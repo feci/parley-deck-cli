@@ -1,6 +1,6 @@
 ---
 idea: live-run-tui
-status: implemented
+status: fix-up-cycle-1
 implementer: codex
 started: 2026-05-10
 completed: 2026-05-10
@@ -30,3 +30,16 @@ Implemented the `live-run-tui` FINAL.md slice:
 - The live TUI intentionally reads from disk instead of using an in-memory event channel.
 - If the runner completes before the final `round.completed` or `round.incomplete` event is read, the TUI performs one final event read before exiting.
 - Verification run: `GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
+
+## Fix-up cycle 1
+
+Review round 1 found blocking issues in skipped-agent duration, sticky `unknown` state, and table alignment. The fix-up:
+
+- Keeps skipped duration at zero unless the event supplies `duration_ms`.
+- Keeps non-participant agents in `unknown` state across all later events.
+- Removes ANSI styling from padded state table cells and aligns headers/rows with fixed-width plain columns.
+- Derives the round label from `IdeaStatus.Status`.
+- Shows terminal zero-duration states as `0s`.
+- Extends reducer coverage for skipped-without-start and unknown-after-multiple-events.
+
+Verification: `GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
