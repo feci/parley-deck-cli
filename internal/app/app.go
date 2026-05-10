@@ -155,7 +155,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	if _, err := protocol.ReadWorkspaceStatus(*root); err != nil {
+	workspaceStatus, err := protocol.ReadWorkspaceStatus(*root)
+	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			fmt.Fprintln(stderr, "no parley-deck workspace found; run `parley init` first")
 			return 1
@@ -202,25 +203,44 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 	fmt.Fprintf(stdout, "Created idea %s and run %s\n", idea.Slug, runID)
 	fmt.Fprintf(stdout, "Starting round-01 with participants: %s\n", strings.Join(participants, ", "))
-	results := runner.RunRoundOne(ctx, runner.Options{
+	runOpts := runner.Options{
 		Root:   *root,
 		RunID:  runID,
 		Idea:   idea,
 		Task:   task,
 		Agents: discovered,
 		Store:  runStore,
-	})
-	failed := printRunResults(stdout, results)
+	}
 	if *noTUI {
+		results := runner.RunRoundOne(ctx, runOpts)
+		failed := printRunResults(stdout, results)
 		if failed {
 			return 1
 		}
 		return 0
 	}
-	tuiCode := runTUIViewWithDiscovery(ctx, *root, discovered, stdout, stderr)
-	if tuiCode != 0 {
-		return tuiCode
+
+	runCtx, cancelRun := context.WithCancel(ctx)
+	defer cancelRun()
+	handle := runner.RunRoundOneAsync(runCtx, runOpts)
+	workspaceStatus.Ideas = []protocol.IdeaStatus{idea}
+	if err := tui.RunLive(tui.LiveOptions{
+		Status:       workspaceStatus,
+		Idea:         idea,
+		Participants: participants,
+		RunID:        runID,
+		RunDir:       handle.RunDir,
+		Done:         handle.Done(),
+		Cancel:       cancelRun,
+	}); err != nil {
+		cancelRun()
+		results := handle.Wait()
+		printRunResults(stdout, results)
+		fmt.Fprintf(stderr, "tui failed: %v\n", err)
+		return 1
 	}
+	results := handle.Wait()
+	failed := printRunResults(stdout, results)
 	if failed {
 		return 1
 	}

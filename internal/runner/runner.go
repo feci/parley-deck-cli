@@ -41,6 +41,67 @@ type Result struct {
 	Duration    time.Duration
 }
 
+type Handle struct {
+	RunID  string
+	RunDir string
+
+	done    chan struct{}
+	results []Result
+	mu      sync.Mutex
+}
+
+func RunRoundOneAsync(ctx context.Context, opts Options) *Handle {
+	handle := &Handle{
+		RunID:  opts.RunID,
+		RunDir: filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID),
+		done:   make(chan struct{}),
+	}
+	go func() {
+		defer close(handle.done)
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				now := time.Now().UTC()
+				result := Result{
+					AgentID:     "runner",
+					CompletedAt: now,
+					ExitError:   fmt.Sprintf("runner panic: %v", recovered),
+				}
+				_ = opts.Store.Append(store.Event{
+					Time: now,
+					Type: "run.failed",
+					Data: map[string]any{"error": result.ExitError},
+				})
+				handle.setResults([]Result{result})
+			}
+		}()
+		handle.setResults(RunRoundOne(ctx, opts))
+	}()
+	return handle
+}
+
+func (h *Handle) Done() <-chan struct{} {
+	return h.done
+}
+
+func (h *Handle) Wait() []Result {
+	<-h.done
+	return h.Results()
+}
+
+func (h *Handle) Results() []Result {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	results := make([]Result, len(h.results))
+	copy(results, h.results)
+	return results
+}
+
+func (h *Handle) setResults(results []Result) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.results = append([]Result(nil), results...)
+}
+
 func RunRoundOne(ctx context.Context, opts Options) []Result {
 	if opts.Timeout == 0 {
 		opts.Timeout = 30 * time.Minute
