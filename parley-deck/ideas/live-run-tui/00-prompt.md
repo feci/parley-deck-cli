@@ -3,7 +3,7 @@ idea: live-run-tui
 author: user
 created: 2026-05-10
 participants: [codex, claude, gemini, hermes]
-status: round-01
+status: final
 ---
 
 ## Problem / idea
