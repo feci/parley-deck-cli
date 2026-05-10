@@ -1,6 +1,6 @@
 ---
 idea: live-run-tui
-status: fix-up-cycle-1
+status: complete
 implementer: codex
 started: 2026-05-10
 completed: 2026-05-10
@@ -43,3 +43,7 @@ Review round 1 found blocking issues in skipped-agent duration, sticky `unknown`
 - Extends reducer coverage for skipped-without-start and unknown-after-multiple-events.
 
 Verification: `GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
+
+## Completion
+
+Review consensus accepted the fix-up with no remaining blocking fixes. Deferred follow-ups are documented in `review/consensus.md` and are outside this slice.
