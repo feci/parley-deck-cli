@@ -1,0 +1,35 @@
+Traceback (most recent call last):
+  File "/Users/tomasfecko/.hermes/hermes-agent/venv/bin/hermes", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_cli/main.py", line 11647, in main
+    run_oneshot(
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_cli/oneshot.py", line 181, in run_oneshot
+    response = _run_agent(
+               ^^^^^^^^^^^
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_cli/oneshot.py", line 305, in _run_agent
+    agent = AIAgent(
+            ^^^^^^^^
+  File "/Users/tomasfecko/.hermes/hermes-agent/run_agent.py", line 1431, in __init__
+    setup_logging(hermes_home=_hermes_home)
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_logging.py", line 216, in setup_logging
+    _add_rotating_handler(
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_logging.py", line 358, in _add_rotating_handler
+    handler = _ManagedRotatingFileHandler(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_logging.py", line 311, in __init__
+    super().__init__(*args, **kwargs)
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/logging/handlers.py", line 155, in __init__
+    BaseRotatingHandler.__init__(self, filename, mode, encoding=encoding,
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/logging/handlers.py", line 58, in __init__
+    logging.FileHandler.__init__(self, filename, mode=mode,
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/logging/__init__.py", line 1181, in __init__
+    StreamHandler.__init__(self, self._open())
+                                 ^^^^^^^^^^^^
+  File "/Users/tomasfecko/.hermes/hermes-agent/hermes_logging.py", line 321, in _open
+    stream = super()._open()
+             ^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.11/3.11.15_1/Frameworks/Python.framework/Versions/3.11/lib/python3.11/logging/__init__.py", line 1213, in _open
+    return open_func(self.baseFilename, self.mode,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 1] Operation not permitted: '/Users/tomasfecko/.hermes/logs/agent.log'
