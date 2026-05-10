@@ -98,6 +98,64 @@ func TestRunRoundOneCreatesArtifactWithHeadlessAgent(t *testing.T) {
 	}
 }
 
+func TestRunRoundOneAsyncClosesWithResults(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := protocol.CreateIdea(root, "Async runner test task", []string{"fake"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	runStore := store.New(filepath.Join(root, protocol.DeckDir, "runs", "async-run"))
+
+	handle := RunRoundOneAsync(context.Background(), Options{
+		Root:  root,
+		RunID: "async-run",
+		Idea:  idea,
+		Task:  "Async runner test task",
+		Agents: []agents.Discovery{
+			{
+				Spec: agents.Spec{
+					ID:           "fake",
+					HeadlessArgs: []string{"-test.run=TestFakeAgentHelper", "--", "parley-fake-agent"},
+					PromptMode:   agents.PromptStdin,
+				},
+				Path:  os.Args[0],
+				Found: true,
+			},
+		},
+		Timeout: 5 * time.Second,
+		Store:   runStore,
+	})
+
+	select {
+	case <-handle.Done():
+	case <-time.After(5 * time.Second):
+		t.Fatal("async runner did not finish")
+	}
+	results := handle.Results()
+	if len(results) != 1 || !results[0].ArtifactOK {
+		t.Fatalf("unexpected async results: %+v", results)
+	}
+	events, err := runStore.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var started, finished bool
+	for _, event := range events {
+		if event.Type == "agent.started" {
+			started = true
+		}
+		if event.Type == "agent.finished" {
+			finished = true
+		}
+	}
+	if !started || !finished {
+		t.Fatalf("events missing started/finished: %+v", events)
+	}
+}
+
 func TestRunRoundOneSkipsExistingArtifact(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
