@@ -182,8 +182,9 @@ func (m liveModel) View() string {
 	}
 
 	header := headerStyle.Render(fmt.Sprintf(
-		"Parley Deck  idea=%s  round=round-01  run=%s  status=%s",
+		"Parley Deck  idea=%s  round=%s  run=%s  status=%s",
 		m.opts.Idea.Slug,
+		displayRoundLabel(m.opts.Idea.Status),
 		m.opts.RunID,
 		displayRoundStatus(m.state.RoundStatus, m.done),
 	))
@@ -217,28 +218,17 @@ func (m liveModel) View() string {
 func (m liveModel) renderAgentTable() string {
 	var b strings.Builder
 	b.WriteString("Agents\n")
-	b.WriteString("  ID        STATE      ELAPSED  LAST EVENT\n")
+	b.WriteString(fmt.Sprintf("%-2s %-8s %-10s %-8s %s\n", "", "ID", "STATE", "ELAPSED", "LAST EVENT"))
 	for i, agent := range m.state.Agents {
 		marker := " "
 		if i == m.selected {
 			marker = ">"
 		}
-		state := agent.State
-		switch agent.State {
-		case stateFinished:
-			state = okStyle.Render(agent.State)
-		case stateFailed:
-			state = warnStyle.Render(agent.State)
-		case stateRunning:
-			state = okStyle.Render(agent.State)
-		default:
-			state = mutedStyle.Render(agent.State)
-		}
-		b.WriteString(fmt.Sprintf("%s %-8s %-16s %-8s %s\n",
+		b.WriteString(fmt.Sprintf("%-2s %-8s %-10s %-8s %s\n",
 			marker,
 			agent.ID,
-			state,
-			formatDuration(displayDuration(agent, m.now)),
+			agent.State,
+			formatAgentDuration(agent, m.now),
 			agent.LatestEvent,
 		))
 	}
@@ -360,6 +350,10 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 				agent.LatestEvent = event.Type
 				continue
 			}
+			if agent.State == stateUnknown {
+				agent.LatestEvent = event.Type
+				continue
+			}
 			applyAgentEvent(agent, event, now)
 		case "round.completed":
 			state.RoundStatus = "completed"
@@ -402,7 +396,7 @@ func applyAgentEvent(agent *AgentState, event store.Event, now time.Time) {
 	case "agent.skipped":
 		agent.State = stateSkipped
 		agent.Reason = dataString(event.Data, "reason")
-		agent.Duration = now.Sub(agent.StartedAt)
+		agent.Duration = dataDuration(event.Data, "duration_ms", 0)
 	}
 }
 
@@ -557,6 +551,26 @@ func formatDuration(value time.Duration) string {
 		return value.Round(time.Millisecond).String()
 	}
 	return value.Round(time.Second).String()
+}
+
+func formatAgentDuration(agent AgentState, now time.Time) string {
+	duration := displayDuration(agent, now)
+	if duration <= 0 {
+		switch agent.State {
+		case stateFinished, stateFailed, stateSkipped:
+			return "0s"
+		default:
+			return "-"
+		}
+	}
+	return formatDuration(duration)
+}
+
+func displayRoundLabel(status string) string {
+	if strings.TrimSpace(status) == "" {
+		return "round-01"
+	}
+	return status
 }
 
 func displayRoundStatus(status string, done bool) string {

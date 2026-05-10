@@ -18,10 +18,12 @@ func TestProjectEventsDerivesAgentAndRoundState(t *testing.T) {
 		{Time: base.Add(time.Second), Type: "agent.finished", Data: map[string]any{"agent": "codex", "duration_ms": float64(1500)}},
 		{Time: base.Add(2 * time.Second), Type: "agent.failed", Data: map[string]any{"agent": "claude", "error": "exit status 1", "duration_ms": float64(2000)}},
 		{Time: base.Add(3 * time.Second), Type: "agent.started", Data: map[string]any{"agent": "gemini"}},
-		{Time: base.Add(4 * time.Second), Type: "round.incomplete", Data: map[string]any{"completed": float64(1), "total": float64(3)}},
+		{Time: base.Add(4 * time.Second), Type: "agent.finished", Data: map[string]any{"agent": "gemini", "duration_ms": float64(50)}},
+		{Time: base.Add(5 * time.Second), Type: "agent.skipped", Data: map[string]any{"agent": "hermes", "reason": "artifact already exists"}},
+		{Time: base.Add(6 * time.Second), Type: "round.incomplete", Data: map[string]any{"completed": float64(1), "total": float64(4)}},
 	}
 
-	state := ProjectEvents([]string{"codex", "claude", "hermes"}, events, base.Add(5*time.Second))
+	state := ProjectEvents([]string{"codex", "claude", "hermes", "opus"}, events, base.Add(7*time.Second))
 	agents := mapByID(state.Agents)
 
 	if got := agents["codex"].State; got != stateFinished {
@@ -33,8 +35,14 @@ func TestProjectEventsDerivesAgentAndRoundState(t *testing.T) {
 	if got := agents["claude"].State; got != stateFailed {
 		t.Fatalf("claude state=%s, want %s", got, stateFailed)
 	}
-	if got := agents["hermes"].State; got != statePending {
-		t.Fatalf("hermes state=%s, want %s", got, statePending)
+	if got := agents["hermes"].State; got != stateSkipped {
+		t.Fatalf("hermes state=%s, want %s", got, stateSkipped)
+	}
+	if got := agents["hermes"].Duration; got != 0 {
+		t.Fatalf("hermes duration=%s, want zero for skip without start", got)
+	}
+	if got := agents["opus"].State; got != statePending {
+		t.Fatalf("opus state=%s, want %s", got, statePending)
 	}
 	if got := agents["gemini"].State; got != stateUnknown {
 		t.Fatalf("gemini state=%s, want %s", got, stateUnknown)
