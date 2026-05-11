@@ -83,3 +83,7 @@ Notes: Consensus matches my round-02 position on every load-bearing item: `Agent
 ### Signoff: gemini — 2026-05-11
 Status: ✅ ACCEPT
 Notes: I accept the consensus. It correctly incorporates my round-02 positions: project-local TOML with 5-layer resolution, opt-in behavioral verification with gitignored probes, and a minimal `cmd/parley` bootstrap. I am also satisfied with the decision to stick to stdlib `flag` for this slice to keep the diff focused.
+
+### Signoff: hermes — 2026-05-11
+Status: ✅ ACCEPT
+Notes: Consensus is solid; the layered resolution order, Codex sandbox/approval defaults, and verification UX all align with practical CLI needs. Ready to proceed.
