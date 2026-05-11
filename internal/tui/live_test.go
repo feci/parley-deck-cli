@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+
+	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 )
@@ -125,10 +128,82 @@ func TestLiveViewIncludesRequiredPanels(t *testing.T) {
 	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
 
 	view := model.View()
-	for _, want := range []string{"idea=live-run-tui", "Agents", "Latest events", "Log preview", "q/esc detach", "ctrl+c cancel"} {
+	for _, want := range []string{"idea=live-run-tui", "Agents", "Latest events", "Questions", "Log preview", "q/esc detach", "ctrl+c cancel"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("view missing %q\n%s", want, view)
 		}
+	}
+}
+
+func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
+	runDir := t.TempDir()
+	question, err := hitl.New(runDir).Create(hitl.Question{
+		Agent:  "codex",
+		Prompt: "Which branch should I target?",
+		Risk:   hitl.RiskNormal,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("hitl-tui-questions"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       runDir,
+	})
+
+	updated, _ := model.Update(questionsMsg{questions: []hitl.Question{question}})
+	model = updated.(liveModel)
+	if !strings.Contains(model.View(), "Which branch should I target?") {
+		t.Fatalf("view missing question\n%s", model.View())
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("main")})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+
+	questions, err := hitl.New(runDir).List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := questions[0].Answer; got != "main" {
+		t.Fatalf("answer=%q, want main", got)
+	}
+	if questions[0].Status != hitl.StatusAnswered {
+		t.Fatalf("status=%s, want answered", questions[0].Status)
+	}
+}
+
+func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
+	model := newLiveModel(LiveOptions{RunDir: t.TempDir()})
+	model.answerMode = true
+	model.answerText = "á"
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	model = updated.(liveModel)
+	if model.answerText != "" {
+		t.Fatalf("answerText=%q, want empty", model.answerText)
+	}
+}
+
+func TestSummarizeHITLEvents(t *testing.T) {
+	question := summarizeEvent(store.Event{
+		Type: "hitl.question",
+		Data: map[string]any{"agent": "gemini", "question_id": "q1", "risk": "normal"},
+	})
+	if question.Text != "gemini question q1 normal" {
+		t.Fatalf("question text=%q", question.Text)
+	}
+
+	answered := summarizeEvent(store.Event{
+		Type: "hitl.answered",
+		Data: map[string]any{"agent": "gemini", "question_id": "q1", "status": "answered"},
+	})
+	if answered.Text != "gemini answered q1 answered" {
+		t.Fatalf("answered text=%q", answered.Text)
 	}
 }
 
