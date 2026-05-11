@@ -3,7 +3,7 @@ idea: hitl-tui-questions
 author: user
 created: 2026-05-11
 participants: [codex, gemini, hermes]
-status: round-02
+status: final
 ---
 
 ## Problem / idea
