@@ -1,6 +1,6 @@
 ---
 idea: hitl-tui-questions
-status: fix-up-cycle-1
+status: complete
 implementer: codex
 started: 2026-05-11
 completed: 2026-05-11
@@ -52,3 +52,7 @@ head-commit: 6ff4a4434c10f815694a86c4a095cef46a9559b2
 None.
 
 Verification run: `GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
+
+## Completion
+
+Review round 2 accepted fix-up cycle 1 with no remaining findings. The final review consensus lists zero agreed fixes for review cycle 2, so this implementation is complete and ready to merge.
