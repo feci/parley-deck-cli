@@ -1,6 +1,6 @@
 ---
 idea: agent-runtime-config
-status: fix-up-cycle-1
+status: complete
 implementer: codex
 started: 2026-05-11
 completed: 2026-05-11
@@ -62,3 +62,7 @@ None.
 Verification run: `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go test ./...`
 
 CLI smoke: `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley agents list`
+
+## Completion
+
+Review round 2 accepted fix-up cycle 1 with no remaining findings. The final review consensus lists zero agreed fixes for review cycle 2, so this implementation is complete and ready to merge.
