@@ -1,11 +1,11 @@
 ---
 idea: hitl-tui-questions
-status: implemented
+status: fix-up-cycle-1
 implementer: codex
 started: 2026-05-11
 completed: 2026-05-11
 branch: parley-deck-cli#feature/hitl-tui-questions
-head-commit: 4d65b7228a5c0e4d75b29e245aa9d5e2b889e657
+head-commit: 6ff4a4434c10f815694a86c4a095cef46a9559b2
 design-pr: https://github.com/feci/parley-deck-cli/pull/3
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/4
 ---
@@ -32,3 +32,23 @@ None known.
 - Agent-authored question files are canonical and are displayed by direct polling from the TUI. `hitl.question` events are emitted when questions are created through the internal HITL package; manually authored files still appear in the Questions panel.
 - This slice intentionally does not inject answers into arbitrary running CLIs. Agents can poll the question JSON file when they choose to wait for human input.
 - Verification run: `GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
+
+## Fix-up cycle 1
+
+status: complete
+completed: 2026-05-11
+head-commit: 6ff4a4434c10f815694a86c4a095cef46a9559b2
+
+### Fixes applied
+
+- Added explicit `hitl.question` and `hitl.answered` event summaries in the live TUI.
+- Changed answer-entry backspace handling to remove a whole rune.
+- Added `agent` fallback when question ID slugification would otherwise be empty.
+- Added focused HITL question list ordering coverage.
+- Clarified `parley answer` usage as accepting `ANSWER...` words.
+
+### Deviations from agreed fixes
+
+None.
+
+Verification run: `GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
