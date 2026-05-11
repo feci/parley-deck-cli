@@ -16,6 +16,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 )
@@ -48,6 +49,11 @@ type liveModel struct {
 	events     []store.Event
 	state      RunState
 	selected   int
+	questions  []hitl.Question
+	selectedQ  int
+	answerMode bool
+	answerText string
+	answerErr  string
 	logPreview string
 	errText    string
 	done       bool
@@ -84,6 +90,11 @@ type eventsMsg struct {
 	err    error
 }
 
+type questionsMsg struct {
+	questions []hitl.Question
+	err       error
+}
+
 type eventTickMsg time.Time
 type elapsedTickMsg time.Time
 type doneMsg struct{}
@@ -112,6 +123,7 @@ func newLiveModel(opts LiveOptions) liveModel {
 func (m liveModel) Init() tea.Cmd {
 	return tea.Batch(
 		readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset),
+		readQuestionsCmd(m.opts.RunDir),
 		eventTickCmd(),
 		elapsedTickCmd(),
 		waitDoneCmd(m.opts.Done),
@@ -125,6 +137,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
+		if m.answerMode {
+			return m.updateAnswerMode(msg)
+		}
 		switch msg.String() {
 		case "q", "esc":
 			return m, tea.Quit
@@ -140,6 +155,19 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "k", "up", "shift+tab":
 			m.selectPrev()
 			m.refreshLogPreview()
+			return m, nil
+		case "n", "]":
+			m.selectNextQuestion()
+			return m, nil
+		case "p", "[":
+			m.selectPrevQuestion()
+			return m, nil
+		case "a", "?":
+			if m.canAnswerSelectedQuestion() {
+				m.answerMode = true
+				m.answerText = ""
+				m.answerErr = ""
+			}
 			return m, nil
 		}
 	case eventsMsg:
@@ -158,7 +186,19 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case eventTickMsg:
-		return m, tea.Batch(readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset), eventTickCmd())
+		return m, tea.Batch(
+			readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset),
+			readQuestionsCmd(m.opts.RunDir),
+			eventTickCmd(),
+		)
+	case questionsMsg:
+		if msg.err != nil {
+			m.answerErr = msg.err.Error()
+		} else {
+			m.questions = msg.questions
+			m.clampQuestionSelection()
+		}
+		return m, nil
 	case elapsedTickMsg:
 		m.now = time.Time(msg)
 		m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
@@ -197,16 +237,22 @@ func (m liveModel) View() string {
 
 	left := boxStyle.Width(leftWidth).Render(m.renderAgentTable())
 	right := boxStyle.Width(rightWidth).Render(m.renderEventPane())
+	questions := boxStyle.Width(bodyWidth).Render(m.renderQuestionsPane())
 	logs := boxStyle.Width(bodyWidth).Render(m.renderLogPane())
-	footer := mutedStyle.Render("Keys: j/k/tab select agent  q/esc detach TUI  ctrl+c cancel run")
+	footer := mutedStyle.Render("Keys: j/k/tab agent  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run")
 	if m.errText != "" {
 		footer = warnStyle.Render(m.errText) + "\n" + footer
+	}
+	if m.answerMode {
+		footer = warnStyle.Render("Answer mode: type answer, enter submit, esc cancel") + "\n" + footer
 	}
 
 	return strings.Join([]string{
 		header,
 		"",
 		lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right),
+		"",
+		questions,
 		"",
 		logs,
 		"",
@@ -252,6 +298,45 @@ func (m liveModel) renderEventPane() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
+func (m liveModel) renderQuestionsPane() string {
+	var b strings.Builder
+	b.WriteString("Questions\n")
+	if len(m.questions) == 0 {
+		b.WriteString(mutedStyle.Render("no questions"))
+		return b.String()
+	}
+	for i, question := range m.questions {
+		marker := " "
+		if i == m.selectedQ {
+			marker = ">"
+		}
+		prompt := question.Prompt
+		if len(prompt) > 72 {
+			prompt = prompt[:69] + "..."
+		}
+		b.WriteString(fmt.Sprintf("%-2s %-28s %-13s %-6s %s\n", marker, question.ID, question.Status, question.Risk, prompt))
+	}
+	if selected := m.selectedQuestion(); selected != nil {
+		b.WriteString("\n")
+		b.WriteString(fmt.Sprintf("Selected: %s from %s\n", selected.ID, selected.Agent))
+		if selected.Details != "" {
+			b.WriteString(selected.Details + "\n")
+		}
+		if selected.DefaultAnswer != "" {
+			b.WriteString(mutedStyle.Render("default: "+selected.DefaultAnswer) + "\n")
+		}
+		if selected.Status != hitl.StatusOpen {
+			b.WriteString(okStyle.Render("answer: "+selected.Answer) + "\n")
+		} else if m.answerMode {
+			b.WriteString(warnStyle.Render("answer> ") + m.answerText + "\n")
+		}
+	}
+	if m.answerErr != "" {
+		b.WriteString(warnStyle.Render(m.answerErr))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
 func (m liveModel) renderLogPane() string {
 	agent := m.selectedAgent()
 	if agent == nil {
@@ -261,6 +346,44 @@ func (m liveModel) renderLogPane() string {
 		return fmt.Sprintf("Log preview: %s\n%s", agent.ID, mutedStyle.Render("no log output yet"))
 	}
 	return fmt.Sprintf("Log preview: %s\n%s", agent.ID, m.logPreview)
+}
+
+func (m liveModel) updateAnswerMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		if m.opts.Cancel != nil {
+			m.opts.Cancel()
+		}
+		return m, tea.Quit
+	case "esc":
+		m.answerMode = false
+		m.answerText = ""
+		m.answerErr = ""
+		return m, nil
+	case "enter":
+		question := m.selectedQuestion()
+		if question == nil {
+			m.answerMode = false
+			return m, nil
+		}
+		if _, err := hitl.New(m.opts.RunDir).Answer(question.ID, m.answerText, false); err != nil {
+			m.answerErr = err.Error()
+			return m, nil
+		}
+		m.answerMode = false
+		m.answerText = ""
+		m.answerErr = ""
+		return m, readQuestionsCmd(m.opts.RunDir)
+	case "backspace", "ctrl+h":
+		if len(m.answerText) > 0 {
+			m.answerText = m.answerText[:len(m.answerText)-1]
+		}
+		return m, nil
+	}
+	if len(msg.Runes) > 0 {
+		m.answerText += string(msg.Runes)
+	}
+	return m, nil
 }
 
 func (m *liveModel) selectNext() {
@@ -292,11 +415,52 @@ func (m *liveModel) clampSelection() {
 	}
 }
 
+func (m *liveModel) selectNextQuestion() {
+	if len(m.questions) == 0 {
+		m.selectedQ = 0
+		return
+	}
+	m.selectedQ = (m.selectedQ + 1) % len(m.questions)
+}
+
+func (m *liveModel) selectPrevQuestion() {
+	if len(m.questions) == 0 {
+		m.selectedQ = 0
+		return
+	}
+	m.selectedQ--
+	if m.selectedQ < 0 {
+		m.selectedQ = len(m.questions) - 1
+	}
+}
+
+func (m *liveModel) clampQuestionSelection() {
+	if len(m.questions) == 0 {
+		m.selectedQ = 0
+		return
+	}
+	if m.selectedQ >= len(m.questions) {
+		m.selectedQ = len(m.questions) - 1
+	}
+}
+
 func (m liveModel) selectedAgent() *AgentState {
 	if len(m.state.Agents) == 0 || m.selected < 0 || m.selected >= len(m.state.Agents) {
 		return nil
 	}
 	return &m.state.Agents[m.selected]
+}
+
+func (m liveModel) selectedQuestion() *hitl.Question {
+	if len(m.questions) == 0 || m.selectedQ < 0 || m.selectedQ >= len(m.questions) {
+		return nil
+	}
+	return &m.questions[m.selectedQ]
+}
+
+func (m liveModel) canAnswerSelectedQuestion() bool {
+	question := m.selectedQuestion()
+	return question != nil && question.Status == hitl.StatusOpen
 }
 
 func (m *liveModel) refreshLogPreview() {
@@ -422,6 +586,13 @@ func readEventsCmd(path string, offset int64) tea.Cmd {
 	return func() tea.Msg {
 		events, nextOffset, err := readEventsFromOffset(path, offset)
 		return eventsMsg{events: events, offset: nextOffset, err: err}
+	}
+}
+
+func readQuestionsCmd(runDir string) tea.Cmd {
+	return func() tea.Msg {
+		questions, err := hitl.New(runDir).List()
+		return questionsMsg{questions: questions, err: err}
 	}
 }
 

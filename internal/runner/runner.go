@@ -207,7 +207,8 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		return failEarly(opts, result, err)
 	}
 
-	prompt, err := BuildRoundOnePrompt(agent.ID, opts.Idea, opts.Task, outputPath)
+	questionsDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "questions")
+	prompt, err := BuildRoundOnePrompt(agent.ID, opts.Idea, opts.Task, outputPath, questionsDir)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
@@ -318,7 +319,7 @@ func combineError(primary string, err error) string {
 	return primary + "; " + err.Error()
 }
 
-func BuildRoundOnePrompt(agentID string, idea protocol.IdeaStatus, task, outputPath string) (string, error) {
+func BuildRoundOnePrompt(agentID string, idea protocol.IdeaStatus, task, outputPath, questionsDir string) (string, error) {
 	promptData, err := os.ReadFile(filepath.Join(idea.Path, "00-prompt.md"))
 	if err != nil {
 		return "", err
@@ -333,6 +334,9 @@ Rules:
 - Write the complete file, including YAML frontmatter.
 - Return only a short confirmation with the path written.
 - Be concrete, concise, and state trade-offs.
+- If you are blocked by missing human input, create one JSON question file under: %s
+- Question files use this shape: {"id":"<unique-id>","agent":"%s","prompt":"<question>","details":"<context>","default_answer":"<safe default if any>","risk":"low|normal|high","status":"open","answer":"","created_at":"<RFC3339 time>","answered_at":"0001-01-01T00:00:00Z"}
+- If you choose to wait for an answer, poll your question file until status is answered or auto_answered. Otherwise proceed with an explicit assumption in your artifact.
 
 Effective launch config:
 - model: cli-default
@@ -355,7 +359,7 @@ date: %s
 ## Proposed approach
 ## Concerns / open questions
 ## Risks
-`, agentID, outputPath, string(promptData), agentID, idea.Slug, time.Now().Format("2006-01-02")), nil
+`, agentID, outputPath, questionsDir, agentID, string(promptData), agentID, idea.Slug, time.Now().Format("2006-01-02")), nil
 }
 
 func commandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {

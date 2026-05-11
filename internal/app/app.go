@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
@@ -51,8 +52,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "parley resume is not implemented yet; durable run loading exists, process reattach is next")
 		return 1
 	case "answer":
-		fmt.Fprintln(stderr, "parley answer is not implemented yet; HITL question storage is next")
-		return 1
+		return runAnswer(args[1:], stdout, stderr)
 	case "tui":
 		return runTUI(ctx, args[1:], stdout, stderr)
 	default:
@@ -71,7 +71,7 @@ Usage:
   %s status [--dir DIR]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume RUN_OR_IDEA
-  %s answer QUESTION_ID
+  %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER
   %s tui [--dir DIR]
   %s help
   %s version
@@ -212,7 +212,13 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		Store:  runStore,
 	}
 	if *noTUI {
-		results := runner.RunRoundOne(ctx, runOpts)
+		runCtx, cancelRun := context.WithCancel(ctx)
+		defer cancelRun()
+		if *auto {
+			startAutoAnswerer(runCtx, handleRunDir(*root, runID))
+		}
+		results := runner.RunRoundOne(runCtx, runOpts)
+		cancelRun()
 		failed := printRunResults(stdout, results)
 		if failed {
 			return 1
@@ -222,6 +228,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 	runCtx, cancelRun := context.WithCancel(ctx)
 	defer cancelRun()
+	if *auto {
+		startAutoAnswerer(runCtx, handleRunDir(*root, runID))
+	}
 	handle := runner.RunRoundOneAsync(runCtx, runOpts)
 	workspaceStatus.Ideas = []protocol.IdeaStatus{idea}
 	if err := tui.RunLive(tui.LiveOptions{
@@ -247,6 +256,33 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+func runAnswer(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("answer", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	rest := fs.Args()
+	if len(rest) < 3 {
+		fmt.Fprintln(stderr, "usage: parley answer [--dir DIR] RUN_ID QUESTION_ID ANSWER")
+		return 2
+	}
+
+	runID := rest[0]
+	questionID := rest[1]
+	answer := strings.TrimSpace(strings.Join(rest[2:], " "))
+	runDir := handleRunDir(*root, runID)
+	question, err := hitl.New(runDir).Answer(questionID, answer, false)
+	if err != nil {
+		fmt.Fprintf(stderr, "answer failed: %v\n", err)
+		return 1
+	}
+
+	fmt.Fprintf(stdout, "Answered %s for run %s\n", question.ID, runID)
+	return 0
+}
+
 func runTUI(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -255,6 +291,27 @@ func runTUI(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	return runTUIView(ctx, *root, stdout, stderr)
+}
+
+func handleRunDir(root, runID string) string {
+	return filepath.Join(root, protocol.DeckDir, "runs", runID)
+}
+
+func startAutoAnswerer(ctx context.Context, runDir string) {
+	go func() {
+		ticker := time.NewTicker(250 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if _, err := hitl.New(runDir).AutoAnswerOpen(); err != nil {
+					continue
+				}
+			}
+		}
+	}()
 }
 
 func runTUIView(ctx context.Context, root string, stdout, stderr io.Writer) int {

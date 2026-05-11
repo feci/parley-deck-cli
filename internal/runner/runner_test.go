@@ -25,8 +25,9 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 		t.Fatal(err)
 	}
 	output := filepath.Join(idea.Path, "round-01", "fake.md")
+	questionsDir := filepath.Join(root, protocol.DeckDir, "runs", "test-run", "questions")
 
-	prompt, err := BuildRoundOnePrompt("fake", idea, "Test task", output)
+	prompt, err := BuildRoundOnePrompt("fake", idea, "Test task", output, questionsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,6 +38,8 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 		"Do not edit any other agent's file.",
 		"agent: fake",
 		"idea: " + idea.Slug,
+		questionsDir,
+		"status\":\"open",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q\n%s", want, prompt)
