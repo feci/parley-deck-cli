@@ -3,7 +3,7 @@ idea: agent-runtime-config
 author: codex
 created: 2026-05-11
 participants: [codex, claude, gemini, hermes]
-status: round-01
+status: round-02
 ---
 
 ## Problem / idea
