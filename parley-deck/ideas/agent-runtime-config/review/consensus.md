@@ -44,3 +44,7 @@ Notes: I accept this review consensus and will implement the agreed fixes in fix
 ### Signoff: claude — 2026-05-11
 Status: ✅ ACCEPT
 Notes: Both my MAJORs (isolated_home_env ignored; HEADLESS placeholder column) are accepted, six of seven MINORs and one NIT are agreed, and all three open questions are resolved. The dismissed `agents.toml` re-declaration MINOR has a defensible rationale (intentional auditability with no correctness dependency) — non-blocking.
+
+### Signoff: gemini — 2026-05-11
+Status: ✅ ACCEPT
+Notes: My MAJOR regarding Codex Git smoke isolation and my MINOR regarding the HEADLESS column are both addressed. The dismissal of my NIT regarding default values is acceptable as those values are indeed intentional Parley domain defaults.
