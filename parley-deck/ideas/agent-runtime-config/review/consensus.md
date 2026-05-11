@@ -40,3 +40,7 @@ reviewed-commit: d38e7f738471caa61042ca087c445b4df5bd2606
 ### Signoff: codex — 2026-05-11
 Status: ✅ ACCEPT
 Notes: I accept this review consensus and will implement the agreed fixes in fix-up cycle 1 before requesting re-review.
+
+### Signoff: claude — 2026-05-11
+Status: ✅ ACCEPT
+Notes: Both my MAJORs (isolated_home_env ignored; HEADLESS placeholder column) are accepted, six of seven MINORs and one NIT are agreed, and all three open questions are resolved. The dismissed `agents.toml` re-declaration MINOR has a defensible rationale (intentional auditability with no correctness dependency) — non-blocking.
