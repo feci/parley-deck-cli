@@ -1,11 +1,11 @@
 ---
 idea: agent-runtime-config
-status: implemented
+status: fix-up-cycle-1
 implementer: codex
 started: 2026-05-11
 completed: 2026-05-11
 branch: parley-deck-cli#feature-agent-runtime-config
-head-commit: 1e1c757ddd74a3c81f8ceda3f0d186a4ae8adc7a
+head-commit: a9c5691117d44c5894b11cc2a1661f66ca2b63ce
 design-pr: https://github.com/feci/parley-deck-cli/pull/5
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/6
 ---
@@ -36,3 +36,29 @@ Implemented the `agent-runtime-config` slice from `FINAL.md`:
 - On this machine, `go run ./cmd/parley agents list` reports the installed Codex binary as present but with a version probe error. That is expected from the local Codex installation state and is exactly the kind of distinction this slice is intended to surface.
 - Verification run: `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go test ./...`
 - CLI smoke: `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley agents list`
+
+## Fix-up cycle 1
+
+status: complete
+completed: 2026-05-11
+head-commit: a9c5691117d44c5894b11cc2a1661f66ca2b63ce
+
+### Fixes applied
+
+- Applied `claude` review round 01 [MAJOR] `Configured isolated_home_env is ignored for gemini and hermes`: Gemini and Hermes isolated-home setup now builds env vars from resolved `IsolatedHomeEnv` templates, with historical env-key fallback only when no template is configured.
+- Applied `claude` review round 01 [MAJOR] and `gemini` review round 01 [MINOR] on the constant `HEADLESS` column: `parley agents list` now reports configured/missing headless state and prints the configured headless mode detail.
+- Applied `gemini` review round 01 [MAJOR] `Codex Git smoke runs directly in CLI instead of via agent`: Codex full verification now embeds the Git smoke sequence in the Codex headless probe prompt instead of executing those Git commands directly from the CLI process.
+- Applied `claude` review round 01 [MINOR] `New TOML-declared agents lose source attribution for unset fields`: synthesized agents now get config-default source metadata for defaulted fields.
+- Applied `claude` review round 01 [MINOR] `{tempdir} placeholder has two different meanings depending on the field`: docs and tests now make the two placeholder meanings explicit.
+- Applied `claude` review round 01 [MINOR] `runFullVerification fails fast on the first error`: full verification now reports per-agent probe failures and returns non-zero after all selected probes are attempted.
+- Applied `claude` review round 01 [MINOR] `parley agents verify` strict missing-agent behavior: docs now describe strict default verification and CLI output hints users toward `--agent ID`.
+- Applied `claude` review round 01 [MINOR] `No app-level test that parley run actually injects resolved runtime`: added an app-level `parley run` test that verifies resolved runtime in the `run.created` event.
+- Applied `claude` review round 01 [NIT] `Compatibility aliases agents discover|probe are not exercised by tests`: added alias coverage.
+
+### Deviations from agreed fixes
+
+None.
+
+Verification run: `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go test ./...`
+
+CLI smoke: `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley agents list`
