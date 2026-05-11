@@ -3,3 +3,5 @@
 /dist/
 /build/
 coverage.out
+parley-deck/agents.local.toml
+parley-deck/meta/runtime-probes/

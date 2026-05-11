@@ -1,0 +1,44 @@
+# Shared Parley Deck agent runtime defaults for this repository.
+# User-local paths and overrides belong in parley-deck/agents.local.toml.
+
+[agents.codex]
+sandbox_mode = "workspace-write"
+approval_policy = "on-failure"
+model = "cli-default"
+reasoning = "cli-default"
+profile = "cli-default"
+speed = "balanced"
+timeout_ms = 1800000
+external_backend = "hosted"
+
+[agents.claude]
+model = "cli-default"
+reasoning = "cli-default"
+profile = "cli-default"
+speed = "balanced"
+timeout_ms = 1800000
+external_backend = "hosted"
+
+[agents.gemini]
+model = "cli-default"
+reasoning = "cli-default"
+profile = "cli-default"
+speed = "balanced"
+timeout_ms = 1800000
+isolate_home = true
+external_backend = "hosted"
+
+[agents.gemini.isolated_home_env]
+GEMINI_CLI_HOME = "{tempdir}"
+
+[agents.hermes]
+model = "cli-default"
+reasoning = "cli-default"
+profile = "cli-default"
+speed = "balanced"
+timeout_ms = 1800000
+isolate_home = true
+external_backend = "hosted"
+
+[agents.hermes.isolated_home_env]
+HERMES_HOME = "{tempdir}"

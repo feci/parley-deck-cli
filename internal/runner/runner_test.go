@@ -27,7 +27,17 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 	output := filepath.Join(idea.Path, "round-01", "fake.md")
 	questionsDir := filepath.Join(root, protocol.DeckDir, "runs", "test-run", "questions")
 
-	prompt, err := BuildRoundOnePrompt("fake", idea, "Test task", output, questionsDir)
+	prompt, err := BuildRoundOnePrompt(agents.Discovery{
+		Spec: agents.Spec{
+			ID:             "fake",
+			Model:          "test-model",
+			Reasoning:      "test-reasoning",
+			Speed:          "test-speed",
+			SandboxMode:    "workspace-write",
+			ApprovalPolicy: "on-failure",
+			TimeoutMS:      1234,
+		},
+	}, idea, "Test task", output, questionsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,6 +50,12 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 		"idea: " + idea.Slug,
 		questionsDir,
 		"status\":\"open",
+		"model: test-model",
+		"thinking/reasoning/effort/profile: test-reasoning",
+		"speed: test-speed",
+		"sandbox: workspace-write",
+		"approval: on-failure",
+		"timeoutMs: 1234",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q\n%s", want, prompt)
@@ -244,6 +260,35 @@ func TestRunRoundOneRecordsAgentFailure(t *testing.T) {
 	}
 	if got, want := events[len(events)-1].Type, "round.incomplete"; got != want {
 		t.Fatalf("last event=%s, want %s", got, want)
+	}
+}
+
+func TestIsolatedHomeEnvUsesConfiguredTemplate(t *testing.T) {
+	env := isolatedHomeEnv(agents.Discovery{
+		Spec: agents.Spec{
+			ID: "gemini",
+			IsolatedHomeEnv: map[string]string{
+				"GEMINI_CLI_HOME": "{tempdir}/gemini",
+				"EXTRA_CACHE":     "{tempdir}/cache",
+			},
+		},
+	}, "/tmp/parley-home", "GEMINI_CLI_HOME")
+
+	got := strings.Join(env, "\n")
+	for _, want := range []string{
+		"GEMINI_CLI_HOME=/tmp/parley-home/gemini",
+		"EXTRA_CACHE=/tmp/parley-home/cache",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("env missing %q: %v", want, env)
+		}
+	}
+}
+
+func TestIsolatedHomeEnvFallsBackToHistoricalKey(t *testing.T) {
+	env := isolatedHomeEnv(agents.Discovery{Spec: agents.Spec{ID: "gemini"}}, "/tmp/parley-home", "GEMINI_CLI_HOME")
+	if len(env) != 1 || env[0] != "GEMINI_CLI_HOME=/tmp/parley-home" {
+		t.Fatalf("env=%v", env)
 	}
 }
 

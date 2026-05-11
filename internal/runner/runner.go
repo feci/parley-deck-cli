@@ -103,9 +103,6 @@ func (h *Handle) setResults(results []Result) {
 }
 
 func RunRoundOne(ctx context.Context, opts Options) []Result {
-	if opts.Timeout == 0 {
-		opts.Timeout = 30 * time.Minute
-	}
 	if opts.Round == 0 {
 		opts.Round = 1
 	}
@@ -208,15 +205,15 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	questionsDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "questions")
-	prompt, err := BuildRoundOnePrompt(agent.ID, opts.Idea, opts.Task, outputPath, questionsDir)
+	prompt, err := BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
 
-	ctx, cancel := context.WithTimeout(parent, opts.Timeout)
+	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
 	defer cancel()
 
-	cmd, cleanup, err := commandFor(ctx, opts.Root, agent, prompt)
+	cmd, cleanup, err := CommandFor(ctx, opts.Root, agent, prompt)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -319,7 +316,7 @@ func combineError(primary string, err error) string {
 	return primary + "; " + err.Error()
 }
 
-func BuildRoundOnePrompt(agentID string, idea protocol.IdeaStatus, task, outputPath, questionsDir string) (string, error) {
+func BuildRoundOnePrompt(agent agents.Discovery, idea protocol.IdeaStatus, task, outputPath, questionsDir string) (string, error) {
 	promptData, err := os.ReadFile(filepath.Join(idea.Path, "00-prompt.md"))
 	if err != nil {
 		return "", err
@@ -339,10 +336,12 @@ Rules:
 - If you choose to wait for an answer, poll your question file until status is answered or auto_answered. Otherwise proceed with an explicit assumption in your artifact.
 
 Effective launch config:
-- model: cli-default
-- thinking/reasoning/effort/profile: cli-default
-- speed: balanced
-- timeoutMs: 1800000
+- model: %s
+- thinking/reasoning/effort/profile: %s
+- speed: %s
+- sandbox: %s
+- approval: %s
+- timeoutMs: %d
 
 Idea prompt:
 %s
@@ -359,10 +358,17 @@ date: %s
 ## Proposed approach
 ## Concerns / open questions
 ## Risks
-`, agentID, outputPath, questionsDir, agentID, string(promptData), agentID, idea.Slug, time.Now().Format("2006-01-02")), nil
+`, agent.ID, outputPath, questionsDir, agent.ID,
+		runtimeValue(agent.Model),
+		runtimeValue(firstNonEmpty(agent.Reasoning, agent.Profile)),
+		runtimeValue(firstNonEmpty(agent.Speed, agents.DefaultSpeed)),
+		runtimeValue(agent.SandboxMode),
+		runtimeValue(agent.ApprovalPolicy),
+		timeoutMSForAgent(agent),
+		string(promptData), agent.ID, idea.Slug, time.Now().Format("2006-01-02")), nil
 }
 
-func commandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
+func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
 	args := make([]string, 0, len(agent.HeadlessArgs))
 	for _, arg := range agent.HeadlessArgs {
 		switch arg {
@@ -377,12 +383,12 @@ func commandFor(ctx context.Context, root string, agent agents.Discovery, prompt
 	cmd := exec.CommandContext(ctx, agent.Path, args...)
 	cleanup := func() {}
 	if agent.IsolateHome {
-		home, envKey, err := isolatedAgentHome(agent.ID)
+		env, remove, err := isolatedAgentHome(agent)
 		if err != nil {
 			return nil, nil, err
 		}
-		cleanup = func() { _ = os.RemoveAll(home) }
-		cmd.Env = append(os.Environ(), envKey+"="+home)
+		cleanup = remove
+		cmd.Env = append(os.Environ(), env...)
 		if agent.ID == "hermes" {
 			cmd.Env = append(cmd.Env, "HERMES_ACCEPT_HOOKS=1", "HERMES_SESSION_SOURCE=parley")
 		}
@@ -390,17 +396,72 @@ func commandFor(ctx context.Context, root string, agent agents.Discovery, prompt
 	return cmd, cleanup, nil
 }
 
-func isolatedAgentHome(agentID string) (string, string, error) {
-	switch agentID {
+func timeoutForAgent(override time.Duration, agent agents.Discovery) time.Duration {
+	if override > 0 {
+		return override
+	}
+	return time.Duration(timeoutMSForAgent(agent)) * time.Millisecond
+}
+
+func timeoutMSForAgent(agent agents.Discovery) int {
+	if agent.TimeoutMS > 0 {
+		return agent.TimeoutMS
+	}
+	return agents.DefaultTimeoutMS
+}
+
+func runtimeValue(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return agents.CLIDefault
+	}
+	return value
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func isolatedAgentHome(agent agents.Discovery) ([]string, func(), error) {
+	switch agent.ID {
 	case "gemini":
 		home, err := isolatedGeminiHome()
-		return home, "GEMINI_CLI_HOME", err
+		if err != nil {
+			return nil, nil, err
+		}
+		return isolatedHomeEnv(agent, home, "GEMINI_CLI_HOME"), func() { _ = os.RemoveAll(home) }, nil
 	case "hermes":
 		home, err := isolatedHermesHome()
-		return home, "HERMES_HOME", err
+		if err != nil {
+			return nil, nil, err
+		}
+		return isolatedHomeEnv(agent, home, "HERMES_HOME"), func() { _ = os.RemoveAll(home) }, nil
 	default:
-		return "", "", fmt.Errorf("no isolated home strategy for %s", agentID)
+		if len(agent.IsolatedHomeEnv) == 0 {
+			return nil, nil, fmt.Errorf("no isolated home strategy for %s", agent.ID)
+		}
+		home, err := os.MkdirTemp("", "parley-"+agent.ID+"-home.*")
+		if err != nil {
+			return nil, nil, err
+		}
+		return isolatedHomeEnv(agent, home, ""), func() { _ = os.RemoveAll(home) }, nil
 	}
+}
+
+func isolatedHomeEnv(agent agents.Discovery, home, fallbackKey string) []string {
+	if len(agent.IsolatedHomeEnv) == 0 && fallbackKey != "" {
+		return []string{fallbackKey + "=" + home}
+	}
+	env := make([]string, 0, len(agent.IsolatedHomeEnv))
+	for key, template := range agent.IsolatedHomeEnv {
+		value := strings.ReplaceAll(template, "{tempdir}", home)
+		env = append(env, key+"="+value)
+	}
+	return env
 }
 
 func isolatedGeminiHome() (string, error) {
