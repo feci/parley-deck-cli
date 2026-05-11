@@ -2,7 +2,7 @@
 idea: hitl-tui-questions
 author: user
 created: 2026-05-11
-participants: [codex, claude, gemini, hermes]
+participants: [codex, gemini, hermes]
 status: round-01
 ---
 
@@ -20,6 +20,7 @@ Implement the next Parley Deck CLI slice: human-in-the-loop questions and answer
 - Persist questions and answers durably under the run directory so they survive TUI detach and can be inspected later.
 - Keep `parley run --no-tui` usable; it should not depend on terminal UI input.
 - Include focused tests for question/answer persistence and TUI state transitions.
+- Claude CLI authentication failed with HTTP 401 during round-01 launch on 2026-05-11, so quorum for this idea is `codex`, `gemini`, and `hermes`.
 
 ## Non-goals
 
