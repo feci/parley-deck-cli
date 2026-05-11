@@ -27,7 +27,17 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 	output := filepath.Join(idea.Path, "round-01", "fake.md")
 	questionsDir := filepath.Join(root, protocol.DeckDir, "runs", "test-run", "questions")
 
-	prompt, err := BuildRoundOnePrompt("fake", idea, "Test task", output, questionsDir)
+	prompt, err := BuildRoundOnePrompt(agents.Discovery{
+		Spec: agents.Spec{
+			ID:             "fake",
+			Model:          "test-model",
+			Reasoning:      "test-reasoning",
+			Speed:          "test-speed",
+			SandboxMode:    "workspace-write",
+			ApprovalPolicy: "on-failure",
+			TimeoutMS:      1234,
+		},
+	}, idea, "Test task", output, questionsDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,6 +50,12 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 		"idea: " + idea.Slug,
 		questionsDir,
 		"status\":\"open",
+		"model: test-model",
+		"thinking/reasoning/effort/profile: test-reasoning",
+		"speed: test-speed",
+		"sandbox: workspace-write",
+		"approval: on-failure",
+		"timeoutMs: 1234",
 	} {
 		if !strings.Contains(prompt, want) {
 			t.Fatalf("prompt missing %q\n%s", want, prompt)

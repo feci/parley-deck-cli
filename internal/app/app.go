@@ -2,12 +2,14 @@ package app
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -15,6 +17,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
@@ -67,7 +70,7 @@ func printUsage(w io.Writer) {
 
 Usage:
   %s init [--dir DIR]
-  %s agents discover|probe
+  %s agents list|verify
   %s status [--dir DIR]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume RUN_OR_IDEA
@@ -97,13 +100,93 @@ func runInit(args []string, stdout, stderr io.Writer) int {
 }
 
 func runAgents(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	if len(args) == 0 || (args[0] != "discover" && args[0] != "probe") {
-		fmt.Fprintln(stderr, "usage: parley agents discover|probe")
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "usage: parley agents list|verify")
 		return 2
 	}
 
-	results := agents.Discover(ctx, agents.DefaultSpecs())
-	agents.PrintDiscovery(stdout, results)
+	switch args[0] {
+	case "list", "discover":
+		return runAgentsList(ctx, args[1:], stdout, stderr)
+	case "verify", "probe":
+		return runAgentsVerify(ctx, args[1:], stdout, stderr)
+	default:
+		fmt.Fprintln(stderr, "usage: parley agents list|verify")
+		return 2
+	}
+}
+
+func runAgentsList(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("agents list", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	results, err := discoverConfigured(ctx, *root)
+	if err != nil {
+		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
+		return 1
+	}
+	agents.PrintRuntimeMatrix(stdout, results)
+	return 0
+}
+
+func runAgentsVerify(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("agents verify", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	agentID := fs.String("agent", "", "agent ID to verify")
+	full := fs.Bool("full", false, "run behavioral headless probes")
+	yes := fs.Bool("yes", false, "confirm hosted backend probes")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	results, err := discoverConfigured(ctx, *root)
+	if err != nil {
+		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
+		return 1
+	}
+	selected, err := selectDiscoveries(results, *agentID)
+	if err != nil {
+		fmt.Fprintf(stderr, "verify failed: %v\n", err)
+		return 2
+	}
+	if *full && !*yes {
+		for _, result := range selected {
+			if result.ExternalBackend != agents.ExternalLocal {
+				fmt.Fprintf(stderr, "verify --full for %s may use an external backend; rerun with --yes to confirm\n", result.ID)
+				return 2
+			}
+		}
+	}
+
+	failed := false
+	for _, result := range selected {
+		switch {
+		case !result.Found:
+			failed = true
+			fmt.Fprintf(stdout, "%s: not installed\n", result.ID)
+		case result.Error != "":
+			failed = true
+			fmt.Fprintf(stdout, "%s: version probe failed: %s\n", result.ID, result.Error)
+		default:
+			fmt.Fprintf(stdout, "%s: installed version=%s\n", result.ID, valueOr(result.Version, "unknown"))
+		}
+	}
+	if failed {
+		return 1
+	}
+	if !*full {
+		return 0
+	}
+
+	if err := runFullVerification(ctx, *root, selected, stdout); err != nil {
+		fmt.Fprintf(stderr, "verify --full failed: %v\n", err)
+		return 1
+	}
 	return 0
 }
 
@@ -165,14 +248,20 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	discovered := agents.Discover(ctx, agents.DefaultSpecs())
+	discovered, err := discoverConfigured(ctx, *root)
+	if err != nil {
+		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintln(stdout, "Resolved agent runtime:")
+	agents.PrintRuntimeMatrix(stdout, discovered)
 	participants, err := selectedParticipantIDs(discovered, *participantsFlag)
 	if err != nil {
 		fmt.Fprintf(stderr, "participant selection failed: %v\n", err)
 		return 1
 	}
 	if len(participants) == 0 {
-		fmt.Fprintln(stderr, "no installed headless agents found; run `parley agents discover` to inspect configuration")
+		fmt.Fprintln(stderr, "no installed headless agents found; run `parley agents list` to inspect configuration")
 		return 1
 	}
 	if !*auto && !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
@@ -195,6 +284,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			"mode":         modeName(*auto),
 			"idea":         idea.Slug,
 			"participants": participants,
+			"runtime":      runtimeEventData(discovered),
 		},
 	}); err != nil {
 		fmt.Fprintf(stderr, "run create failed: %v\n", err)
@@ -297,6 +387,113 @@ func handleRunDir(root, runID string) string {
 	return filepath.Join(root, protocol.DeckDir, "runs", runID)
 }
 
+func discoverConfigured(ctx context.Context, root string) ([]agents.Discovery, error) {
+	specs, err := config.LoadAgentSpecs(root)
+	if err != nil {
+		return nil, err
+	}
+	return agents.Discover(ctx, specs), nil
+}
+
+func selectDiscoveries(results []agents.Discovery, agentID string) ([]agents.Discovery, error) {
+	if strings.TrimSpace(agentID) == "" {
+		return results, nil
+	}
+	for _, result := range results {
+		if result.ID == agentID {
+			return []agents.Discovery{result}, nil
+		}
+	}
+	return nil, fmt.Errorf("unknown agent %s", agentID)
+}
+
+func runFullVerification(ctx context.Context, root string, selected []agents.Discovery, stdout io.Writer) error {
+	runID := store.NewRunID(time.Now())
+	probeDir := filepath.Join(root, protocol.DeckDir, "meta", "runtime-probes", runID)
+	if err := os.MkdirAll(probeDir, 0o755); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "probe dir: %s\n", probeDir)
+
+	for _, result := range selected {
+		if result.ID == "codex" {
+			if err := runCodexGitSmoke(ctx, root); err != nil {
+				return err
+			}
+			fmt.Fprintln(stdout, "codex: git smoke passed")
+		}
+		if err := runHeadlessProbe(ctx, root, probeDir, runID, result, stdout); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runCodexGitSmoke(ctx context.Context, root string) error {
+	steps := []struct {
+		name  string
+		args  []string
+		stdin string
+	}{
+		{name: "git status", args: []string{"status"}},
+		{name: "git branch tmp-codex-git-test", args: []string{"branch", "tmp-codex-git-test"}},
+		{name: "git branch -D tmp-codex-git-test", args: []string{"branch", "-D", "tmp-codex-git-test"}},
+		{name: "git hash-object -w --stdin", args: []string{"hash-object", "-w", "--stdin"}, stdin: "test"},
+	}
+	for _, step := range steps {
+		cmd := exec.CommandContext(ctx, "git", step.args...)
+		cmd.Dir = root
+		if step.stdin != "" {
+			cmd.Stdin = strings.NewReader(step.stdin)
+		}
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("%s: %w: %s", step.name, err, strings.TrimSpace(string(output)))
+		}
+	}
+	return nil
+}
+
+func runHeadlessProbe(ctx context.Context, root, probeDir, runID string, result agents.Discovery, stdout io.Writer) error {
+	outputPath := filepath.Join(probeDir, result.ID+".md")
+	sentinel := fmt.Sprintf("# parley-runtime-probe agent=%s run=%s", result.ID, runID)
+	prompt := fmt.Sprintf(`Create exactly this file and no other file:
+%s
+
+The first line must be exactly:
+%s
+
+After the sentinel, write one short line confirming the headless probe.`, outputPath, sentinel)
+
+	cmd, cleanup, err := runner.CommandFor(ctx, root, result, prompt)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", result.ID, err)
+	}
+	cmd.Dir = root
+	if result.PromptMode == agents.PromptStdin {
+		cmd.Stdin = strings.NewReader(prompt)
+	}
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errOut
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s headless probe: %w: stdout=%s stderr=%s", result.ID, err, strings.TrimSpace(out.String()), strings.TrimSpace(errOut.String()))
+	}
+	data, err := os.ReadFile(outputPath)
+	if err != nil {
+		return fmt.Errorf("%s headless probe did not create %s: %w", result.ID, outputPath, err)
+	}
+	if !strings.HasPrefix(string(data), sentinel) {
+		return fmt.Errorf("%s headless probe sentinel mismatch in %s", result.ID, outputPath)
+	}
+	fmt.Fprintf(stdout, "%s: headless probe passed\n", result.ID)
+	return nil
+}
+
 func startAutoAnswerer(ctx context.Context, runDir string) {
 	go func() {
 		ticker := time.NewTicker(250 * time.Millisecond)
@@ -315,7 +512,11 @@ func startAutoAnswerer(ctx context.Context, runDir string) {
 }
 
 func runTUIView(ctx context.Context, root string, stdout, stderr io.Writer) int {
-	results := agents.Discover(ctx, agents.DefaultSpecs())
+	results, err := discoverConfigured(ctx, root)
+	if err != nil {
+		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
+		return 1
+	}
 	return runTUIViewWithDiscovery(ctx, root, results, stdout, stderr)
 }
 
@@ -342,6 +543,35 @@ func modeName(auto bool) string {
 		return "auto"
 	}
 	return "hitl"
+}
+
+func runtimeEventData(discovered []agents.Discovery) []map[string]any {
+	data := make([]map[string]any, 0, len(discovered))
+	for _, result := range discovered {
+		data = append(data, map[string]any{
+			"agent":            result.ID,
+			"installed":        result.Found,
+			"version":          result.Version,
+			"sandbox_mode":     result.SandboxMode,
+			"approval_policy":  result.ApprovalPolicy,
+			"model":            result.Model,
+			"reasoning":        result.Reasoning,
+			"profile":          result.Profile,
+			"speed":            result.Speed,
+			"timeout_ms":       result.TimeoutMS,
+			"isolate_home":     result.IsolateHome,
+			"external_backend": result.ExternalBackend,
+			"sources":          result.Sources,
+		})
+	}
+	return data
+}
+
+func valueOr(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
 }
 
 func installedAgentIDs(discovered []agents.Discovery) []string {
