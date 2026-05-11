@@ -71,3 +71,7 @@ date: 2026-05-11
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+
+### Signoff: codex — 2026-05-11
+Status: ✅ ACCEPT
+Notes: I accept the consensus as drafted. The final plan should preserve the minimal implementation shape: runtime config first, visible effective values, Codex `workspace-write` + `on-failure`, and no generic retry engine.
