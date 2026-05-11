@@ -376,7 +376,8 @@ func (m liveModel) updateAnswerMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, readQuestionsCmd(m.opts.RunDir)
 	case "backspace", "ctrl+h":
 		if len(m.answerText) > 0 {
-			m.answerText = m.answerText[:len(m.answerText)-1]
+			runes := []rune(m.answerText)
+			m.answerText = string(runes[:len(runes)-1])
 		}
 		return m, nil
 	}
@@ -576,6 +577,10 @@ func summarizeEvent(event store.Event) EventSummary {
 		}
 	case "agent.skipped":
 		text = fmt.Sprintf("%s %s", agent, dataString(event.Data, "reason"))
+	case "hitl.question":
+		text = fmt.Sprintf("%s question %s %s", agent, dataString(event.Data, "question_id"), dataString(event.Data, "risk"))
+	case "hitl.answered":
+		text = fmt.Sprintf("%s answered %s %s", agent, dataString(event.Data, "question_id"), dataString(event.Data, "status"))
 	case "round.completed", "round.incomplete":
 		text = fmt.Sprintf("%s/%s agents", dataString(event.Data, "completed"), dataString(event.Data, "total"))
 	}

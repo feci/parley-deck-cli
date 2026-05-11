@@ -263,5 +263,9 @@ func slugify(value string) string {
 			lastDash = true
 		}
 	}
-	return strings.Trim(b.String(), "-")
+	slug := strings.Trim(b.String(), "-")
+	if slug == "" {
+		return "agent"
+	}
+	return slug
 }

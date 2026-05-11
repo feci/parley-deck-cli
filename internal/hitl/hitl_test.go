@@ -90,10 +90,41 @@ func TestAutoAnswerOnlyLowRiskWithDefault(t *testing.T) {
 	}
 }
 
+func TestListOrdersByCreatedAtThenID(t *testing.T) {
+	hitlStore := New(t.TempDir())
+	base := time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC)
+	for _, question := range []Question{
+		{ID: "later", Agent: "codex", Prompt: "Later?", CreatedAt: base.Add(time.Second)},
+		{ID: "b", Agent: "codex", Prompt: "B?", CreatedAt: base},
+		{ID: "a", Agent: "codex", Prompt: "A?", CreatedAt: base},
+	} {
+		if _, err := hitlStore.Create(question); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	questions, err := hitlStore.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := []string{questions[0].ID, questions[1].ID, questions[2].ID}
+	want := []string{"a", "b", "later"}
+	if got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+		t.Fatalf("order=%v, want %v", got, want)
+	}
+}
+
 func TestQuestionIDIncludesAgentSlug(t *testing.T) {
 	id := NewQuestionID("Gemini Agent", time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC))
 	if !strings.Contains(id, "gemini-agent") {
 		t.Fatalf("id=%q missing agent slug", id)
+	}
+}
+
+func TestQuestionIDFallsBackForEmptyAgentSlug(t *testing.T) {
+	id := NewQuestionID("@#!", time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC))
+	if !strings.Contains(id, "-agent-") {
+		t.Fatalf("id=%q missing fallback agent slug", id)
 	}
 }
 

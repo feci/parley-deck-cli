@@ -71,7 +71,7 @@ Usage:
   %s status [--dir DIR]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume RUN_OR_IDEA
-  %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER
+  %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
   %s tui [--dir DIR]
   %s help
   %s version
@@ -265,7 +265,7 @@ func runAnswer(args []string, stdout, stderr io.Writer) int {
 	}
 	rest := fs.Args()
 	if len(rest) < 3 {
-		fmt.Fprintln(stderr, "usage: parley answer [--dir DIR] RUN_ID QUESTION_ID ANSWER")
+		fmt.Fprintln(stderr, "usage: parley answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...")
 		return 2
 	}
 

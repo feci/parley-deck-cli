@@ -177,6 +177,36 @@ func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
 	}
 }
 
+func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
+	model := newLiveModel(LiveOptions{RunDir: t.TempDir()})
+	model.answerMode = true
+	model.answerText = "á"
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	model = updated.(liveModel)
+	if model.answerText != "" {
+		t.Fatalf("answerText=%q, want empty", model.answerText)
+	}
+}
+
+func TestSummarizeHITLEvents(t *testing.T) {
+	question := summarizeEvent(store.Event{
+		Type: "hitl.question",
+		Data: map[string]any{"agent": "gemini", "question_id": "q1", "risk": "normal"},
+	})
+	if question.Text != "gemini question q1 normal" {
+		t.Fatalf("question text=%q", question.Text)
+	}
+
+	answered := summarizeEvent(store.Event{
+		Type: "hitl.answered",
+		Data: map[string]any{"agent": "gemini", "question_id": "q1", "status": "answered"},
+	})
+	if answered.Text != "gemini answered q1 answered" {
+		t.Fatalf("answered text=%q", answered.Text)
+	}
+}
+
 func mapByID(agents []AgentState) map[string]AgentState {
 	mapped := map[string]AgentState{}
 	for _, agent := range agents {
