@@ -433,13 +433,13 @@ func isolatedAgentHome(agent agents.Discovery) ([]string, func(), error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		return []string{"GEMINI_CLI_HOME=" + home}, func() { _ = os.RemoveAll(home) }, nil
+		return isolatedHomeEnv(agent, home, "GEMINI_CLI_HOME"), func() { _ = os.RemoveAll(home) }, nil
 	case "hermes":
 		home, err := isolatedHermesHome()
 		if err != nil {
 			return nil, nil, err
 		}
-		return []string{"HERMES_HOME=" + home}, func() { _ = os.RemoveAll(home) }, nil
+		return isolatedHomeEnv(agent, home, "HERMES_HOME"), func() { _ = os.RemoveAll(home) }, nil
 	default:
 		if len(agent.IsolatedHomeEnv) == 0 {
 			return nil, nil, fmt.Errorf("no isolated home strategy for %s", agent.ID)
@@ -448,13 +448,20 @@ func isolatedAgentHome(agent agents.Discovery) ([]string, func(), error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		env := make([]string, 0, len(agent.IsolatedHomeEnv))
-		for key, template := range agent.IsolatedHomeEnv {
-			value := strings.ReplaceAll(template, "{tempdir}", home)
-			env = append(env, key+"="+value)
-		}
-		return env, func() { _ = os.RemoveAll(home) }, nil
+		return isolatedHomeEnv(agent, home, ""), func() { _ = os.RemoveAll(home) }, nil
 	}
+}
+
+func isolatedHomeEnv(agent agents.Discovery, home, fallbackKey string) []string {
+	if len(agent.IsolatedHomeEnv) == 0 && fallbackKey != "" {
+		return []string{fallbackKey + "=" + home}
+	}
+	env := make([]string, 0, len(agent.IsolatedHomeEnv))
+	for key, template := range agent.IsolatedHomeEnv {
+		value := strings.ReplaceAll(template, "{tempdir}", home)
+		env = append(env, key+"="+value)
+	}
+	return env
 }
 
 func isolatedGeminiHome() (string, error) {

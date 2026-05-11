@@ -222,9 +222,12 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 	for _, result := range results {
 		installed := "no"
 		version := "-"
-		headless := "not-probed"
+		headless := "missing"
 		if result.Found {
 			installed = "yes"
+		}
+		if len(result.HeadlessArgs) > 0 {
+			headless = "configured"
 		}
 		if result.Version != "" {
 			version = result.Version
@@ -256,6 +259,9 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 				sourceFor(result.Sources, "model"),
 				sourceFor(result.Sources, "timeout_ms"),
 			)
+		}
+		if result.HeadlessMode != "" {
+			fmt.Fprintf(w, "  headless: %s\n", result.HeadlessMode)
 		}
 		if result.Notes != "" {
 			fmt.Fprintf(w, "  note: %s\n", result.Notes)

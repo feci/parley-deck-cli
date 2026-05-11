@@ -29,6 +29,9 @@ sandbox_mode = "workspace-write"
 command = "{root}/bin/extra"
 headless_args = ["--prompt", "{deck}/prompt.md"]
 external_backend = "local"
+
+[agents.extra.isolated_home_env]
+EXTRA_HOME = "{tempdir}/extra"
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -77,6 +80,12 @@ model = "env-model"
 	}
 	if extra.ExternalBackend != agents.ExternalLocal {
 		t.Fatalf("external backend=%q, want local", extra.ExternalBackend)
+	}
+	if got := extra.Sources["model"]; got == agents.SourceDiscovered || got == "" {
+		t.Fatalf("extra model source=%q, want config default source", got)
+	}
+	if got, want := extra.IsolatedHomeEnv["EXTRA_HOME"], "{tempdir}/extra"; got != want {
+		t.Fatalf("isolated env=%q, want %q", got, want)
 	}
 }
 

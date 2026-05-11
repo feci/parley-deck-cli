@@ -92,6 +92,8 @@ parley agents verify
 parley agents verify --agent codex
 ```
 
+Without `--agent`, `parley agents verify` checks every configured agent and exits non-zero if any configured agent is missing or has a failing version probe. Use `--agent ID` when you intentionally want to verify only one agent.
+
 Full behavioral verification can spend hosted-backend tokens and write probe files under `parley-deck/meta/runtime-probes/`, so it requires `--yes`:
 
 ```sh
@@ -118,6 +120,7 @@ Configured isolated-home environment values may use placeholders:
 
 - `{root}`: selected repository root.
 - `{deck}`: selected repository's `parley-deck/` directory.
-- `{tempdir}`: temporary isolated home prepared for the agent.
+- `{tempdir}` inside `isolated_home_env`: temporary isolated home prepared for that specific agent launch.
+- `{tempdir}` in command/path fields: the operating system temp directory resolved when configuration is loaded.
 
 Probe outputs are not source artifacts and are ignored by Git.

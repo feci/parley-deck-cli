@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -169,6 +168,9 @@ func runAgentsVerify(ctx context.Context, args []string, stdout, stderr io.Write
 		case !result.Found:
 			failed = true
 			fmt.Fprintf(stdout, "%s: not installed\n", result.ID)
+			if strings.TrimSpace(*agentID) == "" {
+				fmt.Fprintln(stdout, "  hint: use --agent ID to verify one configured agent without requiring every built-in agent")
+			}
 		case result.Error != "":
 			failed = true
 			fmt.Fprintf(stdout, "%s: version probe failed: %s\n", result.ID, result.Error)
@@ -415,41 +417,15 @@ func runFullVerification(ctx context.Context, root string, selected []agents.Dis
 	}
 	fmt.Fprintf(stdout, "probe dir: %s\n", probeDir)
 
+	var failures []string
 	for _, result := range selected {
-		if result.ID == "codex" {
-			if err := runCodexGitSmoke(ctx, root); err != nil {
-				return err
-			}
-			fmt.Fprintln(stdout, "codex: git smoke passed")
-		}
 		if err := runHeadlessProbe(ctx, root, probeDir, runID, result, stdout); err != nil {
-			return err
+			fmt.Fprintf(stdout, "%s: full probe failed: %v\n", result.ID, err)
+			failures = append(failures, result.ID)
 		}
 	}
-	return nil
-}
-
-func runCodexGitSmoke(ctx context.Context, root string) error {
-	steps := []struct {
-		name  string
-		args  []string
-		stdin string
-	}{
-		{name: "git status", args: []string{"status"}},
-		{name: "git branch tmp-codex-git-test", args: []string{"branch", "tmp-codex-git-test"}},
-		{name: "git branch -D tmp-codex-git-test", args: []string{"branch", "-D", "tmp-codex-git-test"}},
-		{name: "git hash-object -w --stdin", args: []string{"hash-object", "-w", "--stdin"}, stdin: "test"},
-	}
-	for _, step := range steps {
-		cmd := exec.CommandContext(ctx, "git", step.args...)
-		cmd.Dir = root
-		if step.stdin != "" {
-			cmd.Stdin = strings.NewReader(step.stdin)
-		}
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("%s: %w: %s", step.name, err, strings.TrimSpace(string(output)))
-		}
+	if len(failures) > 0 {
+		return fmt.Errorf("%d full verification probe(s) failed: %s", len(failures), strings.Join(failures, ", "))
 	}
 	return nil
 }
@@ -457,13 +433,7 @@ func runCodexGitSmoke(ctx context.Context, root string) error {
 func runHeadlessProbe(ctx context.Context, root, probeDir, runID string, result agents.Discovery, stdout io.Writer) error {
 	outputPath := filepath.Join(probeDir, result.ID+".md")
 	sentinel := fmt.Sprintf("# parley-runtime-probe agent=%s run=%s", result.ID, runID)
-	prompt := fmt.Sprintf(`Create exactly this file and no other file:
-%s
-
-The first line must be exactly:
-%s
-
-After the sentinel, write one short line confirming the headless probe.`, outputPath, sentinel)
+	prompt := probePrompt(result, outputPath, sentinel)
 
 	cmd, cleanup, err := runner.CommandFor(ctx, root, result, prompt)
 	if cleanup != nil {
@@ -492,6 +462,30 @@ After the sentinel, write one short line confirming the headless probe.`, output
 	}
 	fmt.Fprintf(stdout, "%s: headless probe passed\n", result.ID)
 	return nil
+}
+
+func probePrompt(result agents.Discovery, outputPath, sentinel string) string {
+	extra := ""
+	if result.ID == "codex" {
+		extra = `
+Before writing the success sentinel, run these Git smoke commands in the current repository:
+
+git status
+git branch tmp-codex-git-test
+git branch -D tmp-codex-git-test
+printf test | git hash-object -w --stdin
+
+If any command fails, do not write the success sentinel. Instead, write the failure and return a short blocker.
+`
+	}
+	return fmt.Sprintf(`Create exactly this file and no other file:
+%s
+
+The first line must be exactly:
+%s
+%s
+
+After the sentinel, write one short line confirming the headless probe.`, outputPath, sentinel, extra)
 }
 
 func startAutoAnswerer(ctx context.Context, runDir string) {

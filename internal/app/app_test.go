@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
@@ -27,10 +28,34 @@ func TestAgentsListPrintsResolvedRuntime(t *testing.T) {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
 	out := stdout.String()
-	for _, want := range []string{"codex", "yes", "codex test 1.0", "workspace-write", "on-failure", "cli-default"} {
+	for _, want := range []string{"codex", "yes", "codex test 1.0", "configured", "workspace-write", "on-failure", "cli-default"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("list output missing %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestAgentsCompatibilityAliases(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	bin := t.TempDir()
+	writeFakeCLI(t, bin, "codex", "codex test 1.0")
+	t.Setenv("PATH", bin)
+
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"agents", "discover", "--dir", root}, &stdout, &stderr); code != 0 {
+		t.Fatalf("discover alias code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "codex") {
+		t.Fatalf("discover stdout=%q", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := Run([]string{"agents", "probe", "--dir", root, "--agent", "codex"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("probe alias code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
 }
 
@@ -53,22 +78,69 @@ func TestAgentsVerifyCheapPath(t *testing.T) {
 	}
 }
 
-func TestAgentsVerifyFullCodexReportsGitSmokeFailure(t *testing.T) {
+func TestCodexProbePromptIncludesGitSmoke(t *testing.T) {
+	prompt := probePrompt(agents.Discovery{Spec: agents.Spec{ID: "codex"}}, "/tmp/probe.md", "# sentinel")
+	for _, want := range []string{
+		"git status",
+		"git branch tmp-codex-git-test",
+		"git branch -D tmp-codex-git-test",
+		"printf test | git hash-object -w --stdin",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("prompt missing %q:\n%s", want, prompt)
+		}
+	}
+}
+
+func TestRunRecordsResolvedRuntime(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	localConfig := filepath.Join(root, protocol.DeckDir, "agents.local.toml")
+	if err := os.WriteFile(localConfig, []byte(`
+[agents.codex]
+model = "local-model"
+approval_policy = "on-failure"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	bin := t.TempDir()
-	writeFakeCLI(t, bin, "codex", "codex test 1.0")
+	writeFakeRoundAgentCLI(t, bin, "codex", "codex test 1.0")
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"agents", "verify", "--dir", root, "--agent", "codex", "--full", "--yes"}, &stdout, &stderr)
-	if code == 0 {
-		t.Fatalf("expected failure stdout=%s stderr=%s", stdout.String(), stderr.String())
+	code := Run([]string{"run", "--dir", root, "--no-tui", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "git status") {
-		t.Fatalf("stderr=%q", stderr.String())
+
+	runsDir := filepath.Join(root, protocol.DeckDir, "runs")
+	entries, err := os.ReadDir(runsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("runs=%d, want 1", len(entries))
+	}
+	events, err := store.New(filepath.Join(runsDir, entries[0].Name())).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) == 0 || events[0].Type != "run.created" {
+		t.Fatalf("events=%+v", events)
+	}
+	runtimeRows, ok := events[0].Data["runtime"].([]any)
+	if !ok || len(runtimeRows) == 0 {
+		t.Fatalf("runtime event data=%+v", events[0].Data["runtime"])
+	}
+	row, ok := runtimeRows[0].(map[string]any)
+	if !ok {
+		t.Fatalf("runtime row=%+v", runtimeRows[0])
+	}
+	if row["agent"] != "codex" || row["model"] != "local-model" || row["approval_policy"] != "on-failure" {
+		t.Fatalf("runtime row=%+v", row)
 	}
 }
 
@@ -117,6 +189,45 @@ func writeFakeCLI(t *testing.T, dir, name, version string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
 	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo '" + version + "'; exit 0; fi\ncat >/dev/null\nexit 0\n"
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeFakeRoundAgentCLI(t *testing.T, dir, name, version string) {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	body := `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo '` + version + `'
+  exit 0
+fi
+out=$(awk -F': ' '/Create exactly this file and no other protocol artifact:/ {print $2; exit}')
+if [ -z "$out" ]; then
+  exit 3
+fi
+cat > "$out" <<'ARTIFACT'
+---
+agent: codex
+idea: runtime-task
+round: 1
+date: 2026-05-11
+---
+
+## Summary
+Fake artifact.
+
+## Proposed approach
+Use the test helper.
+
+## Concerns / open questions
+None.
+
+## Risks
+None.
+ARTIFACT
+exit 0
+`
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatal(err)
 	}

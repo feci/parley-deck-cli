@@ -118,7 +118,7 @@ func applyFile(root string, specs []agents.Spec, path, source string, optional b
 				Speed:           agents.DefaultSpeed,
 				TimeoutMS:       agents.DefaultTimeoutMS,
 				ExternalBackend: agents.ExternalUnknown,
-				Sources:         map[string]string{"id": source},
+				Sources:         configDefaultSources(source),
 			})
 			index = len(specs) - 1
 			byID[id] = index
@@ -129,6 +129,23 @@ func applyFile(root string, specs []agents.Spec, path, source string, optional b
 	}
 
 	return specs, nil
+}
+
+func configDefaultSources(source string) map[string]string {
+	sources := map[string]string{}
+	for _, field := range []string{
+		"id",
+		"prompt_mode",
+		"model",
+		"reasoning",
+		"profile",
+		"speed",
+		"timeout_ms",
+		"external_backend",
+	} {
+		sources[field] = source + ":default"
+	}
+	return sources
 }
 
 func applyOverride(root string, spec agents.Spec, override agentOverride, source string) agents.Spec {
