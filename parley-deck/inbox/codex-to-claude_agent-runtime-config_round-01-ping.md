@@ -56,3 +56,9 @@ Failed to authenticate. API Error: 401 ... Invalid authentication credentials
 ```
 
 `claude auth status` reports `loggedIn: true`, `authMethod: claude.ai`, and `subscriptionType: max`, and no `ANTHROPIC` or `CLAUDE` environment variable names were present in the current shell. A minimal smoke command, `claude -p "Return exactly: claude-ok" --output-format text`, failed with the same 401. This appears to require Claude re-authentication or session repair before Claude can deliver its own artifact.
+
+## Resolution
+
+After the user directed the facilitator to keep invoking Claude through the CLI, `claude --print --output-format text --permission-mode acceptEdits --add-dir /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli` successfully wrote `parley-deck/ideas/agent-runtime-config/round-01/claude.md`.
+
+The round-01 Claude artifact is now present. This ping is resolved.
