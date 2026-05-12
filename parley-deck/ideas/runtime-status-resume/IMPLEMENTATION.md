@@ -1,11 +1,11 @@
 ---
 idea: runtime-status-resume
-status: implemented
+status: fix-up-cycle-1
 implementer: codex
 started: 2026-05-12
 completed: 2026-05-12
 branch: parley-deck-cli#feature/runtime-status-resume
-head-commit: 653bac85d34e03f3fc8f70da31b44caa81b7bd21
+head-commit: ef6b772ed0ba1deac54e3a6c1a86a3396a1485db
 design-pr: https://github.com/feci/parley-deck-cli/pull/7
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/8
 ---
@@ -53,3 +53,32 @@ Implemented the `runtime-status-resume` slice from `FINAL.md`:
 - `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley resume --no-tui 20260510T201528.433687000Z`
 - `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley status --run 20260510T201528.433687000Z --json | jq -r '.run_id + " " + .idea_slug + " " + .outcome'`
 - Manual resume TUI smoke: opened `parley resume 20260510T201528.433687000Z` in a PTY, verified the resume footer, and exited with `q`.
+
+## Fix-up cycle 1
+
+status: ready-for-re-review
+completed: 2026-05-12
+head-commit: ef6b772ed0ba1deac54e3a6c1a86a3396a1485db
+
+### Fixes applied
+
+- Applied claude/review/round-01 [MAJOR] resume TUI header wording: resume mode now renders pending round status as `unverified` instead of `running`, and `TestResumeViewHasExplicitExitPath` asserts the regression.
+- Applied claude/review/round-01 and gemini/review/round-01 [MINOR] outcome/liveness coverage: added deterministic runstate tests for incomplete, failed, and idle projections.
+- Applied claude/review/round-01 [MINOR] CLI coverage gaps: added `status --idea`, workspace `status --json`, and nonexistent resume target tests.
+- Applied claude/review/round-01 [MINOR] started-only agent duration: CLI detail now reports elapsed time for a running agent snapshot when `StartedAt` is known.
+- Applied claude/review/round-01 [MINOR] known idea with no runs: `ResolveRun` now returns `idea "<slug>" has no runs yet`.
+- Applied claude/review/round-01 [NIT] resume footer: resume mode now advertises `q/esc/ctrl+c close resume view`.
+- Applied claude/review/round-01 [NIT] unknown idea fallback path: `ideaForRun` leaves `Path` empty when the run's idea slug is unknown.
+
+### Deviations from agreed fixes
+
+None.
+
+### Verification
+
+- `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go test ./...`
+- `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley status`
+- `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley status --run 20260510T201528.433687000Z`
+- `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley resume --no-tui 20260510T201528.433687000Z`
+- `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley status --json`
+- Manual resume TUI smoke: opened `parley resume 20260510T194003Z` in a PTY, verified `status=unverified` and `q/esc/ctrl+c close resume view`, and exited with `q`.
