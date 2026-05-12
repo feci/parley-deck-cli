@@ -1,0 +1,665 @@
+package consensus
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"parley-deck-cli/internal/protocol"
+)
+
+const (
+	StatusAccept       = "✅ ACCEPT"
+	StatusReservations = "🟡 ACCEPT-WITH-RESERVATIONS"
+	StatusBlock        = "❌ BLOCK"
+
+	TriageReady     = "ready"
+	TriageReserved  = "reserved"
+	TriageBlocked   = "blocked"
+	TriagePartial   = "partial"
+	TriageMalformed = "malformed"
+)
+
+type DraftOptions struct {
+	Review bool
+	Round  int
+	By     string
+	Now    time.Time
+}
+
+type SignoffOptions struct {
+	Review          bool
+	Agent           string
+	Status          string
+	Notes           string
+	CounterProposal string
+	Now             time.Time
+}
+
+type FinalizeOptions struct {
+	By  string
+	Now time.Time
+}
+
+type ReopenOptions struct {
+	Review bool
+	Reason string
+}
+
+type Summary struct {
+	Idea         string    `json:"idea"`
+	Path         string    `json:"path"`
+	Review       bool      `json:"review"`
+	Triage       string    `json:"triage"`
+	Participants []string  `json:"participants"`
+	Signoffs     []Signoff `json:"signoffs"`
+	Missing      []string  `json:"missing,omitempty"`
+	Errors       []string  `json:"errors,omitempty"`
+}
+
+type Signoff struct {
+	Agent           string `json:"agent"`
+	Date            string `json:"date"`
+	Status          string `json:"status"`
+	Notes           string `json:"notes,omitempty"`
+	CounterProposal string `json:"counter_proposal,omitempty"`
+	Line            int    `json:"line"`
+}
+
+type document struct {
+	Path     string
+	Raw      string
+	Signoffs []Signoff
+}
+
+type schema struct {
+	review bool
+	rel    string
+}
+
+var appendMu sync.Mutex
+
+var signoffHeader = regexp.MustCompile(`^### Signoff:\s*([A-Za-z0-9._-]+)\s+(?:—|-)\s+(\d{4}-\d{2}-\d{2})\s*$`)
+
+func Status(root, ideaSlug string, review bool) (Summary, error) {
+	idea, err := findIdea(root, ideaSlug)
+	if err != nil {
+		return Summary{}, err
+	}
+	path := consensusPath(idea.Path, schemaFor(review))
+	doc, err := parseDocument(path)
+	if err != nil {
+		return Summary{}, err
+	}
+	return validateDocument(idea.Slug, idea.Participants, review, doc), nil
+}
+
+func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
+	idea, err := findIdea(root, ideaSlug)
+	if err != nil {
+		return Summary{}, err
+	}
+	s := schemaFor(opts.Review)
+	path := consensusPath(idea.Path, s)
+	if _, err := os.Stat(path); err == nil {
+		return Summary{}, fmt.Errorf("%s already exists", path)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return Summary{}, err
+	}
+
+	roundLabel, roundRel, err := selectRound(idea.Path, opts.Review, opts.Round)
+	if err != nil {
+		return Summary{}, err
+	}
+	if missing := missingRoundArtifacts(filepath.Join(roundBaseDir(idea.Path, opts.Review), roundLabel), idea.Participants); len(missing) > 0 {
+		return Summary{}, fmt.Errorf("%s is incomplete; missing %s", roundRel, strings.Join(missing, ", "))
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return Summary{}, err
+	}
+	if err := writeFileAtomic(path, []byte(draftTemplate(idea, opts, roundRel)), 0o644); err != nil {
+		return Summary{}, err
+	}
+	if !opts.Review {
+		if err := updateIdeaStatus(idea.Path, "consensus"); err != nil {
+			return Summary{}, err
+		}
+	}
+	return Status(root, ideaSlug, opts.Review)
+}
+
+func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) {
+	idea, err := findIdea(root, ideaSlug)
+	if err != nil {
+		return Summary{}, err
+	}
+	if !contains(idea.Participants, opts.Agent) {
+		return Summary{}, fmt.Errorf("unknown participant %q", opts.Agent)
+	}
+	status, err := CanonicalStatus(opts.Status)
+	if err != nil {
+		return Summary{}, err
+	}
+	if (status == StatusReservations || status == StatusBlock) && strings.TrimSpace(opts.Notes) == "" {
+		return Summary{}, fmt.Errorf("notes are required for %s", status)
+	}
+	if status == StatusBlock && strings.TrimSpace(opts.CounterProposal) == "" {
+		return Summary{}, errors.New("counter-proposal is required for ❌ BLOCK")
+	}
+
+	appendMu.Lock()
+	defer appendMu.Unlock()
+
+	path := consensusPath(idea.Path, schemaFor(opts.Review))
+	doc, err := parseDocument(path)
+	if err != nil {
+		return Summary{}, err
+	}
+	current := validateDocument(idea.Slug, idea.Participants, opts.Review, doc)
+	if len(current.Errors) > 0 {
+		return Summary{}, fmt.Errorf("cannot append to malformed consensus: %s", strings.Join(current.Errors, "; "))
+	}
+	for _, signoff := range current.Signoffs {
+		if signoff.Agent == opts.Agent {
+			return Summary{}, fmt.Errorf("participant %s already signed", opts.Agent)
+		}
+	}
+
+	now := opts.Now
+	if now.IsZero() {
+		now = time.Now()
+	}
+	block := signoffBlock(opts.Agent, now.Format("2006-01-02"), status, opts.Notes, opts.CounterProposal)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return Summary{}, err
+	}
+	defer file.Close()
+	if !strings.HasSuffix(doc.Raw, "\n") {
+		block = "\n" + block
+	}
+	if _, err := file.WriteString(block); err != nil {
+		return Summary{}, err
+	}
+	return Status(root, ideaSlug, opts.Review)
+}
+
+func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, error) {
+	idea, err := findIdea(root, ideaSlug)
+	if err != nil {
+		return "", Summary{}, err
+	}
+	summary, err := Status(root, ideaSlug, false)
+	if err != nil {
+		return "", Summary{}, err
+	}
+	switch summary.Triage {
+	case TriageReady:
+	case TriageReserved:
+		doc, err := parseDocument(summary.Path)
+		if err != nil {
+			return "", Summary{}, err
+		}
+		if !hasSectionContent(doc.Raw, "## Open items deferred to implementation") {
+			return "", Summary{}, errors.New("reserved consensus requires open items deferred to implementation before finalize")
+		}
+	default:
+		return "", Summary{}, fmt.Errorf("cannot finalize consensus with triage=%s", summary.Triage)
+	}
+
+	path := filepath.Join(idea.Path, "FINAL.md")
+	if _, err := os.Stat(path); err == nil {
+		return "", Summary{}, fmt.Errorf("%s already exists", path)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", Summary{}, err
+	}
+
+	now := opts.Now
+	if now.IsZero() {
+		now = time.Now()
+	}
+	if err := writeFileAtomic(path, []byte(finalTemplate(idea, opts.By, now)), 0o644); err != nil {
+		return "", Summary{}, err
+	}
+	if err := updateIdeaStatus(idea.Path, "final"); err != nil {
+		return "", Summary{}, err
+	}
+	updated, err := Status(root, ideaSlug, false)
+	if err != nil {
+		return path, Summary{}, err
+	}
+	return path, updated, nil
+}
+
+func Reopen(root, ideaSlug string, opts ReopenOptions) (string, error) {
+	if strings.TrimSpace(opts.Reason) == "" {
+		return "", errors.New("reason is required")
+	}
+	idea, err := findIdea(root, ideaSlug)
+	if err != nil {
+		return "", err
+	}
+	summary, err := Status(root, ideaSlug, opts.Review)
+	if err != nil {
+		return "", err
+	}
+	if summary.Triage != TriageBlocked {
+		return "", fmt.Errorf("cannot reopen consensus with triage=%s", summary.Triage)
+	}
+
+	aborted := nextAbortedPath(roundBaseDir(idea.Path, opts.Review))
+	if err := os.Rename(summary.Path, aborted); err != nil {
+		return "", err
+	}
+	reason := fmt.Sprintf("\n\n## Reopen reason\n\n%s\n", strings.TrimSpace(opts.Reason))
+	file, err := os.OpenFile(aborted, os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return "", err
+	}
+	_, writeErr := file.WriteString(reason)
+	if err := closeWith(writeErr, file); err != nil {
+		return "", err
+	}
+	if !opts.Review {
+		if err := updateIdeaStatus(idea.Path, "discussion"); err != nil {
+			return "", err
+		}
+	}
+	return aborted, nil
+}
+
+func CanonicalStatus(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "accept", strings.ToLower(StatusAccept):
+		return StatusAccept, nil
+	case "reserve", "reservations", "accept-with-reservations", strings.ToLower(StatusReservations):
+		return StatusReservations, nil
+	case "block", strings.ToLower(StatusBlock):
+		return StatusBlock, nil
+	default:
+		return "", fmt.Errorf("unknown signoff status %q", raw)
+	}
+}
+
+func schemaFor(review bool) schema {
+	if review {
+		return schema{review: true, rel: filepath.Join("review", "consensus.md")}
+	}
+	return schema{rel: "consensus.md"}
+}
+
+func consensusPath(ideaDir string, s schema) string {
+	return filepath.Join(ideaDir, s.rel)
+}
+
+func findIdea(root, slug string) (protocol.IdeaStatus, error) {
+	status, err := protocol.ReadWorkspaceStatus(root)
+	if err != nil {
+		return protocol.IdeaStatus{}, err
+	}
+	for _, idea := range status.Ideas {
+		if idea.Slug == slug {
+			return idea, nil
+		}
+	}
+	return protocol.IdeaStatus{}, fmt.Errorf("idea %q not found", slug)
+}
+
+func parseDocument(path string) (document, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return document{}, err
+	}
+	lines := strings.Split(string(data), "\n")
+	doc := document{Path: path, Raw: string(data)}
+	for i := 0; i < len(lines); i++ {
+		match := signoffHeader.FindStringSubmatch(strings.TrimSpace(lines[i]))
+		if len(match) != 3 {
+			continue
+		}
+		signoff := Signoff{Agent: match[1], Date: match[2], Line: i + 1}
+		for j := i + 1; j < len(lines); j++ {
+			line := strings.TrimSpace(lines[j])
+			if signoffHeader.MatchString(line) {
+				break
+			}
+			if value, ok := strings.CutPrefix(line, "Status:"); ok {
+				signoff.Status = strings.TrimSpace(value)
+				continue
+			}
+			if value, ok := strings.CutPrefix(line, "Notes:"); ok {
+				signoff.Notes = strings.TrimSpace(value)
+				continue
+			}
+			if value, ok := strings.CutPrefix(line, "Counter-proposal (required if ❌):"); ok {
+				signoff.CounterProposal = strings.TrimSpace(value)
+				continue
+			}
+		}
+		doc.Signoffs = append(doc.Signoffs, signoff)
+	}
+	return doc, nil
+}
+
+func validateDocument(ideaSlug string, participants []string, review bool, doc document) Summary {
+	summary := Summary{
+		Idea:         ideaSlug,
+		Path:         doc.Path,
+		Review:       review,
+		Participants: append([]string(nil), participants...),
+		Signoffs:     append([]Signoff(nil), doc.Signoffs...),
+	}
+	signed := map[string]bool{}
+	hasReservations := false
+	hasBlock := false
+	for _, signoff := range doc.Signoffs {
+		switch {
+		case !contains(participants, signoff.Agent):
+			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: unknown participant %s", signoff.Line, signoff.Agent))
+		case signed[signoff.Agent]:
+			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: duplicate signoff for %s", signoff.Line, signoff.Agent))
+		default:
+			signed[signoff.Agent] = true
+		}
+		if _, err := CanonicalStatus(signoff.Status); err != nil {
+			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: %v", signoff.Line, err))
+			continue
+		}
+		switch signoff.Status {
+		case StatusReservations:
+			hasReservations = true
+			if strings.TrimSpace(signoff.Notes) == "" {
+				summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: notes are required for %s", signoff.Line, StatusReservations))
+			}
+		case StatusBlock:
+			hasBlock = true
+			if strings.TrimSpace(signoff.Notes) == "" {
+				summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: notes are required for %s", signoff.Line, StatusBlock))
+			}
+			if strings.TrimSpace(signoff.CounterProposal) == "" {
+				summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: counter-proposal is required for %s", signoff.Line, StatusBlock))
+			}
+		}
+	}
+	for _, participant := range participants {
+		if !signed[participant] {
+			summary.Missing = append(summary.Missing, participant)
+		}
+	}
+	switch {
+	case len(summary.Errors) > 0:
+		summary.Triage = TriageMalformed
+	case hasBlock:
+		summary.Triage = TriageBlocked
+	case len(summary.Missing) > 0:
+		summary.Triage = TriagePartial
+	case hasReservations:
+		summary.Triage = TriageReserved
+	default:
+		summary.Triage = TriageReady
+	}
+	return summary
+}
+
+func selectRound(ideaDir string, review bool, requested int) (string, string, error) {
+	base := roundBaseDir(ideaDir, review)
+	if requested > 0 {
+		label := fmt.Sprintf("round-%02d", requested)
+		if info, err := os.Stat(filepath.Join(base, label)); err == nil && info.IsDir() {
+			return label, roundRel(review, label), nil
+		}
+		return "", "", fmt.Errorf("%s does not exist", roundRel(review, label))
+	}
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return "", "", err
+	}
+	var rounds []string
+	for _, entry := range entries {
+		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "round-") {
+			continue
+		}
+		if _, err := strconv.Atoi(strings.TrimPrefix(entry.Name(), "round-")); err == nil {
+			rounds = append(rounds, entry.Name())
+		}
+	}
+	if len(rounds) == 0 {
+		return "", "", fmt.Errorf("no round directories found under %s", base)
+	}
+	sort.Strings(rounds)
+	label := rounds[len(rounds)-1]
+	return label, roundRel(review, label), nil
+}
+
+func roundBaseDir(ideaDir string, review bool) string {
+	if review {
+		return filepath.Join(ideaDir, "review")
+	}
+	return ideaDir
+}
+
+func roundRel(review bool, label string) string {
+	if review {
+		return filepath.Join("review", label)
+	}
+	return label
+}
+
+func missingRoundArtifacts(roundDir string, participants []string) []string {
+	var missing []string
+	for _, participant := range participants {
+		if _, err := os.Stat(filepath.Join(roundDir, participant+".md")); errors.Is(err, os.ErrNotExist) {
+			missing = append(missing, participant+".md")
+		}
+	}
+	return missing
+}
+
+func draftTemplate(idea protocol.IdeaStatus, opts DraftOptions, roundRel string) string {
+	now := opts.Now
+	if now.IsZero() {
+		now = time.Now()
+	}
+	by := firstNonEmpty(opts.By, "user")
+	if opts.Review {
+		return fmt.Sprintf(`---
+idea: %s
+cycle: review
+drafted-by: %s
+date: %s
+---
+
+## Agreed fixes
+
+<!-- Review %s and record fixes that must be implemented. -->
+
+## Deferred follow-ups
+
+## Dismissed findings
+
+## Signoffs
+
+<!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+`, idea.Slug, by, now.Format("2006-01-02"), roundRel)
+	}
+	return fmt.Sprintf(`---
+idea: %s
+drafted-by: %s
+date: %s
+---
+
+## Agreed decisions
+
+<!-- Review %s and record the decisions participants are signing off. -->
+
+## Agreed trade-offs
+
+## Open items deferred to implementation
+
+## Signoffs
+
+<!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+`, idea.Slug, by, now.Format("2006-01-02"), roundRel)
+}
+
+func finalTemplate(idea protocol.IdeaStatus, by string, now time.Time) string {
+	return fmt.Sprintf(`---
+idea: %s
+status: final
+author: %s
+consensus-date: %s
+participants: [%s]
+---
+
+## Final plan / specification
+
+### Goal
+
+### Scope
+
+### Implementation details
+
+### Tests
+
+### Verification
+
+## References
+
+- Consensus: ./consensus.md
+- Rounds: ./round-01/
+`, idea.Slug, firstNonEmpty(by, "user"), now.Format("2006-01-02"), strings.Join(idea.Participants, ", "))
+}
+
+func signoffBlock(agent, date, status, notes, counter string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "\n### Signoff: %s — %s\n", agent, date)
+	fmt.Fprintf(&b, "Status: %s\n", status)
+	if strings.TrimSpace(notes) != "" {
+		fmt.Fprintf(&b, "Notes: %s\n", strings.TrimSpace(notes))
+	}
+	if strings.TrimSpace(counter) != "" {
+		fmt.Fprintf(&b, "Counter-proposal (required if ❌): %s\n", strings.TrimSpace(counter))
+	}
+	return b.String()
+}
+
+func updateIdeaStatus(ideaDir, status string) error {
+	path := filepath.Join(ideaDir, "00-prompt.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(data), "\n")
+	inFrontmatter := false
+	replaced := false
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			if !replaced {
+				lines = append(lines[:i], append([]string{"status: " + status}, lines[i:]...)...)
+				replaced = true
+			}
+			break
+		}
+		if inFrontmatter && strings.HasPrefix(trimmed, "status:") {
+			lines[i] = "status: " + status
+			replaced = true
+		}
+	}
+	if !replaced {
+		return fmt.Errorf("%s has no frontmatter status field", path)
+	}
+	out := strings.Join(lines, "\n")
+	return writeFileAtomic(path, []byte(out), 0o644)
+}
+
+func hasSectionContent(raw, heading string) bool {
+	lines := strings.Split(raw, "\n")
+	inSection := false
+	var content []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == heading {
+			inSection = true
+			continue
+		}
+		if inSection && strings.HasPrefix(trimmed, "## ") {
+			break
+		}
+		if inSection && trimmed != "" && !strings.HasPrefix(trimmed, "<!--") {
+			content = append(content, trimmed)
+		}
+	}
+	return len(content) > 0
+}
+
+func nextAbortedPath(baseDir string) string {
+	for i := 1; ; i++ {
+		path := filepath.Join(baseDir, fmt.Sprintf("round-%02d-consensus-aborted.md", i))
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			return path
+		}
+	}
+}
+
+func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := os.Chmod(tmpPath, perm); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	return os.Rename(tmpPath, path)
+}
+
+func closeWith(err error, file *os.File) error {
+	if closeErr := file.Close(); err == nil {
+		return closeErr
+	}
+	return err
+}
+
+func contains(values []string, value string) bool {
+	for _, existing := range values {
+		if existing == value {
+			return true
+		}
+	}
+	return false
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}

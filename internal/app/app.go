@@ -18,6 +18,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/config"
+	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
@@ -48,6 +49,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runInit(args[1:], stdout, stderr)
 	case "agents":
 		return runAgents(ctx, args[1:], stdout, stderr)
+	case "consensus":
+		return runConsensus(args[1:], stdout, stderr)
 	case "status":
 		return runStatus(args[1:], stdout, stderr)
 	case "run":
@@ -71,6 +74,7 @@ func printUsage(w io.Writer) {
 Usage:
   %s init [--dir DIR]
   %s agents list|verify
+  %s consensus status|draft|signoff|finalize|reopen
   %s status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
@@ -79,7 +83,7 @@ Usage:
   %s help
   %s version
 
-`, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName)
+`, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName)
 }
 
 func runInit(args []string, stdout, stderr io.Writer) int {
@@ -193,6 +197,164 @@ func runAgentsVerify(ctx context.Context, args []string, stdout, stderr io.Write
 	return 0
 }
 
+func runConsensus(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		printConsensusUsage(stderr)
+		return 2
+	}
+	switch args[0] {
+	case "status":
+		return runConsensusStatus(args[1:], stdout, stderr)
+	case "draft":
+		return runConsensusDraft(args[1:], stdout, stderr)
+	case "signoff":
+		return runConsensusSignoff(args[1:], stdout, stderr)
+	case "finalize":
+		return runConsensusFinalize(args[1:], stdout, stderr)
+	case "reopen":
+		return runConsensusReopen(args[1:], stdout, stderr)
+	default:
+		printConsensusUsage(stderr)
+		return 2
+	}
+}
+
+func printConsensusUsage(w io.Writer) {
+	fmt.Fprintln(w, "usage: parley consensus status|draft|signoff|finalize|reopen")
+}
+
+func runConsensusStatus(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("consensus status", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	review := fs.Bool("review", false, "use review consensus")
+	jsonOut := fs.Bool("json", false, "print unstable JSON output")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley consensus status [--dir DIR] [--review] [--json] IDEA")
+		return 2
+	}
+	summary, err := consensus.Status(*root, fs.Arg(0), *review)
+	if err != nil {
+		fmt.Fprintf(stderr, "consensus status failed: %v\n", err)
+		return 1
+	}
+	if *jsonOut {
+		return printJSON(stdout, summary, stderr)
+	}
+	printConsensusSummary(stdout, summary)
+	return 0
+}
+
+func runConsensusDraft(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("consensus draft", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	review := fs.Bool("review", false, "use review consensus")
+	round := fs.Int("round", 0, "round number to draft from")
+	by := fs.String("by", "user", "drafting agent ID")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley consensus draft [--dir DIR] [--review] [--round N] [--by AGENT] IDEA")
+		return 2
+	}
+	summary, err := consensus.Draft(*root, fs.Arg(0), consensus.DraftOptions{
+		Review: *review,
+		Round:  *round,
+		By:     *by,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "consensus draft failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "Drafted consensus at %s\n", summary.Path)
+	printConsensusSummary(stdout, summary)
+	return 0
+}
+
+func runConsensusSignoff(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("consensus signoff", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	review := fs.Bool("review", false, "use review consensus")
+	agent := fs.String("agent", "", "participant agent ID")
+	status := fs.String("status", "", "accept, reserve, reservations, or block")
+	notes := fs.String("notes", "", "signoff notes")
+	counter := fs.String("counter", "", "counter-proposal for block signoffs")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 || strings.TrimSpace(*agent) == "" || strings.TrimSpace(*status) == "" {
+		fmt.Fprintln(stderr, "usage: parley consensus signoff [--dir DIR] [--review] --agent ID --status accept|reserve|reservations|block [--notes TEXT] [--counter TEXT] IDEA")
+		return 2
+	}
+	summary, err := consensus.AppendSignoff(*root, fs.Arg(0), consensus.SignoffOptions{
+		Review:          *review,
+		Agent:           *agent,
+		Status:          *status,
+		Notes:           *notes,
+		CounterProposal: *counter,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "consensus signoff failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "Appended signoff for %s to %s\n", *agent, summary.Path)
+	printConsensusSummary(stdout, summary)
+	return 0
+}
+
+func runConsensusFinalize(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("consensus finalize", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	by := fs.String("by", "user", "final plan author")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley consensus finalize [--dir DIR] [--by AGENT] IDEA")
+		return 2
+	}
+	path, summary, err := consensus.Finalize(*root, fs.Arg(0), consensus.FinalizeOptions{By: *by})
+	if err != nil {
+		fmt.Fprintf(stderr, "consensus finalize failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "Finalized consensus and created %s\n", path)
+	printConsensusSummary(stdout, summary)
+	return 0
+}
+
+func runConsensusReopen(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("consensus reopen", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	review := fs.Bool("review", false, "use review consensus")
+	reason := fs.String("reason", "", "reason for reopening consensus")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 || strings.TrimSpace(*reason) == "" {
+		fmt.Fprintln(stderr, "usage: parley consensus reopen [--dir DIR] [--review] --reason TEXT IDEA")
+		return 2
+	}
+	path, err := consensus.Reopen(*root, fs.Arg(0), consensus.ReopenOptions{
+		Review: *review,
+		Reason: *reason,
+	})
+	if err != nil {
+		fmt.Fprintf(stderr, "consensus reopen failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "Reopened consensus; preserved blocked draft at %s\n", path)
+	return 0
+}
+
 func runStatus(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("status", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -218,11 +380,8 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	if *runID != "" || *ideaSlug != "" {
+	if *runID != "" {
 		target := *runID
-		if target == "" {
-			target = *ideaSlug
-		}
 		run, err := runstate.ResolveRun(*root, target)
 		if err != nil {
 			fmt.Fprintf(stderr, "status failed: %v\n", err)
@@ -232,6 +391,39 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 			return printJSON(stdout, run, stderr)
 		}
 		printRunDetail(stdout, run)
+		return 0
+	}
+	if *ideaSlug != "" {
+		run, err := runstate.ResolveRun(*root, *ideaSlug)
+		if err == nil {
+			if *jsonOut {
+				return printJSON(stdout, run, stderr)
+			}
+			printRunDetail(stdout, run)
+			printConsensusIfPresent(stdout, *root, *ideaSlug)
+			return 0
+		}
+		idea, ok := findIdeaStatus(status, *ideaSlug)
+		if !ok {
+			fmt.Fprintf(stderr, "status failed: %v\n", err)
+			return 1
+		}
+		if *jsonOut {
+			payload := struct {
+				Idea      protocol.IdeaStatus `json:"idea"`
+				Consensus *consensus.Summary  `json:"consensus,omitempty"`
+				Review    *consensus.Summary  `json:"review_consensus,omitempty"`
+			}{Idea: idea}
+			if summary, err := consensus.Status(*root, *ideaSlug, false); err == nil {
+				payload.Consensus = &summary
+			}
+			if summary, err := consensus.Status(*root, *ideaSlug, true); err == nil {
+				payload.Review = &summary
+			}
+			return printJSON(stdout, payload, stderr)
+		}
+		printIdeaDetail(stdout, idea)
+		printConsensusIfPresent(stdout, *root, *ideaSlug)
 		return 0
 	}
 
@@ -254,7 +446,7 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 	} else {
 		fmt.Fprintln(stdout, "Ideas:")
 		for _, idea := range status.Ideas {
-			fmt.Fprintf(stdout, "  %s  status=%s  participants=%s\n", idea.Slug, idea.Status, strings.Join(idea.Participants, ","))
+			fmt.Fprintf(stdout, "  %s  status=%s  participants=%s%s\n", idea.Slug, idea.Status, strings.Join(idea.Participants, ","), consensusTriageLabel(*root, idea.Slug))
 		}
 	}
 	printRunsOverview(stdout, runs, 10)
@@ -406,6 +598,63 @@ func printRunDetail(stdout io.Writer, run runstate.RunSummary) {
 	fmt.Fprintf(stdout, "Next: %s\n", nextRunAction(run))
 }
 
+func printIdeaDetail(stdout io.Writer, idea protocol.IdeaStatus) {
+	fmt.Fprintf(stdout, "Idea: %s\n", idea.Slug)
+	fmt.Fprintf(stdout, "Status: %s\n", idea.Status)
+	fmt.Fprintf(stdout, "Participants: %s\n", strings.Join(idea.Participants, ","))
+}
+
+func printConsensusIfPresent(stdout io.Writer, root, ideaSlug string) {
+	if summary, err := consensus.Status(root, ideaSlug, false); err == nil {
+		printConsensusSummary(stdout, summary)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(stdout, "Consensus: error: %v\n", err)
+	}
+	if summary, err := consensus.Status(root, ideaSlug, true); err == nil {
+		printConsensusSummary(stdout, summary)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		fmt.Fprintf(stdout, "Review consensus: error: %v\n", err)
+	}
+}
+
+func printConsensusSummary(stdout io.Writer, summary consensus.Summary) {
+	label := "Consensus"
+	if summary.Review {
+		label = "Review consensus"
+	}
+	fmt.Fprintf(stdout, "%s: %s\n", label, summary.Triage)
+	fmt.Fprintf(stdout, "Path: %s\n", summary.Path)
+	if len(summary.Missing) > 0 {
+		fmt.Fprintf(stdout, "Missing signoffs: %s\n", strings.Join(summary.Missing, ","))
+	}
+	if len(summary.Errors) > 0 {
+		fmt.Fprintln(stdout, "Errors:")
+		for _, errText := range summary.Errors {
+			fmt.Fprintf(stdout, "  %s\n", errText)
+		}
+	}
+	if len(summary.Signoffs) == 0 {
+		fmt.Fprintln(stdout, "Signoffs: none")
+		return
+	}
+	fmt.Fprintln(stdout, "Signoffs:")
+	for _, signoff := range summary.Signoffs {
+		fmt.Fprintf(stdout, "  %-10s %s", signoff.Agent, signoff.Status)
+		if signoff.Notes != "" {
+			fmt.Fprintf(stdout, " — %s", signoff.Notes)
+		}
+		fmt.Fprintln(stdout)
+	}
+}
+
+func consensusTriageLabel(root, ideaSlug string) string {
+	summary, err := consensus.Status(root, ideaSlug, false)
+	if err != nil {
+		return ""
+	}
+	return "  consensus=" + summary.Triage
+}
+
 func displayRunState(run runstate.RunSummary) string {
 	if run.Terminal {
 		return valueOr(run.Outcome, "unknown")
@@ -467,6 +716,15 @@ func nextRunAction(run runstate.RunSummary) string {
 		return fmt.Sprintf("parley resume %s", run.RunID)
 	}
 	return "no recoverable action; inspect artifacts/logs"
+}
+
+func findIdeaStatus(status protocol.WorkspaceStatus, slug string) (protocol.IdeaStatus, bool) {
+	for _, idea := range status.Ideas {
+		if idea.Slug == slug {
+			return idea, true
+		}
+	}
+	return protocol.IdeaStatus{}, false
 }
 
 func ideaForRun(status protocol.WorkspaceStatus, run runstate.RunSummary) protocol.IdeaStatus {

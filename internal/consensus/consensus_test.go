@@ -1,0 +1,234 @@
+package consensus
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"parley-deck-cli/internal/protocol"
+)
+
+func TestDraftAndAppendSignoffTriage(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex", "claude"})
+	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex", "claude"})
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+
+	summary, err := Draft(root, "sample", DraftOptions{By: "codex", Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriagePartial || strings.Join(summary.Missing, ",") != "codex,claude" {
+		t.Fatalf("summary=%+v", summary)
+	}
+	assertPromptStatus(t, root, "sample", "consensus")
+
+	summary, err = AppendSignoff(root, "sample", SignoffOptions{
+		Agent:  "codex",
+		Status: "accept",
+		Notes:  "Accept.",
+		Now:    now,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriagePartial || strings.Join(summary.Missing, ",") != "claude" {
+		t.Fatalf("summary=%+v", summary)
+	}
+
+	summary, err = AppendSignoff(root, "sample", SignoffOptions{
+		Agent:  "claude",
+		Status: "reserve",
+		Notes:  "Reservation is logged.",
+		Now:    now,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriageReserved {
+		t.Fatalf("triage=%s, want %s", summary.Triage, TriageReserved)
+	}
+
+	_, err = AppendSignoff(root, "sample", SignoffOptions{Agent: "codex", Status: "accept", Now: now})
+	if err == nil || !strings.Contains(err.Error(), "already signed") {
+		t.Fatalf("duplicate err=%v", err)
+	}
+}
+
+func TestMalformedSignoffs(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	path := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
+	writeFile(t, path, `---
+idea: sample
+drafted-by: codex
+date: 2026-05-12
+---
+
+## Signoffs
+
+### Signoff: codex — 2026-05-12
+Status: ❌ BLOCK
+Notes: Missing counter.
+
+### Signoff: ghost — 2026-05-12
+Status: ✅ ACCEPT
+`)
+
+	summary, err := Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriageMalformed {
+		t.Fatalf("triage=%s errors=%v", summary.Triage, summary.Errors)
+	}
+	if len(summary.Errors) != 2 {
+		t.Fatalf("errors=%v", summary.Errors)
+	}
+}
+
+func TestFinalizeCreatesFinalAndUpdatesStatus(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "codex", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "codex", Status: "accept", Notes: "Accept.", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+
+	finalPath, summary, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriageReady {
+		t.Fatalf("summary=%+v", summary)
+	}
+	if _, err := os.Stat(finalPath); err != nil {
+		t.Fatal(err)
+	}
+	assertPromptStatus(t, root, "sample", "final")
+}
+
+func TestReservedFinalizeRequiresOpenItems(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "codex", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "codex", Status: "reserve", Notes: "Needs follow-up.", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err == nil {
+		t.Fatal("expected reserved consensus without open items to fail")
+	}
+}
+
+func TestReopenBlockedConsensus(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	path := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
+	writeFile(t, path, `---
+idea: sample
+drafted-by: codex
+date: 2026-05-12
+---
+
+## Signoffs
+
+### Signoff: codex — 2026-05-12
+Status: ❌ BLOCK
+Notes: Missing implementation guard.
+Counter-proposal (required if ❌): Add the guard and run another round.
+`)
+
+	aborted, err := Reopen(root, "sample", ReopenOptions{Reason: "Blocked by codex."})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("consensus.md should be moved, err=%v", err)
+	}
+	data, err := os.ReadFile(aborted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Blocked by codex.") {
+		t.Fatalf("aborted file missing reason:\n%s", data)
+	}
+	assertPromptStatus(t, root, "sample", "discussion")
+}
+
+func TestReviewDraftUsesReviewPath(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"codex"})
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+
+	summary, err := Draft(root, "sample", DraftOptions{Review: true, By: "codex", Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !summary.Review || !strings.HasSuffix(summary.Path, filepath.Join("review", "consensus.md")) {
+		t.Fatalf("summary=%+v", summary)
+	}
+	assertPromptStatus(t, root, "sample", "round-01")
+}
+
+func setupIdea(t *testing.T, slug string, participants []string) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", slug)
+	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(ideaDir, "00-prompt.md"), `---
+idea: `+slug+`
+author: codex
+created: 2026-05-12
+participants: [`+strings.Join(participants, ", ")+`]
+status: round-01
+---
+`)
+	return root
+}
+
+func writeRoundFiles(t *testing.T, root, slug string, review bool, round string, participants []string) {
+	t.Helper()
+	base := filepath.Join(root, protocol.DeckDir, "ideas", slug)
+	if review {
+		base = filepath.Join(base, "review")
+	}
+	roundDir := filepath.Join(base, round)
+	if err := os.MkdirAll(roundDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, participant := range participants {
+		writeFile(t, filepath.Join(roundDir, participant+".md"), "# "+participant+"\n")
+	}
+}
+
+func writeFile(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func assertPromptStatus(t *testing.T, root, slug, want string) {
+	t.Helper()
+	meta, err := protocol.ReadFrontmatter(filepath.Join(root, protocol.DeckDir, "ideas", slug, "00-prompt.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := meta["status"]; got != want {
+		t.Fatalf("status=%q, want %q", got, want)
+	}
+}
