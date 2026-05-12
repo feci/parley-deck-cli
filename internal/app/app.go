@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/tui"
 )
@@ -51,8 +53,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case "run":
 		return runTask(ctx, args[1:], stdout, stderr)
 	case "resume":
-		fmt.Fprintln(stderr, "parley resume is not implemented yet; durable run loading exists, process reattach is next")
-		return 1
+		return runResume(args[1:], stdout, stderr)
 	case "answer":
 		return runAnswer(args[1:], stdout, stderr)
 	case "tui":
@@ -70,9 +71,9 @@ func printUsage(w io.Writer) {
 Usage:
   %s init [--dir DIR]
   %s agents list|verify
-  %s status [--dir DIR]
+  %s status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
-  %s resume RUN_OR_IDEA
+  %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
   %s tui [--dir DIR]
   %s help
@@ -196,7 +197,14 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("status", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	root := fs.String("dir", ".", "workspace directory")
+	runID := fs.String("run", "", "run ID to inspect")
+	ideaSlug := fs.String("idea", "", "idea slug to inspect")
+	jsonOut := fs.Bool("json", false, "print unstable JSON output")
 	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if *runID != "" && *ideaSlug != "" {
+		fmt.Fprintln(stderr, "status accepts only one of --run or --idea")
 		return 2
 	}
 
@@ -210,17 +218,273 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	fmt.Fprintf(stdout, "Transport: %s\n", status.Transport)
-	if len(status.Ideas) == 0 {
-		fmt.Fprintln(stdout, "Ideas: none")
+	if *runID != "" || *ideaSlug != "" {
+		target := *runID
+		if target == "" {
+			target = *ideaSlug
+		}
+		run, err := runstate.ResolveRun(*root, target)
+		if err != nil {
+			fmt.Fprintf(stderr, "status failed: %v\n", err)
+			return 1
+		}
+		if *jsonOut {
+			return printJSON(stdout, run, stderr)
+		}
+		printRunDetail(stdout, run)
 		return 0
 	}
 
-	fmt.Fprintln(stdout, "Ideas:")
-	for _, idea := range status.Ideas {
-		fmt.Fprintf(stdout, "  %s  status=%s  participants=%s\n", idea.Slug, idea.Status, strings.Join(idea.Participants, ","))
+	runs, err := runstate.ListRuns(*root)
+	if err != nil {
+		fmt.Fprintf(stderr, "status failed: %v\n", err)
+		return 1
+	}
+	if *jsonOut {
+		payload := struct {
+			Workspace protocol.WorkspaceStatus `json:"workspace"`
+			Runs      []runstate.RunSummary    `json:"runs"`
+		}{Workspace: status, Runs: runs}
+		return printJSON(stdout, payload, stderr)
+	}
+
+	fmt.Fprintf(stdout, "Transport: %s\n", status.Transport)
+	if len(status.Ideas) == 0 {
+		fmt.Fprintln(stdout, "Ideas: none")
+	} else {
+		fmt.Fprintln(stdout, "Ideas:")
+		for _, idea := range status.Ideas {
+			fmt.Fprintf(stdout, "  %s  status=%s  participants=%s\n", idea.Slug, idea.Status, strings.Join(idea.Participants, ","))
+		}
+	}
+	printRunsOverview(stdout, runs, 10)
+	return 0
+}
+
+func runResume(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("resume", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	noTUI := fs.Bool("no-tui", false, "print run detail without opening the TUI")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley resume [--dir DIR] [--no-tui] RUN_OR_IDEA")
+		return 2
+	}
+
+	run, err := runstate.ResolveRun(*root, fs.Arg(0))
+	if err != nil {
+		fmt.Fprintf(stderr, "resume failed: %v\n", err)
+		return 1
+	}
+	if *noTUI {
+		printRunDetail(stdout, run)
+		return 0
+	}
+
+	status, err := protocol.ReadWorkspaceStatus(*root)
+	if err != nil {
+		fmt.Fprintf(stderr, "resume failed: %v\n", err)
+		return 1
+	}
+	idea := ideaForRun(status, run)
+	if err := tui.RunLive(tui.LiveOptions{
+		Status:       status,
+		Idea:         idea,
+		Participants: run.Participants,
+		RunID:        run.RunID,
+		RunDir:       run.RunDir,
+		Resume:       true,
+	}); err != nil {
+		fmt.Fprintf(stderr, "resume tui failed: %v\n", err)
+		return 1
 	}
 	return 0
+}
+
+func printJSON(stdout io.Writer, value any, stderr io.Writer) int {
+	encoder := json.NewEncoder(stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(value); err != nil {
+		fmt.Fprintf(stderr, "json failed: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+func printRunsOverview(stdout io.Writer, runs []runstate.RunSummary, limit int) {
+	if len(runs) == 0 {
+		fmt.Fprintln(stdout, "Runs: none")
+		return
+	}
+	fmt.Fprintln(stdout, "Runs:")
+	if limit <= 0 || limit > len(runs) {
+		limit = len(runs)
+	}
+	for _, run := range runs[:limit] {
+		if run.Error != "" {
+			fmt.Fprintf(stdout, "  %s  error=%s\n", run.RunID, run.Error)
+			continue
+		}
+		fmt.Fprintf(stdout, "  %s  idea=%s  state=%s  agents=%s  questions=%d open\n",
+			run.RunID,
+			valueOr(run.IdeaSlug, "unknown"),
+			displayRunState(run),
+			agentProgress(run),
+			run.OpenQuestions,
+		)
+	}
+	if len(runs) > limit {
+		fmt.Fprintf(stdout, "  ... %d older run(s) hidden; use --run RUN_ID for details\n", len(runs)-limit)
+	}
+}
+
+func printRunDetail(stdout io.Writer, run runstate.RunSummary) {
+	fmt.Fprintf(stdout, "Run: %s\n", run.RunID)
+	fmt.Fprintf(stdout, "Idea: %s\n", valueOr(run.IdeaSlug, "unknown"))
+	if run.Task != "" {
+		fmt.Fprintf(stdout, "Task: %s\n", run.Task)
+	}
+	if run.Mode != "" {
+		fmt.Fprintf(stdout, "Mode: %s\n", run.Mode)
+	}
+	if run.Error != "" {
+		fmt.Fprintf(stdout, "State: error: %s\n", run.Error)
+		return
+	}
+	fmt.Fprintf(stdout, "State: %s\n", displayRunState(run))
+	fmt.Fprintf(stdout, "Open questions: %d\n", run.OpenQuestions)
+
+	if len(run.State.Agents) > 0 {
+		fmt.Fprintln(stdout, "Agents:")
+		for _, agent := range run.State.Agents {
+			fmt.Fprintf(stdout, "  %-10s state=%-10s duration=%-8s latest=%s\n",
+				agent.ID,
+				agent.State,
+				formatDuration(agentDuration(agent)),
+				valueOr(agent.LatestEvent, "-"),
+			)
+			if agent.ArtifactPath != "" {
+				fmt.Fprintf(stdout, "             artifact: %s\n", agent.ArtifactPath)
+			}
+			if agent.StdoutPath != "" || agent.StderrPath != "" {
+				fmt.Fprintf(stdout, "             logs: stdout=%s stderr=%s\n", valueOr(agent.StdoutPath, "-"), valueOr(agent.StderrPath, "-"))
+			}
+			if agent.Error != "" {
+				fmt.Fprintf(stdout, "             error: %s\n", agent.Error)
+			}
+			if agent.Reason != "" {
+				fmt.Fprintf(stdout, "             reason: %s\n", agent.Reason)
+			}
+		}
+	}
+
+	if len(run.Questions) > 0 {
+		fmt.Fprintln(stdout, "Open HITL questions:")
+		printed := false
+		for _, question := range run.Questions {
+			if question.Status != hitl.StatusOpen {
+				continue
+			}
+			printed = true
+			fmt.Fprintf(stdout, "  %s  agent=%s  risk=%s  %s\n", question.ID, question.Agent, question.Risk, question.Prompt)
+		}
+		if !printed {
+			fmt.Fprintln(stdout, "  none")
+		}
+	}
+
+	if len(run.State.Recent) > 0 {
+		fmt.Fprintln(stdout, "Recent events:")
+		for _, event := range run.State.Recent {
+			fmt.Fprintf(stdout, "  %s  %-16s %s\n", event.Time.Format(time.RFC3339), event.Type, event.Text)
+		}
+	}
+
+	fmt.Fprintf(stdout, "Next: %s\n", nextRunAction(run))
+}
+
+func displayRunState(run runstate.RunSummary) string {
+	if run.Terminal {
+		return valueOr(run.Outcome, "unknown")
+	}
+	state := valueOr(run.Liveness, "idle")
+	if !run.LastEventAt.IsZero() {
+		return fmt.Sprintf("%s — last event %s ago", state, formatDuration(run.LastEventAge))
+	}
+	return state
+}
+
+func agentProgress(run runstate.RunSummary) string {
+	total := len(run.State.Agents)
+	if total == 0 {
+		total = len(run.Participants)
+	}
+	if total == 0 {
+		return "-"
+	}
+	done := 0
+	for _, agent := range run.State.Agents {
+		switch agent.State {
+		case runstate.StateFinished, runstate.StateFailed, runstate.StateSkipped:
+			done++
+		}
+	}
+	return fmt.Sprintf("%d/%d", done, total)
+}
+
+func agentDuration(agent runstate.AgentState) time.Duration {
+	if agent.Duration > 0 {
+		return agent.Duration
+	}
+	if agent.State == runstate.StateRunning && !agent.StartedAt.IsZero() {
+		if elapsed := time.Since(agent.StartedAt); elapsed > 0 {
+			return elapsed
+		}
+	}
+	return 0
+}
+
+func formatDuration(value time.Duration) string {
+	if value <= 0 {
+		return "-"
+	}
+	if value < time.Second {
+		return value.Round(time.Millisecond).String()
+	}
+	return value.Round(time.Second).String()
+}
+
+func nextRunAction(run runstate.RunSummary) string {
+	for _, question := range run.Questions {
+		if question.Status == hitl.StatusOpen {
+			return fmt.Sprintf("parley answer %s %s <answer>", run.RunID, question.ID)
+		}
+	}
+	if !run.Terminal {
+		return fmt.Sprintf("parley resume %s", run.RunID)
+	}
+	return "no recoverable action; inspect artifacts/logs"
+}
+
+func ideaForRun(status protocol.WorkspaceStatus, run runstate.RunSummary) protocol.IdeaStatus {
+	for _, idea := range status.Ideas {
+		if idea.Slug == run.IdeaSlug {
+			return idea
+		}
+	}
+	slug := valueOr(run.IdeaSlug, "unknown")
+	idea := protocol.IdeaStatus{
+		Slug:         slug,
+		Status:       "unknown",
+		Participants: run.Participants,
+	}
+	if slug != "unknown" {
+		idea.Path = filepath.Join(status.Root, protocol.DeckDir, "ideas", slug)
+	}
+	return idea
 }
 
 func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {

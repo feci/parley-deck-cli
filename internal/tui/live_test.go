@@ -177,6 +177,35 @@ func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
 	}
 }
 
+func TestResumeViewHasExplicitExitPath(t *testing.T) {
+	base := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("runtime-status-resume"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       t.TempDir(),
+		Resume:       true,
+	})
+	model.events = []store.Event{
+		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex"}},
+	}
+	model.state = ProjectEvents([]string{"codex"}, model.events, base.Add(time.Minute))
+
+	view := model.View()
+	if strings.Contains(view, "status=running") {
+		t.Fatalf("resume view must not imply live process\n%s", view)
+	}
+	for _, want := range []string{"status=unverified", "q/esc/ctrl+c close resume view"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("resume view missing %q\n%s", want, view)
+		}
+	}
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("q did not return a quit command")
+	}
+}
+
 func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
 	model := newLiveModel(LiveOptions{RunDir: t.TempDir()})
 	model.answerMode = true
