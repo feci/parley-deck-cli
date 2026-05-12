@@ -37,3 +37,7 @@ Notes: Implementer accepts the review consensus and will apply the agreed fixes 
 ### Signoff: claude — 2026-05-12
 Status: ✅ ACCEPT
 Notes: The agreed fixes cover my MAJOR resume-header finding and related minor/nit items, so codex may proceed to fix-up cycle 1.
+
+### Signoff: gemini — 2026-05-12
+Status: ✅ ACCEPT
+Notes: The agreed fixes address my coverage gap finding for outcomes and liveness, and I agree with the deferment of my performance and shadowing nits; codex may proceed to fix-up cycle 1.
