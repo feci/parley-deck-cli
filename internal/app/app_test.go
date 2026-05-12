@@ -283,6 +283,82 @@ func TestStatusAndResumeUseRunState(t *testing.T) {
 	}
 }
 
+func TestConsensusCLIWorkflowAndIdeaStatus(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", "sample")
+	roundDir := filepath.Join(ideaDir, "round-01")
+	if err := os.MkdirAll(roundDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: sample\nparticipants: [codex]\nstatus: round-01\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(roundDir, "codex.md"), []byte("# codex\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "draft", "--dir", root, "--by", "codex", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("draft code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Consensus: partial") {
+		t.Fatalf("draft stdout=%q", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"consensus", "signoff", "--dir", root, "--agent", "codex", "--status", "accept", "--notes", "Accept.", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("signoff code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Consensus: ready") {
+		t.Fatalf("signoff stdout=%q", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"consensus", "status", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("status code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Consensus: ready") {
+		t.Fatalf("consensus status stdout=%q", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"status", "--dir", root, "--idea", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("status --idea code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Idea: sample", "Status: consensus", "Consensus: ready"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("status --idea output missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"consensus", "finalize", "--dir", root, "--by", "codex", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("finalize code=%d stderr=%s", code, stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(ideaDir, "FINAL.md")); err != nil {
+		t.Fatal(err)
+	}
+	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meta["status"] != "final" {
+		t.Fatalf("status=%q, want final", meta["status"])
+	}
+}
+
 func TestResumeReportsKnownIdeaWithNoRuns(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
