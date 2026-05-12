@@ -45,3 +45,32 @@ Notes: The agreed fixes address my coverage gap finding for outcomes and livenes
 ### Signoff: hermes — 2026-05-12
 Status: ✅ ACCEPT
 Notes: The consensus handles my non-blocking findings as deferred follow-ups and includes the blocking fix from review round 1, so codex may proceed to fix-up cycle 1.
+
+## Review cycle 2 final consensus
+
+reviewed-commit: bd8cd27fc934467093c1b2da83dd4c10f09c979e
+drafted-by: codex
+date: 2026-05-12
+
+### Review summary
+
+Fix-up cycle 1 applied all agreed fixes from review cycle 1. Gemini and Hermes accepted with no findings. Claude accepted and recorded one non-blocking MINOR follow-up about making the resume TUI header distinguish `idle` or failed run-level outcomes from the conservative `unverified` wording.
+
+### Agreed fixes
+
+None for review cycle 2.
+
+### Deferred follow-ups
+
+- From claude/review/round-02 [MINOR] Resume TUI header collapses `idle` and failed run-level outcomes into `unverified`: defer to a future resume/re-attach or runstate/TUI integration slice that can plumb run-level outcome/liveness into `LiveOptions` without broadening this fix-up.
+- From claude/review/round-02 [NIT] Errored runs for a known idea can produce `idea "<slug>" has no runs yet`: defer to a future degraded-run listing/error-reporting pass.
+
+### Dismissed findings
+
+None.
+
+### Signoffs
+
+### Signoff: codex — 2026-05-12
+Status: ✅ ACCEPT
+Notes: Review round 2 has zero agreed fixes. The remaining items are deferred follow-ups, so the implementation can be marked complete.
