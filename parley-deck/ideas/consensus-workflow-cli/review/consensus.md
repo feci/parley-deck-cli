@@ -40,3 +40,7 @@ Notes: Fix-up cycle 1 closes every Round 01 finding I raised (CRITICAL triage by
 ### Signoff: gemini — 2026-05-12
 Status: ✅ ACCEPT
 Notes: Fix-up cycle 1 successfully addresses all previous findings. All agreed fixes are implemented and verified with tests. No further issues identified.
+
+### Signoff: hermes — 2026-05-12
+Status: ✅ ACCEPT
+Notes: Re-review of fix-up cycle 1 confirms all agreed fixes implemented with regression tests. No new issues or protocol deviations. Ready to advance.
