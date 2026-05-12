@@ -67,3 +67,7 @@ Notes: The focus on a shared `internal/runstate` projection and durable-state re
 ### Signoff: claude — 2026-05-12
 Status: ✅ ACCEPT
 Notes: Accept; shared `internal/runstate` projection, durable-state resume (no process reattachment), and the deferred follow-up ideas correctly scope this slice.
+
+### Signoff: hermes — 2026-05-12
+Status: ✅ ACCEPT
+Notes: The consensus correctly narrows scope to durable state projection and shared runstate logic without overclaiming process resurrection.
