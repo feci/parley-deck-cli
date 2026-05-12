@@ -59,3 +59,7 @@ date: 2026-05-12
 ### Signoff: codex — 2026-05-12
 Status: ✅ ACCEPT
 Notes: Accept. The consensus keeps the slice narrow, shares projection logic, and avoids unsupported process reattachment claims.
+
+### Signoff: gemini — 2026-05-12
+Status: ✅ ACCEPT
+Notes: The focus on a shared `internal/runstate` projection and durable-state recovery ensures a robust foundation for both CLI and TUI status reporting.
