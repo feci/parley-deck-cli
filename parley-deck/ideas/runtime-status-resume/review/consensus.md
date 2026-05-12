@@ -41,3 +41,7 @@ Notes: The agreed fixes cover my MAJOR resume-header finding and related minor/n
 ### Signoff: gemini — 2026-05-12
 Status: ✅ ACCEPT
 Notes: The agreed fixes address my coverage gap finding for outcomes and liveness, and I agree with the deferment of my performance and shadowing nits; codex may proceed to fix-up cycle 1.
+
+### Signoff: hermes — 2026-05-12
+Status: ✅ ACCEPT
+Notes: The consensus handles my non-blocking findings as deferred follow-ups and includes the blocking fix from review round 1, so codex may proceed to fix-up cycle 1.
