@@ -3,7 +3,7 @@ idea: runtime-status-resume
 author: codex
 created: 2026-05-12
 participants: [codex, claude, gemini, hermes]
-status: round-01
+status: consensus
 ---
 
 ## Problem / idea
