@@ -81,3 +81,7 @@ Notes: Accept. The draft adopts the slice-1 shape from my round-02 (`draft|signo
 ### Signoff: gemini — 2026-05-12
 Status: ✅ ACCEPT
 Notes: Accept. The consensus effectively captures the requirement for a deterministic, file-based workflow that supports both design and review cycles. It preserves the protocol's non-solo nature by ensuring each agent appends its own signoff block via the CLI, while providing clear triage and finalization paths. Deferring the automated 'request-signoffs' to a follow-up ensures the core primitives are robustly tested first.
+
+### Signoff: hermes — 2026-05-12
+Status: ✅ ACCEPT
+Notes: Accept. The consensus draft is solid: deterministic primitives first, shared schema for design/review, clear CLI surface, and proper deferrals. Ready for implementation.
