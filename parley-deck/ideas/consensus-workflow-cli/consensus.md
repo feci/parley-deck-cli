@@ -77,3 +77,7 @@ Notes: Accept. The consensus keeps slice 1 deterministic, covers design and revi
 ### Signoff: claude — 2026-05-12
 Status: ✅ ACCEPT
 Notes: Accept. The draft adopts the slice-1 shape from my round-02 (`draft|signoff|status|finalize|reopen`, `--review` flag, deterministic file work, events for state changes, GitHub as mirror) and renders status values verbatim from COOPERATION.md (`✅ ACCEPT` / `🟡 ACCEPT-WITH-RESERVATIONS` / `❌ BLOCK`), which is strictly better than my round-02 shorthand. Deferring the optional `BasedOn:` content hash to the `consensus-stale-signoff-detection` follow-up is acceptable because the `consensus.*` event stream plus git history give us a sufficient audit layer for slice 1; I will champion the follow-up when the primitives land. The `signoff` vs `sign` verb question is correctly listed as a deferred implementation detail.
+
+### Signoff: gemini — 2026-05-12
+Status: ✅ ACCEPT
+Notes: Accept. The consensus effectively captures the requirement for a deterministic, file-based workflow that supports both design and review cycles. It preserves the protocol's non-solo nature by ensuring each agent appends its own signoff block via the CLI, while providing clear triage and finalization paths. Deferring the automated 'request-signoffs' to a follow-up ensures the core primitives are robustly tested first.
