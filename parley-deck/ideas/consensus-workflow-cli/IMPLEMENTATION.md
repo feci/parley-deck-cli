@@ -3,6 +3,7 @@ idea: consensus-workflow-cli
 implemented-by: codex
 status: ready-for-review
 date: 2026-05-12
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/10
 ---
 
 ## Summary
