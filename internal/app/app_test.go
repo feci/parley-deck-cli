@@ -2,10 +2,12 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
@@ -182,6 +184,73 @@ func TestRunAnswerUpdatesQuestionAndEventLog(t *testing.T) {
 	}
 	if got := events[len(events)-1].Type; got != "hitl.answered" {
 		t.Fatalf("last event=%s, want hitl.answered", got)
+	}
+}
+
+func TestStatusAndResumeUseRunState(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", "sample")
+	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: sample\nparticipants: [codex]\nstatus: round-01\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runID := "20260512T100000.000000000Z"
+	runDir := filepath.Join(root, protocol.DeckDir, "runs", runID)
+	base := time.Date(2026, 5, 12, 10, 0, 0, 0, time.UTC)
+	s := store.New(runDir)
+	for _, event := range []store.Event{
+		{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "mode": "hitl", "participants": []string{"codex"}, "task": "Sample task"}},
+		{Time: base.Add(time.Second), Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": "stdout.log", "stderr": "stderr.log"}},
+	} {
+		if err := s.Append(event); err != nil {
+			t.Fatal(err)
+		}
+	}
+	question, err := hitl.New(runDir).Create(hitl.Question{Agent: "codex", Prompt: "Which branch?", Risk: hitl.RiskNormal})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"status", "--dir", root}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Transport:", "Ideas:", "sample", "Runs:", runID, "questions=1 open"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("status output missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"resume", "--dir", root, "--no-tui", runID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("resume code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Run: " + runID, "Idea: sample", "State: unverified", "Open HITL questions:", question.ID, "Next: parley answer " + runID + " " + question.ID} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("resume output missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"status", "--dir", root, "--run", runID, "--json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("json status code=%d stderr=%s", code, stderr.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	if payload["run_id"] != runID || payload["idea_slug"] != "sample" {
+		t.Fatalf("payload=%+v", payload)
 	}
 }
 

@@ -177,6 +177,23 @@ func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
 	}
 }
 
+func TestResumeViewHasExplicitExitPath(t *testing.T) {
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("runtime-status-resume"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       t.TempDir(),
+		Resume:       true,
+	})
+	if !strings.Contains(model.View(), "close resume view") {
+		t.Fatalf("resume footer missing\n%s", model.View())
+	}
+	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("q did not return a quit command")
+	}
+}
+
 func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
 	model := newLiveModel(LiveOptions{RunDir: t.TempDir()})
 	model.answerMode = true

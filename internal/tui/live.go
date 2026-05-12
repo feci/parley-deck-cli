@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -18,16 +17,17 @@ import (
 
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 )
 
 const (
-	statePending  = "pending"
-	stateRunning  = "running"
-	stateFinished = "finished"
-	stateFailed   = "failed"
-	stateSkipped  = "skipped"
-	stateUnknown  = "unknown"
+	statePending  = runstate.StatePending
+	stateRunning  = runstate.StateRunning
+	stateFinished = runstate.StateFinished
+	stateFailed   = runstate.StateFailed
+	stateSkipped  = runstate.StateSkipped
+	stateUnknown  = runstate.StateUnknown
 )
 
 type LiveOptions struct {
@@ -38,6 +38,7 @@ type LiveOptions struct {
 	RunDir       string
 	Done         <-chan struct{}
 	Cancel       func()
+	Resume       bool
 }
 
 type liveModel struct {
@@ -59,30 +60,9 @@ type liveModel struct {
 	done       bool
 }
 
-type RunState struct {
-	Agents      []AgentState
-	RoundStatus string
-	Recent      []EventSummary
-}
-
-type AgentState struct {
-	ID          string
-	State       string
-	StartedAt   time.Time
-	Duration    time.Duration
-	LatestEvent string
-	Error       string
-	Reason      string
-	StdoutPath  string
-	StderrPath  string
-}
-
-type EventSummary struct {
-	Time  time.Time
-	Type  string
-	Agent string
-	Text  string
-}
+type RunState = runstate.RunState
+type AgentState = runstate.AgentState
+type EventSummary = runstate.EventSummary
 
 type eventsMsg struct {
 	events []store.Event
@@ -121,13 +101,16 @@ func newLiveModel(opts LiveOptions) liveModel {
 }
 
 func (m liveModel) Init() tea.Cmd {
-	return tea.Batch(
+	cmds := []tea.Cmd{
 		readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset),
 		readQuestionsCmd(m.opts.RunDir),
 		eventTickCmd(),
 		elapsedTickCmd(),
-		waitDoneCmd(m.opts.Done),
-	)
+	}
+	if m.opts.Done != nil {
+		cmds = append(cmds, waitDoneCmd(m.opts.Done))
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -239,7 +222,11 @@ func (m liveModel) View() string {
 	right := boxStyle.Width(rightWidth).Render(m.renderEventPane())
 	questions := boxStyle.Width(bodyWidth).Render(m.renderQuestionsPane())
 	logs := boxStyle.Width(bodyWidth).Render(m.renderLogPane())
-	footer := mutedStyle.Render("Keys: j/k/tab agent  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run")
+	footerText := "Keys: j/k/tab agent  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run"
+	if m.opts.Resume {
+		footerText = "Keys: j/k/tab agent  n/p question  a answer  q/esc close resume view"
+	}
+	footer := mutedStyle.Render(footerText)
 	if m.errText != "" {
 		footer = warnStyle.Render(m.errText) + "\n" + footer
 	}
@@ -485,106 +472,11 @@ func (m *liveModel) refreshLogPreview() {
 }
 
 func ProjectEvents(participants []string, events []store.Event, now time.Time) RunState {
-	agentsByID := map[string]*AgentState{}
-	order := append([]string(nil), participants...)
-	for _, id := range participants {
-		agentsByID[id] = &AgentState{ID: id, State: statePending}
-	}
-
-	state := RunState{RoundStatus: "pending"}
-	for _, event := range events {
-		summary := summarizeEvent(event)
-		if summary.Type != "" {
-			state.Recent = append(state.Recent, summary)
-			if len(state.Recent) > 8 {
-				state.Recent = state.Recent[len(state.Recent)-8:]
-			}
-		}
-
-		switch event.Type {
-		case "agent.started", "agent.finished", "agent.failed", "agent.skipped":
-			id := dataString(event.Data, "agent")
-			if id == "" {
-				continue
-			}
-			agent, ok := agentsByID[id]
-			if !ok {
-				agent = &AgentState{ID: id, State: stateUnknown}
-				agentsByID[id] = agent
-				order = append(order, id)
-				agent.LatestEvent = event.Type
-				continue
-			}
-			if agent.State == stateUnknown {
-				agent.LatestEvent = event.Type
-				continue
-			}
-			applyAgentEvent(agent, event, now)
-		case "round.completed":
-			state.RoundStatus = "completed"
-		case "round.incomplete":
-			state.RoundStatus = "incomplete"
-		}
-	}
-
-	sort.SliceStable(order, func(i, j int) bool {
-		leftKnown := contains(participants, order[i])
-		rightKnown := contains(participants, order[j])
-		if leftKnown != rightKnown {
-			return leftKnown
-		}
-		return order[i] < order[j]
-	})
-	for _, id := range order {
-		if agent := agentsByID[id]; agent != nil {
-			state.Agents = append(state.Agents, *agent)
-		}
-	}
-	return state
-}
-
-func applyAgentEvent(agent *AgentState, event store.Event, now time.Time) {
-	agent.LatestEvent = event.Type
-	switch event.Type {
-	case "agent.started":
-		agent.State = stateRunning
-		agent.StartedAt = event.Time
-		agent.StdoutPath = dataString(event.Data, "stdout")
-		agent.StderrPath = dataString(event.Data, "stderr")
-	case "agent.finished":
-		agent.State = stateFinished
-		agent.Duration = dataDuration(event.Data, "duration_ms", now.Sub(agent.StartedAt))
-	case "agent.failed":
-		agent.State = stateFailed
-		agent.Error = dataString(event.Data, "error")
-		agent.Duration = dataDuration(event.Data, "duration_ms", now.Sub(agent.StartedAt))
-	case "agent.skipped":
-		agent.State = stateSkipped
-		agent.Reason = dataString(event.Data, "reason")
-		agent.Duration = dataDuration(event.Data, "duration_ms", 0)
-	}
+	return runstate.ProjectEvents(participants, events, now)
 }
 
 func summarizeEvent(event store.Event) EventSummary {
-	agent := dataString(event.Data, "agent")
-	text := agent
-	switch event.Type {
-	case "run.created":
-		text = fmt.Sprintf("idea=%s", dataString(event.Data, "idea"))
-	case "agent.failed":
-		if errText := dataString(event.Data, "error"); errText != "" {
-			text = fmt.Sprintf("%s %s", agent, errText)
-		}
-	case "agent.skipped":
-		text = fmt.Sprintf("%s %s", agent, dataString(event.Data, "reason"))
-	case "hitl.question":
-		text = fmt.Sprintf("%s question %s %s", agent, dataString(event.Data, "question_id"), dataString(event.Data, "risk"))
-	case "hitl.answered":
-		text = fmt.Sprintf("%s answered %s %s", agent, dataString(event.Data, "question_id"), dataString(event.Data, "status"))
-	case "round.completed", "round.incomplete":
-		text = fmt.Sprintf("%s/%s agents", dataString(event.Data, "completed"), dataString(event.Data, "total"))
-	}
-	return EventSummary{Time: event.Time, Type: event.Type, Agent: agent, Text: strings.TrimSpace(text)}
+	return runstate.SummarizeEvent(event)
 }
 
 func readEventsCmd(path string, offset int64) tea.Cmd {
@@ -757,49 +649,4 @@ func displayRoundStatus(status string, done bool) string {
 		return "unknown"
 	}
 	return "running"
-}
-
-func dataString(data map[string]any, key string) string {
-	if data == nil {
-		return ""
-	}
-	switch value := data[key].(type) {
-	case string:
-		return value
-	case fmt.Stringer:
-		return value.String()
-	case int:
-		return fmt.Sprintf("%d", value)
-	case int64:
-		return fmt.Sprintf("%d", value)
-	case float64:
-		return fmt.Sprintf("%.0f", value)
-	default:
-		return ""
-	}
-}
-
-func dataDuration(data map[string]any, key string, fallback time.Duration) time.Duration {
-	if data == nil {
-		return fallback
-	}
-	switch value := data[key].(type) {
-	case int:
-		return time.Duration(value) * time.Millisecond
-	case int64:
-		return time.Duration(value) * time.Millisecond
-	case float64:
-		return time.Duration(value) * time.Millisecond
-	default:
-		return fallback
-	}
-}
-
-func contains(values []string, want string) bool {
-	for _, value := range values {
-		if value == want {
-			return true
-		}
-	}
-	return false
 }
