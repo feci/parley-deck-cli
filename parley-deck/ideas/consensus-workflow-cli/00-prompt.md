@@ -3,7 +3,7 @@ idea: consensus-workflow-cli
 author: codex
 created: 2026-05-12
 participants: [codex, claude, gemini, hermes]
-status: consensus
+status: final
 ---
 
 ## Problem / idea
