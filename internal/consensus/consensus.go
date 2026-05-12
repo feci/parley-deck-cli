@@ -28,10 +28,11 @@ const (
 )
 
 type DraftOptions struct {
-	Review bool
-	Round  int
-	By     string
-	Now    time.Time
+	Review         bool
+	Round          int
+	By             string
+	ReviewedCommit string
+	Now            time.Time
 }
 
 type SignoffOptions struct {
@@ -125,7 +126,7 @@ func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return Summary{}, err
 	}
-	if err := writeFileAtomic(path, []byte(draftTemplate(idea, opts, roundRel)), 0o644); err != nil {
+	if err := writeFileAtomic(path, []byte(draftTemplate(idea, opts, roundLabel, roundRel)), 0o644); err != nil {
 		return Summary{}, err
 	}
 	if !opts.Review {
@@ -197,6 +198,9 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 	if err != nil {
 		return "", Summary{}, err
 	}
+	if idea.Status == "final" {
+		return "", Summary{}, fmt.Errorf("idea %s is already final", idea.Slug)
+	}
 	summary, err := Status(root, ideaSlug, false)
 	if err != nil {
 		return "", Summary{}, err
@@ -255,7 +259,14 @@ func Reopen(root, ideaSlug string, opts ReopenOptions) (string, error) {
 		return "", fmt.Errorf("cannot reopen consensus with triage=%s", summary.Triage)
 	}
 
-	aborted := nextAbortedPath(roundBaseDir(idea.Path, opts.Review))
+	latestRound, _, err := selectRound(idea.Path, opts.Review, 0)
+	if err != nil {
+		latestRound = "round-01"
+	}
+	aborted, err := nextAbortedPath(roundBaseDir(idea.Path, opts.Review), latestRound)
+	if err != nil {
+		return "", err
+	}
 	if err := os.Rename(summary.Path, aborted); err != nil {
 		return "", err
 	}
@@ -269,7 +280,7 @@ func Reopen(root, ideaSlug string, opts ReopenOptions) (string, error) {
 		return "", err
 	}
 	if !opts.Review {
-		if err := updateIdeaStatus(idea.Path, "discussion"); err != nil {
+		if err := updateIdeaStatus(idea.Path, latestRound); err != nil {
 			return "", err
 		}
 	}
@@ -277,7 +288,11 @@ func Reopen(root, ideaSlug string, opts ReopenOptions) (string, error) {
 }
 
 func CanonicalStatus(raw string) (string, error) {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
+	value := strings.TrimSpace(raw)
+	if before, _, ok := strings.Cut(value, "("); ok {
+		value = strings.TrimSpace(before)
+	}
+	switch strings.ToLower(value) {
 	case "accept", strings.ToLower(StatusAccept):
 		return StatusAccept, nil
 	case "reserve", "reservations", "accept-with-reservations", strings.ToLower(StatusReservations):
@@ -339,8 +354,11 @@ func parseDocument(path string) (document, error) {
 				signoff.Notes = strings.TrimSpace(value)
 				continue
 			}
-			if value, ok := strings.CutPrefix(line, "Counter-proposal (required if ❌):"); ok {
-				signoff.CounterProposal = strings.TrimSpace(value)
+			if strings.HasPrefix(line, "Counter-proposal") {
+				_, value, ok := strings.Cut(line, ":")
+				if ok {
+					signoff.CounterProposal = strings.TrimSpace(value)
+				}
 				continue
 			}
 		}
@@ -369,11 +387,12 @@ func validateDocument(ideaSlug string, participants []string, review bool, doc d
 		default:
 			signed[signoff.Agent] = true
 		}
-		if _, err := CanonicalStatus(signoff.Status); err != nil {
+		status, err := CanonicalStatus(signoff.Status)
+		if err != nil {
 			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: %v", signoff.Line, err))
 			continue
 		}
-		switch signoff.Status {
+		switch status {
 		case StatusReservations:
 			hasReservations = true
 			if strings.TrimSpace(signoff.Notes) == "" {
@@ -422,21 +441,32 @@ func selectRound(ideaDir string, review bool, requested int) (string, string, er
 	if err != nil {
 		return "", "", err
 	}
-	var rounds []string
+	var rounds []roundEntry
 	for _, entry := range entries {
 		if !entry.IsDir() || !strings.HasPrefix(entry.Name(), "round-") {
 			continue
 		}
-		if _, err := strconv.Atoi(strings.TrimPrefix(entry.Name(), "round-")); err == nil {
-			rounds = append(rounds, entry.Name())
+		number, err := strconv.Atoi(strings.TrimPrefix(entry.Name(), "round-"))
+		if err == nil {
+			rounds = append(rounds, roundEntry{name: entry.Name(), number: number})
 		}
 	}
 	if len(rounds) == 0 {
 		return "", "", fmt.Errorf("no round directories found under %s", base)
 	}
-	sort.Strings(rounds)
-	label := rounds[len(rounds)-1]
+	sort.Slice(rounds, func(i, j int) bool {
+		if rounds[i].number == rounds[j].number {
+			return rounds[i].name < rounds[j].name
+		}
+		return rounds[i].number < rounds[j].number
+	})
+	label := rounds[len(rounds)-1].name
 	return label, roundRel(review, label), nil
+}
+
+type roundEntry struct {
+	name   string
+	number int
 }
 
 func roundBaseDir(ideaDir string, review bool) string {
@@ -463,18 +493,24 @@ func missingRoundArtifacts(roundDir string, participants []string) []string {
 	return missing
 }
 
-func draftTemplate(idea protocol.IdeaStatus, opts DraftOptions, roundRel string) string {
+func draftTemplate(idea protocol.IdeaStatus, opts DraftOptions, roundLabel, roundRel string) string {
 	now := opts.Now
 	if now.IsZero() {
 		now = time.Now()
 	}
 	by := firstNonEmpty(opts.By, "user")
 	if opts.Review {
+		cycle := strings.TrimPrefix(roundLabel, "round-")
+		cycle = strings.TrimLeft(cycle, "0")
+		if cycle == "" {
+			cycle = "1"
+		}
 		return fmt.Sprintf(`---
 idea: %s
-cycle: review
+cycle: %s
 drafted-by: %s
 date: %s
+reviewed-commit: %s
 ---
 
 ## Agreed fixes
@@ -488,7 +524,7 @@ date: %s
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
-`, idea.Slug, by, now.Format("2006-01-02"), roundRel)
+`, idea.Slug, cycle, by, now.Format("2006-01-02"), opts.ReviewedCommit, roundRel)
 	}
 	return fmt.Sprintf(`---
 idea: %s
@@ -528,6 +564,8 @@ participants: [%s]
 ### Implementation details
 
 ### Tests
+
+### Non-goals
 
 ### Verification
 
@@ -605,11 +643,13 @@ func hasSectionContent(raw, heading string) bool {
 	return len(content) > 0
 }
 
-func nextAbortedPath(baseDir string) string {
+func nextAbortedPath(baseDir, roundLabel string) (string, error) {
 	for i := 1; ; i++ {
-		path := filepath.Join(baseDir, fmt.Sprintf("round-%02d-consensus-aborted.md", i))
+		path := filepath.Join(baseDir, fmt.Sprintf("%s-consensus-aborted-%02d.md", roundLabel, i))
 		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-			return path
+			return path, nil
+		} else if err != nil {
+			return "", err
 		}
 	}
 }

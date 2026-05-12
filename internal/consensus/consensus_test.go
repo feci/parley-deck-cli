@@ -87,6 +87,32 @@ Status: ✅ ACCEPT
 	}
 }
 
+func TestManualStatusAliasesAffectTriage(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	path := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
+	writeFile(t, path, `---
+idea: sample
+drafted-by: codex
+date: 2026-05-12
+---
+
+## Signoffs
+
+### Signoff: codex — 2026-05-12
+Status: block
+Notes: Manual block.
+Counter-proposal: Run another round.
+`)
+
+	summary, err := Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriageBlocked || len(summary.Errors) != 0 {
+		t.Fatalf("summary=%+v", summary)
+	}
+}
+
 func TestFinalizeCreatesFinalAndUpdatesStatus(t *testing.T) {
 	root := setupIdea(t, "sample", []string{"codex"})
 	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
@@ -108,6 +134,15 @@ func TestFinalizeCreatesFinalAndUpdatesStatus(t *testing.T) {
 	if _, err := os.Stat(finalPath); err != nil {
 		t.Fatal(err)
 	}
+	finalData, err := os.ReadFile(finalPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"### Goal", "### Scope", "### Implementation details", "### Tests", "### Non-goals", "### Verification"} {
+		if !strings.Contains(string(finalData), want) {
+			t.Fatalf("FINAL.md missing %q:\n%s", want, finalData)
+		}
+	}
 	assertPromptStatus(t, root, "sample", "final")
 }
 
@@ -127,8 +162,35 @@ func TestReservedFinalizeRequiresOpenItems(t *testing.T) {
 	}
 }
 
+func TestReservedFinalizeSucceedsWithOpenItems(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "codex", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := strings.Replace(string(data), "## Open items deferred to implementation\n\n## Signoffs", "## Open items deferred to implementation\n\n- Carry this reservation into implementation.\n\n## Signoffs", 1)
+	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "codex", Status: "reserve", Notes: "Needs follow-up.", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	assertPromptStatus(t, root, "sample", "final")
+}
+
 func TestReopenBlockedConsensus(t *testing.T) {
 	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
 	path := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
 	writeFile(t, path, `---
 idea: sample
@@ -158,7 +220,10 @@ Counter-proposal (required if ❌): Add the guard and run another round.
 	if !strings.Contains(string(data), "Blocked by codex.") {
 		t.Fatalf("aborted file missing reason:\n%s", data)
 	}
-	assertPromptStatus(t, root, "sample", "discussion")
+	if !strings.HasSuffix(aborted, "round-01-consensus-aborted-01.md") {
+		t.Fatalf("aborted=%q", aborted)
+	}
+	assertPromptStatus(t, root, "sample", "round-01")
 }
 
 func TestReviewDraftUsesReviewPath(t *testing.T) {
@@ -166,14 +231,41 @@ func TestReviewDraftUsesReviewPath(t *testing.T) {
 	writeRoundFiles(t, root, "sample", true, "round-01", []string{"codex"})
 	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
 
-	summary, err := Draft(root, "sample", DraftOptions{Review: true, By: "codex", Now: now})
+	summary, err := Draft(root, "sample", DraftOptions{Review: true, By: "codex", ReviewedCommit: "abc123", Now: now})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !summary.Review || !strings.HasSuffix(summary.Path, filepath.Join("review", "consensus.md")) {
 		t.Fatalf("summary=%+v", summary)
 	}
+	data, err := os.ReadFile(summary.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"cycle: 1", "reviewed-commit: abc123"} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("review consensus missing %q:\n%s", want, data)
+		}
+	}
 	assertPromptStatus(t, root, "sample", "round-01")
+}
+
+func TestDraftSelectsLatestRoundNumerically(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-2", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-10", []string{"codex"})
+
+	summary, err := Draft(root, "sample", DraftOptions{By: "codex", Now: time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(summary.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Review round-10") {
+		t.Fatalf("draft did not use numeric latest round:\n%s", data)
+	}
 }
 
 func setupIdea(t *testing.T, slug string, participants []string) string {

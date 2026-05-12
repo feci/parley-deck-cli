@@ -255,6 +255,7 @@ func runConsensusDraft(args []string, stdout, stderr io.Writer) int {
 	review := fs.Bool("review", false, "use review consensus")
 	round := fs.Int("round", 0, "round number to draft from")
 	by := fs.String("by", "user", "drafting agent ID")
+	reviewedCommit := fs.String("reviewed-commit", "", "reviewed commit for review consensus")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -263,9 +264,10 @@ func runConsensusDraft(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	summary, err := consensus.Draft(*root, fs.Arg(0), consensus.DraftOptions{
-		Review: *review,
-		Round:  *round,
-		By:     *by,
+		Review:         *review,
+		Round:          *round,
+		By:             *by,
+		ReviewedCommit: *reviewedCommit,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "consensus draft failed: %v\n", err)
@@ -650,7 +652,13 @@ func printConsensusSummary(stdout io.Writer, summary consensus.Summary) {
 func consensusTriageLabel(root, ideaSlug string) string {
 	summary, err := consensus.Status(root, ideaSlug, false)
 	if err != nil {
-		return ""
+		if errors.Is(err, os.ErrNotExist) {
+			return ""
+		}
+		return "  consensus=error"
+	}
+	if len(summary.Errors) > 0 {
+		return "  consensus=error"
 	}
 	return "  consensus=" + summary.Triage
 }
