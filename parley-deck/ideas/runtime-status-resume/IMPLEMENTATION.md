@@ -1,6 +1,6 @@
 ---
 idea: runtime-status-resume
-status: fix-up-cycle-1
+status: complete
 implementer: codex
 started: 2026-05-12
 completed: 2026-05-12
@@ -82,3 +82,10 @@ None.
 - `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley resume --no-tui 20260510T201528.433687000Z`
 - `GOPATH=/private/tmp/parley-go GOCACHE=/private/tmp/parley-go-cache GOMODCACHE=/private/tmp/parley-go/pkg/mod go run ./cmd/parley status --json`
 - Manual resume TUI smoke: opened `parley resume 20260510T194003Z` in a PTY, verified `status=unverified` and `q/esc/ctrl+c close resume view`, and exited with `q`.
+
+## Completion
+
+completed: 2026-05-12
+review-consensus: ./review/consensus.md
+
+Review cycle 2 reached consensus with zero agreed fixes. Claude, Gemini, Hermes, and Codex accepted the final state. The remaining Claude round-02 MINOR/NIT observations are recorded as deferred follow-ups in `review/consensus.md`.
