@@ -63,3 +63,7 @@ Notes: Accept. The consensus keeps the slice narrow, shares projection logic, an
 ### Signoff: gemini — 2026-05-12
 Status: ✅ ACCEPT
 Notes: The focus on a shared `internal/runstate` projection and durable-state recovery ensures a robust foundation for both CLI and TUI status reporting.
+
+### Signoff: claude — 2026-05-12
+Status: ✅ ACCEPT
+Notes: Accept; shared `internal/runstate` projection, durable-state resume (no process reattachment), and the deferred follow-up ideas correctly scope this slice.
