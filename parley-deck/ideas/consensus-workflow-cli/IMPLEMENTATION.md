@@ -1,7 +1,7 @@
 ---
 idea: consensus-workflow-cli
 implemented-by: codex
-status: ready-for-re-review
+status: complete
 date: 2026-05-12
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/10
 fix-up-cycle: 1
@@ -61,6 +61,10 @@ Remaining non-blocking follow-ups recorded by review consensus:
 - automated `request-signoffs`;
 - workspace status performance for large idea counts;
 - explicit finalized-status guard policy beyond the existing `FINAL.md` existence guard.
+
+## Review closeout
+
+Review round 02 approved fix-up cycle 1 with no remaining agreed fixes. Final review consensus is recorded in `review/consensus.md`; the cycle-1 consensus with agreed fixes is preserved in `review/consensus-cycle-01.md`.
 
 ## Ready for review
 
