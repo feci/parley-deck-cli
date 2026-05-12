@@ -12,6 +12,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 )
 
@@ -241,6 +242,18 @@ func TestStatusAndResumeUseRunState(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
+	code = Run([]string{"status", "--dir", root, "--idea", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("status --idea code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Run: " + runID, "Idea: sample", "State: unverified"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("status --idea output missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
 	code = Run([]string{"status", "--dir", root, "--run", runID, "--json"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("json status code=%d stderr=%s", code, stderr.String())
@@ -251,6 +264,55 @@ func TestStatusAndResumeUseRunState(t *testing.T) {
 	}
 	if payload["run_id"] != runID || payload["idea_slug"] != "sample" {
 		t.Fatalf("payload=%+v", payload)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"status", "--dir", root, "--json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("workspace json status code=%d stderr=%s", code, stderr.String())
+	}
+	var workspacePayload struct {
+		Runs []map[string]any `json:"runs"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &workspacePayload); err != nil {
+		t.Fatalf("invalid workspace json: %v\n%s", err, stdout.String())
+	}
+	if len(workspacePayload.Runs) != 1 || workspacePayload.Runs[0]["run_id"] != runID {
+		t.Fatalf("workspace payload=%+v", workspacePayload)
+	}
+}
+
+func TestResumeReportsKnownIdeaWithNoRuns(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", "empty")
+	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: empty\nparticipants: [codex]\nstatus: round-01\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"resume", "--dir", root, "--no-tui", "empty"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), `idea "empty" has no runs yet`) {
+		t.Fatalf("stderr=%q", stderr.String())
+	}
+}
+
+func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
+	duration := agentDuration(runstate.AgentState{
+		State:     runstate.StateRunning,
+		StartedAt: time.Now().Add(-2 * time.Minute),
+	})
+	if duration <= 0 {
+		t.Fatalf("duration=%s, want elapsed duration", duration)
 	}
 }
 

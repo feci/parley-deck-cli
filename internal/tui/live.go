@@ -209,7 +209,7 @@ func (m liveModel) View() string {
 		m.opts.Idea.Slug,
 		displayRoundLabel(m.opts.Idea.Status),
 		m.opts.RunID,
-		displayRoundStatus(m.state.RoundStatus, m.done),
+		displayRoundStatus(m.state.RoundStatus, m.done, m.opts.Resume),
 	))
 
 	leftWidth := 36
@@ -224,7 +224,7 @@ func (m liveModel) View() string {
 	logs := boxStyle.Width(bodyWidth).Render(m.renderLogPane())
 	footerText := "Keys: j/k/tab agent  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run"
 	if m.opts.Resume {
-		footerText = "Keys: j/k/tab agent  n/p question  a answer  q/esc close resume view"
+		footerText = "Keys: j/k/tab agent  n/p question  a answer  q/esc/ctrl+c close resume view"
 	}
 	footer := mutedStyle.Render(footerText)
 	if m.errText != "" {
@@ -641,9 +641,12 @@ func displayRoundLabel(status string) string {
 	return status
 }
 
-func displayRoundStatus(status string, done bool) string {
+func displayRoundStatus(status string, done bool, resume bool) string {
 	if status != "" && status != "pending" {
 		return status
+	}
+	if resume {
+		return runstate.LivenessUnverified
 	}
 	if done {
 		return "unknown"

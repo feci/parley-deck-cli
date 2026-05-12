@@ -3,6 +3,7 @@ package runstate
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -65,6 +66,66 @@ func TestLoadRunDerivesUnverifiedLivenessAndQuestions(t *testing.T) {
 	}
 }
 
+func TestLoadRunDerivesIncompleteOutcome(t *testing.T) {
+	root := t.TempDir()
+	writeIdea(t, root, "sample", []string{"codex", "claude"})
+	runID := "20260512T100200.000000000Z"
+	runDir := RunDir(root, runID)
+	base := time.Date(2026, 5, 12, 10, 2, 0, 0, time.UTC)
+	appendEvents(t, runDir,
+		store.Event{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "participants": []string{"codex", "claude"}}},
+		store.Event{Time: base.Add(time.Second), Type: "agent.started", Data: map[string]any{"agent": "codex"}},
+		store.Event{Time: base.Add(2 * time.Second), Type: "agent.finished", Data: map[string]any{"agent": "codex"}},
+		store.Event{Time: base.Add(3 * time.Second), Type: "round.incomplete", Data: map[string]any{"completed": float64(1), "total": float64(2)}},
+	)
+
+	run, err := LoadRunAt(root, runID, base.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !run.Terminal || run.Outcome != OutcomeIncomplete || run.Liveness != "" {
+		t.Fatalf("terminal=%v outcome=%q liveness=%q", run.Terminal, run.Outcome, run.Liveness)
+	}
+}
+
+func TestLoadRunDerivesFailedOutcome(t *testing.T) {
+	root := t.TempDir()
+	writeIdea(t, root, "sample", []string{"codex"})
+	runID := "20260512T100300.000000000Z"
+	runDir := RunDir(root, runID)
+	base := time.Date(2026, 5, 12, 10, 3, 0, 0, time.UTC)
+	appendEvents(t, runDir,
+		store.Event{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "participants": []string{"codex"}}},
+		store.Event{Time: base.Add(time.Second), Type: "run.failed", Data: map[string]any{"error": "store unavailable"}},
+	)
+
+	run, err := LoadRunAt(root, runID, base.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !run.Terminal || run.Outcome != OutcomeFailed || run.Liveness != "" {
+		t.Fatalf("terminal=%v outcome=%q liveness=%q", run.Terminal, run.Outcome, run.Liveness)
+	}
+}
+
+func TestLoadRunDerivesIdleLiveness(t *testing.T) {
+	root := t.TempDir()
+	writeIdea(t, root, "sample", []string{"codex"})
+	runID := "20260512T100400.000000000Z"
+	base := time.Date(2026, 5, 12, 10, 4, 0, 0, time.UTC)
+	appendEvents(t, RunDir(root, runID),
+		store.Event{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "participants": []string{"codex"}}},
+	)
+
+	run, err := LoadRunAt(root, runID, base.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.Terminal || run.Outcome != "" || run.Liveness != LivenessIdle {
+		t.Fatalf("terminal=%v outcome=%q liveness=%q", run.Terminal, run.Outcome, run.Liveness)
+	}
+}
+
 func TestResolveRunChoosesNewestRunForIdea(t *testing.T) {
 	root := t.TempDir()
 	writeIdea(t, root, "sample", []string{"codex"})
@@ -82,6 +143,19 @@ func TestResolveRunChoosesNewestRunForIdea(t *testing.T) {
 	}
 	if run.RunID != "20260512T100500.000000000Z" {
 		t.Fatalf("run=%s", run.RunID)
+	}
+}
+
+func TestResolveRunReportsKnownIdeaWithNoRuns(t *testing.T) {
+	root := t.TempDir()
+	writeIdea(t, root, "empty", []string{"codex"})
+
+	_, err := ResolveRun(root, "empty")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !strings.Contains(err.Error(), `idea "empty" has no runs yet`) {
+		t.Fatalf("error=%v", err)
 	}
 }
 
@@ -104,7 +178,7 @@ func writeIdea(t *testing.T, root, slug string, participants []string) {
 	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	content := "---\nidea: " + slug + "\nparticipants: [" + participants[0] + "]\nstatus: round-01\n---\n"
+	content := "---\nidea: " + slug + "\nparticipants: [" + strings.Join(participants, ", ") + "]\nstatus: round-01\n---\n"
 	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}

@@ -190,6 +190,9 @@ func ResolveRun(root, target string) (RunSummary, error) {
 			return run, nil
 		}
 	}
+	if ideaExists(root, target) {
+		return RunSummary{}, fmt.Errorf("idea %q has no runs yet", target)
+	}
 	if len(runs) == 0 {
 		return RunSummary{}, fmt.Errorf("no runs found for %q", target)
 	}
@@ -344,6 +347,22 @@ func inferParticipants(root, ideaSlug string) []string {
 		}
 	}
 	return nil
+}
+
+func ideaExists(root, ideaSlug string) bool {
+	if ideaSlug == "" {
+		return false
+	}
+	status, err := protocol.ReadWorkspaceStatus(root)
+	if err != nil {
+		return false
+	}
+	for _, idea := range status.Ideas {
+		if idea.Slug == ideaSlug {
+			return true
+		}
+	}
+	return false
 }
 
 func runIDs(runs []RunSummary) []string {

@@ -178,6 +178,7 @@ func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
 }
 
 func TestResumeViewHasExplicitExitPath(t *testing.T) {
+	base := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
 	model := newLiveModel(LiveOptions{
 		Idea:         testIdea("runtime-status-resume"),
 		Participants: []string{"codex"},
@@ -185,8 +186,19 @@ func TestResumeViewHasExplicitExitPath(t *testing.T) {
 		RunDir:       t.TempDir(),
 		Resume:       true,
 	})
-	if !strings.Contains(model.View(), "close resume view") {
-		t.Fatalf("resume footer missing\n%s", model.View())
+	model.events = []store.Event{
+		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex"}},
+	}
+	model.state = ProjectEvents([]string{"codex"}, model.events, base.Add(time.Minute))
+
+	view := model.View()
+	if strings.Contains(view, "status=running") {
+		t.Fatalf("resume view must not imply live process\n%s", view)
+	}
+	for _, want := range []string{"status=unverified", "q/esc/ctrl+c close resume view"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("resume view missing %q\n%s", want, view)
+		}
 	}
 	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	if cmd == nil {

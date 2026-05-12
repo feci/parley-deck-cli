@@ -439,6 +439,11 @@ func agentDuration(agent runstate.AgentState) time.Duration {
 	if agent.Duration > 0 {
 		return agent.Duration
 	}
+	if agent.State == runstate.StateRunning && !agent.StartedAt.IsZero() {
+		if elapsed := time.Since(agent.StartedAt); elapsed > 0 {
+			return elapsed
+		}
+	}
 	return 0
 }
 
@@ -470,12 +475,16 @@ func ideaForRun(status protocol.WorkspaceStatus, run runstate.RunSummary) protoc
 			return idea
 		}
 	}
-	return protocol.IdeaStatus{
-		Slug:         valueOr(run.IdeaSlug, "unknown"),
+	slug := valueOr(run.IdeaSlug, "unknown")
+	idea := protocol.IdeaStatus{
+		Slug:         slug,
 		Status:       "unknown",
 		Participants: run.Participants,
-		Path:         filepath.Join(status.Root, protocol.DeckDir, "ideas", run.IdeaSlug),
 	}
+	if slug != "unknown" {
+		idea.Path = filepath.Join(status.Root, protocol.DeckDir, "ideas", slug)
+	}
+	return idea
 }
 
 func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
