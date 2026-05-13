@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runstate"
@@ -359,6 +361,189 @@ func TestConsensusCLIWorkflowAndIdeaStatus(t *testing.T) {
 	}
 }
 
+func TestConsensusRequestSignoffsHappyPath(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha", "beta"}, false, nil)
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
+	beta := writeFakeSignoffCLI(t, bin, "beta", "accept", 0)
+	writeAgentsLocalConfig(t, root,
+		fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal},
+		fakeAgentConfig{ID: "beta", Path: beta, Backend: agents.ExternalLocal},
+	)
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	for _, want := range []string{"Requesting signoff from alpha", "Requesting signoff from beta", "Requested signoffs complete: alpha,beta"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("stdout missing %q:\n%s", want, stdout.String())
+		}
+	}
+	summary, err := consensus.Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != consensus.TriageReady || len(summary.Signoffs) != 2 {
+		t.Fatalf("summary=%+v", summary)
+	}
+}
+
+func TestConsensusRequestSignoffsDryRunAndHostedGate(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalHosted})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "--dry-run", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("dry-run code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	for _, want := range []string{"Consensus signoff request dry-run", "Requires --yes: yes", "alpha backend=hosted"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("dry-run stdout missing %q:\n%s", want, stdout.String())
+		}
+	}
+	summary, err := consensus.Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(summary.Signoffs) != 0 {
+		t.Fatalf("dry-run wrote signoffs: %+v", summary.Signoffs)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("hosted gate code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "rerun with --yes or --dry-run") {
+		t.Fatalf("stderr=%q", stderr.String())
+	}
+}
+
+func TestConsensusRequestSignoffsRejectsAlreadySignedExplicitParticipant(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha", "beta"}, false, map[string]string{"alpha": "accept"})
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "--participants", "alpha", "sample"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "participant alpha already signed") {
+		t.Fatalf("stderr=%q", stderr.String())
+	}
+}
+
+func TestConsensusRequestSignoffsReviewPath(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha"}, true, nil)
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "--review", "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	summary, err := consensus.Status(root, "sample", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != consensus.TriageReady || len(summary.Signoffs) != 1 {
+		t.Fatalf("summary=%+v", summary)
+	}
+	data, err := os.ReadFile(filepath.Join(root, protocol.DeckDir, "ideas", "sample", "review", "consensus.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Signoff: alpha") {
+		t.Fatalf("review consensus not signed:\n%s", string(data))
+	}
+}
+
+func TestConsensusRequestSignoffsNonZeroAfterAppendFails(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 7)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "exited with error after appending valid signoff") {
+		t.Fatalf("stderr=%q", stderr.String())
+	}
+	summary, err := consensus.Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != consensus.TriageReady {
+		t.Fatalf("summary=%+v", summary)
+	}
+}
+
+func TestConsensusRequestSignoffsBlockStops(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "block", 0)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "alpha appended BLOCK signoff") {
+		t.Fatalf("stderr=%q", stderr.String())
+	}
+	summary, err := consensus.Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != consensus.TriageBlocked {
+		t.Fatalf("summary=%+v", summary)
+	}
+}
+
 func TestResumeReportsKnownIdeaWithNoRuns(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
@@ -390,6 +575,95 @@ func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
 	if duration <= 0 {
 		t.Fatalf("duration=%s, want elapsed duration", duration)
 	}
+}
+
+type fakeAgentConfig struct {
+	ID      string
+	Path    string
+	Backend string
+}
+
+func writeAgentsLocalConfig(t *testing.T, root string, entries ...fakeAgentConfig) {
+	t.Helper()
+	var b strings.Builder
+	for _, entry := range entries {
+		backend := entry.Backend
+		if backend == "" {
+			backend = agents.ExternalLocal
+		}
+		fmt.Fprintf(&b, "[agents.%s]\n", entry.ID)
+		fmt.Fprintf(&b, "command = %q\n", entry.Path)
+		fmt.Fprintln(&b, "prompt_mode = \"stdin\"")
+		fmt.Fprintf(&b, "external_backend = %q\n", backend)
+		fmt.Fprintln(&b, "timeout_ms = 5000")
+		fmt.Fprintln(&b)
+	}
+	path := filepath.Join(root, protocol.DeckDir, "agents.local.toml")
+	if err := os.WriteFile(path, []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeConsensusIdea(t *testing.T, root, slug string, participants []string, review bool, signoffs map[string]string) {
+	t.Helper()
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", slug)
+	if err := os.MkdirAll(filepath.Join(ideaDir, "round-01"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	prompt := fmt.Sprintf("---\nidea: %s\nparticipants: [%s]\nstatus: consensus\n---\n", slug, strings.Join(participants, ", "))
+	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	consensusDir := ideaDir
+	if review {
+		consensusDir = filepath.Join(ideaDir, "review")
+		if err := os.MkdirAll(consensusDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "---\nidea: %s\n---\n\n## Signoffs\n", slug)
+	for _, participant := range participants {
+		status, ok := signoffs[participant]
+		if !ok {
+			continue
+		}
+		fmt.Fprintf(&b, "\n### Signoff: %s - 2026-05-13\nStatus: %s\nNotes: seeded signoff.\n", participant, status)
+	}
+	if err := os.WriteFile(filepath.Join(consensusDir, "consensus.md"), []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeFakeSignoffCLI(t *testing.T, dir, name, status string, exitCode int) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	counter := ""
+	notes := name + " accepts."
+	if status == "block" {
+		notes = name + " blocks."
+		counter = "Counter-proposal: revise the consensus.\n"
+	}
+	body := fmt.Sprintf(`#!/bin/sh
+prompt=$(mktemp)
+cat > "$prompt"
+path=$(awk -F': ' '/^Consensus file to sign:/ {print $2; exit}' "$prompt")
+if [ -z "$path" ]; then
+  exit 3
+fi
+cat >> "$path" <<'SIGNOFF'
+
+### Signoff: %[1]s - 2026-05-13
+Status: %[2]s
+Notes: %[3]s
+%[4]sSIGNOFF
+exit %[5]d
+`, name, status, notes, counter, exitCode)
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func writeFakeCLI(t *testing.T, dir, name, version string) {

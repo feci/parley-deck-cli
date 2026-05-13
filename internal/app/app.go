@@ -50,7 +50,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case "agents":
 		return runAgents(ctx, args[1:], stdout, stderr)
 	case "consensus":
-		return runConsensus(args[1:], stdout, stderr)
+		return runConsensus(ctx, args[1:], stdout, stderr)
 	case "status":
 		return runStatus(args[1:], stdout, stderr)
 	case "run":
@@ -74,7 +74,7 @@ func printUsage(w io.Writer) {
 Usage:
   %s init [--dir DIR]
   %s agents list|verify
-  %s consensus status|draft|signoff|finalize|reopen
+  %s consensus status|draft|signoff|request-signoffs|finalize|reopen
   %s status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
@@ -197,7 +197,7 @@ func runAgentsVerify(ctx context.Context, args []string, stdout, stderr io.Write
 	return 0
 }
 
-func runConsensus(args []string, stdout, stderr io.Writer) int {
+func runConsensus(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		printConsensusUsage(stderr)
 		return 2
@@ -209,6 +209,8 @@ func runConsensus(args []string, stdout, stderr io.Writer) int {
 		return runConsensusDraft(args[1:], stdout, stderr)
 	case "signoff":
 		return runConsensusSignoff(args[1:], stdout, stderr)
+	case "request-signoffs":
+		return runConsensusRequestSignoffs(ctx, args[1:], stdout, stderr)
 	case "finalize":
 		return runConsensusFinalize(args[1:], stdout, stderr)
 	case "reopen":
@@ -220,7 +222,7 @@ func runConsensus(args []string, stdout, stderr io.Writer) int {
 }
 
 func printConsensusUsage(w io.Writer) {
-	fmt.Fprintln(w, "usage: parley consensus status|draft|signoff|finalize|reopen")
+	fmt.Fprintln(w, "usage: parley consensus status|draft|signoff|request-signoffs|finalize|reopen")
 }
 
 func runConsensusStatus(args []string, stdout, stderr io.Writer) int {
