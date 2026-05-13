@@ -125,19 +125,31 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		if len(before.Errors) > 0 {
 			return fmt.Errorf("target consensus became malformed before %s: %s", agent.ID, strings.Join(before.Errors, "; "))
 		}
+		beforeRaw, err := os.ReadFile(before.Path)
+		if err != nil {
+			return err
+		}
 
 		prompt := buildConsensusSignoffPrompt(rootAbs, summary.Path, opts.Review, agent.ID)
 		runErr := runSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)
 
 		after, statusErr := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 		if statusErr != nil {
+			printPartialProgress(stdout, successes)
 			return statusErr
 		}
-		signoff, validateErr := validateRequestedSignoff(before, after, agent.ID)
+		afterRaw, err := os.ReadFile(after.Path)
+		if err != nil {
+			printPartialProgress(stdout, successes)
+			return err
+		}
+		signoff, validateErr := validateRequestedSignoff(before, after, agent.ID, string(beforeRaw), string(afterRaw))
 		if validateErr != nil {
+			printPartialProgress(stdout, successes)
 			return validateErr
 		}
 		if runErr != nil {
+			printPartialProgress(stdout, successes)
 			return fmt.Errorf("%s exited with error after appending valid signoff: %w", agent.ID, runErr)
 		}
 
@@ -199,10 +211,10 @@ func requestSignoffAgents(targets []string, discovered []agents.Discovery) ([]ag
 	for _, target := range targets {
 		agent, ok := byID[target]
 		if !ok {
-			return nil, fmt.Errorf("participant %s has no configured runner entry", target)
+			return nil, fmt.Errorf("%w: participant %s has no configured runner entry", errRequestUsage, target)
 		}
 		if !agent.Found {
-			return nil, fmt.Errorf("participant %s runner is not installed", target)
+			return nil, fmt.Errorf("%w: participant %s runner is not installed", errRequestUsage, target)
 		}
 		selected = append(selected, agent)
 	}
@@ -270,15 +282,21 @@ func requestSignoffTimeout(agent agents.Discovery) time.Duration {
 	return time.Duration(timeoutMS) * time.Millisecond
 }
 
-func validateRequestedSignoff(before, after consensus.Summary, agentID string) (consensus.Signoff, error) {
+func validateRequestedSignoff(before, after consensus.Summary, agentID, beforeRaw, afterRaw string) (consensus.Signoff, error) {
 	if len(after.Errors) > 0 {
 		return consensus.Signoff{}, fmt.Errorf("target consensus is malformed after %s: %s", agentID, strings.Join(after.Errors, "; "))
+	}
+	if err := validateAppendOnlyContent(beforeRaw, afterRaw, agentID); err != nil {
+		return consensus.Signoff{}, err
 	}
 
 	beforeByAgent := signoffsByAgent(before.Signoffs)
 	afterByAgent := signoffsByAgent(after.Signoffs)
 	if _, ok := beforeByAgent[agentID]; ok {
 		return consensus.Signoff{}, fmt.Errorf("participant %s was already signed before invocation", agentID)
+	}
+	if newAgents := newSignoffAgents(beforeByAgent, afterByAgent); len(newAgents) != 1 || newAgents[0] != agentID {
+		return consensus.Signoff{}, fmt.Errorf("%s appended unexpected signoff set: %s", agentID, strings.Join(newAgents, ","))
 	}
 	signoff, ok := afterByAgent[agentID]
 	if !ok {
@@ -306,6 +324,56 @@ func validateRequestedSignoff(before, after consensus.Summary, agentID string) (
 	return signoff, nil
 }
 
+func validateAppendOnlyContent(beforeRaw, afterRaw, agentID string) error {
+	if !strings.HasPrefix(afterRaw, beforeRaw) {
+		return fmt.Errorf("%s changed existing consensus content outside the append-only suffix", agentID)
+	}
+	suffix := strings.TrimSpace(strings.TrimPrefix(afterRaw, beforeRaw))
+	if suffix == "" {
+		return nil
+	}
+	headerAgents := signoffHeaderAgents(suffix)
+	if len(headerAgents) != 1 {
+		return fmt.Errorf("%s appended %d signoff blocks; expected exactly one", agentID, len(headerAgents))
+	}
+	if headerAgents[0] != agentID {
+		return fmt.Errorf("%s appended signoff for %s", agentID, headerAgents[0])
+	}
+	return nil
+}
+
+func signoffHeaderAgents(raw string) []string {
+	var agents []string
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "### Signoff:") {
+			continue
+		}
+		rest := strings.TrimSpace(strings.TrimPrefix(line, "### Signoff:"))
+		if agent, _, ok := strings.Cut(rest, "—"); ok {
+			agents = append(agents, strings.TrimSpace(agent))
+			continue
+		}
+		if idx := strings.LastIndex(rest, " - "); idx >= 0 {
+			agents = append(agents, strings.TrimSpace(rest[:idx]))
+			continue
+		}
+		agents = append(agents, strings.TrimSpace(rest))
+	}
+	return agents
+}
+
+func newSignoffAgents(beforeByAgent, afterByAgent map[string]consensus.Signoff) []string {
+	var agents []string
+	for agent := range afterByAgent {
+		if _, ok := beforeByAgent[agent]; !ok {
+			agents = append(agents, agent)
+		}
+	}
+	sort.Strings(agents)
+	return agents
+}
+
 func signoffsByAgent(signoffs []consensus.Signoff) map[string]consensus.Signoff {
 	byAgent := make(map[string]consensus.Signoff, len(signoffs))
 	for _, signoff := range signoffs {
@@ -321,14 +389,14 @@ func buildConsensusSignoffPrompt(rootAbs, consensusPath string, review bool, age
 	}
 	ideaDir := ideaDirFromConsensusPath(consensusAbs, review)
 	rounds := roundDirsForPrompt(ideaDir, review)
-	return fmt.Sprintf(`You are Parley Deck participant %q in the consensus signoff phase.
+	return fmt.Sprintf(`You are Parley Deck participant %s in the consensus signoff phase.
 
 Repository root: %s
 Consensus file to sign: %s
 
 Protocol rules:
 - Edit exactly one file: the consensus file above.
-- Append exactly one signoff block for %q under ## Signoffs.
+- Append exactly one signoff block for %s under ## Signoffs.
 - Do not edit or rewrite any existing line, and do not edit any other file.
 - Read enough context to make your own signoff decision.
 - Use one canonical status: %s, %s, or %s.
@@ -345,6 +413,7 @@ Canonical block shape:
 ### Signoff: %s — %s
 Status: %s
 Notes: <brief note>
+Counter-proposal (required if ❌): <counter-proposal if status is ❌ BLOCK>
 
 Return a short confirmation after appending.
 `, agentID,
@@ -360,6 +429,13 @@ Return a short confirmation after appending.
 		agentID,
 		time.Now().Format("2006-01-02"),
 		consensus.StatusAccept)
+}
+
+func printPartialProgress(stdout io.Writer, successes []string) {
+	if len(successes) == 0 {
+		return
+	}
+	fmt.Fprintf(stdout, "Signoffs accepted before failure: %s\n", strings.Join(successes, ","))
 }
 
 func ideaDirFromConsensusPath(consensusPath string, review bool) string {

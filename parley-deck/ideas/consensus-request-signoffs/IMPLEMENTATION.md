@@ -7,6 +7,7 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/12
 branch: feature-consensus-request-signoffs
 base: main
 design-pr: https://github.com/feci/parley-deck-cli/pull/11
+fix-up-cycle: 1
 ---
 
 ## Summary
@@ -60,3 +61,22 @@ Review should focus on:
 - post-invocation validation strictness;
 - error codes for usage/safety vs runtime failures;
 - whether the command should add durable run logs in a later slice.
+
+## Fix-up cycle 1
+
+Applied agreed fixes from `review/consensus.md`:
+
+- reject invocations that append any signoff for a participant other than the expected agent;
+- reject changes to existing consensus content outside the append-only suffix;
+- print accepted signoffs before returning a mid-loop failure;
+- include `Counter-proposal` guidance in the signoff prompt for `BLOCK`;
+- map missing/unconfigured runner preflight failures to usage/safety exit code 2;
+- remove quoted agent IDs from normal prompt prose;
+- add regression tests for forged extra signoffs and edits to existing consensus content.
+
+Verification:
+
+- `GOCACHE=/private/tmp/parley-go-build-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./internal/app -run 'TestConsensusRequestSignoffs'`
+- `GOCACHE=/private/tmp/parley-go-build-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
+
+Ready for re-review of fix-up cycle 1.
