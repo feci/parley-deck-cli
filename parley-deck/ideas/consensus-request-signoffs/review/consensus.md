@@ -35,3 +35,7 @@ reviewed-commit: d9337399c238a1e7b72b2d75cf4bbc24590c22ea
 ### Signoff: codex — 2026-05-13
 Status: ✅ ACCEPT
 Notes: The agreed fixes match the review findings and should be addressed in fix-up cycle 1 before re-review.
+
+### Signoff: claude — 2026-05-13
+Status: ✅ ACCEPT
+Notes: Agreed fixes cover my MAJOR (forged extra signoff) and all MINOR/NIT findings, including the non-signoff edit detection raised in my open questions.
