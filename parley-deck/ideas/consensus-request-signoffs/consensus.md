@@ -65,3 +65,7 @@ Notes: Matches my round-02 converged proposal: missing-in-prompt-order default, 
 ### Signoff: gemini — 2026-05-13
 Status: ✅ ACCEPT
 Notes: Aligns with my round-02 position. The proposal correctly prioritizes sequential execution and post-invocation verification to ensure file integrity. Using the prompt's participant list as the default order is deterministic and respects the original design intent. The inclusion of the --yes gate for external backends and a robust dry-run mode addresses my safety and cost concerns.
+
+### Signoff: hermes — 2026-05-13
+Status: ✅ ACCEPT
+Notes: Matches the cooperation protocol: sequential append-only signoffs with strict post-invocation verification of exactly one new canonical block, no foreign edits, and no BLOCK status. The design correctly reuses internal primitives and enforces the --yes safety gate for hosted agents.
