@@ -57,3 +57,7 @@ date: 2026-05-13
 ### Signoff: codex — 2026-05-13
 Status: ✅ ACCEPT
 Notes: Ready for finalization after the remaining participants append their own signoffs.
+
+### Signoff: claude — 2026-05-13
+Status: ✅ ACCEPT
+Notes: Matches my round-02 converged proposal: missing-in-prompt-order default, `--participants` as ordered target set with hard fail on unknown/already-signed, `--yes` hosted gate, sequential invocation, append-only prompt with absolute paths, and post-invocation re-parse that checks count+1, canonical shape, no foreign-block changes, not BLOCK, and zero exit. The five clarifications I flagged (prompt-as-paths, snapshot mechanism, parser API surface, frontmatter parser location, workdir handoff) are correctly left as implementation decisions for the shipping PR.
