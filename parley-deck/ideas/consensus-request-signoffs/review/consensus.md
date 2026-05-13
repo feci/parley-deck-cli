@@ -39,3 +39,7 @@ Notes: The agreed fixes match the review findings and should be addressed in fix
 ### Signoff: claude — 2026-05-13
 Status: ✅ ACCEPT
 Notes: Agreed fixes cover my MAJOR (forged extra signoff) and all MINOR/NIT findings, including the non-signoff edit detection raised in my open questions.
+
+### Signoff: gemini — 2026-05-13
+Status: ✅ ACCEPT
+Notes: Agreed fixes address my MAJOR finding on file integrity and all MINOR/NIT feedback.
