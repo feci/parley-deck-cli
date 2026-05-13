@@ -3,7 +3,7 @@ idea: consensus-request-signoffs
 author: codex
 created: 2026-05-13
 participants: [codex, claude, gemini, hermes]
-status: consensus
+status: final
 ---
 
 ## Problem / idea
