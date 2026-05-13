@@ -1,7 +1,7 @@
 ---
 idea: consensus-request-signoffs
 implemented-by: codex
-status: ready-for-review
+status: complete
 date: 2026-05-13
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/12
 branch: feature-consensus-request-signoffs
@@ -80,3 +80,14 @@ Verification:
 - `GOCACHE=/private/tmp/parley-go-build-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
 
 Ready for re-review of fix-up cycle 1.
+
+## Review closeout
+
+Review round 02 approved fix-up cycle 1 with no remaining agreed fixes. Final review consensus is recorded in `review/consensus.md`; the cycle-1 consensus with agreed fixes is preserved in `review/consensus-cycle-01.md`.
+
+Live smoke verification:
+
+- `GOCACHE=/private/tmp/parley-go-build-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go run ./cmd/parley consensus request-signoffs --review --participants claude,gemini,hermes --dry-run consensus-request-signoffs`
+- `GOCACHE=/private/tmp/parley-go-build-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go run ./cmd/parley consensus request-signoffs --review --participants claude,gemini,hermes --yes consensus-request-signoffs`
+
+The live command successfully invoked Claude, Gemini, and Hermes sequentially and validated all three review-consensus signoffs.
