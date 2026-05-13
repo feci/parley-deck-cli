@@ -43,3 +43,7 @@ Notes: Agreed fixes cover my MAJOR (forged extra signoff) and all MINOR/NIT find
 ### Signoff: gemini — 2026-05-13
 Status: ✅ ACCEPT
 Notes: Agreed fixes address my MAJOR finding on file integrity and all MINOR/NIT feedback.
+
+### Signoff: hermes — 2026-05-13
+Status: ✅ ACCEPT
+Notes: No findings in round 1; implementation matches spec. Ready after agreed fixes.
