@@ -1,11 +1,11 @@
 ---
 idea: tui-agent-controls
-status: implemented
+status: fix-up-cycle-1
 implementer: codex
 started: 2026-05-14
 completed: 2026-05-14
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli#impl-tui-agent-controls
-head-commit: f76d6ab
+head-commit: 3853565
 design-pr: https://github.com/feci/parley-deck-cli/pull/17
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/18
 ---
@@ -32,3 +32,22 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/18
   - `go test ./internal/tui`
   - `go test ./...`
   - PTY smoke: opened `parley tui --dir .`, sent dashboard keys, and exited with `q`.
+
+## Fix-up cycle 1
+
+status: fix-up-cycle-1
+completed: 2026-05-14
+head-commit: 3853565
+
+### Fixes applied
+
+- Removed the stale `initModel.View()` post-init branch.
+- Added symmetric headless command fallback rendering.
+- Removed trailing spaces from interactive command rendering.
+- Added `unknown` fallback for empty backend values.
+- Expanded footer copy to mention `shift+tab`, arrow keys, `esc`, and `ctrl+c`.
+- Added tests for arrow-key navigation, `h`/`m` overrides, focus-gated no-op mode keys, fallback command rendering, and backend fallback.
+
+### Deviations from agreed fixes
+
+- None.
