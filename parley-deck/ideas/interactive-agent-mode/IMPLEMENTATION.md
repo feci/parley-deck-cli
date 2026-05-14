@@ -1,6 +1,6 @@
 ---
 idea: interactive-agent-mode
-implemented-by: codex
+implementer: codex
 status: implemented
 date: 2026-05-14
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/14

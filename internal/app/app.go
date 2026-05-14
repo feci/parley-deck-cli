@@ -555,6 +555,9 @@ func resumePendingConsensusSignoffs(root string, run runstate.RunSummary, stdout
 		if completed[agent] || !signed[agent] {
 			continue
 		}
+		if err := validateResumedConsensusHandoff(event, summary); err != nil {
+			return err
+		}
 		artifact := ""
 		if value, ok := event.Data["artifact"].(string); ok {
 			artifact = value
@@ -574,6 +577,66 @@ func resumePendingConsensusSignoffs(root string, run runstate.RunSummary, stdout
 		fmt.Fprintf(stdout, "Validated pending signoff from %s.\n", agent)
 	}
 	return nil
+}
+
+func validateResumedConsensusHandoff(event store.Event, summary consensus.Summary) error {
+	agent := eventAgent(event)
+	artifact, _ := event.Data["artifact"].(string)
+	if agent == "" || artifact == "" {
+		return fmt.Errorf("pending handoff event is missing agent or artifact")
+	}
+	beforeLen, ok := eventDataInt(event.Data, "before_len")
+	if !ok || beforeLen < 0 {
+		return fmt.Errorf("pending handoff for %s is missing before_len", agent)
+	}
+	beforeHash, _ := event.Data["before_sha256"].(string)
+	if beforeHash == "" {
+		return fmt.Errorf("pending handoff for %s is missing before_sha256", agent)
+	}
+	data, err := os.ReadFile(artifact)
+	if err != nil {
+		return err
+	}
+	if len(data) < beforeLen {
+		return fmt.Errorf("%s changed existing consensus content before %s signoff", agent, agent)
+	}
+	beforeRaw := string(data[:beforeLen])
+	afterRaw := string(data)
+	if got := sha256Hex(beforeRaw); got != beforeHash {
+		return fmt.Errorf("%s changed existing consensus content before append-only suffix", agent)
+	}
+	if err := validateAppendOnlyContent(beforeRaw, afterRaw, agent); err != nil {
+		return err
+	}
+	var found bool
+	for _, signoff := range summary.Signoffs {
+		if signoff.Agent != agent {
+			continue
+		}
+		found = true
+		status, err := consensus.CanonicalStatus(signoff.Status)
+		if err != nil {
+			return err
+		}
+		if status == consensus.StatusBlock {
+			return fmt.Errorf("%s appended BLOCK signoff", agent)
+		}
+	}
+	if !found {
+		return fmt.Errorf("%s did not append a signoff", agent)
+	}
+	return nil
+}
+
+func eventDataInt(data map[string]any, key string) (int, bool) {
+	switch value := data[key].(type) {
+	case int:
+		return value, true
+	case float64:
+		return int(value), true
+	default:
+		return 0, false
+	}
 }
 
 func eventAgent(event store.Event) string {

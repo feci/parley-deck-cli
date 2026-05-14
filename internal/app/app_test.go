@@ -454,7 +454,7 @@ func TestConsensusRequestSignoffsManualModeWritesHandoff(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
-	if code != 0 {
+	if code != 3 {
 		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
 	for _, want := range []string{"Requesting signoff from alpha (manual)", "Manual handoff for alpha", "Requested signoffs pending: alpha"} {
@@ -503,6 +503,67 @@ func TestConsensusRequestSignoffsManualModeWritesHandoff(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "Validated pending signoff from alpha.") {
 		t.Fatalf("resume stdout=%q", stdout.String())
+	}
+}
+
+func TestResumeRejectsManualSignoffAfterExistingContentEdit(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+	consensusPath := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
+	data, err := os.ReadFile(consensusPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data = []byte(strings.Replace(string(data), "## Signoffs", "## Context\nOriginal.\n\n## Signoffs", 1))
+	if err := os.WriteFile(consensusPath, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{
+		ID:         "alpha",
+		Path:       alpha,
+		Backend:    agents.ExternalLocal,
+		LaunchMode: agents.LaunchManual,
+	})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 3 {
+		t.Fatalf("manual code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	entries, err := os.ReadDir(filepath.Join(root, protocol.DeckDir, "runs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tampered, err := os.ReadFile(consensusPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tampered = []byte(strings.Replace(string(tampered), "Original.", "Changed.", 1))
+	if err := os.WriteFile(consensusPath, tampered, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := consensus.AppendSignoff(root, "sample", consensus.SignoffOptions{
+		Agent:  "alpha",
+		Status: "accept",
+		Notes:  "manual signoff.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"resume", "--dir", root, "--no-tui", entries[0].Name()}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("resume code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "changed existing consensus content") {
+		t.Fatalf("stderr=%q", stderr.String())
 	}
 }
 

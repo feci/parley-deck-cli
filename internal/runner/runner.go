@@ -262,7 +262,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	if _, statErr := os.Stat(outputPath); statErr == nil {
-		if validateErr := ValidateArtifact(outputPath, agent.ID, opts.Idea.Slug, opts.Round); validateErr != nil {
+		if validateErr := ValidateRoundOneArtifact(outputPath, agent.ID, opts.Idea.Slug); validateErr != nil {
 			result.ExitError = combineError(result.ExitError, validateErr)
 		} else {
 			result.ArtifactOK = true

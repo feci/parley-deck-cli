@@ -3,13 +3,12 @@ package runner
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"parley-deck-cli/internal/protocol"
 )
 
-func ValidateArtifact(path, agentID, ideaSlug string, round int) error {
+func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
 	meta, err := protocol.ReadFrontmatter(path)
 	if err != nil {
 		return err
@@ -17,7 +16,7 @@ func ValidateArtifact(path, agentID, ideaSlug string, round int) error {
 	for key, want := range map[string]string{
 		"agent": agentID,
 		"idea":  ideaSlug,
-		"round": strconv.Itoa(round),
+		"round": "1",
 	} {
 		if got := strings.Trim(strings.TrimSpace(meta[key]), `"'`); got != want {
 			return fmt.Errorf("%s frontmatter %s=%q, want %q", path, key, got, want)

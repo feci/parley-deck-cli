@@ -53,10 +53,7 @@ func WriteHandoffPacket(opts HandoffOptions) (HandoffPacket, error) {
 
 func handoffInstructions(opts HandoffOptions, packet HandoffPacket) string {
 	command := agents.InteractiveCommandOrDefault(opts.Agent.Spec)
-	args := append([]string(nil), opts.Agent.InteractiveArgs...)
-	for i, arg := range args {
-		args[i] = strings.ReplaceAll(arg, "{prompt_path}", packet.PromptPath)
-	}
+	args := ExpandInteractiveArgs(opts.Agent.InteractiveArgs, opts.Root, packet.PromptPath, opts.TargetPath)
 	if command == "" {
 		command = "<configure interactive_command>"
 	}
@@ -96,4 +93,15 @@ func quoteShellArgs(args []string) []string {
 		quoted[i] = arg
 	}
 	return quoted
+}
+
+func ExpandInteractiveArgs(args []string, root, promptPath, targetPath string) []string {
+	out := make([]string, len(args))
+	for i, arg := range args {
+		arg = strings.ReplaceAll(arg, "{root}", root)
+		arg = strings.ReplaceAll(arg, "{prompt_path}", promptPath)
+		arg = strings.ReplaceAll(arg, "{target_path}", targetPath)
+		out[i] = arg
+	}
+	return out
 }
