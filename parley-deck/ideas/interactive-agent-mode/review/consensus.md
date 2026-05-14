@@ -38,3 +38,15 @@ reviewed-commit: 348b693
 ### Signoff: codex — 2026-05-14
 Status: ✅ ACCEPT
 Notes: Accept. The agreed fixes capture the real correctness issues before merge, especially append-only validation for manual/resume handoffs.
+
+### Signoff: claude — 2026-05-14
+Status: ✅ ACCEPT
+Notes: Accept. All round-01 findings I raised are routed correctly: the CRITICAL append-only bypass for manual/resume is in agreed fixes with the right shape (persist pre-handoff hash, re-validate in resume), both MAJORs and all MINORs/NITs are agreed, and my open questions are resolved — `before_sha256` is implicitly handled by the CRITICAL fix, mixed-mode validation and `--allow-interactive-noninteractive` are appropriately deferred.
+
+### Signoff: gemini — 2026-05-14
+Status: ✅ ACCEPT
+Notes: Accept. My findings on Round 2+ validation and manual exit semantics are addressed in agreed fixes. Deferring signal handling for `spawn-tty` and mixed-mode resume polish to subsequent slices is appropriate for this foundational implementation.
+
+### Signoff: hermes — 2026-05-14
+Status: ✅ ACCEPT
+Notes: Accept. Round-01 findings on hosted confirmation and validation are addressed by the agreed append-only fixes and dismissals; all critical path issues for manual/resume are now covered.
