@@ -1,11 +1,11 @@
 ---
 idea: tui-init-bootstrap
-status: implemented
+status: complete
 implementer: codex
 started: 2026-05-14
 completed: 2026-05-14
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli#impl-tui-init-bootstrap
-head-commit: 6f16a40
+head-commit: 20a568c
 design-pr: https://github.com/feci/parley-deck-cli/pull/15
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/16
 ---
@@ -27,3 +27,9 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/16
 ## Deviations from FINAL
 
 - None.
+
+## Review result
+
+- Review consensus: ./review/consensus.md
+- Required fixes: none.
+- Deferred follow-ups are non-blocking and recorded in review consensus.
