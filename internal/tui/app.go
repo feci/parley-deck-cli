@@ -185,10 +185,6 @@ func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m initModel) View() string {
-	if m.status != nil {
-		return model{status: *m.status, agents: m.agents, width: m.width}.View()
-	}
-
 	width := m.width
 	if width < 80 {
 		width = 80
@@ -315,13 +311,9 @@ func (m model) renderAgentDetails() string {
 	b.WriteString(modeLine + "\n")
 	b.WriteString(fmt.Sprintf("model: %s  reasoning/profile: %s\n", valueOrDefault(agent.Model), valueOrDefault(firstNonEmpty(agent.Reasoning, agent.Profile))))
 	b.WriteString(fmt.Sprintf("sandbox: %s  approval: %s\n", valueOrDefault(agent.SandboxMode), valueOrDefault(agent.ApprovalPolicy)))
-	b.WriteString(fmt.Sprintf("timeout: %dms  backend: %s  isolated home: %s\n", timeoutMS(agent), valueOrDefault(agent.ExternalBackend), yesNo(agent.IsolateHome)))
-	if agent.HeadlessMode != "" {
-		b.WriteString(fmt.Sprintf("headless: %s\n", agent.HeadlessMode))
-	} else if len(agent.HeadlessArgs) > 0 {
-		b.WriteString(fmt.Sprintf("headless args: %s\n", strings.Join(agent.HeadlessArgs, " ")))
-	}
-	b.WriteString(fmt.Sprintf("interactive: %s %s\n", valueOrDefault(agents.InteractiveCommandOrDefault(agent.Spec)), strings.Join(agent.InteractiveArgs, " ")))
+	b.WriteString(fmt.Sprintf("timeout: %dms  backend: %s  isolated home: %s\n", timeoutMS(agent), backendOrUnknown(agent.ExternalBackend), yesNo(agent.IsolateHome)))
+	b.WriteString(fmt.Sprintf("headless: %s\n", headlessCommandLine(agent)))
+	b.WriteString(fmt.Sprintf("interactive: %s\n", interactiveCommandLine(agent)))
 	b.WriteString(fmt.Sprintf("prompt: %s  invoke: %s\n", agents.InteractivePromptModeOrDefault(agent.InteractivePromptMode), agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke)))
 	if agent.InteractiveNotes != "" {
 		b.WriteString(fmt.Sprintf("interactive notes: %s\n", agent.InteractiveNotes))
@@ -333,7 +325,7 @@ func (m model) renderAgentDetails() string {
 }
 
 func (m model) renderFooter() string {
-	return "Keys: tab focus  j/k select  h/i/m set agent mode  x clear mode  q quit.  Mode overrides are session-only preview; this dashboard does not launch agents."
+	return "Keys: tab/shift+tab focus  j/k/up/down select  h/i/m set agent mode  x clear mode  q/esc/ctrl+c quit.  Mode overrides are session-only preview; this dashboard does not launch agents."
 }
 
 func (m model) selectionMarker(zone focusZone, selected bool) string {
@@ -438,6 +430,34 @@ func valueOrDefault(value string) string {
 		return agents.CLIDefault
 	}
 	return value
+}
+
+func backendOrUnknown(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return agents.ExternalUnknown
+	}
+	return value
+}
+
+func headlessCommandLine(agent agents.Discovery) string {
+	switch {
+	case agent.HeadlessMode != "":
+		return agent.HeadlessMode
+	case len(agent.HeadlessArgs) > 0:
+		return strings.Join(agent.HeadlessArgs, " ")
+	case len(agent.Commands) > 0:
+		return agent.Commands[0]
+	default:
+		return agents.CLIDefault
+	}
+}
+
+func interactiveCommandLine(agent agents.Discovery) string {
+	command := valueOrDefault(agents.InteractiveCommandOrDefault(agent.Spec))
+	if len(agent.InteractiveArgs) == 0 {
+		return command
+	}
+	return command + " " + strings.Join(agent.InteractiveArgs, " ")
 }
 
 func timeoutMS(agent agents.Discovery) int {

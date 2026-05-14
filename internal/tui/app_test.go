@@ -113,11 +113,33 @@ func TestDashboardRendersSelectedAgentDetails(t *testing.T) {
 		"sandbox: workspace-write",
 		"headless: codex exec -",
 		"interactive: codex",
-		"Mode overrides are session-only preview",
+		"session-only preview",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("dashboard view missing %q\n%s", want, view)
 		}
+	}
+}
+
+func TestDashboardRendersFallbackCommandDetails(t *testing.T) {
+	m := newModel(testStatus(), testDiscoveries())
+	m.selectedAgent = 1
+	m.width = 120
+
+	view := m.View()
+	for _, want := range []string{
+		"id: claude",
+		"configured launch: interactive",
+		"backend: unknown",
+		"headless: claude",
+		"interactive: claude --resume {prompt_path}",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("dashboard view missing %q\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "interactive: claude \n") {
+		t.Fatalf("interactive command has trailing space\n%s", view)
 	}
 }
 
@@ -136,6 +158,17 @@ func TestDashboardAgentNavigationClamps(t *testing.T) {
 	m = updated.(model)
 	if m.selectedAgent != 1 {
 		t.Fatalf("selectedAgent=%d, want 1", m.selectedAgent)
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	m = updated.(model)
+	if m.selectedAgent != 0 {
+		t.Fatalf("selectedAgent=%d, want 0 after up", m.selectedAgent)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(model)
+	if m.selectedAgent != 1 {
+		t.Fatalf("selectedAgent=%d, want 1 after down", m.selectedAgent)
 	}
 }
 
@@ -172,7 +205,18 @@ func TestDashboardFocusSwitchPreservesSelection(t *testing.T) {
 func TestDashboardLaunchModeOverridesAreSessionOnly(t *testing.T) {
 	m := newModel(testStatus(), testDiscoveries())
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
+	m = updated.(model)
+	if got := m.launchOverrides["codex"]; got != agents.LaunchManual {
+		t.Fatalf("override=%q, want manual", got)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	m = updated.(model)
+	if got := m.launchOverrides["codex"]; got != agents.LaunchHeadless {
+		t.Fatalf("override=%q, want headless", got)
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
 	m = updated.(model)
 	if got := m.launchOverrides["codex"]; got != agents.LaunchInteractive {
 		t.Fatalf("override=%q, want interactive", got)
@@ -191,6 +235,21 @@ func TestDashboardLaunchModeOverridesAreSessionOnly(t *testing.T) {
 	}
 	if !strings.Contains(m.View(), "effective: headless") {
 		t.Fatalf("view did not return to configured mode\n%s", m.View())
+	}
+}
+
+func TestDashboardModeKeysNoopOutsideAgentFocus(t *testing.T) {
+	m := newModel(testStatus(), testDiscoveries())
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m = updated.(model)
+	if m.focus != focusIdeas {
+		t.Fatalf("focus=%s, want ideas", m.focus)
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	m = updated.(model)
+	if len(m.launchOverrides) != 0 {
+		t.Fatalf("override created while ideas pane focused: %+v", m.launchOverrides)
 	}
 }
 
@@ -234,7 +293,6 @@ func testDiscoveries() []agents.Discovery {
 				InteractiveArgs:       []string{"--resume", "{prompt_path}"},
 				InteractivePromptMode: agents.InteractivePromptFile,
 				InteractiveInvoke:     agents.InteractiveInvokePrintOnly,
-				ExternalBackend:       agents.ExternalHosted,
 			},
 			Path:    "/usr/bin/claude",
 			Found:   true,
