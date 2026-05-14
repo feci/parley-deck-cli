@@ -7,7 +7,7 @@ completed: 2026-05-14
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli#impl-tui-agent-controls
 head-commit: f76d6ab
 design-pr: https://github.com/feci/parley-deck-cli/pull/17
-implementation-pr: pending
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/18
 ---
 
 ## Summary of work
