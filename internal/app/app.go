@@ -1197,8 +1197,11 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 	status, err := protocol.ReadWorkspaceStatus(root)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			fmt.Fprintln(stderr, "no parley-deck workspace found; run `parley init` first")
-			return 1
+			if err := tui.RunInit(root, results); err != nil {
+				fmt.Fprintf(stderr, "tui failed: %v\n", err)
+				return 1
+			}
+			return 0
 		}
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
