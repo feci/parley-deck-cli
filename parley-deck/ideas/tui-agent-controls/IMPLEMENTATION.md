@@ -1,11 +1,11 @@
 ---
 idea: tui-agent-controls
-status: fix-up-cycle-1
+status: complete
 implementer: codex
 started: 2026-05-14
 completed: 2026-05-14
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli#impl-tui-agent-controls
-head-commit: 3853565
+head-commit: f5d5e45
 design-pr: https://github.com/feci/parley-deck-cli/pull/17
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/18
 ---
@@ -51,3 +51,9 @@ head-commit: 3853565
 ### Deviations from agreed fixes
 
 - None.
+
+## Review closeout
+
+Review round 02 approved fix-up cycle 1 with no remaining agreed fixes. The cycle-1 consensus with agreed fixes is preserved in `review/consensus-cycle-01.md`; the current `review/consensus.md` records zero agreed fixes and all participant signoffs.
+
+Implementation is complete.

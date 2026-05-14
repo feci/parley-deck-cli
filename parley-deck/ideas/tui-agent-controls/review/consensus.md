@@ -1,19 +1,14 @@
 ---
 idea: tui-agent-controls
-cycle: 1
+review-cycle: 2
 drafted-by: codex
 date: 2026-05-14
-reviewed-commit: f4315d4
+reviewed-commit: f5d5e45
 ---
 
 ## Agreed fixes
 
-- Remove the stale `initModel.View()` post-init branch that manually constructs an under-initialized dashboard model.
-- Render a headless command line even when an agent only has base `Commands` configured and no explicit `HeadlessMode` or `HeadlessArgs`.
-- Avoid trailing spaces in rendered interactive command lines.
-- Use an `unknown` backend fallback instead of `cli-default` when `ExternalBackend` is empty.
-- Extend footer copy to mention arrow keys, `shift+tab`, `esc`, and `ctrl+c`.
-- Add focused tests for arrow-key navigation, `h` and `m` mode overrides, and no-op mode keys while the ideas pane has focus.
+None. Review round 02 confirmed that all agreed fixes from cycle 1 were applied and introduced no new findings.
 
 ## Deferred follow-ups
 
@@ -22,9 +17,7 @@ reviewed-commit: f4315d4
 
 ## Dismissed findings
 
-- `shift+tab` using the same two-pane toggle as `tab` is acceptable for the current two-focus-zone dashboard.
-- Agent pane selection markers already distinguish focused selected rows (`>`) from unfocused selected rows (`.`); no fix required.
-- The effective mode line already adds `(session only)` when an override exists; no repeated label is required.
+None in review round 02.
 
 ## Signoffs
 
@@ -32,16 +25,16 @@ reviewed-commit: f4315d4
 
 ### Signoff: codex — 2026-05-14
 Status: ✅ ACCEPT
-Notes: Review consensus captures the agreed minor fix-up items before merge.
+Notes: Accept. Review round 02 has zero agreed fixes, so the implementation can be marked complete after participant signoffs.
 
 ### Signoff: claude — 2026-05-14
 Status: ✅ ACCEPT
-Notes: Agreed fixes cover all my round-01 findings (stale init branch, headless line symmetry, trailing-space, footer copy, and arrow/`h`/`m`/focus-gated test gaps). Deferred and dismissed items match my read of FINAL scope.
+Notes: All five round-01 findings I raised are verified resolved at f5d5e45 (init branch removal, headless symmetry, trailing-space guard, `unknown` backend fallback, footer help, plus arrow/`h`/`m`/focus-gating tests). Round-02 reviews from codex, gemini, and hermes report no remaining findings. Ready to merge.
 
 ### Signoff: gemini — 2026-05-14
 Status: ✅ ACCEPT
-Notes: The agreed fixes and tests address the primary risks of UI stale state and navigation predictability. The focus on rendering symmetry for headless lines and the addition of specific mode-override tests provide high confidence for this first interactive slice.
+Notes: Review round 02 confirmed all round-01 findings are resolved. Navigation, focus markers, and session-only overrides are correctly implemented and tested. No remaining findings.
 
 ### Signoff: hermes — 2026-05-14
 Status: ✅ ACCEPT
-Notes: All agreed fixes, deferred follow-ups, and dismissed findings precisely match the round-01 review scope and the original prompt constraints for a minimal interactive slice. Ready to merge.
+Notes: Round-02 review confirmed all agreed fixes from round-01 are present at f5d5e45 with zero remaining findings. Ready to merge.
