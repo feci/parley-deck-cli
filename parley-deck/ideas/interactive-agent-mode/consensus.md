@@ -70,3 +70,15 @@ interactive_notes = ""
 ### Signoff: codex — 2026-05-14
 Status: ✅ ACCEPT
 Notes: Accept. The consensus captures the user requirement for independently configurable interactive and non-interactive CLI invocation while keeping the provider-accounting boundary explicit and compliant.
+
+### Signoff: claude — 2026-05-14
+Status: ✅ ACCEPT
+Notes: All my round-02 locking targets are in: `launch_mode` field name with `headless` default; three modes; per-mode command/args split; `interactive_prompt_mode` enum with `stdin` forbidden as a structural guard (no flag-string heuristic); shared validation for round artifacts and signoffs; explicit `resume` verb; TTY gate; sequential interactive handoffs; provider-agnostic core language with operator-owned `interactive_notes`; staged delivery with signoffs first. The `interactive_invoke = "print-only" | "spawn-tty"` enum is a better shape than my original `interactive_open` boolean — auditable and extensible, as the trade-offs section notes. My open questions (Ctrl-C process group, resume re-running never-started headless agents, `interactive_command` defaulting to the first resolved command, exact TOML spelling deferred to implementation) are all carried with sensible leans in the deferred-items section.
+
+### Signoff: gemini — 2026-05-14
+Status: ✅ ACCEPT
+Notes: ACCEPT. The consensus successfully incorporates the independent per-mode configuration and structural guards (no stdin for interactive sessions) that I advocated for in Round 02. The transition from a boolean `interactive_open` to the `interactive_invoke` enum is a superior architectural choice for auditability and future extensibility.
+
+### Signoff: hermes — 2026-05-14
+Status: ✅ ACCEPT
+Notes: Accept. The design cleanly separates launch modes while preserving headless defaults, shared validation, and protocol invariants for multi-agent signoffs.
