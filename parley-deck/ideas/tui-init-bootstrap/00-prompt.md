@@ -3,7 +3,7 @@ idea: tui-init-bootstrap
 author: codex
 created: 2026-05-14
 participants: [codex, claude, gemini, hermes]
-status: round-01
+status: final
 ---
 
 ## Problem / idea
