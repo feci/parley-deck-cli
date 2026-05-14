@@ -1,14 +1,14 @@
 ---
 idea: interactive-agent-mode
 implementer: codex
-status: implemented
+status: fix-up-cycle-1
 date: 2026-05-14
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/14
 branch: feature/interactive-agent-mode
 base: main
 design-pr: https://github.com/feci/parley-deck-cli/pull/13
-head-commit: 91d51d3
-fix-up-cycle: 0
+head-commit: 3bde3a2
+fix-up-cycle: 1
 ---
 
 ## Summary
@@ -73,3 +73,23 @@ Review should focus on:
 - append-only consensus validation after interactive polling;
 - manual pending/resume behavior;
 - whether the stricter Round 1 artifact validation is too broad for existing headless runs.
+
+## Fix-up cycle 1
+
+Applied agreed fixes from `review/consensus.md`:
+
+- store `before_len` and `before_sha256` on signoff handoff events and make `resume` verify append-only content before marking pending signoffs complete;
+- unify placeholder expansion for handoff instructions, dry-run previews, and `spawn-tty` args;
+- change manual handoff instructions to point at `parley resume <run-id>`;
+- return exit code `3` for pending manual handoffs and document it;
+- rename the strict round artifact validator to `ValidateRoundOneArtifact` so its scope is explicit;
+- document why manual mode validates shared `interactive_*` handoff fields;
+- remove the unreachable `runInteractiveTTY` command fallback;
+- change the `IMPLEMENTATION.md` frontmatter key to `implementer`.
+
+Verification:
+
+- `GOCACHE=/private/tmp/parley-go-build-cache GOMODCACHE=/private/tmp/parley-go-mod-cache go test ./...`
+- `git diff --check`
+
+Ready for re-review of fix-up cycle 1.
