@@ -475,6 +475,13 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "resume failed: %v\n", err)
 		return 1
 	}
+	if err := resumePendingConsensusSignoffs(*root, run, stdout); err != nil {
+		fmt.Fprintf(stderr, "resume failed: %v\n", err)
+		return 1
+	}
+	if refreshed, err := runstate.ResolveRun(*root, fs.Arg(0)); err == nil {
+		run = refreshed
+	}
 	if *noTUI {
 		printRunDetail(stdout, run)
 		return 0
@@ -498,6 +505,83 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+func resumePendingConsensusSignoffs(root string, run runstate.RunSummary, stdout io.Writer) error {
+	if run.Mode != "consensus-signoff" {
+		return nil
+	}
+	events, err := store.New(run.RunDir).Load()
+	if err != nil {
+		return err
+	}
+	review := false
+	for _, event := range events {
+		if event.Type != "run.created" {
+			continue
+		}
+		if value, ok := event.Data["review"].(bool); ok {
+			review = value
+		}
+	}
+	summary, err := consensus.Status(root, run.IdeaSlug, review)
+	if err != nil {
+		return err
+	}
+	if len(summary.Errors) > 0 {
+		return fmt.Errorf("target consensus is malformed: %s", strings.Join(summary.Errors, "; "))
+	}
+	completed := map[string]bool{}
+	var pending []store.Event
+	for _, event := range events {
+		agent := eventAgent(event)
+		if agent == "" {
+			continue
+		}
+		switch event.Type {
+		case "agent.handoff.completed":
+			completed[agent] = true
+		case "agent.handoff.pending", "agent.handoff.started":
+			pending = append(pending, event)
+		}
+	}
+	signed := map[string]bool{}
+	for _, signoff := range summary.Signoffs {
+		signed[signoff.Agent] = true
+	}
+	runStore := store.New(run.RunDir)
+	for _, event := range pending {
+		agent := eventAgent(event)
+		if completed[agent] || !signed[agent] {
+			continue
+		}
+		artifact := ""
+		if value, ok := event.Data["artifact"].(string); ok {
+			artifact = value
+		}
+		if err := runStore.Append(store.Event{
+			Time: time.Now().UTC(),
+			Type: "agent.handoff.completed",
+			Data: map[string]any{
+				"agent":       agent,
+				"artifact":    artifact,
+				"launch_mode": event.Data["launch_mode"],
+			},
+		}); err != nil {
+			return err
+		}
+		completed[agent] = true
+		fmt.Fprintf(stdout, "Validated pending signoff from %s.\n", agent)
+	}
+	return nil
+}
+
+func eventAgent(event store.Event) string {
+	if event.Data == nil {
+		return ""
+	}
+	value, _ := event.Data["agent"].(string)
+	return value
 }
 
 func printJSON(stdout io.Writer, value any, stderr io.Writer) int {

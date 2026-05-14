@@ -109,6 +109,52 @@ func TestCodexBuiltInRuntimeDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadAgentSpecsInteractiveLaunchFields(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	local := filepath.Join(root, protocol.DeckDir, "agents.local.toml")
+	if err := os.WriteFile(local, []byte(`
+[agents.claude]
+launch_mode = "interactive"
+interactive_mode = "claude tty"
+interactive_command = "claude"
+interactive_args = ["--resume", "{prompt_path}"]
+interactive_prompt_mode = "file"
+interactive_invoke = "print-only"
+interactive_timeout_ms = 120000
+interactive_poll_ms = 500
+interactive_notes = "local note"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	specs, err := LoadAgentSpecs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claude := findSpec(t, specs, "claude")
+	if claude.LaunchMode != agents.LaunchInteractive {
+		t.Fatalf("launch=%q", claude.LaunchMode)
+	}
+	if claude.InteractiveMode != "claude tty" || claude.InteractiveCommand != "claude" {
+		t.Fatalf("interactive command fields: %+v", claude)
+	}
+	if got := strings.Join(claude.InteractiveArgs, " "); got != "--resume {prompt_path}" {
+		t.Fatalf("interactive args=%q", got)
+	}
+	if claude.InteractivePromptMode != agents.InteractivePromptFile || claude.InteractiveInvoke != agents.InteractiveInvokePrintOnly {
+		t.Fatalf("interactive mode/invoke: %+v", claude)
+	}
+	if claude.InteractiveTimeoutMS != 120000 || claude.InteractivePollMS != 500 {
+		t.Fatalf("interactive timeouts: %+v", claude)
+	}
+	if claude.InteractiveNotes != "local note" {
+		t.Fatalf("notes=%q", claude.InteractiveNotes)
+	}
+}
+
 func TestExpandPlaceholders(t *testing.T) {
 	root := filepath.Join("tmp", "repo")
 	temp := filepath.Join("tmp", "agent")

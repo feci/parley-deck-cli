@@ -20,25 +20,34 @@ type fileConfig struct {
 }
 
 type agentOverride struct {
-	Command         string            `toml:"command"`
-	Path            string            `toml:"path"`
-	Commands        []string          `toml:"commands"`
-	VersionArgs     []string          `toml:"version_args"`
-	HeadlessMode    string            `toml:"headless_mode"`
-	HeadlessArgs    []string          `toml:"headless_args"`
-	PromptMode      string            `toml:"prompt_mode"`
-	SandboxMode     string            `toml:"sandbox_mode"`
-	ApprovalPolicy  string            `toml:"approval_policy"`
-	Model           string            `toml:"model"`
-	Reasoning       string            `toml:"reasoning"`
-	Profile         string            `toml:"profile"`
-	Speed           string            `toml:"speed"`
-	TimeoutMS       int               `toml:"timeout_ms"`
-	IsolateHome     *bool             `toml:"isolate_home"`
-	IsolatedHomeEnv map[string]string `toml:"isolated_home_env"`
-	ExternalBackend string            `toml:"external_backend"`
-	Telemetry       string            `toml:"telemetry"`
-	Notes           string            `toml:"notes"`
+	Command               string            `toml:"command"`
+	Path                  string            `toml:"path"`
+	Commands              []string          `toml:"commands"`
+	VersionArgs           []string          `toml:"version_args"`
+	LaunchMode            string            `toml:"launch_mode"`
+	HeadlessMode          string            `toml:"headless_mode"`
+	HeadlessArgs          []string          `toml:"headless_args"`
+	InteractiveMode       string            `toml:"interactive_mode"`
+	InteractiveCommand    string            `toml:"interactive_command"`
+	InteractiveArgs       []string          `toml:"interactive_args"`
+	InteractivePromptMode string            `toml:"interactive_prompt_mode"`
+	InteractiveInvoke     string            `toml:"interactive_invoke"`
+	InteractiveTimeoutMS  int               `toml:"interactive_timeout_ms"`
+	InteractivePollMS     int               `toml:"interactive_poll_ms"`
+	InteractiveNotes      string            `toml:"interactive_notes"`
+	PromptMode            string            `toml:"prompt_mode"`
+	SandboxMode           string            `toml:"sandbox_mode"`
+	ApprovalPolicy        string            `toml:"approval_policy"`
+	Model                 string            `toml:"model"`
+	Reasoning             string            `toml:"reasoning"`
+	Profile               string            `toml:"profile"`
+	Speed                 string            `toml:"speed"`
+	TimeoutMS             int               `toml:"timeout_ms"`
+	IsolateHome           *bool             `toml:"isolate_home"`
+	IsolatedHomeEnv       map[string]string `toml:"isolated_home_env"`
+	ExternalBackend       string            `toml:"external_backend"`
+	Telemetry             string            `toml:"telemetry"`
+	Notes                 string            `toml:"notes"`
 }
 
 func LoadAgentSpecs(root string) ([]agents.Spec, error) {
@@ -110,15 +119,19 @@ func applyFile(root string, specs []agents.Spec, path, source string, optional b
 		index, ok := byID[id]
 		if !ok {
 			specs = append(specs, agents.Spec{
-				ID:              id,
-				PromptMode:      agents.PromptStdin,
-				Model:           agents.CLIDefault,
-				Reasoning:       agents.CLIDefault,
-				Profile:         agents.CLIDefault,
-				Speed:           agents.DefaultSpeed,
-				TimeoutMS:       agents.DefaultTimeoutMS,
-				ExternalBackend: agents.ExternalUnknown,
-				Sources:         configDefaultSources(source),
+				ID:                    id,
+				PromptMode:            agents.PromptStdin,
+				LaunchMode:            agents.LaunchHeadless,
+				InteractivePromptMode: agents.InteractivePromptNone,
+				InteractiveInvoke:     agents.InteractiveInvokePrintOnly,
+				InteractivePollMS:     agents.DefaultInteractivePollMS,
+				Model:                 agents.CLIDefault,
+				Reasoning:             agents.CLIDefault,
+				Profile:               agents.CLIDefault,
+				Speed:                 agents.DefaultSpeed,
+				TimeoutMS:             agents.DefaultTimeoutMS,
+				ExternalBackend:       agents.ExternalUnknown,
+				Sources:               configDefaultSources(source),
 			})
 			index = len(specs) - 1
 			byID[id] = index
@@ -135,7 +148,11 @@ func configDefaultSources(source string) map[string]string {
 	sources := map[string]string{}
 	for _, field := range []string{
 		"id",
+		"launch_mode",
 		"prompt_mode",
+		"interactive_prompt_mode",
+		"interactive_invoke",
+		"interactive_poll_ms",
 		"model",
 		"reasoning",
 		"profile",
@@ -168,6 +185,10 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 		spec.VersionArgs = expandSlice(override.VersionArgs, root, tempdir)
 		spec.Sources["version_args"] = source
 	}
+	if override.LaunchMode != "" {
+		spec.LaunchMode = override.LaunchMode
+		spec.Sources["launch_mode"] = source
+	}
 	if override.HeadlessMode != "" {
 		spec.HeadlessMode = override.HeadlessMode
 		spec.Sources["headless_mode"] = source
@@ -175,6 +196,38 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 	if len(override.HeadlessArgs) > 0 {
 		spec.HeadlessArgs = expandSlice(override.HeadlessArgs, root, tempdir)
 		spec.Sources["headless_args"] = source
+	}
+	if override.InteractiveMode != "" {
+		spec.InteractiveMode = override.InteractiveMode
+		spec.Sources["interactive_mode"] = source
+	}
+	if override.InteractiveCommand != "" {
+		spec.InteractiveCommand = ExpandPlaceholders(override.InteractiveCommand, root, tempdir)
+		spec.Sources["interactive_command"] = source
+	}
+	if len(override.InteractiveArgs) > 0 {
+		spec.InteractiveArgs = expandSlice(override.InteractiveArgs, root, tempdir)
+		spec.Sources["interactive_args"] = source
+	}
+	if override.InteractivePromptMode != "" {
+		spec.InteractivePromptMode = override.InteractivePromptMode
+		spec.Sources["interactive_prompt_mode"] = source
+	}
+	if override.InteractiveInvoke != "" {
+		spec.InteractiveInvoke = override.InteractiveInvoke
+		spec.Sources["interactive_invoke"] = source
+	}
+	if override.InteractiveTimeoutMS > 0 {
+		spec.InteractiveTimeoutMS = override.InteractiveTimeoutMS
+		spec.Sources["interactive_timeout_ms"] = source
+	}
+	if override.InteractivePollMS > 0 {
+		spec.InteractivePollMS = override.InteractivePollMS
+		spec.Sources["interactive_poll_ms"] = source
+	}
+	if override.InteractiveNotes != "" {
+		spec.InteractiveNotes = override.InteractiveNotes
+		spec.Sources["interactive_notes"] = source
 	}
 	if override.PromptMode != "" {
 		spec.PromptMode = agents.PromptMode(override.PromptMode)
@@ -250,6 +303,7 @@ func cloneSpecs(specs []agents.Spec) []agents.Spec {
 		out[i].Commands = append([]string(nil), spec.Commands...)
 		out[i].VersionArgs = append([]string(nil), spec.VersionArgs...)
 		out[i].HeadlessArgs = append([]string(nil), spec.HeadlessArgs...)
+		out[i].InteractiveArgs = append([]string(nil), spec.InteractiveArgs...)
 		if spec.IsolatedHomeEnv != nil {
 			out[i].IsolatedHomeEnv = map[string]string{}
 			for key, value := range spec.IsolatedHomeEnv {

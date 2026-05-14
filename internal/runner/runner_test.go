@@ -305,9 +305,14 @@ func TestFakeAgentHelper(t *testing.T) {
 	if len(match) != 2 {
 		t.Fatalf("could not find output path in prompt:\n%s", string(input))
 	}
+	ideaRe := regexp.MustCompile(`(?m)^idea: (.+)$`)
+	ideaMatch := ideaRe.FindStringSubmatch(string(input))
+	if len(ideaMatch) != 2 {
+		t.Fatalf("could not find idea slug in prompt:\n%s", string(input))
+	}
 	body := `---
 agent: fake
-idea: runner-test-task
+idea: ` + ideaMatch[1] + `
 round: 1
 date: 2026-05-10
 ---

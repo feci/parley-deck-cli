@@ -32,6 +32,32 @@ GEMINI_CLI_HOME = "{tempdir}"
 
 Use `cli-default` when a model, reasoning, effort, or profile value cannot be proven from the target CLI. Do not invent model names in shared config.
 
+## Launch Modes
+
+Each agent can choose how `parley` should involve its CLI:
+
+- `headless`: programmatic execution. `parley` invokes the configured headless command and validates the artifact.
+- `interactive`: user-driven handoff. `parley` writes a prompt and instructions, optionally starts a real terminal command, waits for the artifact, then validates it.
+- `manual`: preparation only. `parley` writes a prompt and instructions and exits with next steps.
+
+Example local Claude override:
+
+```toml
+[agents.claude]
+launch_mode = "interactive"
+interactive_command = "claude"
+interactive_args = []
+interactive_prompt_mode = "none"
+interactive_invoke = "print-only"
+interactive_timeout_ms = 1800000
+interactive_poll_ms = 2000
+interactive_notes = "Use this when you intentionally want a user-driven Claude CLI session."
+```
+
+`interactive_invoke = "spawn-tty"` may be used when the command should be started attached to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
+
+Provider billing and usage accounting are determined by the provider and account. Parley only makes the technical mode explicit: headless is programmatic execution; interactive/manual are user-driven handoff flows.
+
 ## Codex Recommended Settings
 
 When Codex participates as an agent, recommend this sandbox profile:

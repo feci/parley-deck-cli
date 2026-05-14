@@ -14,6 +14,7 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 )
@@ -435,6 +436,76 @@ func TestConsensusRequestSignoffsDryRunAndHostedGate(t *testing.T) {
 	}
 }
 
+func TestConsensusRequestSignoffsManualModeWritesHandoff(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+
+	bin := t.TempDir()
+	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
+	writeAgentsLocalConfig(t, root, fakeAgentConfig{
+		ID:         "alpha",
+		Path:       alpha,
+		Backend:    agents.ExternalHosted,
+		LaunchMode: agents.LaunchManual,
+	})
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	for _, want := range []string{"Requesting signoff from alpha (manual)", "Manual handoff for alpha", "Requested signoffs pending: alpha"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("stdout missing %q:\n%s", want, stdout.String())
+		}
+	}
+	summary, err := consensus.Status(root, "sample", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(summary.Signoffs) != 0 {
+		t.Fatalf("manual mode should not invoke headless signer: %+v", summary.Signoffs)
+	}
+	runsDir := filepath.Join(root, protocol.DeckDir, "runs")
+	entries, err := os.ReadDir(runsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("runs=%d, want 1", len(entries))
+	}
+	handoff := filepath.Join(runsDir, entries[0].Name(), "agents", "alpha", "handoff.md")
+	data, err := os.ReadFile(handoff)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Interactive handoff: alpha", runner.UsageCaveat, "Target artifact:"} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("handoff missing %q:\n%s", want, string(data))
+		}
+	}
+
+	if _, err := consensus.AppendSignoff(root, "sample", consensus.SignoffOptions{
+		Agent:  "alpha",
+		Status: "accept",
+		Notes:  "manual signoff.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"resume", "--dir", root, "--no-tui", entries[0].Name()}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("resume code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Validated pending signoff from alpha.") {
+		t.Fatalf("resume stdout=%q", stdout.String())
+	}
+}
+
 func TestConsensusRequestSignoffsRejectsAlreadySignedExplicitParticipant(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
@@ -620,9 +691,10 @@ func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
 }
 
 type fakeAgentConfig struct {
-	ID      string
-	Path    string
-	Backend string
+	ID         string
+	Path       string
+	Backend    string
+	LaunchMode string
 }
 
 func writeAgentsLocalConfig(t *testing.T, root string, entries ...fakeAgentConfig) {
@@ -637,6 +709,9 @@ func writeAgentsLocalConfig(t *testing.T, root string, entries ...fakeAgentConfi
 		fmt.Fprintf(&b, "command = %q\n", entry.Path)
 		fmt.Fprintln(&b, "prompt_mode = \"stdin\"")
 		fmt.Fprintf(&b, "external_backend = %q\n", backend)
+		if entry.LaunchMode != "" {
+			fmt.Fprintf(&b, "launch_mode = %q\n", entry.LaunchMode)
+		}
 		fmt.Fprintln(&b, "timeout_ms = 5000")
 		fmt.Fprintln(&b)
 	}
