@@ -10,25 +10,34 @@ import (
 )
 
 type Spec struct {
-	ID              string
-	Commands        []string
-	VersionArgs     []string
-	HeadlessMode    string
-	HeadlessArgs    []string
-	PromptMode      PromptMode
-	SandboxMode     string
-	ApprovalPolicy  string
-	Model           string
-	Reasoning       string
-	Profile         string
-	Speed           string
-	TimeoutMS       int
-	IsolateHome     bool
-	IsolatedHomeEnv map[string]string
-	ExternalBackend string
-	Telemetry       string
-	Notes           string
-	Sources         map[string]string
+	ID                    string
+	Commands              []string
+	VersionArgs           []string
+	LaunchMode            string
+	HeadlessMode          string
+	HeadlessArgs          []string
+	InteractiveMode       string
+	InteractiveCommand    string
+	InteractiveArgs       []string
+	InteractivePromptMode string
+	InteractiveInvoke     string
+	InteractiveTimeoutMS  int
+	InteractivePollMS     int
+	InteractiveNotes      string
+	PromptMode            PromptMode
+	SandboxMode           string
+	ApprovalPolicy        string
+	Model                 string
+	Reasoning             string
+	Profile               string
+	Speed                 string
+	TimeoutMS             int
+	IsolateHome           bool
+	IsolatedHomeEnv       map[string]string
+	ExternalBackend       string
+	Telemetry             string
+	Notes                 string
+	Sources               map[string]string
 }
 
 type PromptMode string
@@ -39,14 +48,28 @@ const (
 )
 
 const (
-	CLIDefault       = "cli-default"
-	DefaultSpeed     = "balanced"
-	DefaultTimeoutMS = 1_800_000
-	ExternalHosted   = "hosted"
-	ExternalLocal    = "local"
-	ExternalUnknown  = "unknown"
-	SourceBuiltIn    = "built-in"
-	SourceDiscovered = "discovered"
+	CLIDefault               = "cli-default"
+	DefaultSpeed             = "balanced"
+	DefaultTimeoutMS         = 1_800_000
+	DefaultInteractivePollMS = 2_000
+	ExternalHosted           = "hosted"
+	ExternalLocal            = "local"
+	ExternalUnknown          = "unknown"
+	SourceBuiltIn            = "built-in"
+	SourceDiscovered         = "discovered"
+)
+
+const (
+	LaunchHeadless    = "headless"
+	LaunchInteractive = "interactive"
+	LaunchManual      = "manual"
+
+	InteractivePromptNone = "none"
+	InteractivePromptFile = "file"
+	InteractivePromptArg  = "arg"
+
+	InteractiveInvokePrintOnly = "print-only"
+	InteractiveInvokeSpawnTTY  = "spawn-tty"
 )
 
 type Discovery struct {
@@ -61,78 +84,94 @@ type Discovery struct {
 func DefaultSpecs() []Spec {
 	return []Spec{
 		withBuiltinSources(Spec{
-			ID:              "codex",
-			Commands:        []string{"codex"},
-			VersionArgs:     []string{"--version"},
-			HeadlessMode:    "codex exec -",
-			HeadlessArgs:    []string{"exec", "--cd", "{root}", "--sandbox", "workspace-write", "--ask-for-approval", "on-failure", "-"},
-			PromptMode:      PromptStdin,
-			SandboxMode:     "workspace-write",
-			ApprovalPolicy:  "on-failure",
-			Model:           CLIDefault,
-			Reasoning:       CLIDefault,
-			Profile:         CLIDefault,
-			Speed:           DefaultSpeed,
-			TimeoutMS:       DefaultTimeoutMS,
-			ExternalBackend: ExternalHosted,
-			Telemetry:       "json events when --json is available",
+			ID:                    "codex",
+			Commands:              []string{"codex"},
+			VersionArgs:           []string{"--version"},
+			LaunchMode:            LaunchHeadless,
+			HeadlessMode:          "codex exec -",
+			HeadlessArgs:          []string{"exec", "--cd", "{root}", "--sandbox", "workspace-write", "--ask-for-approval", "on-failure", "-"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptStdin,
+			SandboxMode:           "workspace-write",
+			ApprovalPolicy:        "on-failure",
+			Model:                 CLIDefault,
+			Reasoning:             CLIDefault,
+			Profile:               CLIDefault,
+			Speed:                 DefaultSpeed,
+			TimeoutMS:             DefaultTimeoutMS,
+			ExternalBackend:       ExternalHosted,
+			Telemetry:             "json events when --json is available",
 		}),
 		withBuiltinSources(Spec{
-			ID:              "claude",
-			Commands:        []string{"claude"},
-			VersionArgs:     []string{"--version"},
-			HeadlessMode:    "claude --print",
-			HeadlessArgs:    []string{"-p", "--output-format", "text", "--permission-mode", "acceptEdits", "--add-dir", "{root}"},
-			PromptMode:      PromptStdin,
-			SandboxMode:     CLIDefault,
-			ApprovalPolicy:  "acceptEdits",
-			Model:           CLIDefault,
-			Reasoning:       CLIDefault,
-			Profile:         CLIDefault,
-			Speed:           DefaultSpeed,
-			TimeoutMS:       DefaultTimeoutMS,
-			ExternalBackend: ExternalHosted,
-			Telemetry:       "stream-json or final text depending on flags",
+			ID:                    "claude",
+			Commands:              []string{"claude"},
+			VersionArgs:           []string{"--version"},
+			LaunchMode:            LaunchHeadless,
+			HeadlessMode:          "claude --print",
+			HeadlessArgs:          []string{"-p", "--output-format", "text", "--permission-mode", "acceptEdits", "--add-dir", "{root}"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptStdin,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "acceptEdits",
+			Model:                 CLIDefault,
+			Reasoning:             CLIDefault,
+			Profile:               CLIDefault,
+			Speed:                 DefaultSpeed,
+			TimeoutMS:             DefaultTimeoutMS,
+			ExternalBackend:       ExternalHosted,
+			Telemetry:             "stream-json or final text depending on flags",
 		}),
 		withBuiltinSources(Spec{
-			ID:              "gemini",
-			Commands:        []string{"gemini"},
-			VersionArgs:     []string{"--version"},
-			HeadlessMode:    "gemini --prompt ... --output-format json",
-			HeadlessArgs:    []string{"--prompt", "Follow the Parley Deck participant instructions provided on stdin.", "--skip-trust", "--approval-mode", "auto_edit", "--output-format", "text"},
-			PromptMode:      PromptStdin,
-			SandboxMode:     CLIDefault,
-			ApprovalPolicy:  "auto_edit",
-			Model:           CLIDefault,
-			Reasoning:       CLIDefault,
-			Profile:         CLIDefault,
-			Speed:           DefaultSpeed,
-			TimeoutMS:       DefaultTimeoutMS,
-			IsolateHome:     true,
-			IsolatedHomeEnv: map[string]string{"GEMINI_CLI_HOME": "{tempdir}"},
-			ExternalBackend: ExternalHosted,
-			Telemetry:       "json stats when output-format json succeeds",
-			Notes:           "uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang",
+			ID:                    "gemini",
+			Commands:              []string{"gemini"},
+			VersionArgs:           []string{"--version"},
+			LaunchMode:            LaunchHeadless,
+			HeadlessMode:          "gemini --prompt ... --output-format json",
+			HeadlessArgs:          []string{"--prompt", "Follow the Parley Deck participant instructions provided on stdin.", "--skip-trust", "--approval-mode", "auto_edit", "--output-format", "text"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptStdin,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "auto_edit",
+			Model:                 CLIDefault,
+			Reasoning:             CLIDefault,
+			Profile:               CLIDefault,
+			Speed:                 DefaultSpeed,
+			TimeoutMS:             DefaultTimeoutMS,
+			IsolateHome:           true,
+			IsolatedHomeEnv:       map[string]string{"GEMINI_CLI_HOME": "{tempdir}"},
+			ExternalBackend:       ExternalHosted,
+			Telemetry:             "json stats when output-format json succeeds",
+			Notes:                 "uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang",
 		}),
 		withBuiltinSources(Spec{
-			ID:              "hermes",
-			Commands:        []string{"hermes", "hermes-agent", "hermesagent"},
-			VersionArgs:     []string{"--version"},
-			HeadlessMode:    "hermes --oneshot",
-			HeadlessArgs:    []string{"--oneshot", "{prompt}", "--accept-hooks"},
-			PromptMode:      PromptArg,
-			SandboxMode:     CLIDefault,
-			ApprovalPolicy:  "accept-hooks",
-			Model:           CLIDefault,
-			Reasoning:       CLIDefault,
-			Profile:         CLIDefault,
-			Speed:           DefaultSpeed,
-			TimeoutMS:       DefaultTimeoutMS,
-			IsolateHome:     true,
-			IsolatedHomeEnv: map[string]string{"HERMES_HOME": "{tempdir}"},
-			ExternalBackend: ExternalHosted,
-			Telemetry:       "unknown",
-			Notes:           "first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs",
+			ID:                    "hermes",
+			Commands:              []string{"hermes", "hermes-agent", "hermesagent"},
+			VersionArgs:           []string{"--version"},
+			LaunchMode:            LaunchHeadless,
+			HeadlessMode:          "hermes --oneshot",
+			HeadlessArgs:          []string{"--oneshot", "{prompt}", "--accept-hooks"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptArg,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "accept-hooks",
+			Model:                 CLIDefault,
+			Reasoning:             CLIDefault,
+			Profile:               CLIDefault,
+			Speed:                 DefaultSpeed,
+			TimeoutMS:             DefaultTimeoutMS,
+			IsolateHome:           true,
+			IsolatedHomeEnv:       map[string]string{"HERMES_HOME": "{tempdir}"},
+			ExternalBackend:       ExternalHosted,
+			Telemetry:             "unknown",
+			Notes:                 "first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs",
 		}),
 	}
 }
@@ -143,8 +182,17 @@ func withBuiltinSources(spec Spec) Spec {
 		"id",
 		"commands",
 		"version_args",
+		"launch_mode",
 		"headless_mode",
 		"headless_args",
+		"interactive_mode",
+		"interactive_command",
+		"interactive_args",
+		"interactive_prompt_mode",
+		"interactive_invoke",
+		"interactive_timeout_ms",
+		"interactive_poll_ms",
+		"interactive_notes",
 		"prompt_mode",
 		"sandbox_mode",
 		"approval_policy",
@@ -218,11 +266,12 @@ func PrintDiscovery(w io.Writer, results []Discovery) {
 }
 
 func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
-	fmt.Fprintln(w, "AGENT    INSTALLED  VERSION                 HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  BACKEND")
+	fmt.Fprintln(w, "AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  BACKEND")
 	for _, result := range results {
 		installed := "no"
 		version := "-"
 		headless := "missing"
+		launchMode := LaunchModeOrDefault(result.LaunchMode)
 		if result.Found {
 			installed = "yes"
 		}
@@ -240,10 +289,11 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 		}
 		fmt.Fprintf(
 			w,
-			"%-8s %-9s %-23s %-9s %-16s %-12s %-12s %-8d %-5s %s\n",
+			"%-8s %-9s %-23s %-12s %-9s %-16s %-12s %-12s %-8d %-5s %s\n",
 			result.ID,
 			installed,
 			truncate(version, 23),
+			launchMode,
 			headless,
 			valueOrDefault(result.SandboxMode),
 			valueOrDefault(result.ApprovalPolicy),
@@ -263,6 +313,14 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 		if result.HeadlessMode != "" {
 			fmt.Fprintf(w, "  headless: %s\n", result.HeadlessMode)
 		}
+		if launchMode != LaunchHeadless || result.InteractiveMode != "" || len(result.InteractiveArgs) > 0 {
+			fmt.Fprintf(w, "  interactive: %s %s prompt=%s invoke=%s\n",
+				valueOrDefault(InteractiveCommandOrDefault(result.Spec)),
+				quoteArgs(result.InteractiveArgs),
+				InteractivePromptModeOrDefault(result.InteractivePromptMode),
+				InteractiveInvokeOrDefault(result.InteractiveInvoke),
+			)
+		}
 		if result.Notes != "" {
 			fmt.Fprintf(w, "  note: %s\n", result.Notes)
 		}
@@ -270,6 +328,65 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 			fmt.Fprintf(w, "  probe error: %s\n", result.Error)
 		}
 	}
+}
+
+func LaunchModeOrDefault(value string) string {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		return LaunchHeadless
+	}
+	return value
+}
+
+func InteractivePromptModeOrDefault(value string) string {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		return InteractivePromptNone
+	}
+	return value
+}
+
+func InteractiveInvokeOrDefault(value string) string {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if value == "" {
+		return InteractiveInvokePrintOnly
+	}
+	return value
+}
+
+func InteractiveTimeoutMSOrDefault(value int) int {
+	if value > 0 {
+		return value
+	}
+	return DefaultTimeoutMS
+}
+
+func InteractivePollMSOrDefault(value int) int {
+	if value > 0 {
+		return value
+	}
+	return DefaultInteractivePollMS
+}
+
+func InteractiveCommandOrDefault(spec Spec) string {
+	if strings.TrimSpace(spec.InteractiveCommand) != "" {
+		return spec.InteractiveCommand
+	}
+	if len(spec.Commands) > 0 {
+		return spec.Commands[0]
+	}
+	return ""
+}
+
+func quoteArgs(args []string) string {
+	if len(args) == 0 {
+		return "[]"
+	}
+	quoted := make([]string, len(args))
+	for i, arg := range args {
+		quoted[i] = fmt.Sprintf("%q", arg)
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
 func probeVersion(parent context.Context, path string, args []string) (string, error) {

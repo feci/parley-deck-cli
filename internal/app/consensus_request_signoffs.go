@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -18,6 +21,7 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
 )
 
 func runConsensusRequestSignoffs(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -28,6 +32,8 @@ func runConsensusRequestSignoffs(ctx context.Context, args []string, stdout, std
 	participantsFlag := fs.String("participants", "", "comma-separated participant IDs to request")
 	yes := fs.Bool("yes", false, "confirm hosted/non-local backend launches")
 	dryRun := fs.Bool("dry-run", false, "print planned signoff requests without invoking agents")
+	var modeOverrides launchModeOverrides
+	fs.Var(&modeOverrides, "mode", "launch mode override: headless|interactive|manual or AGENT=MODE; repeatable")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -43,8 +49,12 @@ func runConsensusRequestSignoffs(ctx context.Context, args []string, stdout, std
 		ParticipantsRaw: *participantsFlag,
 		Yes:             *yes,
 		DryRun:          *dryRun,
+		ModeOverrides:   modeOverrides,
 	}
 	if err := requestConsensusSignoffs(ctx, opts, stdout, stderr); err != nil {
+		if errors.Is(err, errRequestPending) {
+			return 3
+		}
 		fmt.Fprintf(stderr, "consensus request-signoffs failed: %v\n", err)
 		if errors.Is(err, errRequestNeedsConfirmation) || errors.Is(err, errRequestUsage) {
 			return 2
@@ -61,11 +71,13 @@ type requestSignoffsOptions struct {
 	ParticipantsRaw string
 	Yes             bool
 	DryRun          bool
+	ModeOverrides   launchModeOverrides
 }
 
 var (
 	errRequestNeedsConfirmation = errors.New("confirmation required")
 	errRequestUsage             = errors.New("invalid request")
+	errRequestPending           = errors.New("pending handoffs")
 )
 
 func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, stdout, stderr io.Writer) error {
@@ -104,7 +116,14 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	if err != nil {
 		return err
 	}
-	hosted := hostedAgentIDs(selected)
+	selected, err = applyLaunchModeOverrides(selected, opts.ModeOverrides)
+	if err != nil {
+		return err
+	}
+	if err := validateLaunchModes(selected); err != nil {
+		return err
+	}
+	hosted := hostedHeadlessAgentIDs(selected)
 	requiresYes := len(hosted) > 0
 
 	if opts.DryRun {
@@ -116,8 +135,25 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	}
 
 	successes := make([]string, 0, len(selected))
+	pending := make([]string, 0)
+	runID := store.NewRunID(time.Now())
+	if hasNonHeadlessLaunch(selected) {
+		runStore := store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))
+		if err := runStore.Append(store.Event{
+			Time: time.Now().UTC(),
+			Type: "run.created",
+			Data: map[string]any{
+				"idea":         opts.IdeaSlug,
+				"mode":         "consensus-signoff",
+				"participants": agentIDs(selected),
+				"review":       opts.Review,
+			},
+		}); err != nil {
+			return err
+		}
+	}
 	for _, agent := range selected {
-		fmt.Fprintf(stdout, "Requesting signoff from %s...\n", agent.ID)
+		fmt.Fprintf(stdout, "Requesting signoff from %s (%s)...\n", agent.ID, agents.LaunchModeOrDefault(agent.LaunchMode))
 		before, err := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 		if err != nil {
 			return err
@@ -131,7 +167,12 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		}
 
 		prompt := buildConsensusSignoffPrompt(rootAbs, summary.Path, opts.Review, agent.ID)
-		runErr := runSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)
+		runResult, runErr := runSignoffAgent(ctx, rootAbs, runID, agent, prompt, summary.Path, string(beforeRaw), stdout, stderr)
+		if runResult.Pending {
+			pending = append(pending, agent.ID)
+			fmt.Fprintf(stdout, "Pending signoff from %s. Handoff: %s\n", agent.ID, runResult.InstructionsPath)
+			continue
+		}
 
 		after, statusErr := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 		if statusErr != nil {
@@ -160,6 +201,11 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	finalSummary, err := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 	if err != nil {
 		return err
+	}
+	if len(pending) > 0 {
+		fmt.Fprintf(stdout, "Requested signoffs pending: %s\n", strings.Join(pending, ","))
+		printConsensusSummary(stdout, finalSummary)
+		return errRequestPending
 	}
 	fmt.Fprintf(stdout, "Requested signoffs complete: %s\n", strings.Join(successes, ","))
 	printConsensusSummary(stdout, finalSummary)
@@ -221,14 +267,128 @@ func requestSignoffAgents(targets []string, discovered []agents.Discovery) ([]ag
 	return selected, nil
 }
 
-func hostedAgentIDs(selected []agents.Discovery) []string {
+type launchModeOverrides struct {
+	global string
+	byID   map[string]string
+}
+
+func (o *launchModeOverrides) String() string {
+	if o == nil {
+		return ""
+	}
+	var parts []string
+	if o.global != "" {
+		parts = append(parts, o.global)
+	}
+	for id, mode := range o.byID {
+		parts = append(parts, id+"="+mode)
+	}
+	sort.Strings(parts)
+	return strings.Join(parts, ",")
+}
+
+func (o *launchModeOverrides) Set(value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return fmt.Errorf("empty launch mode override")
+	}
+	if o.byID == nil {
+		o.byID = map[string]string{}
+	}
+	if id, mode, ok := strings.Cut(value, "="); ok {
+		id = strings.TrimSpace(id)
+		mode = strings.TrimSpace(mode)
+		if id == "" {
+			return fmt.Errorf("empty agent in launch mode override %q", value)
+		}
+		if !validLaunchMode(mode) {
+			return fmt.Errorf("invalid launch mode %q", mode)
+		}
+		o.byID[id] = mode
+		return nil
+	}
+	if !validLaunchMode(value) {
+		return fmt.Errorf("invalid launch mode %q", value)
+	}
+	o.global = value
+	return nil
+}
+
+func applyLaunchModeOverrides(selected []agents.Discovery, overrides launchModeOverrides) ([]agents.Discovery, error) {
+	out := make([]agents.Discovery, len(selected))
+	copy(out, selected)
+	for i := range out {
+		if overrides.global != "" {
+			out[i].LaunchMode = overrides.global
+		}
+		if mode, ok := overrides.byID[out[i].ID]; ok {
+			out[i].LaunchMode = mode
+		}
+	}
+	for id := range overrides.byID {
+		found := false
+		for _, agent := range out {
+			if agent.ID == id {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("%w: launch mode override references unselected participant %s", errRequestUsage, id)
+		}
+	}
+	return out, nil
+}
+
+func validateLaunchModes(selected []agents.Discovery) error {
+	for _, agent := range selected {
+		mode := agents.LaunchModeOrDefault(agent.LaunchMode)
+		if !validLaunchMode(mode) {
+			return fmt.Errorf("%w: %s has invalid launch_mode %q", errRequestUsage, agent.ID, agent.LaunchMode)
+		}
+		if mode == agents.LaunchHeadless {
+			continue
+		}
+		// Manual mode writes the same handoff packet fields as interactive
+		// mode, so validate the shared interactive_* shape for both modes.
+		promptMode := agents.InteractivePromptModeOrDefault(agent.InteractivePromptMode)
+		if promptMode != agents.InteractivePromptNone && promptMode != agents.InteractivePromptFile && promptMode != agents.InteractivePromptArg {
+			return fmt.Errorf("%w: %s has invalid interactive_prompt_mode %q", errRequestUsage, agent.ID, agent.InteractivePromptMode)
+		}
+		invoke := agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke)
+		if invoke != agents.InteractiveInvokePrintOnly && invoke != agents.InteractiveInvokeSpawnTTY {
+			return fmt.Errorf("%w: %s has invalid interactive_invoke %q", errRequestUsage, agent.ID, agent.InteractiveInvoke)
+		}
+	}
+	return nil
+}
+
+func validLaunchMode(mode string) bool {
+	switch strings.TrimSpace(strings.ToLower(mode)) {
+	case agents.LaunchHeadless, agents.LaunchInteractive, agents.LaunchManual:
+		return true
+	default:
+		return false
+	}
+}
+
+func hostedHeadlessAgentIDs(selected []agents.Discovery) []string {
 	var hosted []string
 	for _, agent := range selected {
-		if requiresExplicitConfirmation(agent.ExternalBackend) {
+		if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless && requiresExplicitConfirmation(agent.ExternalBackend) {
 			hosted = append(hosted, agent.ID)
 		}
 	}
 	return hosted
+}
+
+func hasNonHeadlessLaunch(selected []agents.Discovery) bool {
+	for _, agent := range selected {
+		if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchHeadless {
+			return true
+		}
+	}
+	return false
 }
 
 func requiresExplicitConfirmation(externalBackend string) bool {
@@ -244,11 +404,32 @@ func printRequestSignoffsDryRun(stdout io.Writer, rootAbs string, summary consen
 	fmt.Fprintf(stdout, "Requires --yes: %s\n", yesNo(requiresYes))
 	fmt.Fprintln(stdout, "Launch order:")
 	for i, agent := range selected {
-		fmt.Fprintf(stdout, "  %d. %s backend=%s command=%s\n", i+1, agent.ID, valueOr(agent.ExternalBackend, agents.ExternalLocal), commandPreview(rootAbs, agent))
+		fmt.Fprintf(stdout, "  %d. %s backend=%s mode=%s command=%s\n", i+1, agent.ID, valueOr(agent.ExternalBackend, agents.ExternalLocal), agents.LaunchModeOrDefault(agent.LaunchMode), commandPreview(rootAbs, agent))
+		if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchHeadless {
+			fmt.Fprintf(stdout, "     usage: %s\n", runner.UsageCaveat)
+		}
 	}
 }
 
-func runSignoffAgent(ctx context.Context, rootAbs string, agent agents.Discovery, prompt string, stdout, stderr io.Writer) error {
+type signoffRunResult struct {
+	Pending          bool
+	InstructionsPath string
+}
+
+func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
+	switch agents.LaunchModeOrDefault(agent.LaunchMode) {
+	case agents.LaunchHeadless:
+		return signoffRunResult{}, runHeadlessSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)
+	case agents.LaunchInteractive:
+		return runInteractiveSignoffAgent(ctx, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout, stderr)
+	case agents.LaunchManual:
+		return runManualSignoffAgent(rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
+	default:
+		return signoffRunResult{}, fmt.Errorf("%s has invalid launch_mode %q", agent.ID, agent.LaunchMode)
+	}
+}
+
+func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.Discovery, prompt string, stdout, stderr io.Writer) error {
 	agentCtx, cancel := context.WithTimeout(ctx, requestSignoffTimeout(agent))
 	defer cancel()
 
@@ -272,6 +453,152 @@ func runSignoffAgent(ctx context.Context, rootAbs string, agent agents.Discovery
 		return err
 	}
 	return nil
+}
+
+func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
+	packet, err := writeSignoffHandoff(rootAbs, runID, agent, prompt, consensusPath)
+	if err != nil {
+		return signoffRunResult{}, err
+	}
+	fmt.Fprintf(stdout, "Interactive handoff for %s\n", agent.ID)
+	fmt.Fprintf(stdout, "  Prompt: %s\n", packet.PromptPath)
+	fmt.Fprintf(stdout, "  Instructions: %s\n", packet.InstructionsPath)
+	fmt.Fprintf(stdout, "  Target: %s\n", consensusPath)
+	fmt.Fprintf(stdout, "  Usage: %s\n", runner.UsageCaveat)
+	if err := appendSignoffEvent(rootAbs, runID, "agent.handoff.started", map[string]any{
+		"agent":         agent.ID,
+		"artifact":      consensusPath,
+		"prompt":        packet.PromptPath,
+		"instructions":  packet.InstructionsPath,
+		"launch_mode":   agents.LaunchInteractive,
+		"before_len":    len(beforeRaw),
+		"before_sha256": sha256Hex(beforeRaw),
+	}); err != nil {
+		return signoffRunResult{}, err
+	}
+
+	if agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke) == agents.InteractiveInvokeSpawnTTY {
+		if err := runInteractiveTTY(ctx, rootAbs, agent, packet, consensusPath); err != nil {
+			return signoffRunResult{}, err
+		}
+	}
+
+	agentCtx, cancel := context.WithTimeout(ctx, requestInteractiveSignoffTimeout(agent))
+	defer cancel()
+	ticker := time.NewTicker(time.Duration(agents.InteractivePollMSOrDefault(agent.InteractivePollMS)) * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if consensusContainsSignoff(consensusPath, agent.ID) {
+			if err := appendSignoffEvent(rootAbs, runID, "agent.handoff.completed", map[string]any{
+				"agent":       agent.ID,
+				"artifact":    consensusPath,
+				"launch_mode": agents.LaunchInteractive,
+			}); err != nil {
+				return signoffRunResult{}, err
+			}
+			return signoffRunResult{}, nil
+		}
+		select {
+		case <-agentCtx.Done():
+			return signoffRunResult{}, agentCtx.Err()
+		case <-ticker.C:
+		}
+	}
+}
+
+func runManualSignoffAgent(rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout io.Writer) (signoffRunResult, error) {
+	packet, err := writeSignoffHandoff(rootAbs, runID, agent, prompt, consensusPath)
+	if err != nil {
+		return signoffRunResult{}, err
+	}
+	fmt.Fprintf(stdout, "Manual handoff for %s\n", agent.ID)
+	fmt.Fprintf(stdout, "  Prompt: %s\n", packet.PromptPath)
+	fmt.Fprintf(stdout, "  Instructions: %s\n", packet.InstructionsPath)
+	fmt.Fprintf(stdout, "  Target: %s\n", consensusPath)
+	fmt.Fprintf(stdout, "  Resume after the signoff is appended: parley resume %s\n", runID)
+	if err := appendSignoffEvent(rootAbs, runID, "agent.handoff.pending", map[string]any{
+		"agent":         agent.ID,
+		"artifact":      consensusPath,
+		"prompt":        packet.PromptPath,
+		"instructions":  packet.InstructionsPath,
+		"launch_mode":   agents.LaunchManual,
+		"before_len":    len(beforeRaw),
+		"before_sha256": sha256Hex(beforeRaw),
+	}); err != nil {
+		return signoffRunResult{}, err
+	}
+	return signoffRunResult{Pending: true, InstructionsPath: packet.InstructionsPath}, nil
+}
+
+func appendSignoffEvent(rootAbs, runID, eventType string, data map[string]any) error {
+	runStore := store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))
+	return runStore.Append(store.Event{Time: time.Now().UTC(), Type: eventType, Data: data})
+}
+
+func writeSignoffHandoff(rootAbs, runID string, agent agents.Discovery, prompt, consensusPath string) (runner.HandoffPacket, error) {
+	return runner.WriteHandoffPacket(runner.HandoffOptions{
+		Root:               rootAbs,
+		RunID:              runID,
+		Agent:              agent,
+		Prompt:             prompt,
+		TargetPath:         consensusPath,
+		ValidationContract: "Append exactly one signoff block for the agent and do not edit existing consensus content.",
+		ResumeCommand:      fmt.Sprintf("parley resume %s", runID),
+	})
+}
+
+func runInteractiveTTY(ctx context.Context, rootAbs string, agent agents.Discovery, packet runner.HandoffPacket, targetPath string) error {
+	if !isTerminal(os.Stdin) || !isTerminal(os.Stdout) {
+		return fmt.Errorf("%s interactive_invoke=spawn-tty requires a terminal", agent.ID)
+	}
+	command := strings.TrimSpace(agent.InteractiveCommand)
+	if command == "" {
+		command = agent.Path
+	}
+	args := runner.ExpandInteractiveArgs(agent.InteractiveArgs, rootAbs, packet.PromptPath, targetPath)
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Dir = rootAbs
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return err
+	}
+	return nil
+}
+
+func consensusContainsSignoff(path, agentID string) bool {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	return len(signoffHeaderAgents(string(data))) > 0 && signoffsContainAgent(string(data), agentID)
+}
+
+func sha256Hex(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
+}
+
+func signoffsContainAgent(raw, agentID string) bool {
+	for _, agent := range signoffHeaderAgents(raw) {
+		if agent == agentID {
+			return true
+		}
+	}
+	return false
+}
+
+func requestInteractiveSignoffTimeout(agent agents.Discovery) time.Duration {
+	return time.Duration(agents.InteractiveTimeoutMSOrDefault(agent.InteractiveTimeoutMS)) * time.Millisecond
+}
+
+func isTerminal(file *os.File) bool {
+	info, err := file.Stat()
+	return err == nil && (info.Mode()&os.ModeCharDevice) != 0
 }
 
 func requestSignoffTimeout(agent agents.Discovery) time.Duration {
@@ -467,6 +794,14 @@ func roundDirsForPrompt(ideaDir string, review bool) []string {
 	return rounds
 }
 
+func ideaSlugForPath(consensusPath string) string {
+	dir := filepath.Dir(consensusPath)
+	if filepath.Base(dir) == "review" {
+		return filepath.Base(filepath.Dir(dir))
+	}
+	return filepath.Base(dir)
+}
+
 func agentIDs(selected []agents.Discovery) []string {
 	ids := make([]string, len(selected))
 	for i, agent := range selected {
@@ -476,6 +811,20 @@ func agentIDs(selected []agents.Discovery) []string {
 }
 
 func commandPreview(rootAbs string, agent agents.Discovery) string {
+	if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchHeadless {
+		command := strings.TrimSpace(agent.InteractiveCommand)
+		if command == "" {
+			command = agents.InteractiveCommandOrDefault(agent.Spec)
+		}
+		parts := []string{command}
+		parts = append(parts, runner.ExpandInteractiveArgs(agent.InteractiveArgs, rootAbs, "<handoff-prompt>", "<target-artifact>")...)
+		for i, part := range parts {
+			if strings.ContainsAny(part, " \t\n") {
+				parts[i] = strconv.Quote(part)
+			}
+		}
+		return strings.Join(parts, " ")
+	}
 	parts := []string{agent.Path}
 	for _, arg := range agent.HeadlessArgs {
 		switch arg {
