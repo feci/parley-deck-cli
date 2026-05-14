@@ -7,7 +7,7 @@ completed: 2026-05-14
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli#impl-tui-init-bootstrap
 head-commit: 6f16a40
 design-pr: https://github.com/feci/parley-deck-cli/pull/15
-implementation-pr: pending
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/16
 ---
 
 ## Implemented changes
