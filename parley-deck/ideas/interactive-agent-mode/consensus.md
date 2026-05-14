@@ -66,3 +66,7 @@ interactive_notes = ""
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+
+### Signoff: codex — 2026-05-14
+Status: ✅ ACCEPT
+Notes: Accept. The consensus captures the user requirement for independently configurable interactive and non-interactive CLI invocation while keeping the provider-accounting boundary explicit and compliant.
