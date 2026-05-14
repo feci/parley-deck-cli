@@ -3,11 +3,11 @@ idea: interactive-agent-mode
 implemented-by: codex
 status: implemented
 date: 2026-05-14
-implementation-pr: TBD
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/14
 branch: feature/interactive-agent-mode
 base: main
 design-pr: https://github.com/feci/parley-deck-cli/pull/13
-head-commit: a281d16
+head-commit: 91d51d3
 fix-up-cycle: 0
 ---
 
