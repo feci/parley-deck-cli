@@ -127,9 +127,11 @@ mv "${tmp}" "${target}"
 trap - EXIT
 
 mkdir -p "${prefix}"
+installed_version="$("${target}" version 2>/dev/null || true)"
 {
   echo "repo=${root}"
   echo "commit=${git_commit}"
+  echo "version=${installed_version:-unknown}"
   echo "installed_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   echo "binary=${target}"
   echo "go=$(go env GOVERSION)"
@@ -137,6 +139,7 @@ mkdir -p "${prefix}"
 
 echo
 echo "Installed ${target}"
+echo "Version: ${installed_version:-unknown}"
 echo
 if ! command -v parley >/dev/null 2>&1 || [ "$(command -v parley)" != "${target}" ]; then
   echo "Add this to your shell profile if needed:"

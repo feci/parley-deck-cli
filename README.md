@@ -28,6 +28,8 @@ parley version
 parley help
 ```
 
+The release version follows semantic versioning and is recorded in `VERSION`.
+
 Re-run `scripts/install-local.sh` after pulling or building new changes to replace the installed binary with the latest local version.
 
 Options:

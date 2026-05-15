@@ -43,7 +43,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		printUsage(stdout)
 		return 0
 	case "version", "--version":
-		fmt.Fprintln(stdout, "parley dev")
+		fmt.Fprintln(stdout, versionLine())
 		return 0
 	case "init":
 		return runInit(args[1:], stdout, stderr)

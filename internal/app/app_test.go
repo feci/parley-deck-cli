@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,41 @@ import (
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 )
+
+func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"version"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if got, want := stdout.String(), "parley 1.0.0\n"; got != want {
+		t.Fatalf("version output=%q want %q", got, want)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"--version"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if got, want := stdout.String(), "parley 1.0.0\n"; got != want {
+		t.Fatalf("--version output=%q want %q", got, want)
+	}
+}
+
+func TestVersionFileMatchesBinaryVersion(t *testing.T) {
+	data, err := os.ReadFile("../../VERSION")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(string(data)); got != version {
+		t.Fatalf("VERSION=%q internal version=%q", got, version)
+	}
+	semver := regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$`)
+	if !semver.MatchString(version) {
+		t.Fatalf("version %q is not a major.minor.patch semantic version", version)
+	}
+}
 
 func TestAgentsListPrintsResolvedRuntime(t *testing.T) {
 	root := t.TempDir()
