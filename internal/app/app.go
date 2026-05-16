@@ -42,9 +42,11 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case "help", "-h", "--help":
 		printUsage(stdout)
 		return 0
-	case "version", "--version":
+	case "--version":
 		fmt.Fprintln(stdout, versionLine())
 		return 0
+	case "version":
+		return runVersion(ctx, args[1:], stdout, stderr)
 	case "init":
 		return runInit(args[1:], stdout, stderr)
 	case "agents":
@@ -81,7 +83,7 @@ Usage:
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
   %s tui [--dir DIR]
   %s help
-  %s version
+  %s version [--all] [--json]
 
 `, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName)
 }

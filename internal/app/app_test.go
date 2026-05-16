@@ -26,7 +26,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.0.0\n"; got != want {
+	if got, want := stdout.String(), "parley 1.1.0\n"; got != want {
 		t.Fatalf("version output=%q want %q", got, want)
 	}
 
@@ -36,8 +36,62 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.0.0\n"; got != want {
+	if got, want := stdout.String(), "parley 1.1.0\n"; got != want {
 		t.Fatalf("--version output=%q want %q", got, want)
+	}
+}
+
+func TestVersionAllJSONIncludesSkillStatus(t *testing.T) {
+	bin := t.TempDir()
+	writeFakeParleyDeckSkill(t, bin)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"version", "--all", "--json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	if payload["ok"] != true {
+		t.Fatalf("payload=%+v", payload)
+	}
+	parley := payload["parley"].(map[string]any)
+	if parley["version"] != version {
+		t.Fatalf("parley=%+v", parley)
+	}
+	skill := payload["parley_deck_skill"].(map[string]any)
+	installer := skill["installer"].(map[string]any)
+	if installer["version"] != "1.1.0" {
+		t.Fatalf("installer=%+v", installer)
+	}
+}
+
+func TestVersionAllFallsBackToLegacySkillVersion(t *testing.T) {
+	bin := t.TempDir()
+	writeFakeLegacyParleyDeckSkill(t, bin)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"version", "--all", "--json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	skill := payload["parley_deck_skill"].(map[string]any)
+	if skill["statusSupported"] != false {
+		t.Fatalf("skill=%+v", skill)
+	}
+	installer := skill["installer"].(map[string]any)
+	if installer["version"] != "1.0.8" {
+		t.Fatalf("installer=%+v", installer)
 	}
 }
 
@@ -933,6 +987,53 @@ func writeFakeCLI(t *testing.T, dir, name, version string) {
 	t.Helper()
 	path := filepath.Join(dir, name)
 	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo '" + version + "'; exit 0; fi\ncat >/dev/null\nexit 0\n"
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeFakeParleyDeckSkill(t *testing.T, dir string) {
+	t.Helper()
+	path := filepath.Join(dir, "parley-deck-skill")
+	body := `#!/bin/sh
+if [ "$1" = "status" ]; then
+  cat <<'JSON'
+{
+  "ok": true,
+  "installer": {
+    "version": "1.1.0",
+    "source": "test"
+  },
+  "compatibility": {
+    "status": "ok",
+    "reasons": []
+  },
+  "project": {
+    "metadataStatus": "valid"
+  },
+  "runtimeInstalls": []
+}
+JSON
+  exit 0
+fi
+exit 2
+`
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeFakeLegacyParleyDeckSkill(t *testing.T, dir string) {
+	t.Helper()
+	path := filepath.Join(dir, "parley-deck-skill")
+	body := `#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo '1.0.8'
+  exit 0
+fi
+echo 'Unknown command: status' >&2
+exit 1
+`
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatal(err)
 	}

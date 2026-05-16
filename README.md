@@ -25,10 +25,11 @@ Verify:
 
 ```bash
 parley version
+parley version --all
 parley help
 ```
 
-The release version follows semantic versioning and is recorded in `VERSION`.
+The release version follows semantic versioning and is recorded in `VERSION`. `parley version --all` also reports `parley-deck-skill` installer, runtime skill, and project metadata status when the skill installer is available.
 
 Re-run `scripts/install-local.sh` after pulling or building new changes to replace the installed binary with the latest local version.
 
