@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -21,8 +22,10 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/runstate"
+	"parley-deck-cli/internal/sessionstore"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/tui"
 )
@@ -1137,47 +1140,32 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "No run started. Use `--yes` or `--auto` to launch without an interactive confirmation prompt.")
 		return 0
 	}
-	idea, err := protocol.CreateIdea(*root, task, participants)
+	created, err := runcontrol.Create(runcontrol.CreateOptions{
+		Root:         *root,
+		Task:         task,
+		Participants: participants,
+		Discovered:   discovered,
+		Auto:         *auto,
+	})
 	if err != nil {
-		fmt.Fprintf(stderr, "idea create failed: %v\n", err)
-		return 1
-	}
-
-	runID := store.NewRunID(time.Now())
-	runStore := store.New(filepath.Join(*root, protocol.DeckDir, "runs", runID))
-	if err := runStore.Append(store.Event{
-		Time: time.Now().UTC(),
-		Type: "run.created",
-		Data: map[string]any{
-			"task":         task,
-			"mode":         modeName(*auto),
-			"idea":         idea.Slug,
-			"participants": participants,
-			"runtime":      runtimeEventData(discovered),
-		},
-	}); err != nil {
 		fmt.Fprintf(stderr, "run create failed: %v\n", err)
 		return 1
 	}
 
-	fmt.Fprintf(stdout, "Created idea %s and run %s\n", idea.Slug, runID)
+	fmt.Fprintf(stdout, "Created idea %s and run %s\n", created.Idea.Slug, created.RunID)
 	fmt.Fprintf(stdout, "Starting round-01 with participants: %s\n", strings.Join(participants, ", "))
-	runOpts := runner.Options{
-		Root:   *root,
-		RunID:  runID,
-		Idea:   idea,
-		Task:   task,
-		Agents: discovered,
-		Store:  runStore,
-	}
+	runOpts := created.RunOptions
 	if *noTUI {
 		runCtx, cancelRun := context.WithCancel(ctx)
 		defer cancelRun()
 		if *auto {
-			startAutoAnswerer(runCtx, handleRunDir(*root, runID))
+			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
 		}
 		results := runner.RunRoundOne(runCtx, runOpts)
 		cancelRun()
+		if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
+			registerWorkspaceSessions(*root, []runstate.RunSummary{run})
+		}
 		failed := printRunResults(stdout, results)
 		if failed {
 			return 1
@@ -1188,15 +1176,15 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	runCtx, cancelRun := context.WithCancel(ctx)
 	defer cancelRun()
 	if *auto {
-		startAutoAnswerer(runCtx, handleRunDir(*root, runID))
+		runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
 	}
 	handle := runner.RunRoundOneAsync(runCtx, runOpts)
-	workspaceStatus.Ideas = []protocol.IdeaStatus{idea}
+	workspaceStatus.Ideas = []protocol.IdeaStatus{created.Idea}
 	if err := tui.RunLive(tui.LiveOptions{
 		Status:       workspaceStatus,
-		Idea:         idea,
+		Idea:         created.Idea,
 		Participants: participants,
-		RunID:        runID,
+		RunID:        created.RunID,
 		RunDir:       handle.RunDir,
 		Done:         handle.Done(),
 		Cancel:       cancelRun,
@@ -1208,6 +1196,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	results := handle.Wait()
+	if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
+		registerWorkspaceSessions(*root, []runstate.RunSummary{run})
+	}
 	failed := printRunResults(stdout, results)
 	if failed {
 		return 1
@@ -1355,23 +1346,6 @@ The first line must be exactly:
 After the sentinel, write one short line confirming the headless probe.`, outputPath, sentinel, extra)
 }
 
-func startAutoAnswerer(ctx context.Context, runDir string) {
-	go func() {
-		ticker := time.NewTicker(250 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				if _, err := hitl.New(runDir).AutoAnswerOpen(); err != nil {
-					continue
-				}
-			}
-		}
-	}()
-}
-
 func runTUIView(ctx context.Context, root string, stdout, stderr io.Writer) int {
 	results, err := discoverConfigured(ctx, root)
 	if err != nil {
@@ -1395,40 +1369,89 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 		return 1
 	}
 
-	if err := tui.Run(status, results); err != nil {
+	runs, err := runstate.ListRuns(root)
+	if err != nil {
+		fmt.Fprintf(stderr, "tui failed: %v\n", err)
+		return 1
+	}
+	registerWorkspaceSessions(root, runs)
+	refreshRuns := func() ([]runstate.RunSummary, error) {
+		return runstate.ListRuns(root)
+	}
+	var cancelMu sync.Mutex
+	var cancelRuns []context.CancelFunc
+	cancelStartedRuns := func() {
+		cancelMu.Lock()
+		defer cancelMu.Unlock()
+		for _, cancel := range cancelRuns {
+			cancel()
+		}
+		cancelRuns = nil
+	}
+	defer cancelStartedRuns()
+	startRun := func(startCtx context.Context, request tui.StartRequest) (runstate.RunSummary, error) {
+		created, err := runcontrol.Create(runcontrol.CreateOptions{
+			Root:         root,
+			Task:         request.Task,
+			Participants: request.Participants,
+			Discovered:   results,
+			Auto:         request.Auto,
+		})
+		if err != nil {
+			return runstate.RunSummary{}, err
+		}
+		runCtx, cancelRun := context.WithCancel(startCtx)
+		cancelMu.Lock()
+		cancelRuns = append(cancelRuns, cancelRun)
+		cancelMu.Unlock()
+		if request.Auto {
+			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
+		}
+		_ = runner.RunRoundOneAsync(runCtx, created.RunOptions)
+		return runstate.LoadRun(root, created.RunID)
+	}
+
+	if err := tui.RunWorkspace(tui.WorkspaceOptions{
+		Root:        root,
+		Status:      status,
+		Agents:      results,
+		Runs:        runs,
+		Context:     ctx,
+		RefreshRuns: refreshRuns,
+		StartRun:    startRun,
+	}); err != nil {
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
 	}
 	return 0
 }
 
-func modeName(auto bool) string {
-	if auto {
-		return "auto"
+func registerWorkspaceSessions(root string, runs []runstate.RunSummary) {
+	sessionStore, err := sessionstore.Default()
+	if err != nil {
+		return
 	}
-	return "hitl"
-}
-
-func runtimeEventData(discovered []agents.Discovery) []map[string]any {
-	data := make([]map[string]any, 0, len(discovered))
-	for _, result := range discovered {
-		data = append(data, map[string]any{
-			"agent":            result.ID,
-			"installed":        result.Found,
-			"version":          result.Version,
-			"sandbox_mode":     result.SandboxMode,
-			"approval_policy":  result.ApprovalPolicy,
-			"model":            result.Model,
-			"reasoning":        result.Reasoning,
-			"profile":          result.Profile,
-			"speed":            result.Speed,
-			"timeout_ms":       result.TimeoutMS,
-			"isolate_home":     result.IsolateHome,
-			"external_backend": result.ExternalBackend,
-			"sources":          result.Sources,
+	now := time.Now().UTC()
+	for _, run := range runs {
+		if run.RunID == "" || run.Error != "" {
+			continue
+		}
+		createdAt := run.LastEventAt
+		if createdAt.IsZero() {
+			createdAt = now
+		}
+		_ = sessionStore.Upsert(sessionstore.Session{
+			WorkspaceRoot: root,
+			RunID:         run.RunID,
+			IdeaSlug:      run.IdeaSlug,
+			Task:          run.Task,
+			Participants:  append([]string(nil), run.Participants...),
+			CreatedAt:     createdAt,
+			UpdatedAt:     now,
+			LastEventAt:   run.LastEventAt,
+			Terminal:      run.Terminal,
 		})
 	}
-	return data
 }
 
 func valueOr(value, fallback string) string {

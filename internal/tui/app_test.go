@@ -1,15 +1,19 @@
 package tui
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runstate"
 )
 
 func TestInitModelViewPromptsForWorkspaceInit(t *testing.T) {
@@ -55,7 +59,7 @@ func TestInitModelInitializesAndShowsDashboard(t *testing.T) {
 	}
 
 	view := dashboard.View()
-	for _, want := range []string{"Parley Deck  transport=", "Protocol", "Agents"} {
+	for _, want := range []string{"Parley Deck  transport=", "Sessions", "Agents"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("dashboard view missing %q\n%s", want, view)
 		}
@@ -99,7 +103,7 @@ func TestInitModelFailureStaysOnSetupScreen(t *testing.T) {
 }
 
 func TestDashboardRendersSelectedAgentDetails(t *testing.T) {
-	m := newModel(testStatus(), testDiscoveries())
+	m := newTestModel(nil)
 	m.width = 120
 
 	view := m.View()
@@ -113,7 +117,7 @@ func TestDashboardRendersSelectedAgentDetails(t *testing.T) {
 		"sandbox: workspace-write",
 		"headless: codex exec -",
 		"interactive: codex",
-		"session-only preview",
+		"Sessions",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("dashboard view missing %q\n%s", want, view)
@@ -122,15 +126,16 @@ func TestDashboardRendersSelectedAgentDetails(t *testing.T) {
 }
 
 func TestDashboardRendersFallbackCommandDetails(t *testing.T) {
-	m := newModel(testStatus(), testDiscoveries())
+	m := newTestModel(nil)
 	m.selectedAgent = 1
-	m.width = 120
+	m.width = 180
 
 	view := m.View()
 	for _, want := range []string{
 		"id: claude",
 		"configured launch: interactive",
-		"backend: unknown",
+		"backend:",
+		"unknown",
 		"headless: claude",
 		"interactive: claude --resume {prompt_path}",
 	} {
@@ -144,7 +149,7 @@ func TestDashboardRendersFallbackCommandDetails(t *testing.T) {
 }
 
 func TestDashboardAgentNavigationClamps(t *testing.T) {
-	m := newModel(testStatus(), testDiscoveries())
+	m := newTestModel(nil)
 
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 	m = updated.(model)
@@ -173,7 +178,8 @@ func TestDashboardAgentNavigationClamps(t *testing.T) {
 }
 
 func TestDashboardFocusSwitchPreservesSelection(t *testing.T) {
-	m := newModel(testStatus(), testDiscoveries())
+	m := newTestModel(testRuns())
+	m.focus = focusAgents
 
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 	m = updated.(model)
@@ -197,13 +203,14 @@ func TestDashboardFocusSwitchPreservesSelection(t *testing.T) {
 	if m.focus != focusAgents {
 		t.Fatalf("focus=%s, want %s", m.focus, focusAgents)
 	}
-	if m.selectedAgent != 1 {
-		t.Fatalf("selectedAgent=%d, want preserved 1", m.selectedAgent)
+	if m.selectedAgent != 0 {
+		t.Fatalf("selectedAgent=%d, want reset 0 for selected run", m.selectedAgent)
 	}
 }
 
 func TestDashboardLaunchModeOverridesAreSessionOnly(t *testing.T) {
-	m := newModel(testStatus(), testDiscoveries())
+	m := newTestModel(nil)
+	m.width = 180
 
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'m'}})
 	m = updated.(model)
@@ -224,7 +231,7 @@ func TestDashboardLaunchModeOverridesAreSessionOnly(t *testing.T) {
 	if got := agents.LaunchModeOrDefault(m.agents[0].LaunchMode); got != agents.LaunchHeadless {
 		t.Fatalf("underlying launch mode mutated to %q", got)
 	}
-	if !strings.Contains(m.View(), "effective: interactive (session only)") {
+	if !strings.Contains(m.View(), "effective: interactive") || !strings.Contains(m.View(), "session only") {
 		t.Fatalf("view missing session override\n%s", m.View())
 	}
 
@@ -239,7 +246,7 @@ func TestDashboardLaunchModeOverridesAreSessionOnly(t *testing.T) {
 }
 
 func TestDashboardModeKeysNoopOutsideAgentFocus(t *testing.T) {
-	m := newModel(testStatus(), testDiscoveries())
+	m := newTestModel(nil)
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
 	m = updated.(model)
 	if m.focus != focusIdeas {
@@ -251,6 +258,84 @@ func TestDashboardModeKeysNoopOutsideAgentFocus(t *testing.T) {
 	if len(m.launchOverrides) != 0 {
 		t.Fatalf("override created while ideas pane focused: %+v", m.launchOverrides)
 	}
+}
+
+func TestWorkspaceRendersRunsEventsAndQuestions(t *testing.T) {
+	m := newTestModel(testRuns())
+	m.width = 140
+
+	view := m.View()
+	for _, want := range []string{
+		"Sessions",
+		"ACTION",
+		"sample",
+		"Event stream",
+		"agent.started",
+		"Run details",
+		"Questions",
+		"Which branch?",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("workspace view missing %q\n%s", want, view)
+		}
+	}
+}
+
+func TestWorkspaceStartModeUsesCallback(t *testing.T) {
+	var got StartRequest
+	m := newModel(WorkspaceOptions{
+		Root:   "/repo",
+		Status: testStatus(),
+		Agents: testDiscoveries(),
+		StartRun: func(_ context.Context, request StartRequest) (runstate.RunSummary, error) {
+			got = request
+			return runstate.RunSummary{RunID: "run-new", IdeaSlug: "new-idea", Attention: runstate.AttentionIdle}, nil
+		},
+	})
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'N'}})
+	m = updated.(model)
+	if !m.startMode {
+		t.Fatal("N did not enter start mode")
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("New task")})
+	m = updated.(model)
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if cmd == nil {
+		t.Fatal("enter did not return start command")
+	}
+	updated, _ = m.Update(cmd())
+	m = updated.(model)
+	if got.Task != "New task" || len(got.Participants) != 1 || got.Participants[0] != "codex" {
+		t.Fatalf("request=%+v", got)
+	}
+	if len(m.runs) != 1 || m.runs[0].RunID != "run-new" {
+		t.Fatalf("runs=%+v", m.runs)
+	}
+}
+
+func TestRefreshPreservesSelectedRunAndAgent(t *testing.T) {
+	runs := testRuns()
+	m := newTestModel(runs)
+	m.selectedIdea = 0
+	m.selectedAgent = 1
+
+	newRun := runstate.RunSummary{RunID: "run-newer", IdeaSlug: "newer", Attention: runstate.AttentionRunning}
+	updated, _ := m.Update(refreshRunsMsg{runs: append([]runstate.RunSummary{newRun}, runs...)})
+	m = updated.(model)
+
+	run, ok := m.selectedRun()
+	if !ok || run.RunID != "run-1" {
+		t.Fatalf("selected run=%+v ok=%v, want run-1", run, ok)
+	}
+	if m.selectedAgent != 1 {
+		t.Fatalf("selectedAgent=%d, want preserved 1", m.selectedAgent)
+	}
+}
+
+func newTestModel(runs []runstate.RunSummary) model {
+	return newModel(WorkspaceOptions{Root: "/repo", Status: testStatus(), Agents: testDiscoveries(), Runs: runs})
 }
 
 func testStatus() protocol.WorkspaceStatus {
@@ -272,6 +357,7 @@ func testDiscoveries() []agents.Discovery {
 				Commands:              []string{"codex"},
 				LaunchMode:            agents.LaunchHeadless,
 				HeadlessMode:          "codex exec -",
+				HeadlessArgs:          []string{"exec", "-"},
 				InteractivePromptMode: agents.InteractivePromptNone,
 				InteractiveInvoke:     agents.InteractiveInvokePrintOnly,
 				SandboxMode:           "workspace-write",
@@ -297,6 +383,36 @@ func testDiscoveries() []agents.Discovery {
 			Path:    "/usr/bin/claude",
 			Found:   true,
 			Version: "claude test",
+		},
+	}
+}
+
+func testRuns() []runstate.RunSummary {
+	base := time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
+	return []runstate.RunSummary{
+		{
+			RunID:         "run-1",
+			IdeaSlug:      "sample",
+			Task:          "Sample task",
+			Participants:  []string{"codex"},
+			OpenQuestions: 1,
+			Attention:     runstate.AttentionAction,
+			LastEventAt:   base,
+			LastEventAge:  time.Minute,
+			State: runstate.RunState{
+				Agents: []runstate.AgentState{
+					{ID: "codex", State: runstate.StateRunning, StartedAt: base, LatestEvent: "agent.started"},
+					{ID: "claude", State: runstate.StatePending},
+				},
+				Recent: []runstate.EventSummary{{Time: base, Type: "agent.started", Agent: "codex", Text: "codex"}},
+			},
+			Questions: []hitl.Question{{ID: "q1", Agent: "codex", Prompt: "Which branch?", Risk: hitl.RiskNormal, Status: hitl.StatusOpen}},
+		},
+		{
+			RunID:       "run-2",
+			IdeaSlug:    "second",
+			Attention:   runstate.AttentionIdle,
+			LastEventAt: base.Add(-time.Hour),
 		},
 	}
 }

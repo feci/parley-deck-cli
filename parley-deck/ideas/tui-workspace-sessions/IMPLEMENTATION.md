@@ -1,0 +1,64 @@
+---
+idea: tui-workspace-sessions
+status: complete
+implemented-by: codex
+branch: feature/tui-workspace-sessions
+date: 2026-05-17
+---
+
+## Summary
+
+Implemented the first MVP slice of the workspace session console:
+
+- Added `internal/sessionstore` for safe user-local session metadata in `~/.parley-deck/sessions.json`, with `PARLEY_HOME` override for tests.
+- Added `internal/runcontrol` so CLI and TUI use a shared run creation path.
+- Added shared run attention derivation in `internal/runstate`.
+- Updated `parley run` to register session metadata through the shared run creation path.
+- Reworked `parley tui` into a workspace run console with session list, event stream, run/agent details, HITL question display, refresh, and `N` start-new-idea mode.
+- Kept TUI-started runs in-process and made the footer explicit that quitting does not provide detached execution.
+
+## Deviations from FINAL.md
+
+- The first UI uses a compact selected-agent detail pane rather than a separate full-screen per-agent view.
+- The selected-run event stream uses the existing compact recent event projection for now, not a larger scrollback buffer.
+- Cross-workspace recent sessions are persisted, but the TUI currently prioritizes current-workspace runs.
+- No global question queue was implemented; it remains deferred as planned.
+
+## Verification
+
+- `go test ./...`
+- `go run ./cmd/parley status --dir .`
+- `go run ./cmd/parley status --dir . --json`
+- `go run ./cmd/parley tui --dir .` smoke-tested in a PTY and exited with `q`.
+
+## Ready for review
+
+Reviewers should focus on:
+
+- Whether the session registry can corrupt or mislead users.
+- Whether `parley run` behavior stayed compatible.
+- Whether TUI-started run lifecycle semantics are clear enough.
+- Whether the TUI model has hidden race or stale-state problems.
+
+## Fix-up cycle 1
+
+Review consensus: `review/consensus.md`
+
+Implemented agreed fixes:
+
+- Stored cancel functions for TUI-started runs and cancel them when the TUI exits.
+- Preserved selected run by `RunID` and selected agent by agent ID across refreshes.
+- Removed per-tick session registry writes from the TUI refresh callback.
+- Added a lock file around `sessionstore.Upsert` read-modify-write.
+- Preserved existing `LastEventAt` when an update omits it.
+- Scheduled refresh ticks only after the previous refresh result is processed.
+
+Verification after fix-up:
+
+- `go test ./...`
+- `go run ./cmd/parley status --dir .`
+- `go run ./cmd/parley tui --dir .` in a PTY, exited with `q`.
+
+## Complete
+
+Review consensus is ready with all reviewer signoffs. There are no remaining agreed fixes for this implementation cycle.

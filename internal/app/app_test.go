@@ -286,6 +286,8 @@ func TestCodexProbePromptIncludesGitSmoke(t *testing.T) {
 
 func TestRunRecordsResolvedRuntime(t *testing.T) {
 	root := t.TempDir()
+	parleyHome := t.TempDir()
+	t.Setenv("PARLEY_HOME", parleyHome)
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
@@ -333,6 +335,9 @@ approval_policy = "on-failure"
 	}
 	if row["agent"] != "codex" || row["model"] != "local-model" || row["approval_policy"] != "on-failure" {
 		t.Fatalf("runtime row=%+v", row)
+	}
+	if _, err := os.Stat(filepath.Join(parleyHome, "sessions.json")); err != nil {
+		t.Fatalf("session registry was not written: %v", err)
 	}
 }
 
