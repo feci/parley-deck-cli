@@ -107,6 +107,14 @@ func TestRunRoundOneCreatesArtifactWithHeadlessAgent(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "fake.md")); err != nil {
 		t.Fatal(err)
 	}
+	indexPath := filepath.Join(idea.Path, "round-01", "_index.md")
+	indexData, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(indexData), "| fake | ok |") {
+		t.Fatalf("index missing fake ok row:\n%s", string(indexData))
+	}
 
 	events, err := runStore.Load()
 	if err != nil {
@@ -114,6 +122,15 @@ func TestRunRoundOneCreatesArtifactWithHeadlessAgent(t *testing.T) {
 	}
 	if got, want := events[len(events)-1].Type, "round.completed"; got != want {
 		t.Fatalf("last event=%s, want %s", got, want)
+	}
+	var indexWritten bool
+	for _, event := range events {
+		if event.Type == "round.index_written" {
+			indexWritten = true
+		}
+	}
+	if !indexWritten {
+		t.Fatalf("events missing round.index_written: %+v", events)
 	}
 }
 
@@ -255,10 +272,85 @@ func TestRunRoundOneRecordsAgentFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := events[len(events)-2].Type, "agent.failed"; got != want {
-		t.Fatalf("terminal agent event=%s, want %s", got, want)
+	var agentFailed bool
+	for _, event := range events {
+		if event.Type == "agent.failed" {
+			agentFailed = true
+		}
+	}
+	if !agentFailed {
+		t.Fatalf("events missing agent.failed: %+v", events)
 	}
 	if got, want := events[len(events)-1].Type, "round.incomplete"; got != want {
+		t.Fatalf("last event=%s, want %s", got, want)
+	}
+	indexData, err := os.ReadFile(filepath.Join(idea.Path, "round-01", "_index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(indexData), "| fake | failed |") {
+		t.Fatalf("index missing failed row:\n%s", string(indexData))
+	}
+}
+
+func TestRunRoundOneIndexWriteFailureIsWarning(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := protocol.CreateIdea(root, "Index warning task", []string{"fake"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexPath := filepath.Join(idea.Path, "round-01", "_index.md")
+	if err := os.Mkdir(indexPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runStore := store.New(filepath.Join(root, protocol.DeckDir, "runs", "index-warning-run"))
+
+	results := RunRoundOne(context.Background(), Options{
+		Root:  root,
+		RunID: "index-warning-run",
+		Idea:  idea,
+		Task:  "Index warning task",
+		Agents: []agents.Discovery{
+			{
+				Spec: agents.Spec{
+					ID:           "fake",
+					HeadlessArgs: []string{"-test.run=TestFakeAgentHelper", "--", "parley-fake-agent"},
+					PromptMode:   agents.PromptStdin,
+				},
+				Path:  os.Args[0],
+				Found: true,
+			},
+		},
+		Timeout: 5 * time.Second,
+		Store:   runStore,
+	})
+
+	if len(results) != 2 {
+		t.Fatalf("got %d results, want 2: %+v", len(results), results)
+	}
+	if !results[0].ArtifactOK || results[0].ExitError != "" {
+		t.Fatalf("participant should still succeed: %+v", results[0])
+	}
+	if results[1].AgentID != "index" || results[1].Warning == "" || results[1].ExitError != "" {
+		t.Fatalf("index failure should be warning-only: %+v", results[1])
+	}
+	events, err := runStore.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var indexFailed bool
+	for _, event := range events {
+		if event.Type == "round.index_failed" {
+			indexFailed = true
+		}
+	}
+	if !indexFailed {
+		t.Fatalf("events missing round.index_failed: %+v", events)
+	}
+	if got, want := events[len(events)-1].Type, "round.completed"; got != want {
 		t.Fatalf("last event=%s, want %s", got, want)
 	}
 }
