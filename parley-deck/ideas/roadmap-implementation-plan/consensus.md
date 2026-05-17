@@ -60,3 +60,15 @@ date: 2026-05-17
 ### Signoff: codex — 2026-05-17
 Status: ✅ ACCEPT
 Notes: Accept. The plan picks a small deterministic first slice, keeps provider-specific caching fenced until a direct backend exists, and preserves repo-map as the next delivery after the context substrate.
+
+### Signoff: claude — 2026-05-17
+Status: ✅ ACCEPT
+Notes: All seven of my round-02 guardrails are reflected in the agreed text: closed sanitizer fence set, context-only sanitization with a source-artifact regression test, sanitizer-is-not-redaction fenced to slice 4, byte-deterministic `_index.md`, runner-owned derived (but git-tracked) index, index-write failure as warning rather than round failure, and rows for skipped/failed participants. Slice ordering 2–7 matches the architectural fence I argued for — no provider-dependent wins claimed before the conditional `direct-sdk-backend-pilot`. One non-blocking ask for the slice 1 PR description: separate the index writer and the sanitizer as two reviewable behaviors so reviewers can sign off on each independently.
+
+### Signoff: gemini — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Accept. The plan correctly prioritizes context hygiene and deterministic indexing as the foundational slice. I am pleased to see my requirements for H2 extraction limits and a deterministic token-estimation heuristic included in the guardrails. This ensures the first slice is both compact and predictable.
+
+### Signoff: hermes — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Accept. The roadmap correctly sequences context substrate before repo maps and provider features; the closed sanitizer set plus regression tests give a safe, deterministic foundation for slice 1.
