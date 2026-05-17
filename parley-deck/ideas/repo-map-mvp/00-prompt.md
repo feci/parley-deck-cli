@@ -8,7 +8,7 @@ roles:
   claude: architecture and reviewability lens
   gemini: context-efficiency and output-shape lens
   hermes: operations and resilience lens
-status: round-01
+status: consensus
 ---
 
 ## Problem / idea
