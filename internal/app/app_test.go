@@ -109,6 +109,79 @@ func TestVersionFileMatchesBinaryVersion(t *testing.T) {
 	}
 }
 
+func TestContextRepoMapJSON(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "cmd", "sample"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "cmd", "sample", "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"context", "repo-map", "--dir", root, "--format", "json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	if payload["schema_version"] != float64(1) || payload["root"] != "." {
+		t.Fatalf("payload=%+v", payload)
+	}
+	if !strings.Contains(stdout.String(), "cmd/sample/main.go") || !strings.Contains(stdout.String(), "\"name\": \"main\"") {
+		t.Fatalf("repo map json missing expected file/symbol:\n%s", stdout.String())
+	}
+}
+
+func TestContextRepoMapMarkdownAndValidation(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("# readme\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"context", "repo-map", "--dir", root, "--format", "markdown", "--max-files", "1"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "# Repository Map") || !strings.Contains(stdout.String(), "README.md") {
+		t.Fatalf("markdown output missing expected content:\n%s", stdout.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "repo-map", "--dir", root, "--format", "xml"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "invalid format") {
+		t.Fatalf("stderr missing invalid format message: %s", stderr.String())
+	}
+}
+
+func TestContextUsage(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"context"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "usage: parley context repo-map") {
+		t.Fatalf("stderr missing usage: %s", stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "bogus"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "usage: parley context repo-map") {
+		t.Fatalf("stderr missing usage for bogus subcommand: %s", stderr.String())
+	}
+}
+
 func TestAgentsListPrintsResolvedRuntime(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
