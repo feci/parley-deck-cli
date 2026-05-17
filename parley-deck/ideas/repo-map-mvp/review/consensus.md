@@ -1,26 +1,26 @@
 ---
 idea: repo-map-mvp
+cycle: 2
 drafted-by: codex
 date: 2026-05-17
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/22
-status: fix-up-needed
+reviewed-commit: 07b26ad
+status: ready
 ---
 
-## Review Summary
+## Agreed fixes
 
-Review round 1 found no CRITICAL or MAJOR issues. Gemini and Hermes reported no findings. Claude found three MINOR issues and one NIT that are small and should be fixed before merge.
+No remaining agreed fixes. Review round 02 verified fix-up cycle 1.
 
-## Agreed Fixes
+## Deferred follow-ups
 
-1. Ensure `parse_error` never leaks the absolute developer-machine root when a Go file read fails between walk and parse.
-2. Add walker coverage for symlink skipping and practical non-regular-file skipping.
-3. Add CLI usage coverage for bare `parley context` and an unknown context subcommand.
-4. Remove the undocumented `--format md` alias so accepted formats exactly match `markdown|json`.
+- Optional deeper non-regular-file walker coverage with a FIFO/socket-style entry when the platform and test environment make that practical. The current symlink plus directory coverage satisfies this MVP's `where practical` scope.
+- `--max-files 0` behavior remains deferred from cycle 1.
+- JSON optional-field `omitempty` behavior remains accepted and deferred from cycle 1.
 
-## Deferred / Dismissed
+## Dismissed findings
 
-- `--max-files 0` behavior remains current default fallback behavior for this slice. A stricter numeric validation policy can be designed later if real usage needs it.
-- JSON `omitempty` behavior remains accepted for optional fields; the schema lists supported fields, not mandatory emission of empty values.
+- Claude round-02 NIT on non-regular-file coverage is accepted as non-blocking and deferred. No participant requested a fix for this slice.
 
 ## Signoffs
 
@@ -28,16 +28,4 @@ Review round 1 found no CRITICAL or MAJOR issues. Gemini and Hermes reported no 
 
 ### Signoff: codex — 2026-05-17
 Status: ✅ ACCEPT
-Notes: Accept. The agreed fixes are narrow, local, and should be applied in fix-up cycle 1 before merge/release.
-
-### Signoff: claude — 2026-05-17
-Status: ✅ ACCEPT
-Notes: Accept. The four agreed fixes map 1:1 to my round-01 findings (parse_error abs-path leak, symlink/non-regular walker coverage, CLI usage test, drop undocumented `md` alias). The two deferrals (`--max-files 0` semantics and `omitempty` policy) match my open questions and are appropriately scoped out of this slice. No counter-proposal needed.
-
-### Signoff: gemini — 2026-05-17
-Status: ✅ ACCEPT
-Notes: Accept. The consensus correctly captures the state of the review. The agreed fixes are minor and improve the robustness and consistency of the MVP implementation as intended.
-
-### Signoff: hermes — 2026-05-17
-Status: ✅ ACCEPT
-Notes: Accept. Hermes reported no findings in round-01. The review summary and agreed fixes accurately reflect the minor issues identified by others and the overall readiness of the MVP.
+Notes: Review round 02 has no remaining agreed fixes. The only new item is a deferred NIT on deeper non-regular-file coverage, so the implementation is ready to mark complete after participant signoffs.
