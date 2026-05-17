@@ -56,3 +56,7 @@ date: 2026-05-17
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+
+### Signoff: codex — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Accept. The plan picks a small deterministic first slice, keeps provider-specific caching fenced until a direct backend exists, and preserves repo-map as the next delivery after the context substrate.
