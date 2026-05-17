@@ -37,3 +37,15 @@ The reviewers identified several low-risk improvements that should be handled be
 ### Signoff: codex — 2026-05-17
 Status: ✅ ACCEPT
 Notes: Accept. The agreed fixes are all local to the new sanitizer/index code and should be handled in fix-up cycle 1 before merge.
+
+### Signoff: claude — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Accept. Agreed fixes 1–9 cover all of my MINOR findings from round-01 (malformed open fence, Unicode-safe fold, dead `### ` guard, MkdirAll, `token-heuristic` frontmatter, `runner/index` sentinel, `len(value)`, trim scoping, and the missing sanitizer/index tests). The two remaining items I raised — `escapeTable("")` returning `"none"` and the `#`/`---` summary-line skip — are NITs I explicitly flagged as non-blocking, so deferring them is fine. Forward-compatibility of `Result.Warning` (a dedicated `Result.Kind` or runner-event type) is also reasonable to defer until a later slice extends the struct.
+
+### Signoff: gemini — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Accept. The consensus correctly incorporates the "degrade gracefully" requirement for malformed fences and the Unicode safety improvements. Deferring streaming extraction for now is appropriate given the current scale of the CLI. The agreed fixes 1-9 cover all the minor technical risks identified during my review.
+
+### Signoff: hermes — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Accept from operations/resilience/tooling lens. Fixes 1-9 (esp. graceful malformed-fence handling, MkdirAll, runner/index sentinel, and expanded sanitizer tests) strengthen runtime robustness and reduce silent-failure surface. No blocking operational concerns remain for this slice.
