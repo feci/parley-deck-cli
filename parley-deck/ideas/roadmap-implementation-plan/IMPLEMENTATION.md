@@ -2,12 +2,13 @@
 idea: roadmap-implementation-plan
 implemented-by: codex
 date: 2026-05-17
-status: ready-for-review
+status: ready-for-re-review
 design-pr: https://github.com/feci/parley-deck-cli/pull/19
 design-final: https://github.com/feci/parley-deck-cli/blob/6dd1621decea3ef53e41df0edab2e5c15fe4c704/parley-deck/ideas/roadmap-implementation-plan/FINAL.md
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/20
 implementation-branch: feature/roadmap-implementation-plan
-implementation-commit: d943fbc
+implementation-commit: 8d57b63
+fix-up-cycle: 1
 ---
 
 ## Summary
@@ -55,6 +56,27 @@ The implementation PR separates two reviewable behaviors:
 
 - `go test ./internal/runner`: passed.
 - `go test ./...`: passed.
+
+## Fix-up Cycle 1
+
+Review consensus: `review/consensus.md`.
+
+Applied agreed fixes:
+
+- Malformed opening fences are preserved as literal text instead of dropping the artifact tail.
+- Fence matching now uses ASCII-only case folding without indexing through Unicode-lowercased copies.
+- H2 extraction uses direct `## ` detection without the dead `### ` guard.
+- `_index.md` writing now creates the round directory before writing.
+- `_index.md` frontmatter includes `token-heuristic: bytes_div_4`.
+- The warning-only synthetic result now uses `runner/index` as a runner-owned sentinel.
+- `approxTokens` uses `len(value)` for byte length without allocating.
+- `SanitizeForContext` no longer trims leading/trailing whitespace.
+- Added tests for no-fence identity, case-mixed fences, malformed opening fences, and updated index metadata/sentinel behavior.
+
+Verification after fix-up:
+
+- `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go test ./internal/runner`: passed.
+- `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go test ./...`: passed.
 
 ## Deviations From FINAL.md
 
