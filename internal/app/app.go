@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -1375,12 +1376,19 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 	}
 	registerWorkspaceSessions(root, runs)
 	refreshRuns := func() ([]runstate.RunSummary, error) {
-		runs, err := runstate.ListRuns(root)
-		if err == nil {
-			registerWorkspaceSessions(root, runs)
-		}
-		return runs, err
+		return runstate.ListRuns(root)
 	}
+	var cancelMu sync.Mutex
+	var cancelRuns []context.CancelFunc
+	cancelStartedRuns := func() {
+		cancelMu.Lock()
+		defer cancelMu.Unlock()
+		for _, cancel := range cancelRuns {
+			cancel()
+		}
+		cancelRuns = nil
+	}
+	defer cancelStartedRuns()
 	startRun := func(startCtx context.Context, request tui.StartRequest) (runstate.RunSummary, error) {
 		created, err := runcontrol.Create(runcontrol.CreateOptions{
 			Root:         root,
@@ -1392,7 +1400,10 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 		if err != nil {
 			return runstate.RunSummary{}, err
 		}
-		runCtx, _ := context.WithCancel(startCtx)
+		runCtx, cancelRun := context.WithCancel(startCtx)
+		cancelMu.Lock()
+		cancelRuns = append(cancelRuns, cancelRun)
+		cancelMu.Unlock()
 		if request.Auto {
 			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
 		}

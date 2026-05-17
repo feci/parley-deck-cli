@@ -3,6 +3,7 @@ package sessionstore
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -94,38 +95,43 @@ func (s Store) Upsert(session Session) error {
 		session.UpdatedAt = now
 	}
 
-	doc, err := s.read()
-	if err != nil {
-		return err
-	}
-	replaced := false
-	for i, existing := range doc.Sessions {
-		if existing.WorkspaceRoot != session.WorkspaceRoot || existing.RunID != session.RunID {
-			continue
+	return s.withLock(func() error {
+		doc, err := s.read()
+		if err != nil {
+			return err
 		}
-		if session.Task == "" {
-			session.Task = existing.Task
+		replaced := false
+		for i, existing := range doc.Sessions {
+			if existing.WorkspaceRoot != session.WorkspaceRoot || existing.RunID != session.RunID {
+				continue
+			}
+			if session.Task == "" {
+				session.Task = existing.Task
+			}
+			if len(session.Participants) == 0 {
+				session.Participants = existing.Participants
+			}
+			if session.IdeaSlug == "" {
+				session.IdeaSlug = existing.IdeaSlug
+			}
+			if session.CreatedAt.IsZero() {
+				session.CreatedAt = existing.CreatedAt
+			}
+			if session.LastEventAt.IsZero() {
+				session.LastEventAt = existing.LastEventAt
+			}
+			doc.Sessions[i] = session
+			replaced = true
+			break
 		}
-		if len(session.Participants) == 0 {
-			session.Participants = existing.Participants
+		if !replaced {
+			if session.CreatedAt.IsZero() {
+				session.CreatedAt = now
+			}
+			doc.Sessions = append(doc.Sessions, session)
 		}
-		if session.IdeaSlug == "" {
-			session.IdeaSlug = existing.IdeaSlug
-		}
-		if session.CreatedAt.IsZero() {
-			session.CreatedAt = existing.CreatedAt
-		}
-		doc.Sessions[i] = session
-		replaced = true
-		break
-	}
-	if !replaced {
-		if session.CreatedAt.IsZero() {
-			session.CreatedAt = now
-		}
-		doc.Sessions = append(doc.Sessions, session)
-	}
-	return s.write(doc)
+		return s.write(doc)
+	})
 }
 
 func (s Store) read() (document, error) {
@@ -173,4 +179,24 @@ func (s Store) write(doc document) error {
 		return err
 	}
 	return os.Rename(tmpName, s.path)
+}
+
+func (s Store) withLock(fn func() error) error {
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
+		return err
+	}
+	lockPath := s.path + ".lock"
+	for attempt := 0; attempt < 50; attempt++ {
+		file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err == nil {
+			_ = file.Close()
+			defer os.Remove(lockPath)
+			return fn()
+		}
+		if !errors.Is(err, os.ErrExist) {
+			return err
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return fmt.Errorf("timed out waiting for session store lock %s", lockPath)
 }

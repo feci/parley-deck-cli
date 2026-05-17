@@ -1,6 +1,6 @@
 ---
 idea: tui-workspace-sessions
-status: ready-for-review
+status: complete
 implemented-by: codex
 branch: feature/tui-workspace-sessions
 date: 2026-05-17
@@ -39,3 +39,26 @@ Reviewers should focus on:
 - Whether `parley run` behavior stayed compatible.
 - Whether TUI-started run lifecycle semantics are clear enough.
 - Whether the TUI model has hidden race or stale-state problems.
+
+## Fix-up cycle 1
+
+Review consensus: `review/consensus.md`
+
+Implemented agreed fixes:
+
+- Stored cancel functions for TUI-started runs and cancel them when the TUI exits.
+- Preserved selected run by `RunID` and selected agent by agent ID across refreshes.
+- Removed per-tick session registry writes from the TUI refresh callback.
+- Added a lock file around `sessionstore.Upsert` read-modify-write.
+- Preserved existing `LastEventAt` when an update omits it.
+- Scheduled refresh ticks only after the previous refresh result is processed.
+
+Verification after fix-up:
+
+- `go test ./...`
+- `go run ./cmd/parley status --dir .`
+- `go run ./cmd/parley tui --dir .` in a PTY, exited with `q`.
+
+## Complete
+
+Review consensus is ready with all reviewer signoffs. There are no remaining agreed fixes for this implementation cycle.

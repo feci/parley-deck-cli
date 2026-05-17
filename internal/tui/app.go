@@ -148,7 +148,7 @@ func newModel(opts WorkspaceOptions) model {
 func (m model) Init() tea.Cmd {
 	var cmds []tea.Cmd
 	if m.refreshRuns != nil {
-		cmds = append(cmds, refreshRunsCmd(m.refreshRuns), refreshTickCmd())
+		cmds = append(cmds, refreshRunsCmd(m.refreshRuns))
 	}
 	return tea.Batch(cmds...)
 }
@@ -202,19 +202,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	case refreshRunsMsg:
+		selectedRunID := ""
+		selectedAgentID := ""
+		if run, ok := m.selectedRun(); ok {
+			selectedRunID = run.RunID
+			if len(run.State.Agents) > 0 {
+				selectedAgentID = run.State.Agents[clampIndex(m.selectedAgent, len(run.State.Agents))].ID
+			}
+		}
 		if msg.err != nil {
 			m.errText = msg.err.Error()
 		} else {
 			m.errText = ""
 			m.runs = msg.runs
+			if selectedRunID != "" {
+				m.selectedIdea = indexRun(m.runs, selectedRunID)
+			}
+			if selectedAgentID != "" {
+				m.selectedAgent = indexAgent(m.selectedRunStateAgents(), selectedAgentID)
+			}
 			m.clampSelections()
+		}
+		if m.refreshRuns != nil {
+			return m, refreshTickCmd()
 		}
 		return m, nil
 	case refreshTickMsg:
 		if m.refreshRuns == nil {
 			return m, nil
 		}
-		return m, tea.Batch(refreshRunsCmd(m.refreshRuns), refreshTickCmd())
+		return m, refreshRunsCmd(m.refreshRuns)
 	case startRunMsg:
 		m.starting = false
 		if msg.err != nil {
@@ -838,6 +855,23 @@ func upsertRunSummary(runs []runstate.RunSummary, run runstate.RunSummary) []run
 func indexRun(runs []runstate.RunSummary, runID string) int {
 	for i, run := range runs {
 		if run.RunID == runID {
+			return i
+		}
+	}
+	return 0
+}
+
+func (m model) selectedRunStateAgents() []runstate.AgentState {
+	run, ok := m.selectedRun()
+	if !ok {
+		return nil
+	}
+	return run.State.Agents
+}
+
+func indexAgent(agents []runstate.AgentState, agentID string) int {
+	for i, agent := range agents {
+		if agent.ID == agentID {
 			return i
 		}
 	}

@@ -68,6 +68,20 @@ func TestUpsertListAndDedupe(t *testing.T) {
 	if !session.Terminal || !session.LastEventAt.Equal(base.Add(time.Minute)) {
 		t.Fatalf("update fields missing: %+v", session)
 	}
+	if err := store.Upsert(Session{
+		WorkspaceRoot: ".",
+		RunID:         "run-1",
+		UpdatedAt:     base.Add(2 * time.Minute),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	sessions, err = store.List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sessions[0].LastEventAt.Equal(base.Add(time.Minute)) {
+		t.Fatalf("zero last event clobbered previous value: %+v", sessions[0])
+	}
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("sessions file missing: %v", err)
 	}

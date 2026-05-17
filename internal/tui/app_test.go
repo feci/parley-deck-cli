@@ -315,6 +315,25 @@ func TestWorkspaceStartModeUsesCallback(t *testing.T) {
 	}
 }
 
+func TestRefreshPreservesSelectedRunAndAgent(t *testing.T) {
+	runs := testRuns()
+	m := newTestModel(runs)
+	m.selectedIdea = 0
+	m.selectedAgent = 1
+
+	newRun := runstate.RunSummary{RunID: "run-newer", IdeaSlug: "newer", Attention: runstate.AttentionRunning}
+	updated, _ := m.Update(refreshRunsMsg{runs: append([]runstate.RunSummary{newRun}, runs...)})
+	m = updated.(model)
+
+	run, ok := m.selectedRun()
+	if !ok || run.RunID != "run-1" {
+		t.Fatalf("selected run=%+v ok=%v, want run-1", run, ok)
+	}
+	if m.selectedAgent != 1 {
+		t.Fatalf("selectedAgent=%d, want preserved 1", m.selectedAgent)
+	}
+}
+
 func newTestModel(runs []runstate.RunSummary) model {
 	return newModel(WorkspaceOptions{Root: "/repo", Status: testStatus(), Agents: testDiscoveries(), Runs: runs})
 }
