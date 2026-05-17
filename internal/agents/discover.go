@@ -89,7 +89,7 @@ func DefaultSpecs() []Spec {
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
 			HeadlessMode:          "codex exec -",
-			HeadlessArgs:          []string{"exec", "--cd", "{root}", "--sandbox", "workspace-write", "--ask-for-approval", "on-failure", "-"},
+			HeadlessArgs:          []string{"exec", "--cd", "{root}", "--sandbox", "workspace-write", "-c", "approval_policy=\"on-failure\"", "-"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
