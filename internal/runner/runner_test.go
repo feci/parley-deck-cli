@@ -334,7 +334,7 @@ func TestRunRoundOneIndexWriteFailureIsWarning(t *testing.T) {
 	if !results[0].ArtifactOK || results[0].ExitError != "" {
 		t.Fatalf("participant should still succeed: %+v", results[0])
 	}
-	if results[1].AgentID != "index" || results[1].Warning == "" || results[1].ExitError != "" {
+	if results[1].AgentID != "runner/index" || results[1].Warning == "" || results[1].ExitError != "" {
 		t.Fatalf("index failure should be warning-only: %+v", results[1])
 	}
 	events, err := runStore.Load()

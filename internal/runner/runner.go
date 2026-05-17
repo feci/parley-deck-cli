@@ -137,7 +137,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 		now := time.Now().UTC()
 		warning := "round index write failed: " + err.Error()
 		results = append(results, Result{
-			AgentID:     "index",
+			AgentID:     "runner/index",
 			OutputPath:  indexPath,
 			CompletedAt: now,
 			Warning:     warning,

@@ -12,41 +12,79 @@ import (
 
 var contextReasoningFenceTags = []string{"think", "thought", "thinking"}
 
-// SanitizeForContext removes a closed set of hidden-reasoning fences before
-// content is reused in prompts or derived context. It is not secret redaction.
+// SanitizeForContext removes a closed set of complete hidden-reasoning fences
+// before content is reused in prompts or derived context. It preserves malformed
+// unclosed fences as literal text and is not secret redaction.
 func SanitizeForContext(input string) string {
 	output := input
 	for _, tag := range contextReasoningFenceTags {
 		output = removeTaggedBlocks(output, tag)
 	}
-	return strings.TrimSpace(output)
+	return output
 }
 
 func removeTaggedBlocks(input, tag string) string {
 	open := "<" + tag + ">"
 	close := "</" + tag + ">"
 	var b strings.Builder
-	remaining := input
+	offset := 0
 	for {
-		lower := strings.ToLower(remaining)
-		start := strings.Index(lower, open)
-		if start < 0 {
-			b.WriteString(remaining)
+		startRel := indexASCIIEqualFold(input[offset:], open)
+		if startRel < 0 {
+			b.WriteString(input[offset:])
 			return b.String()
 		}
-		b.WriteString(remaining[:start])
+		start := offset + startRel
+		b.WriteString(input[offset:start])
 		afterOpen := start + len(open)
-		endRel := strings.Index(strings.ToLower(remaining[afterOpen:]), close)
+		endRel := indexASCIIEqualFold(input[afterOpen:], close)
 		if endRel < 0 {
+			b.WriteString(input[start:])
 			return b.String()
 		}
-		remaining = remaining[afterOpen+endRel+len(close):]
+		offset = afterOpen + endRel + len(close)
 	}
+}
+
+func indexASCIIEqualFold(value, needle string) int {
+	if needle == "" {
+		return 0
+	}
+	for i := 0; i+len(needle) <= len(value); i++ {
+		if asciiEqualFold(value[i:i+len(needle)], needle) {
+			return i
+		}
+	}
+	return -1
+}
+
+func asciiEqualFold(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		ca := asciiLower(a[i])
+		cb := asciiLower(b[i])
+		if ca != cb {
+			return false
+		}
+	}
+	return true
+}
+
+func asciiLower(value byte) byte {
+	if value >= 'A' && value <= 'Z' {
+		return value + ('a' - 'A')
+	}
+	return value
 }
 
 func writeRoundIndex(idea protocol.IdeaStatus, roundLabel string, results []Result) (string, error) {
 	roundDir := filepath.Join(idea.Path, roundLabel)
 	indexPath := filepath.Join(roundDir, "_index.md")
+	if err := os.MkdirAll(roundDir, 0o755); err != nil {
+		return indexPath, err
+	}
 	data := BuildRoundIndex(idea, roundLabel, results)
 	if err := os.WriteFile(indexPath, []byte(data), 0o644); err != nil {
 		return indexPath, err
@@ -67,7 +105,7 @@ func BuildRoundIndex(idea protocol.IdeaStatus, roundLabel string, results []Resu
 	})
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "---\nidea: %s\nround: %s\nartifact: round-index\nderived: true\ngenerated-by: parley\n---\n\n", idea.Slug, roundLabel)
+	fmt.Fprintf(&b, "---\nidea: %s\nround: %s\nartifact: round-index\nderived: true\ngenerated-by: parley\ntoken-heuristic: bytes_div_4\n---\n\n", idea.Slug, roundLabel)
 	fmt.Fprintf(&b, "# Round Index: %s\n\n", roundLabel)
 	fmt.Fprintln(&b, "This is a runner-owned derived artifact. Source participant artifacts are not modified.")
 	fmt.Fprintln(&b)
@@ -189,7 +227,7 @@ func extractH2Sections(markdown string) []roundIndexSection {
 	current := -1
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "## ") && !strings.HasPrefix(trimmed, "### ") {
+		if strings.HasPrefix(trimmed, "## ") {
 			title := strings.TrimSpace(strings.TrimPrefix(trimmed, "## "))
 			if title == "" {
 				continue
@@ -213,7 +251,7 @@ func approxTokens(value string) int {
 	if value == "" {
 		return 0
 	}
-	return (len([]byte(value)) + 3) / 4
+	return (len(value) + 3) / 4
 }
 
 func trimSummary(value string) string {

@@ -32,10 +32,29 @@ func TestSanitizeForContextRemovesSupportedReasoningFences(t *testing.T) {
 	}
 }
 
-func TestSanitizeForContextDropsMalformedOpenFence(t *testing.T) {
+func TestSanitizeForContextPreservesInputWithoutFences(t *testing.T) {
+	input := "  visible text\nwith whitespace  "
+	if got := SanitizeForContext(input); got != input {
+		t.Fatalf("got %q, want original input %q", got, input)
+	}
+}
+
+func TestSanitizeForContextRemovesCaseMixedFence(t *testing.T) {
+	got := SanitizeForContext("before\n<Think>hidden</THINK>\nafter")
+	if strings.Contains(got, "hidden") || strings.Contains(got, "<Think>") {
+		t.Fatalf("case-mixed fence was not removed: %q", got)
+	}
+	for _, want := range []string{"before", "after"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("sanitized output missing %q: %q", want, got)
+		}
+	}
+}
+
+func TestSanitizeForContextPreservesMalformedOpenFence(t *testing.T) {
 	got := SanitizeForContext("visible\n<think>unfinished hidden text")
-	if strings.Contains(got, "unfinished hidden text") {
-		t.Fatalf("malformed open fence was not removed: %q", got)
+	if !strings.Contains(got, "unfinished hidden text") {
+		t.Fatalf("malformed open fence should preserve trailing content: %q", got)
 	}
 	if !strings.Contains(got, "visible") {
 		t.Fatalf("visible text was removed: %q", got)
@@ -88,6 +107,7 @@ Alpha risk paragraph.
 	}
 	for _, want := range []string{
 		"artifact: round-index",
+		"token-heuristic: bytes_div_4",
 		"| alpha | ok |",
 		"| beta | failed |",
 		"## alpha",
