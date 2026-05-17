@@ -26,7 +26,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.2.1\n"; got != want {
+	if got, want := stdout.String(), "parley 1.2.2\n"; got != want {
 		t.Fatalf("version output=%q want %q", got, want)
 	}
 
@@ -36,8 +36,31 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.2.1\n"; got != want {
+	if got, want := stdout.String(), "parley 1.2.2\n"; got != want {
 		t.Fatalf("--version output=%q want %q", got, want)
+	}
+}
+
+func TestHelpIncludesDescriptionsFlagsAndExamples(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"help"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"Parley Deck keeps the cooperation trail",
+		"Commands:",
+		"Parameters and flags:",
+		"--participants AGENTS",
+		"--format markdown|json",
+		"Examples:",
+		"parley context repo-map --dir . --format markdown --max-files 50",
+		"Exit codes:",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("help missing %q:\n%s", want, out)
+		}
 	}
 }
 

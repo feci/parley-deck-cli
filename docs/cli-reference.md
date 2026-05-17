@@ -1,0 +1,195 @@
+# CLI Reference
+
+`parley` orchestrates Parley Deck workflows from the terminal. Commands operate
+on the current directory by default; pass `--dir DIR` to target another
+workspace root.
+
+## Common Workflow
+
+```bash
+parley init --dir .
+parley agents list --dir .
+parley agents verify --dir . --agent claude
+parley run --dir . --participants claude,gemini --yes "Plan the next CLI slice"
+parley status --dir .
+parley resume --dir . <run-id-or-idea>
+```
+
+## Commands
+
+### `parley init [--dir DIR]`
+
+Create the repository-local `parley-deck/` workspace with protocol, ideas,
+inbox, metadata, and run directories.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+
+### `parley agents list [--dir DIR]`
+
+Print the effective runtime matrix for configured agents. The output includes
+installed state, version probe, launch mode, sandbox and approval policy,
+model/profile, timeout, isolated-home use, backend type, and config sources.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+
+### `parley agents verify [--dir DIR] [--agent ID] [--full] [--yes]`
+
+Verify configured agent CLIs.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--agent ID`: verify only one stable agent ID.
+- `--full`: run behavioral headless probes, not just version probes.
+- `--yes`: confirm probes that may call hosted backends.
+
+Examples:
+
+```bash
+parley agents verify --dir . --agent codex
+parley agents verify --dir . --full --agent hermes --yes
+```
+
+### `parley run [--dir DIR] [--no-tui] [--auto] [--participants IDS] [--yes] TASK`
+
+Create a new idea from `TASK` and launch round-01 with selected participants.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--no-tui`: run headlessly and print results instead of opening the TUI.
+- `--auto`: enable automatic low-risk HITL handling during the run.
+- `--participants IDS`: comma-separated agent IDs, for example `claude,gemini`.
+- `--yes`: confirm selected hosted/non-local backend launches.
+- `TASK`: free-form work request.
+
+Example:
+
+```bash
+parley run --dir . --no-tui --participants claude,gemini --yes "Review the repo-map MVP"
+```
+
+### `parley resume [--dir DIR] [--no-tui] RUN_OR_IDEA`
+
+Resume a previous run by run ID or idea slug. This also validates pending
+manual or interactive consensus signoff handoffs when possible.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--no-tui`: print run detail instead of opening the TUI.
+- `RUN_OR_IDEA`: run ID under `parley-deck/runs/` or idea slug.
+
+### `parley status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]`
+
+Show workspace, idea, consensus, run, and HITL question state.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--run RUN_ID`: inspect one run.
+- `--idea SLUG`: inspect one idea or its latest run.
+- `--json`: print machine-readable JSON.
+
+### `parley answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...`
+
+Answer a pending human-in-the-loop question for a run.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `RUN_ID`: run directory ID.
+- `QUESTION_ID`: question file ID.
+- `ANSWER...`: answer text.
+
+Example:
+
+```bash
+parley answer --dir . 20260517T120000.000000000Z q1 "Use the conservative default"
+```
+
+### `parley context repo-map [--dir DIR] [--format markdown|json] [--max-files N]`
+
+Emit a deterministic map of the local repository. Markdown output is useful in
+prompts; JSON output is useful for tools.
+
+- `--dir DIR`: repository root to map. Defaults to `.`.
+- `--format markdown|json`: output format. Defaults to `markdown`.
+- `--max-files N`: maximum number of files to include. Defaults to `1000`.
+
+Examples:
+
+```bash
+parley context repo-map --dir . --format markdown --max-files 50
+parley context repo-map --dir . --format json --max-files 10
+```
+
+### `parley consensus status [--dir DIR] [--review] [--json] IDEA`
+
+Inspect consensus state for an idea.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--review`: inspect `review/consensus.md` instead of `consensus.md`.
+- `--json`: print machine-readable JSON.
+- `IDEA`: idea slug under `parley-deck/ideas/`.
+
+### `parley consensus draft [--dir DIR] [--review] [--round N] [--by AGENT] IDEA`
+
+Draft a consensus file from submitted round or review files.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--review`: draft review consensus.
+- `--round N`: source round number.
+- `--by AGENT`: drafter agent ID recorded in frontmatter.
+- `IDEA`: idea slug.
+
+### `parley consensus signoff [--dir DIR] [--review] --agent ID --status STATUS [--notes TEXT] [--counter TEXT] IDEA`
+
+Append one signoff block to the target consensus file.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--review`: sign review consensus.
+- `--agent ID`: signing participant ID.
+- `--status STATUS`: `accept`, `reserve`, `reservations`, or `block`.
+- `--notes TEXT`: signoff notes.
+- `--counter TEXT`: counter-proposal for `block` signoffs.
+- `IDEA`: idea slug.
+
+### `parley consensus request-signoffs [--dir DIR] [--review] [--participants IDS] [--yes] [--dry-run] IDEA`
+
+Ask missing participants to append their own signoff blocks.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--review`: request review consensus signoffs.
+- `--participants IDS`: comma-separated participant IDs to request.
+- `--yes`: confirm hosted/non-local backend launches.
+- `--dry-run`: print the planned requests without invoking agents.
+- `IDEA`: idea slug.
+
+### `parley consensus finalize [--dir DIR] [--by AGENT] IDEA`
+
+Create or update `FINAL.md` from accepted consensus.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--by AGENT`: final plan author.
+- `IDEA`: idea slug.
+
+### `parley consensus reopen [--dir DIR] [--review] --reason TEXT IDEA`
+
+Reopen a consensus file and preserve the previous blocked draft.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--review`: reopen review consensus.
+- `--reason TEXT`: reason recorded in the reopened file.
+- `IDEA`: idea slug.
+
+### `parley tui [--dir DIR]`
+
+Open the project TUI.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+
+### `parley version [--all] [--json]`
+
+Print the CLI version.
+
+- `--all`: include `parley-deck-skill` installer, runtime skill, and project
+  metadata status when available.
+- `--json`: print machine-readable JSON.
+
+## Exit Codes
+
+- `0`: success.
+- `1`: runtime failure, failed probe, malformed workspace, or agent failure.
+- `2`: usage error or missing required argument.
+- `3`: pending manual/interactive handoff for `consensus request-signoffs`.

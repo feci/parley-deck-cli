@@ -75,10 +75,21 @@ func Run(args []string, stdout, stderr io.Writer) int {
 func printUsage(w io.Writer) {
 	fmt.Fprintf(w, `%s orchestrates Parley Deck multi-agent workflows.
 
+Parley Deck keeps the cooperation trail in a repository-local parley-deck/
+directory. The CLI initializes that workspace, discovers local agent CLIs,
+starts or resumes multi-agent rounds, tracks HITL questions, manages consensus
+signoffs, and emits repository context that can be handed to agents.
+
 Usage:
   %s init [--dir DIR]
-  %s agents list|verify
-  %s consensus status|draft|signoff|request-signoffs|finalize|reopen
+  %s agents list [--dir DIR]
+  %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
+  %s consensus status [--dir DIR] [--review] [--json] IDEA
+  %s consensus draft [--dir DIR] [--review] [--round N] [--by AGENT] IDEA
+  %s consensus signoff [--dir DIR] [--review] --agent ID --status accept|reserve|reservations|block [--notes TEXT] [--counter TEXT] IDEA
+  %s consensus request-signoffs [--dir DIR] [--review] [--participants IDS] [--yes] [--dry-run] IDEA
+  %s consensus finalize [--dir DIR] [--by AGENT] IDEA
+  %s consensus reopen [--dir DIR] [--review] --reason TEXT IDEA
   %s context repo-map [--dir DIR] [--format markdown|json] [--max-files N]
   %s status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
@@ -88,7 +99,179 @@ Usage:
   %s help
   %s version [--all] [--json]
 
-`, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName)
+Commands:
+  init
+      Create parley-deck/COOPERATION.md, ideas/, inbox/, meta/, and runs/.
+
+  agents list
+      Print the effective runtime matrix for configured agents: installed
+      state, command, launch mode, sandbox/approval policy, model/profile,
+      timeout, home isolation, backend class, and config sources.
+
+  agents verify
+      Check configured agent CLIs. By default this is a cheap version probe.
+      Use --full --yes to run behavioral probes that may call hosted backends.
+
+  run
+      Create a new idea from TASK and start round-01 with selected agents.
+      Without --yes or --auto, Parley asks before launching hosted agents.
+
+  resume
+      Re-open a run by run ID or idea slug, validate pending handoffs, and
+      continue the live TUI unless --no-tui is set.
+
+  status
+      Show workspace, idea, consensus, run, and HITL question state.
+
+  answer
+      Answer a pending human-in-the-loop question for a run.
+
+  consensus
+      Draft, inspect, sign, request signoffs for, finalize, or reopen design
+      and review consensus files under parley-deck/ideas/<idea>/.
+
+  context repo-map
+      Emit a deterministic local repository map for agent context. Markdown is
+      optimized for humans and prompts; JSON is optimized for tooling.
+
+  tui
+      Open the project TUI for workspace status, run state, questions, and
+      agent/runtime inspection.
+
+  version
+      Print the CLI version. With --all, also print parley-deck-skill and
+      project metadata compatibility status when available.
+
+Parameters and flags:
+  --dir DIR
+      Workspace root. Defaults to the current directory.
+
+  --participants AGENTS
+      Comma-separated agent IDs, for example claude,gemini,hermes.
+
+  --yes
+      Confirm an operation that may launch configured hosted backends.
+
+  --auto
+      Enable automatic low-risk HITL handling during a run.
+
+  --no-tui
+      Run or resume without opening the live terminal UI.
+
+  --json
+      Print machine-readable JSON for commands that support it.
+
+  --review
+      Target review consensus at review/consensus.md instead of consensus.md.
+
+  --agent ID
+      Select one participant or signer by stable Parley agent ID.
+
+  --status VALUE
+      Signoff status: accept, reserve, reservations, or block.
+
+  --notes TEXT
+      Notes appended to a signoff.
+
+  --counter TEXT
+      Counter-proposal required for block signoffs.
+
+  --round N
+      Round number used when drafting consensus.
+
+  --by AGENT
+      Agent ID recorded as drafter/finalizer.
+
+  --format markdown|json
+      Output format for context repo-map. Defaults to markdown.
+
+  --max-files N
+      Maximum number of files in repo-map output. Defaults to 1000.
+
+  TASK
+      Free-form work request used to create a new idea.
+
+  IDEA / SLUG
+      Idea directory name under parley-deck/ideas/.
+
+  RUN_ID
+      Run directory ID under parley-deck/runs/.
+
+  QUESTION_ID
+      HITL question ID from a run's questions directory.
+
+Examples:
+  # Initialize a repository for Parley Deck.
+  %s init --dir .
+
+  # Inspect configured agents and runtime defaults.
+  %s agents list --dir .
+  %s agents verify --dir . --agent claude
+
+  # Generate agent-friendly repository context.
+  %s context repo-map --dir . --format markdown --max-files 50
+  %s context repo-map --dir . --format json --max-files 10
+
+  # Start a headless round with selected agents.
+  %s run --dir . --no-tui --participants claude,gemini --yes "Plan the next CLI slice"
+
+  # Resume or inspect active work.
+  %s status --dir .
+  %s status --dir . --idea repo-map-mvp
+  %s resume --dir . 20260517T120000.000000000Z
+
+  # Consensus flow.
+  %s consensus status --dir . repo-map-mvp
+  %s consensus draft --dir . --round 1 --by codex repo-map-mvp
+  %s consensus request-signoffs --dir . --participants claude,gemini --yes repo-map-mvp
+
+  # Answer a HITL question.
+  %s answer --dir . 20260517T120000.000000000Z q1 "Use the conservative default"
+
+  # Version and compatibility status.
+  %s version
+  %s version --all
+
+Exit codes:
+  0  Success.
+  1  Runtime failure, failed probe, malformed workspace, or agent failure.
+  2  Usage error or missing required argument.
+  3  Pending manual/interactive handoff for consensus request-signoffs.
+
+`, appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+		appName,
+	)
 }
 
 func runInit(args []string, stdout, stderr io.Writer) int {
