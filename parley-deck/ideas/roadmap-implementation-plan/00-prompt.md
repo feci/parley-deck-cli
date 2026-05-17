@@ -3,7 +3,7 @@ idea: roadmap-implementation-plan
 author: user
 created: 2026-05-17
 participants: [codex, claude, gemini, hermes]
-status: round-02
+status: consensus
 roles:
   codex: facilitator and implementation-sequencing lens
   claude: architecture, UX, and risk lens
