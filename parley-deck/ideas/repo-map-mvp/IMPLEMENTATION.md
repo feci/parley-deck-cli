@@ -2,17 +2,33 @@
 idea: repo-map-mvp
 implemented-by: codex
 date: 2026-05-17
-status: ready-for-review
+status: ready-for-re-review
 design-pr: https://github.com/feci/parley-deck-cli/pull/21
 design-final: https://github.com/feci/parley-deck-cli/blob/0ec2dc42eee346f1d4ee5f2730ee707360ebfe40/parley-deck/ideas/repo-map-mvp/FINAL.md
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/22
 implementation-branch: feature/repo-map-mvp
-implementation-commit: b11bc19
+implementation-commit: 07b26ad
+fix-up-cycle: 1
 ---
 
 ## Summary
 
 Implemented `repo-map-mvp`: a deterministic local repository map command and package.
+
+## Fix-up Cycle 1
+
+Applied review consensus fixes from `review/consensus.md`:
+
+1. Sanitized Go file read errors so `parse_error` reports the relative repository path and does not leak an absolute developer-machine root.
+2. Added walker coverage for skipped symlinks and directories as practical non-regular paths.
+3. Added CLI usage coverage for bare `parley context` and an unknown context subcommand.
+4. Removed the undocumented `--format md` alias; accepted formats are exactly `markdown` and `json`.
+
+Checks run after fix-up:
+
+- `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go test ./internal/repomap ./internal/app`
+- `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go test ./...`
+- `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go run ./cmd/parley context repo-map --dir . --format md` exits non-zero with `invalid format "md"; expected markdown or json`.
 
 ## Implementation plan / checklist
 
