@@ -1315,6 +1315,8 @@ func printRunResults(stdout io.Writer, results []runner.Result) bool {
 	failed := false
 	for _, result := range results {
 		switch {
+		case result.Warning != "" && result.ExitError == "":
+			fmt.Fprintf(stdout, "  %-8s warning: %s\n", result.AgentID, result.Warning)
 		case result.Skipped && result.ExitError == "":
 			fmt.Fprintf(stdout, "  %-8s skipped: %s\n", result.AgentID, result.SkipReason)
 		case result.ArtifactOK && result.ExitError == "":

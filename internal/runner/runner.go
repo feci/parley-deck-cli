@@ -38,6 +38,7 @@ type Result struct {
 	ArtifactOK  bool
 	Skipped     bool
 	SkipReason  string
+	Warning     string
 	Duration    time.Duration
 }
 
@@ -131,6 +132,36 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 			continue
 		}
 		eventType = "round.incomplete"
+	}
+	if indexPath, err := writeRoundIndex(opts.Idea, opts.RoundLabel, results); err != nil {
+		now := time.Now().UTC()
+		warning := "round index write failed: " + err.Error()
+		results = append(results, Result{
+			AgentID:     "runner/index",
+			OutputPath:  indexPath,
+			CompletedAt: now,
+			Warning:     warning,
+		})
+		_ = opts.Store.Append(store.Event{
+			Time: now,
+			Type: "round.index_failed",
+			Data: map[string]any{
+				"idea":     opts.Idea.Slug,
+				"round":    opts.RoundLabel,
+				"artifact": indexPath,
+				"error":    err.Error(),
+			},
+		})
+	} else {
+		_ = opts.Store.Append(store.Event{
+			Time: time.Now().UTC(),
+			Type: "round.index_written",
+			Data: map[string]any{
+				"idea":     opts.Idea.Slug,
+				"round":    opts.RoundLabel,
+				"artifact": indexPath,
+			},
+		})
 	}
 	if err := opts.Store.Append(store.Event{
 		Time: time.Now().UTC(),
