@@ -8,7 +8,7 @@ roles:
   claude: interaction model and correctness lens
   gemini: state model and concurrency lens
   hermes: operations and recovery lens
-status: round-01
+status: final
 ---
 
 ## Problem / idea
