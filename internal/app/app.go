@@ -53,6 +53,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runAgents(ctx, args[1:], stdout, stderr)
 	case "consensus":
 		return runConsensus(ctx, args[1:], stdout, stderr)
+	case "context":
+		return runContext(args[1:], stdout, stderr)
 	case "status":
 		return runStatus(args[1:], stdout, stderr)
 	case "run":
@@ -77,6 +79,7 @@ Usage:
   %s init [--dir DIR]
   %s agents list|verify
   %s consensus status|draft|signoff|request-signoffs|finalize|reopen
+  %s context repo-map [--dir DIR] [--format markdown|json] [--max-files N]
   %s status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
@@ -85,7 +88,7 @@ Usage:
   %s help
   %s version [--all] [--json]
 
-`, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName)
+`, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName, appName)
 }
 
 func runInit(args []string, stdout, stderr io.Writer) int {
