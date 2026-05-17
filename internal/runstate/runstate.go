@@ -27,7 +27,16 @@ const (
 
 	LivenessUnverified = "unverified"
 	LivenessIdle       = "idle"
+
+	AttentionAction  = "ACTION"
+	AttentionRunning = "RUNNING"
+	AttentionFailed  = "FAILED"
+	AttentionDone    = "DONE"
+	AttentionStale   = "STALE"
+	AttentionIdle    = "IDLE"
 )
+
+const AttentionStaleAfter = 10 * time.Minute
 
 type RunState struct {
 	Agents      []AgentState   `json:"agents"`
@@ -70,6 +79,7 @@ type RunSummary struct {
 	LastEventAt   time.Time       `json:"last_event_at,omitempty"`
 	LastEventAge  time.Duration   `json:"last_event_age"`
 	OpenQuestions int             `json:"open_questions"`
+	Attention     string          `json:"attention,omitempty"`
 	Questions     []hitl.Question `json:"questions,omitempty"`
 	State         RunState        `json:"state"`
 	Error         string          `json:"error,omitempty"`
@@ -135,8 +145,42 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 			summary.OpenQuestions++
 		}
 	}
+	summary.Attention = Attention(summary)
 
 	return summary, nil
+}
+
+func Attention(run RunSummary) string {
+	if run.Error != "" {
+		return AttentionFailed
+	}
+	if run.OpenQuestions > 0 {
+		return AttentionAction
+	}
+	if run.Terminal {
+		switch run.Outcome {
+		case OutcomeCompleted:
+			return AttentionDone
+		case OutcomeIncomplete, OutcomeFailed:
+			return AttentionFailed
+		default:
+			return AttentionFailed
+		}
+	}
+	for _, agent := range run.State.Agents {
+		if agent.State == StateFailed {
+			return AttentionFailed
+		}
+	}
+	for _, agent := range run.State.Agents {
+		if agent.State == StateRunning {
+			return AttentionRunning
+		}
+	}
+	if !run.LastEventAt.IsZero() && run.LastEventAge >= AttentionStaleAfter {
+		return AttentionStale
+	}
+	return AttentionIdle
 }
 
 func ListRuns(root string) ([]RunSummary, error) {

@@ -159,6 +159,30 @@ func TestResolveRunReportsKnownIdeaWithNoRuns(t *testing.T) {
 	}
 }
 
+func TestAttention(t *testing.T) {
+	base := time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name string
+		run  RunSummary
+		want string
+	}{
+		{name: "open question", run: RunSummary{OpenQuestions: 1}, want: AttentionAction},
+		{name: "completed", run: RunSummary{Terminal: true, Outcome: OutcomeCompleted}, want: AttentionDone},
+		{name: "incomplete", run: RunSummary{Terminal: true, Outcome: OutcomeIncomplete}, want: AttentionFailed},
+		{name: "failed agent", run: RunSummary{State: RunState{Agents: []AgentState{{ID: "codex", State: StateFailed}}}}, want: AttentionFailed},
+		{name: "running agent", run: RunSummary{State: RunState{Agents: []AgentState{{ID: "codex", State: StateRunning}}}}, want: AttentionRunning},
+		{name: "stale", run: RunSummary{LastEventAt: base.Add(-AttentionStaleAfter), LastEventAge: AttentionStaleAfter}, want: AttentionStale},
+		{name: "idle", run: RunSummary{}, want: AttentionIdle},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Attention(tt.run); got != tt.want {
+				t.Fatalf("Attention()=%s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func appendEvents(t *testing.T, runDir string, events ...store.Event) {
 	t.Helper()
 	s := store.New(runDir)
