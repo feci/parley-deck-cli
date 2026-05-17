@@ -2,13 +2,14 @@
 idea: repo-map-mvp
 implemented-by: codex
 date: 2026-05-17
-status: ready-for-re-review
+status: complete
 design-pr: https://github.com/feci/parley-deck-cli/pull/21
 design-final: https://github.com/feci/parley-deck-cli/blob/0ec2dc42eee346f1d4ee5f2730ee707360ebfe40/parley-deck/ideas/repo-map-mvp/FINAL.md
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/22
 implementation-branch: feature/repo-map-mvp
 implementation-commit: 07b26ad
 fix-up-cycle: 1
+review-consensus: ./review/consensus.md
 ---
 
 ## Summary
@@ -29,6 +30,10 @@ Checks run after fix-up:
 - `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go test ./internal/repomap ./internal/app`
 - `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go test ./...`
 - `GOCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gocache GOMODCACHE=/Users/tomasfecko/AI_WORKSPACE/parley-deck/.gomodcache go run ./cmd/parley context repo-map --dir . --format md` exits non-zero with `invalid format "md"; expected markdown or json`.
+
+## Review Completion
+
+Review round 02 approved fix-up cycle 1 with no remaining agreed fixes. The cycle-1 consensus with agreed fixes is preserved in `review/consensus-cycle-01.md`; the current `review/consensus.md` records zero agreed fixes and all participant signoffs.
 
 ## Implementation plan / checklist
 
