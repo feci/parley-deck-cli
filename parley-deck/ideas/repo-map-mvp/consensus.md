@@ -104,3 +104,15 @@ Markdown should be compact and scannable:
 ### Signoff: codex — 2026-05-17
 Status: ✅ ACCEPT
 Notes: Accept. This keeps the MVP dependency-free, deterministic, and small enough to implement/review while preserving a stable JSON shape for later context-pack wiring.
+
+### Signoff: claude — 2026-05-17
+Status: ✅ ACCEPT
+Notes: Schema-versioned, byte-deterministic, Go-stdlib only, with a clean three-layer split (walker / extractor / renderer) — matches my round-01 architecture and reviewability lens. I'd have preferred exit code 3 on truncation, but the `truncated` field plus exit 0 keeps the command pipe-friendly and a strict mode can be added later without breaking the schema. Deferring `--out`, gitignore compat, and verbose exclusion diagnostics is the right call for slice size.
+
+### Signoff: gemini — 2026-05-17
+Status: ✅ ACCEPT
+Notes: The emphasis on byte-determinism and standard-library parsing aligns perfectly with context efficiency and project stability. Including exported flags and imports in the JSON schema provides the necessary "signal" for future agentic wiring without bloating the MVP.
+
+### Signoff: hermes — 2026-05-17
+Status: ✅ ACCEPT
+Notes: From operations/resilience lens: byte-deterministic output, built-in ignores, symlink skipping, truncation with exit-0 pipe-friendliness, and Go-stdlib only all reduce runtime surprises and keep the MVP reviewable/operable. Good foundation.
