@@ -47,7 +47,7 @@ func runContextRepoMap(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	switch strings.ToLower(*format) {
-	case "markdown", "md":
+	case "markdown":
 		if err := repomap.RenderMarkdown(m, stdout); err != nil {
 			fmt.Fprintf(stderr, "context repo-map failed: %v\n", err)
 			return 1

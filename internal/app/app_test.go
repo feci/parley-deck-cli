@@ -161,6 +161,27 @@ func TestContextRepoMapMarkdownAndValidation(t *testing.T) {
 	}
 }
 
+func TestContextUsage(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"context"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "usage: parley context repo-map") {
+		t.Fatalf("stderr missing usage: %s", stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"context", "bogus"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "usage: parley context repo-map") {
+		t.Fatalf("stderr missing usage for bogus subcommand: %s", stderr.String())
+	}
+}
+
 func TestAgentsListPrintsResolvedRuntime(t *testing.T) {
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {

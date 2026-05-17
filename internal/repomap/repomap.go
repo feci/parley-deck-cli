@@ -3,6 +3,7 @@ package repomap
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -193,7 +194,7 @@ func kindForPath(path string) string {
 func enrichGoFile(rootAbs string, file *File) {
 	data, err := os.ReadFile(filepath.Join(rootAbs, filepath.FromSlash(file.Path)))
 	if err != nil {
-		file.ParseError = err.Error()
+		file.ParseError = readErrorMessage(file.Path, err)
 		return
 	}
 	fset := token.NewFileSet()
@@ -207,6 +208,14 @@ func enrichGoFile(rootAbs string, file *File) {
 	file.Package = parsed.Name.Name
 	file.Imports = extractImports(parsed)
 	file.Symbols = extractSymbols(fset, parsed)
+}
+
+func readErrorMessage(path string, err error) string {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return fmt.Sprintf("read %s: %v", path, pathErr.Err)
+	}
+	return fmt.Sprintf("read %s: %v", path, err)
 }
 
 func extractImports(file *ast.File) []string {

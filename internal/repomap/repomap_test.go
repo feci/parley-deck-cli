@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -105,6 +106,40 @@ func TestBuildIgnoresTransientDirsAndTruncatesDeterministically(t *testing.T) {
 		if strings.Contains(file.Path, ".git") || strings.Contains(file.Path, "node_modules") || strings.Contains(file.Path, "parley-deck/runs") {
 			t.Fatalf("ignored path included: %+v", file)
 		}
+	}
+}
+
+func TestBuildSkipsSymlinksAndDirectories(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "target.txt", "target\n")
+	if err := os.MkdirAll(filepath.Join(root, "plain-dir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Symlink("target.txt", filepath.Join(root, "linked.txt")); err != nil {
+			t.Skipf("symlink creation not available: %v", err)
+		}
+	}
+
+	m, err := Build(Options{Root: root, MaxFiles: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range m.Files {
+		if file.Path == "linked.txt" || file.Path == "plain-dir" {
+			t.Fatalf("non-regular path included: %+v", file)
+		}
+	}
+}
+
+func TestReadErrorMessageUsesRelativePath(t *testing.T) {
+	err := &os.PathError{Op: "open", Path: "/tmp/private/repo/broken.go", Err: os.ErrPermission}
+	got := readErrorMessage("broken.go", err)
+	if strings.Contains(got, "/tmp/private/repo") {
+		t.Fatalf("read error leaked absolute root: %q", got)
+	}
+	if !strings.Contains(got, "broken.go") {
+		t.Fatalf("read error missing relative path: %q", got)
 	}
 }
 
