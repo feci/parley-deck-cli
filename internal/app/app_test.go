@@ -26,7 +26,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.3.0\n"; got != want {
+	if got, want := stdout.String(), "parley 1.3.1\n"; got != want {
 		t.Fatalf("version output=%q want %q", got, want)
 	}
 
@@ -36,7 +36,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.3.0\n"; got != want {
+	if got, want := stdout.String(), "parley 1.3.1\n"; got != want {
 		t.Fatalf("--version output=%q want %q", got, want)
 	}
 }
@@ -1152,10 +1152,11 @@ out=$(awk -F': ' '/Create exactly this file and no other protocol artifact:/ {pr
 if [ -z "$out" ]; then
   exit 3
 fi
+idea=$(basename "$(dirname "$(dirname "$out")")")
 cat > "$out" <<'ARTIFACT'
 ---
 agent: codex
-idea: runtime-task
+idea: REPLACE_IDEA
 round: 1
 date: 2026-05-11
 ---
@@ -1172,6 +1173,8 @@ None.
 ## Risks
 None.
 ARTIFACT
+sed -i.bak "s/REPLACE_IDEA/$idea/" "$out"
+rm -f "$out.bak"
 exit 0
 `
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {

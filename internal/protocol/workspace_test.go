@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestReadFrontmatter(t *testing.T) {
@@ -42,5 +43,23 @@ func TestInitWorkspaceAndStatus(t *testing.T) {
 	}
 	if status.Transport != "local-dir" {
 		t.Fatalf("transport = %q", status.Transport)
+	}
+}
+
+func TestTimestampedSlugShortensLongTask(t *testing.T) {
+	now := time.Date(2026, 5, 17, 21, 39, 35, 0, time.UTC)
+	got := timestampedSlug("podme nastartovat novu ideu, skus vymysliet hru na roblox", now)
+	want := "2026-05-17T21-39-35-podme-nastartova"
+	if got != want {
+		t.Fatalf("slug=%q want %q", got, want)
+	}
+}
+
+func TestTimestampedSlugFallsBackForEmptyTask(t *testing.T) {
+	now := time.Date(2026, 5, 17, 21, 39, 35, 0, time.UTC)
+	got := timestampedSlug("!!!", now)
+	want := "2026-05-17T21-39-35-task"
+	if got != want {
+		t.Fatalf("slug=%q want %q", got, want)
 	}
 }

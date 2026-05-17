@@ -9,7 +9,7 @@ import (
 )
 
 func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
-	meta, err := protocol.ReadFrontmatter(path)
+	meta, err := readRoundOneFrontmatter(path)
 	if err != nil {
 		return err
 	}
@@ -38,4 +38,56 @@ func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
 		}
 	}
 	return nil
+}
+
+func readRoundOneFrontmatter(path string) (map[string]string, error) {
+	meta, err := protocol.ReadFrontmatter(path)
+	if err != nil {
+		return nil, err
+	}
+	if hasAnyFrontmatter(meta) {
+		return meta, nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return parseLeadingFrontmatterWithoutOpeningFence(string(data)), nil
+}
+
+func hasAnyFrontmatter(meta map[string]string) bool {
+	for _, key := range []string{"agent", "idea", "round"} {
+		if strings.TrimSpace(meta[key]) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func parseLeadingFrontmatterWithoutOpeningFence(data string) map[string]string {
+	lines := strings.Split(data, "\n")
+	meta := map[string]string{}
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			if i == 0 || len(meta) == 0 {
+				return map[string]string{}
+			}
+			return meta
+		}
+		if trimmed == "" {
+			continue
+		}
+		key, value, ok := strings.Cut(line, ":")
+		if !ok {
+			return map[string]string{}
+		}
+		key = strings.TrimSpace(key)
+		if key == "" || strings.ContainsAny(key, " \t") {
+			return map[string]string{}
+		}
+		meta[key] = strings.TrimSpace(value)
+	}
+	return map[string]string{}
 }

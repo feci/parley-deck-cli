@@ -363,7 +363,7 @@ Rules:
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
 - Do not read or reference other agents' round-01 answers.
-- Write the complete file, including YAML frontmatter.
+- Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
 - Return only a short confirmation with the path written.
 - Be concrete, concise, and state trade-offs.
 - If you are blocked by missing human input, create one JSON question file under: %s

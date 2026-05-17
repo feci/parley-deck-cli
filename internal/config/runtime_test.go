@@ -101,7 +101,7 @@ func TestCodexBuiltInRuntimeDefaults(t *testing.T) {
 	if codex.ApprovalPolicy != "on-failure" {
 		t.Fatalf("approval=%q", codex.ApprovalPolicy)
 	}
-	if strings.Join(codex.HeadlessArgs, " ") != "exec --cd {root} --sandbox workspace-write -c approval_policy=\"on-failure\" -" {
+	if strings.Join(codex.HeadlessArgs, " ") != "exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy=\"on-failure\" -" {
 		t.Fatalf("headless args=%v", codex.HeadlessArgs)
 	}
 	if codex.Model != agents.CLIDefault || codex.Reasoning != agents.CLIDefault || codex.Profile != agents.CLIDefault {

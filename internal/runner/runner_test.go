@@ -46,6 +46,7 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 		"Create exactly this file",
 		output,
 		"Do not edit any other agent's file.",
+		"The first line of the file must be exactly \"---\".",
 		"agent: fake",
 		"idea: " + idea.Slug,
 		questionsDir,
@@ -64,6 +65,35 @@ func TestBuildRoundOnePrompt(t *testing.T) {
 
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("prompt generation should not create artifact, stat err=%v", err)
+	}
+}
+
+func TestValidateRoundOneArtifactAcceptsMissingOpeningFence(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "hermes.md")
+	data := `agent: hermes
+idea: sample
+round: 1
+date: 2026-05-17
+---
+
+## Summary
+Summary.
+
+## Proposed approach
+Approach.
+
+## Concerns / open questions
+None.
+
+## Risks
+None.
+`
+	if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateRoundOneArtifact(path, "hermes", "sample"); err != nil {
+		t.Fatalf("validation should tolerate missing opening fence: %v", err)
 	}
 }
 

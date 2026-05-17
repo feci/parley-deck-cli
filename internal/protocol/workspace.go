@@ -53,7 +53,8 @@ func InitWorkspace(root string) error {
 }
 
 func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
-	slug := uniqueSlug(filepath.Join(root, DeckDir, "ideas"), slugify(task))
+	now := time.Now()
+	slug := uniqueSlug(filepath.Join(root, DeckDir, "ideas"), timestampedSlug(task, now))
 	ideaDir := filepath.Join(root, DeckDir, "ideas", slug)
 	if err := os.MkdirAll(filepath.Join(ideaDir, "round-01"), 0o755); err != nil {
 		return IdeaStatus{}, err
@@ -79,7 +80,7 @@ status: round-01
 ## Non-goals
 
 - Do not make unrelated repository changes.
-`, slug, time.Now().Format("2006-01-02"), strings.Join(participants, ", "), task)
+`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), task)
 	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
 		return IdeaStatus{}, err
 	}
@@ -122,6 +123,30 @@ func uniqueSlug(ideasDir, base string) string {
 		}
 		slug = fmt.Sprintf("%s-%d", base, i)
 	}
+}
+
+func timestampedSlug(task string, now time.Time) string {
+	prefix := truncateSlug(slugify(task), 16)
+	if prefix == "" {
+		prefix = "task"
+	}
+	return now.Format("2006-01-02T15-04-05") + "-" + prefix
+}
+
+func truncateSlug(slug string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
+	var b strings.Builder
+	count := 0
+	for _, r := range slug {
+		if count >= maxRunes {
+			break
+		}
+		b.WriteRune(r)
+		count++
+	}
+	return strings.Trim(b.String(), "-")
 }
 
 func slugify(value string) string {
