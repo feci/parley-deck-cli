@@ -8,6 +8,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/sessionstore"
 	"parley-deck-cli/internal/store"
@@ -39,7 +40,12 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	if err != nil {
 		return CreatedRun{}, err
 	}
+	transport := ""
+	if status, err := protocol.ReadWorkspaceStatus(opts.Root); err == nil {
+		transport = status.Transport
+	}
 
+	mode := ModeName(opts.Auto)
 	runID := store.NewRunID(now)
 	runDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", runID)
 	runStore := store.New(runDir)
@@ -48,12 +54,25 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		Type: "run.created",
 		Data: map[string]any{
 			"task":         opts.Task,
-			"mode":         ModeName(opts.Auto),
+			"mode":         mode,
 			"idea":         idea.Slug,
 			"participants": opts.Participants,
 			"runtime":      RuntimeEventData(opts.Discovered),
 		},
 	}); err != nil {
+		return CreatedRun{}, err
+	}
+	if err := runmanifest.Write(opts.Root, runID, runmanifest.New(runmanifest.Options{
+		Root:         opts.Root,
+		RunID:        runID,
+		IdeaSlug:     idea.Slug,
+		Task:         opts.Task,
+		Mode:         mode,
+		Transport:    transport,
+		Participants: opts.Participants,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})); err != nil {
 		return CreatedRun{}, err
 	}
 

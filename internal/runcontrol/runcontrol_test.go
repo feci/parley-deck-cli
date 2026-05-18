@@ -7,6 +7,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/sessionstore"
 	"parley-deck-cli/internal/store"
 )
@@ -46,6 +47,13 @@ func TestCreateWritesRunCreatedAndRegistersSession(t *testing.T) {
 	}
 	if events[0].Data["task"] != "Session task" || events[0].Data["idea"] != created.Idea.Slug {
 		t.Fatalf("run.created data=%+v", events[0].Data)
+	}
+	manifest, err := runmanifest.Load(root, created.RunID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.RunID != created.RunID || manifest.IdeaSlug != created.Idea.Slug || manifest.Task != "Session task" || manifest.Mode != "hitl" || manifest.Status != runmanifest.StatusRunning {
+		t.Fatalf("manifest=%+v", manifest)
 	}
 
 	sessions, err := sessionstore.New(filepath.Join(parleyHome, "sessions.json")).List()

@@ -15,6 +15,7 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
@@ -474,6 +475,144 @@ func TestStatusAndResumeUseRunState(t *testing.T) {
 	}
 	if len(workspacePayload.Runs) != 1 || workspacePayload.Runs[0]["run_id"] != runID {
 		t.Fatalf("workspace payload=%+v", workspacePayload)
+	}
+}
+
+func TestSessionsCLIListAndInspect(t *testing.T) {
+	root := t.TempDir()
+	parleyHome := t.TempDir()
+	t.Setenv("PARLEY_HOME", parleyHome)
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"sessions", "list"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("empty list code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Sessions: none") {
+		t.Fatalf("empty sessions list output:\n%s", stdout.String())
+	}
+
+	now := time.Date(2026, 5, 18, 9, 30, 0, 0, time.UTC)
+	created, err := runcontrol.Create(runcontrol.CreateOptions{
+		Root:         root,
+		Task:         "Recoverable session task",
+		Participants: []string{"codex"},
+		Discovered: []agents.Discovery{{
+			Spec:  agents.Spec{ID: "codex"},
+			Found: true,
+		}},
+		Now: now,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"sessions", "list"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("list code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Session index:", created.RunID, "idea=" + created.Idea.Slug, "workspace=" + root, "status=running", "participants=codex"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("sessions list missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"sessions", "list", "--json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("json list code=%d stderr=%s", code, stderr.String())
+	}
+	var listPayload struct {
+		Sessions []map[string]any `json:"sessions"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &listPayload); err != nil {
+		t.Fatalf("invalid json list: %v\n%s", err, stdout.String())
+	}
+	if len(listPayload.Sessions) != 1 || listPayload.Sessions[0]["run_id"] != created.RunID {
+		t.Fatalf("list payload=%+v", listPayload)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"sessions", "inspect", created.RunID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("inspect code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Session: " + created.RunID, "Manifest:", "Manifest schema: 1", "Manifest status: running", "Mode: hitl", "Run: " + created.RunID, "Idea: " + created.Idea.Slug} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("sessions inspect missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"sessions", "inspect", "--json", created.RunID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("json inspect code=%d stderr=%s", code, stderr.String())
+	}
+	var payload struct {
+		Session struct {
+			RunID    string `json:"run_id"`
+			IdeaSlug string `json:"idea_slug"`
+		} `json:"session"`
+		Manifest struct {
+			RunID  string `json:"run_id"`
+			Mode   string `json:"mode"`
+			Status string `json:"status"`
+		} `json:"manifest"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	if payload.Session.RunID != created.RunID || payload.Session.IdeaSlug != created.Idea.Slug || payload.Manifest.Mode != "hitl" || payload.Manifest.Status != "running" {
+		t.Fatalf("payload=%+v", payload)
+	}
+
+	legacyRoot := t.TempDir()
+	if err := protocol.InitWorkspace(legacyRoot); err != nil {
+		t.Fatal(err)
+	}
+	legacyRunID := "20260518T120000.000000000Z"
+	legacyRunDir := filepath.Join(legacyRoot, protocol.DeckDir, "runs", legacyRunID)
+	if err := store.New(legacyRunDir).Append(store.Event{
+		Time: now,
+		Type: "run.created",
+		Data: map[string]any{
+			"idea":         "legacy",
+			"mode":         "hitl",
+			"participants": []string{"codex"},
+			"task":         "Legacy task",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"sessions", "inspect", "--dir", legacyRoot, legacyRunID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("legacy inspect code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Session: " + legacyRunID, "Manifest: missing (legacy run;", "Run: " + legacyRunID, "Idea: legacy"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("legacy inspect missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"sessions", "inspect", "--dir", legacyRoot, "missing-run"}, &stdout, &stderr)
+	if code == 0 {
+		t.Fatalf("missing run unexpectedly succeeded:\n%s", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "sessions inspect failed") {
+		t.Fatalf("missing run stderr=%q", stderr.String())
 	}
 }
 

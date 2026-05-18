@@ -23,6 +23,7 @@ import (
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runcontrol"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/sessionstore"
@@ -60,6 +61,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runContext(args[1:], stdout, stderr)
 	case "status":
 		return runStatus(args[1:], stdout, stderr)
+	case "sessions":
+		return runSessions(args[1:], stdout, stderr)
 	case "run":
 		return runTask(ctx, args[1:], stdout, stderr)
 	case "resume":
@@ -95,6 +98,8 @@ Usage:
   %s consensus reopen [--dir DIR] [--review] --reason TEXT IDEA
   %s context repo-map [--dir DIR] [--format markdown|json] [--max-files N]
   %s status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]
+  %s sessions list [--json]
+  %s sessions inspect [--dir DIR] [--json] RUN_ID
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
@@ -125,6 +130,13 @@ Commands:
 
   status
       Show workspace, idea, consensus, run, and HITL question state.
+
+  sessions
+      List and inspect the local Parley session index in ~/.parley-deck.
+      Inspect resolves the stored workspace run and prints manifest details
+      when parley-deck/runs/<run-id>/run.json exists.
+      Use --dir to disambiguate or inspect an unindexed run from a workspace.
+      Slice 1 is read-only and assumes a single active parley process per run.
 
   answer
       Answer a pending human-in-the-loop question for a run.
@@ -221,6 +233,8 @@ Examples:
   # Resume or inspect active work.
   %s status --dir .
   %s status --dir . --idea repo-map-mvp
+  %s sessions list
+  %s sessions inspect 20260517T120000.000000000Z
   %s resume --dir . 20260517T120000.000000000Z
 
   # Consensus flow.
@@ -242,6 +256,10 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
+		appName,
+		appName,
+		appName,
 		appName,
 		appName,
 		appName,
@@ -646,6 +664,280 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 	}
 	printRunsOverview(stdout, runs, 10)
 	return 0
+}
+
+func runSessions(args []string, stdout, stderr io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprintln(stderr, "usage: parley sessions list [--json]\n       parley sessions inspect [--dir DIR] [--json] RUN_ID")
+		return 2
+	}
+	switch args[0] {
+	case "list":
+		return runSessionsList(args[1:], stdout, stderr)
+	case "inspect":
+		return runSessionsInspect(args[1:], stdout, stderr)
+	default:
+		fmt.Fprintf(stderr, "unknown sessions command: %s\n", args[0])
+		return 2
+	}
+}
+
+func runSessionsList(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("sessions list", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	jsonOut := fs.Bool("json", false, "print JSON output")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 0 {
+		fmt.Fprintln(stderr, "usage: parley sessions list [--json]")
+		return 2
+	}
+	sessionStore, err := sessionstore.Default()
+	if err != nil {
+		fmt.Fprintf(stderr, "sessions list failed: %v\n", err)
+		return 1
+	}
+	sessions, err := sessionStore.List()
+	if err != nil {
+		fmt.Fprintf(stderr, "sessions list failed: %v\n", err)
+		return 1
+	}
+	if *jsonOut {
+		payload := struct {
+			IndexPath string                 `json:"index_path"`
+			Sessions  []sessionstore.Session `json:"sessions"`
+		}{IndexPath: sessionStore.Path(), Sessions: sessions}
+		return printJSON(stdout, payload, stderr)
+	}
+
+	fmt.Fprintf(stdout, "Session index: %s\n", sessionStore.Path())
+	if len(sessions) == 0 {
+		fmt.Fprintln(stdout, "Sessions: none")
+		return 0
+	}
+	fmt.Fprintln(stdout, "Sessions:")
+	for _, session := range sessions {
+		fmt.Fprintf(stdout, "  %s  idea=%s  workspace=%s  started=%s  status=%s\n",
+			session.RunID,
+			valueOr(session.IdeaSlug, "unknown"),
+			session.WorkspaceRoot,
+			sessionStartedTimestamp(session),
+			sessionStatus(session),
+		)
+		if len(session.Participants) > 0 {
+			fmt.Fprintf(stdout, "      participants=%s\n", strings.Join(session.Participants, ","))
+		}
+	}
+	return 0
+}
+
+func runSessionsInspect(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("sessions inspect", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory used to disambiguate or inspect an unindexed run")
+	jsonOut := fs.Bool("json", false, "print JSON output")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley sessions inspect [--dir DIR] [--json] RUN_ID")
+		return 2
+	}
+
+	sessionStore, err := sessionstore.Default()
+	if err != nil {
+		fmt.Fprintf(stderr, "sessions inspect failed: %v\n", err)
+		return 1
+	}
+	filterRoot := ""
+	fs.Visit(func(flag *flag.Flag) {
+		if flag.Name == "dir" {
+			filterRoot = *root
+		}
+	})
+	session, err := resolveIndexedSession(sessionStore, fs.Arg(0), filterRoot, *root)
+	if err != nil {
+		fmt.Fprintf(stderr, "sessions inspect failed: %v\n", err)
+		return 1
+	}
+	payload := inspectSession(sessionStore.Path(), session)
+	if *jsonOut {
+		return printJSON(stdout, payload, stderr)
+	}
+	printSessionDetail(stdout, payload)
+	return 0
+}
+
+type sessionInspectPayload struct {
+	IndexPath     string                `json:"index_path"`
+	Session       sessionstore.Session  `json:"session"`
+	Manifest      *runmanifest.Manifest `json:"manifest,omitempty"`
+	ManifestPath  string                `json:"manifest_path,omitempty"`
+	ManifestError string                `json:"manifest_error,omitempty"`
+	Run           *runstate.RunSummary  `json:"run,omitempty"`
+	RunError      string                `json:"run_error,omitempty"`
+}
+
+func resolveIndexedSession(sessionStore sessionstore.Store, target, filterRoot, fallbackRoot string) (sessionstore.Session, error) {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return sessionstore.Session{}, fmt.Errorf("run ID is required")
+	}
+	var rootAbs string
+	if strings.TrimSpace(filterRoot) != "" {
+		var err error
+		rootAbs, err = filepath.Abs(filterRoot)
+		if err != nil {
+			return sessionstore.Session{}, err
+		}
+	}
+
+	sessions, err := sessionStore.List()
+	if err != nil {
+		return sessionstore.Session{}, err
+	}
+	var matches []sessionstore.Session
+	for _, session := range sessions {
+		if session.RunID != target {
+			continue
+		}
+		if rootAbs != "" && session.WorkspaceRoot != rootAbs {
+			continue
+		}
+		matches = append(matches, session)
+	}
+	if len(matches) == 1 {
+		return matches[0], nil
+	}
+	if len(matches) > 1 {
+		var roots []string
+		for _, match := range matches {
+			roots = append(roots, match.WorkspaceRoot)
+		}
+		return sessionstore.Session{}, fmt.Errorf("run %s exists in multiple workspaces; retry with --dir (%s)", target, strings.Join(roots, ", "))
+	}
+	if strings.TrimSpace(fallbackRoot) == "" {
+		return sessionstore.Session{}, fmt.Errorf("run %s is not in the local session index", target)
+	}
+
+	fallbackAbs, err := filepath.Abs(fallbackRoot)
+	if err != nil {
+		return sessionstore.Session{}, err
+	}
+	run, err := runstate.ResolveRun(fallbackAbs, target)
+	if err != nil {
+		if rootAbs == "" {
+			return sessionstore.Session{}, fmt.Errorf("run %s is not in the local session index and was not found in workspace %s: %w", target, fallbackAbs, err)
+		}
+		return sessionstore.Session{}, fmt.Errorf("run %s was not found for workspace %s: %w", target, fallbackAbs, err)
+	}
+	return sessionstore.Session{
+		WorkspaceRoot: fallbackAbs,
+		RunID:         run.RunID,
+		IdeaSlug:      run.IdeaSlug,
+		Task:          run.Task,
+		Participants:  append([]string(nil), run.Participants...),
+		UpdatedAt:     time.Now().UTC(),
+		LastEventAt:   run.LastEventAt,
+		Terminal:      run.Terminal,
+	}, nil
+}
+
+func inspectSession(indexPath string, session sessionstore.Session) sessionInspectPayload {
+	payload := sessionInspectPayload{
+		IndexPath:    indexPath,
+		Session:      session,
+		ManifestPath: runmanifest.Path(session.WorkspaceRoot, session.RunID),
+	}
+	manifest, err := runmanifest.Load(session.WorkspaceRoot, session.RunID)
+	if err == nil {
+		payload.Manifest = &manifest
+	} else if !errors.Is(err, os.ErrNotExist) {
+		payload.ManifestError = err.Error()
+	}
+	run, err := runstate.LoadRun(session.WorkspaceRoot, session.RunID)
+	if err == nil {
+		payload.Run = &run
+	} else {
+		payload.RunError = err.Error()
+	}
+	return payload
+}
+
+func printSessionDetail(stdout io.Writer, payload sessionInspectPayload) {
+	session := payload.Session
+	fmt.Fprintf(stdout, "Session: %s\n", session.RunID)
+	fmt.Fprintf(stdout, "Index: %s\n", payload.IndexPath)
+	fmt.Fprintf(stdout, "Workspace: %s\n", session.WorkspaceRoot)
+	fmt.Fprintf(stdout, "Idea: %s\n", valueOr(session.IdeaSlug, "unknown"))
+	if session.Task != "" {
+		fmt.Fprintf(stdout, "Task: %s\n", session.Task)
+	}
+	if len(session.Participants) > 0 {
+		fmt.Fprintf(stdout, "Participants: %s\n", strings.Join(session.Participants, ","))
+	}
+	fmt.Fprintf(stdout, "Status: %s\n", sessionStatus(session))
+	fmt.Fprintf(stdout, "Last event: %s\n", sessionTimestamp(session))
+	if payload.Manifest != nil {
+		fmt.Fprintf(stdout, "Manifest: %s\n", payload.ManifestPath)
+		fmt.Fprintf(stdout, "Manifest schema: %d\n", payload.Manifest.SchemaVersion)
+		if payload.Manifest.Status != "" {
+			fmt.Fprintf(stdout, "Manifest status: %s\n", payload.Manifest.Status)
+		}
+		if payload.Manifest.Mode != "" {
+			fmt.Fprintf(stdout, "Mode: %s\n", payload.Manifest.Mode)
+		}
+		if payload.Manifest.Transport != "" {
+			fmt.Fprintf(stdout, "Transport: %s\n", payload.Manifest.Transport)
+		}
+		if !payload.Manifest.CreatedAt.IsZero() {
+			fmt.Fprintf(stdout, "Created: %s\n", payload.Manifest.CreatedAt.Format(time.RFC3339))
+		}
+	} else if payload.ManifestError != "" {
+		fmt.Fprintf(stdout, "Manifest: error: %s\n", payload.ManifestError)
+	} else {
+		fmt.Fprintf(stdout, "Manifest: missing (legacy run; expected at %s)\n", payload.ManifestPath)
+	}
+	if payload.RunError != "" {
+		fmt.Fprintf(stdout, "Run: error: %s\n", payload.RunError)
+		return
+	}
+	if payload.Run != nil {
+		fmt.Fprintln(stdout)
+		printRunDetail(stdout, *payload.Run)
+	}
+}
+
+func sessionStatus(session sessionstore.Session) string {
+	if manifest, err := runmanifest.Load(session.WorkspaceRoot, session.RunID); err == nil && manifest.Status != "" {
+		return manifest.Status
+	}
+	if session.Terminal {
+		return "terminal"
+	}
+	return "active"
+}
+
+func sessionStartedTimestamp(session sessionstore.Session) string {
+	if session.CreatedAt.IsZero() {
+		return "-"
+	}
+	return session.CreatedAt.Format(time.RFC3339)
+}
+
+func sessionTimestamp(session sessionstore.Session) string {
+	value := session.LastEventAt
+	if value.IsZero() {
+		value = session.UpdatedAt
+	}
+	if value.IsZero() {
+		value = session.CreatedAt
+	}
+	if value.IsZero() {
+		return "-"
+	}
+	return value.Format(time.RFC3339)
 }
 
 func runResume(args []string, stdout, stderr io.Writer) int {
