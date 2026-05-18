@@ -27,7 +27,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.3.1\n"; got != want {
+	if got, want := stdout.String(), "parley 1.4.0\n"; got != want {
 		t.Fatalf("version output=%q want %q", got, want)
 	}
 
@@ -37,7 +37,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.3.1\n"; got != want {
+	if got, want := stdout.String(), "parley 1.4.0\n"; got != want {
 		t.Fatalf("--version output=%q want %q", got, want)
 	}
 }
