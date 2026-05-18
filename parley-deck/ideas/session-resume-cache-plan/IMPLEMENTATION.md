@@ -1,10 +1,12 @@
 ---
 idea: session-resume-cache-plan
-status: in-progress
+status: complete
 implementer: codex
 date: 2026-05-18
 branch: feature/session-resume-cache-plan
+head-commit: a07bd53
 design-pr: https://github.com/feci/parley-deck-cli/pull/25
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/25
 ---
 
 ## Current protocol state
@@ -20,9 +22,10 @@ to review and release one slice at a time.
 
 ## Slice 1: local run manifest and sessions CLI
 
-Status: implemented by `codex` on 2026-05-18; review round 1 fixes applied;
-Claude re-review is blocked by local authentication (`401 Invalid
-authentication credentials`).
+Status: implemented by `codex` on 2026-05-18; review round 1 fixes applied.
+Release proceeds under the user-directed exception recorded in
+`review/consensus.md` and
+`parley-deck/inbox/codex-to-all_session-resume-cache-plan_release-exception.md`.
 
 Scope:
 
