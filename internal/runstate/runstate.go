@@ -10,6 +10,7 @@ import (
 
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/store"
 )
 
@@ -67,22 +68,23 @@ type EventSummary struct {
 // RunSummary is the intentionally small, unstable developer JSON surface for
 // this slice. Keep fields conservative until real consumers exist.
 type RunSummary struct {
-	RunID         string          `json:"run_id"`
-	RunDir        string          `json:"-"`
-	IdeaSlug      string          `json:"idea_slug"`
-	Task          string          `json:"task,omitempty"`
-	Mode          string          `json:"mode,omitempty"`
-	Participants  []string        `json:"participants,omitempty"`
-	Terminal      bool            `json:"terminal"`
-	Outcome       string          `json:"outcome,omitempty"`
-	Liveness      string          `json:"liveness,omitempty"`
-	LastEventAt   time.Time       `json:"last_event_at,omitempty"`
-	LastEventAge  time.Duration   `json:"last_event_age"`
-	OpenQuestions int             `json:"open_questions"`
-	Attention     string          `json:"attention,omitempty"`
-	Questions     []hitl.Question `json:"questions,omitempty"`
-	State         RunState        `json:"state"`
-	Error         string          `json:"error,omitempty"`
+	RunID         string               `json:"run_id"`
+	RunDir        string               `json:"-"`
+	IdeaSlug      string               `json:"idea_slug"`
+	Task          string               `json:"task,omitempty"`
+	Mode          string               `json:"mode,omitempty"`
+	Participants  []string             `json:"participants,omitempty"`
+	Terminal      bool                 `json:"terminal"`
+	Outcome       string               `json:"outcome,omitempty"`
+	Liveness      string               `json:"liveness,omitempty"`
+	LastEventAt   time.Time            `json:"last_event_at,omitempty"`
+	LastEventAge  time.Duration        `json:"last_event_age"`
+	OpenQuestions int                  `json:"open_questions"`
+	Attention     string               `json:"attention,omitempty"`
+	Questions     []hitl.Question      `json:"questions,omitempty"`
+	NextActions   []runplan.NextAction `json:"next_actions,omitempty"`
+	State         RunState             `json:"state"`
+	Error         string               `json:"error,omitempty"`
 }
 
 func RunDir(root, runID string) string {
@@ -146,6 +148,16 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 		}
 	}
 	summary.Attention = Attention(summary)
+	summary.NextActions = runplan.Plan(root, runplan.Input{
+		RunID:        summary.RunID,
+		IdeaSlug:     summary.IdeaSlug,
+		Participants: append([]string(nil), summary.Participants...),
+		Terminal:     summary.Terminal,
+		Outcome:      summary.Outcome,
+		Questions:    append([]hitl.Question(nil), summary.Questions...),
+		Agents:       plannerAgents(summary.State.Agents),
+		RoundStatus:  summary.State.RoundStatus,
+	})
 
 	return summary, nil
 }
@@ -407,6 +419,20 @@ func ideaExists(root, ideaSlug string) bool {
 		}
 	}
 	return false
+}
+
+func plannerAgents(agents []AgentState) []runplan.AgentState {
+	out := make([]runplan.AgentState, 0, len(agents))
+	for _, agent := range agents {
+		out = append(out, runplan.AgentState{
+			ID:           agent.ID,
+			State:        agent.State,
+			ArtifactPath: agent.ArtifactPath,
+			Error:        agent.Error,
+			Reason:       agent.Reason,
+		})
+	}
+	return out
 }
 
 func runIDs(runs []RunSummary) []string {

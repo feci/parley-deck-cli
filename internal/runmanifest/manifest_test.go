@@ -18,6 +18,11 @@ func TestWriteLoadAndDefaults(t *testing.T) {
 		Task:         "Task",
 		Mode:         "hitl",
 		Transport:    "github-pr",
+		Phase:        "round",
+		IdeaStatus:   "round-01",
+		CurrentRound: "round-01",
+		ActiveSteps:  []Step{{ID: "round-01.codex", Kind: "round", AgentID: "codex", Status: "running"}},
+		NextActions:  []NextAction{{ID: "inspect.run", Kind: "inspect", RunID: "run-1", IdeaSlug: "idea", Risk: "low", Summary: "Inspect run state"}},
 		Participants: []string{"codex"},
 		CreatedAt:    now,
 	})
@@ -43,6 +48,15 @@ func TestWriteLoadAndDefaults(t *testing.T) {
 	}
 	if loaded.RunID != "run-1" || loaded.IdeaSlug != "idea" || loaded.Status != StatusRunning || loaded.Transport != "github-pr" {
 		t.Fatalf("loaded=%+v", loaded)
+	}
+	if loaded.Phase != "round" || loaded.IdeaStatus != "round-01" || loaded.CurrentRound != "round-01" {
+		t.Fatalf("loaded continuation fields=%+v", loaded)
+	}
+	if len(loaded.ActiveSteps) != 1 || loaded.ActiveSteps[0].ID != "round-01.codex" {
+		t.Fatalf("loaded active steps=%+v", loaded.ActiveSteps)
+	}
+	if len(loaded.NextActions) != 1 || loaded.NextActions[0].Kind != "inspect" {
+		t.Fatalf("loaded next actions=%+v", loaded.NextActions)
 	}
 	if loaded.WorkspaceRoot != root {
 		t.Fatalf("workspace root=%q want %q", loaded.WorkspaceRoot, root)

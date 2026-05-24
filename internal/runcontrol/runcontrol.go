@@ -69,6 +69,10 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		Task:         opts.Task,
 		Mode:         mode,
 		Transport:    transport,
+		Phase:        "round",
+		IdeaStatus:   idea.Status,
+		CurrentRound: "round-01",
+		ActiveSteps:  initialRoundSteps(opts.Participants),
 		Participants: opts.Participants,
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -93,6 +97,20 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		Store:  runStore,
 	}
 	return created, nil
+}
+
+func initialRoundSteps(participants []string) []runmanifest.Step {
+	steps := make([]runmanifest.Step, 0, len(participants))
+	for _, participant := range participants {
+		steps = append(steps, runmanifest.Step{
+			ID:           "round-01." + participant,
+			Kind:         "round",
+			AgentID:      participant,
+			ArtifactPath: filepath.ToSlash(filepath.Join("round-01", participant+".md")),
+			Status:       "pending",
+		})
+	}
+	return steps
 }
 
 func StartAutoAnswerer(ctx context.Context, runDir string) {

@@ -1,0 +1,277 @@
+package runplan
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/hitl"
+	"parley-deck-cli/internal/protocol"
+)
+
+const (
+	KindAnswerQuestion  = "answer-question"
+	KindRetryAgent      = "retry-agent"
+	KindDraftConsensus  = "draft-consensus"
+	KindRequestSignoffs = "request-signoffs"
+	KindFinalize        = "finalize"
+	KindInspect         = "inspect"
+
+	RiskLow    = "low"
+	RiskNormal = "normal"
+	RiskHigh   = "high"
+)
+
+type NextAction struct {
+	ID           string `json:"id"`
+	Kind         string `json:"kind"`
+	RunID        string `json:"run_id,omitempty"`
+	IdeaSlug     string `json:"idea_slug,omitempty"`
+	Phase        string `json:"phase,omitempty"`
+	Round        string `json:"round,omitempty"`
+	AgentID      string `json:"agent_id,omitempty"`
+	ArtifactPath string `json:"artifact_path,omitempty"`
+	Risk         string `json:"risk,omitempty"`
+	RequiresYes  bool   `json:"requires_yes,omitempty"`
+	Summary      string `json:"summary,omitempty"`
+}
+
+type Input struct {
+	RunID        string
+	IdeaSlug     string
+	Participants []string
+	Terminal     bool
+	Outcome      string
+	Questions    []hitl.Question
+	Agents       []AgentState
+	RoundStatus  string
+}
+
+type AgentState struct {
+	ID           string
+	State        string
+	ArtifactPath string
+	Error        string
+	Reason       string
+}
+
+func Plan(root string, input Input) []NextAction {
+	var actions []NextAction
+	for _, question := range input.Questions {
+		if question.Status != hitl.StatusOpen {
+			continue
+		}
+		actions = append(actions, NextAction{
+			ID:          "answer-question." + question.ID,
+			Kind:        KindAnswerQuestion,
+			RunID:       input.RunID,
+			IdeaSlug:    input.IdeaSlug,
+			Phase:       "hitl",
+			AgentID:     question.Agent,
+			Risk:        riskFromQuestion(question.Risk),
+			RequiresYes: false,
+			Summary:     fmt.Sprintf("Answer HITL question %s for %s", question.ID, valueOr(question.Agent, "run")),
+		})
+	}
+
+	if input.IdeaSlug == "" || input.IdeaSlug == "unknown" {
+		return appendInspectIfEmpty(actions, input, "Inspect run state; idea slug is unknown")
+	}
+
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", input.IdeaSlug)
+	participants := participantOrder(input)
+	if len(participants) == 0 {
+		return appendInspectIfEmpty(actions, input, "Inspect run state; no participants are known")
+	}
+
+	round := "round-01"
+	missingRoundArtifact := false
+	for _, participant := range participants {
+		artifactRel := filepath.ToSlash(filepath.Join(round, participant+".md"))
+		if artifactExists(ideaDir, artifactRel) {
+			continue
+		}
+		missingRoundArtifact = true
+		agent := agentByID(input.Agents, participant)
+		if shouldRetryAgent(input, agent) {
+			actions = append(actions, NextAction{
+				ID:           "retry-agent." + round + "." + participant,
+				Kind:         KindRetryAgent,
+				RunID:        input.RunID,
+				IdeaSlug:     input.IdeaSlug,
+				Phase:        "round",
+				Round:        round,
+				AgentID:      participant,
+				ArtifactPath: artifactRel,
+				Risk:         RiskNormal,
+				RequiresYes:  true,
+				Summary:      fmt.Sprintf("Retry missing or failed %s artifact for %s", round, participant),
+			})
+		}
+	}
+
+	if missingRoundArtifact {
+		return appendInspectIfEmpty(actions, input, "Inspect incomplete round state")
+	}
+
+	summary, err := consensus.Status(root, input.IdeaSlug, false)
+	if errors.Is(err, os.ErrNotExist) {
+		actions = append(actions, NextAction{
+			ID:          "draft-consensus." + input.IdeaSlug,
+			Kind:        KindDraftConsensus,
+			RunID:       input.RunID,
+			IdeaSlug:    input.IdeaSlug,
+			Phase:       "consensus",
+			Round:       round,
+			Risk:        RiskNormal,
+			RequiresYes: true,
+			Summary:     "Draft consensus from completed round artifacts",
+		})
+		return actions
+	}
+	if err != nil {
+		return appendInspectIfEmpty(actions, input, "Inspect consensus state; consensus status could not be read")
+	}
+
+	switch summary.Triage {
+	case consensus.TriageMalformed:
+		actions = append(actions, NextAction{
+			ID:          "inspect.consensus-malformed",
+			Kind:        KindInspect,
+			RunID:       input.RunID,
+			IdeaSlug:    input.IdeaSlug,
+			Phase:       "consensus",
+			Risk:        RiskHigh,
+			RequiresYes: false,
+			Summary:     "Inspect malformed consensus before continuing",
+		})
+	case consensus.TriagePartial:
+		actions = append(actions, NextAction{
+			ID:          "request-signoffs." + input.IdeaSlug,
+			Kind:        KindRequestSignoffs,
+			RunID:       input.RunID,
+			IdeaSlug:    input.IdeaSlug,
+			Phase:       "consensus",
+			Risk:        RiskNormal,
+			RequiresYes: true,
+			Summary:     "Request missing consensus signoffs: " + strings.Join(summary.Missing, ","),
+		})
+	case consensus.TriageBlocked:
+		actions = append(actions, NextAction{
+			ID:          "inspect.consensus-blocked",
+			Kind:        KindInspect,
+			RunID:       input.RunID,
+			IdeaSlug:    input.IdeaSlug,
+			Phase:       "consensus",
+			Risk:        RiskHigh,
+			RequiresYes: false,
+			Summary:     "Inspect blocked consensus before opening another round",
+		})
+	case consensus.TriageReady, consensus.TriageReserved:
+		if !fileExists(filepath.Join(ideaDir, "FINAL.md")) {
+			actions = append(actions, NextAction{
+				ID:          "finalize." + input.IdeaSlug,
+				Kind:        KindFinalize,
+				RunID:       input.RunID,
+				IdeaSlug:    input.IdeaSlug,
+				Phase:       "finalization",
+				Risk:        RiskNormal,
+				RequiresYes: true,
+				Summary:     "Finalize accepted consensus",
+			})
+		}
+	}
+
+	return appendInspectIfEmpty(actions, input, "No recoverable action; inspect artifacts and logs")
+}
+
+func shouldRetryAgent(input Input, agent AgentState) bool {
+	if agent.ID == "" {
+		return input.Terminal || input.RoundStatus == "incomplete"
+	}
+	switch agent.State {
+	case "failed", "skipped":
+		return true
+	case "pending":
+		return input.Terminal || input.RoundStatus == "incomplete"
+	default:
+		return false
+	}
+}
+
+func participantOrder(input Input) []string {
+	seen := map[string]bool{}
+	var participants []string
+	for _, participant := range input.Participants {
+		participant = strings.TrimSpace(participant)
+		if participant == "" || seen[participant] {
+			continue
+		}
+		seen[participant] = true
+		participants = append(participants, participant)
+	}
+	for _, agent := range input.Agents {
+		id := strings.TrimSpace(agent.ID)
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		participants = append(participants, id)
+	}
+	return participants
+}
+
+func agentByID(agents []AgentState, id string) AgentState {
+	for _, agent := range agents {
+		if agent.ID == id {
+			return agent
+		}
+	}
+	return AgentState{ID: id, State: "pending"}
+}
+
+func artifactExists(ideaDir, artifactRel string) bool {
+	return fileExists(filepath.Join(ideaDir, filepath.FromSlash(artifactRel)))
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir() && info.Size() > 0
+}
+
+func riskFromQuestion(risk string) string {
+	switch strings.TrimSpace(strings.ToLower(risk)) {
+	case hitl.RiskLow:
+		return RiskLow
+	case hitl.RiskHigh:
+		return RiskHigh
+	default:
+		return RiskNormal
+	}
+}
+
+func appendInspectIfEmpty(actions []NextAction, input Input, summary string) []NextAction {
+	if len(actions) > 0 {
+		return actions
+	}
+	return append(actions, NextAction{
+		ID:          "inspect." + valueOr(input.RunID, input.IdeaSlug),
+		Kind:        KindInspect,
+		RunID:       input.RunID,
+		IdeaSlug:    input.IdeaSlug,
+		Phase:       "inspection",
+		Risk:        RiskLow,
+		RequiresYes: false,
+		Summary:     summary,
+	})
+}
+
+func valueOr(value, fallback string) string {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+	return value
+}

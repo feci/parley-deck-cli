@@ -87,8 +87,12 @@ Resume or inspect work:
 ```bash
 parley status --dir .
 parley status --dir . --idea repo-map-mvp
+parley continue --dir . 20260517T120000.000000000Z
 parley resume --dir . 20260517T120000.000000000Z
 ```
+
+`continue` prints the planner-derived next safe workflow action for an existing
+run or idea. `resume` remains the read-only detail/live-view command.
 
 Answer a human-in-the-loop question:
 

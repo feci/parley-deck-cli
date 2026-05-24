@@ -27,7 +27,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.4.0\n"; got != want {
+	if got, want := stdout.String(), versionLine()+"\n"; got != want {
 		t.Fatalf("version output=%q want %q", got, want)
 	}
 
@@ -37,7 +37,7 @@ func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
-	if got, want := stdout.String(), "parley 1.4.0\n"; got != want {
+	if got, want := stdout.String(), versionLine()+"\n"; got != want {
 		t.Fatalf("--version output=%q want %q", got, want)
 	}
 }
@@ -433,6 +433,34 @@ func TestStatusAndResumeUseRunState(t *testing.T) {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("resume output missing %q:\n%s", want, stdout.String())
 		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"continue", "--dir", root, runID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("continue code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{"Run: " + runID, "Recommended: Answer HITL question " + question.ID, "Command: parley answer " + runID + " " + question.ID, "Next actions:", "kind=answer-question"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("continue output missing %q:\n%s", want, stdout.String())
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"continue", "--dir", root, "--json", runID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("continue json code=%d stderr=%s", code, stderr.String())
+	}
+	var continuePayload struct {
+		Actions []map[string]any `json:"actions"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &continuePayload); err != nil {
+		t.Fatalf("invalid continue json: %v\n%s", err, stdout.String())
+	}
+	if len(continuePayload.Actions) == 0 || continuePayload.Actions[0]["kind"] != "answer-question" {
+		t.Fatalf("continue payload=%+v", continuePayload)
 	}
 
 	stdout.Reset()

@@ -469,7 +469,23 @@ func (m model) renderQuestions() string {
 	if m.startMode {
 		return m.renderStartBox()
 	}
-	b.WriteString("Questions\n")
+	b.WriteString("Actions\n")
+	if len(run.NextActions) == 0 {
+		b.WriteString(mutedStyle.Render("no planner actions"))
+	} else {
+		for i, action := range run.NextActions {
+			if i >= 4 {
+				b.WriteString(fmt.Sprintf("\n  ... %d more action(s)", len(run.NextActions)-i))
+				break
+			}
+			marker := " "
+			if i == 0 {
+				marker = ">"
+			}
+			b.WriteString(fmt.Sprintf("%s %-18s %-6s %s\n", marker, action.Kind, valueOr(action.Risk, "-"), truncateText(valueOr(action.Summary, action.ID), 88)))
+		}
+	}
+	b.WriteString("\n\nQuestions\n")
 	if len(run.Questions) == 0 {
 		b.WriteString(mutedStyle.Render("no questions"))
 		return b.String()

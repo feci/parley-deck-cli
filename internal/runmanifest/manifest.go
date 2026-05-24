@@ -13,21 +13,58 @@ const (
 	SchemaVersion = 1
 	FileName      = "run.json"
 
-	StatusRunning = "running"
+	StatusRunning        = "running"
+	StatusWaiting        = "waiting"
+	StatusActionRequired = "action_required"
+	StatusIncomplete     = "incomplete"
+	StatusFailed         = "failed"
+	StatusCompleted      = "completed"
+	StatusCancelled      = "cancelled"
+	StatusStale          = "stale"
 )
 
 type Manifest struct {
-	SchemaVersion int       `json:"schema_version"`
-	RunID         string    `json:"run_id"`
-	WorkspaceRoot string    `json:"workspace_root"`
-	IdeaSlug      string    `json:"idea_slug"`
-	Task          string    `json:"task,omitempty"`
-	Mode          string    `json:"mode,omitempty"`
-	Transport     string    `json:"transport,omitempty"`
-	Status        string    `json:"status,omitempty"`
-	Participants  []string  `json:"participants,omitempty"`
-	CreatedAt     time.Time `json:"created_at,omitempty"`
-	UpdatedAt     time.Time `json:"updated_at,omitempty"`
+	SchemaVersion int          `json:"schema_version"`
+	RunID         string       `json:"run_id"`
+	WorkspaceRoot string       `json:"workspace_root"`
+	IdeaSlug      string       `json:"idea_slug"`
+	Task          string       `json:"task,omitempty"`
+	Mode          string       `json:"mode,omitempty"`
+	Transport     string       `json:"transport,omitempty"`
+	Status        string       `json:"status,omitempty"`
+	Phase         string       `json:"phase,omitempty"`
+	IdeaStatus    string       `json:"idea_status,omitempty"`
+	CurrentRound  string       `json:"current_round,omitempty"`
+	ActiveSteps   []Step       `json:"active_steps,omitempty"`
+	LastActionAt  *time.Time   `json:"last_action_at,omitempty"`
+	NextActions   []NextAction `json:"next_actions,omitempty"`
+	Participants  []string     `json:"participants,omitempty"`
+	CreatedAt     time.Time    `json:"created_at,omitempty"`
+	UpdatedAt     time.Time    `json:"updated_at,omitempty"`
+}
+
+type Step struct {
+	ID           string     `json:"id"`
+	Kind         string     `json:"kind,omitempty"`
+	AgentID      string     `json:"agent_id,omitempty"`
+	ArtifactPath string     `json:"artifact_path,omitempty"`
+	Status       string     `json:"status,omitempty"`
+	StartedAt    *time.Time `json:"started_at,omitempty"`
+	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
+}
+
+type NextAction struct {
+	ID           string `json:"id"`
+	Kind         string `json:"kind"`
+	RunID        string `json:"run_id,omitempty"`
+	IdeaSlug     string `json:"idea_slug,omitempty"`
+	Phase        string `json:"phase,omitempty"`
+	Round        string `json:"round,omitempty"`
+	AgentID      string `json:"agent_id,omitempty"`
+	ArtifactPath string `json:"artifact_path,omitempty"`
+	Risk         string `json:"risk,omitempty"`
+	RequiresYes  bool   `json:"requires_yes,omitempty"`
+	Summary      string `json:"summary,omitempty"`
 }
 
 type Options struct {
@@ -38,6 +75,12 @@ type Options struct {
 	Mode         string
 	Transport    string
 	Status       string
+	Phase        string
+	IdeaStatus   string
+	CurrentRound string
+	ActiveSteps  []Step
+	LastActionAt time.Time
+	NextActions  []NextAction
 	Participants []string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -60,6 +103,11 @@ func New(opts Options) Manifest {
 	if status == "" {
 		status = StatusRunning
 	}
+	var lastActionAt *time.Time
+	if !opts.LastActionAt.IsZero() {
+		value := opts.LastActionAt.UTC()
+		lastActionAt = &value
+	}
 	return Manifest{
 		SchemaVersion: SchemaVersion,
 		RunID:         opts.RunID,
@@ -69,6 +117,12 @@ func New(opts Options) Manifest {
 		Mode:          opts.Mode,
 		Transport:     opts.Transport,
 		Status:        status,
+		Phase:         opts.Phase,
+		IdeaStatus:    opts.IdeaStatus,
+		CurrentRound:  opts.CurrentRound,
+		ActiveSteps:   append([]Step(nil), opts.ActiveSteps...),
+		LastActionAt:  lastActionAt,
+		NextActions:   append([]NextAction(nil), opts.NextActions...),
 		Participants:  append([]string(nil), opts.Participants...),
 		CreatedAt:     createdAt,
 		UpdatedAt:     updatedAt,

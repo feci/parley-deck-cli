@@ -12,6 +12,7 @@ parley agents list --dir .
 parley agents verify --dir . --agent claude
 parley run --dir . --participants claude,gemini --yes "Plan the next CLI slice"
 parley status --dir .
+parley continue --dir . <run-id-or-idea>
 parley resume --dir . <run-id-or-idea>
 ```
 
@@ -73,6 +74,24 @@ manual or interactive consensus signoff handoffs when possible.
 - `--dir DIR`: workspace root. Defaults to `.`.
 - `--no-tui`: print run detail instead of opening the TUI.
 - `RUN_OR_IDEA`: run ID under `parley-deck/runs/` or idea slug.
+
+### `parley continue [--dir DIR] [--json] RUN_OR_IDEA`
+
+Inspect a previous run by run ID or idea slug and print planner-derived next
+actions for continuing the workflow. This first slice is read-only: it tells
+the user which safe command to run next, such as answering a HITL question,
+drafting consensus, requesting signoffs, finalizing, or retrying one missing
+agent step in a later implementation slice.
+
+- `--dir DIR`: workspace root. Defaults to `.`.
+- `--json`: print machine-readable JSON containing the run summary and actions.
+- `RUN_OR_IDEA`: run ID under `parley-deck/runs/` or idea slug.
+
+Example:
+
+```bash
+parley continue --dir . 20260517T120000.000000000Z
+```
 
 ### `parley status [--dir DIR] [--run RUN_ID] [--idea SLUG] [--json]`
 

@@ -25,6 +25,7 @@ import (
 	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/sessionstore"
 	"parley-deck-cli/internal/store"
@@ -65,6 +66,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runSessions(args[1:], stdout, stderr)
 	case "run":
 		return runTask(ctx, args[1:], stdout, stderr)
+	case "continue":
+		return runContinue(args[1:], stdout, stderr)
 	case "resume":
 		return runResume(args[1:], stdout, stderr)
 	case "answer":
@@ -101,6 +104,7 @@ Usage:
   %s sessions list [--json]
   %s sessions inspect [--dir DIR] [--json] RUN_ID
   %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
+  %s continue [--dir DIR] [--json] RUN_OR_IDEA
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
   %s tui [--dir DIR]
@@ -127,6 +131,12 @@ Commands:
   resume
       Re-open a run by run ID or idea slug, validate pending handoffs, and
       continue the live TUI unless --no-tui is set.
+
+  continue
+      Inspect a run by run ID or idea slug and print planner-derived next
+      actions for continuing the workflow. This first slice is read-only; use
+      the printed commands for existing safe actions such as answering HITL
+      questions or consensus operations.
 
   status
       Show workspace, idea, consensus, run, and HITL question state.
@@ -235,6 +245,7 @@ Examples:
   %s status --dir . --idea repo-map-mvp
   %s sessions list
   %s sessions inspect 20260517T120000.000000000Z
+  %s continue --dir . 20260517T120000.000000000Z
   %s resume --dir . 20260517T120000.000000000Z
 
   # Consensus flow.
@@ -256,6 +267,8 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
+		appName,
 		appName,
 		appName,
 		appName,
@@ -990,6 +1003,39 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+func runContinue(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("continue", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	jsonOut := fs.Bool("json", false, "print unstable JSON output")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley continue [--dir DIR] [--json] RUN_OR_IDEA")
+		return 2
+	}
+
+	run, err := runstate.ResolveRun(*root, fs.Arg(0))
+	if err != nil {
+		fmt.Fprintf(stderr, "continue failed: %v\n", err)
+		return 1
+	}
+	if *jsonOut {
+		payload := struct {
+			Run     runstate.RunSummary  `json:"run"`
+			Actions []runplan.NextAction `json:"actions"`
+		}{Run: run, Actions: run.NextActions}
+		return printJSON(stdout, payload, stderr)
+	}
+
+	fmt.Fprintf(stdout, "Run: %s\n", run.RunID)
+	fmt.Fprintf(stdout, "Idea: %s\n", valueOr(run.IdeaSlug, "unknown"))
+	fmt.Fprintf(stdout, "State: %s\n", displayRunState(run))
+	printNextActions(stdout, run)
+	return 0
+}
+
 func resumePendingConsensusSignoffs(root string, run runstate.RunSummary, stdout io.Writer) error {
 	if run.Mode != "consensus-signoff" {
 		return nil
@@ -1347,6 +1393,12 @@ func formatDuration(value time.Duration) string {
 }
 
 func nextRunAction(run runstate.RunSummary) string {
+	if len(run.NextActions) > 0 {
+		if command := actionCommand(run, run.NextActions[0]); command != "" {
+			return command
+		}
+		return fmt.Sprintf("parley continue %s", run.RunID)
+	}
 	for _, question := range run.Questions {
 		if question.Status == hitl.StatusOpen {
 			return fmt.Sprintf("parley answer %s %s <answer>", run.RunID, question.ID)
@@ -1356,6 +1408,74 @@ func nextRunAction(run runstate.RunSummary) string {
 		return fmt.Sprintf("parley resume %s", run.RunID)
 	}
 	return "no recoverable action; inspect artifacts/logs"
+}
+
+func printNextActions(stdout io.Writer, run runstate.RunSummary) {
+	if len(run.NextActions) == 0 {
+		fmt.Fprintln(stdout, "Next actions: none")
+		return
+	}
+	fmt.Fprintf(stdout, "Recommended: %s\n", actionSummary(run.NextActions[0]))
+	if command := actionCommand(run, run.NextActions[0]); command != "" {
+		fmt.Fprintf(stdout, "Command: %s\n", command)
+	}
+	fmt.Fprintln(stdout, "Next actions:")
+	for _, action := range run.NextActions {
+		fmt.Fprintf(stdout, "  %s  kind=%s  risk=%s", action.ID, action.Kind, valueOr(action.Risk, "-"))
+		if action.AgentID != "" {
+			fmt.Fprintf(stdout, "  agent=%s", action.AgentID)
+		}
+		if action.ArtifactPath != "" {
+			fmt.Fprintf(stdout, "  artifact=%s", action.ArtifactPath)
+		}
+		if action.RequiresYes {
+			fmt.Fprint(stdout, "  requires=yes")
+		}
+		fmt.Fprintf(stdout, "\n      %s\n", actionSummary(action))
+		if command := actionCommand(run, action); command != "" {
+			fmt.Fprintf(stdout, "      command: %s\n", command)
+		}
+	}
+}
+
+func actionSummary(action runplan.NextAction) string {
+	return valueOr(action.Summary, action.Kind)
+}
+
+func actionCommand(run runstate.RunSummary, action runplan.NextAction) string {
+	runID := valueOr(action.RunID, run.RunID)
+	idea := valueOr(action.IdeaSlug, run.IdeaSlug)
+	switch action.Kind {
+	case runplan.KindAnswerQuestion:
+		questionID := strings.TrimPrefix(action.ID, "answer-question.")
+		if runID == "" || questionID == "" || questionID == action.ID {
+			return ""
+		}
+		return fmt.Sprintf("parley answer %s %s <answer>", runID, questionID)
+	case runplan.KindDraftConsensus:
+		if idea == "" {
+			return ""
+		}
+		return fmt.Sprintf("parley consensus draft --round 1 --by codex %s", idea)
+	case runplan.KindRequestSignoffs:
+		if idea == "" {
+			return ""
+		}
+		return fmt.Sprintf("parley consensus request-signoffs --yes %s", idea)
+	case runplan.KindFinalize:
+		if idea == "" {
+			return ""
+		}
+		return fmt.Sprintf("parley consensus finalize --by codex %s", idea)
+	case runplan.KindInspect:
+		if runID != "" {
+			return fmt.Sprintf("parley status --run %s", runID)
+		}
+		if idea != "" {
+			return fmt.Sprintf("parley status --idea %s", idea)
+		}
+	}
+	return ""
 }
 
 func findIdeaStatus(status protocol.WorkspaceStatus, slug string) (protocol.IdeaStatus, bool) {
