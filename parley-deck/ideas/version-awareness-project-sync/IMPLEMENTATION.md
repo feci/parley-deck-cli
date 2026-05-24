@@ -1,6 +1,6 @@
 ---
 idea: version-awareness-project-sync
-status: implemented
+status: complete
 implementer: codex
 started: 2026-05-15
 completed: 2026-05-15
@@ -24,7 +24,7 @@ Implemented the accepted version-awareness design across the skill installer, ru
 - [x] Add `parley version --all [--json]` wrapper with status and legacy-version fallback.
 - [x] Update source and installed skill startup guidance.
 - [x] Run package and CLI tests.
-- [ ] Run Parley review cycle.
+- [x] Run Parley review cycle.
 
 ## Deviations from FINAL.md
 
@@ -36,4 +36,11 @@ Implemented the accepted version-awareness design across the skill installer, ru
 - `COOPERATION.md` remains canonical; sync writes metadata by default, not protocol content.
 - Detected runtime skill copies for Codex, Claude, Gemini, and Hermes were updated from the local 1.1.0 source.
 - The Homebrew `parley-deck-skill` command on PATH is still a legacy 1.0.8 install until the tap/release is updated; the new CLI reports that explicitly through the legacy fallback.
-- Phase 6 review is currently blocked by sandbox permission failures in the Gemini and Hermes reviewer runtimes. See `parley-deck/inbox/codex-to-gemini_version-awareness-project-sync_review-blocked.md` and `parley-deck/inbox/codex-to-hermes_version-awareness-project-sync_review-blocked.md`.
+- 2026-05-24 review round 01 completed with Gemini and Hermes.
+- Fix-up cycle 1 addresses Gemini's non-blocking review findings:
+  - added `--dir DIR` support to `parley version --all` so project discovery does not require the current working directory;
+  - switched version JSON output to the shared indented `printJSON` helper;
+  - avoided duplicate missing-command text when both `parley-deck-skill status` and `parley-deck-skill --version` fail.
+- Fix-up verification: `env GOCACHE=/tmp/parley-go-cache GOMODCACHE=/tmp/parley-go-mod /tmp/go1.26.3-linux-arm64/go/bin/go test ./internal/app`.
+- 2026-05-24 review round 02 completed with no remaining agreed fixes.
+- Review consensus is ready with ACCEPT signoffs from codex, gemini, and hermes. Implementation is complete.

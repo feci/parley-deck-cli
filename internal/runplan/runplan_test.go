@@ -40,6 +40,24 @@ func TestPlanRetriesFailedMissingRoundArtifact(t *testing.T) {
 	}
 }
 
+func TestPlanUsesCurrentRoundForMissingArtifacts(t *testing.T) {
+	root := newWorkspace(t, "sample", []string{"codex", "claude"})
+	writeFile(t, filepath.Join(root, protocol.DeckDir, "ideas", "sample", "round-02", "codex.md"), "# codex\n")
+
+	actions := Plan(root, Input{
+		RunID:        "run-1",
+		IdeaSlug:     "sample",
+		Participants: []string{"codex", "claude"},
+		Terminal:     true,
+		RoundStatus:  "incomplete",
+		CurrentRound: "round-02",
+		Agents:       []AgentState{{ID: "codex", State: "finished"}, {ID: "claude", State: "failed", Error: "auth"}},
+	})
+	if len(actions) != 1 || actions[0].Round != "round-02" || actions[0].ArtifactPath != "round-02/claude.md" {
+		t.Fatalf("actions=%+v", actions)
+	}
+}
+
 func TestPlanDraftsConsensusWhenRoundArtifactsExist(t *testing.T) {
 	root := newWorkspace(t, "sample", []string{"codex"})
 	writeFile(t, filepath.Join(root, protocol.DeckDir, "ideas", "sample", "round-01", "codex.md"), "# codex\n")

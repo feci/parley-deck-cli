@@ -10,6 +10,7 @@ import (
 
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/store"
 )
@@ -73,6 +74,7 @@ type RunSummary struct {
 	IdeaSlug      string               `json:"idea_slug"`
 	Task          string               `json:"task,omitempty"`
 	Mode          string               `json:"mode,omitempty"`
+	CurrentRound  string               `json:"current_round,omitempty"`
 	Participants  []string             `json:"participants,omitempty"`
 	Terminal      bool                 `json:"terminal"`
 	Outcome       string               `json:"outcome,omitempty"`
@@ -97,6 +99,7 @@ func LoadRun(root, runID string) (RunSummary, error) {
 
 func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 	runDir := RunDir(root, runID)
+	manifest, hasManifest := loadManifestSnapshot(root, runID)
 	events, err := store.New(runDir).Load()
 	if err != nil {
 		return RunSummary{RunID: runID, RunDir: runDir}, err
@@ -106,6 +109,9 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 		RunID:    runID,
 		RunDir:   runDir,
 		IdeaSlug: "unknown",
+	}
+	if hasManifest {
+		applyManifestDefaults(&summary, manifest)
 	}
 	for _, event := range events {
 		if !event.Time.IsZero() && (summary.LastEventAt.IsZero() || event.Time.After(summary.LastEventAt)) {
@@ -132,6 +138,9 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 		summary.Participants = inferParticipants(root, summary.IdeaSlug)
 	}
 	summary.State = ProjectEvents(summary.Participants, events, now)
+	if summary.CurrentRound == "" {
+		summary.CurrentRound = inferCurrentRound(summary.State)
+	}
 	summary.Terminal, summary.Outcome = deriveOutcome(events)
 	if !summary.Terminal {
 		summary.Liveness = deriveLiveness(summary.State)
@@ -157,9 +166,62 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 		Questions:    append([]hitl.Question(nil), summary.Questions...),
 		Agents:       plannerAgents(summary.State.Agents),
 		RoundStatus:  summary.State.RoundStatus,
+		CurrentRound: summary.CurrentRound,
 	})
 
 	return summary, nil
+}
+
+func loadManifestSnapshot(root, runID string) (runmanifest.Manifest, bool) {
+	manifest, err := runmanifest.Load(root, runID)
+	if err != nil {
+		return runmanifest.Manifest{}, false
+	}
+	return manifest, true
+}
+
+func applyManifestDefaults(summary *RunSummary, manifest runmanifest.Manifest) {
+	if manifest.IdeaSlug != "" && (summary.IdeaSlug == "" || summary.IdeaSlug == "unknown") {
+		summary.IdeaSlug = manifest.IdeaSlug
+	}
+	if summary.Task == "" {
+		summary.Task = manifest.Task
+	}
+	if summary.Mode == "" {
+		summary.Mode = manifest.Mode
+	}
+	if summary.CurrentRound == "" {
+		summary.CurrentRound = manifest.CurrentRound
+	}
+	if len(summary.Participants) == 0 {
+		summary.Participants = append([]string(nil), manifest.Participants...)
+	}
+	if summary.LastEventAt.IsZero() && !manifest.UpdatedAt.IsZero() {
+		summary.LastEventAt = manifest.UpdatedAt
+	}
+}
+
+func inferCurrentRound(state RunState) string {
+	best := ""
+	for _, agent := range state.Agents {
+		round := roundFromArtifact(agent.ArtifactPath)
+		if round > best {
+			best = round
+		}
+	}
+	if best == "" {
+		return "round-01"
+	}
+	return best
+}
+
+func roundFromArtifact(path string) string {
+	path = filepath.ToSlash(path)
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 || !strings.HasPrefix(parts[0], "round-") {
+		return ""
+	}
+	return parts[0]
 }
 
 func Attention(run RunSummary) string {

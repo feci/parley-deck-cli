@@ -17,6 +17,7 @@ import (
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 )
@@ -80,6 +81,9 @@ func TestVersionAllJSONIncludesSkillStatus(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "\n  \"parley\"") {
+		t.Fatalf("version json is not indented:\n%s", stdout.String())
+	}
 	if payload["ok"] != true {
 		t.Fatalf("payload=%+v", payload)
 	}
@@ -91,6 +95,32 @@ func TestVersionAllJSONIncludesSkillStatus(t *testing.T) {
 	installer := skill["installer"].(map[string]any)
 	if installer["version"] != "1.1.0" {
 		t.Fatalf("installer=%+v", installer)
+	}
+}
+
+func TestVersionAllUsesDirFlagForProjectStatus(t *testing.T) {
+	bin := t.TempDir()
+	writeFakeParleyDeckSkill(t, bin)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	root := t.TempDir()
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"version", "--all", "--json", "--dir", root}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	skill := payload["parley_deck_skill"].(map[string]any)
+	project := skill["project"].(map[string]any)
+	if project["projectArg"] != absRoot {
+		t.Fatalf("project arg=%v want %s", project["projectArg"], absRoot)
 	}
 }
 
@@ -116,6 +146,24 @@ func TestVersionAllFallsBackToLegacySkillVersion(t *testing.T) {
 	installer := skill["installer"].(map[string]any)
 	if installer["version"] != "1.0.8" {
 		t.Fatalf("installer=%+v", installer)
+	}
+}
+
+func TestVersionAllMissingSkillErrorIsNotDuplicated(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"version", "--all", "--json"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("code=%d stderr=%s", code, stderr.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
+	}
+	message, _ := payload["parley_deck_skill_error"].(string)
+	if strings.Contains(message, "version probe failed") {
+		t.Fatalf("duplicated missing-command error: %q", message)
 	}
 }
 
@@ -1099,6 +1147,29 @@ func TestResumeReportsKnownIdeaWithNoRuns(t *testing.T) {
 	}
 }
 
+func TestActionCommandUsesActionRoundAndAvoidsHardcodedAgent(t *testing.T) {
+	run := runstate.RunSummary{RunID: "run-1", IdeaSlug: "sample"}
+	draft := actionCommand(run, runplan.NextAction{
+		Kind:     runplan.KindDraftConsensus,
+		IdeaSlug: "sample",
+		Round:    "round-02",
+	})
+	if draft != "parley consensus draft --round 2 sample" {
+		t.Fatalf("draft command=%q", draft)
+	}
+	if strings.Contains(draft, "codex") {
+		t.Fatalf("draft command hardcodes agent: %q", draft)
+	}
+
+	finalize := actionCommand(run, runplan.NextAction{Kind: runplan.KindFinalize, IdeaSlug: "sample"})
+	if finalize != "parley consensus finalize sample" {
+		t.Fatalf("finalize command=%q", finalize)
+	}
+	if strings.Contains(finalize, "codex") {
+		t.Fatalf("finalize command hardcodes agent: %q", finalize)
+	}
+}
+
 func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
 	duration := agentDuration(runstate.AgentState{
 		State:     runstate.StateRunning,
@@ -1265,7 +1336,15 @@ func writeFakeParleyDeckSkill(t *testing.T, dir string) {
 	path := filepath.Join(dir, "parley-deck-skill")
 	body := `#!/bin/sh
 if [ "$1" = "status" ]; then
-  cat <<'JSON'
+  project=""
+  while [ "$#" -gt 0 ]; do
+    if [ "$1" = "--project" ]; then
+      shift
+      project="$1"
+    fi
+    shift
+  done
+  cat <<JSON
 {
   "ok": true,
   "installer": {
@@ -1277,7 +1356,8 @@ if [ "$1" = "status" ]; then
     "reasons": []
   },
   "project": {
-    "metadataStatus": "valid"
+    "metadataStatus": "valid",
+    "projectArg": "$project"
   },
   "runtimeInstalls": []
 }

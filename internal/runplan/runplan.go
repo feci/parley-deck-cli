@@ -10,34 +10,23 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runaction"
 )
 
 const (
-	KindAnswerQuestion  = "answer-question"
-	KindRetryAgent      = "retry-agent"
-	KindDraftConsensus  = "draft-consensus"
-	KindRequestSignoffs = "request-signoffs"
-	KindFinalize        = "finalize"
-	KindInspect         = "inspect"
+	KindAnswerQuestion  = runaction.KindAnswerQuestion
+	KindRetryAgent      = runaction.KindRetryAgent
+	KindDraftConsensus  = runaction.KindDraftConsensus
+	KindRequestSignoffs = runaction.KindRequestSignoffs
+	KindFinalize        = runaction.KindFinalize
+	KindInspect         = runaction.KindInspect
 
-	RiskLow    = "low"
-	RiskNormal = "normal"
-	RiskHigh   = "high"
+	RiskLow    = runaction.RiskLow
+	RiskNormal = runaction.RiskNormal
+	RiskHigh   = runaction.RiskHigh
 )
 
-type NextAction struct {
-	ID           string `json:"id"`
-	Kind         string `json:"kind"`
-	RunID        string `json:"run_id,omitempty"`
-	IdeaSlug     string `json:"idea_slug,omitempty"`
-	Phase        string `json:"phase,omitempty"`
-	Round        string `json:"round,omitempty"`
-	AgentID      string `json:"agent_id,omitempty"`
-	ArtifactPath string `json:"artifact_path,omitempty"`
-	Risk         string `json:"risk,omitempty"`
-	RequiresYes  bool   `json:"requires_yes,omitempty"`
-	Summary      string `json:"summary,omitempty"`
-}
+type NextAction = runaction.NextAction
 
 type Input struct {
 	RunID        string
@@ -48,6 +37,7 @@ type Input struct {
 	Questions    []hitl.Question
 	Agents       []AgentState
 	RoundStatus  string
+	CurrentRound string
 }
 
 type AgentState struct {
@@ -87,7 +77,7 @@ func Plan(root string, input Input) []NextAction {
 		return appendInspectIfEmpty(actions, input, "Inspect run state; no participants are known")
 	}
 
-	round := "round-01"
+	round := currentRound(input)
 	missingRoundArtifact := false
 	for _, participant := range participants {
 		artifactRel := filepath.ToSlash(filepath.Join(round, participant+".md"))
@@ -200,6 +190,14 @@ func shouldRetryAgent(input Input, agent AgentState) bool {
 	default:
 		return false
 	}
+}
+
+func currentRound(input Input) string {
+	round := strings.TrimSpace(input.CurrentRound)
+	if round == "" {
+		return "round-01"
+	}
+	return round
 }
 
 func participantOrder(input Input) []string {

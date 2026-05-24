@@ -109,7 +109,7 @@ Usage:
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
   %s tui [--dir DIR]
   %s help
-  %s version [--all] [--json]
+  %s version [--dir DIR] [--all] [--json]
 
 Commands:
   init
@@ -1456,7 +1456,10 @@ func actionCommand(run runstate.RunSummary, action runplan.NextAction) string {
 		if idea == "" {
 			return ""
 		}
-		return fmt.Sprintf("parley consensus draft --round 1 --by codex %s", idea)
+		if round := roundNumber(action.Round); round != "" {
+			return fmt.Sprintf("parley consensus draft --round %s %s", round, idea)
+		}
+		return fmt.Sprintf("parley consensus draft %s", idea)
 	case runplan.KindRequestSignoffs:
 		if idea == "" {
 			return ""
@@ -1466,7 +1469,7 @@ func actionCommand(run runstate.RunSummary, action runplan.NextAction) string {
 		if idea == "" {
 			return ""
 		}
-		return fmt.Sprintf("parley consensus finalize --by codex %s", idea)
+		return fmt.Sprintf("parley consensus finalize %s", idea)
 	case runplan.KindInspect:
 		if runID != "" {
 			return fmt.Sprintf("parley status --run %s", runID)
@@ -1476,6 +1479,18 @@ func actionCommand(run runstate.RunSummary, action runplan.NextAction) string {
 		}
 	}
 	return ""
+}
+
+func roundNumber(round string) string {
+	round = strings.TrimSpace(round)
+	if !strings.HasPrefix(round, "round-") {
+		return ""
+	}
+	n := strings.TrimLeft(strings.TrimPrefix(round, "round-"), "0")
+	if n == "" {
+		return "0"
+	}
+	return n
 }
 
 func findIdeaStatus(status protocol.WorkspaceStatus, slug string) (protocol.IdeaStatus, bool) {

@@ -7,8 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -16,29 +16,28 @@ import (
 func runVersion(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
 	all := fs.Bool("all", false, "include Parley Deck skill and project status")
 	jsonOut := fs.Bool("json", false, "print JSON output")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	if fs.NArg() != 0 {
-		fmt.Fprintln(stderr, "usage: parley version [--all] [--json]")
+		fmt.Fprintln(stderr, "usage: parley version [--dir DIR] [--all] [--json]")
 		return 2
 	}
 
 	if !*all {
 		if *jsonOut {
-			writeVersionJSON(stdout, nil, "")
-			return 0
+			return printJSON(stdout, versionPayload(nil, ""), stderr)
 		}
 		fmt.Fprintln(stdout, versionLine())
 		return 0
 	}
 
-	skillStatus, skillError := parleyDeckSkillStatus(ctx)
+	skillStatus, skillError := parleyDeckSkillStatus(ctx, *root)
 	if *jsonOut {
-		writeVersionJSON(stdout, skillStatus, skillError)
-		return 0
+		return printJSON(stdout, versionPayload(skillStatus, skillError), stderr)
 	}
 
 	fmt.Fprintln(stdout, versionLine())
@@ -50,7 +49,7 @@ func runVersion(ctx context.Context, args []string, stdout, stderr io.Writer) in
 	return 0
 }
 
-func writeVersionJSON(stdout io.Writer, skillStatus map[string]any, skillError string) {
+func versionPayload(skillStatus map[string]any, skillError string) map[string]any {
 	payload := map[string]any{
 		"ok": skillError == "",
 		"parley": map[string]any{
@@ -65,19 +64,22 @@ func writeVersionJSON(stdout io.Writer, skillStatus map[string]any, skillError s
 	if skillError != "" {
 		payload["parley_deck_skill_error"] = skillError
 	}
-	_ = json.NewEncoder(stdout).Encode(payload)
+	return payload
 }
 
-func parleyDeckSkillStatus(ctx context.Context) (map[string]any, string) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		cwd = "."
+func parleyDeckSkillStatus(ctx context.Context, root string) (map[string]any, string) {
+	project := strings.TrimSpace(root)
+	if project == "" {
+		project = "."
+	}
+	if abs, err := filepath.Abs(project); err == nil {
+		project = abs
 	}
 
 	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(probeCtx, "parley-deck-skill", "status", "--target", "all", "--project", cwd, "--json")
+	cmd := exec.CommandContext(probeCtx, "parley-deck-skill", "status", "--target", "all", "--project", project, "--json")
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 	cmd.Stdout = &out
@@ -107,6 +109,9 @@ func legacyParleyDeckSkillStatus(ctx context.Context, statusError string) (map[s
 		message := strings.TrimSpace(errOut.String())
 		if message == "" {
 			message = err.Error()
+		}
+		if message == statusError {
+			return nil, statusError
 		}
 		return nil, statusError + "; version probe failed: " + message
 	}

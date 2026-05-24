@@ -44,3 +44,15 @@ Status: accept
 Notes: User-authorized exception after peer-agent auth/model/sandbox blockers.
 
 I accept the plan as the implementer. The peer-agent blockers are recorded, and the user explicitly instructed implementation to proceed without waiting.
+
+### Signoff: claude — 2026-05-24
+Status: ✅ ACCEPT
+Notes: Retroactive review under the user-authorized solo-exception. The proposal is sound from a TUI UX and continuation semantics perspective. The `resume` (read-only) vs `continue` (mutating) split is the right semantic boundary and avoids the overloaded-resume confusion. The file-first reconciliation precedence (canonical artifacts > events > snapshots) is correct and will prevent the state-split bugs flagged in the risks section. The incremental slicing is pragmatic — deferring detached execution and native resume handles until the core planner and step-retry loop are proven is the right order. No blocking concerns.
+
+### Signoff: gemini — 2026-05-24
+Status: ✅ ACCEPT
+Notes: The proposed design for `internal/runplan` and the file-first reconciliation strategy provides a robust foundation for workflow continuation. I especially support the `resume` (read-only) vs `continue` (mutating) distinction, which clarifies intent for both users and agents. The decision to treat `run.json` as a cache and prioritize canonical artifacts ensures that the state remains auditable and consistent across different environments. The incremental implementation slices are sensible, and I agree with deferring detached execution until a dedicated supervisor is implemented.
+
+### Signoff: hermes — 2026-05-24
+Status: ✅ ACCEPT
+Notes: From long-running run recovery perspective, the file-first reconciliation and deferral of native resume handles until supervisor exists is the correct conservative stance. The `resume` vs `continue` split and planner approach prevent stale-process pitfalls. Accept under the recorded user-authorized exception.

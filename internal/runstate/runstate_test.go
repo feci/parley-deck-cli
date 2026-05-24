@@ -9,6 +9,7 @@ import (
 
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/store"
 )
 
@@ -85,6 +86,47 @@ func TestLoadRunDerivesIncompleteOutcome(t *testing.T) {
 	}
 	if !run.Terminal || run.Outcome != OutcomeIncomplete || run.Liveness != "" {
 		t.Fatalf("terminal=%v outcome=%q liveness=%q", run.Terminal, run.Outcome, run.Liveness)
+	}
+}
+
+func TestLoadRunUsesManifestCurrentRoundForPlanner(t *testing.T) {
+	root := t.TempDir()
+	writeIdea(t, root, "sample", []string{"codex", "claude"})
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", "sample")
+	if err := os.MkdirAll(filepath.Join(ideaDir, "round-02"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "round-02", "codex.md"), []byte("# codex\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	runID := "20260512T100250.000000000Z"
+	base := time.Date(2026, 5, 12, 10, 2, 30, 0, time.UTC)
+	if err := runmanifest.Write(root, runID, runmanifest.New(runmanifest.Options{
+		Root:         root,
+		RunID:        runID,
+		IdeaSlug:     "sample",
+		CurrentRound: "round-02",
+		Participants: []string{"codex", "claude"},
+		CreatedAt:    base,
+	})); err != nil {
+		t.Fatal(err)
+	}
+	appendEvents(t, RunDir(root, runID),
+		store.Event{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "participants": []string{"codex", "claude"}}},
+		store.Event{Time: base.Add(time.Second), Type: "agent.failed", Data: map[string]any{"agent": "claude", "error": "auth"}},
+		store.Event{Time: base.Add(2 * time.Second), Type: "round.incomplete", Data: map[string]any{"completed": float64(1), "total": float64(2)}},
+	)
+
+	run, err := LoadRunAt(root, runID, base.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.CurrentRound != "round-02" {
+		t.Fatalf("current round=%q", run.CurrentRound)
+	}
+	if len(run.NextActions) != 1 || run.NextActions[0].ArtifactPath != "round-02/claude.md" {
+		t.Fatalf("next actions=%+v", run.NextActions)
 	}
 }
 
