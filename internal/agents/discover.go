@@ -38,6 +38,11 @@ type Spec struct {
 	Telemetry             string
 	Notes                 string
 	Sources               map[string]string
+	// ACPArgs are the launch flags that put an ACP-capable CLI into ACP mode
+	// (e.g. ["--experimental-acp"] for claude, ["acp"] for goose, ["--acp"] for qwen).
+	// When LaunchMode == LaunchACP, the runner spawns Commands[0] with ACPArgs
+	// and speaks JSON-RPC 2.0 over NDJSON on stdio instead of a one-shot text run.
+	ACPArgs []string
 }
 
 type PromptMode string
@@ -63,6 +68,7 @@ const (
 	LaunchHeadless    = "headless"
 	LaunchInteractive = "interactive"
 	LaunchManual      = "manual"
+	LaunchACP         = "acp"
 
 	InteractivePromptNone = "none"
 	InteractivePromptFile = "file"
@@ -82,6 +88,12 @@ type Discovery struct {
 }
 
 func DefaultSpecs() []Spec {
+	specs := defaultBuiltinSpecs()
+	specs = append(specs, ACPSpecs()...)
+	return specs
+}
+
+func defaultBuiltinSpecs() []Spec {
 	return []Spec{
 		withBuiltinSources(Spec{
 			ID:                    "codex",
@@ -206,6 +218,7 @@ func withBuiltinSources(spec Spec) Spec {
 		"external_backend",
 		"telemetry",
 		"notes",
+		"acp_args",
 	} {
 		spec.Sources[field] = SourceBuiltIn
 	}

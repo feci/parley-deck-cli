@@ -241,6 +241,10 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		return failEarly(opts, result, err)
 	}
 
+	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchACP {
+		return runACPAgent(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt)
+	}
+
 	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
 	defer cancel()
 

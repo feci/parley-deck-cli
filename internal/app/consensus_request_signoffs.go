@@ -365,7 +365,7 @@ func validateLaunchModes(selected []agents.Discovery) error {
 
 func validLaunchMode(mode string) bool {
 	switch strings.TrimSpace(strings.ToLower(mode)) {
-	case agents.LaunchHeadless, agents.LaunchInteractive, agents.LaunchManual:
+	case agents.LaunchHeadless, agents.LaunchInteractive, agents.LaunchManual, agents.LaunchACP:
 		return true
 	default:
 		return false
@@ -423,6 +423,10 @@ func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Di
 	case agents.LaunchInteractive:
 		return runInteractiveSignoffAgent(ctx, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout, stderr)
 	case agents.LaunchManual:
+		return runManualSignoffAgent(rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
+	case agents.LaunchACP:
+		// Consensus signoff via ACP not yet wired; route through manual until the
+		// ACP runtime is plumbed end-to-end through the signoff flow.
 		return runManualSignoffAgent(rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
 	default:
 		return signoffRunResult{}, fmt.Errorf("%s has invalid launch_mode %q", agent.ID, agent.LaunchMode)
