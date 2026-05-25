@@ -13,6 +13,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runaction"
 	"parley-deck-cli/internal/runstate"
 )
 
@@ -282,6 +283,167 @@ func TestWorkspaceRendersRunsEventsAndQuestions(t *testing.T) {
 	}
 }
 
+func TestDashboardActionFocusAndSelection(t *testing.T) {
+	m := newTestModel(testRuns())
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	m = updated.(model)
+	if m.focus != focusActions {
+		t.Fatalf("focus=%s, want actions", m.focus)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	m = updated.(model)
+	if m.selectedAction != 1 {
+		t.Fatalf("selectedAction=%d, want 1", m.selectedAction)
+	}
+	view := m.View()
+	if !strings.Contains(view, "> answer-question") {
+		t.Fatalf("view did not mark selected action\n%s", view)
+	}
+	if !strings.Contains(view, "enter action") {
+		t.Fatalf("footer missing action key\n%s", view)
+	}
+}
+
+func TestDashboardEnterRunsSelectedAction(t *testing.T) {
+	var got ActionRequest
+	refreshCalled := false
+	m := newModel(WorkspaceOptions{
+		Root:   "/repo",
+		Status: testStatus(),
+		Agents: testDiscoveries(),
+		Runs:   testRuns(),
+		RefreshRuns: func() ([]runstate.RunSummary, error) {
+			refreshCalled = true
+			return testRuns(), nil
+		},
+		ActionRunner: func(_ context.Context, request ActionRequest) (ActionResult, error) {
+			got = request
+			return ActionResult{Message: "action done", Refresh: true}, nil
+		},
+	})
+	m.focus = focusActions
+	m.selectedAction = 1
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if cmd == nil {
+		t.Fatal("enter did not return action command")
+	}
+	if !m.actionRunning {
+		t.Fatal("model did not enter action running state")
+	}
+	updated, refreshCmd := m.Update(cmd())
+	m = updated.(model)
+	if got.Action.ID != "answer-question.q1" {
+		t.Fatalf("action=%+v", got.Action)
+	}
+	if m.actionRunning {
+		t.Fatal("model stayed actionRunning after result")
+	}
+	if !strings.Contains(m.actionText, "action done") {
+		t.Fatalf("actionText=%q", m.actionText)
+	}
+	if refreshCmd == nil {
+		t.Fatal("successful action did not request refresh")
+	}
+	updated, _ = m.Update(refreshCmd())
+	m = updated.(model)
+	if !refreshCalled {
+		t.Fatal("refresh callback was not called")
+	}
+}
+
+func TestDashboardActionWithoutRunnerShowsCommand(t *testing.T) {
+	m := newTestModel(testRuns())
+	m.focus = focusActions
+	m.selectedAction = 1
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if cmd != nil {
+		t.Fatal("enter returned command without runner")
+	}
+	for _, want := range []string{
+		"action execution is not available",
+		"parley answer run-1 q1 <answer>",
+	} {
+		if !strings.Contains(m.actionText, want) {
+			t.Fatalf("actionText missing %q: %q", want, m.actionText)
+		}
+	}
+}
+
+func TestDashboardRequiresConfirmationBeforeRunningAction(t *testing.T) {
+	calls := 0
+	m := newModel(WorkspaceOptions{
+		Root:   "/repo",
+		Status: testStatus(),
+		Agents: testDiscoveries(),
+		Runs:   testRuns(),
+		ActionRunner: func(_ context.Context, request ActionRequest) (ActionResult, error) {
+			calls++
+			return ActionResult{Message: request.Action.ID}, nil
+		},
+	})
+	m.focus = focusActions
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if cmd != nil {
+		t.Fatal("first enter returned command for RequiresYes action")
+	}
+	if calls != 0 {
+		t.Fatalf("runner called before confirmation: %d", calls)
+	}
+	if !strings.Contains(m.actionText, "press enter again") {
+		t.Fatalf("actionText=%q", m.actionText)
+	}
+
+	updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if cmd == nil {
+		t.Fatal("second enter did not return action command")
+	}
+	updated, _ = m.Update(cmd())
+	m = updated.(model)
+	if calls != 1 {
+		t.Fatalf("runner calls=%d, want 1", calls)
+	}
+	if strings.Contains(m.actionText, "press enter again") {
+		t.Fatalf("confirmation text was not replaced: %q", m.actionText)
+	}
+}
+
+func TestDashboardBlocksEnterWhileActionRunning(t *testing.T) {
+	calls := 0
+	m := newModel(WorkspaceOptions{
+		Root:   "/repo",
+		Status: testStatus(),
+		Agents: testDiscoveries(),
+		Runs:   testRuns(),
+		ActionRunner: func(_ context.Context, request ActionRequest) (ActionResult, error) {
+			calls++
+			return ActionResult{Message: request.Action.ID}, nil
+		},
+	})
+	m.focus = focusActions
+	m.selectedAction = 1
+	m.actionRunning = true
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(model)
+	if cmd != nil {
+		t.Fatal("enter returned command while actionRunning")
+	}
+	if calls != 0 {
+		t.Fatalf("runner calls=%d, want 0", calls)
+	}
+	if !strings.Contains(m.actionText, "already running") {
+		t.Fatalf("actionText=%q", m.actionText)
+	}
+}
+
 func TestWorkspaceStartModeUsesCallback(t *testing.T) {
 	var got StartRequest
 	m := newModel(WorkspaceOptions{
@@ -406,6 +568,10 @@ func testRuns() []runstate.RunSummary {
 					{ID: "claude", State: runstate.StatePending},
 				},
 				Recent: []runstate.EventSummary{{Time: base, Type: "agent.started", Agent: "codex", Text: "codex"}},
+			},
+			NextActions: []runaction.NextAction{
+				{ID: "draft-consensus.sample", Kind: runaction.KindDraftConsensus, IdeaSlug: "sample", Risk: runaction.RiskNormal, RequiresYes: true, Summary: "Draft consensus"},
+				{ID: "answer-question.q1", Kind: runaction.KindAnswerQuestion, RunID: "run-1", IdeaSlug: "sample", Risk: runaction.RiskLow, Summary: "Answer HITL question"},
 			},
 			Questions: []hitl.Question{{ID: "q1", Agent: "codex", Prompt: "Which branch?", Risk: hitl.RiskNormal, Status: hitl.StatusOpen}},
 		},

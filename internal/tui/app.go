@@ -12,17 +12,19 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runaction"
 	"parley-deck-cli/internal/runstate"
 )
 
 type WorkspaceOptions struct {
-	Root        string
-	Status      protocol.WorkspaceStatus
-	Agents      []agents.Discovery
-	Runs        []runstate.RunSummary
-	Context     context.Context
-	RefreshRuns func() ([]runstate.RunSummary, error)
-	StartRun    StartRunFunc
+	Root         string
+	Status       protocol.WorkspaceStatus
+	Agents       []agents.Discovery
+	Runs         []runstate.RunSummary
+	Context      context.Context
+	RefreshRuns  func() ([]runstate.RunSummary, error)
+	StartRun     StartRunFunc
+	ActionRunner ActionRunner
 }
 
 type StartRequest struct {
@@ -34,6 +36,19 @@ type StartRequest struct {
 
 type StartRunFunc func(context.Context, StartRequest) (runstate.RunSummary, error)
 
+type ActionRequest struct {
+	Run    runstate.RunSummary
+	Action runaction.NextAction
+}
+
+type ActionResult struct {
+	Message string
+	Command string
+	Refresh bool
+}
+
+type ActionRunner func(context.Context, ActionRequest) (ActionResult, error)
+
 type model struct {
 	root            string
 	status          protocol.WorkspaceStatus
@@ -42,23 +57,29 @@ type model struct {
 	ctx             context.Context
 	refreshRuns     func() ([]runstate.RunSummary, error)
 	startRun        StartRunFunc
+	actionRunner    ActionRunner
 	width           int
 	focus           focusZone
 	selectedIdea    int
 	selectedAgent   int
+	selectedAction  int
+	confirmActionID string
 	launchOverrides map[string]string
 	startMode       bool
 	starting        bool
+	actionRunning   bool
 	startText       string
 	startErr        string
+	actionText      string
 	errText         string
 }
 
 type focusZone string
 
 const (
-	focusIdeas  focusZone = "ideas"
-	focusAgents focusZone = "agents"
+	focusIdeas   focusZone = "ideas"
+	focusActions focusZone = "actions"
+	focusAgents  focusZone = "agents"
 )
 
 type initModel struct {
@@ -83,6 +104,11 @@ type refreshRunsMsg struct {
 type startRunMsg struct {
 	run runstate.RunSummary
 	err error
+}
+
+type actionRunMsg struct {
+	result ActionResult
+	err    error
 }
 
 type refreshTickMsg time.Time
@@ -134,6 +160,7 @@ func newModel(opts WorkspaceOptions) model {
 		ctx:             ctx,
 		refreshRuns:     opts.RefreshRuns,
 		startRun:        opts.StartRun,
+		actionRunner:    opts.ActionRunner,
 		width:           100,
 		focus:           focusIdeas,
 		launchOverrides: map[string]string{},
@@ -165,8 +192,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "ctrl+c", "esc":
 			return m, tea.Quit
-		case "tab", "shift+tab":
-			m.switchFocus()
+		case "tab":
+			m.switchFocus(1)
+			return m, nil
+		case "shift+tab":
+			m.switchFocus(-1)
+			return m, nil
+		case "enter":
+			if m.focus == focusActions {
+				return m.triggerSelectedAction()
+			}
 			return m, nil
 		case "N":
 			if m.startRun == nil {
@@ -204,10 +239,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case refreshRunsMsg:
 		selectedRunID := ""
 		selectedAgentID := ""
+		selectedActionID := ""
 		if run, ok := m.selectedRun(); ok {
 			selectedRunID = run.RunID
 			if len(run.State.Agents) > 0 {
 				selectedAgentID = run.State.Agents[clampIndex(m.selectedAgent, len(run.State.Agents))].ID
+			}
+			if len(run.NextActions) > 0 {
+				selectedActionID = run.NextActions[clampIndex(m.selectedAction, len(run.NextActions))].ID
 			}
 		}
 		if msg.err != nil {
@@ -220,6 +259,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if selectedAgentID != "" {
 				m.selectedAgent = indexAgent(m.selectedRunStateAgents(), selectedAgentID)
+			}
+			if selectedActionID != "" {
+				m.selectedAction = indexAction(m.selectedRunActions(), selectedActionID)
 			}
 			m.clampSelections()
 		}
@@ -244,6 +286,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runs = upsertRunSummary(m.runs, msg.run)
 		m.selectedIdea = indexRun(m.runs, msg.run.RunID)
 		m.focus = focusIdeas
+		return m, nil
+	case actionRunMsg:
+		m.actionRunning = false
+		m.confirmActionID = ""
+		if msg.err != nil {
+			m.actionText = msg.err.Error()
+			if msg.result.Command != "" {
+				m.actionText += "\ncommand: " + msg.result.Command
+			}
+			return m, nil
+		}
+		m.actionText = valueOr(msg.result.Message, "action completed")
+		if msg.result.Command != "" && !strings.Contains(m.actionText, msg.result.Command) {
+			m.actionText += "\ncommand: " + msg.result.Command
+		}
+		if msg.result.Refresh && m.refreshRuns != nil {
+			return m, refreshRunsCmd(m.refreshRuns)
+		}
 		return m, nil
 	}
 	return m, nil
@@ -276,7 +336,7 @@ func (m model) View() string {
 	right := panelStyle(m.focus == focusAgents).Width(rightWidth).Render(m.renderRunDetails())
 	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", middle, "  ", right))
 	b.WriteString("\n\n")
-	b.WriteString(boxStyle.Width(width - 4).Render(m.renderQuestions()))
+	b.WriteString(panelStyle(m.focus == focusActions).Width(width - 4).Render(m.renderQuestions()))
 	b.WriteString("\n\n")
 	b.WriteString(boxStyle.Width(width - 4).Render(m.renderFooter()))
 	b.WriteString("\n")
@@ -478,11 +538,20 @@ func (m model) renderQuestions() string {
 				b.WriteString(fmt.Sprintf("\n  ... %d more action(s)", len(run.NextActions)-i))
 				break
 			}
-			marker := " "
-			if i == 0 {
-				marker = ">"
+			marker := m.selectionMarker(focusActions, i == m.selectedAction)
+			summary := truncateText(valueOr(action.Summary, action.ID), 88)
+			if m.actionRunning && i == m.selectedAction {
+				summary = "[running] " + summary
 			}
-			b.WriteString(fmt.Sprintf("%s %-18s %-6s %s\n", marker, action.Kind, valueOr(action.Risk, "-"), truncateText(valueOr(action.Summary, action.ID), 88)))
+			b.WriteString(fmt.Sprintf("%s %-18s %-6s %s\n", marker, action.Kind, valueOr(action.Risk, "-"), summary))
+		}
+	}
+	if m.actionText != "" {
+		b.WriteString("\n")
+		if m.actionRunning {
+			b.WriteString(warnStyle.Render(m.actionText))
+		} else {
+			b.WriteString(mutedStyle.Render(m.actionText))
 		}
 	}
 	b.WriteString("\n\nQuestions\n")
@@ -578,7 +647,15 @@ func (m model) renderFooter() string {
 	if m.startMode {
 		parts = append(parts, "Start: type task  enter launch  esc cancel")
 	} else {
-		parts = append(parts, "Keys: N new idea  r refresh  tab focus  j/k select  h/i/m set agent mode  x clear mode  q/esc quit")
+		keys := "Keys: N new idea  r refresh  tab focus  j/k select"
+		if m.focus == focusActions {
+			keys += "  enter action"
+		}
+		if m.focus == focusAgents {
+			keys += "  h/i/m set agent mode  x clear mode"
+		}
+		keys += "  q/esc quit"
+		parts = append(parts, keys)
 		parts = append(parts, "Quit closes the TUI and cancels TUI-started runs; it does not detach child processes.")
 	}
 	if m.errText != "" {
@@ -600,12 +677,34 @@ func (m model) selectionMarker(zone focusZone, selected bool) string {
 	return "."
 }
 
-func (m *model) switchFocus() {
-	if m.focus == focusIdeas && len(m.agents) > 0 {
-		m.focus = focusAgents
+func (m *model) switchFocus(delta int) {
+	previous := m.focus
+	zones := []focusZone{focusIdeas}
+	if m.hasActionFocusTargets() {
+		zones = append(zones, focusActions)
+	}
+	if m.hasAgentFocusTargets() {
+		zones = append(zones, focusAgents)
+	}
+	if len(zones) == 1 {
+		m.focus = zones[0]
 		return
 	}
-	m.focus = focusIdeas
+	current := 0
+	for i, zone := range zones {
+		if zone == m.focus {
+			current = i
+			break
+		}
+	}
+	next := (current + delta) % len(zones)
+	if next < 0 {
+		next += len(zones)
+	}
+	m.focus = zones[next]
+	if previous != m.focus && m.focus != focusActions {
+		m.confirmActionID = ""
+	}
 }
 
 func (m *model) moveSelection(delta int) {
@@ -613,12 +712,22 @@ func (m *model) moveSelection(delta int) {
 	case focusIdeas:
 		m.selectedIdea = clampIndex(m.selectedIdea+delta, len(m.runs))
 		m.selectedAgent = 0
+		m.selectedAction = 0
+		m.actionText = ""
+		m.confirmActionID = ""
 	case focusAgents:
 		if run, ok := m.selectedRun(); ok && len(run.State.Agents) > 0 {
 			m.selectedAgent = clampIndex(m.selectedAgent+delta, len(run.State.Agents))
 			return
 		}
 		m.selectedAgent = clampIndex(m.selectedAgent+delta, len(m.agents))
+	case focusActions:
+		previous := m.selectedAction
+		m.selectedAction = clampIndex(m.selectedAction+delta, len(m.selectedRunActions()))
+		if previous != m.selectedAction {
+			m.actionText = ""
+			m.confirmActionID = ""
+		}
 	}
 }
 
@@ -629,6 +738,10 @@ func (m *model) clampSelections() {
 	} else {
 		m.selectedAgent = clampIndex(m.selectedAgent, len(m.agents))
 	}
+	m.selectedAction = clampIndex(m.selectedAction, len(m.selectedRunActions()))
+	if m.focus == focusActions && !m.hasActionFocusTargets() {
+		m.focus = focusIdeas
+	}
 }
 
 func (m model) selectedRun() (runstate.RunSummary, bool) {
@@ -636,6 +749,26 @@ func (m model) selectedRun() (runstate.RunSummary, bool) {
 		return runstate.RunSummary{}, false
 	}
 	return m.runs[clampIndex(m.selectedIdea, len(m.runs))], true
+}
+
+func (m model) selectedRunActions() []runaction.NextAction {
+	run, ok := m.selectedRun()
+	if !ok {
+		return nil
+	}
+	return run.NextActions
+}
+
+func (m model) hasActionFocusTargets() bool {
+	return len(m.selectedRunActions()) > 0
+}
+
+func (m model) hasAgentFocusTargets() bool {
+	if len(m.agents) > 0 {
+		return true
+	}
+	run, ok := m.selectedRun()
+	return ok && len(run.State.Agents) > 0
 }
 
 func (m model) renderStartBox() string {
@@ -854,6 +987,48 @@ func startRunCmd(ctx context.Context, start StartRunFunc, request StartRequest) 
 	}
 }
 
+func (m model) triggerSelectedAction() (tea.Model, tea.Cmd) {
+	if m.actionRunning {
+		m.actionText = "action already running"
+		return m, nil
+	}
+	run, ok := m.selectedRun()
+	if !ok || len(run.NextActions) == 0 {
+		m.actionText = "no planner action selected"
+		return m, nil
+	}
+	action := run.NextActions[clampIndex(m.selectedAction, len(run.NextActions))]
+	if m.actionRunner == nil {
+		m.actionText = "action execution is not available in this view"
+		if command := runaction.Command(action, run.RunID, run.IdeaSlug); command != "" {
+			m.actionText += "\ncommand: " + command
+		}
+		return m, nil
+	}
+	if action.RequiresYes && m.confirmActionID != action.ID {
+		m.confirmActionID = action.ID
+		m.actionText = "Action requires confirmation; press enter again to run: " + valueOr(action.Summary, action.Kind)
+		if command := runaction.Command(action, run.RunID, run.IdeaSlug); command != "" {
+			m.actionText += "\ncommand: " + command
+		}
+		return m, nil
+	}
+	m.confirmActionID = ""
+	m.actionRunning = true
+	m.actionText = "Running action: " + valueOr(action.Summary, action.Kind)
+	return m, actionRunCmd(m.ctx, m.actionRunner, ActionRequest{Run: run, Action: action})
+}
+
+func actionRunCmd(ctx context.Context, runner ActionRunner, request ActionRequest) tea.Cmd {
+	return func() tea.Msg {
+		if runner == nil {
+			return actionRunMsg{err: fmt.Errorf("action runner is not configured")}
+		}
+		result, err := runner(ctx, request)
+		return actionRunMsg{result: result, err: err}
+	}
+}
+
 func upsertRunSummary(runs []runstate.RunSummary, run runstate.RunSummary) []runstate.RunSummary {
 	if run.RunID == "" {
 		return runs
@@ -888,6 +1063,15 @@ func (m model) selectedRunStateAgents() []runstate.AgentState {
 func indexAgent(agents []runstate.AgentState, agentID string) int {
 	for i, agent := range agents {
 		if agent.ID == agentID {
+			return i
+		}
+	}
+	return 0
+}
+
+func indexAction(actions []runaction.NextAction, actionID string) int {
+	for i, action := range actions {
+		if action.ID == actionID {
 			return i
 		}
 	}

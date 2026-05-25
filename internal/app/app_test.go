@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,11 +16,13 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runaction"
 	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/tui"
 )
 
 func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
@@ -1149,11 +1152,11 @@ func TestResumeReportsKnownIdeaWithNoRuns(t *testing.T) {
 
 func TestActionCommandUsesActionRoundAndAvoidsHardcodedAgent(t *testing.T) {
 	run := runstate.RunSummary{RunID: "run-1", IdeaSlug: "sample"}
-	draft := actionCommand(run, runplan.NextAction{
+	draft := runaction.Command(runplan.NextAction{
 		Kind:     runplan.KindDraftConsensus,
 		IdeaSlug: "sample",
 		Round:    "round-02",
-	})
+	}, run.RunID, run.IdeaSlug)
 	if draft != "parley consensus draft --round 2 sample" {
 		t.Fatalf("draft command=%q", draft)
 	}
@@ -1161,12 +1164,59 @@ func TestActionCommandUsesActionRoundAndAvoidsHardcodedAgent(t *testing.T) {
 		t.Fatalf("draft command hardcodes agent: %q", draft)
 	}
 
-	finalize := actionCommand(run, runplan.NextAction{Kind: runplan.KindFinalize, IdeaSlug: "sample"})
+	finalize := runaction.Command(runplan.NextAction{Kind: runplan.KindFinalize, IdeaSlug: "sample"}, run.RunID, run.IdeaSlug)
 	if finalize != "parley consensus finalize sample" {
 		t.Fatalf("finalize command=%q", finalize)
 	}
 	if strings.Contains(finalize, "codex") {
 		t.Fatalf("finalize command hardcodes agent: %q", finalize)
+	}
+}
+
+func TestConsensusActionArgsForTUIRunner(t *testing.T) {
+	run := runstate.RunSummary{RunID: "run-1", IdeaSlug: "sample"}
+	args, err := consensusActionArgs("/repo", tui.ActionRequest{
+		Run: run,
+		Action: runaction.NextAction{
+			Kind:     runaction.KindDraftConsensus,
+			IdeaSlug: "sample",
+			Round:    "round-03",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"draft", "--dir", "/repo", "--round", "3", "sample"}
+	if fmt.Sprint(args) != fmt.Sprint(want) {
+		t.Fatalf("args=%v, want %v", args, want)
+	}
+
+	args, err = consensusActionArgs("/repo", tui.ActionRequest{
+		Run:    run,
+		Action: runaction.NextAction{Kind: runaction.KindRequestSignoffs},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = []string{"request-signoffs", "--dir", "/repo", "--yes", "sample"}
+	if fmt.Sprint(args) != fmt.Sprint(want) {
+		t.Fatalf("args=%v, want %v", args, want)
+	}
+}
+
+func TestRunTUIActionReturnsAdvisoryForRetry(t *testing.T) {
+	result, err := runTUIAction(context.Background(), "/repo", tui.ActionRequest{
+		Run:    runstate.RunSummary{RunID: "run-1", IdeaSlug: "sample"},
+		Action: runaction.NextAction{Kind: runaction.KindRetryAgent, IdeaSlug: "sample"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.Message, "retry-agent is not supported") {
+		t.Fatalf("message=%q", result.Message)
+	}
+	if result.Refresh {
+		t.Fatal("retry advisory requested refresh")
 	}
 }
 

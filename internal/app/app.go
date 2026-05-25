@@ -22,6 +22,7 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runaction"
 	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
@@ -1394,7 +1395,7 @@ func formatDuration(value time.Duration) string {
 
 func nextRunAction(run runstate.RunSummary) string {
 	if len(run.NextActions) > 0 {
-		if command := actionCommand(run, run.NextActions[0]); command != "" {
+		if command := runaction.Command(run.NextActions[0], run.RunID, run.IdeaSlug); command != "" {
 			return command
 		}
 		return fmt.Sprintf("parley continue %s", run.RunID)
@@ -1416,7 +1417,7 @@ func printNextActions(stdout io.Writer, run runstate.RunSummary) {
 		return
 	}
 	fmt.Fprintf(stdout, "Recommended: %s\n", actionSummary(run.NextActions[0]))
-	if command := actionCommand(run, run.NextActions[0]); command != "" {
+	if command := runaction.Command(run.NextActions[0], run.RunID, run.IdeaSlug); command != "" {
 		fmt.Fprintf(stdout, "Command: %s\n", command)
 	}
 	fmt.Fprintln(stdout, "Next actions:")
@@ -1432,7 +1433,7 @@ func printNextActions(stdout io.Writer, run runstate.RunSummary) {
 			fmt.Fprint(stdout, "  requires=yes")
 		}
 		fmt.Fprintf(stdout, "\n      %s\n", actionSummary(action))
-		if command := actionCommand(run, action); command != "" {
+		if command := runaction.Command(action, run.RunID, run.IdeaSlug); command != "" {
 			fmt.Fprintf(stdout, "      command: %s\n", command)
 		}
 	}
@@ -1440,57 +1441,6 @@ func printNextActions(stdout io.Writer, run runstate.RunSummary) {
 
 func actionSummary(action runplan.NextAction) string {
 	return valueOr(action.Summary, action.Kind)
-}
-
-func actionCommand(run runstate.RunSummary, action runplan.NextAction) string {
-	runID := valueOr(action.RunID, run.RunID)
-	idea := valueOr(action.IdeaSlug, run.IdeaSlug)
-	switch action.Kind {
-	case runplan.KindAnswerQuestion:
-		questionID := strings.TrimPrefix(action.ID, "answer-question.")
-		if runID == "" || questionID == "" || questionID == action.ID {
-			return ""
-		}
-		return fmt.Sprintf("parley answer %s %s <answer>", runID, questionID)
-	case runplan.KindDraftConsensus:
-		if idea == "" {
-			return ""
-		}
-		if round := roundNumber(action.Round); round != "" {
-			return fmt.Sprintf("parley consensus draft --round %s %s", round, idea)
-		}
-		return fmt.Sprintf("parley consensus draft %s", idea)
-	case runplan.KindRequestSignoffs:
-		if idea == "" {
-			return ""
-		}
-		return fmt.Sprintf("parley consensus request-signoffs --yes %s", idea)
-	case runplan.KindFinalize:
-		if idea == "" {
-			return ""
-		}
-		return fmt.Sprintf("parley consensus finalize %s", idea)
-	case runplan.KindInspect:
-		if runID != "" {
-			return fmt.Sprintf("parley status --run %s", runID)
-		}
-		if idea != "" {
-			return fmt.Sprintf("parley status --idea %s", idea)
-		}
-	}
-	return ""
-}
-
-func roundNumber(round string) string {
-	round = strings.TrimSpace(round)
-	if !strings.HasPrefix(round, "round-") {
-		return ""
-	}
-	n := strings.TrimLeft(strings.TrimPrefix(round, "round-"), "0")
-	if n == "" {
-		return "0"
-	}
-	return n
 }
 
 func findIdeaStatus(status protocol.WorkspaceStatus, slug string) (protocol.IdeaStatus, bool) {
@@ -1773,6 +1723,96 @@ The first line must be exactly:
 After the sentinel, write one short line confirming the headless probe.`, outputPath, sentinel, extra)
 }
 
+func runTUIAction(ctx context.Context, root string, request tui.ActionRequest) (tui.ActionResult, error) {
+	if strings.TrimSpace(root) == "" {
+		root = "."
+	}
+	action := request.Action
+	command := runaction.Command(action, request.Run.RunID, request.Run.IdeaSlug)
+	result := tui.ActionResult{Command: command}
+
+	switch action.Kind {
+	case runaction.KindInspect:
+		if command == "" {
+			result.Message = "inspect action has no run or idea target"
+			return result, nil
+		}
+		result.Message = "Inspect from the CLI: " + command
+		return result, nil
+	case runaction.KindAnswerQuestion:
+		if command == "" {
+			result.Message = "answer-question needs a question ID before it can run"
+			return result, nil
+		}
+		result.Message = "Answer requires text input; run from the CLI: " + command
+		return result, nil
+	case runaction.KindRetryAgent:
+		result.Message = "retry-agent is not supported by the runtime yet"
+		return result, nil
+	case runaction.KindDraftConsensus, runaction.KindRequestSignoffs, runaction.KindFinalize:
+		args, err := consensusActionArgs(root, request)
+		if err != nil {
+			return result, err
+		}
+		select {
+		case <-ctx.Done():
+			return result, ctx.Err()
+		default:
+		}
+		var stdoutBuf, stderrBuf bytes.Buffer
+		code := runConsensus(ctx, args, &stdoutBuf, &stderrBuf)
+		if code != 0 {
+			return result, fmt.Errorf("%s failed: %s", valueOr(command, action.Kind), commandOutput(stderrBuf.String(), stdoutBuf.String()))
+		}
+		result.Refresh = true
+		result.Message = commandOutput(stdoutBuf.String(), "")
+		if result.Message == "" {
+			result.Message = "Action completed: " + valueOr(command, action.Kind)
+		}
+		return result, nil
+	default:
+		if command != "" {
+			result.Message = "Action is advisory; run from the CLI: " + command
+			return result, nil
+		}
+		return result, fmt.Errorf("unsupported action kind %q", action.Kind)
+	}
+}
+
+func consensusActionArgs(root string, request tui.ActionRequest) ([]string, error) {
+	action := request.Action
+	idea := valueOr(action.IdeaSlug, request.Run.IdeaSlug)
+	if idea == "" {
+		return nil, fmt.Errorf("%s action has no idea target", action.Kind)
+	}
+	switch action.Kind {
+	case runaction.KindDraftConsensus:
+		args := []string{"draft", "--dir", root}
+		if round := runaction.RoundNumber(action.Round); round != "" {
+			args = append(args, "--round", round)
+		}
+		return append(args, idea), nil
+	case runaction.KindRequestSignoffs:
+		return []string{"request-signoffs", "--dir", root, "--yes", idea}, nil
+	case runaction.KindFinalize:
+		return []string{"finalize", "--dir", root, idea}, nil
+	default:
+		return nil, fmt.Errorf("%s is not executable from the TUI", action.Kind)
+	}
+}
+
+func commandOutput(primary, fallback string) string {
+	output := strings.TrimSpace(primary)
+	if output == "" {
+		output = strings.TrimSpace(fallback)
+	}
+	output = strings.ReplaceAll(output, "\r\n", "\n")
+	if len(output) > 240 {
+		output = output[:237] + "..."
+	}
+	return output
+}
+
 func runTUIView(ctx context.Context, root string, stdout, stderr io.Writer) int {
 	results, err := discoverConfigured(ctx, root)
 	if err != nil {
@@ -1846,6 +1886,9 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 		Context:     ctx,
 		RefreshRuns: refreshRuns,
 		StartRun:    startRun,
+		ActionRunner: func(actionCtx context.Context, request tui.ActionRequest) (tui.ActionResult, error) {
+			return runTUIAction(actionCtx, root, request)
+		},
 	}); err != nil {
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
