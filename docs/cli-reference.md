@@ -198,10 +198,12 @@ Open the project TUI.
 
 - `--dir DIR`: workspace root. Defaults to `.`.
 
-### `parley version [--all] [--json]`
+### `parley version [--dir DIR] [--all] [--json]`
 
 Print the CLI version.
 
+- `--dir DIR`: workspace root for project metadata in `--all` output.
+  Defaults to `.`.
 - `--all`: include `parley-deck-skill` installer, runtime skill, and project
   metadata status when available.
 - `--json`: print machine-readable JSON.
