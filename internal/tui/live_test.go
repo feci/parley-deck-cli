@@ -135,6 +135,50 @@ func TestLiveViewIncludesRequiredPanels(t *testing.T) {
 	}
 }
 
+func TestLiveCompactLayoutFitsShortTerminal(t *testing.T) {
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("compact-live-run-tui"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       t.TempDir(),
+	})
+	model.width = 100
+	model.height = 18
+	model.events = []store.Event{
+		{Time: time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC), Type: "agent.started", Data: map[string]any{"agent": "codex"}},
+	}
+	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
+
+	view := model.View()
+	for _, want := range []string{"layout=compact", "Agents", "Latest events", "Questions", "Log preview", "q/esc detach"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("compact live view missing %q\n%s", want, view)
+		}
+	}
+	if got := renderedLineCount(view); got > model.height {
+		t.Fatalf("compact live view rendered %d lines, want <= %d\n%s", got, model.height, view)
+	}
+}
+
+func TestLiveCompactThresholdBoundary(t *testing.T) {
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("compact-live-boundary"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       t.TempDir(),
+	})
+	model.width = 100
+	model.height = compactLiveHeight
+	if view := model.View(); strings.Contains(view, "layout=compact") {
+		t.Fatalf("live view used compact layout at threshold height %d\n%s", compactLiveHeight, view)
+	}
+
+	model.height = compactLiveHeight - 1
+	if view := model.View(); !strings.Contains(view, "layout=compact") {
+		t.Fatalf("live view did not use compact layout below threshold height %d\n%s", compactLiveHeight-1, view)
+	}
+}
+
 func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
 	runDir := t.TempDir()
 	question, err := hitl.New(runDir).Create(hitl.Question{

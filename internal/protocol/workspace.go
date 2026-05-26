@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"bufio"
+	_ "embed"
 	"errors"
 	"fmt"
 	"os"
@@ -14,6 +15,9 @@ import (
 )
 
 const DeckDir = "parley-deck"
+
+//go:embed defaults/COOPERATION.md
+var defaultCooperation string
 
 type WorkspaceStatus struct {
 	Root      string
@@ -49,7 +53,11 @@ func InitWorkspace(root string) error {
 		return err
 	}
 
-	return os.WriteFile(cooperation, []byte(defaultCooperation), 0o644)
+	return os.WriteFile(cooperation, []byte(defaultCooperationForInit()), 0o644)
+}
+
+func defaultCooperationForInit() string {
+	return strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `local-dir`", 1)
 }
 
 func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
@@ -278,14 +286,3 @@ func first(value, fallback string) string {
 	}
 	return strings.TrimSpace(value)
 }
-
-const defaultCooperation = `# COOPERATION.md — Multi-Agent Cooperation Protocol
-
-**Workspace:** ` + "`parley-deck`" + `
-**Parley deck:** ` + "`./parley-deck/`" + `
-**Transport:** ` + "`local-dir`" + `
-**Status:** Bootstrap file created by parley-deck-cli.
-
-This workspace uses Parley Deck canonical artifacts under ` + "`parley-deck/`" + `.
-Replace this bootstrap file with the full project cooperation protocol when available.
-`

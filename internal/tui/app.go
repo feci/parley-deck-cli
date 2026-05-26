@@ -59,6 +59,7 @@ type model struct {
 	startRun        StartRunFunc
 	actionRunner    ActionRunner
 	width           int
+	height          int
 	focus           focusZone
 	selectedIdea    int
 	selectedAgent   int
@@ -87,6 +88,7 @@ type initModel struct {
 	agents       []agents.Discovery
 	status       *protocol.WorkspaceStatus
 	width        int
+	height       int
 	initializing bool
 	errText      string
 }
@@ -162,6 +164,7 @@ func newModel(opts WorkspaceOptions) model {
 		startRun:        opts.StartRun,
 		actionRunner:    opts.ActionRunner,
 		width:           100,
+		height:          defaultDashboardHeight,
 		focus:           focusIdeas,
 		launchOverrides: map[string]string{},
 	}
@@ -184,6 +187,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
+		m.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
 		if m.startMode {
@@ -310,37 +314,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	var b strings.Builder
-	b.WriteString(headerStyle.Render(fmt.Sprintf("Parley Deck  transport=%s  mode=HITL default", m.status.Transport)))
-	b.WriteString("\n\n")
-
-	width := m.width
-	if width < 80 {
-		width = 80
+	width := tuiWidth(m.width)
+	height := tuiHeight(m.height, defaultDashboardHeight)
+	if height < compactDashboardHeight {
+		return m.renderCompactDashboard(width, height)
 	}
-	leftWidth := width/3 - 2
-	midWidth := width/3 - 2
-	rightWidth := width - leftWidth - midWidth - 10
-	if leftWidth < 34 {
-		leftWidth = 34
-	}
-	if midWidth < 34 {
-		midWidth = 34
-	}
-	if rightWidth < 34 {
-		rightWidth = 34
-	}
-
-	left := panelStyle(m.focus == focusIdeas).Width(leftWidth).Render(m.renderIdeas())
-	middle := boxStyle.Width(midWidth).Render(m.renderEvents())
-	right := panelStyle(m.focus == focusAgents).Width(rightWidth).Render(m.renderRunDetails())
-	b.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", middle, "  ", right))
-	b.WriteString("\n\n")
-	b.WriteString(panelStyle(m.focus == focusActions).Width(width - 4).Render(m.renderQuestions()))
-	b.WriteString("\n\n")
-	b.WriteString(boxStyle.Width(width - 4).Render(m.renderFooter()))
-	b.WriteString("\n")
-	return b.String()
+	return m.renderDashboard(width, height)
 }
 
 func (m initModel) Init() tea.Cmd {
@@ -351,6 +330,7 @@ func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
+		m.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -375,6 +355,7 @@ func (m initModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.errText = ""
 		dashboard := newModel(WorkspaceOptions{Root: m.root, Status: status, Agents: m.agents})
 		dashboard.width = m.width
+		dashboard.height = m.height
 		return dashboard, nil
 	}
 	return m, nil
@@ -431,111 +412,195 @@ func panelStyle(focused bool) lipgloss.Style {
 	return style
 }
 
-func (m model) renderIdeas() string {
-	var b strings.Builder
-	b.WriteString("Sessions\n")
-	if len(m.runs) == 0 {
-		b.WriteString(mutedStyle.Render("no runs found"))
-		if len(m.status.Ideas) > 0 {
-			b.WriteString("\n\n")
-			b.WriteString(mutedStyle.Render(fmt.Sprintf("%d protocol idea(s) on disk", len(m.status.Ideas))))
-		}
-		return b.String()
+func (m model) renderDashboard(width, height int) string {
+	bodyWidth := width - 4
+	leftWidth := clampInt(width/3, 30, 44)
+	rightWidth := bodyWidth - leftWidth - 4
+	if rightWidth < 42 {
+		rightWidth = 42
+		leftWidth = bodyWidth - rightWidth - 4
 	}
-	for i, run := range m.runs {
-		marker := m.selectionMarker(focusIdeas, i == m.selectedIdea)
-		badge := valueOr(run.Attention, runstate.Attention(run))
-		b.WriteString(fmt.Sprintf("%s %-7s %s\n", marker, badge, run.IdeaSlug))
-		b.WriteString(fmt.Sprintf("   run: %s\n", run.RunID))
-		b.WriteString(fmt.Sprintf("   agents: %s  q: %d\n", agentProgress(run), run.OpenQuestions))
-		if !run.LastEventAt.IsZero() {
-			b.WriteString(fmt.Sprintf("   last: %s ago\n", formatDuration(run.LastEventAge)))
-		}
+	if leftWidth < 28 {
+		leftWidth = 28
+	}
+
+	left := panelStyle(m.focus == focusIdeas).Width(leftWidth).Render(clipLines(m.renderIdeas(), height-7))
+	right := panelStyle(m.focus == focusAgents || m.focus == focusActions).Width(rightWidth).Render(clipLines(m.renderWorkspace(), height-7))
+	footer := mutedStyle.Render(m.renderFooter())
+
+	return strings.Join([]string{
+		m.dashboardHeader("normal"),
+		"",
+		lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right),
+		"",
+		footer,
+		"",
+	}, "\n")
+}
+
+func (m model) renderCompactDashboard(width, height int) string {
+	var b strings.Builder
+	b.WriteString(m.dashboardHeader("compact"))
+	b.WriteString("\n")
+	if m.errText != "" {
+		b.WriteString(warnStyle.Render(m.errText))
+		b.WriteString("\n")
+	}
+	if m.startErr != "" {
+		b.WriteString(warnStyle.Render(m.startErr))
+		b.WriteString("\n")
+	}
+	if m.startMode {
+		b.WriteString(sectionTitle("Start new idea"))
+		b.WriteString("\n")
+		b.WriteString(oneLine(m.renderStartBox()))
+		b.WriteString("\n")
+		b.WriteString(mutedStyle.Render(m.renderCompactFooter()))
+		return clipLines(b.String(), height) + "\n"
+	}
+
+	b.WriteString(sectionTitle("Sessions"))
+	b.WriteString("\n")
+	b.WriteString(m.renderCompactRuns(3))
+	b.WriteString("\n")
+
+	if run, ok := m.selectedRun(); ok {
+		b.WriteString(sectionTitle("Run details"))
+		b.WriteString("\n")
+		b.WriteString(m.renderCompactRunSummary(run))
+		b.WriteString("\n")
+		b.WriteString(sectionTitle("Agents"))
+		b.WriteString("\n")
+		b.WriteString(m.renderCompactRunAgents(run, 3))
+		b.WriteString("\n")
+		b.WriteString(sectionTitle("Actions"))
+		b.WriteString("\n")
+		b.WriteString(m.renderCompactActions(run, 2))
+		b.WriteString("\n")
+		b.WriteString(sectionTitle("Questions"))
+		b.WriteString("\n")
+		b.WriteString(m.renderCompactQuestions(run, 2))
+	} else {
+		b.WriteString(sectionTitle("Agents"))
+		b.WriteString("\n")
+		b.WriteString(m.renderCompactDiscoveredAgents(4))
+	}
+	b.WriteString("\n")
+	b.WriteString(mutedStyle.Render(m.renderCompactFooter()))
+	return clipLines(b.String(), height) + "\n"
+}
+
+func (m model) dashboardHeader(layout string) string {
+	focus := string(m.focus)
+	if focus == "" {
+		focus = string(focusIdeas)
+	}
+	parts := []string{
+		fmt.Sprintf("Parley Deck  transport=%s", m.status.Transport),
+		"mode=HITL default",
+		"focus=" + focus,
+	}
+	if run, ok := m.selectedRun(); ok {
+		parts = append(parts, fmt.Sprintf("run=%s %s %s", run.IdeaSlug, attentionBadge(valueOr(run.Attention, runstate.Attention(run))), agentProgress(run)))
+	}
+	if layout == "compact" {
+		parts = append(parts, "layout=compact")
+	}
+	return headerStyle.Render(strings.Join(parts, "  "))
+}
+
+func (m model) renderWorkspace() string {
+	if m.startMode {
+		return m.renderStartBox()
+	}
+	run, ok := m.selectedRun()
+	if !ok {
+		return m.renderAgents()
+	}
+
+	var b strings.Builder
+	b.WriteString(m.renderRunOverview(run))
+	b.WriteString("\n\n")
+	b.WriteString(m.renderRunAgents(run, 5))
+	b.WriteString("\n\n")
+	b.WriteString(m.renderEventsLimit(run, 5))
+	b.WriteString("\n\n")
+	b.WriteString(m.renderActionsAndQuestions(run, 4, 4))
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderRunOverview(run runstate.RunSummary) string {
+	var b strings.Builder
+	b.WriteString("Run details\n")
+	b.WriteString(fmt.Sprintf("idea: %s  run: %s\n", valueOr(run.IdeaSlug, "unknown"), run.RunID))
+	b.WriteString(fmt.Sprintf("attention: %s  state: %s  agents: %s  q: %d\n",
+		attentionBadge(valueOr(run.Attention, runstate.Attention(run))),
+		displayRunState(run),
+		agentProgress(run),
+		run.OpenQuestions,
+	))
+	if run.Task != "" {
+		b.WriteString(fmt.Sprintf("task: %s\n", truncateText(run.Task, 96)))
+	}
+	if !run.LastEventAt.IsZero() {
+		b.WriteString(fmt.Sprintf("last event: %s ago\n", formatDuration(run.LastEventAge)))
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
 
-func (m model) renderEvents() string {
-	run, ok := m.selectedRun()
-	if !ok {
-		return "Event stream\n" + mutedStyle.Render("select or start a run")
+func (m model) renderRunAgents(run runstate.RunSummary, limit int) string {
+	var b strings.Builder
+	b.WriteString("Agents\n")
+	if len(run.State.Agents) == 0 {
+		b.WriteString(mutedStyle.Render("no agent state yet"))
+		return b.String()
 	}
+	for i, state := range run.State.Agents {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more agent(s)\n", len(run.State.Agents)-i))
+			break
+		}
+		marker := " "
+		if i == m.selectedAgent {
+			marker = m.selectionMarker(focusAgents, true)
+		}
+		b.WriteString(fmt.Sprintf("%s %-8s %-14s %-8s %s\n",
+			marker,
+			state.ID,
+			stateBadge(state.State),
+			formatDuration(agentDuration(state)),
+			truncateText(state.LatestEvent, 64),
+		))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderEventsLimit(run runstate.RunSummary, limit int) string {
 	var b strings.Builder
 	b.WriteString("Event stream\n")
 	if len(run.State.Recent) == 0 {
 		b.WriteString(mutedStyle.Render("waiting for events"))
 		return b.String()
 	}
-	for _, event := range run.State.Recent {
-		b.WriteString(fmt.Sprintf("%s  %-16s %s\n", event.Time.Local().Format("15:04:05"), event.Type, event.Text))
+	for i, event := range run.State.Recent {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more event(s)\n", len(run.State.Recent)-i))
+			break
+		}
+		b.WriteString(fmt.Sprintf("%s  %-16s %s\n", event.Time.Local().Format("15:04:05"), event.Type, truncateText(event.Text, 96)))
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
 
-func (m model) renderRunDetails() string {
-	run, ok := m.selectedRun()
-	if !ok {
-		return m.renderAgents()
-	}
+func (m model) renderActionsAndQuestions(run runstate.RunSummary, actionLimit, questionLimit int) string {
 	var b strings.Builder
-	b.WriteString("Run details\n")
-	b.WriteString(fmt.Sprintf("idea: %s\n", valueOr(run.IdeaSlug, "unknown")))
-	b.WriteString(fmt.Sprintf("run: %s\n", run.RunID))
-	b.WriteString(fmt.Sprintf("attention: %s\n", valueOr(run.Attention, runstate.Attention(run))))
-	b.WriteString(fmt.Sprintf("state: %s\n", displayRunState(run)))
-	if run.Task != "" {
-		b.WriteString(fmt.Sprintf("task: %s\n", truncateText(run.Task, 72)))
-	}
-	if len(run.State.Agents) == 0 {
-		b.WriteString("\n")
-		b.WriteString(mutedStyle.Render("no agent state yet"))
-		return strings.TrimRight(b.String(), "\n")
-	}
-	agent := run.State.Agents[clampIndex(m.selectedAgent, len(run.State.Agents))]
-	b.WriteString("\nAgents\n")
-	for i, state := range run.State.Agents {
-		marker := " "
-		if i == m.selectedAgent {
-			marker = ">"
-		}
-		b.WriteString(fmt.Sprintf("%s %-8s %-10s %s\n", marker, state.ID, state.State, state.LatestEvent))
-	}
-	b.WriteString("\n")
-	b.WriteString(fmt.Sprintf("Agent: %s\n", agent.ID))
-	b.WriteString(fmt.Sprintf("duration: %s\n", formatDuration(agentDuration(agent))))
-	if agent.ArtifactPath != "" {
-		b.WriteString(fmt.Sprintf("artifact: %s\n", agent.ArtifactPath))
-	}
-	if agent.Error != "" {
-		b.WriteString(warnStyle.Render("error: "+agent.Error) + "\n")
-	}
-	if preview := logPreview(agent); preview != "" {
-		b.WriteString("\n")
-		b.WriteString("Log tail\n")
-		b.WriteString(preview)
-	}
-	return strings.TrimRight(b.String(), "\n")
-}
-
-func (m model) renderQuestions() string {
-	run, ok := m.selectedRun()
-	if !ok {
-		if m.startMode {
-			return m.renderStartBox()
-		}
-		return "Questions\n" + mutedStyle.Render("no run selected")
-	}
-	var b strings.Builder
-	if m.startMode {
-		return m.renderStartBox()
-	}
 	b.WriteString("Actions\n")
 	if len(run.NextActions) == 0 {
 		b.WriteString(mutedStyle.Render("no planner actions"))
 	} else {
 		for i, action := range run.NextActions {
-			if i >= 4 {
-				b.WriteString(fmt.Sprintf("\n  ... %d more action(s)", len(run.NextActions)-i))
+			if i >= actionLimit {
+				b.WriteString(fmt.Sprintf("  ... %d more action(s)\n", len(run.NextActions)-i))
 				break
 			}
 			marker := m.selectionMarker(focusActions, i == m.selectedAction)
@@ -543,7 +608,7 @@ func (m model) renderQuestions() string {
 			if m.actionRunning && i == m.selectedAction {
 				summary = "[running] " + summary
 			}
-			b.WriteString(fmt.Sprintf("%s %-18s %-6s %s\n", marker, action.Kind, valueOr(action.Risk, "-"), summary))
+			b.WriteString(fmt.Sprintf("%s %-18s %-10s %s\n", marker, action.Kind, riskBadge(action.Risk), summary))
 		}
 	}
 	if m.actionText != "" {
@@ -557,14 +622,159 @@ func (m model) renderQuestions() string {
 	b.WriteString("\n\nQuestions\n")
 	if len(run.Questions) == 0 {
 		b.WriteString(mutedStyle.Render("no questions"))
-		return b.String()
+		return strings.TrimRight(b.String(), "\n")
 	}
-	for _, question := range run.Questions {
+	for i, question := range run.Questions {
+		if i >= questionLimit {
+			b.WriteString(fmt.Sprintf("  ... %d more question(s)\n", len(run.Questions)-i))
+			break
+		}
 		marker := " "
 		if question.Status == hitl.StatusOpen {
-			marker = "!"
+			marker = warnStyle.Render("!")
 		}
-		b.WriteString(fmt.Sprintf("%s %-28s %-13s %-6s %s\n", marker, question.ID, question.Status, question.Risk, truncateText(question.Prompt, 90)))
+		b.WriteString(fmt.Sprintf("%s %-28s %-13s %-10s %s\n", marker, question.ID, question.Status, riskBadge(question.Risk), truncateText(question.Prompt, 90)))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderCompactRuns(limit int) string {
+	if len(m.runs) == 0 {
+		if len(m.status.Ideas) > 0 {
+			return mutedStyle.Render(fmt.Sprintf("no runs found  %d protocol idea(s) on disk", len(m.status.Ideas)))
+		}
+		return mutedStyle.Render("no runs found")
+	}
+	var b strings.Builder
+	for i, run := range m.runs {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more session(s)\n", len(m.runs)-i))
+			break
+		}
+		marker := m.selectionMarker(focusIdeas, i == m.selectedIdea)
+		b.WriteString(fmt.Sprintf("%s %-18s %-28s agents:%s q:%d",
+			marker,
+			attentionBadge(valueOr(run.Attention, runstate.Attention(run))),
+			truncateText(run.IdeaSlug, 28),
+			agentProgress(run),
+			run.OpenQuestions,
+		))
+		if !run.LastEventAt.IsZero() {
+			b.WriteString(fmt.Sprintf(" last:%s", formatDuration(run.LastEventAge)))
+		}
+		b.WriteString("\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderCompactRunSummary(run runstate.RunSummary) string {
+	parts := []string{
+		fmt.Sprintf("%s %s", attentionBadge(valueOr(run.Attention, runstate.Attention(run))), valueOr(run.IdeaSlug, "unknown")),
+		"state=" + displayRunState(run),
+		"agents=" + agentProgress(run),
+		fmt.Sprintf("q=%d", run.OpenQuestions),
+	}
+	if run.Task != "" {
+		parts = append(parts, "task="+truncateText(run.Task, 56))
+	}
+	return strings.Join(parts, "  ")
+}
+
+func (m model) renderCompactRunAgents(run runstate.RunSummary, limit int) string {
+	if len(run.State.Agents) == 0 {
+		return mutedStyle.Render("no agent state yet")
+	}
+	var b strings.Builder
+	for i, state := range run.State.Agents {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more agent(s)\n", len(run.State.Agents)-i))
+			break
+		}
+		marker := " "
+		if i == m.selectedAgent {
+			marker = m.selectionMarker(focusAgents, true)
+		}
+		b.WriteString(fmt.Sprintf("%s %-8s %-14s %s\n", marker, state.ID, stateBadge(state.State), truncateText(state.LatestEvent, 48)))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderCompactActions(run runstate.RunSummary, limit int) string {
+	if len(run.NextActions) == 0 {
+		return mutedStyle.Render("no planner actions")
+	}
+	var b strings.Builder
+	for i, action := range run.NextActions {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more action(s)\n", len(run.NextActions)-i))
+			break
+		}
+		marker := m.selectionMarker(focusActions, i == m.selectedAction)
+		b.WriteString(fmt.Sprintf("%s %-18s %-10s %s\n", marker, action.Kind, riskBadge(action.Risk), truncateText(valueOr(action.Summary, action.ID), 60)))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderCompactQuestions(run runstate.RunSummary, limit int) string {
+	if len(run.Questions) == 0 {
+		return mutedStyle.Render("no questions")
+	}
+	var b strings.Builder
+	for i, question := range run.Questions {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more question(s)\n", len(run.Questions)-i))
+			break
+		}
+		marker := " "
+		if question.Status == hitl.StatusOpen {
+			marker = warnStyle.Render("!")
+		}
+		b.WriteString(fmt.Sprintf("%s %-22s %-13s %s\n", marker, question.ID, question.Status, truncateText(question.Prompt, 64)))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderCompactDiscoveredAgents(limit int) string {
+	if len(m.agents) == 0 {
+		return mutedStyle.Render("no agents configured")
+	}
+	var b strings.Builder
+	for i, agent := range m.agents {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more agent(s)\n", len(m.agents)-i))
+			break
+		}
+		marker := m.selectionMarker(focusAgents, i == m.selectedAgent)
+		state := stateBadge("missing")
+		if agent.Found {
+			state = stateBadge("found")
+		}
+		b.WriteString(fmt.Sprintf("%s %-8s %-10s mode:%s version:%s\n", marker, agent.ID, state, m.effectiveLaunchMode(agent), valueOr(agent.Version, "-")))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m model) renderIdeas() string {
+	var b strings.Builder
+	b.WriteString(sectionTitle("Sessions"))
+	b.WriteString("\n")
+	if len(m.runs) == 0 {
+		b.WriteString(mutedStyle.Render("no runs found"))
+		if len(m.status.Ideas) > 0 {
+			b.WriteString("\n\n")
+			b.WriteString(mutedStyle.Render(fmt.Sprintf("%d protocol idea(s) on disk", len(m.status.Ideas))))
+		}
+		return b.String()
+	}
+	for i, run := range m.runs {
+		marker := m.selectionMarker(focusIdeas, i == m.selectedIdea)
+		badge := valueOr(run.Attention, runstate.Attention(run))
+		b.WriteString(fmt.Sprintf("%s %-18s %s\n", marker, attentionBadge(badge), run.IdeaSlug))
+		b.WriteString(fmt.Sprintf("   run: %s\n", run.RunID))
+		b.WriteString(fmt.Sprintf("   agents: %s  q: %d\n", agentProgress(run), run.OpenQuestions))
+		if !run.LastEventAt.IsZero() {
+			b.WriteString(fmt.Sprintf("   last: %s ago\n", formatDuration(run.LastEventAge)))
+		}
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
@@ -643,11 +853,19 @@ func (m model) renderAgentDetails() string {
 }
 
 func (m model) renderFooter() string {
+	return m.renderFooterText(true)
+}
+
+func (m model) renderCompactFooter() string {
+	return m.renderFooterText(false)
+}
+
+func (m model) renderFooterText(includeLifecycleWarning bool) string {
 	var parts []string
 	if m.startMode {
 		parts = append(parts, "Start: type task  enter launch  esc cancel")
 	} else {
-		keys := "Keys: N new idea  r refresh  tab focus  j/k select"
+		keys := "Keys: N new  r refresh  tab focus  j/k select"
 		if m.focus == focusActions {
 			keys += "  enter action"
 		}
@@ -656,7 +874,9 @@ func (m model) renderFooter() string {
 		}
 		keys += "  q/esc quit"
 		parts = append(parts, keys)
-		parts = append(parts, "Quit closes the TUI and cancels TUI-started runs; it does not detach child processes.")
+		if includeLifecycleWarning {
+			parts = append(parts, "Quit closes the TUI and cancels TUI-started runs; it does not detach child processes.")
+		}
 	}
 	if m.errText != "" {
 		parts = append([]string{warnStyle.Render(m.errText)}, parts...)
@@ -664,7 +884,7 @@ func (m model) renderFooter() string {
 	if m.startErr != "" {
 		parts = append([]string{warnStyle.Render(m.startErr)}, parts...)
 	}
-	return strings.Join(parts, "\n")
+	return strings.Join(parts, "  |  ")
 }
 
 func (m model) selectionMarker(zone focusZone, selected bool) string {

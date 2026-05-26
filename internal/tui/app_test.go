@@ -283,6 +283,36 @@ func TestWorkspaceRendersRunsEventsAndQuestions(t *testing.T) {
 	}
 }
 
+func TestDashboardCompactLayoutFitsShortTerminal(t *testing.T) {
+	m := newTestModel(testRuns())
+	m.width = 100
+	m.height = 20
+
+	view := m.View()
+	for _, want := range []string{"layout=compact", "Sessions", "Run details", "Agents", "Actions", "Questions", "q/esc quit"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("compact dashboard missing %q\n%s", want, view)
+		}
+	}
+	if got := renderedLineCount(view); got > m.height {
+		t.Fatalf("compact dashboard rendered %d lines, want <= %d\n%s", got, m.height, view)
+	}
+}
+
+func TestDashboardCompactThresholdBoundary(t *testing.T) {
+	m := newTestModel(testRuns())
+	m.width = 100
+	m.height = compactDashboardHeight
+	if view := m.View(); strings.Contains(view, "layout=compact") {
+		t.Fatalf("dashboard used compact layout at threshold height %d\n%s", compactDashboardHeight, view)
+	}
+
+	m.height = compactDashboardHeight - 1
+	if view := m.View(); !strings.Contains(view, "layout=compact") {
+		t.Fatalf("dashboard did not use compact layout below threshold height %d\n%s", compactDashboardHeight-1, view)
+	}
+}
+
 func TestDashboardActionFocusAndSelection(t *testing.T) {
 	m := newTestModel(testRuns())
 
@@ -582,4 +612,12 @@ func testRuns() []runstate.RunSummary {
 			LastEventAt: base.Add(-time.Hour),
 		},
 	}
+}
+
+func renderedLineCount(view string) int {
+	view = strings.TrimRight(view, "\n")
+	if view == "" {
+		return 0
+	}
+	return strings.Count(view, "\n") + 1
 }

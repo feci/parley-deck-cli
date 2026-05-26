@@ -15,3 +15,9 @@ Summary: Added advisory per-idea roles/lenses, internal-helper accountability, p
 Idea: user-follow-up to `ideas/meta-protocol-change-agent-teams-patterns/`
 Drafted by: codex
 Summary: Clarified that participant-spawned helpers may contribute only through the owning participant and must not create canonical round, review, consensus, or signoff files under a separate helper identity unless that identity is explicitly listed in `participants:`.
+
+## 2026-05-25 — Concrete roster and local headless config note
+
+Idea: ideas/meta-protocol-change-roster-headless-config/
+Drafted by: codex
+Summary: Replaced placeholder roster rows with `codex`, `claude`, `gemini`, and `hermes`; marked host handles as not mapped; and documented that `parley-deck/meta/headless-agents.local.json` is optional, gitignored, machine-local launch configuration rather than canonical project state.

@@ -195,33 +195,65 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m liveModel) View() string {
-	width := m.width
-	if width < 80 {
-		width = 80
-	}
+	width := tuiWidth(m.width)
+	height := tuiHeight(m.height, defaultLiveHeight)
 	bodyWidth := width - 4
 	if bodyWidth < 76 {
 		bodyWidth = 76
 	}
 
-	header := headerStyle.Render(fmt.Sprintf(
+	header := m.liveHeader("normal")
+	if height < compactLiveHeight {
+		return m.renderCompactLive(width, height, m.liveHeader("compact"))
+	}
+
+	leftWidth := clampInt(bodyWidth/2, 42, 54)
+	rightWidth := bodyWidth - leftWidth - 4
+	if rightWidth < 40 {
+		rightWidth = 40
+		leftWidth = bodyWidth - rightWidth - 4
+	}
+
+	leftBody := strings.Join([]string{
+		m.renderAgentTable(),
+		"",
+		m.renderQuestionsPane(),
+	}, "\n")
+	rightBody := strings.Join([]string{
+		m.renderEventPane(),
+		"",
+		m.renderLogPane(),
+	}, "\n")
+	usableRows := height - 6
+	left := boxStyle.Width(leftWidth).Render(clipLines(leftBody, usableRows))
+	right := boxStyle.Width(rightWidth).Render(clipLines(rightBody, usableRows))
+	footer := m.renderLiveFooter()
+
+	return strings.Join([]string{
+		header,
+		"",
+		lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right),
+		"",
+		footer,
+		"",
+	}, "\n")
+}
+
+func (m liveModel) liveHeader(layout string) string {
+	header := fmt.Sprintf(
 		"Parley Deck  idea=%s  round=%s  run=%s  status=%s",
 		m.opts.Idea.Slug,
 		displayRoundLabel(m.opts.Idea.Status),
 		m.opts.RunID,
 		displayRoundStatus(m.state.RoundStatus, m.done, m.opts.Resume),
-	))
-
-	leftWidth := 36
-	rightWidth := bodyWidth - leftWidth - 4
-	if rightWidth < 36 {
-		rightWidth = 36
+	)
+	if layout == "compact" {
+		header += "  layout=compact"
 	}
+	return headerStyle.Render(header)
+}
 
-	left := boxStyle.Width(leftWidth).Render(m.renderAgentTable())
-	right := boxStyle.Width(rightWidth).Render(m.renderEventPane())
-	questions := boxStyle.Width(bodyWidth).Render(m.renderQuestionsPane())
-	logs := boxStyle.Width(bodyWidth).Render(m.renderLogPane())
+func (m liveModel) renderLiveFooter() string {
 	footerText := "Keys: j/k/tab agent  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run"
 	if m.opts.Resume {
 		footerText = "Keys: j/k/tab agent  n/p question  a answer  q/esc/ctrl+c close resume view"
@@ -233,24 +265,109 @@ func (m liveModel) View() string {
 	if m.answerMode {
 		footer = warnStyle.Render("Answer mode: type answer, enter submit, esc cancel") + "\n" + footer
 	}
+	return footer
+}
 
-	return strings.Join([]string{
-		header,
-		"",
-		lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right),
-		"",
-		questions,
-		"",
-		logs,
-		"",
-		footer,
-		"",
-	}, "\n")
+func (m liveModel) renderCompactLive(width, height int, header string) string {
+	var b strings.Builder
+	b.WriteString(header)
+	b.WriteString("\n")
+	if m.errText != "" {
+		b.WriteString(warnStyle.Render(m.errText))
+		b.WriteString("\n")
+	}
+	if m.answerMode {
+		b.WriteString(warnStyle.Render("Answer mode: type answer, enter submit, esc cancel"))
+		b.WriteString("\n")
+	}
+	b.WriteString(sectionTitle("Agents"))
+	b.WriteString("\n")
+	b.WriteString(m.renderCompactLiveAgents(4))
+	b.WriteString("\n")
+	b.WriteString(sectionTitle("Latest events"))
+	b.WriteString("\n")
+	b.WriteString(m.renderCompactLatestEvent())
+	b.WriteString("\n")
+	b.WriteString(sectionTitle("Questions"))
+	b.WriteString("\n")
+	b.WriteString(m.renderCompactLiveQuestion())
+	b.WriteString("\n")
+	b.WriteString(sectionTitle("Log preview"))
+	b.WriteString("\n")
+	b.WriteString(m.renderCompactLogLine(width - 12))
+	b.WriteString("\n")
+	b.WriteString(m.renderLiveFooter())
+	return clipLines(b.String(), height) + "\n"
+}
+
+func (m liveModel) renderCompactLiveAgents(limit int) string {
+	if len(m.state.Agents) == 0 {
+		return mutedStyle.Render("no agents")
+	}
+	var b strings.Builder
+	for i, agent := range m.state.Agents {
+		if i >= limit {
+			b.WriteString(fmt.Sprintf("  ... %d more agent(s)\n", len(m.state.Agents)-i))
+			break
+		}
+		marker := " "
+		if i == m.selected {
+			marker = ">"
+		}
+		b.WriteString(fmt.Sprintf("%s %-8s %-14s %-8s %s\n",
+			marker,
+			agent.ID,
+			stateBadge(agent.State),
+			formatAgentDuration(agent, m.now),
+			truncateText(agent.LatestEvent, 52),
+		))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m liveModel) renderCompactLatestEvent() string {
+	if len(m.state.Recent) == 0 {
+		return mutedStyle.Render("waiting for events")
+	}
+	event := m.state.Recent[len(m.state.Recent)-1]
+	return fmt.Sprintf("%s  %-16s %s", event.Time.Local().Format("15:04:05"), event.Type, truncateText(event.Text, 72))
+}
+
+func (m liveModel) renderCompactLiveQuestion() string {
+	if len(m.questions) == 0 {
+		return mutedStyle.Render("no questions")
+	}
+	question := m.questions[clampIndex(m.selectedQ, len(m.questions))]
+	prefix := " "
+	if question.Status == hitl.StatusOpen {
+		prefix = warnStyle.Render("!")
+	}
+	text := fmt.Sprintf("%s %-24s %-13s %-10s %s", prefix, question.ID, question.Status, riskBadge(question.Risk), truncateText(question.Prompt, 72))
+	if m.answerMode {
+		text += "\n" + warnStyle.Render("answer> ") + m.answerText
+	}
+	if m.answerErr != "" {
+		text += "\n" + warnStyle.Render(m.answerErr)
+	}
+	return text
+}
+
+func (m liveModel) renderCompactLogLine(limit int) string {
+	agent := m.selectedAgent()
+	if agent == nil {
+		return mutedStyle.Render("no agent selected")
+	}
+	line := firstVisibleLine(m.logPreview)
+	if line == "" {
+		return fmt.Sprintf("%s: %s", agent.ID, mutedStyle.Render("no log output yet"))
+	}
+	return fmt.Sprintf("%s: %s", agent.ID, truncateText(line, limit))
 }
 
 func (m liveModel) renderAgentTable() string {
 	var b strings.Builder
-	b.WriteString("Agents\n")
+	b.WriteString(sectionTitle("Agents"))
+	b.WriteString("\n")
 	b.WriteString(fmt.Sprintf("%-2s %-8s %-10s %-8s %s\n", "", "ID", "STATE", "ELAPSED", "LAST EVENT"))
 	for i, agent := range m.state.Agents {
 		marker := " "
@@ -260,7 +377,7 @@ func (m liveModel) renderAgentTable() string {
 		b.WriteString(fmt.Sprintf("%-2s %-8s %-10s %-8s %s\n",
 			marker,
 			agent.ID,
-			agent.State,
+			stateBadge(agent.State),
 			formatAgentDuration(agent, m.now),
 			agent.LatestEvent,
 		))
@@ -270,7 +387,8 @@ func (m liveModel) renderAgentTable() string {
 
 func (m liveModel) renderEventPane() string {
 	var b strings.Builder
-	b.WriteString("Latest events\n")
+	b.WriteString(sectionTitle("Latest events"))
+	b.WriteString("\n")
 	if len(m.state.Recent) == 0 {
 		b.WriteString(mutedStyle.Render("waiting for events"))
 		return b.String()
@@ -287,7 +405,8 @@ func (m liveModel) renderEventPane() string {
 
 func (m liveModel) renderQuestionsPane() string {
 	var b strings.Builder
-	b.WriteString("Questions\n")
+	b.WriteString(sectionTitle("Questions"))
+	b.WriteString("\n")
 	if len(m.questions) == 0 {
 		b.WriteString(mutedStyle.Render("no questions"))
 		return b.String()
@@ -306,6 +425,9 @@ func (m liveModel) renderQuestionsPane() string {
 	if selected := m.selectedQuestion(); selected != nil {
 		b.WriteString("\n")
 		b.WriteString(fmt.Sprintf("Selected: %s from %s\n", selected.ID, selected.Agent))
+		if selected.Prompt != "" {
+			b.WriteString(fmt.Sprintf("Prompt: %s\n", selected.Prompt))
+		}
 		if selected.Details != "" {
 			b.WriteString(selected.Details + "\n")
 		}

@@ -10,7 +10,7 @@ signoffs, and emits repository context for agents.
 Install the current checkout into `~/.parley-deck` while developing:
 
 ```bash
-cd /Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-cli
+cd /path/to/parley-deck-cli
 scripts/install-local.sh
 ```
 

@@ -76,7 +76,7 @@ func parleyDeckSkillStatus(ctx context.Context, root string) (map[string]any, st
 		project = abs
 	}
 
-	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	probeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(probeCtx, "parley-deck-skill", "status", "--target", "all", "--project", project, "--json")
@@ -89,7 +89,7 @@ func parleyDeckSkillStatus(ctx context.Context, root string) (map[string]any, st
 		if message == "" {
 			message = err.Error()
 		}
-		return legacyParleyDeckSkillStatus(probeCtx, message)
+		return legacyParleyDeckSkillStatus(ctx, message)
 	}
 
 	var status map[string]any
@@ -100,7 +100,10 @@ func parleyDeckSkillStatus(ctx context.Context, root string) (map[string]any, st
 }
 
 func legacyParleyDeckSkillStatus(ctx context.Context, statusError string) (map[string]any, string) {
-	cmd := exec.CommandContext(ctx, "parley-deck-skill", "--version")
+	probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(probeCtx, "parley-deck-skill", "--version")
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 	cmd.Stdout = &out

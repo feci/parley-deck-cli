@@ -11,14 +11,13 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/25
 
 ## Current protocol state
 
-The implementation proceeds incrementally under explicit user instruction from
-2026-05-18. Round 1 has canonical artifacts from `codex` and `claude`.
-`gemini` and `hermes` remain blocked by local CLI/runtime issues recorded in
-`parley-deck/inbox/codex-to-all_session-resume-cache-plan_agent-blockers.md`.
+The implementation proceeded incrementally under explicit user instruction from
+2026-05-18. The earlier Gemini and Hermes local CLI blockers are historical:
+on 2026-05-25 the missing participant artifacts were recovered, all four
+participants completed rounds 1-3, and `consensus.md` plus `FINAL.md` were
+created with full signoff.
 
-Because another participant is available, `claude` is being used for slice
-review and follow-up artifacts. The implementation keeps changes small enough
-to review and release one slice at a time.
+Slice 1 remains complete and is now anchored to the recovered final roadmap.
 
 ## Slice 1: local run manifest and sessions CLI
 

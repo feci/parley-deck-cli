@@ -3,6 +3,7 @@ package protocol
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -35,6 +36,17 @@ func TestInitWorkspaceAndStatus(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, DeckDir, "COOPERATION.md")); err != nil {
 		t.Fatal(err)
+	}
+	cooperation, err := os.ReadFile(filepath.Join(dir, DeckDir, "COOPERATION.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(cooperation)
+	if !strings.Contains(text, "## 11. Transport mechanics") {
+		t.Fatalf("COOPERATION.md does not contain the full protocol")
+	}
+	if strings.Contains(text, "Replace this bootstrap file") {
+		t.Fatalf("COOPERATION.md still contains the old bootstrap placeholder")
 	}
 
 	status, err := ReadWorkspaceStatus(dir)

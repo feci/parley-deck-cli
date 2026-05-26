@@ -8,7 +8,7 @@ roles:
   claude: session resume UX and durable metadata design
   gemini: cross-agent cache discovery and interoperability
   hermes: long-running session registry and recovery model
-status: round-01
+status: final
 ---
 
 ## Problem / idea
