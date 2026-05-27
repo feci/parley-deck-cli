@@ -73,13 +73,13 @@ parley agents verify --dir . --full --agent codex --yes
 Start a multi-agent round:
 
 ```bash
-parley run --dir . --participants claude,gemini --yes "Plan the next CLI slice"
+parley run --dir . --participants claude,agy --yes "Plan the next CLI slice"
 ```
 
 Run without opening the live TUI:
 
 ```bash
-parley run --dir . --no-tui --participants claude,gemini --yes "Review the repo-map MVP"
+parley run --dir . --no-tui --participants claude,agy --yes "Review the repo-map MVP"
 ```
 
 Resume or inspect work:
@@ -112,7 +112,7 @@ Manage consensus:
 ```bash
 parley consensus status --dir . repo-map-mvp
 parley consensus draft --dir . --round 1 --by codex repo-map-mvp
-parley consensus request-signoffs --dir . --participants claude,gemini --yes repo-map-mvp
+parley consensus request-signoffs --dir . --participants claude,agy --yes repo-map-mvp
 parley consensus signoff --dir . --agent codex --status accept --notes "Ready" repo-map-mvp
 ```
 

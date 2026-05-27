@@ -115,8 +115,8 @@ func TestListOrdersByCreatedAtThenID(t *testing.T) {
 }
 
 func TestQuestionIDIncludesAgentSlug(t *testing.T) {
-	id := NewQuestionID("Gemini Agent", time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC))
-	if !strings.Contains(id, "gemini-agent") {
+	id := NewQuestionID("Antigravity Agent", time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC))
+	if !strings.Contains(id, "antigravity-agent") {
 		t.Fatalf("id=%q missing agent slug", id)
 	}
 }

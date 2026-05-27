@@ -10,7 +10,7 @@ workspace root.
 parley init --dir .
 parley agents list --dir .
 parley agents verify --dir . --agent claude
-parley run --dir . --participants claude,gemini --yes "Plan the next CLI slice"
+parley run --dir . --participants claude,agy --yes "Plan the next CLI slice"
 parley status --dir .
 parley continue --dir . <run-id-or-idea>
 parley resume --dir . <run-id-or-idea>
@@ -56,14 +56,14 @@ Create a new idea from `TASK` and launch round-01 with selected participants.
 - `--dir DIR`: workspace root. Defaults to `.`.
 - `--no-tui`: run headlessly and print results instead of opening the TUI.
 - `--auto`: enable automatic low-risk HITL handling during the run.
-- `--participants IDS`: comma-separated agent IDs, for example `claude,gemini`.
+- `--participants IDS`: comma-separated agent IDs, for example `claude,agy`.
 - `--yes`: confirm selected hosted/non-local backend launches.
 - `TASK`: free-form work request.
 
 Example:
 
 ```bash
-parley run --dir . --no-tui --participants claude,gemini --yes "Review the repo-map MVP"
+parley run --dir . --no-tui --participants claude,agy --yes "Review the repo-map MVP"
 ```
 
 ### `parley resume [--dir DIR] [--no-tui] RUN_OR_IDEA`

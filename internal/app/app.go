@@ -173,7 +173,7 @@ Parameters and flags:
       Workspace root. Defaults to the current directory.
 
   --participants AGENTS
-      Comma-separated agent IDs, for example claude,gemini,hermes.
+      Comma-separated agent IDs, for example claude,agy,hermes.
 
   --yes
       Confirm an operation that may launch configured hosted backends.
@@ -239,7 +239,7 @@ Examples:
   %s context repo-map --dir . --format json --max-files 10
 
   # Start a headless round with selected agents.
-  %s run --dir . --no-tui --participants claude,gemini --yes "Plan the next CLI slice"
+  %s run --dir . --no-tui --participants claude,agy --yes "Plan the next CLI slice"
 
   # Resume or inspect active work.
   %s status --dir .
@@ -252,7 +252,7 @@ Examples:
   # Consensus flow.
   %s consensus status --dir . repo-map-mvp
   %s consensus draft --dir . --round 1 --by codex repo-map-mvp
-  %s consensus request-signoffs --dir . --participants claude,gemini --yes repo-map-mvp
+  %s consensus request-signoffs --dir . --participants claude,agy --yes repo-map-mvp
 
   # Answer a HITL question.
   %s answer --dir . 20260517T120000.000000000Z q1 "Use the conservative default"
@@ -1934,7 +1934,7 @@ func valueOr(value, fallback string) string {
 func installedAgentIDs(discovered []agents.Discovery) []string {
 	ids := make([]string, 0, len(discovered))
 	for _, result := range discovered {
-		if result.Found {
+		if result.Found && result.ID != "gemini" {
 			ids = append(ids, result.ID)
 		}
 	}

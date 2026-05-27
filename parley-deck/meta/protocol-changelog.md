@@ -1,3 +1,9 @@
+## 2026-05-27 — Replace Gemini defaults with Antigravity CLI
+
+Idea: ideas/antigravity-agent-migration/
+Drafted by: codex
+Summary: Added `agy` as the active Antigravity CLI participant, moved `gemini` to inactive legacy status for historical compatibility, and updated shared runtime defaults so new workflows prefer Antigravity while retaining explicit Gemini overrides.
+
 ## 2026-05-10 — Switch transport to GitHub PR
 
 Idea: ideas/meta-protocol-change-github-pr-transport/

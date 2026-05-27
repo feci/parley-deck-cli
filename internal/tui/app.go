@@ -1019,6 +1019,9 @@ func (m model) defaultParticipants() []string {
 		if m.effectiveLaunchMode(agent) != agents.LaunchHeadless {
 			continue
 		}
+		if agent.ID == "gemini" {
+			continue
+		}
 		participants = append(participants, agent.ID)
 	}
 	return participants

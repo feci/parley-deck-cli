@@ -12,13 +12,25 @@ timeout_ms = 1800000
 external_backend = "hosted"
 
 [agents.claude]
+model = "opus"
+reasoning = "max"
+profile = "cli-default"
+speed = "balanced"
+timeout_ms = 1800000
+external_backend = "hosted"
+
+# Antigravity CLI replaces Gemini as the active default participant.
+[agents.agy]
 model = "cli-default"
 reasoning = "cli-default"
 profile = "cli-default"
 speed = "balanced"
 timeout_ms = 1800000
 external_backend = "hosted"
+approval_policy = "dangerously-skip-permissions"
+notes = "Antigravity CLI replacement for Gemini; current agy help exposes no model or thinking flags."
 
+# Legacy compatibility only; prefer [agents.agy] for new work.
 [agents.gemini]
 model = "cli-default"
 reasoning = "cli-default"
@@ -32,13 +44,14 @@ external_backend = "hosted"
 GEMINI_CLI_HOME = "{tempdir}"
 
 [agents.hermes]
-model = "cli-default"
+model = "xai/grok-4.3"
 reasoning = "cli-default"
 profile = "cli-default"
 speed = "balanced"
 timeout_ms = 1800000
 isolate_home = true
 external_backend = "hosted"
+approval_policy = "accept-hooks"
 
 [agents.hermes.isolated_home_env]
 HERMES_HOME = "{tempdir}"

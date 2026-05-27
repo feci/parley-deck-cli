@@ -20,8 +20,8 @@ func TestProjectEventsDerivesAgentAndRoundState(t *testing.T) {
 		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": "/tmp/codex.out", "stderr": "/tmp/codex.err"}},
 		{Time: base.Add(time.Second), Type: "agent.finished", Data: map[string]any{"agent": "codex", "duration_ms": float64(1500)}},
 		{Time: base.Add(2 * time.Second), Type: "agent.failed", Data: map[string]any{"agent": "claude", "error": "exit status 1", "duration_ms": float64(2000)}},
-		{Time: base.Add(3 * time.Second), Type: "agent.started", Data: map[string]any{"agent": "gemini"}},
-		{Time: base.Add(4 * time.Second), Type: "agent.finished", Data: map[string]any{"agent": "gemini", "duration_ms": float64(50)}},
+		{Time: base.Add(3 * time.Second), Type: "agent.started", Data: map[string]any{"agent": "agy"}},
+		{Time: base.Add(4 * time.Second), Type: "agent.finished", Data: map[string]any{"agent": "agy", "duration_ms": float64(50)}},
 		{Time: base.Add(5 * time.Second), Type: "agent.skipped", Data: map[string]any{"agent": "hermes", "reason": "artifact already exists"}},
 		{Time: base.Add(6 * time.Second), Type: "round.incomplete", Data: map[string]any{"completed": float64(1), "total": float64(4)}},
 	}
@@ -47,8 +47,8 @@ func TestProjectEventsDerivesAgentAndRoundState(t *testing.T) {
 	if got := agents["opus"].State; got != statePending {
 		t.Fatalf("opus state=%s, want %s", got, statePending)
 	}
-	if got := agents["gemini"].State; got != stateUnknown {
-		t.Fatalf("gemini state=%s, want %s", got, stateUnknown)
+	if got := agents["agy"].State; got != stateUnknown {
+		t.Fatalf("agy state=%s, want %s", got, stateUnknown)
 	}
 	if got := state.RoundStatus; got != "incomplete" {
 		t.Fatalf("round status=%s, want incomplete", got)
@@ -265,17 +265,17 @@ func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
 func TestSummarizeHITLEvents(t *testing.T) {
 	question := summarizeEvent(store.Event{
 		Type: "hitl.question",
-		Data: map[string]any{"agent": "gemini", "question_id": "q1", "risk": "normal"},
+		Data: map[string]any{"agent": "agy", "question_id": "q1", "risk": "normal"},
 	})
-	if question.Text != "gemini question q1 normal" {
+	if question.Text != "agy question q1 normal" {
 		t.Fatalf("question text=%q", question.Text)
 	}
 
 	answered := summarizeEvent(store.Event{
 		Type: "hitl.answered",
-		Data: map[string]any{"agent": "gemini", "question_id": "q1", "status": "answered"},
+		Data: map[string]any{"agent": "agy", "question_id": "q1", "status": "answered"},
 	})
-	if answered.Text != "gemini answered q1 answered" {
+	if answered.Text != "agy answered q1 answered" {
 		t.Fatalf("answered text=%q", answered.Text)
 	}
 }

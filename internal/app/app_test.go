@@ -69,6 +69,39 @@ func TestHelpIncludesDescriptionsFlagsAndExamples(t *testing.T) {
 	}
 }
 
+func TestDefaultParticipantSelectionSkipsLegacyGemini(t *testing.T) {
+	discovered := []agents.Discovery{
+		{
+			Spec:  agents.Spec{ID: "agy", LaunchMode: agents.LaunchHeadless, HeadlessArgs: []string{"--print"}},
+			Found: true,
+		},
+		{
+			Spec:  agents.Spec{ID: "gemini", LaunchMode: agents.LaunchHeadless, HeadlessArgs: []string{"--prompt"}},
+			Found: true,
+		},
+		{
+			Spec:  agents.Spec{ID: "manual", LaunchMode: agents.LaunchManual, HeadlessArgs: []string{"--run"}},
+			Found: true,
+		},
+	}
+
+	got, err := selectedParticipantIDs(discovered, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(got, ",") != "agy,manual" {
+		t.Fatalf("default participants=%v, want [agy manual]", got)
+	}
+
+	got, err = selectedParticipantIDs(discovered, "gemini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(got, ",") != "gemini" {
+		t.Fatalf("explicit participants=%v, want [gemini]", got)
+	}
+}
+
 func TestVersionAllJSONIncludesSkillStatus(t *testing.T) {
 	bin := t.TempDir()
 	writeFakeParleyDeckSkill(t, bin)

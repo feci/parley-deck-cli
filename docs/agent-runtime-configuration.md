@@ -23,12 +23,15 @@ sandbox_mode = "workspace-write"
 approval_policy = "on-failure"
 timeout_ms = 1800000
 
-[agents.gemini]
-isolate_home = true
-
-[agents.gemini.isolated_home_env]
-GEMINI_CLI_HOME = "{tempdir}"
+[agents.agy]
+approval_policy = "dangerously-skip-permissions"
+timeout_ms = 1800000
 ```
+
+Antigravity `agy` currently exposes no stable home-isolation environment
+variable through local CLI discovery. Do not set `isolate_home = true` for
+`agy` unless you also provide a working `[agents.agy.isolated_home_env]`
+mapping in local configuration.
 
 Use `cli-default` when a model, reasoning, effort, or profile value cannot be proven from the target CLI. Do not invent model names in shared config.
 
@@ -91,7 +94,7 @@ printf test | git hash-object -w --stdin
 
 Users should add an agent only after they can describe these fields:
 
-- Stable Parley agent ID, such as `codex`, `claude`, `gemini`, or `hermes`.
+- Stable Parley agent ID, such as `codex`, `claude`, `agy`, or `hermes`.
 - CLI command or absolute executable path.
 - Headless prompt mode, preferably stdin when supported.
 - Arguments required to allow narrow workspace writes.

@@ -22,9 +22,10 @@ type ACPBackend struct {
 // ACPCatalog returns the table of well-known ACP-capable CLIs.
 // Order matches AionUi's ACP_BACKENDS_ALL so new entries land in one place.
 // Entries whose primary parley-deck ID already lives in DefaultSpecs (codex,
-// claude, gemini, hermes) intentionally use distinct catalog IDs ("hermes-acp",
-// "claude-acp", "codex-acp") so the existing headless text-mode launches
-// remain the default for those four. Users can opt in via the ACP entry.
+// claude, agy, gemini, hermes) intentionally use distinct catalog IDs
+// ("hermes-acp", "claude-acp", "codex-acp") so the existing headless
+// text-mode launches remain the default for those agents. Users can opt in via
+// the ACP entry.
 func ACPCatalog() []ACPBackend {
 	return []ACPBackend{
 		{ID: "claude-acp", Name: "Claude Code (ACP)", Command: "claude", ACPArgs: []string{"--experimental-acp"},

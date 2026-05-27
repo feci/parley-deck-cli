@@ -6,3 +6,5 @@ coverage.out
 parley-deck/agents.local.toml
 parley-deck/meta/headless-agents.local.json
 parley-deck/meta/runtime-probes/
+.antigravitycli/
+tmp-test-plugin/

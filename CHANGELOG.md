@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.5.3 - 2026-05-27
+
+- Add Antigravity CLI `agy` as a first-class headless agent and default
+  replacement for Gemini.
+- Mark Gemini as legacy compatibility while keeping existing overrides working.
+- Prefer verified stronger defaults for Claude (`opus`/`max`) and Hermes
+  (`xai/grok-4.3`) while keeping Antigravity model/thinking fields at
+  `cli-default` until the CLI exposes flags.
+- Update project and embedded protocol rosters, docs, examples, and runtime
+  configuration defaults for the Antigravity migration.
+
 ## v1.5.2 - 2026-05-26
 
 - Add TUI planner action execution and focus-aware action controls.
