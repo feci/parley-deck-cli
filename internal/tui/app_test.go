@@ -118,6 +118,7 @@ func TestDashboardRendersSelectedAgentDetails(t *testing.T) {
 		"sandbox: workspace-write",
 		"headless: codex exec --skip-git-",
 		"repo-check -",
+		"acp: codex acp",
 		"interactive: codex",
 		"Sessions",
 	} {
@@ -139,6 +140,7 @@ func TestDashboardRendersFallbackCommandDetails(t *testing.T) {
 		"backend:",
 		"unknown",
 		"headless: claude",
+		"acp: not configured",
 		"interactive: claude --resume {prompt_path}",
 	} {
 		if !strings.Contains(view, want) {
@@ -230,10 +232,15 @@ func TestDashboardLaunchModeOverridesAreSessionOnly(t *testing.T) {
 	if got := m.launchOverrides["codex"]; got != agents.LaunchInteractive {
 		t.Fatalf("override=%q, want interactive", got)
 	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(model)
+	if got := m.launchOverrides["codex"]; got != agents.LaunchACP {
+		t.Fatalf("override=%q, want acp", got)
+	}
 	if got := agents.LaunchModeOrDefault(m.agents[0].LaunchMode); got != agents.LaunchHeadless {
 		t.Fatalf("underlying launch mode mutated to %q", got)
 	}
-	if !strings.Contains(m.View(), "effective: interactive") || !strings.Contains(m.View(), "session only") {
+	if !strings.Contains(m.View(), "effective: acp") || !strings.Contains(m.View(), "session only") {
 		t.Fatalf("view missing session override\n%s", m.View())
 	}
 
@@ -259,6 +266,21 @@ func TestDashboardModeKeysNoopOutsideAgentFocus(t *testing.T) {
 	m = updated.(model)
 	if len(m.launchOverrides) != 0 {
 		t.Fatalf("override created while ideas pane focused: %+v", m.launchOverrides)
+	}
+}
+
+func TestDashboardACPModeRequiresACPConfig(t *testing.T) {
+	m := newTestModel(nil)
+	m.focus = focusAgents
+	m.selectedAgent = 1
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(model)
+	if _, ok := m.launchOverrides["claude"]; ok {
+		t.Fatalf("unsupported ACP mode created override: %+v", m.launchOverrides)
+	}
+	if !strings.Contains(m.View(), "claude has no acp launch configuration") {
+		t.Fatalf("missing unsupported ACP message\n%s", m.View())
 	}
 }
 
@@ -551,6 +573,7 @@ func testDiscoveries() []agents.Discovery {
 				LaunchMode:            agents.LaunchHeadless,
 				HeadlessMode:          "codex exec --skip-git-repo-check -",
 				HeadlessArgs:          []string{"exec", "--skip-git-repo-check", "-"},
+				ACPArgs:               []string{"acp"},
 				InteractivePromptMode: agents.InteractivePromptNone,
 				InteractiveInvoke:     agents.InteractiveInvokePrintOnly,
 				SandboxMode:           "workspace-write",

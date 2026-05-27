@@ -233,6 +233,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "i":
 			m.setSelectedAgentMode(agents.LaunchInteractive)
 			return m, nil
+		case "a":
+			m.setSelectedAgentMode(agents.LaunchACP)
+			return m, nil
 		case "m":
 			m.setSelectedAgentMode(agents.LaunchManual)
 			return m, nil
@@ -841,6 +844,7 @@ func (m model) renderAgentDetails() string {
 	b.WriteString(fmt.Sprintf("sandbox: %s  approval: %s\n", valueOrDefault(agent.SandboxMode), valueOrDefault(agent.ApprovalPolicy)))
 	b.WriteString(fmt.Sprintf("timeout: %dms  backend: %s  isolated home: %s\n", timeoutMS(agent), backendOrUnknown(agent.ExternalBackend), yesNo(agent.IsolateHome)))
 	b.WriteString(fmt.Sprintf("headless: %s\n", headlessCommandLine(agent)))
+	b.WriteString(fmt.Sprintf("acp: %s\n", acpCommandLine(agent)))
 	b.WriteString(fmt.Sprintf("interactive: %s\n", interactiveCommandLine(agent)))
 	b.WriteString(fmt.Sprintf("prompt: %s  invoke: %s\n", agents.InteractivePromptModeOrDefault(agent.InteractivePromptMode), agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke)))
 	if agent.InteractiveNotes != "" {
@@ -870,7 +874,7 @@ func (m model) renderFooterText(includeLifecycleWarning bool) string {
 			keys += "  enter action"
 		}
 		if m.focus == focusAgents {
-			keys += "  h/i/m set agent mode  x clear mode"
+			keys += "  h/i/a/m set agent mode  x clear mode"
 		}
 		keys += "  q/esc quit"
 		parts = append(parts, keys)
@@ -1003,7 +1007,7 @@ func (m model) renderStartBox() string {
 	participants := m.defaultParticipants()
 	b.WriteString("\n")
 	if len(participants) == 0 {
-		b.WriteString(warnStyle.Render("No installed headless participants available"))
+		b.WriteString(warnStyle.Render("No installed launchable participants available"))
 	} else {
 		b.WriteString(fmt.Sprintf("participants: %s", strings.Join(participants, ", ")))
 	}
@@ -1013,10 +1017,19 @@ func (m model) renderStartBox() string {
 func (m model) defaultParticipants() []string {
 	var participants []string
 	for _, agent := range m.agents {
-		if !agent.Found || len(agent.HeadlessArgs) == 0 {
+		if !agent.Found {
 			continue
 		}
-		if m.effectiveLaunchMode(agent) != agents.LaunchHeadless {
+		switch m.effectiveLaunchMode(agent) {
+		case agents.LaunchHeadless:
+			if len(agent.HeadlessArgs) == 0 {
+				continue
+			}
+		case agents.LaunchACP:
+			if agent.ACPArgs == nil {
+				continue
+			}
+		default:
 			continue
 		}
 		if agent.ID == "gemini" {
@@ -1048,7 +1061,7 @@ func (m model) updateStartMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		participants := m.defaultParticipants()
 		if len(participants) == 0 {
-			m.startErr = "no installed headless participants available"
+			m.startErr = "no installed launchable participants available"
 			return m, nil
 		}
 		m.starting = true
@@ -1115,7 +1128,12 @@ func (m *model) setSelectedAgentMode(mode string) {
 	if m.launchOverrides == nil {
 		m.launchOverrides = map[string]string{}
 	}
+	if !launchModeAvailable(agent, mode) {
+		m.errText = fmt.Sprintf("%s has no %s launch configuration", agent.ID, mode)
+		return
+	}
 	m.launchOverrides[agent.ID] = mode
+	m.errText = ""
 }
 
 func (m *model) clearSelectedAgentMode() {
@@ -1127,6 +1145,7 @@ func (m *model) clearSelectedAgentMode() {
 		return
 	}
 	delete(m.launchOverrides, agent.ID)
+	m.errText = ""
 }
 
 func yesNo(value bool) string {
@@ -1169,6 +1188,33 @@ func interactiveCommandLine(agent agents.Discovery) string {
 		return command
 	}
 	return command + " " + strings.Join(agent.InteractiveArgs, " ")
+}
+
+func acpCommandLine(agent agents.Discovery) string {
+	if agent.ACPArgs == nil {
+		return "not configured"
+	}
+	command := agents.CLIDefault
+	if len(agent.Commands) > 0 {
+		command = agent.Commands[0]
+	}
+	if len(agent.ACPArgs) == 0 {
+		return command
+	}
+	return command + " " + strings.Join(agent.ACPArgs, " ")
+}
+
+func launchModeAvailable(agent agents.Discovery, mode string) bool {
+	switch agents.LaunchModeOrDefault(mode) {
+	case agents.LaunchHeadless:
+		return len(agent.HeadlessArgs) > 0
+	case agents.LaunchACP:
+		return agent.ACPArgs != nil
+	case agents.LaunchInteractive, agents.LaunchManual:
+		return true
+	default:
+		return false
+	}
 }
 
 func timeoutMS(agent agents.Discovery) int {

@@ -88,9 +88,7 @@ type Discovery struct {
 }
 
 func DefaultSpecs() []Spec {
-	specs := defaultBuiltinSpecs()
-	specs = append(specs, ACPSpecs()...)
-	return specs
+	return mergeACPCatalog(defaultBuiltinSpecs(), ACPCatalog())
 }
 
 func defaultBuiltinSpecs() []Spec {
@@ -349,7 +347,14 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 		if result.HeadlessMode != "" {
 			fmt.Fprintf(w, "  headless: %s\n", result.HeadlessMode)
 		}
-		if launchMode != LaunchHeadless || result.InteractiveMode != "" || len(result.InteractiveArgs) > 0 {
+		if result.ACPArgs != nil {
+			command := CLIDefault
+			if len(result.Commands) > 0 {
+				command = result.Commands[0]
+			}
+			fmt.Fprintf(w, "  acp: %s %s\n", command, quoteArgs(result.ACPArgs))
+		}
+		if launchMode == LaunchInteractive || launchMode == LaunchManual || result.InteractiveMode != "" || len(result.InteractiveArgs) > 0 {
 			fmt.Fprintf(w, "  interactive: %s %s prompt=%s invoke=%s\n",
 				valueOrDefault(InteractiveCommandOrDefault(result.Spec)),
 				quoteArgs(result.InteractiveArgs),

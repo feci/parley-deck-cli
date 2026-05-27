@@ -4,22 +4,22 @@ import "testing"
 
 func TestACPCatalogCoversKnownBackends(t *testing.T) {
 	wantBinaries := map[string]string{
-		"claude-acp": "claude",
-		"qwen":       "qwen",
-		"codex-acp":  "codex",
-		"codebuddy":  "codebuddy",
-		"goose":      "goose",
-		"auggie":     "auggie",
-		"kimi":       "kimi",
-		"opencode":   "opencode",
-		"droid":      "droid",
-		"copilot":    "copilot",
-		"qoder":      "qodercli",
-		"vibe":       "vibe-acp",
-		"cursor":     "agent",
-		"kiro":       "kiro-cli",
-		"hermes-acp": "hermes",
-		"snow":       "snow",
+		"claude":    "claude",
+		"qwen":      "qwen",
+		"codex":     "codex",
+		"codebuddy": "codebuddy",
+		"goose":     "goose",
+		"auggie":    "auggie",
+		"kimi":      "kimi",
+		"opencode":  "opencode",
+		"droid":     "droid",
+		"copilot":   "copilot",
+		"qoder":     "qodercli",
+		"vibe":      "vibe-acp",
+		"cursor":    "agent",
+		"kiro":      "kiro-cli",
+		"hermes":    "hermes",
+		"snow":      "snow",
 	}
 
 	got := make(map[string]string, len(ACPCatalog()))
@@ -50,17 +50,44 @@ func TestACPSpecsAreMarkedLaunchACP(t *testing.T) {
 			t.Errorf("spec %q has no Commands", spec.ID)
 		}
 	}
+	vibe := findSpecForTest(specs, "vibe")
+	if vibe.ACPArgs == nil || len(vibe.ACPArgs) != 0 {
+		t.Fatalf("vibe ACPArgs=%v, want configured empty list", vibe.ACPArgs)
+	}
 }
 
 func TestDefaultSpecsMergesACPCatalog(t *testing.T) {
-	ids := map[string]bool{}
+	ids := map[string]int{}
 	for _, spec := range DefaultSpecs() {
-		ids[spec.ID] = true
+		ids[spec.ID]++
 	}
 	for _, required := range []string{"codex", "claude", "agy", "gemini", "hermes", "goose", "qwen", "opencode"} {
-		if !ids[required] {
+		if ids[required] == 0 {
 			t.Errorf("DefaultSpecs missing %q", required)
 		}
+	}
+	for _, duplicate := range []string{"codex-acp", "claude-acp", "hermes-acp"} {
+		if ids[duplicate] != 0 {
+			t.Errorf("DefaultSpecs should not expose duplicate ACP agent %q", duplicate)
+		}
+	}
+	for id, count := range ids {
+		if count != 1 {
+			t.Errorf("DefaultSpecs has %d entries for %q", count, id)
+		}
+	}
+
+	claude := findSpecForTest(DefaultSpecs(), "claude")
+	if !sameStringsForTest(claude.ACPArgs, []string{"--experimental-acp"}) {
+		t.Fatalf("claude ACPArgs=%v", claude.ACPArgs)
+	}
+	hermes := findSpecForTest(DefaultSpecs(), "hermes")
+	if !sameStringsForTest(hermes.ACPArgs, []string{"acp"}) {
+		t.Fatalf("hermes ACPArgs=%v", hermes.ACPArgs)
+	}
+	codex := findSpecForTest(DefaultSpecs(), "codex")
+	if codex.ACPArgs != nil {
+		t.Fatalf("codex ACPArgs=%v, want nil until ACP launch args are configured", codex.ACPArgs)
 	}
 }
 
@@ -117,4 +144,16 @@ func containsStringForTest(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func sameStringsForTest(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
 }

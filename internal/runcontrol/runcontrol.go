@@ -142,6 +142,8 @@ func RuntimeEventData(discovered []agents.Discovery) []map[string]any {
 			"agent":            result.ID,
 			"installed":        result.Found,
 			"version":          result.Version,
+			"launch_mode":      agents.LaunchModeOrDefault(result.LaunchMode),
+			"acp_args":         result.ACPArgs,
 			"sandbox_mode":     result.SandboxMode,
 			"approval_policy":  result.ApprovalPolicy,
 			"model":            result.Model,

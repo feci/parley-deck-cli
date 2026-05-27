@@ -33,7 +33,7 @@ func runConsensusRequestSignoffs(ctx context.Context, args []string, stdout, std
 	yes := fs.Bool("yes", false, "confirm hosted/non-local backend launches")
 	dryRun := fs.Bool("dry-run", false, "print planned signoff requests without invoking agents")
 	var modeOverrides launchModeOverrides
-	fs.Var(&modeOverrides, "mode", "launch mode override: headless|interactive|manual or AGENT=MODE; repeatable")
+	fs.Var(&modeOverrides, "mode", "launch mode override: headless|acp|interactive|manual or AGENT=MODE; repeatable")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}

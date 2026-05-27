@@ -1510,7 +1510,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if len(participants) == 0 {
-		fmt.Fprintln(stderr, "no installed headless agents found; run `parley agents list` to inspect configuration")
+		fmt.Fprintln(stderr, "no installed agents found; run `parley agents list` to inspect configuration")
 		return 1
 	}
 	if !*auto && !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
@@ -1857,11 +1857,12 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 	}
 	defer cancelStartedRuns()
 	startRun := func(startCtx context.Context, request tui.StartRequest) (runstate.RunSummary, error) {
+		discoveredForRun := applySessionLaunchOverrides(results, request.LaunchOverrides)
 		created, err := runcontrol.Create(runcontrol.CreateOptions{
 			Root:         root,
 			Task:         request.Task,
 			Participants: request.Participants,
-			Discovered:   results,
+			Discovered:   discoveredForRun,
 			Auto:         request.Auto,
 		})
 		if err != nil {
@@ -1922,6 +1923,20 @@ func registerWorkspaceSessions(root string, runs []runstate.RunSummary) {
 			Terminal:      run.Terminal,
 		})
 	}
+}
+
+func applySessionLaunchOverrides(discovered []agents.Discovery, overrides map[string]string) []agents.Discovery {
+	if len(overrides) == 0 {
+		return discovered
+	}
+	out := make([]agents.Discovery, len(discovered))
+	copy(out, discovered)
+	for i := range out {
+		if mode, ok := overrides[out[i].ID]; ok {
+			out[i].LaunchMode = mode
+		}
+	}
+	return out
 }
 
 func valueOr(value, fallback string) string {

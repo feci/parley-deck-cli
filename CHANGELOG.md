@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.5.4 - 2026-05-27
+
+- Treat ACP as a selectable launch mode on an existing agent instead of
+  exposing duplicate `*-acp` agent IDs for Codex, Claude, and Hermes.
+- Add the TUI `a` key for session-only ACP launch overrides and show ACP
+  command details in the selected-agent panel.
+- Add `acp_args` runtime configuration so local installs can enable ACP for
+  CLIs when their concrete ACP launch args are known.
+- Apply TUI launch-mode overrides to newly started runs and record effective
+  launch metadata in run runtime events.
+
 ## v1.5.3 - 2026-05-27
 
 - Add Antigravity CLI `agy` as a first-class headless agent and default

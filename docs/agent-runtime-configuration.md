@@ -40,6 +40,7 @@ Use `cli-default` when a model, reasoning, effort, or profile value cannot be pr
 Each agent can choose how `parley` should involve its CLI:
 
 - `headless`: programmatic execution. `parley` invokes the configured headless command and validates the artifact.
+- `acp`: programmatic Agent Client Protocol execution. `parley` starts the configured command with `acp_args` and speaks JSON-RPC 2.0 over NDJSON on stdio.
 - `interactive`: user-driven handoff. `parley` writes a prompt and instructions, optionally starts a real terminal command, waits for the artifact, then validates it.
 - `manual`: preparation only. `parley` writes a prompt and instructions and exits with next steps.
 
@@ -57,9 +58,20 @@ interactive_poll_ms = 2000
 interactive_notes = "Use this when you intentionally want a user-driven Claude CLI session."
 ```
 
+Example local ACP override:
+
+```toml
+[agents.codex]
+launch_mode = "acp"
+# Configure these only after your installed Codex CLI documents a real ACP launch mode.
+acp_args = ["..."]
+```
+
+In the TUI Agents pane, use `h`, `i`, `a`, and `m` to set a session-only launch mode override for headless, interactive, ACP, or manual mode. `a` is accepted only when the agent has ACP configured through built-in defaults or local `acp_args`.
+
 `interactive_invoke = "spawn-tty"` may be used when the command should be started attached to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
 
-Provider billing and usage accounting are determined by the provider and account. Parley only makes the technical mode explicit: headless is programmatic execution; interactive/manual are user-driven handoff flows.
+Provider billing and usage accounting are determined by the provider and account. Parley only makes the technical mode explicit: headless and ACP are programmatic execution; interactive/manual are user-driven handoff flows.
 
 For `consensus request-signoffs`, manual handoffs return exit code `3` after writing handoff instructions. This means the request is pending human action, not fully complete. After appending the signoff, run `parley resume <run-id>` so Parley validates the append-only change and records completion.
 

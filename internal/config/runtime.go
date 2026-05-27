@@ -27,6 +27,7 @@ type agentOverride struct {
 	LaunchMode            string            `toml:"launch_mode"`
 	HeadlessMode          string            `toml:"headless_mode"`
 	HeadlessArgs          []string          `toml:"headless_args"`
+	ACPArgs               []string          `toml:"acp_args"`
 	InteractiveMode       string            `toml:"interactive_mode"`
 	InteractiveCommand    string            `toml:"interactive_command"`
 	InteractiveArgs       []string          `toml:"interactive_args"`
@@ -197,6 +198,10 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 		spec.HeadlessArgs = expandSlice(override.HeadlessArgs, root, tempdir)
 		spec.Sources["headless_args"] = source
 	}
+	if override.ACPArgs != nil {
+		spec.ACPArgs = expandSlice(override.ACPArgs, root, tempdir)
+		spec.Sources["acp_args"] = source
+	}
 	if override.InteractiveMode != "" {
 		spec.InteractiveMode = override.InteractiveMode
 		spec.Sources["interactive_mode"] = source
@@ -303,6 +308,7 @@ func cloneSpecs(specs []agents.Spec) []agents.Spec {
 		out[i].Commands = append([]string(nil), spec.Commands...)
 		out[i].VersionArgs = append([]string(nil), spec.VersionArgs...)
 		out[i].HeadlessArgs = append([]string(nil), spec.HeadlessArgs...)
+		out[i].ACPArgs = cloneOptionalStringSlice(spec.ACPArgs)
 		out[i].InteractiveArgs = append([]string(nil), spec.InteractiveArgs...)
 		if spec.IsolatedHomeEnv != nil {
 			out[i].IsolatedHomeEnv = map[string]string{}
@@ -318,4 +324,11 @@ func cloneSpecs(specs []agents.Spec) []agents.Spec {
 		}
 	}
 	return out
+}
+
+func cloneOptionalStringSlice(values []string) []string {
+	if values == nil {
+		return nil
+	}
+	return append([]string{}, values...)
 }

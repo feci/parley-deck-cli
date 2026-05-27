@@ -1,5 +1,7 @@
 package agents
 
+import "strings"
+
 // ACPBackend describes a CLI agent that supports the Agent Client Protocol
 // (JSON-RPC 2.0 over NDJSON on stdio). The catalog mirrors AionUi's
 // ACP_BACKENDS_ALL table so parley-deck can auto-detect the same set of
@@ -11,28 +13,24 @@ type ACPBackend struct {
 	Name string
 	// Command is the binary name resolved via exec.LookPath.
 	Command string
-	// ACPArgs are the arguments that put the CLI into ACP mode
-	// (e.g. ["--experimental-acp"], ["acp"], ["--acp"], or [] when the
-	// binary speaks ACP by default).
+	// ACPArgs are the arguments that put the CLI into ACP mode.
+	// nil means Parley knows about the backend but has no safe default args.
+	// [] means the binary speaks ACP by default.
 	ACPArgs []string
 	// Notes captures backend-specific behavior worth surfacing.
 	Notes string
 }
 
-// ACPCatalog returns the table of well-known ACP-capable CLIs.
-// Order matches AionUi's ACP_BACKENDS_ALL so new entries land in one place.
-// Entries whose primary parley-deck ID already lives in DefaultSpecs (codex,
-// claude, agy, gemini, hermes) intentionally use distinct catalog IDs
-// ("hermes-acp", "claude-acp", "codex-acp") so the existing headless
-// text-mode launches remain the default for those agents. Users can opt in via
-// the ACP entry.
+// ACPCatalog returns the table of well-known ACP-capable CLIs. Entries whose
+// primary parley-deck ID already lives in DefaultSpecs use the same ID, so ACP
+// becomes a selectable launch mode on that agent instead of a duplicate agent.
 func ACPCatalog() []ACPBackend {
 	return []ACPBackend{
-		{ID: "claude-acp", Name: "Claude Code (ACP)", Command: "claude", ACPArgs: []string{"--experimental-acp"},
-			Notes: "ACP mode for claude CLI; coexists with built-in `claude` headless spec"},
+		{ID: "claude", Name: "Claude Code (ACP)", Command: "claude", ACPArgs: []string{"--experimental-acp"},
+			Notes: "ACP mode is available with --experimental-acp"},
 		{ID: "qwen", Name: "Qwen Code", Command: "qwen", ACPArgs: []string{"--acp"}},
-		{ID: "codex-acp", Name: "Codex (ACP)", Command: "codex", ACPArgs: []string{},
-			Notes: "codex-acp bridge speaks ACP by default; coexists with built-in `codex` headless spec"},
+		{ID: "codex", Name: "Codex (ACP)", Command: "codex", ACPArgs: nil,
+			Notes: "Codex ACP is not enabled by default because the local codex CLI exposes no stable ACP launch args; configure acp_args locally when available"},
 		{ID: "codebuddy", Name: "CodeBuddy", Command: "codebuddy", ACPArgs: []string{"--acp"}},
 		{ID: "goose", Name: "Goose", Command: "goose", ACPArgs: []string{"acp"}},
 		{ID: "auggie", Name: "Augment Code", Command: "auggie", ACPArgs: []string{"--acp"}},
@@ -45,59 +43,120 @@ func ACPCatalog() []ACPBackend {
 		{ID: "cursor", Name: "Cursor Agent", Command: "agent", ACPArgs: []string{"acp"},
 			Notes: "Cursor CLI binary is the generic name `agent`; PATH lookup may collide with other tools"},
 		{ID: "kiro", Name: "Kiro", Command: "kiro-cli", ACPArgs: []string{"acp"}},
-		{ID: "hermes-acp", Name: "Hermes Agent (ACP)", Command: "hermes", ACPArgs: []string{"acp"},
-			Notes: "ACP mode for hermes CLI; coexists with built-in `hermes` headless spec"},
+		{ID: "hermes", Name: "Hermes Agent (ACP)", Command: "hermes", ACPArgs: []string{"acp"},
+			Notes: "ACP mode is available with hermes acp"},
 		{ID: "snow", Name: "Snow CLI", Command: "snow", ACPArgs: []string{"--acp"}},
 	}
 }
 
-// ACPSpecs converts the ACP catalog into Spec entries suitable for merging
-// into DefaultSpecs. Each spec is marked with LaunchACP so the runner picks
-// the JSON-RPC code path; HeadlessArgs is intentionally left empty.
+func mergeACPCatalog(specs []Spec, catalog []ACPBackend) []Spec {
+	out := make([]Spec, len(specs))
+	copy(out, specs)
+	byID := make(map[string]int, len(out))
+	for i, spec := range out {
+		byID[spec.ID] = i
+	}
+	for _, backend := range catalog {
+		if index, ok := byID[backend.ID]; ok {
+			out[index] = mergeACPBackend(out[index], backend)
+			continue
+		}
+		out = append(out, specFromACPBackend(backend))
+		byID[backend.ID] = len(out) - 1
+	}
+	return out
+}
+
+func mergeACPBackend(spec Spec, backend ACPBackend) Spec {
+	if len(spec.Commands) == 0 {
+		spec.Commands = []string{backend.Command}
+	}
+	if len(spec.VersionArgs) == 0 {
+		spec.VersionArgs = []string{"--version"}
+	}
+	if backend.ACPArgs != nil {
+		spec.ACPArgs = cloneStringSlice(backend.ACPArgs)
+	}
+	if backend.Notes != "" {
+		spec.Notes = joinNotes(spec.Notes, backend.Notes)
+	}
+	if spec.Sources != nil {
+		spec.Sources["acp_args"] = SourceBuiltIn
+		if backend.Notes != "" {
+			spec.Sources["notes"] = SourceBuiltIn
+		}
+	}
+	return spec
+}
+
+// ACPSpecs converts the ACP catalog into Spec entries. Each spec is marked
+// with LaunchACP so the runner picks the JSON-RPC code path; HeadlessArgs and
+// HeadlessMode are intentionally left empty.
 func ACPSpecs() []Spec {
 	catalog := ACPCatalog()
 	specs := make([]Spec, 0, len(catalog))
 	for _, backend := range catalog {
-		notes := backend.Notes
-		if notes == "" {
-			notes = "ACP backend; spawned with " + backend.Command + " " + joinACPArgs(backend.ACPArgs)
+		if backend.ACPArgs == nil {
+			continue
 		}
-		specs = append(specs, withBuiltinSources(Spec{
-			ID:                    backend.ID,
-			Commands:              []string{backend.Command},
-			VersionArgs:           []string{"--version"},
-			LaunchMode:            LaunchACP,
-			HeadlessMode:          backend.Command + " " + joinACPArgs(backend.ACPArgs),
-			ACPArgs:               append([]string(nil), backend.ACPArgs...),
-			InteractivePromptMode: InteractivePromptNone,
-			InteractiveInvoke:     InteractiveInvokePrintOnly,
-			InteractivePollMS:     DefaultInteractivePollMS,
-			PromptMode:            PromptStdin,
-			SandboxMode:           CLIDefault,
-			ApprovalPolicy:        CLIDefault,
-			Model:                 CLIDefault,
-			Reasoning:             CLIDefault,
-			Profile:               CLIDefault,
-			Speed:                 DefaultSpeed,
-			TimeoutMS:             DefaultTimeoutMS,
-			ExternalBackend:       ExternalUnknown,
-			Telemetry:             "ACP session/update events",
-			Notes:                 notes,
-		}))
+		specs = append(specs, specFromACPBackend(backend))
 	}
 	return specs
 }
 
+func specFromACPBackend(backend ACPBackend) Spec {
+	notes := backend.Notes
+	if notes == "" {
+		notes = "ACP backend; spawned with " + backend.Command + " " + joinACPArgs(backend.ACPArgs)
+	}
+	return withBuiltinSources(Spec{
+		ID:                    backend.ID,
+		Commands:              []string{backend.Command},
+		VersionArgs:           []string{"--version"},
+		LaunchMode:            LaunchACP,
+		ACPArgs:               cloneStringSlice(backend.ACPArgs),
+		InteractivePromptMode: InteractivePromptNone,
+		InteractiveInvoke:     InteractiveInvokePrintOnly,
+		InteractivePollMS:     DefaultInteractivePollMS,
+		PromptMode:            PromptStdin,
+		SandboxMode:           CLIDefault,
+		ApprovalPolicy:        CLIDefault,
+		Model:                 CLIDefault,
+		Reasoning:             CLIDefault,
+		Profile:               CLIDefault,
+		Speed:                 DefaultSpeed,
+		TimeoutMS:             DefaultTimeoutMS,
+		ExternalBackend:       ExternalUnknown,
+		Telemetry:             "ACP session/update events",
+		Notes:                 notes,
+	})
+}
+
 func joinACPArgs(args []string) string {
+	if args == nil {
+		return "(not configured)"
+	}
 	if len(args) == 0 {
 		return "(no args)"
 	}
-	out := ""
-	for i, a := range args {
-		if i > 0 {
-			out += " "
-		}
-		out += a
+	return strings.Join(args, " ")
+}
+
+func joinNotes(current, next string) string {
+	current = strings.TrimSpace(current)
+	next = strings.TrimSpace(next)
+	if current == "" {
+		return next
 	}
-	return out
+	if next == "" || strings.Contains(current, next) {
+		return current
+	}
+	return current + "; " + next
+}
+
+func cloneStringSlice(values []string) []string {
+	if values == nil {
+		return nil
+	}
+	return append([]string{}, values...)
 }

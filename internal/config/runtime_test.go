@@ -155,6 +155,45 @@ interactive_notes = "local note"
 	}
 }
 
+func TestLoadAgentSpecsACPArgs(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	local := filepath.Join(root, protocol.DeckDir, "agents.local.toml")
+	if err := os.WriteFile(local, []byte(`
+[agents.codex]
+launch_mode = "acp"
+acp_args = ["acp", "--stdio"]
+
+[agents.vibe]
+command = "vibe-acp"
+launch_mode = "acp"
+acp_args = []
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	specs, err := LoadAgentSpecs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codex := findSpec(t, specs, "codex")
+	if codex.LaunchMode != agents.LaunchACP {
+		t.Fatalf("codex launch=%q", codex.LaunchMode)
+	}
+	if got := strings.Join(codex.ACPArgs, " "); got != "acp --stdio" {
+		t.Fatalf("codex acp args=%q", got)
+	}
+	if got := codex.Sources["acp_args"]; got != "parley-deck/agents.local.toml" {
+		t.Fatalf("codex acp_args source=%q", got)
+	}
+	vibe := findSpec(t, specs, "vibe")
+	if vibe.ACPArgs == nil || len(vibe.ACPArgs) != 0 {
+		t.Fatalf("vibe ACPArgs=%v, want configured empty list", vibe.ACPArgs)
+	}
+}
+
 func TestExpandPlaceholders(t *testing.T) {
 	root := filepath.Join("tmp", "repo")
 	temp := filepath.Join("tmp", "agent")

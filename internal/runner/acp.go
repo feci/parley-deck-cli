@@ -25,10 +25,11 @@ const acpClientName = "parley-deck"
 // the canonical artifact file (outputPath) via its own filesystem tools.
 // Streaming session/update notifications are appended to the run's event log.
 func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, result Result, outputPath, stdoutPath, stderrPath, prompt string) Result {
-	if len(agent.ACPArgs) == 0 && agent.Path != "" {
+	if agent.ACPArgs == nil && agent.Path != "" {
 		// Defensive: an ACP-mode agent must declare its launch flags; AionUi
-		// defaults to ["--experimental-acp"] for claude when unset, but
-		// requiring an explicit list in the spec keeps behavior predictable.
+		// defaults to ["--experimental-acp"] for claude when unset. Requiring
+		// nil-vs-empty intent keeps behavior predictable while still allowing
+		// binaries that speak ACP with no arguments.
 		return failEarly(opts, result, fmt.Errorf("agent %s has launch_mode=acp but ACPArgs is empty", agent.ID))
 	}
 
@@ -74,13 +75,13 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 		Time: result.StartedAt,
 		Type: "agent.started",
 		Data: map[string]any{
-			"agent":      agent.ID,
-			"artifact":   outputPath,
-			"stdout":     stdoutPath,
-			"stderr":     stderrPath,
-			"launch":     agents.LaunchACP,
-			"command":    agent.Path,
-			"acp_args":   agent.ACPArgs,
+			"agent":    agent.ID,
+			"artifact": outputPath,
+			"stdout":   stdoutPath,
+			"stderr":   stderrPath,
+			"launch":   agents.LaunchACP,
+			"command":  agent.Path,
+			"acp_args": agent.ACPArgs,
 		},
 	}); appendErr != nil {
 		return failEarly(opts, result, fmt.Errorf("event append failed: %w", appendErr))
@@ -180,11 +181,11 @@ type acpRunnerHandler struct {
 	stdoutTap *os.File
 	sessionID string
 
-	mu          sync.Mutex
-	messageBuf  strings.Builder
-	thoughtBuf  strings.Builder
-	chunkBatch  int
-	noop        acp.NoopHandler
+	mu         sync.Mutex
+	messageBuf strings.Builder
+	thoughtBuf strings.Builder
+	chunkBatch int
+	noop       acp.NoopHandler
 }
 
 func (h *acpRunnerHandler) SessionUpdate(update acp.SessionUpdate) error {
