@@ -1,0 +1,1092 @@
+diff --git a/internal/app/pipeline_cmd.go b/internal/app/pipeline_cmd.go
+index 362585f..d8bc46a 100644
+--- a/internal/app/pipeline_cmd.go
++++ b/internal/app/pipeline_cmd.go
+@@ -9,6 +9,7 @@ import (
+ 	"os"
+ 	"path/filepath"
+ 	"strings"
++	"sync"
+ 	"time"
+ 
+ 	"parley-deck-cli/internal/agents"
+@@ -185,6 +186,12 @@ func runPipelineStatus(args []string, stdout, stderr io.Writer) int {
+ 	}
+ 	fmt.Fprintf(stdout, "pipeline %q: status=%s current=%s\n", run.PipelineSlug, run.Status, valueOrDash(run.CurrentBlock))
+ 	fmt.Fprintf(stdout, "  completed: %s\n", valueOrDash(strings.Join(run.CompletedBlocks, ", ")))
++	if len(run.ReadyBlocks) > 0 {
++		fmt.Fprintf(stdout, "  ready: %s\n", strings.Join(run.ReadyBlocks, ", "))
++	}
++	if len(run.ActiveBlocks) > 0 {
++		fmt.Fprintf(stdout, "  active: %s\n", strings.Join(run.ActiveBlocks, ", "))
++	}
+ 	if run.PendingGate != "" {
+ 		fmt.Fprintf(stdout, "  pending gate: %s\n", run.PendingGate)
+ 	}
+@@ -389,16 +396,22 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
+ 	drafter := fs.String("drafter", "", "consensus drafter agent ID (default: first participant)")
+ 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs (default: manifest participants)")
+ 	yes := fs.Bool("yes", false, "launch hosted agents without confirmation")
++	maxActive := fs.Int("max-active", 4, "max concurrently-active blocks for DAG pipelines (1 = single-active)")
+ 	if err := fs.Parse(args); err != nil {
+ 		return 2
+ 	}
+ 	if fs.NArg() != 1 {
+-		fmt.Fprintln(stderr, "usage: parley pipeline auto [--dir DIR] [--rounds N] [--max-blocks M] [--drafter ID] [--participants IDS] [--yes] SLUG")
++		fmt.Fprintln(stderr, "usage: parley pipeline auto [--dir DIR] [--rounds N] [--max-blocks M] [--max-active K] [--drafter ID] [--participants IDS] [--yes] SLUG")
+ 		return 2
+ 	}
+ 	deck := deckDirFor(*root)
+ 	slug := fs.Arg(0)
+ 
++	// DAG manifests with --max-active>1 use the parallel wave driver.
++	if m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug)); err == nil && m.IsDAG() && *maxActive > 1 {
++		return runPipelineAutoDAG(ctx, *root, deck, slug, m, *maxActive, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr)
++	}
++
+ 	for iter := 0; iter < *maxBlocks; iter++ {
+ 		m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug))
+ 		if err != nil {
+@@ -449,9 +462,18 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
+ 				if code := autoDriveImplementationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *yes, stdout, stderr); code != 0 {
+ 					return code
+ 				}
++				d2, derr := blockCompleteFunc(deck, slug)(block)
++				if derr != nil {
++					fmt.Fprintf(stderr, "auto failed: %v\n", derr)
++					return 1
++				}
++				done = d2
+ 			}
+-			fmt.Fprintf(stdout, "auto: implementation block %q — implementation + review round-01 done. status=needs_artifact — draft review/consensus.md (machine-readable agreed_fixes) + fix-up, then `parley pipeline continue`.\n", block.ID)
+-			return 0
++			if !done {
++				fmt.Fprintf(stdout, "auto: implementation block %q paused (review BLOCK / fail-closed / max fix-up cycles). status=needs_artifact — resolve, then re-run `parley pipeline auto`.\n", block.ID)
++				return 0
++			}
++			// implementation complete -> fall through to Advance.
+ 		}
+ 		if !done {
+ 			// deliberation or watcher: drive Phase 1-4 to a finalized artifact.
+@@ -494,6 +516,132 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
+ 	return 1
+ }
+ 
++// runPipelineAutoDAG drives a DAG pipeline in parallel waves: each wave is the
++// set of dependency-ready, gate-approved blocks, launched concurrently up to
++// maxActive. It fully drives deliberation/watcher blocks; it stops (with
++// guidance) when a ready block is an action (gated execute) or implementation
++// (use single-active auto). Production gates remain non-bypassable.
++func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline.Manifest, maxActive int, participantsFlag, drafter string, rounds int, yes bool, stdout, stderr io.Writer) int {
++	complete := blockCompleteFunc(deck, slug)
++	for wave := 0; wave < 100; wave++ {
++		run, err := pipeline.LoadRun(pipeline.RunPath(deck, slug))
++		if err != nil {
++			fmt.Fprintf(stderr, "auto failed: %v\n", err)
++			return 1
++		}
++		driver := pipeline.Driver{DeckDir: deck, Manifest: m, Now: time.Now()}
++		step, err := driver.ComputeDAGStep(&run)
++		if err != nil {
++			fmt.Fprintf(stderr, "auto failed: %v\n", err)
++			return 1
++		}
++		if step.Done {
++			run.Status = pipeline.StatusCompleted
++			run.CurrentBlock, run.ReadyBlocks, run.ActiveBlocks, run.PendingGate = "", nil, nil, ""
++			_ = run.Save(pipeline.RunPath(deck, slug))
++			fmt.Fprintf(stdout, "auto: DAG pipeline %q complete.\n", slug)
++			return 0
++		}
++		if len(step.Ready) == 0 {
++			run.Status = pipeline.StatusBlockedOnGate
++			run.ReadyBlocks, run.ActiveBlocks = nil, nil
++			if len(step.AwaitGates) > 0 {
++				run.PendingGate = step.AwaitGates[0]
++			}
++			_ = run.Save(pipeline.RunPath(deck, slug))
++			fmt.Fprintf(stdout, "auto: paused — %d gate(s) await approval: %s\n  approve each: parley pipeline gate approve --dir %s %s <edge>, then re-run auto.\n", len(step.AwaitGates), strings.Join(step.AwaitGates, ", "), root, slug)
++			return 0
++		}
++		var launch []pipeline.Block
++		for _, bid := range step.Ready {
++			b, _ := findBlock(m, bid)
++			switch b.Kind {
++			case pipeline.KindDeliberation, pipeline.KindWatcher:
++				launch = append(launch, b)
++			case pipeline.KindAction:
++				fmt.Fprintf(stdout, "auto: ready action block %q — status=needs_human_gate; run `parley pipeline execute ...` (production-gated) + record-effect, then re-run auto.\n", bid)
++				return 0
++			case pipeline.KindImplementation:
++				fmt.Fprintf(stdout, "auto: ready implementation block %q — run with `parley pipeline auto --max-active 1` (single-active drives Phase 5-8). status=needs_artifact\n", bid)
++				return 0
++			}
++		}
++		if len(launch) > maxActive {
++			launch = launch[:maxActive]
++		}
++		run.ActiveBlocks = blockIDs(launch)
++		run.ReadyBlocks = step.Ready
++		run.Status = pipeline.StatusRunning
++		_ = run.Save(pipeline.RunPath(deck, slug))
++
++		fmt.Fprintf(stdout, "auto: DAG wave — launching %d block(s) concurrently (max-active %d): %s\n", len(launch), maxActive, strings.Join(blockIDs(launch), ", "))
++		var wg sync.WaitGroup
++		var mu sync.Mutex
++		failed := 0
++		for _, b := range launch {
++			b := b
++			if _, statErr := os.Stat(filepath.Join(pipeline.BlockWorkspace(deck, slug, b.ID), "00-prompt.md")); os.IsNotExist(statErr) {
++				if _, serr := pipeline.SeedBlockPrompt(deck, m, nil, b, time.Now()); serr != nil {
++					fmt.Fprintf(stderr, "auto: seed %q failed: %v\n", b.ID, serr)
++					return 1
++				}
++			}
++			wg.Add(1)
++			go func() {
++				defer wg.Done()
++				if code := autoDriveDeliberationBlock(ctx, root, deck, slug, b, participantsFlag, drafter, rounds, yes, io.Discard, io.Discard); code != 0 {
++					mu.Lock()
++					failed++
++					mu.Unlock()
++				}
++			}()
++		}
++		wg.Wait()
++		if failed > 0 {
++			fmt.Fprintf(stderr, "auto: %d block(s) in the wave did not finalize; stopping. Inspect their workspaces and re-run auto.\n", failed)
++			return 1
++		}
++		// Record newly-complete blocks in the cursor for the next wave.
++		run2, err := pipeline.LoadRun(pipeline.RunPath(deck, slug))
++		if err != nil {
++			fmt.Fprintf(stderr, "auto failed: %v\n", err)
++			return 1
++		}
++		progressed := false
++		for _, b := range launch {
++			if done, _ := complete(b); done && !contains(run2.CompletedBlocks, b.ID) {
++				run2.CompletedBlocks = append(run2.CompletedBlocks, b.ID)
++				progressed = true
++			}
++		}
++		run2.ActiveBlocks = nil
++		_ = run2.Save(pipeline.RunPath(deck, slug))
++		if !progressed {
++			fmt.Fprintf(stderr, "auto: wave made no progress (no block finalized); stopping to avoid a loop.\n")
++			return 1
++		}
++	}
++	fmt.Fprintf(stderr, "auto: hit DAG wave cap; re-run to continue.\n")
++	return 1
++}
++
++func blockIDs(blocks []pipeline.Block) []string {
++	out := make([]string, len(blocks))
++	for i, b := range blocks {
++		out[i] = b.ID
++	}
++	return out
++}
++
++func contains(xs []string, x string) bool {
++	for _, s := range xs {
++		if s == x {
++			return true
++		}
++	}
++	return false
++}
++
+ // autoDriveDeliberationBlock runs the rounds + consensus + finalize for one
+ // deliberation block. Returns 0 on success, non-zero (an exit code) on a stop.
+ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, block pipeline.Block, participantsFlag, drafter string, rounds int, yes bool, stdout, stderr io.Writer) int {
+@@ -612,15 +760,62 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string,
+ 		fmt.Fprintf(stdout, "auto: block %q has no non-implementer reviewer; Phase 6 needs another agent (non-solo review).\n", block.ID)
+ 		return 0
+ 	}
+-	if _, statErr := os.Stat(filepath.Join(blockWS, "review", "round-01")); os.IsNotExist(statErr) {
+-		fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-01 (%s)\n", block.ID, strings.Join(reviewers, ", "))
+-		ideaRev := idea
+-		ideaRev.Participants = reviewers
+-		runID := fmt.Sprintf("pipe-%s-rev01-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
+-		if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaRev, Round: 1, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})) {
++
++	// Phase 6-8 unattended loop: review round -> drafter writes the review
++	// consensus with the machine contract -> decide -> fix-up, bounded.
++	const maxCycles = 3
++	stamp := func() string { return time.Now().UTC().Format("20060102T150405.000000Z") }
++	for cycle := 1; cycle <= maxCycles; cycle++ {
++		roundDir := filepath.Join(blockWS, "review", fmt.Sprintf("round-%02d", cycle))
++		if _, statErr := os.Stat(roundDir); os.IsNotExist(statErr) {
++			fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-%02d (%s)\n", block.ID, cycle, strings.Join(reviewers, ", "))
++			ideaRev := idea
++			ideaRev.Participants = reviewers
++			rid := fmt.Sprintf("pipe-%s-rev%02d-%s", block.ID, cycle, stamp())
++			if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: rid, Idea: ideaRev, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", rid))})) {
++				return 1
++			}
++		}
++		fmt.Fprintf(stdout, "auto: block %q Phase 7 review consensus (drafter %s)\n", block.ID, implementer)
++		ideaDraft := idea
++		ideaDraft.Participants = []string{implementer}
++		cid := fmt.Sprintf("pipe-%s-rc%02d-%s", block.ID, cycle, stamp())
++		rc := runner.RunReviewConsensus(ctx, runner.Options{Root: root, RunID: cid, Idea: ideaDraft, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", cid))})
++		if rc.ExitError != "" || !rc.ArtifactOK {
++			fmt.Fprintf(stderr, "auto: review consensus draft failed: %s\n", rc.ExitError)
++			return 1
++		}
++		count, blocked, found, err := pipeline.ReviewAgreedFixes(filepath.Join(blockWS, "review", "consensus.md"))
++		if err != nil {
++			fmt.Fprintf(stderr, "auto: read review consensus failed: %v\n", err)
+ 			return 1
+ 		}
++		switch pipeline.Phase8Decision(count, blocked, found, cycle, maxCycles) {
++		case pipeline.Phase8Complete:
++			fmt.Fprintf(stdout, "auto: block %q implementation complete (0 outstanding agreed fixes).\n", block.ID)
++			return 0
++		case pipeline.Phase8Blocked:
++			fmt.Fprintf(stdout, "auto: block %q review BLOCKed; stopping for human resolution.\n", block.ID)
++			return 0
++		case pipeline.Phase8NoData:
++			fmt.Fprintf(stdout, "auto: block %q review consensus lacks outstanding_agreed_fixes (fail-closed); a drafter must record it.\n", block.ID)
++			return 0
++		case pipeline.Phase8Maxed:
++			fmt.Fprintf(stdout, "auto: block %q hit max fix-up cycles (%d); stopping.\n", block.ID, maxCycles)
++			return 0
++		case pipeline.Phase8Fixup:
++			fmt.Fprintf(stdout, "auto: block %q Phase 8 fix-up cycle %d (%d agreed fixes) by %s\n", block.ID, cycle, count, implementer)
++			fid := fmt.Sprintf("pipe-%s-fix%02d-%s", block.ID, cycle, stamp())
++			ideaFix := idea
++			ideaFix.Participants = []string{implementer}
++			fr := runner.RunFixup(ctx, runner.Options{Root: root, RunID: fid, Idea: ideaFix, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", fid))})
++			if fr.ExitError != "" || !fr.ArtifactOK {
++				fmt.Fprintf(stderr, "auto: fix-up failed: %s\n", fr.ExitError)
++				return 1
++			}
++		}
+ 	}
++	fmt.Fprintf(stdout, "auto: block %q reached max fix-up cycles.\n", block.ID)
+ 	return 0
+ }
+ 
+@@ -1031,10 +1226,32 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
+ 				return true, nil
+ 			}
+ 		}
++		// Implementation blocks finish when IMPLEMENTATION.md is status: complete
++		// or the review consensus reports zero outstanding agreed fixes.
++		if b.Kind == pipeline.KindImplementation {
++			if data, err := os.ReadFile(filepath.Join(ws, "IMPLEMENTATION.md")); err == nil {
++				if implementationComplete(string(data)) {
++					return true, nil
++				}
++			}
++			rc := filepath.Join(ws, "review", "consensus.md")
++			if count, blocked, found, err := pipeline.ReviewAgreedFixes(rc); err == nil && found && !blocked && count == 0 {
++				return true, nil
++			}
++		}
+ 		return false, nil
+ 	}
+ }
+ 
++func implementationComplete(content string) bool {
++	for _, line := range strings.Split(content, "\n") {
++		if strings.TrimSpace(line) == "status: complete" {
++			return true
++		}
++	}
++	return false
++}
++
+ func isFinalized(content string) bool {
+ 	for _, line := range strings.Split(content, "\n") {
+ 		if strings.TrimSpace(line) == "status: final" {
+diff --git a/internal/app/pipeline_cmd_test.go b/internal/app/pipeline_cmd_test.go
+index 6245ada..7bc5002 100644
+--- a/internal/app/pipeline_cmd_test.go
++++ b/internal/app/pipeline_cmd_test.go
+@@ -6,6 +6,8 @@ import (
+ 	"path/filepath"
+ 	"strings"
+ 	"testing"
++
++	"parley-deck-cli/internal/pipeline"
+ )
+ 
+ func writeFile(t *testing.T, path, content string) {
+@@ -67,6 +69,27 @@ func TestPipelineAutoWalksToDoneUnderAutoLeft(t *testing.T) {
+ 	}
+ }
+ 
++func TestBlockCompleteRespectsBlockedReviewConsensus(t *testing.T) {
++	ws := t.TempDir()
++	deck := filepath.Join(ws, "parley-deck")
++	slug := "impl-demo"
++	block := pipeline.Block{ID: "build", Kind: pipeline.KindImplementation}
++	rcDir := filepath.Join(pipeline.BlockWorkspace(deck, slug, block.ID), "review")
++	complete := blockCompleteFunc(deck, slug)
++
++	// 0 outstanding fixes but BLOCKED -> NOT complete (fail closed).
++	writeFile(t, filepath.Join(rcDir, "consensus.md"), "---\nidea: x\noutstanding_agreed_fixes: 0\nblocked: true\n---\n")
++	if done, err := complete(block); err != nil || done {
++		t.Fatalf("blocked review consensus must not be complete (done=%v err=%v)", done, err)
++	}
++
++	// 0 outstanding fixes, not blocked -> complete.
++	writeFile(t, filepath.Join(rcDir, "consensus.md"), "---\nidea: x\noutstanding_agreed_fixes: 0\nblocked: false\n---\n")
++	if done, err := complete(block); err != nil || !done {
++		t.Fatalf("unblocked zero-fix consensus should be complete (done=%v err=%v)", done, err)
++	}
++}
++
+ func TestPipelineAutoStopsAtActionBlockNeedsHumanGate(t *testing.T) {
+ 	ws := t.TempDir()
+ 	if err := os.MkdirAll(filepath.Join(ws, "parley-deck"), 0o755); err != nil {
+diff --git a/internal/app/version.go b/internal/app/version.go
+index f73990f..ae88aa7 100644
+--- a/internal/app/version.go
++++ b/internal/app/version.go
+@@ -1,6 +1,6 @@
+ package app
+ 
+-const version = "1.9.0"
++const version = "1.10.0"
+ 
+ func versionLine() string {
+ 	return appName + " " + version
+diff --git a/internal/pipeline/dag_step_test.go b/internal/pipeline/dag_step_test.go
+new file mode 100644
+index 0000000..00abee9
+--- /dev/null
++++ b/internal/pipeline/dag_step_test.go
+@@ -0,0 +1,90 @@
++package pipeline
++
++import (
++	"sort"
++	"testing"
++	"time"
++)
++
++const diamondYAML = `
++schema_version: 1
++idea_slug: diamond
++transport: local-dir
++execution: dag
++autonomy: auto-left
++participants: [codex, claude]
++blocks:
++  - {id: spec, kind: deliberation}
++  - {id: api, kind: deliberation}
++  - {id: ui, kind: deliberation}
++  - {id: integrate, kind: deliberation}
++edges:
++  - {from: spec, to: api}
++  - {from: spec, to: ui}
++  - {from: api, to: integrate}
++  - {from: ui, to: integrate}
++`
++
++func TestComputeDAGStepParallelWaves(t *testing.T) {
++	m, err := Parse([]byte(diamondYAML))
++	if err != nil {
++		t.Fatalf("parse: %v", err)
++	}
++	now := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)
++	d := Driver{DeckDir: t.TempDir(), Manifest: m, Now: now}
++
++	step := func(completed ...string) DAGStep {
++		run := PipelineRun{PipelineSlug: "diamond", CompletedBlocks: completed}
++		s, err := d.ComputeDAGStep(&run)
++		if err != nil {
++			t.Fatalf("ComputeDAGStep: %v", err)
++		}
++		sort.Strings(s.Ready)
++		return s
++	}
++
++	// Root only.
++	if s := step(); len(s.Ready) != 1 || s.Ready[0] != "spec" {
++		t.Fatalf("wave 0 ready = %v, want [spec]", s.Ready)
++	}
++	// After spec: api AND ui both ready in one wave (parallel fan-out).
++	if s := step("spec"); len(s.Ready) != 2 || s.Ready[0] != "api" || s.Ready[1] != "ui" {
++		t.Fatalf("wave 1 ready = %v, want [api ui]", s.Ready)
++	}
++	// Only api done: integrate NOT yet ready (join needs ui too).
++	if s := step("spec", "api"); contains(s.Ready, "integrate") {
++		t.Fatalf("integrate must not be ready before ui: %v", s.Ready)
++	}
++	// api+ui done: integrate ready.
++	if s := step("spec", "api", "ui"); len(s.Ready) != 1 || s.Ready[0] != "integrate" {
++		t.Fatalf("join wave ready = %v, want [integrate]", s.Ready)
++	}
++	// All done.
++	if s := step("spec", "api", "ui", "integrate"); !s.Done {
++		t.Fatalf("expected Done")
++	}
++}
++
++func TestComputeDAGStepSupervisedAwaitsGate(t *testing.T) {
++	m, _ := Parse([]byte(diamondYAML))
++	m.Autonomy = AutonomySupervised // no auto-approval
++	now := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)
++	d := Driver{DeckDir: t.TempDir(), Manifest: m, Now: now}
++	run := PipelineRun{PipelineSlug: "diamond"}
++	s, err := d.ComputeDAGStep(&run)
++	if err != nil {
++		t.Fatalf("ComputeDAGStep: %v", err)
++	}
++	if len(s.Ready) != 0 || len(s.AwaitGates) != 1 || s.AwaitGates[0] != EdgeID("ready", "spec") {
++		t.Fatalf("supervised: ready=%v await=%v, want await [ready->spec]", s.Ready, s.AwaitGates)
++	}
++}
++
++func contains(xs []string, x string) bool {
++	for _, s := range xs {
++		if s == x {
++			return true
++		}
++	}
++	return false
++}
+diff --git a/internal/pipeline/executor.go b/internal/pipeline/executor.go
+index 96f0916..40bf642 100644
+--- a/internal/pipeline/executor.go
++++ b/internal/pipeline/executor.go
+@@ -231,6 +231,55 @@ func (d Driver) advanceDAG(run *PipelineRun, complete BlockComplete) (AdvanceRes
+ 	}
+ }
+ 
++// DAGStep is one wave of multi-active DAG execution: the gate-approved blocks
++// ready to launch now, the edges still awaiting a human gate, and whether the
++// pipeline is complete.
++type DAGStep struct {
++	Ready      []string // gate-approved, dependency-complete, not-done blocks
++	AwaitGates []string // edge ids of open gates blocking otherwise-ready blocks
++	Done       bool
++}
++
++// ComputeDAGStep records nothing but inspects the cursor's completed set, ensures
++// a boundary gate exists for every dependency-ready block (auto-approving the
++// eligible ones via the central policy), and returns the launchable wave. It is
++// pure w.r.t. the cursor (gates are persisted) so it is deterministic + testable.
++func (d Driver) ComputeDAGStep(run *PipelineRun) (DAGStep, error) {
++	if d.Manifest.AllBlocksComplete(run.CompletedBlocks) {
++		return DAGStep{Done: true}, nil
++	}
++	depsReady := d.Manifest.ReadyBlocks(run.CompletedBlocks, func(string) bool { return true })
++	var step DAGStep
++	for _, bid := range depsReady {
++		b, _ := d.findBlockByID(bid)
++		edge := EdgeID("ready", bid)
++		g, exists, err := LoadGate(d.DeckDir, run.PipelineSlug, edge)
++		if err != nil {
++			return DAGStep{}, err
++		}
++		if !exists {
++			g = NewGate(run.PipelineSlug, "ready", bid, b.Risk, b.GatePolicy, d.Now)
++			if AutoApproveWithDecider(d.Manifest.Autonomy, b.Risk, d.Manifest.Decider != "") {
++				by := "policy:auto-left"
++				if d.Manifest.Decider != "" && d.Manifest.Autonomy != AutonomyAutoLeft {
++					by = "decider:" + d.Manifest.Decider
++				}
++				g.Resolve(true, by, d.Now)
++			}
++			if err := SaveGate(d.DeckDir, g); err != nil {
++				return DAGStep{}, err
++			}
++		}
++		switch g.Status {
++		case GateApproved:
++			step.Ready = append(step.Ready, bid)
++		default: // open or rejected -> needs a human
++			step.AwaitGates = append(step.AwaitGates, edge)
++		}
++	}
++	return step, nil
++}
++
+ func (d Driver) findBlockByID(id string) (Block, bool) {
+ 	for _, b := range d.Manifest.Blocks {
+ 		if b.ID == id {
+diff --git a/internal/pipeline/review.go b/internal/pipeline/review.go
+new file mode 100644
+index 0000000..1208cce
+--- /dev/null
++++ b/internal/pipeline/review.go
+@@ -0,0 +1,76 @@
++package pipeline
++
++import (
++	"fmt"
++	"os"
++	"strconv"
++	"strings"
++)
++
++// ReviewAgreedFixes reads the machine-readable Phase-7 contract from a
++// review/consensus.md frontmatter: `outstanding_agreed_fixes: <int>` (the
++// authority for the fix-up loop) and optional `blocked: true`. `found` is false
++// when the field is absent, so the auto driver can FAIL CLOSED rather than
++// guess "zero fixes" from prose (§12 / decided 2026-06-02).
++func ReviewAgreedFixes(path string) (count int, blocked bool, found bool, err error) {
++	data, readErr := os.ReadFile(path)
++	if readErr != nil {
++		return 0, false, false, fmt.Errorf("read review consensus: %w", readErr)
++	}
++	lines := strings.Split(string(data), "\n")
++	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
++		return 0, false, false, nil
++	}
++	for _, line := range lines[1:] {
++		t := strings.TrimSpace(line)
++		if t == "---" {
++			break
++		}
++		key, val, ok := strings.Cut(t, ":")
++		if !ok {
++			continue
++		}
++		key = strings.TrimSpace(key)
++		val = strings.Trim(strings.TrimSpace(val), `"'`)
++		switch key {
++		case "outstanding_agreed_fixes":
++			n, convErr := strconv.Atoi(val)
++			if convErr != nil {
++				return 0, false, false, fmt.Errorf("outstanding_agreed_fixes=%q is not an int: %w", val, convErr)
++			}
++			count, found = n, true
++		case "blocked":
++			blocked = val == "true" || val == "yes"
++		}
++	}
++	return count, blocked, found, nil
++}
++
++// Phase8Action is the next step the unattended fix-up loop should take.
++type Phase8Action string
++
++const (
++	Phase8Complete Phase8Action = "complete"      // zero outstanding fixes -> block done
++	Phase8Blocked  Phase8Action = "blocked"       // a reviewer BLOCKed -> stop for human
++	Phase8Fixup    Phase8Action = "fixup"          // outstanding>0 and under the cap -> apply fixes, re-review
++	Phase8Maxed    Phase8Action = "max-cycles"     // hit the safety cap -> stop
++	Phase8NoData   Phase8Action = "missing-contract" // review consensus lacked the machine field -> fail closed
++)
++
++// Phase8Decision is the pure control logic for the unattended fix-up loop. It is
++// kept separate from agent I/O so it is fully unit-testable.
++func Phase8Decision(outstanding int, blocked, foundContract bool, cycle, maxCycles int) Phase8Action {
++	if !foundContract {
++		return Phase8NoData
++	}
++	if blocked {
++		return Phase8Blocked
++	}
++	if outstanding <= 0 {
++		return Phase8Complete
++	}
++	if cycle >= maxCycles {
++		return Phase8Maxed
++	}
++	return Phase8Fixup
++}
+diff --git a/internal/pipeline/review_test.go b/internal/pipeline/review_test.go
+new file mode 100644
+index 0000000..f5c013b
+--- /dev/null
++++ b/internal/pipeline/review_test.go
+@@ -0,0 +1,52 @@
++package pipeline
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func TestReviewAgreedFixesParsesContract(t *testing.T) {
++	dir := t.TempDir()
++	p := filepath.Join(dir, "consensus.md")
++	os.WriteFile(p, []byte("---\nidea: x\noutstanding_agreed_fixes: 2\nblocked: false\n---\n\n## Agreed fixes\n"), 0o644)
++	count, blocked, found, err := ReviewAgreedFixes(p)
++	if err != nil || !found || count != 2 || blocked {
++		t.Fatalf("got count=%d blocked=%v found=%v err=%v", count, blocked, found, err)
++	}
++
++	os.WriteFile(p, []byte("---\nidea: x\noutstanding_agreed_fixes: 0\nblocked: true\n---\n"), 0o644)
++	count, blocked, found, _ = ReviewAgreedFixes(p)
++	if count != 0 || !blocked || !found {
++		t.Fatalf("blocked case: count=%d blocked=%v found=%v", count, blocked, found)
++	}
++
++	// Missing field -> found=false (auto fails closed).
++	os.WriteFile(p, []byte("---\nidea: x\n---\n\n## Agreed fixes\n"), 0o644)
++	_, _, found, _ = ReviewAgreedFixes(p)
++	if found {
++		t.Fatal("missing outstanding_agreed_fixes must report found=false")
++	}
++}
++
++func TestPhase8Decision(t *testing.T) {
++	cases := []struct {
++		name                       string
++		outstanding                int
++		blocked, found             bool
++		cycle, max                 int
++		want                       Phase8Action
++	}{
++		{"missing contract fails closed", 0, false, false, 1, 3, Phase8NoData},
++		{"blocked stops", 2, true, true, 1, 3, Phase8Blocked},
++		{"zero completes", 0, false, true, 1, 3, Phase8Complete},
++		{"fixes under cap -> fixup", 3, false, true, 1, 3, Phase8Fixup},
++		{"fixes at cap -> maxed", 3, false, true, 3, 3, Phase8Maxed},
++		{"blocked beats zero", 0, true, true, 1, 3, Phase8Blocked},
++	}
++	for _, c := range cases {
++		if got := Phase8Decision(c.outstanding, c.blocked, c.found, c.cycle, c.max); got != c.want {
++			t.Errorf("%s: got %q want %q", c.name, got, c.want)
++		}
++	}
++}
+diff --git a/internal/pipeline/run.go b/internal/pipeline/run.go
+index 7d29cf3..3ed4442 100644
+--- a/internal/pipeline/run.go
++++ b/internal/pipeline/run.go
+@@ -28,7 +28,12 @@ type PipelineRun struct {
+ 	Status          RunStatus `json:"status"`
+ 	CurrentBlock    string    `json:"current_block,omitempty"`
+ 	CompletedBlocks []string  `json:"completed_blocks"`
+-	PendingGate     string    `json:"pending_gate,omitempty"`
++	// ReadyBlocks / ActiveBlocks support multi-active DAG execution. They are
++	// additive: a linear/single-active run leaves them empty and uses
++	// current_block, so older cursors load unchanged.
++	ReadyBlocks  []string `json:"ready_blocks,omitempty"`
++	ActiveBlocks []string `json:"active_blocks,omitempty"`
++	PendingGate  string   `json:"pending_gate,omitempty"`
+ 	EffectKeys      []string  `json:"effect_keys,omitempty"`
+ 	CreatedAt       time.Time `json:"created_at"`
+ 	UpdatedAt       time.Time `json:"updated_at"`
+diff --git a/internal/runner/phase58.go b/internal/runner/phase58.go
+index c5d61df..40353fc 100644
+--- a/internal/runner/phase58.go
++++ b/internal/runner/phase58.go
+@@ -11,6 +11,7 @@ import (
+ 
+ 	"parley-deck-cli/internal/agents"
+ 	"parley-deck-cli/internal/protocol"
++	"parley-deck-cli/internal/store"
+ )
+ 
+ // RunImplementation runs Phase 5: it launches a single implementer to produce
+@@ -40,6 +41,89 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
+ 	return RunRoundOne(ctx, opts)
+ }
+ 
++// RunFixup runs a Phase 8 fix-up: it re-invokes the implementer to apply the
++// agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Unlike
++// RunImplementation it edits existing files, so success is exit-code based (no
++// single new-artifact validation). opts.Idea.Participants must be [implementer].
++func RunFixup(ctx context.Context, opts Options) Result {
++	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
++	if len(selected) == 0 {
++		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
++	}
++	agent := selected[0]
++	now := time.Now().UTC()
++	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", agent.ID)
++	if err := os.MkdirAll(agentDir, 0o755); err != nil {
++		return Result{AgentID: agent.ID, ExitError: err.Error()}
++	}
++	stdoutPath := filepath.Join(agentDir, "stdout.log")
++	stderrPath := filepath.Join(agentDir, "stderr.log")
++	result := Result{AgentID: agent.ID, StartedAt: now, StdoutPath: stdoutPath, StderrPath: stderrPath}
++
++	prompt := BuildFixupPrompt(agent, opts.Idea)
++	cctx, cancel := context.WithTimeout(ctx, timeoutForAgent(opts.Timeout, agent))
++	defer cancel()
++	cmd, cleanup, err := CommandFor(cctx, opts.Root, agent, prompt)
++	if cleanup != nil {
++		defer cleanup()
++	}
++	if err != nil {
++		result.ExitError = err.Error()
++		result.CompletedAt = time.Now().UTC()
++		return result
++	}
++	cmd.Dir = opts.Root
++	so, err := os.Create(stdoutPath)
++	if err != nil {
++		result.ExitError = err.Error()
++		return result
++	}
++	defer so.Close()
++	se, err := os.Create(stderrPath)
++	if err != nil {
++		result.ExitError = err.Error()
++		return result
++	}
++	defer se.Close()
++	cmd.Stdout = so
++	cmd.Stderr = se
++	if agent.PromptMode == agents.PromptStdin {
++		cmd.Stdin = strings.NewReader(prompt)
++	}
++	runErr := cmd.Run()
++	result.CompletedAt = time.Now().UTC()
++	result.Duration = result.CompletedAt.Sub(now)
++	if runErr != nil {
++		result.ExitError = runErr.Error()
++		if cctx.Err() != nil {
++			result.ExitError = cctx.Err().Error()
++		}
++	} else {
++		result.ArtifactOK = true
++	}
++	eventType := "agent.fixup_finished"
++	if !result.ArtifactOK {
++		eventType = "agent.fixup_failed"
++	}
++	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: map[string]any{"agent": agent.ID, "error": result.ExitError}})
++	return result
++}
++
++// BuildFixupPrompt is the Phase 8 fix-up prompt for the implementer.
++func BuildFixupPrompt(agent agents.Discovery, idea protocol.IdeaStatus) string {
++	rc := filepath.Join(idea.Path, "review", "consensus.md")
++	impl := filepath.Join(idea.Path, "IMPLEMENTATION.md")
++	return fmt.Sprintf(`You are %s, the implementer for Parley Deck idea %s (Phase 8 fix-up).
++
++Rules:
++- Read %s and apply EVERY agreed fix listed there to the code.
++- Then append a "## Fix-up cycle" section to %s describing the fixes applied, and keep its frontmatter status accurate.
++- Do not edit other agents' review or signoff files.
++- Run the project's build/tests if available.
++- Return a short confirmation with the fixes applied and checks run.
++`, agent.ID, idea.Slug, rc, impl)
++}
++
+ // BuildImplementationPrompt is the Phase 5 implementer prompt.
+ func BuildImplementationPrompt(agent agents.Discovery, idea protocol.IdeaStatus, outputPath string) string {
+ 	finalPath := filepath.Join(idea.Path, "FINAL.md")
+@@ -49,6 +133,7 @@ Rules:
+ - Implement strictly according to %s. Read it first.
+ - Before multi-file changes or changes outside parley-deck/, write your plan/checklist into the file below.
+ - Create exactly this file: %s
++- Immediately use your file-writing tool to create that file; do not explore the workspace first beyond what FINAL.md requires, and report a blocker instead of narrating.
+ - Record unavoidable deviations from FINAL.md in that file.
+ - Do not edit other agents' protocol files.
+ - The first line of the file must be exactly "---".
+@@ -79,6 +164,7 @@ func BuildReviewPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round i
+ Rules:
+ - Review the implementation against FINAL.md and IMPLEMENTATION.md (below).
+ - Create exactly this review file: %s
++- Immediately use your file-writing tool to create that file with its required frontmatter; do not narrate instead of writing.
+ - Do not edit implementation files or other agents' files.
+ - Use ONLY these severity tags: CRITICAL, MAJOR, MINOR, NIT.
+ - Each finding states what is wrong, why it matters, and the concrete fix.
+@@ -146,10 +232,71 @@ func validateArtifactForPhase(opts Options, outputPath, agentID string) error {
+ 		return ValidateImplementationArtifact(outputPath, opts.Idea.Slug)
+ 	case "review":
+ 		return ValidateReviewArtifact(outputPath, agentID, opts.Idea.Slug, roundNumber(opts))
++	case "review-consensus":
++		return ValidateReviewConsensusArtifact(outputPath)
+ 	}
+ 	return ValidateRoundArtifact(outputPath, agentID, opts.Idea.Slug, roundNumber(opts))
+ }
+ 
++// RunReviewConsensus launches the drafter to (re)write review/consensus.md with
++// the machine-readable Phase-7 contract (outstanding_agreed_fixes). Overwrites
++// any prior draft so each fix-up cycle records the current count.
++func RunReviewConsensus(ctx context.Context, opts Options) Result {
++	opts.Phase = "review-consensus"
++	opts.ArtifactName = filepath.Join("review", "consensus.md")
++	opts.Overwrite = true
++	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
++	if len(selected) == 0 {
++		return Result{AgentID: "drafter", ExitError: "no drafter available in participants"}
++	}
++	return runAgent(ctx, opts, selected[0])
++}
++
++// BuildReviewConsensusPrompt is the Phase 7 drafter prompt; it MUST set the
++// machine-readable outstanding_agreed_fixes so the unattended loop can decide.
++func BuildReviewConsensusPrompt(agent agents.Discovery, idea protocol.IdeaStatus, outputPath, context string) string {
++	return fmt.Sprintf(`You are %s, drafting the Phase 7 review consensus for Parley Deck idea %s.
++
++Rules:
++- Create exactly this file: %s (overwrite any prior draft).
++- Synthesize the review-round findings below into agreed fixes, deferred follow-ups, and dismissed findings.
++- The frontmatter MUST include outstanding_agreed_fixes: <integer count of fixes still to apply> and blocked: <true|false>.
++- Set outstanding_agreed_fixes to 0 only when nothing remains to fix.
++- The first line of the file must be exactly "---".
++- Return only a short confirmation with the path written.
++
++Required file shape:
++---
++idea: %s
++review-cycle: 1
++drafted-by: %s
++date: %s
++outstanding_agreed_fixes: 0
++blocked: false
++---
++
++## Agreed fixes
++## Deferred follow-ups
++## Dismissed findings
++## Signoffs
++
++Review context (IMPLEMENTATION.md + review rounds):
++%s
++`, agent.ID, idea.Slug, outputPath, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), context)
++}
++
++// ValidateReviewConsensusArtifact requires the machine-readable contract field.
++func ValidateReviewConsensusArtifact(path string) error {
++	meta, err := protocol.ReadFrontmatter(path)
++	if err != nil {
++		return err
++	}
++	if strings.TrimSpace(meta["outstanding_agreed_fixes"]) == "" {
++		return fmt.Errorf("%s frontmatter missing outstanding_agreed_fixes (the auto fix-up loop fails closed without it)", path)
++	}
++	return nil
++}
++
+ // ValidateImplementationArtifact checks an IMPLEMENTATION.md.
+ func ValidateImplementationArtifact(path, ideaSlug string) error {
+ 	meta, err := protocol.ReadFrontmatter(path)
+diff --git a/internal/runner/round_test.go b/internal/runner/round_test.go
+index b3197bb..a5c7f65 100644
+--- a/internal/runner/round_test.go
++++ b/internal/runner/round_test.go
+@@ -131,6 +131,119 @@ func TestFakeRound2AgentHelper(t *testing.T) {
+ 	os.Exit(0)
+ }
+ 
++func TestStdoutFallbackRecoversArtifact(t *testing.T) {
++	root := t.TempDir()
++	if err := protocol.InitWorkspace(root); err != nil {
++		t.Fatal(err)
++	}
++	idea, err := protocol.CreateIdea(root, "Stdout fallback task", []string{"printer"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	results := RunRoundOne(context.Background(), Options{
++		Root: root, RunID: "sf-run", Idea: idea, Task: "x",
++		Agents: []agents.Discovery{{
++			Spec:  agents.Spec{ID: "printer", HeadlessArgs: []string{"-test.run=TestFakeStdoutAgentHelper", "--", "parley-fake-stdout"}, PromptMode: agents.PromptStdin},
++			Path:  os.Args[0], Found: true,
++		}},
++		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "sf-run")),
++	})
++	if len(results) != 1 || !results[0].ArtifactOK {
++		t.Fatalf("expected artifact recovered from stdout: %+v", results)
++	}
++	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "printer.md")); err != nil {
++		t.Fatalf("recovered artifact missing: %v", err)
++	}
++	if results[0].Warning == "" {
++		t.Fatal("expected a warning noting the stdout fallback")
++	}
++}
++
++func TestStdoutFallbackRejectsNarration(t *testing.T) {
++	root := t.TempDir()
++	if err := protocol.InitWorkspace(root); err != nil {
++		t.Fatal(err)
++	}
++	idea, err := protocol.CreateIdea(root, "Narration task", []string{"narrator"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	results := RunRoundOne(context.Background(), Options{
++		Root: root, RunID: "nar-run", Idea: idea, Task: "x",
++		Agents: []agents.Discovery{{
++			Spec:  agents.Spec{ID: "narrator", HeadlessArgs: []string{"-test.run=TestFakeNarrateAgentHelper", "--", "parley-fake-narrate"}, PromptMode: agents.PromptStdin},
++			Path:  os.Args[0], Found: true,
++		}},
++		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "nar-run")),
++	})
++	if len(results) != 1 || results[0].ArtifactOK {
++		t.Fatalf("narration must NOT become an artifact: %+v", results)
++	}
++	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "narrator.md")); !os.IsNotExist(err) {
++		t.Fatalf("narration should not have produced an artifact file")
++	}
++}
++
++func TestStdoutFallbackRejectsInvalidFrontmatter(t *testing.T) {
++	root := t.TempDir()
++	if err := protocol.InitWorkspace(root); err != nil {
++		t.Fatal(err)
++	}
++	idea, err := protocol.CreateIdea(root, "Bad frontmatter task", []string{"badfm"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	results := RunRoundOne(context.Background(), Options{
++		Root: root, RunID: "bf-run", Idea: idea, Task: "x",
++		Agents: []agents.Discovery{{
++			Spec:  agents.Spec{ID: "badfm", HeadlessArgs: []string{"-test.run=TestFakeBadFrontmatterHelper", "--", "parley-fake-badfm"}, PromptMode: agents.PromptStdin},
++			Path:  os.Args[0], Found: true,
++		}},
++		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "bf-run")),
++	})
++	if len(results) != 1 || results[0].ArtifactOK {
++		t.Fatalf("invalid stdout frontmatter must NOT become an artifact: %+v", results)
++	}
++	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "badfm.md")); !os.IsNotExist(err) {
++		t.Fatal("invalid candidate must leave no artifact at the protocol path")
++	}
++	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "badfm.md.stdout-candidate")); !os.IsNotExist(err) {
++		t.Fatal("the temp candidate must be removed on validation failure")
++	}
++}
++
++func TestFakeBadFrontmatterHelper(t *testing.T) {
++	if !hasArg("parley-fake-badfm") {
++		return
++	}
++	// First line is the fence, but the frontmatter is for the wrong idea/round
++	// and the body lacks the required sections -> validation must reject it.
++	os.Stdout.WriteString("---\nagent: badfm\nidea: not-this-idea\nround: 9\n---\n\n## Nope\n")
++	os.Exit(0)
++}
++
++func TestFakeStdoutAgentHelper(t *testing.T) {
++	if !hasArg("parley-fake-stdout") {
++		return
++	}
++	input, _ := io.ReadAll(os.Stdin)
++	idea := regexp.MustCompile(`(?m)^idea: (\S+)$`).FindStringSubmatch(string(input))
++	if len(idea) != 2 {
++		t.Fatalf("no idea in prompt")
++	}
++	// Print a valid artifact to stdout WITHOUT writing the file.
++	os.Stdout.WriteString("---\nagent: printer\nidea: " + idea[1] + "\nround: 1\ndate: 2026-06-02\n---\n\n## Summary\ns\n\n## Proposed approach\np\n\n## Concerns / open questions\nc\n\n## Risks\nr\n")
++	os.Exit(0)
++}
++
++func TestFakeNarrateAgentHelper(t *testing.T) {
++	if !hasArg("parley-fake-narrate") {
++		return
++	}
++	os.Stdout.WriteString("I will list the directory contents to check if the target file exists.\n")
++	os.Exit(0)
++}
++
+ func mustWrite(t *testing.T, path, content string) {
+ 	t.Helper()
+ 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+diff --git a/internal/runner/runner.go b/internal/runner/runner.go
+index bc1cc78..de77fe7 100644
+--- a/internal/runner/runner.go
++++ b/internal/runner/runner.go
+@@ -34,6 +34,9 @@ type Options struct {
+ 	// ArtifactName, when set, makes the agent write idea.Path/<ArtifactName>
+ 	// (e.g. IMPLEMENTATION.md) instead of the per-agent round path.
+ 	ArtifactName string
++	// Overwrite allows re-running an agent even if its artifact already exists
++	// (used for per-cycle review-consensus re-drafts). Off by default.
++	Overwrite bool
+ }
+ 
+ type Result struct {
+@@ -225,7 +228,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
+ 		StartedAt:  now,
+ 	}
+ 
+-	if _, err := os.Stat(outputPath); err == nil {
++	if _, err := os.Stat(outputPath); err == nil && !opts.Overwrite {
+ 		result.Skipped = true
+ 		result.SkipReason = "artifact already exists"
+ 		result.CompletedAt = time.Now().UTC()
+@@ -308,6 +311,35 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
+ 		}
+ 	}
+ 
++	// stdout-capture fallback: some print-only CLIs (e.g. agy --print) emit the
++	// artifact to stdout instead of writing the file. If the file is absent but
++	// captured stdout is a plausible artifact (starts with the YAML frontmatter
++	// fence), persist it as the agent-authored artifact. Strict "---" validation
++	// keeps narration from becoming a protocol file.
++	if _, statErr := os.Stat(outputPath); os.IsNotExist(statErr) {
++		if data, readErr := os.ReadFile(stdoutPath); readErr == nil && firstLineIsFence(data) {
++			// Validate a CANDIDATE before placing it at the protocol path, so a
++			// malformed print-only response never poisons the artifact path.
++			tmp := outputPath + ".stdout-candidate"
++			if writeErr := os.WriteFile(tmp, data, 0o644); writeErr == nil {
++				if validateArtifactForPhase(opts, tmp, agent.ID) == nil {
++					if renameErr := os.Rename(tmp, outputPath); renameErr == nil {
++						result.Warning = "artifact recovered from stdout (print-only agent)"
++						_ = opts.Store.Append(store.Event{
++							Time: time.Now().UTC(),
++							Type: "agent.stdout_fallback",
++							Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
++						})
++					} else {
++						_ = os.Remove(tmp)
++					}
++				} else {
++					_ = os.Remove(tmp) // invalid candidate -> leave no protocol artifact
++				}
++			}
++		}
++	}
++
+ 	if _, statErr := os.Stat(outputPath); statErr == nil {
+ 		if validateErr := validateArtifactForPhase(opts, outputPath, agent.ID); validateErr != nil {
+ 			result.ExitError = combineError(result.ExitError, validateErr)
+@@ -376,6 +408,7 @@ func BuildRoundOnePrompt(agent agents.Discovery, idea protocol.IdeaStatus, task,
+ 
+ Rules:
+ - Create exactly this file and no other protocol artifact: %s
++- Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
+ - Do not edit any other agent's file.
+ - Do not overwrite the file if it already exists; report a blocker instead.
+ - Do not read or reference other agents' round-01 answers.
+@@ -430,6 +463,17 @@ func roundLabel(n int) string {
+ 	return fmt.Sprintf("round-%02d", n)
+ }
+ 
++// firstLineIsFence reports whether the first line is exactly the YAML frontmatter
++// fence "---". Unlike a prefix check it does not accept leading narration, so a
++// stdout stream that merely contains "---" somewhere is rejected.
++func firstLineIsFence(data []byte) bool {
++	s := string(data)
++	if i := strings.IndexByte(s, '\n'); i >= 0 {
++		s = s[:i]
++	}
++	return strings.TrimRight(s, "\r ") == "---"
++}
++
+ // RunRound runs cross-review round N (N>=2) for an idea; round 1 uses
+ // RunRoundOne. It seeds each participant with the prior rounds' artifacts and
+ // writes round-NN/<agent>.md, reusing the same launch/validation machinery.
+@@ -453,6 +497,12 @@ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, quest
+ 			return "", err
+ 		}
+ 		return BuildReviewPrompt(agent, opts.Idea, roundNumber(opts), outputPath, ctx), nil
++	case "review-consensus":
++		ctx, err := gatherReviewContext(opts.Idea.Path, roundNumber(opts)+1)
++		if err != nil {
++			return "", err
++		}
++		return BuildReviewConsensusPrompt(agent, opts.Idea, outputPath, ctx), nil
+ 	}
+ 	if roundNumber(opts) <= 1 {
+ 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
+@@ -504,6 +554,7 @@ func BuildRoundPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round in
+ 
+ Rules:
+ - Create exactly this file and no other protocol artifact: %s
++- Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
+ - Do not edit any other agent's file.
+ - Do not overwrite the file if it already exists; report a blocker instead.
+ - READ every prior-round artifact below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus.

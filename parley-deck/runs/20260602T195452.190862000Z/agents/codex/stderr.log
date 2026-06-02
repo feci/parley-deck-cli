@@ -1,0 +1,336 @@
+OpenAI Codex v0.134.0
+--------
+workdir: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e89e7-3804-7f32-9ce5-777e438dc232
+--------
+user
+You are codex, a participant in a Parley Deck cooperation round.
+
+Rules:
+- Create exactly this file and no other protocol artifact: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+- Do not edit any other agent's file.
+- Do not overwrite the file if it already exists; report a blocker instead.
+- Do not read or reference other agents' round-01 answers.
+- Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
+- Return only a short confirmation with the path written.
+- Be concrete, concise, and state trade-offs.
+- If you are blocked by missing human input, create one JSON question file under: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/runs/20260602T195452.190862000Z/questions
+- Question files use this shape: {"id":"<unique-id>","agent":"codex","prompt":"<question>","details":"<context>","default_answer":"<safe default if any>","risk":"low|normal|high","status":"open","answer":"","created_at":"<RFC3339 time>","answered_at":"0001-01-01T00:00:00Z"}
+- If you choose to wait for an answer, poll your question file until status is answered or auto_answered. Otherwise proceed with an explicit assumption in your artifact.
+
+Effective launch config:
+- model: cli-default
+- thinking/reasoning/effort/profile: cli-default
+- speed: balanced
+- sandbox: workspace-write
+- approval: on-failure
+- timeoutMs: 1800000
+
+Idea prompt:
+---
+idea: 2026-06-02T21-54-52-continue-the-4-r
+author: user
+created: 2026-06-02
+participants: [codex, hermes]
+status: round-01
+---
+
+## Problem / idea
+
+Continue the 4 remaining COOPERATION.md §12 pipeline follow-ups in parley-deck-cli (on top of the shipped 1.9.0 surface: internal/pipeline {manifest,run,gate,executor,effects,provider,watcher,dag,watch_eval}, internal/runner {round,phase58}, and `parley pipeline validate|start|status|run-block|continue|auto|watch|execute|record-effect|gate`). Additive; preserve linear back-compat, agents-write-markdown/driver-executes, non-bypassable production gates. Give independent Phase-1 analysis + the smallest correct implementation + risks per item, and the recommended build order.
+
+ITEM 1 — Parallel multi-active DAG auto-drive.
+Today `execution: dag` is validated and `advanceDAG` runs SINGLE-ACTIVE (one block at a time, dependency-ordered via ReadyBlocks). Goal: drive ALL currently-ready blocks. Proposed: extend the cursor (`pipeline-run.json`) with additive `ready_blocks[]` / `active_blocks[]` (schema bump + zero-value defaulting; keep `current_block` populated for linear back-compat); `parley pipeline auto` (and a new status view) launches/advances every ready block whose inbound edges are complete and gates resolved, concurrently. Boundary gates still per edge; production still non-bypassable. Question: cursor schema evolution without breaking existing runs; how `auto` tracks multiple in-flight blocks + their per-block rounds/consensus; deterministic ordering for tests; whether to bound concurrency.
+
+ITEM 2 — Fully-unattended Phase 8 fix-up loop.
+Today `auto` for an implementation block runs Phase 5 (RunImplementation) + review round-01 (RunReviewRound) then STOPS for human review-consensus. Goal: auto-drive Phase 7 (draft review/consensus.md, collect signoffs) + Phase 8 (implementer applies agreed fixes, re-review) until `outstanding_agreed_fixes: 0`, bounded by a max-cycles cap. Proposed: a machine-readable `agreed_fixes` contract in review/consensus.md (e.g. a fenced yaml block or frontmatter count) + a helper `ReviewAgreedFixes(path) int`; a loop: review round → consensus.Draft → requestConsensusSignoffs → if agreed_fixes>0 → RunFixup (implementer) → next review round; stop at zero or max cycles or a BLOCK signoff. Question: exact agreed_fixes machine format + who writes it (drafter vs structured-from-reviews); how a fix-up re-review reuses RunReviewRound (round-02+); testability with fake agents; safety cap; what counts as "applied".
+
+ITEM 3 — WinGet upstream PR to microsoft/winget-pkgs.
+RECON FINDING (state it in your analysis): there are NO GitHub *releases* for cli v1.6.0/1.7.0/1.8.0/1.9.0 — only git tags exist; the latest GitHub release is v1.5.4. The portable .exe assets are built by CI on release publication, so no real InstallerSha256 values exist yet. Therefore the upstream microsoft/winget-pkgs PR is BLOCKED on infra: (a) create GitHub releases for the tags (triggers the portable-build CI), (b) wait for .exe assets, (c) fill InstallerSha256 from the immutable assets, (d) validate + open the upstream PR. Question: is creating the GitHub releases (gh release create from existing tags) the right unblocking step to do now, leaving the upstream PR for once assets exist? Do NOT invent hashes or open a PR with placeholder shas.
+
+ITEM 4 — Fix the agy headless launch regression.
+RECON FINDING: agy 1.0.4 CAN write its artifact in `--print` mode — verified `agy --print-timeout 120s --dangerously-skip-permissions --add-dir <dir> --print "<runner-style prompt asking to create <path>>"` correctly wrote the file. The real `parley run` failure ("artifact was not created", agy narrated "I will list the directory contents...") most likely occurs because `--add-dir {root}` points at a LARGE repo root and agy explores it instead of writing, especially with a big idea prompt. Proposed fix (in OUR launch spec, agy is third-party): make the agy launch more directive/robust — e.g. an agy-specific prompt preamble instructing it to immediately use its file-write tool for the exact output path before any exploration, and/or a stdout-capture fallback that writes the agent's printed markdown to the artifact when the agent did not create the file itself (validated to start with `---`). Question: where to put agy-specific behavior (discover.go spec note vs runner prompt branch) without special-casing one vendor too deeply; is a generic "write-first" preamble safe for all agents; is the stdout fallback acceptable under the agents-write-markdown rule (the agent still authored the content); how to test without launching real agy.
+
+CONSTRAINTS: additive + backward-compatible; preserve agents-write-markdown/driver-executes + non-bypassable production gates; vendor-neutral (no hard agy/vercel coupling); Go 1.26; full test coverage with fake agents (no reliance on real hosted agents in unit tests); English-only protocol files; do not invent winget hashes or open an upstream PR without real release assets.
+
+DELIVER in round-01: per-item assessment + minimal correct implementation + top risks; explicitly confirm item 3 is infra-blocked and what the safe actionable step is; recommended build order.
+
+## Constraints
+
+- Local-directory transport for this initial run.
+- Human-in-the-loop mode by default unless the run was started with auto mode.
+
+## Non-goals
+
+- Do not make unrelated repository changes.
+
+
+Required file shape:
+---
+agent: codex
+idea: 2026-06-02T21-54-52-continue-the-4-r
+round: 1
+date: 2026-06-02
+---
+
+## Summary
+## Proposed approach
+## Concerns / open questions
+## Risks
+
+codex
+I’ll write only the requested `codex.md` artifact, after checking that it does not already exist.
+exec
+/bin/zsh -lc 'test ! -e '"'parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md' && printf 'absent\\n' || printf 'exists\\n'" in /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+ succeeded in 0ms:
+absent
+
+codex
+The target file is absent, so I’m adding the required markdown artifact with the requested frontmatter and concise per-item analysis.
+apply patch
+patch: completed
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+diff --git a/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md b/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe0dbba02b49643fa567960e6b0e3cb966c166c7
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+@@ -0,0 +1,71 @@
++---
++agent: codex
++idea: 2026-06-02T21-54-52-continue-the-4-r
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++All four follow-ups are feasible as additive changes except Item 3, which is infra-blocked. The implementation path should preserve the shipped 1.9.0 linear surface by defaulting new cursor fields to empty, keeping `current_block` populated, and treating production gates as non-bypassable in every new DAG and auto-drive path.
++
++Recommended build order:
++
++1. Item 4: agy launch robustness, because it stabilizes agent artifact creation for the rest of the pipeline work.
++2. Item 2: unattended Phase 8 loop, because it is mostly runner/review state and can be tested with fake agents before multi-active execution.
++3. Item 1: parallel multi-active DAG auto-drive, because it touches cursor semantics, status, scheduling, and gate interactions.
++4. Item 3: release infra step only; upstream WinGet PR waits for real immutable assets and hashes.
++
++## Proposed approach
++
++Item 1, parallel multi-active DAG auto-drive:
++
++Assessment: extend the DAG cursor without changing the linear contract. Add `ready_blocks []string` and `active_blocks []ActiveBlock` or `[]string` to `pipeline-run.json`, with zero-value defaulting during load. Keep `current_block` set to the first active block, or first ready block if none are active, in deterministic DAG order for existing status and linear commands.
++
++Minimal implementation: make `advanceDAG` compute all ready blocks whose dependencies are complete and whose inbound gates are resolved. Sort by manifest block order, then ID as a stable tie-breaker. `pipeline auto` should launch all ready blocks up to a configurable cap, defaulting to unbounded or a conservative `PARLEY_PIPELINE_MAX_CONCURRENCY` default of CPU count. Track per-block phase/round state under each block's existing artifacts, not in a shared mutable consensus field. Add a new status view that shows ready, active, blocked-by-gate, complete.
++
++Trade-off: unbounded concurrency maximizes throughput but can oversubscribe agents and produce noisy failures; a default cap is safer but means "all ready" means all ready within capacity. I would expose the cap but keep deterministic scheduling.
++
++Item 2, fully-unattended Phase 8 fix-up loop:
++
++Assessment: the loop needs a small machine contract in `review/consensus.md`, otherwise auto cannot distinguish "no fixes" from "not parsed". The drafter should own the contract because it already synthesizes reviews into consensus.
++
++Minimal implementation: require frontmatter in `review/consensus.md` with `outstanding_agreed_fixes: <int>` and optional `blocked: true|false`. Add `ReviewAgreedFixes(path) (count int, blocked bool, err error)`. In auto mode only, run review round N, draft consensus, request signoffs, stop on BLOCK, stop on zero fixes, otherwise run `RunFixup` by the implementer and then start review round N+1. Cap cycles with a manifest/run option defaulting to 3.
++
++Trade-off: frontmatter is easier to parse and test than fenced YAML but constrains consensus documents. "Applied" should mean the implementer produced its fix-up artifact and the next review consensus reports zero outstanding agreed fixes, not that the driver infers code correctness.
++
++Item 3, WinGet upstream PR:
++
++Assessment: infra-blocked. There are no GitHub releases for CLI v1.6.0, v1.7.0, v1.8.0, or v1.9.0; only git tags exist. The latest GitHub release is v1.5.4. The portable `.exe` assets are built by CI on release publication, so real `InstallerSha256` values do not exist yet.
++
++Minimal implementation: do not open a microsoft/winget-pkgs PR and do not invent hashes. The safe actionable step is to create GitHub releases from the existing tags, for example with `gh release create` using the existing tag metadata, wait for portable-build CI to attach immutable `.exe` assets, compute `InstallerSha256` from those assets, validate the WinGet manifest locally, then open the upstream PR.
++
++Trade-off: creating releases now unblocks packaging but may require release notes/signoff discipline. Waiting avoids accidental public release metadata churn but leaves WinGet blocked.
++
++Item 4, agy headless launch regression:
++
++Assessment: agy 1.0.4 can write artifacts in `--print` mode when given a directive prompt and scoped `--add-dir`; the observed `parley run` failure likely comes from broad repo exploration under a large root plus a long idea prompt. The fix should be launch-spec level and generic enough to avoid hard vendor coupling.
++
++Minimal implementation: add a generic write-first preamble for headless file-producing agents: immediately create the exact requested artifact path, include required frontmatter, avoid repository exploration unless explicitly necessary, and report blocker instead of narrating. Keep an agy launch-spec note only for its known `--print` behavior. Add stdout-capture fallback after process exit: if the artifact is missing and stdout parses as markdown starting with `---`, write stdout to the expected artifact path as agent-authored content and record the fallback in driver logs. Test with fake agents that either write the file, print valid markdown, print invalid markdown, or narrate without frontmatter.
++
++Trade-off: stdout fallback slightly broadens "agents write markdown", but the agent still authored the artifact bytes and the driver only places them at the mandated path. The fallback must reject invalid frontmatter to avoid converting narration into protocol artifacts.
++
++## Concerns / open questions
++
++For Item 1, the main open question is whether concurrency should default to all ready blocks or a bounded cap. I recommend a cap with deterministic scheduling because it is easier to test and safer for real agent quotas.
++
++For Item 2, consensus frontmatter should be mandatory only for auto-driven implementation blocks. Manual review consensus can remain human-readable, but auto must fail closed if the machine fields are absent.
++
++For Item 3, the human decision is whether creating GitHub releases from existing tags is acceptable now. My recommendation is yes, if release ownership approves public release creation; the upstream WinGet PR should wait.
++
++For Item 4, stdout fallback should be generic and guarded by strict validation, while agy-specific behavior should stay in launch discovery/spec metadata rather than scattered runner branches.
++
++## Risks
++
++Item 1 risks race conditions around shared `pipeline-run.json`, especially if multiple active blocks finish simultaneously. Use atomic cursor writes and a single driver-owned scheduler loop.
++
++Item 2 risks infinite or low-value fix-up churn. The max-cycle cap, BLOCK signoff stop, and required `outstanding_agreed_fixes` field are the safety controls.
++
++Item 3 risks shipping incorrect WinGet manifests if hashes are guessed or assets are mutable. Do not proceed without real release assets and verified hashes.
++
++Item 4 risks masking a broken agent by accepting narrative stdout. Strict `---` frontmatter validation and required protocol shape keep this fallback narrow.
+
+diff --git a/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md b/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe0dbba02b49643fa567960e6b0e3cb966c166c7
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+@@ -0,0 +1,71 @@
++---
++agent: codex
++idea: 2026-06-02T21-54-52-continue-the-4-r
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++All four follow-ups are feasible as additive changes except Item 3, which is infra-blocked. The implementation path should preserve the shipped 1.9.0 linear surface by defaulting new cursor fields to empty, keeping `current_block` populated, and treating production gates as non-bypassable in every new DAG and auto-drive path.
++
++Recommended build order:
++
++1. Item 4: agy launch robustness, because it stabilizes agent artifact creation for the rest of the pipeline work.
++2. Item 2: unattended Phase 8 loop, because it is mostly runner/review state and can be tested with fake agents before multi-active execution.
++3. Item 1: parallel multi-active DAG auto-drive, because it touches cursor semantics, status, scheduling, and gate interactions.
++4. Item 3: release infra step only; upstream WinGet PR waits for real immutable assets and hashes.
++
++## Proposed approach
++
++Item 1, parallel multi-active DAG auto-drive:
++
++Assessment: extend the DAG cursor without changing the linear contract. Add `ready_blocks []string` and `active_blocks []ActiveBlock` or `[]string` to `pipeline-run.json`, with zero-value defaulting during load. Keep `current_block` set to the first active block, or first ready block if none are active, in deterministic DAG order for existing status and linear commands.
++
++Minimal implementation: make `advanceDAG` compute all ready blocks whose dependencies are complete and whose inbound gates are resolved. Sort by manifest block order, then ID as a stable tie-breaker. `pipeline auto` should launch all ready blocks up to a configurable cap, defaulting to unbounded or a conservative `PARLEY_PIPELINE_MAX_CONCURRENCY` default of CPU count. Track per-block phase/round state under each block's existing artifacts, not in a shared mutable consensus field. Add a new status view that shows ready, active, blocked-by-gate, complete.
++
++Trade-off: unbounded concurrency maximizes throughput but can oversubscribe agents and produce noisy failures; a default cap is safer but means "all ready" means all ready within capacity. I would expose the cap but keep deterministic scheduling.
++
++Item 2, fully-unattended Phase 8 fix-up loop:
++
++Assessment: the loop needs a small machine contract in `review/consensus.md`, otherwise auto cannot distinguish "no fixes" from "not parsed". The drafter should own the contract because it already synthesizes reviews into consensus.
++
++Minimal implementation: require frontmatter in `review/consensus.md` with `outstanding_agreed_fixes: <int>` and optional `blocked: true|false`. Add `ReviewAgreedFixes(path) (count int, blocked bool, err error)`. In auto mode only, run review round N, draft consensus, request signoffs, stop on BLOCK, stop on zero fixes, otherwise run `RunFixup` by the implementer and then start review round N+1. Cap cycles with a manifest/run option defaulting to 3.
++
++Trade-off: frontmatter is easier to parse and test than fenced YAML but constrains consensus documents. "Applied" should mean the implementer produced its fix-up artifact and the next review consensus reports zero outstanding agreed fixes, not that the driver infers code correctness.
++
++Item 3, WinGet upstream PR:
++
++Assessment: infra-blocked. There are no GitHub releases for CLI v1.6.0, v1.7.0, v1.8.0, or v1.9.0; only git tags exist. The latest GitHub release is v1.5.4. The portable `.exe` assets are built by CI on release publication, so real `InstallerSha256` values do not exist yet.
++
++Minimal implementation: do not open a microsoft/winget-pkgs PR and do not invent hashes. The safe actionable step is to create GitHub releases from the existing tags, for example with `gh release create` using the existing tag metadata, wait for portable-build CI to attach immutable `.exe` assets, compute `InstallerSha256` from those assets, validate the WinGet manifest locally, then open the upstream PR.
++
++Trade-off: creating releases now unblocks packaging but may require release notes/signoff discipline. Waiting avoids accidental public release metadata churn but leaves WinGet blocked.
++
++Item 4, agy headless launch regression:
++
++Assessment: agy 1.0.4 can write artifacts in `--print` mode when given a directive prompt and scoped `--add-dir`; the observed `parley run` failure likely comes from broad repo exploration under a large root plus a long idea prompt. The fix should be launch-spec level and generic enough to avoid hard vendor coupling.
++
++Minimal implementation: add a generic write-first preamble for headless file-producing agents: immediately create the exact requested artifact path, include required frontmatter, avoid repository exploration unless explicitly necessary, and report blocker instead of narrating. Keep an agy launch-spec note only for its known `--print` behavior. Add stdout-capture fallback after process exit: if the artifact is missing and stdout parses as markdown starting with `---`, write stdout to the expected artifact path as agent-authored content and record the fallback in driver logs. Test with fake agents that either write the file, print valid markdown, print invalid markdown, or narrate without frontmatter.
++
++Trade-off: stdout fallback slightly broadens "agents write markdown", but the agent still authored the artifact bytes and the driver only places them at the mandated path. The fallback must reject invalid frontmatter to avoid converting narration into protocol artifacts.
++
++## Concerns / open questions
++
++For Item 1, the main open question is whether concurrency should default to all ready blocks or a bounded cap. I recommend a cap with deterministic scheduling because it is easier to test and safer for real agent quotas.
++
++For Item 2, consensus frontmatter should be mandatory only for auto-driven implementation blocks. Manual review consensus can remain human-readable, but auto must fail closed if the machine fields are absent.
++
++For Item 3, the human decision is whether creating GitHub releases from existing tags is acceptable now. My recommendation is yes, if release ownership approves public release creation; the upstream WinGet PR should wait.
++
++For Item 4, stdout fallback should be generic and guarded by strict validation, while agy-specific behavior should stay in launch discovery/spec metadata rather than scattered runner branches.
++
++## Risks
++
++Item 1 risks race conditions around shared `pipeline-run.json`, especially if multiple active blocks finish simultaneously. Use atomic cursor writes and a single driver-owned scheduler loop.
++
++Item 2 risks infinite or low-value fix-up churn. The max-cycle cap, BLOCK signoff stop, and required `outstanding_agreed_fixes` field are the safety controls.
++
++Item 3 risks shipping incorrect WinGet manifests if hashes are guessed or assets are mutable. Do not proceed without real release assets and verified hashes.
++
++Item 4 risks masking a broken agent by accepting narrative stdout. Strict `---` frontmatter validation and required protocol shape keep this fallback narrow.
+
+codex
+Wrote `/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md`
+diff --git a/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md b/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe0dbba02b49643fa567960e6b0e3cb966c166c7
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T21-54-52-continue-the-4-r/round-01/codex.md
+@@ -0,0 +1,71 @@
++---
++agent: codex
++idea: 2026-06-02T21-54-52-continue-the-4-r
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++All four follow-ups are feasible as additive changes except Item 3, which is infra-blocked. The implementation path should preserve the shipped 1.9.0 linear surface by defaulting new cursor fields to empty, keeping `current_block` populated, and treating production gates as non-bypassable in every new DAG and auto-drive path.
++
++Recommended build order:
++
++1. Item 4: agy launch robustness, because it stabilizes agent artifact creation for the rest of the pipeline work.
++2. Item 2: unattended Phase 8 loop, because it is mostly runner/review state and can be tested with fake agents before multi-active execution.
++3. Item 1: parallel multi-active DAG auto-drive, because it touches cursor semantics, status, scheduling, and gate interactions.
++4. Item 3: release infra step only; upstream WinGet PR waits for real immutable assets and hashes.
++
++## Proposed approach
++
++Item 1, parallel multi-active DAG auto-drive:
++
++Assessment: extend the DAG cursor without changing the linear contract. Add `ready_blocks []string` and `active_blocks []ActiveBlock` or `[]string` to `pipeline-run.json`, with zero-value defaulting during load. Keep `current_block` set to the first active block, or first ready block if none are active, in deterministic DAG order for existing status and linear commands.
++
++Minimal implementation: make `advanceDAG` compute all ready blocks whose dependencies are complete and whose inbound gates are resolved. Sort by manifest block order, then ID as a stable tie-breaker. `pipeline auto` should launch all ready blocks up to a configurable cap, defaulting to unbounded or a conservative `PARLEY_PIPELINE_MAX_CONCURRENCY` default of CPU count. Track per-block phase/round state under each block's existing artifacts, not in a shared mutable consensus field. Add a new status view that shows ready, active, blocked-by-gate, complete.
++
++Trade-off: unbounded concurrency maximizes throughput but can oversubscribe agents and produce noisy failures; a default cap is safer but means "all ready" means all ready within capacity. I would expose the cap but keep deterministic scheduling.
++
++Item 2, fully-unattended Phase 8 fix-up loop:
++
++Assessment: the loop needs a small machine contract in `review/consensus.md`, otherwise auto cannot distinguish "no fixes" from "not parsed". The drafter should own the contract because it already synthesizes reviews into consensus.
++
++Minimal implementation: require frontmatter in `review/consensus.md` with `outstanding_agreed_fixes: <int>` and optional `blocked: true|false`. Add `ReviewAgreedFixes(path) (count int, blocked bool, err error)`. In auto mode only, run review round N, draft consensus, request signoffs, stop on BLOCK, stop on zero fixes, otherwise run `RunFixup` by the implementer and then start review round N+1. Cap cycles with a manifest/run option defaulting to 3.
++
++Trade-off: frontmatter is easier to parse and test than fenced YAML but constrains consensus documents. "Applied" should mean the implementer produced its fix-up artifact and the next review consensus reports zero outstanding agreed fixes, not that the driver infers code correctness.
++
++Item 3, WinGet upstream PR:
++
++Assessment: infra-blocked. There are no GitHub releases for CLI v1.6.0, v1.7.0, v1.8.0, or v1.9.0; only git tags exist. The latest GitHub release is v1.5.4. The portable `.exe` assets are built by CI on release publication, so real `InstallerSha256` values do not exist yet.
++
++Minimal implementation: do not open a microsoft/winget-pkgs PR and do not invent hashes. The safe actionable step is to create GitHub releases from the existing tags, for example with `gh release create` using the existing tag metadata, wait for portable-build CI to attach immutable `.exe` assets, compute `InstallerSha256` from those assets, validate the WinGet manifest locally, then open the upstream PR.
++
++Trade-off: creating releases now unblocks packaging but may require release notes/signoff discipline. Waiting avoids accidental public release metadata churn but leaves WinGet blocked.
++
++Item 4, agy headless launch regression:
++
++Assessment: agy 1.0.4 can write artifacts in `--print` mode when given a directive prompt and scoped `--add-dir`; the observed `parley run` failure likely comes from broad repo exploration under a large root plus a long idea prompt. The fix should be launch-spec level and generic enough to avoid hard vendor coupling.
++
++Minimal implementation: add a generic write-first preamble for headless file-producing agents: immediately create the exact requested artifact path, include required frontmatter, avoid repository exploration unless explicitly necessary, and report blocker instead of narrating. Keep an agy launch-spec note only for its known `--print` behavior. Add stdout-capture fallback after process exit: if the artifact is missing and stdout parses as markdown starting with `---`, write stdout to the expected artifact path as agent-authored content and record the fallback in driver logs. Test with fake agents that either write the file, print valid markdown, print invalid markdown, or narrate without frontmatter.
++
++Trade-off: stdout fallback slightly broadens "agents write markdown", but the agent still authored the artifact bytes and the driver only places them at the mandated path. The fallback must reject invalid frontmatter to avoid converting narration into protocol artifacts.
++
++## Concerns / open questions
++
++For Item 1, the main open question is whether concurrency should default to all ready blocks or a bounded cap. I recommend a cap with deterministic scheduling because it is easier to test and safer for real agent quotas.
++
++For Item 2, consensus frontmatter should be mandatory only for auto-driven implementation blocks. Manual review consensus can remain human-readable, but auto must fail closed if the machine fields are absent.
++
++For Item 3, the human decision is whether creating GitHub releases from existing tags is acceptable now. My recommendation is yes, if release ownership approves public release creation; the upstream WinGet PR should wait.
++
++For Item 4, stdout fallback should be generic and guarded by strict validation, while agy-specific behavior should stay in launch discovery/spec metadata rather than scattered runner branches.
++
++## Risks
++
++Item 1 risks race conditions around shared `pipeline-run.json`, especially if multiple active blocks finish simultaneously. Use atomic cursor writes and a single driver-owned scheduler loop.
++
++Item 2 risks infinite or low-value fix-up churn. The max-cycle cap, BLOCK signoff stop, and required `outstanding_agreed_fixes` field are the safety controls.
++
++Item 3 risks shipping incorrect WinGet manifests if hashes are guessed or assets are mutable. Do not proceed without real release assets and verified hashes.
++
++Item 4 risks masking a broken agent by accepting narrative stdout. Strict `---` frontmatter validation and required protocol shape keep this fallback narrow.
+
+tokens used
+18,536

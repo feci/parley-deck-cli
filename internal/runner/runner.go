@@ -34,6 +34,9 @@ type Options struct {
 	// ArtifactName, when set, makes the agent write idea.Path/<ArtifactName>
 	// (e.g. IMPLEMENTATION.md) instead of the per-agent round path.
 	ArtifactName string
+	// Overwrite allows re-running an agent even if its artifact already exists
+	// (used for per-cycle review-consensus re-drafts). Off by default.
+	Overwrite bool
 }
 
 type Result struct {
@@ -225,7 +228,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		StartedAt:  now,
 	}
 
-	if _, err := os.Stat(outputPath); err == nil {
+	if _, err := os.Stat(outputPath); err == nil && !opts.Overwrite {
 		result.Skipped = true
 		result.SkipReason = "artifact already exists"
 		result.CompletedAt = time.Now().UTC()
@@ -308,6 +311,35 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		}
 	}
 
+	// stdout-capture fallback: some print-only CLIs (e.g. agy --print) emit the
+	// artifact to stdout instead of writing the file. If the file is absent but
+	// captured stdout is a plausible artifact (starts with the YAML frontmatter
+	// fence), persist it as the agent-authored artifact. Strict "---" validation
+	// keeps narration from becoming a protocol file.
+	if _, statErr := os.Stat(outputPath); os.IsNotExist(statErr) {
+		if data, readErr := os.ReadFile(stdoutPath); readErr == nil && firstLineIsFence(data) {
+			// Validate a CANDIDATE before placing it at the protocol path, so a
+			// malformed print-only response never poisons the artifact path.
+			tmp := outputPath + ".stdout-candidate"
+			if writeErr := os.WriteFile(tmp, data, 0o644); writeErr == nil {
+				if validateArtifactForPhase(opts, tmp, agent.ID) == nil {
+					if renameErr := os.Rename(tmp, outputPath); renameErr == nil {
+						result.Warning = "artifact recovered from stdout (print-only agent)"
+						_ = opts.Store.Append(store.Event{
+							Time: time.Now().UTC(),
+							Type: "agent.stdout_fallback",
+							Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
+						})
+					} else {
+						_ = os.Remove(tmp)
+					}
+				} else {
+					_ = os.Remove(tmp) // invalid candidate -> leave no protocol artifact
+				}
+			}
+		}
+	}
+
 	if _, statErr := os.Stat(outputPath); statErr == nil {
 		if validateErr := validateArtifactForPhase(opts, outputPath, agent.ID); validateErr != nil {
 			result.ExitError = combineError(result.ExitError, validateErr)
@@ -376,6 +408,7 @@ func BuildRoundOnePrompt(agent agents.Discovery, idea protocol.IdeaStatus, task,
 
 Rules:
 - Create exactly this file and no other protocol artifact: %s
+- Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
 - Do not read or reference other agents' round-01 answers.
@@ -430,6 +463,17 @@ func roundLabel(n int) string {
 	return fmt.Sprintf("round-%02d", n)
 }
 
+// firstLineIsFence reports whether the first line is exactly the YAML frontmatter
+// fence "---". Unlike a prefix check it does not accept leading narration, so a
+// stdout stream that merely contains "---" somewhere is rejected.
+func firstLineIsFence(data []byte) bool {
+	s := string(data)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	return strings.TrimRight(s, "\r ") == "---"
+}
+
 // RunRound runs cross-review round N (N>=2) for an idea; round 1 uses
 // RunRoundOne. It seeds each participant with the prior rounds' artifacts and
 // writes round-NN/<agent>.md, reusing the same launch/validation machinery.
@@ -453,6 +497,12 @@ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, quest
 			return "", err
 		}
 		return BuildReviewPrompt(agent, opts.Idea, roundNumber(opts), outputPath, ctx), nil
+	case "review-consensus":
+		ctx, err := gatherReviewContext(opts.Idea.Path, roundNumber(opts)+1)
+		if err != nil {
+			return "", err
+		}
+		return BuildReviewConsensusPrompt(agent, opts.Idea, outputPath, ctx), nil
 	}
 	if roundNumber(opts) <= 1 {
 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
@@ -504,6 +554,7 @@ func BuildRoundPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round in
 
 Rules:
 - Create exactly this file and no other protocol artifact: %s
+- Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
 - READ every prior-round artifact below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus.
