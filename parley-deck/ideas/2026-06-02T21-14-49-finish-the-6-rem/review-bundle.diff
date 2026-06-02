@@ -1,0 +1,1626 @@
+diff --git a/internal/app/pipeline_cmd.go b/internal/app/pipeline_cmd.go
+index 25f9ba9..e56dfea 100644
+--- a/internal/app/pipeline_cmd.go
++++ b/internal/app/pipeline_cmd.go
+@@ -42,7 +42,7 @@ func launchBlockRound(ctx context.Context, root, deck, slug, blockID string, par
+ }
+ 
+ func printPipelineUsage(w io.Writer) {
+-	fmt.Fprintln(w, "usage: parley pipeline validate MANIFEST | start [--dir DIR] MANIFEST | status [--dir DIR] SLUG | run-block [--dir DIR] [--participants IDS] [--round N] [--yes] SLUG | continue [--dir DIR] SLUG | auto [--dir DIR] [--rounds N] [--max-blocks M] [--drafter ID] [--participants IDS] [--yes] SLUG | execute [--dir DIR] [--provider P] [--dry-run] SLUG BLOCK CAPABILITY TARGET | record-effect [--dir DIR] --status STATUS [--external-ref REF] SLUG DIGEST | gate approve|reject [--dir DIR] [--by WHO] SLUG EDGE")
++	fmt.Fprintln(w, "usage: parley pipeline validate MANIFEST | start [--dir DIR] MANIFEST | status [--dir DIR] SLUG | run-block [--dir DIR] [--participants IDS] [--round N] [--yes] SLUG | continue [--dir DIR] SLUG | auto [--dir DIR] [--rounds N] [--max-blocks M] [--drafter ID] [--participants IDS] [--yes] SLUG | watch [--dir DIR] [--spec FILE] --signals FILE [--once] SLUG | execute [--dir DIR] [--provider P] [--dry-run] [--json] SLUG BLOCK CAPABILITY TARGET | record-effect [--dir DIR] --status STATUS [--external-ref REF] SLUG DIGEST | gate approve|reject [--dir DIR] [--by WHO] SLUG EDGE")
+ }
+ 
+ func runPipeline(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+@@ -63,6 +63,8 @@ func runPipeline(ctx context.Context, args []string, stdout, stderr io.Writer) i
+ 		return runPipelineContinue(args[1:], stdout, stderr)
+ 	case "auto":
+ 		return runPipelineAuto(ctx, args[1:], stdout, stderr)
++	case "watch":
++		return runPipelineWatch(args[1:], stdout, stderr)
+ 	case "execute":
+ 		return runPipelineExecute(args[1:], stdout, stderr)
+ 	case "record-effect":
+@@ -431,14 +433,34 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
+ 			fmt.Fprintf(stderr, "auto failed: %v\n", err)
+ 			return 1
+ 		}
+-		if !done {
+-			if block.Kind != pipeline.KindDeliberation {
+-				fmt.Fprintf(stdout, "auto: reached %s block %q. auto drives deliberation blocks end-to-end; for this block run its rounds/consensus manually (action blocks: then `parley pipeline execute`; implementation: Phase 5-8), then re-run auto.\n", block.Kind, block.ID)
+-				return 0
++		// Action and implementation blocks are never auto-advanced past: their
++		// side effects (deploy) and code-review/fix-up are explicit gated steps.
++		if block.Kind == pipeline.KindAction {
++			if !done {
++				if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
++					return code
++				}
++			}
++			fmt.Fprintf(stdout, "auto: action block %q plan finalized. status=needs_human_gate — run `parley pipeline execute [--dry-run] [--json] --dir %s %s %s <capability> <target>` (production-gated) + `record-effect`, then `parley pipeline continue` to advance. auto never auto-executes or advances past an action block.\n", block.ID, *root, slug, block.ID)
++			return 0
++		}
++		if block.Kind == pipeline.KindImplementation {
++			if !done {
++				if code := autoDriveImplementationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *yes, stdout, stderr); code != 0 {
++					return code
++				}
+ 			}
++			fmt.Fprintf(stdout, "auto: implementation block %q — implementation + review round-01 done. status=needs_artifact — draft review/consensus.md (machine-readable agreed_fixes) + fix-up, then `parley pipeline continue`.\n", block.ID)
++			return 0
++		}
++		if !done {
++			// deliberation or watcher: drive Phase 1-4 to a finalized artifact.
+ 			if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
+ 				return code
+ 			}
++			if block.Kind == pipeline.KindWatcher {
++				fmt.Fprintf(stdout, "auto: watcher block %q spec finalized. Schedule `parley pipeline watch %s --signals <file>` (e.g. via cron) to evaluate SLOs.\n", block.ID, slug)
++			}
+ 		}
+ 
+ 		driver := pipeline.Driver{DeckDir: deck, Manifest: m, Now: time.Now()}
+@@ -537,28 +559,260 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
+ 	return 0
+ }
+ 
++// autoDriveImplementationBlock runs Phase 5 (implementation) and Phase 6
++// review round-01 for an implementation block using the runner. It stops before
++// review consensus + fix-up (human-guided). Returns 0 on success.
++func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, block pipeline.Block, participantsFlag, drafter string, yes bool, stdout, stderr io.Writer) int {
++	discovered, err := discoverConfigured(ctx, root)
++	if err != nil {
++		fmt.Fprintf(stderr, "auto: agent config failed: %v\n", err)
++		return 1
++	}
++	pArg := participantsFlag
++	if strings.TrimSpace(pArg) == "" {
++		if m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug)); err == nil {
++			pArg = strings.Join(m.Participants, ",")
++		}
++	}
++	participants, err := selectedParticipantIDs(discovered, pArg)
++	if err != nil {
++		fmt.Fprintf(stderr, "auto: participant selection failed: %v\n", err)
++		return 1
++	}
++	if len(participants) == 0 {
++		fmt.Fprintln(stderr, "auto: no installed participants for this block (capability halt, §12.9)")
++		return 1
++	}
++	implementer := drafter
++	if implementer == "" {
++		implementer = participants[0]
++	}
++	blockWS := pipeline.BlockWorkspace(deck, slug, block.ID)
++	idea := protocol.IdeaStatus{Slug: slug + "__" + block.ID, Path: blockWS}
++
++	if _, statErr := os.Stat(filepath.Join(blockWS, "IMPLEMENTATION.md")); os.IsNotExist(statErr) {
++		fmt.Fprintf(stdout, "auto: block %q Phase 5 implementation by %s\n", block.ID, implementer)
++		ideaImpl := idea
++		ideaImpl.Participants = []string{implementer}
++		runID := fmt.Sprintf("pipe-%s-impl-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
++		res := runner.RunImplementation(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaImpl, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})
++		if res.ExitError != "" || !res.ArtifactOK {
++			fmt.Fprintf(stderr, "auto: implementation failed: %s\n", res.ExitError)
++			return 1
++		}
++	}
++
++	reviewers := make([]string, 0, len(participants))
++	for _, p := range participants {
++		if p != implementer {
++			reviewers = append(reviewers, p)
++		}
++	}
++	if len(reviewers) == 0 {
++		fmt.Fprintf(stdout, "auto: block %q has no non-implementer reviewer; Phase 6 needs another agent (non-solo review).\n", block.ID)
++		return 0
++	}
++	if _, statErr := os.Stat(filepath.Join(blockWS, "review", "round-01")); os.IsNotExist(statErr) {
++		fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-01 (%s)\n", block.ID, strings.Join(reviewers, ", "))
++		ideaRev := idea
++		ideaRev.Participants = reviewers
++		runID := fmt.Sprintf("pipe-%s-rev01-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
++		if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaRev, Round: 1, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})) {
++			return 1
++		}
++	}
++	return 0
++}
++
++// runPipelineWatch performs one monitoring evaluation pass (§12.11): it loads a
++// structured watcher spec + current signal values, raises breaches, dedupes
++// them against persisted records, opens a remediation idea ONLY for predeclared
++// low-risk classes, and marks recovered breaches resolved. Periodic execution
++// is the caller's cron/scheduler invoking this repeatedly (one pass each).
++func runPipelineWatch(args []string, stdout, stderr io.Writer) int {
++	fs := flag.NewFlagSet("pipeline watch", flag.ContinueOnError)
++	fs.SetOutput(stderr)
++	root := fs.String("dir", ".", "workspace directory")
++	specPath := fs.String("spec", "", "monitoring spec YAML (default: pipelines/<slug>/monitoring.yaml)")
++	signalsPath := fs.String("signals", "", "JSON file of {signal: number} current values")
++	fs.Bool("once", true, "evaluate a single pass (the only mode; schedule repeats via cron)")
++	if err := fs.Parse(args); err != nil {
++		return 2
++	}
++	if fs.NArg() != 1 || strings.TrimSpace(*signalsPath) == "" {
++		fmt.Fprintln(stderr, "usage: parley pipeline watch [--dir DIR] [--spec FILE] --signals FILE [--once] SLUG")
++		return 2
++	}
++	deck := deckDirFor(*root)
++	slug := fs.Arg(0)
++	spec := *specPath
++	if spec == "" {
++		spec = filepath.Join(pipeline.PipelineDir(deck, slug), "monitoring.yaml")
++	}
++	m, err := pipeline.LoadMonitoring(spec)
++	if err != nil {
++		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++		return 1
++	}
++	if m.PipelineSlug == "" {
++		m.PipelineSlug = slug
++	}
++	values, err := pipeline.FileSignalSource{Path: *signalsPath}.Values()
++	if err != nil {
++		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++		return 1
++	}
++	now := time.Now()
++	breaches, err := pipeline.EvaluateBreaches(m, values, now)
++	if err != nil {
++		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++		return 1
++	}
++
++	priorOpen, err := pipeline.ListOpenBreaches(deck, slug)
++	if err != nil {
++		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++		return 1
++	}
++
++	current := map[string]bool{}
++	newCount, dedupCount, autoOpened, notified := 0, 0, 0, 0
++	for _, b := range breaches {
++		fp := b.Fingerprint()
++		current[fp] = true
++		rec, exists, err := pipeline.LoadBreachRecord(deck, slug, fp)
++		if err != nil {
++			fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++			return 1
++		}
++		if exists && rec.Status != pipeline.BreachResolved {
++			rec.LastSeen = now
++			rec.Breach = b
++			dedupCount++
++			_ = pipeline.SaveBreachRecord(deck, rec)
++			continue
++		}
++		rec = pipeline.BreachRecord{Fingerprint: fp, PipelineSlug: slug, Breach: b, FirstSeen: now, LastSeen: now, Status: pipeline.BreachNotified}
++		newCount++
++		if m.CanAutoOpen(b) {
++			ideaSlug, err := openRemediationIdea(deck, slug, b, fp, now)
++			if err != nil {
++				fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++				return 1
++			}
++			rec.Status = pipeline.BreachOpen
++			rec.RemediationIdea = ideaSlug
++			autoOpened++
++			fmt.Fprintf(stdout, "breach %s (%s %s, class=%s): auto-opened low-risk remediation idea %s\n", fp, b.Signal, b.Threshold, b.Class, ideaSlug)
++		} else {
++			notified++
++			fmt.Fprintf(stdout, "breach %s (%s %s, class=%s): notify+gate (no auto-remediation; not a low-risk class)\n", fp, b.Signal, b.Threshold, b.Class)
++		}
++		if err := pipeline.SaveBreachRecord(deck, rec); err != nil {
++			fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++			return 1
++		}
++	}
++
++	resolved := 0
++	for fp, rec := range priorOpen {
++		if current[fp] {
++			continue
++		}
++		rec.Status = pipeline.BreachResolved
++		rec.LastSeen = now
++		if err := pipeline.SaveBreachRecord(deck, rec); err != nil {
++			fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
++			return 1
++		}
++		resolved++
++		fmt.Fprintf(stdout, "breach %s resolved (signal recovered)\n", fp)
++	}
++
++	fmt.Fprintf(stdout, "watch %s: %d breach(es) — %d new (%d auto-remediation, %d notify), %d ongoing, %d resolved\n", slug, len(breaches), newCount, autoOpened, notified, dedupCount, resolved)
++	return 0
++}
++
++// openRemediationIdea creates a gated remediation idea linked back to the
++// pipeline and the triggering breach fingerprint.
++func openRemediationIdea(deck, slug string, b pipeline.Breach, fp string, now time.Time) (string, error) {
++	ideaSlug := slug + "__remediation-" + fp
++	dir := filepath.Join(deck, "ideas", ideaSlug)
++	if err := os.MkdirAll(filepath.Join(dir, "round-01"), 0o755); err != nil {
++		return "", err
++	}
++	prompt := fmt.Sprintf(`---
++idea: %s
++author: watcher
++created: %s
++participants: []
++status: round-01
++pipeline_slug: %s
++breach_fingerprint: %s
++derived_from: [pipelines/%s/monitoring.yaml]
++---
++
++## Problem / idea
++
++Auto-opened by the §12.11 monitoring watcher for pipeline %q after a predeclared low-risk SLO breach.
++
++- signal: %s
++- target: %s
++- breach threshold: %s
++- observed: %s
++- breach class: %s (low-risk, auto-open permitted)
++
++Remediation work itself remains gated: any production mutation must still go through an action block's non-bypassable production gate.
++
++## Constraints
++## Non-goals
++`, ideaSlug, now.Format("2006-01-02"), slug, fp, slug, slug, b.Signal, b.Target, b.Threshold, b.Observed, b.Class)
++	if err := os.WriteFile(filepath.Join(dir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
++		return "", err
++	}
++	return ideaSlug, nil
++}
++
+ // runPipelineExecute is the §12.10 execute sub-phase for action blocks. It
+ // validates preconditions (action plan finalized; production gate approved for
+ // production capabilities), plans the concrete provider call, and records the
+ // effect ledger entry. The Go CLI does NOT perform the side effect — it emits
+ // the ProviderCall for the driver/harness to execute via MCP, preserving the
+ // agents-write-markdown / driver-executes boundary (§12.4).
++// ExecuteJSON is the versioned machine-readable output of `pipeline execute
++// --json` (schema_version 1). An external driver/harness consumes it, performs
++// the MCP call when the gate permits, then calls `record-effect`.
++type ExecuteJSON struct {
++	SchemaVersion  int                    `json:"schema_version"`
++	Status         string                 `json:"status"` // dry_run|pending_gate|ready_for_harness
++	ProviderCall   *pipeline.ProviderCall `json:"provider_call,omitempty"`
++	EffectDigest   string                 `json:"effect_digest,omitempty"`
++	IdempotencyKey string                 `json:"idempotency_key,omitempty"`
++	Gate           executeGateJSON        `json:"gate"`
++}
++
++type executeGateJSON struct {
++	Required bool   `json:"required"`
++	State    string `json:"state"` // open|approved|not_required
++}
++
+ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
+ 	fs := flag.NewFlagSet("pipeline execute", flag.ContinueOnError)
+ 	fs.SetOutput(stderr)
+ 	root := fs.String("dir", ".", "workspace directory")
+ 	providerName := fs.String("provider", "vercel", "provider (vercel|noop)")
+ 	dryRun := fs.Bool("dry-run", false, "plan only; never mutate")
++	jsonOut := fs.Bool("json", false, "emit a machine-readable execution plan for an external harness")
+ 	if err := fs.Parse(args); err != nil {
+ 		return 2
+ 	}
+ 	if fs.NArg() != 4 {
+-		fmt.Fprintln(stderr, "usage: parley pipeline execute [--dir DIR] [--provider P] [--dry-run] SLUG BLOCK CAPABILITY TARGET")
++		fmt.Fprintln(stderr, "usage: parley pipeline execute [--dir DIR] [--provider P] [--dry-run] [--json] SLUG BLOCK CAPABILITY TARGET")
+ 		return 2
+ 	}
+ 	deck := deckDirFor(*root)
+ 	slug, blockID, capability, target := fs.Arg(0), fs.Arg(1), fs.Arg(2), fs.Arg(3)
+-	cap := pipeline.Capability(capability)
++	capName := pipeline.Capability(capability)
+ 
+ 	m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug))
+ 	if err != nil {
+@@ -589,14 +843,24 @@ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
+ 		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+ 		return 1
+ 	}
+-	if !prov.Supports(cap) {
+-		fmt.Fprintf(stderr, "pipeline execute failed: provider %q does not support %q (capability halt, §12.9)\n", prov.Name(), cap)
++	if !prov.Supports(capName) {
++		fmt.Fprintf(stderr, "pipeline execute failed: provider %q does not support %q (capability halt, §12.9)\n", prov.Name(), capName)
+ 		return 1
+ 	}
+ 
+ 	now := time.Now()
++	risk := block.Risk
++	if capName.IsProduction() {
++		risk = pipeline.RiskProduction
++	}
++	reqHash := pipeline.HashRequest([]byte(target))
++	key := pipeline.IdempotencyKey(slug, blockID, prov.Name(), string(capName), target, reqHash)
++	digest := pipeline.KeyDigest(key)
++
++	gateRequired := capName.IsProduction()
+ 	gateApproved := false
+-	if cap.IsProduction() && !*dryRun {
++	gateState := "not_required"
++	if gateRequired && !*dryRun {
+ 		edge := pipeline.EdgeID(blockID, "execute")
+ 		g, exists, err := pipeline.LoadGate(deck, slug, edge)
+ 		if err != nil {
+@@ -609,48 +873,43 @@ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
+ 				fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+ 				return 1
+ 			}
+-			fmt.Fprintf(stdout, "production execution requires approval (non-bypassable, §12.8).\n  approve with: parley pipeline gate approve --dir %s %s %s\n", *root, slug, edge)
+-			return 0
++			return emitExecutePendingGate(*jsonOut, stdout, *root, slug, edge, key, digest)
+ 		}
+ 		switch g.Status {
+ 		case pipeline.GateOpen:
+-			fmt.Fprintf(stdout, "awaiting production gate approval. approve with: parley pipeline gate approve --dir %s %s %s\n", *root, slug, edge)
+-			return 0
++			return emitExecutePendingGate(*jsonOut, stdout, *root, slug, edge, key, digest)
+ 		case pipeline.GateRejected:
+ 			fmt.Fprintf(stderr, "pipeline execute failed: production gate %s was rejected\n", edge)
+ 			return 1
+ 		case pipeline.GateApproved:
+ 			gateApproved = true
++			gateState = "approved"
+ 		}
+ 	}
+ 
+-	call, err := prov.Plan(pipeline.ActionRequest{Capability: cap, Target: target, DryRun: *dryRun, GateApproved: gateApproved})
++	call, err := prov.Plan(pipeline.ActionRequest{Capability: capName, Target: target, DryRun: *dryRun, GateApproved: gateApproved})
+ 	if err != nil {
+ 		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+ 		return 1
+ 	}
+ 
+-	risk := block.Risk
+-	if cap.IsProduction() {
+-		risk = pipeline.RiskProduction
+-	}
+-	reqHash := pipeline.HashRequest([]byte(target))
+-	key := pipeline.IdempotencyKey(slug, blockID, prov.Name(), string(cap), target, reqHash)
+ 	eff, exists, err := pipeline.LoadEffect(deck, slug, key)
+ 	if err != nil {
+ 		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+ 		return 1
+ 	}
+ 	if !exists {
+-		eff = pipeline.NewEffect(slug, blockID, prov.Name(), string(cap), target, reqHash, risk, now)
++		eff = pipeline.NewEffect(slug, blockID, prov.Name(), string(capName), target, reqHash, risk, now)
+ 	}
+ 	if eff.NeedsReconcile() {
+-		fmt.Fprintf(stderr, "pipeline execute blocked: effect %s is %s (external_ref %q); reconcile with record-effect before re-attempting (§12.7)\n", pipeline.KeyDigest(key), eff.Status, eff.ExternalRef)
++		fmt.Fprintf(stderr, "pipeline execute blocked: effect %s is %s (external_ref %q); reconcile with record-effect before re-attempting (§12.7)\n", digest, eff.Status, eff.ExternalRef)
+ 		return 1
+ 	}
++	status := "ready_for_harness"
+ 	if *dryRun {
+ 		eff.DryRunResult = "planned (dry-run)"
+ 		eff.Advance(pipeline.EffectDryRunOK, "", "dry-run planned", now)
++		status = "dry_run"
+ 	} else {
+ 		eff.Advance(pipeline.EffectExecuting, "", "planned for harness execution", now)
+ 	}
+@@ -659,12 +918,45 @@ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
+ 		return 1
+ 	}
+ 
++	if *jsonOut {
++		out := ExecuteJSON{
++			SchemaVersion:  1,
++			Status:         status,
++			ProviderCall:   &call,
++			EffectDigest:   digest,
++			IdempotencyKey: key,
++			Gate:           executeGateJSON{Required: gateRequired, State: gateState},
++		}
++		b, _ := json.MarshalIndent(out, "", "  ")
++		fmt.Fprintln(stdout, string(b))
++		return 0
++	}
++
+ 	callJSON, _ := json.MarshalIndent(call, "", "  ")
+-	fmt.Fprintf(stdout, "effect %s -> %s (risk=%s)\n", pipeline.KeyDigest(key), eff.Status, risk)
++	fmt.Fprintf(stdout, "effect %s -> %s (risk=%s)\n", digest, eff.Status, risk)
+ 	fmt.Fprintf(stdout, "ProviderCall (the driver/harness performs this via MCP; the CLI does not):\n%s\n", callJSON)
+ 	if !*dryRun {
+-		fmt.Fprintf(stdout, "after the harness runs it, record the result:\n  parley pipeline record-effect --dir %s --status succeeded --external-ref <ref> %s %s\n", *root, slug, pipeline.KeyDigest(key))
++		fmt.Fprintf(stdout, "after the harness runs it, record the result:\n  parley pipeline record-effect --dir %s --status succeeded --external-ref <ref> %s %s\n", *root, slug, digest)
++	}
++	return 0
++}
++
++// emitExecutePendingGate reports that a production gate must be approved before
++// execution, in JSON or human form.
++func emitExecutePendingGate(jsonOut bool, stdout io.Writer, root, slug, edge, key, digest string) int {
++	if jsonOut {
++		out := ExecuteJSON{
++			SchemaVersion:  1,
++			Status:         "pending_gate",
++			EffectDigest:   digest,
++			IdempotencyKey: key,
++			Gate:           executeGateJSON{Required: true, State: "open"},
++		}
++		b, _ := json.MarshalIndent(out, "", "  ")
++		fmt.Fprintln(stdout, string(b))
++		return 0
+ 	}
++	fmt.Fprintf(stdout, "production execution requires approval (non-bypassable, §12.8).\n  approve with: parley pipeline gate approve --dir %s %s %s\n", root, slug, edge)
+ 	return 0
+ }
+ 
+diff --git a/internal/app/pipeline_cmd_test.go b/internal/app/pipeline_cmd_test.go
+index 7f0f7bb..6245ada 100644
+--- a/internal/app/pipeline_cmd_test.go
++++ b/internal/app/pipeline_cmd_test.go
+@@ -67,6 +67,49 @@ func TestPipelineAutoWalksToDoneUnderAutoLeft(t *testing.T) {
+ 	}
+ }
+ 
++func TestPipelineAutoStopsAtActionBlockNeedsHumanGate(t *testing.T) {
++	ws := t.TempDir()
++	if err := os.MkdirAll(filepath.Join(ws, "parley-deck"), 0o755); err != nil {
++		t.Fatal(err)
++	}
++	manifest := filepath.Join(ws, "pipeline.yaml")
++	writeFile(t, manifest, `schema_version: 1
++idea_slug: act-demo
++transport: local-dir
++autonomy: auto-left
++participants: [codex, claude]
++blocks:
++  - {id: spec, kind: deliberation, output_artifact: SPEC.md}
++  - {id: deploy, kind: action, output_artifact: DEPLOYMENT.md}
++`)
++	var out, errOut bytes.Buffer
++	if code := Run([]string{"pipeline", "start", "--dir", ws, manifest}, &out, &errOut); code != 0 {
++		t.Fatalf("start exit=%d err=%s", code, errOut.String())
++	}
++	final := "---\nstatus: final\n---\n\ndone\n"
++	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "act-demo__spec", "FINAL.md"), final)
++	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "act-demo__deploy", "FINAL.md"), final)
++
++	out.Reset()
++	code := Run([]string{"pipeline", "auto", "--dir", ws, "--yes", "act-demo"}, &out, &errOut)
++	if code != 0 {
++		t.Fatalf("auto exit=%d err=%s out=%s", code, errOut.String(), out.String())
++	}
++	if !strings.Contains(out.String(), "needs_human_gate") || !strings.Contains(out.String(), "action block") {
++		t.Fatalf("auto should stop at action block with needs_human_gate, got:\n%s", out.String())
++	}
++	// It advanced past the deliberation block to the action block, but must NOT
++	// have completed the pipeline or executed anything.
++	var statusOut bytes.Buffer
++	Run([]string{"pipeline", "status", "--dir", ws, "act-demo"}, &statusOut, &errOut)
++	if strings.Contains(statusOut.String(), "status=completed") {
++		t.Fatalf("pipeline must not complete past an unexecuted action block:\n%s", statusOut.String())
++	}
++	if !strings.Contains(statusOut.String(), "current=deploy") {
++		t.Fatalf("expected current=deploy, got:\n%s", statusOut.String())
++	}
++}
++
+ func TestPipelineAutoPausesAtSupervisedGate(t *testing.T) {
+ 	ws := startAndFinalize(t, "supervised")
+ 	var out, errOut bytes.Buffer
+diff --git a/internal/pipeline/dag.go b/internal/pipeline/dag.go
+new file mode 100644
+index 0000000..56c1041
+--- /dev/null
++++ b/internal/pipeline/dag.go
+@@ -0,0 +1,55 @@
++package pipeline
++
++// ReadyBlocks returns the IDs of blocks that may run next: not yet completed,
++// with every inbound edge originating from a completed block AND that edge's
++// gate approved. A block with no inbound edges (a root) is ready immediately.
++// gateApproved is consulted per edge id (EdgeID(from,to)); pass a function that
++// returns true when no gate is required.
++//
++// For a linear manifest this yields the single next incomplete block, so the
++// same engine serves both linear and DAG execution.
++func (m Manifest) ReadyBlocks(completed []string, gateApproved func(edgeID string) bool) []string {
++	done := make(map[string]bool, len(completed))
++	for _, c := range completed {
++		done[c] = true
++	}
++	incoming := make(map[string][]Edge, len(m.Blocks))
++	for _, e := range m.Edges {
++		incoming[e.To] = append(incoming[e.To], e)
++	}
++	var ready []string
++	for _, b := range m.Blocks {
++		if done[b.ID] {
++			continue
++		}
++		blocked := false
++		for _, e := range incoming[b.ID] {
++			if !done[e.From] {
++				blocked = true
++				break
++			}
++			if gateApproved != nil && !gateApproved(EdgeID(e.From, e.To)) {
++				blocked = true
++				break
++			}
++		}
++		if !blocked {
++			ready = append(ready, b.ID)
++		}
++	}
++	return ready
++}
++
++// AllBlocksComplete reports whether every block id is in completed.
++func (m Manifest) AllBlocksComplete(completed []string) bool {
++	done := make(map[string]bool, len(completed))
++	for _, c := range completed {
++		done[c] = true
++	}
++	for _, b := range m.Blocks {
++		if !done[b.ID] {
++			return false
++		}
++	}
++	return true
++}
+diff --git a/internal/pipeline/dag_test.go b/internal/pipeline/dag_test.go
+new file mode 100644
+index 0000000..73f263d
+--- /dev/null
++++ b/internal/pipeline/dag_test.go
+@@ -0,0 +1,173 @@
++package pipeline
++
++import "testing"
++
++const dagYAML = `
++schema_version: 1
++idea_slug: dag-demo
++transport: local-dir
++execution: dag
++participants: [codex, claude]
++blocks:
++  - {id: spec, kind: deliberation}
++  - {id: api, kind: deliberation}
++  - {id: ui, kind: deliberation}
++  - {id: integrate, kind: deliberation}
++edges:
++  - {from: spec, to: api}
++  - {from: spec, to: ui}
++  - {from: api, to: integrate}
++  - {from: ui, to: integrate}
++`
++
++func TestDAGManifestParses(t *testing.T) {
++	m, err := Parse([]byte(dagYAML))
++	if err != nil {
++		t.Fatalf("valid DAG rejected: %v", err)
++	}
++	if !m.IsDAG() {
++		t.Fatal("expected IsDAG")
++	}
++}
++
++func TestDAGRejectsCycle(t *testing.T) {
++	y := `
++schema_version: 1
++idea_slug: cyc
++transport: local-dir
++execution: dag
++participants: [a, b]
++blocks:
++  - {id: x, kind: deliberation}
++  - {id: y, kind: deliberation}
++edges:
++  - {from: x, to: y}
++  - {from: y, to: x}
++`
++	if _, err := Parse([]byte(y)); err == nil {
++		t.Fatal("expected cycle to be rejected")
++	}
++}
++
++func TestDAGRejectsUnknownEndpoint(t *testing.T) {
++	y := `
++schema_version: 1
++idea_slug: bad
++transport: local-dir
++execution: dag
++participants: [a, b]
++blocks:
++  - {id: x, kind: deliberation}
++edges:
++  - {from: x, to: ghost}
++`
++	if _, err := Parse([]byte(y)); err == nil {
++		t.Fatal("expected unknown endpoint to be rejected")
++	}
++}
++
++func TestReadyBlocksFanOutAndJoin(t *testing.T) {
++	m, err := Parse([]byte(dagYAML))
++	if err != nil {
++		t.Fatal(err)
++	}
++	allGatesOK := func(string) bool { return true }
++
++	// Nothing done: only the root "spec" is ready.
++	ready := m.ReadyBlocks(nil, allGatesOK)
++	if len(ready) != 1 || ready[0] != "spec" {
++		t.Fatalf("initial ready = %v, want [spec]", ready)
++	}
++	// spec done: api and ui both become ready (fan-out).
++	ready = m.ReadyBlocks([]string{"spec"}, allGatesOK)
++	if len(ready) != 2 {
++		t.Fatalf("after spec ready = %v, want [api ui]", ready)
++	}
++	// api+ui done: integrate ready (join).
++	ready = m.ReadyBlocks([]string{"spec", "api", "ui"}, allGatesOK)
++	if len(ready) != 1 || ready[0] != "integrate" {
++		t.Fatalf("join ready = %v, want [integrate]", ready)
++	}
++	// Only api done: integrate NOT ready (ui still pending).
++	ready = m.ReadyBlocks([]string{"spec", "api"}, allGatesOK)
++	for _, r := range ready {
++		if r == "integrate" {
++			t.Fatal("integrate must not be ready until both api and ui complete")
++		}
++	}
++	if m.AllBlocksComplete([]string{"spec", "api", "ui"}) {
++		t.Fatal("not all complete yet")
++	}
++	if !m.AllBlocksComplete([]string{"spec", "api", "ui", "integrate"}) {
++		t.Fatal("should be all complete")
++	}
++}
++
++func TestReadyBlocksRespectsUnapprovedGate(t *testing.T) {
++	m, _ := Parse([]byte(dagYAML))
++	// spec done but the spec->api gate not approved: api blocked, ui (gate ok) ready.
++	ready := m.ReadyBlocks([]string{"spec"}, func(edge string) bool {
++		return edge != EdgeID("spec", "api")
++	})
++	for _, r := range ready {
++		if r == "api" {
++			t.Fatal("api must be blocked by its unapproved gate")
++		}
++	}
++}
++
++func TestPerBlockTransportOverride(t *testing.T) {
++	y := `
++schema_version: 1
++idea_slug: t
++transport: local-dir
++participants: [a, b]
++blocks:
++  - {id: b1, kind: deliberation}
++  - {id: b2, kind: deliberation, transport: github-pr}
++`
++	m, err := Parse([]byte(y))
++	if err != nil {
++		t.Fatalf("per-block transport rejected: %v", err)
++	}
++	if m.EffectiveTransport(m.Blocks[0]) != "local-dir" {
++		t.Fatalf("b1 transport = %q", m.EffectiveTransport(m.Blocks[0]))
++	}
++	if m.EffectiveTransport(m.Blocks[1]) != "github-pr" {
++		t.Fatalf("b2 transport = %q", m.EffectiveTransport(m.Blocks[1]))
++	}
++}
++
++func TestPerBlockTransportValidated(t *testing.T) {
++	y := `
++schema_version: 1
++idea_slug: t
++transport: local-dir
++participants: [a, b]
++blocks:
++  - {id: b1, kind: deliberation, transport: smoke-signals}
++`
++	if _, err := Parse([]byte(y)); err == nil {
++		t.Fatal("invalid per-block transport must be rejected")
++	}
++}
++
++func TestDeciderAutoApprovesLowRiskOnly(t *testing.T) {
++	// With a decider configured (hasDecider=true) under supervised autonomy:
++	if !AutoApproveWithDecider(AutonomySupervised, RiskLow, true) {
++		t.Fatal("decider should auto-approve low-risk")
++	}
++	if !AutoApproveWithDecider(AutonomySupervised, RiskNormal, true) {
++		t.Fatal("decider should auto-approve normal-risk")
++	}
++	if AutoApproveWithDecider(AutonomySupervised, RiskHigh, true) {
++		t.Fatal("decider must NOT auto-approve high-risk")
++	}
++	if AutoApproveWithDecider(AutonomySupervised, RiskProduction, true) {
++		t.Fatal("decider must NEVER auto-approve production")
++	}
++	// No decider, supervised: block-and-wait.
++	if AutoApproveWithDecider(AutonomySupervised, RiskLow, false) {
++		t.Fatal("no decider + supervised must block")
++	}
++}
+diff --git a/internal/pipeline/executor.go b/internal/pipeline/executor.go
+index da1e7be..df3c6da 100644
+--- a/internal/pipeline/executor.go
++++ b/internal/pipeline/executor.go
+@@ -106,8 +106,12 @@ func (d Driver) Advance(run *PipelineRun, complete BlockComplete) (AdvanceResult
+ 	}
+ 	if !exists {
+ 		gate = NewGate(run.PipelineSlug, cur.ID, next.ID, next.Risk, next.GatePolicy, d.Now)
+-		if AutoApprove(d.Manifest.Autonomy, next.Risk) {
+-			gate.Resolve(true, "policy:auto-left", d.Now)
++		if AutoApproveWithDecider(d.Manifest.Autonomy, next.Risk, d.Manifest.Decider != "") {
++			by := "policy:auto-left"
++			if d.Manifest.Decider != "" && d.Manifest.Autonomy != AutonomyAutoLeft {
++				by = "decider:" + d.Manifest.Decider
++			}
++			gate.Resolve(true, by, d.Now)
+ 		}
+ 		if err := SaveGate(d.DeckDir, gate); err != nil {
+ 			return AdvanceResult{}, err
+diff --git a/internal/pipeline/gate.go b/internal/pipeline/gate.go
+index be43b08..af32f09 100644
+--- a/internal/pipeline/gate.go
++++ b/internal/pipeline/gate.go
+@@ -39,17 +39,27 @@ type Gate struct {
+ // EdgeID is the stable identifier for the boundary between two blocks.
+ func EdgeID(from, to string) string { return from + "->" + to }
+ 
+-// AutoApprove reports whether a boundary gate may be resolved without a human.
+-//
+-// This is the single central policy evaluator (§12.8/§12.11): production-risk
+-// mutations are NEVER auto-approvable; under supervised autonomy nothing
+-// auto-approves; under auto-left only low-risk, non-production gates may.
++// AutoApprove reports whether a boundary gate may be resolved without a human
++// under the given autonomy, with no decider configured.
+ func AutoApprove(autonomy Autonomy, risk Risk) bool {
++	return AutoApproveWithDecider(autonomy, risk, false)
++}
++
++// AutoApproveWithDecider is the single central policy evaluator (§12.8/§12.11):
++// production-risk mutations are NEVER auto-approvable. Otherwise a low-risk /
++// normal, non-production boundary may auto-resolve either under auto-left
++// autonomy OR when a decider agent is configured. Supervised + no decider =
++// block-and-wait (default).
++func AutoApproveWithDecider(autonomy Autonomy, risk Risk, hasDecider bool) bool {
+ 	if risk == RiskProduction {
+ 		return false
+ 	}
+-	if autonomy == AutonomyAutoLeft {
+-		return risk == RiskLow || risk == "" || risk == RiskNormal
++	nonProdLow := risk == RiskLow || risk == "" || risk == RiskNormal
++	if autonomy == AutonomyAutoLeft && nonProdLow {
++		return true
++	}
++	if hasDecider && nonProdLow {
++		return true
+ 	}
+ 	return false
+ }
+diff --git a/internal/pipeline/manifest.go b/internal/pipeline/manifest.go
+index fb62a4f..64cb5b9 100644
+--- a/internal/pipeline/manifest.go
++++ b/internal/pipeline/manifest.go
+@@ -7,6 +7,7 @@ package pipeline
+ import (
+ 	"fmt"
+ 	"os"
++	"strings"
+ 
+ 	"gopkg.in/yaml.v3"
+ )
+@@ -54,6 +55,8 @@ type Block struct {
+ 	Risk                Risk      `yaml:"risk,omitempty" json:"risk,omitempty"`
+ 	ProviderCapabilities []string `yaml:"provider_capabilities,omitempty" json:"provider_capabilities,omitempty"`
+ 	GatePolicy          string    `yaml:"gate_policy,omitempty" json:"gate_policy,omitempty"`
++	// Transport optionally overrides the manifest transport for this block.
++	Transport           string    `yaml:"transport,omitempty" json:"transport,omitempty"`
+ }
+ 
+ // Edge is a reserved-for-future DAG edge (§12.3). A v1 driver accepts only a
+@@ -73,8 +76,28 @@ type Manifest struct {
+ 	Participants  []string `yaml:"participants" json:"participants"`
+ 	Blocks        []Block  `yaml:"blocks" json:"blocks"`
+ 	Edges         []Edge   `yaml:"edges,omitempty" json:"edges,omitempty"`
++	// Execution is "linear" (default) or "dag". A linear manifest keeps the
++	// strict single-chain edge rule; a dag manifest is validated as an acyclic
++	// graph and advanced by ready-set (§12.3, decided 2026-06-02).
++	Execution string `yaml:"execution,omitempty" json:"execution,omitempty"`
++	// Decider optionally names an agent authorized to auto-resolve ONLY
++	// low-risk, non-production boundary gates (§12.8). Production gates remain
++	// non-bypassable; block-and-wait stays the default with no decider.
++	Decider string `yaml:"decider,omitempty" json:"decider,omitempty"`
+ }
+ 
++// EffectiveTransport returns a block's transport: its override if set, else the
++// manifest transport (§12 per-block transport).
++func (m Manifest) EffectiveTransport(b Block) string {
++	if strings.TrimSpace(b.Transport) != "" {
++		return b.Transport
++	}
++	return m.Transport
++}
++
++// IsDAG reports whether the manifest opts into DAG execution.
++func (m Manifest) IsDAG() bool { return m.Execution == "dag" }
++
+ var validKinds = map[BlockKind]bool{
+ 	KindDeliberation: true, KindImplementation: true, KindAction: true, KindWatcher: true,
+ }
+@@ -145,9 +168,65 @@ func (m Manifest) Validate() error {
+ 		if b.Risk != "" && !validRisks[b.Risk] {
+ 			return fmt.Errorf("block %q: invalid risk %q", b.ID, b.Risk)
+ 		}
++		if b.Transport != "" && !validTransports[b.Transport] {
++			return fmt.Errorf("block %q: invalid transport %q (want local-dir|github-pr|gitlab-mr)", b.ID, b.Transport)
++		}
+ 	}
+ 
+-	return m.validateLinear()
++	switch m.Execution {
++	case "", "linear":
++		return m.validateLinear()
++	case "dag":
++		return m.validateDAG(seen)
++	default:
++		return fmt.Errorf("invalid execution %q (want linear|dag)", m.Execution)
++	}
++}
++
++// validateDAG checks edges form an acyclic graph with known endpoints. Unlike
++// linear, it permits branches and joins. Used when Execution == "dag".
++func (m Manifest) validateDAG(known map[string]bool) error {
++	adj := make(map[string][]string, len(m.Blocks))
++	indeg := make(map[string]int, len(m.Blocks))
++	for _, b := range m.Blocks {
++		indeg[b.ID] = 0
++	}
++	for i, e := range m.Edges {
++		if !known[e.From] {
++			return fmt.Errorf("edge %d: unknown from-block %q", i, e.From)
++		}
++		if !known[e.To] {
++			return fmt.Errorf("edge %d: unknown to-block %q", i, e.To)
++		}
++		if e.From == e.To {
++			return fmt.Errorf("edge %d: self-loop on %q", i, e.From)
++		}
++		adj[e.From] = append(adj[e.From], e.To)
++		indeg[e.To]++
++	}
++	// Kahn's algorithm for cycle detection.
++	queue := make([]string, 0, len(m.Blocks))
++	for _, b := range m.Blocks {
++		if indeg[b.ID] == 0 {
++			queue = append(queue, b.ID)
++		}
++	}
++	visited := 0
++	for len(queue) > 0 {
++		n := queue[0]
++		queue = queue[1:]
++		visited++
++		for _, to := range adj[n] {
++			indeg[to]--
++			if indeg[to] == 0 {
++				queue = append(queue, to)
++			}
++		}
++	}
++	if visited != len(m.Blocks) {
++		return fmt.Errorf("dag manifest has a cycle (visited %d of %d blocks)", visited, len(m.Blocks))
++	}
++	return nil
+ }
+ 
+ // validateLinear enforces §12.3 / §12.9: edges, if present, must describe the
+diff --git a/internal/pipeline/watch_eval.go b/internal/pipeline/watch_eval.go
+new file mode 100644
+index 0000000..c591596
+--- /dev/null
++++ b/internal/pipeline/watch_eval.go
+@@ -0,0 +1,202 @@
++package pipeline
++
++import (
++	"encoding/json"
++	"fmt"
++	"os"
++	"path/filepath"
++	"strconv"
++	"strings"
++	"time"
++
++	"gopkg.in/yaml.v3"
++)
++
++// SignalSource provides current values for monitored signals. It is an
++// interface so the watcher stays vendor-neutral; the default reads a JSON file.
++type SignalSource interface {
++	Values() (map[string]float64, error)
++}
++
++// FileSignalSource reads a JSON object of {signal_name: number} from disk.
++type FileSignalSource struct{ Path string }
++
++func (f FileSignalSource) Values() (map[string]float64, error) {
++	data, err := os.ReadFile(f.Path)
++	if err != nil {
++		return nil, fmt.Errorf("read signals: %w", err)
++	}
++	var out map[string]float64
++	if err := json.Unmarshal(data, &out); err != nil {
++		return nil, fmt.Errorf("parse signals: %w", err)
++	}
++	return out, nil
++}
++
++// LoadMonitoring reads a structured watcher spec (YAML) from disk.
++func LoadMonitoring(path string) (Monitoring, error) {
++	data, err := os.ReadFile(path)
++	if err != nil {
++		return Monitoring{}, fmt.Errorf("read monitoring spec: %w", err)
++	}
++	var m Monitoring
++	if err := yaml.Unmarshal(data, &m); err != nil {
++		return Monitoring{}, fmt.Errorf("parse monitoring spec: %w", err)
++	}
++	return m, nil
++}
++
++// breaches reports whether an observed value satisfies a threshold's BREACH
++// condition. Supported operators: >=, <=, >, <, ==, != followed by a number.
++func thresholdBreached(value float64, threshold string) (bool, error) {
++	t := strings.TrimSpace(threshold)
++	op := ""
++	for _, candidate := range []string{">=", "<=", "==", "!=", ">", "<"} {
++		if strings.HasPrefix(t, candidate) {
++			op = candidate
++			break
++		}
++	}
++	if op == "" {
++		return false, fmt.Errorf("threshold %q must start with one of >= <= == != > <", threshold)
++	}
++	bound, err := strconv.ParseFloat(strings.TrimSpace(t[len(op):]), 64)
++	if err != nil {
++		return false, fmt.Errorf("threshold %q has no numeric bound: %w", threshold, err)
++	}
++	switch op {
++	case ">=":
++		return value >= bound, nil
++	case "<=":
++		return value <= bound, nil
++	case ">":
++		return value > bound, nil
++	case "<":
++		return value < bound, nil
++	case "==":
++		return value == bound, nil
++	case "!=":
++		return value != bound, nil
++	}
++	return false, nil
++}
++
++// EvaluateBreaches returns one Breach per signal whose observed value satisfies
++// its threshold breach condition. Signals absent from values are skipped.
++func EvaluateBreaches(m Monitoring, values map[string]float64, now time.Time) ([]Breach, error) {
++	var out []Breach
++	for _, s := range m.Signals {
++		v, ok := values[s.Name]
++		if !ok {
++			continue
++		}
++		breached, err := thresholdBreached(v, s.Threshold)
++		if err != nil {
++			return nil, fmt.Errorf("signal %q: %w", s.Name, err)
++		}
++		if breached {
++			out = append(out, Breach{
++				Signal:    s.Name,
++				Target:    s.Target,
++				Threshold: s.Threshold,
++				Observed:  strconv.FormatFloat(v, 'f', -1, 64),
++				Class:     s.Class,
++				At:        now,
++			})
++		}
++	}
++	return out, nil
++}
++
++// BreachRecordStatus is the persisted lifecycle of a breach fingerprint.
++type BreachRecordStatus string
++
++const (
++	BreachOpen     BreachRecordStatus = "open"
++	BreachNotified BreachRecordStatus = "notified"
++	BreachResolved BreachRecordStatus = "resolved"
++)
++
++// BreachRecord persists a breach across watch passes so an ongoing breach is
++// deduplicated and a recovered one can be marked resolved (§12.11).
++type BreachRecord struct {
++	Fingerprint string             `json:"fingerprint"`
++	PipelineSlug string            `json:"pipeline_slug"`
++	Breach      Breach             `json:"breach"`
++	Status      BreachRecordStatus `json:"status"`
++	RemediationIdea string         `json:"remediation_idea,omitempty"`
++	FirstSeen   time.Time          `json:"first_seen"`
++	LastSeen    time.Time          `json:"last_seen"`
++}
++
++func breachDir(deckDir, slug string) string {
++	return filepath.Join(PipelineDir(deckDir, slug), "breaches")
++}
++
++func breachPath(deckDir, slug, fingerprint string) string {
++	return filepath.Join(breachDir(deckDir, slug), fingerprint+".json")
++}
++
++// LoadBreachRecord reads a persisted breach record; the bool reports existence.
++func LoadBreachRecord(deckDir, slug, fingerprint string) (BreachRecord, bool, error) {
++	data, err := os.ReadFile(breachPath(deckDir, slug, fingerprint))
++	if os.IsNotExist(err) {
++		return BreachRecord{}, false, nil
++	}
++	if err != nil {
++		return BreachRecord{}, false, fmt.Errorf("read breach record: %w", err)
++	}
++	var r BreachRecord
++	if err := json.Unmarshal(data, &r); err != nil {
++		return BreachRecord{}, false, fmt.Errorf("parse breach record: %w", err)
++	}
++	return r, true, nil
++}
++
++// SaveBreachRecord writes a breach record atomically.
++func SaveBreachRecord(deckDir string, r BreachRecord) error {
++	if err := os.MkdirAll(breachDir(deckDir, r.PipelineSlug), 0o755); err != nil {
++		return fmt.Errorf("create breaches dir: %w", err)
++	}
++	data, err := json.MarshalIndent(r, "", "  ")
++	if err != nil {
++		return fmt.Errorf("encode breach record: %w", err)
++	}
++	data = append(data, '\n')
++	path := breachPath(deckDir, r.PipelineSlug, r.Fingerprint)
++	tmp := path + ".tmp"
++	if err := os.WriteFile(tmp, data, 0o644); err != nil {
++		return fmt.Errorf("write breach record: %w", err)
++	}
++	if err := os.Rename(tmp, path); err != nil {
++		return fmt.Errorf("commit breach record: %w", err)
++	}
++	return nil
++}
++
++// ListOpenBreaches returns the fingerprints of currently open/notified records,
++// so a watch pass can mark recovered ones resolved.
++func ListOpenBreaches(deckDir, slug string) (map[string]BreachRecord, error) {
++	out := map[string]BreachRecord{}
++	entries, err := os.ReadDir(breachDir(deckDir, slug))
++	if os.IsNotExist(err) {
++		return out, nil
++	}
++	if err != nil {
++		return nil, err
++	}
++	for _, e := range entries {
++		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
++			continue
++		}
++		fp := strings.TrimSuffix(e.Name(), ".json")
++		r, ok, err := LoadBreachRecord(deckDir, slug, fp)
++		if err != nil {
++			return nil, err
++		}
++		if ok && r.Status != BreachResolved {
++			out[fp] = r
++		}
++	}
++	return out, nil
++}
+diff --git a/internal/pipeline/watcher.go b/internal/pipeline/watcher.go
+index f256bd8..71b9b08 100644
+--- a/internal/pipeline/watcher.go
++++ b/internal/pipeline/watcher.go
+@@ -14,12 +14,16 @@ type SLO struct {
+ 	Target    string `yaml:"target" json:"target"`
+ }
+ 
+-// Signal is a monitored input source and its breach threshold.
++// Signal is a monitored input source and its breach threshold. Threshold
++// expresses the BREACH condition directly (e.g. ">500", "<0.99", ">=5"): a
++// breach is raised when the observed value satisfies the comparison. Class
++// names the BreachClass used for remediation policy.
+ type Signal struct {
+ 	Name      string `yaml:"name" json:"name"`
+ 	Source    string `yaml:"source" json:"source"`
+ 	Threshold string `yaml:"threshold" json:"threshold"`
+ 	Target    string `yaml:"target" json:"target"`
++	Class     string `yaml:"class" json:"class"`
+ }
+ 
+ // BreachClass categorizes a breach and declares its remediation autonomy.
+diff --git a/internal/runner/phase58.go b/internal/runner/phase58.go
+new file mode 100644
+index 0000000..c5d61df
+--- /dev/null
++++ b/internal/runner/phase58.go
+@@ -0,0 +1,198 @@
++package runner
++
++import (
++	"context"
++	"fmt"
++	"os"
++	"path/filepath"
++	"strconv"
++	"strings"
++	"time"
++
++	"parley-deck-cli/internal/agents"
++	"parley-deck-cli/internal/protocol"
++)
++
++// RunImplementation runs Phase 5: it launches a single implementer to produce
++// IMPLEMENTATION.md (and code on a branch) per FINAL.md. opts.Idea.Participants
++// must contain exactly the implementer. Reuses the shared launch machinery.
++func RunImplementation(ctx context.Context, opts Options) Result {
++	opts.Phase = "implementation"
++	opts.ArtifactName = "IMPLEMENTATION.md"
++	if opts.RoundLabel == "" {
++		opts.RoundLabel = "implementation"
++	}
++	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
++	if len(selected) == 0 {
++		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
++	}
++	return runAgent(ctx, opts, selected[0])
++}
++
++// RunReviewRound runs Phase 6 review round N: each reviewer (opts.Idea.Participants
++// should be the non-implementer reviewers) writes review/round-NN/<agent>.md.
++func RunReviewRound(ctx context.Context, opts Options) []Result {
++	if opts.Round < 1 {
++		opts.Round = 1
++	}
++	opts.Phase = "review"
++	opts.RoundLabel = filepath.Join("review", roundLabel(opts.Round))
++	return RunRoundOne(ctx, opts)
++}
++
++// BuildImplementationPrompt is the Phase 5 implementer prompt.
++func BuildImplementationPrompt(agent agents.Discovery, idea protocol.IdeaStatus, outputPath string) string {
++	finalPath := filepath.Join(idea.Path, "FINAL.md")
++	return fmt.Sprintf(`You are %s, the implementer for Parley Deck idea %s (Phase 5).
++
++Rules:
++- Implement strictly according to %s. Read it first.
++- Before multi-file changes or changes outside parley-deck/, write your plan/checklist into the file below.
++- Create exactly this file: %s
++- Record unavoidable deviations from FINAL.md in that file.
++- Do not edit other agents' protocol files.
++- The first line of the file must be exactly "---".
++- Return a short confirmation with branch, files changed, checks run.
++
++Required file shape:
++---
++idea: %s
++status: implemented
++implementer: %s
++started: %s
++completed: %s
++branch: <repo-path>#<branch-name>
++head-commit: <sha-or-short-sha>
++---
++
++## Summary of work
++## Implementation plan / checklist
++## Deviations from FINAL.md
++## Notes for reviewers
++`, agent.ID, idea.Slug, finalPath, outputPath, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), time.Now().Format("2006-01-02"))
++}
++
++// BuildReviewPrompt is the Phase 6 reviewer prompt for review round N.
++func BuildReviewPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round int, outputPath, context string) string {
++	return fmt.Sprintf(`You are %s, a reviewer for Parley Deck idea %s (Phase 6, review round %d).
++
++Rules:
++- Review the implementation against FINAL.md and IMPLEMENTATION.md (below).
++- Create exactly this review file: %s
++- Do not edit implementation files or other agents' files.
++- Use ONLY these severity tags: CRITICAL, MAJOR, MINOR, NIT.
++- Each finding states what is wrong, why it matters, and the concrete fix.
++- The first line of the file must be exactly "---".
++- Return only a short confirmation with the path written.
++
++Required file shape:
++---
++agent: %s
++idea: %s
++review-round: %d
++date: %s
++---
++
++## Summary
++## Findings
++### [CRITICAL] <title>
++### [MAJOR] <title>
++### [MINOR] <title>
++### [NIT] <title>
++## Open questions
++
++Context (FINAL.md, IMPLEMENTATION.md, prior review rounds):
++%s
++`, agent.ID, idea.Slug, round, outputPath, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), context)
++}
++
++// gatherReviewContext concatenates FINAL.md, IMPLEMENTATION.md, and any prior
++// review-round artifacts to seed a code-review round.
++func gatherReviewContext(ideaPath string, round int) (string, error) {
++	var b strings.Builder
++	for _, name := range []string{"FINAL.md", "IMPLEMENTATION.md"} {
++		data, err := os.ReadFile(filepath.Join(ideaPath, name))
++		if err == nil {
++			fmt.Fprintf(&b, "\n===== %s =====\n%s\n", name, string(data))
++		}
++	}
++	for r := 1; r < round; r++ {
++		dir := filepath.Join(ideaPath, "review", roundLabel(r))
++		entries, err := os.ReadDir(dir)
++		if os.IsNotExist(err) {
++			continue
++		}
++		if err != nil {
++			return "", err
++		}
++		for _, e := range entries {
++			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" {
++				continue
++			}
++			data, err := os.ReadFile(filepath.Join(dir, e.Name()))
++			if err != nil {
++				return "", err
++			}
++			fmt.Fprintf(&b, "\n===== review/%s/%s =====\n%s\n", roundLabel(r), e.Name(), string(data))
++		}
++	}
++	return b.String(), nil
++}
++
++// validateArtifactForPhase dispatches artifact validation by phase.
++func validateArtifactForPhase(opts Options, outputPath, agentID string) error {
++	switch opts.Phase {
++	case "implementation":
++		return ValidateImplementationArtifact(outputPath, opts.Idea.Slug)
++	case "review":
++		return ValidateReviewArtifact(outputPath, agentID, opts.Idea.Slug, roundNumber(opts))
++	}
++	return ValidateRoundArtifact(outputPath, agentID, opts.Idea.Slug, roundNumber(opts))
++}
++
++// ValidateImplementationArtifact checks an IMPLEMENTATION.md.
++func ValidateImplementationArtifact(path, ideaSlug string) error {
++	meta, err := protocol.ReadFrontmatter(path)
++	if err != nil {
++		return err
++	}
++	if got := strings.Trim(strings.TrimSpace(meta["idea"]), `"'`); got != ideaSlug {
++		return fmt.Errorf("%s frontmatter idea=%q, want %q", path, got, ideaSlug)
++	}
++	if strings.TrimSpace(meta["status"]) == "" {
++		return fmt.Errorf("%s frontmatter missing status", path)
++	}
++	data, err := os.ReadFile(path)
++	if err != nil {
++		return err
++	}
++	if !strings.Contains(string(data), "## Summary of work") {
++		return fmt.Errorf("%s missing '## Summary of work'", path)
++	}
++	return nil
++}
++
++// ValidateReviewArtifact checks a review/round-NN/<agent>.md.
++func ValidateReviewArtifact(path, agentID, ideaSlug string, round int) error {
++	meta, err := protocol.ReadFrontmatter(path)
++	if err != nil {
++		return err
++	}
++	for key, want := range map[string]string{
++		"agent":        agentID,
++		"idea":         ideaSlug,
++		"review-round": strconv.Itoa(round),
++	} {
++		if got := strings.Trim(strings.TrimSpace(meta[key]), `"'`); got != want {
++			return fmt.Errorf("%s frontmatter %s=%q, want %q", path, key, got, want)
++		}
++	}
++	data, err := os.ReadFile(path)
++	if err != nil {
++		return err
++	}
++	if !strings.Contains(string(data), "## Findings") {
++		return fmt.Errorf("%s missing '## Findings'", path)
++	}
++	return nil
++}
+diff --git a/internal/runner/phase58_test.go b/internal/runner/phase58_test.go
+new file mode 100644
+index 0000000..18673b3
+--- /dev/null
++++ b/internal/runner/phase58_test.go
+@@ -0,0 +1,133 @@
++package runner
++
++import (
++	"context"
++	"io"
++	"os"
++	"path/filepath"
++	"regexp"
++	"testing"
++	"time"
++
++	"parley-deck-cli/internal/agents"
++	"parley-deck-cli/internal/protocol"
++	"parley-deck-cli/internal/store"
++)
++
++func TestRunImplementationWritesArtifact(t *testing.T) {
++	root := t.TempDir()
++	if err := protocol.InitWorkspace(root); err != nil {
++		t.Fatal(err)
++	}
++	idea, err := protocol.CreateIdea(root, "Impl task", []string{"builder"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	mustWrite(t, filepath.Join(idea.Path, "FINAL.md"), "---\nstatus: final\n---\n\nplan\n")
++
++	res := RunImplementation(context.Background(), Options{
++		Root:  root,
++		RunID: "impl-run",
++		Idea:  idea,
++		Agents: []agents.Discovery{{
++			Spec:  agents.Spec{ID: "builder", HeadlessArgs: []string{"-test.run=TestFakeImplHelper", "--", "parley-fake-impl"}, PromptMode: agents.PromptStdin},
++			Path:  os.Args[0],
++			Found: true,
++		}},
++		Timeout: 5 * time.Second,
++		Store:   store.New(filepath.Join(root, protocol.DeckDir, "runs", "impl-run")),
++	})
++	if !res.ArtifactOK || res.ExitError != "" {
++		t.Fatalf("unexpected result: %+v", res)
++	}
++	if _, err := os.Stat(filepath.Join(idea.Path, "IMPLEMENTATION.md")); err != nil {
++		t.Fatalf("IMPLEMENTATION.md missing: %v", err)
++	}
++}
++
++func TestRunReviewRoundWritesReviews(t *testing.T) {
++	root := t.TempDir()
++	if err := protocol.InitWorkspace(root); err != nil {
++		t.Fatal(err)
++	}
++	idea, err := protocol.CreateIdea(root, "Review task", []string{"rev1"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	mustWrite(t, filepath.Join(idea.Path, "IMPLEMENTATION.md"), "---\nidea: "+idea.Slug+"\nstatus: implemented\n---\n\n## Summary of work\nx\n")
++
++	results := RunReviewRound(context.Background(), Options{
++		Root:  root,
++		RunID: "rev-run",
++		Idea:  idea,
++		Round: 1,
++		Agents: []agents.Discovery{{
++			Spec:  agents.Spec{ID: "rev1", HeadlessArgs: []string{"-test.run=TestFakeReviewHelper", "--", "parley-fake-review"}, PromptMode: agents.PromptStdin},
++			Path:  os.Args[0],
++			Found: true,
++		}},
++		Timeout: 5 * time.Second,
++		Store:   store.New(filepath.Join(root, protocol.DeckDir, "runs", "rev-run")),
++	})
++	if len(results) != 1 || !results[0].ArtifactOK || results[0].ExitError != "" {
++		t.Fatalf("unexpected results: %+v", results)
++	}
++	if _, err := os.Stat(filepath.Join(idea.Path, "review", "round-01", "rev1.md")); err != nil {
++		t.Fatalf("review artifact missing: %v", err)
++	}
++}
++
++func TestValidateImplementationAndReviewArtifacts(t *testing.T) {
++	dir := t.TempDir()
++	impl := filepath.Join(dir, "IMPLEMENTATION.md")
++	mustWrite(t, impl, "---\nidea: demo\nstatus: implemented\n---\n\n## Summary of work\nok\n")
++	if err := ValidateImplementationArtifact(impl, "demo"); err != nil {
++		t.Fatalf("valid impl rejected: %v", err)
++	}
++	if err := ValidateImplementationArtifact(impl, "other"); err == nil {
++		t.Fatal("wrong idea slug must fail")
++	}
++	rev := filepath.Join(dir, "rev.md")
++	mustWrite(t, rev, "---\nagent: rev1\nidea: demo\nreview-round: 2\n---\n\n## Findings\nnone\n")
++	if err := ValidateReviewArtifact(rev, "rev1", "demo", 2); err != nil {
++		t.Fatalf("valid review rejected: %v", err)
++	}
++	if err := ValidateReviewArtifact(rev, "rev1", "demo", 1); err == nil {
++		t.Fatal("wrong review-round must fail")
++	}
++}
++
++func TestFakeImplHelper(t *testing.T) {
++	if !hasArg("parley-fake-impl") {
++		return
++	}
++	input, _ := io.ReadAll(os.Stdin)
++	out := regexp.MustCompile(`(?m)^- Create exactly this file: (.+)$`).FindStringSubmatch(string(input))
++	idea := regexp.MustCompile(`(?m)^idea: (\S+)$`).FindStringSubmatch(string(input))
++	if len(out) != 2 || len(idea) != 2 {
++		t.Fatalf("impl prompt missing path/idea:\n%s", string(input))
++	}
++	body := "---\nidea: " + idea[1] + "\nstatus: implemented\nimplementer: builder\n---\n\n## Summary of work\nbuilt it\n\n## Implementation plan / checklist\n- [x] done\n\n## Deviations from FINAL.md\nnone\n\n## Notes for reviewers\nnone\n"
++	if err := os.WriteFile(out[1], []byte(body), 0o644); err != nil {
++		t.Fatal(err)
++	}
++	os.Exit(0)
++}
++
++func TestFakeReviewHelper(t *testing.T) {
++	if !hasArg("parley-fake-review") {
++		return
++	}
++	input, _ := io.ReadAll(os.Stdin)
++	out := regexp.MustCompile(`(?m)^- Create exactly this review file: (.+)$`).FindStringSubmatch(string(input))
++	idea := regexp.MustCompile(`(?m)^idea: (\S+)$`).FindStringSubmatch(string(input))
++	round := regexp.MustCompile(`(?m)^review-round: (\d+)$`).FindStringSubmatch(string(input))
++	if len(out) != 2 || len(idea) != 2 || len(round) != 2 {
++		t.Fatalf("review prompt missing path/idea/round:\n%s", string(input))
++	}
++	body := "---\nagent: rev1\nidea: " + idea[1] + "\nreview-round: " + round[1] + "\n---\n\n## Summary\nlgtm\n\n## Findings\n### [NIT] tiny\nnit.\n\n## Open questions\nnone\n"
++	if err := os.WriteFile(out[1], []byte(body), 0o644); err != nil {
++		t.Fatal(err)
++	}
++	os.Exit(0)
++}
+diff --git a/internal/runner/runner.go b/internal/runner/runner.go
+index da0abbb..bc1cc78 100644
+--- a/internal/runner/runner.go
++++ b/internal/runner/runner.go
+@@ -26,6 +26,14 @@ type Options struct {
+ 	Store      store.Store
+ 	Round      int
+ 	RoundLabel string
++	// Phase selects the prompt + validation contract: "" or "deliberation"
++	// (Phase 1-4 rounds), "review" (Phase 6 code-review rounds), or
++	// "implementation" (Phase 5). Set via the RunReviewRound/RunImplementation
++	// helpers; defaults to deliberation.
++	Phase string
++	// ArtifactName, when set, makes the agent write idea.Path/<ArtifactName>
++	// (e.g. IMPLEMENTATION.md) instead of the per-agent round path.
++	ArtifactName string
+ }
+ 
+ type Result struct {
+@@ -206,6 +214,9 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
+ 	stdoutPath := filepath.Join(agentDir, "stdout.log")
+ 	stderrPath := filepath.Join(agentDir, "stderr.log")
+ 	outputPath := filepath.Join(opts.Idea.Path, opts.RoundLabel, agent.ID+".md")
++	if opts.ArtifactName != "" {
++		outputPath = filepath.Join(opts.Idea.Path, opts.ArtifactName)
++	}
+ 	result := Result{
+ 		AgentID:    agent.ID,
+ 		OutputPath: outputPath,
+@@ -298,7 +309,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
+ 	}
+ 
+ 	if _, statErr := os.Stat(outputPath); statErr == nil {
+-		if validateErr := ValidateRoundArtifact(outputPath, agent.ID, opts.Idea.Slug, roundNumber(opts)); validateErr != nil {
++		if validateErr := validateArtifactForPhase(opts, outputPath, agent.ID); validateErr != nil {
+ 			result.ExitError = combineError(result.ExitError, validateErr)
+ 		} else {
+ 			result.ArtifactOK = true
+@@ -433,6 +444,16 @@ func RunRound(ctx context.Context, opts Options) []Result {
+ }
+ 
+ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, questionsDir string) (string, error) {
++	switch opts.Phase {
++	case "implementation":
++		return BuildImplementationPrompt(agent, opts.Idea, outputPath), nil
++	case "review":
++		ctx, err := gatherReviewContext(opts.Idea.Path, roundNumber(opts))
++		if err != nil {
++			return "", err
++		}
++		return BuildReviewPrompt(agent, opts.Idea, roundNumber(opts), outputPath, ctx), nil
++	}
+ 	if roundNumber(opts) <= 1 {
+ 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
+ 	}
+diff --git a/references/EXECUTION_CONTRACT.md b/references/EXECUTION_CONTRACT.md
+new file mode 100644
+index 0000000..61cdd2b
+--- /dev/null
++++ b/references/EXECUTION_CONTRACT.md
+@@ -0,0 +1,66 @@
++# Pipeline execute contract (§12.10)
++
++How a side-effecting `action` block is executed. The boundary is strict
++(COOPERATION.md §12.4): **agents write markdown; the CLI plans and ledgers; an
++external driver/harness performs the actual provider call via MCP**. The Go CLI
++never mutates a provider itself.
++
++## Roles
++
++- **Agents** deliberate the action plan (Phase 1-4) and finalize it.
++- **CLI** (`parley pipeline execute`) validates preconditions, enforces gates,
++  computes the idempotency key, writes the per-effect ledger entry, and emits
++  the concrete `ProviderCall`. It performs no side effect.
++- **Harness/driver** reads the emitted plan, performs the MCP call when the gate
++  permits, then calls `parley pipeline record-effect` with the outcome.
++
++## Flow
++
++1. `parley pipeline execute --json SLUG BLOCK CAPABILITY TARGET` (add `--dry-run`
++   to plan without intent to mutate). Output (schema_version 1):
++
++   ```json
++   {
++     "schema_version": 1,
++     "status": "dry_run | pending_gate | ready_for_harness",
++     "provider_call": { "provider": "vercel", "tool": "mcp__...", "args": {}, "dry_run": false },
++     "effect_digest": "<digest>",
++     "idempotency_key": "<full key>",
++     "gate": { "required": true, "state": "approved | open | not_required" }
++   }
++   ```
++
++   - `pending_gate` → a production gate is open; approve with
++     `parley pipeline gate approve SLUG BLOCK->execute`, then re-run. The CLI
++     wrote no executing ledger entry.
++   - `dry_run` → the effect is recorded `dry_run_ok`; no mutation should happen.
++   - `ready_for_harness` → the effect is recorded `executing`; the harness must
++     now perform `provider_call` via the named MCP tool.
++
++2. The harness performs `provider_call.tool` with `provider_call.args` via MCP
++   **only** when `gate.state == "approved"` (or the capability is non-production
++   / dry-run). Production capabilities (`*.production`, `*.rollback`) are
++   non-bypassable and must never run without an approved gate.
++
++3. The harness records the outcome:
++
++   ```
++   parley pipeline record-effect --status succeeded --external-ref <id> SLUG <effect_digest>
++   parley pipeline record-effect --status failed   --external-ref <id> SLUG <effect_digest>
++   ```
++
++## Idempotency & reconcile (§12.7)
++
++- The same `idempotency_key` always maps to the same `effects/<digest>.json`, so
++  re-planning the same action never creates a duplicate.
++- An effect left `executing` (harness crashed before `record-effect`) or
++  `failed` is ambiguous: a fresh `execute` is blocked until the harness
++  reconciles external state and records a terminal status. Retrying without the
++  idempotency key is prohibited.
++
++## Vendor neutrality
++
++`provider_call.provider`/`tool` come from a `Provider` implementation behind a
++generic capability vocabulary (`deploy.preview`, `deploy.production`,
++`runtime.rollback`, `monitor.alert`, `issue.create`, `notify.send`). Vercel is
++the first implementation; the protocol depends on no specific vendor.

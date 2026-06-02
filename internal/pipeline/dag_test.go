@@ -153,15 +153,20 @@ blocks:
 }
 
 func TestDeciderAutoApprovesLowRiskOnly(t *testing.T) {
-	// With a decider configured (hasDecider=true) under supervised autonomy:
+	// With a decider configured (hasDecider=true) under supervised autonomy,
+	// ONLY low-risk gates auto-resolve (strictly narrower than auto-left).
 	if !AutoApproveWithDecider(AutonomySupervised, RiskLow, true) {
 		t.Fatal("decider should auto-approve low-risk")
 	}
-	if !AutoApproveWithDecider(AutonomySupervised, RiskNormal, true) {
-		t.Fatal("decider should auto-approve normal-risk")
+	if AutoApproveWithDecider(AutonomySupervised, RiskNormal, true) {
+		t.Fatal("decider must NOT auto-approve normal-risk (low-risk only)")
 	}
 	if AutoApproveWithDecider(AutonomySupervised, RiskHigh, true) {
 		t.Fatal("decider must NOT auto-approve high-risk")
+	}
+	// auto-left keeps the broader low/normal behavior.
+	if !AutoApproveWithDecider(AutonomyAutoLeft, RiskNormal, false) {
+		t.Fatal("auto-left should still auto-approve normal-risk")
 	}
 	if AutoApproveWithDecider(AutonomySupervised, RiskProduction, true) {
 		t.Fatal("decider must NEVER auto-approve production")

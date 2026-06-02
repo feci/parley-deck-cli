@@ -441,7 +441,7 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 					return code
 				}
 			}
-			fmt.Fprintf(stdout, "auto: action block %q plan finalized. status=needs_human_gate — run `parley pipeline execute [--dry-run] [--json] --dir %s %s %s <capability> <target>` (production-gated) + `record-effect`, then `parley pipeline continue` to advance. auto never auto-executes or advances past an action block.\n", block.ID, *root, slug, block.ID)
+			fmt.Fprintf(stdout, "auto: action block %q ready (plan finalized). status=needs_human_gate — run `parley pipeline execute [--dry-run] [--json] --dir %s %s %s <capability> <target>` (production-gated) + `record-effect`, then `parley pipeline continue` to advance. auto never auto-executes or advances past an action block.\n", block.ID, *root, slug, block.ID)
 			return 0
 		}
 		if block.Kind == pipeline.KindImplementation {
@@ -675,6 +675,9 @@ func runPipelineWatch(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
+	// Dedupe contract: Breach.Fingerprint() is deterministic over
+	// signal+target+threshold+class, so an ongoing breach maps to the same key
+	// across passes and is not re-opened.
 	current := map[string]bool{}
 	newCount, dedupCount, autoOpened, notified := 0, 0, 0, 0
 	for _, b := range breaches {

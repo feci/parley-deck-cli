@@ -46,19 +46,20 @@ func AutoApprove(autonomy Autonomy, risk Risk) bool {
 }
 
 // AutoApproveWithDecider is the single central policy evaluator (§12.8/§12.11):
-// production-risk mutations are NEVER auto-approvable. Otherwise a low-risk /
-// normal, non-production boundary may auto-resolve either under auto-left
-// autonomy OR when a decider agent is configured. Supervised + no decider =
-// block-and-wait (default).
+// production-risk mutations are NEVER auto-approvable.
+//   - auto-left autonomy auto-resolves low/normal, non-production boundaries.
+//   - a configured decider agent auto-resolves ONLY low-risk, non-production
+//     boundaries (never normal/high/production) — strictly narrower than
+//     auto-left, per FINAL.md item 6b.
+// Supervised + no decider = block-and-wait (default).
 func AutoApproveWithDecider(autonomy Autonomy, risk Risk, hasDecider bool) bool {
 	if risk == RiskProduction {
 		return false
 	}
-	nonProdLow := risk == RiskLow || risk == "" || risk == RiskNormal
-	if autonomy == AutonomyAutoLeft && nonProdLow {
+	if autonomy == AutonomyAutoLeft && (risk == RiskLow || risk == "" || risk == RiskNormal) {
 		return true
 	}
-	if hasDecider && nonProdLow {
+	if hasDecider && risk == RiskLow {
 		return true
 	}
 	return false

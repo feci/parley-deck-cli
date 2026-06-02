@@ -1,6 +1,6 @@
 ---
 idea: 2026-06-02T21-14-49-finish-the-6-rem
-status: implemented
+status: complete
 implementer: claude
 started: 2026-06-02
 completed: 2026-06-02
@@ -35,3 +35,15 @@ All six items implemented per FINAL.md / consensus.md, additive, full suite gree
 ## Notes for reviewers
 
 Focus: (1) production-safety invariants in `AutoApproveWithDecider`, `runPipelineExecute` gate handling, and `runPipelineAuto` action/impl stops; (2) `validateDAG` cycle/endpoint correctness; (3) `thresholdBreached` operator parsing; (4) backward-compat of `Options`/manifest additions (zero-value defaults). Tests: `internal/pipeline` (dag/watch/gate/effects/provider/manifest), `internal/runner` (round/phase58), `internal/app` (PipelineAuto*).
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-02
+
+### Fixes applied
+- [decider-low-risk-only] (codex MAJOR): `AutoApproveWithDecider` decider path now approves ONLY `RiskLow`; auto-left keeps low/normal; production never. Test updated.
+- [dag-execution-aware-driver] (codex MAJOR): added `advanceDAG` — single-active executor selecting the next block by topological readiness (`ReadyBlocks`) with a per-transition boundary gate; `Driver.Advance` routes to it when `Execution: dag`. New `TestAdvanceDAGRespectsTopologicalOrder` (reverse-listed blocks run in dependency order).
+- [action-stop-message] (hermes MINOR): reworded auto action-block message; added breach-dedupe contract comment (hermes NIT).
+
+### Deviations from agreed fixes
+None. `review/consensus.md` outstanding_agreed_fixes: 0. go build/vet + full suite green.
