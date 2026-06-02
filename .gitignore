@@ -8,3 +8,6 @@ parley-deck/meta/headless-agents.local.json
 parley-deck/meta/runtime-probes/
 .antigravitycli/
 tmp-test-plugin/
+# agy (Antigravity CLI) writes a project->UUID map to ./cache/projects.json
+# in its working directory when launched; it is a runtime artifact, not ours.
+/cache/
