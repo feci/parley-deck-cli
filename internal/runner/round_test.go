@@ -131,6 +131,81 @@ func TestFakeRound2AgentHelper(t *testing.T) {
 	os.Exit(0)
 }
 
+func TestStdoutFallbackRecoversArtifact(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := protocol.CreateIdea(root, "Stdout fallback task", []string{"printer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := RunRoundOne(context.Background(), Options{
+		Root: root, RunID: "sf-run", Idea: idea, Task: "x",
+		Agents: []agents.Discovery{{
+			Spec:  agents.Spec{ID: "printer", HeadlessArgs: []string{"-test.run=TestFakeStdoutAgentHelper", "--", "parley-fake-stdout"}, PromptMode: agents.PromptStdin},
+			Path:  os.Args[0], Found: true,
+		}},
+		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "sf-run")),
+	})
+	if len(results) != 1 || !results[0].ArtifactOK {
+		t.Fatalf("expected artifact recovered from stdout: %+v", results)
+	}
+	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "printer.md")); err != nil {
+		t.Fatalf("recovered artifact missing: %v", err)
+	}
+	if results[0].Warning == "" {
+		t.Fatal("expected a warning noting the stdout fallback")
+	}
+}
+
+func TestStdoutFallbackRejectsNarration(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := protocol.CreateIdea(root, "Narration task", []string{"narrator"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := RunRoundOne(context.Background(), Options{
+		Root: root, RunID: "nar-run", Idea: idea, Task: "x",
+		Agents: []agents.Discovery{{
+			Spec:  agents.Spec{ID: "narrator", HeadlessArgs: []string{"-test.run=TestFakeNarrateAgentHelper", "--", "parley-fake-narrate"}, PromptMode: agents.PromptStdin},
+			Path:  os.Args[0], Found: true,
+		}},
+		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "nar-run")),
+	})
+	if len(results) != 1 || results[0].ArtifactOK {
+		t.Fatalf("narration must NOT become an artifact: %+v", results)
+	}
+	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "narrator.md")); !os.IsNotExist(err) {
+		t.Fatalf("narration should not have produced an artifact file")
+	}
+}
+
+func TestFakeStdoutAgentHelper(t *testing.T) {
+	if !hasArg("parley-fake-stdout") {
+		return
+	}
+	input, _ := io.ReadAll(os.Stdin)
+	idea := regexp.MustCompile(`(?m)^idea: (\S+)$`).FindStringSubmatch(string(input))
+	if len(idea) != 2 {
+		t.Fatalf("no idea in prompt")
+	}
+	// Print a valid artifact to stdout WITHOUT writing the file.
+	os.Stdout.WriteString("---\nagent: printer\nidea: " + idea[1] + "\nround: 1\ndate: 2026-06-02\n---\n\n## Summary\ns\n\n## Proposed approach\np\n\n## Concerns / open questions\nc\n\n## Risks\nr\n")
+	os.Exit(0)
+}
+
+func TestFakeNarrateAgentHelper(t *testing.T) {
+	if !hasArg("parley-fake-narrate") {
+		return
+	}
+	os.Stdout.WriteString("I will list the directory contents to check if the target file exists.\n")
+	os.Exit(0)
+}
+
 func mustWrite(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

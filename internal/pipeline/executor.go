@@ -231,6 +231,55 @@ func (d Driver) advanceDAG(run *PipelineRun, complete BlockComplete) (AdvanceRes
 	}
 }
 
+// DAGStep is one wave of multi-active DAG execution: the gate-approved blocks
+// ready to launch now, the edges still awaiting a human gate, and whether the
+// pipeline is complete.
+type DAGStep struct {
+	Ready      []string // gate-approved, dependency-complete, not-done blocks
+	AwaitGates []string // edge ids of open gates blocking otherwise-ready blocks
+	Done       bool
+}
+
+// ComputeDAGStep records nothing but inspects the cursor's completed set, ensures
+// a boundary gate exists for every dependency-ready block (auto-approving the
+// eligible ones via the central policy), and returns the launchable wave. It is
+// pure w.r.t. the cursor (gates are persisted) so it is deterministic + testable.
+func (d Driver) ComputeDAGStep(run *PipelineRun) (DAGStep, error) {
+	if d.Manifest.AllBlocksComplete(run.CompletedBlocks) {
+		return DAGStep{Done: true}, nil
+	}
+	depsReady := d.Manifest.ReadyBlocks(run.CompletedBlocks, func(string) bool { return true })
+	var step DAGStep
+	for _, bid := range depsReady {
+		b, _ := d.findBlockByID(bid)
+		edge := EdgeID("ready", bid)
+		g, exists, err := LoadGate(d.DeckDir, run.PipelineSlug, edge)
+		if err != nil {
+			return DAGStep{}, err
+		}
+		if !exists {
+			g = NewGate(run.PipelineSlug, "ready", bid, b.Risk, b.GatePolicy, d.Now)
+			if AutoApproveWithDecider(d.Manifest.Autonomy, b.Risk, d.Manifest.Decider != "") {
+				by := "policy:auto-left"
+				if d.Manifest.Decider != "" && d.Manifest.Autonomy != AutonomyAutoLeft {
+					by = "decider:" + d.Manifest.Decider
+				}
+				g.Resolve(true, by, d.Now)
+			}
+			if err := SaveGate(d.DeckDir, g); err != nil {
+				return DAGStep{}, err
+			}
+		}
+		switch g.Status {
+		case GateApproved:
+			step.Ready = append(step.Ready, bid)
+		default: // open or rejected -> needs a human
+			step.AwaitGates = append(step.AwaitGates, edge)
+		}
+	}
+	return step, nil
+}
+
 func (d Driver) findBlockByID(id string) (Block, bool) {
 	for _, b := range d.Manifest.Blocks {
 		if b.ID == id {

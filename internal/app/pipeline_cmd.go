@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"parley-deck-cli/internal/agents"
@@ -185,6 +186,12 @@ func runPipelineStatus(args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "pipeline %q: status=%s current=%s\n", run.PipelineSlug, run.Status, valueOrDash(run.CurrentBlock))
 	fmt.Fprintf(stdout, "  completed: %s\n", valueOrDash(strings.Join(run.CompletedBlocks, ", ")))
+	if len(run.ReadyBlocks) > 0 {
+		fmt.Fprintf(stdout, "  ready: %s\n", strings.Join(run.ReadyBlocks, ", "))
+	}
+	if len(run.ActiveBlocks) > 0 {
+		fmt.Fprintf(stdout, "  active: %s\n", strings.Join(run.ActiveBlocks, ", "))
+	}
 	if run.PendingGate != "" {
 		fmt.Fprintf(stdout, "  pending gate: %s\n", run.PendingGate)
 	}
@@ -389,15 +396,21 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 	drafter := fs.String("drafter", "", "consensus drafter agent ID (default: first participant)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs (default: manifest participants)")
 	yes := fs.Bool("yes", false, "launch hosted agents without confirmation")
+	maxActive := fs.Int("max-active", 4, "max concurrently-active blocks for DAG pipelines (1 = single-active)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	if fs.NArg() != 1 {
-		fmt.Fprintln(stderr, "usage: parley pipeline auto [--dir DIR] [--rounds N] [--max-blocks M] [--drafter ID] [--participants IDS] [--yes] SLUG")
+		fmt.Fprintln(stderr, "usage: parley pipeline auto [--dir DIR] [--rounds N] [--max-blocks M] [--max-active K] [--drafter ID] [--participants IDS] [--yes] SLUG")
 		return 2
 	}
 	deck := deckDirFor(*root)
 	slug := fs.Arg(0)
+
+	// DAG manifests with --max-active>1 use the parallel wave driver.
+	if m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug)); err == nil && m.IsDAG() && *maxActive > 1 {
+		return runPipelineAutoDAG(ctx, *root, deck, slug, m, *maxActive, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr)
+	}
 
 	for iter := 0; iter < *maxBlocks; iter++ {
 		m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug))
@@ -449,9 +462,18 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 				if code := autoDriveImplementationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *yes, stdout, stderr); code != 0 {
 					return code
 				}
+				d2, derr := blockCompleteFunc(deck, slug)(block)
+				if derr != nil {
+					fmt.Fprintf(stderr, "auto failed: %v\n", derr)
+					return 1
+				}
+				done = d2
 			}
-			fmt.Fprintf(stdout, "auto: implementation block %q — implementation + review round-01 done. status=needs_artifact — draft review/consensus.md (machine-readable agreed_fixes) + fix-up, then `parley pipeline continue`.\n", block.ID)
-			return 0
+			if !done {
+				fmt.Fprintf(stdout, "auto: implementation block %q paused (review BLOCK / fail-closed / max fix-up cycles). status=needs_artifact — resolve, then re-run `parley pipeline auto`.\n", block.ID)
+				return 0
+			}
+			// implementation complete -> fall through to Advance.
 		}
 		if !done {
 			// deliberation or watcher: drive Phase 1-4 to a finalized artifact.
@@ -492,6 +514,132 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	fmt.Fprintf(stderr, "auto: hit --max-blocks safety cap; re-run to continue.\n")
 	return 1
+}
+
+// runPipelineAutoDAG drives a DAG pipeline in parallel waves: each wave is the
+// set of dependency-ready, gate-approved blocks, launched concurrently up to
+// maxActive. It fully drives deliberation/watcher blocks; it stops (with
+// guidance) when a ready block is an action (gated execute) or implementation
+// (use single-active auto). Production gates remain non-bypassable.
+func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline.Manifest, maxActive int, participantsFlag, drafter string, rounds int, yes bool, stdout, stderr io.Writer) int {
+	complete := blockCompleteFunc(deck, slug)
+	for wave := 0; wave < 100; wave++ {
+		run, err := pipeline.LoadRun(pipeline.RunPath(deck, slug))
+		if err != nil {
+			fmt.Fprintf(stderr, "auto failed: %v\n", err)
+			return 1
+		}
+		driver := pipeline.Driver{DeckDir: deck, Manifest: m, Now: time.Now()}
+		step, err := driver.ComputeDAGStep(&run)
+		if err != nil {
+			fmt.Fprintf(stderr, "auto failed: %v\n", err)
+			return 1
+		}
+		if step.Done {
+			run.Status = pipeline.StatusCompleted
+			run.CurrentBlock, run.ReadyBlocks, run.ActiveBlocks, run.PendingGate = "", nil, nil, ""
+			_ = run.Save(pipeline.RunPath(deck, slug))
+			fmt.Fprintf(stdout, "auto: DAG pipeline %q complete.\n", slug)
+			return 0
+		}
+		if len(step.Ready) == 0 {
+			run.Status = pipeline.StatusBlockedOnGate
+			run.ReadyBlocks, run.ActiveBlocks = nil, nil
+			if len(step.AwaitGates) > 0 {
+				run.PendingGate = step.AwaitGates[0]
+			}
+			_ = run.Save(pipeline.RunPath(deck, slug))
+			fmt.Fprintf(stdout, "auto: paused — %d gate(s) await approval: %s\n  approve each: parley pipeline gate approve --dir %s %s <edge>, then re-run auto.\n", len(step.AwaitGates), strings.Join(step.AwaitGates, ", "), root, slug)
+			return 0
+		}
+		var launch []pipeline.Block
+		for _, bid := range step.Ready {
+			b, _ := findBlock(m, bid)
+			switch b.Kind {
+			case pipeline.KindDeliberation, pipeline.KindWatcher:
+				launch = append(launch, b)
+			case pipeline.KindAction:
+				fmt.Fprintf(stdout, "auto: ready action block %q — status=needs_human_gate; run `parley pipeline execute ...` (production-gated) + record-effect, then re-run auto.\n", bid)
+				return 0
+			case pipeline.KindImplementation:
+				fmt.Fprintf(stdout, "auto: ready implementation block %q — run with `parley pipeline auto --max-active 1` (single-active drives Phase 5-8). status=needs_artifact\n", bid)
+				return 0
+			}
+		}
+		if len(launch) > maxActive {
+			launch = launch[:maxActive]
+		}
+		run.ActiveBlocks = blockIDs(launch)
+		run.ReadyBlocks = step.Ready
+		run.Status = pipeline.StatusRunning
+		_ = run.Save(pipeline.RunPath(deck, slug))
+
+		fmt.Fprintf(stdout, "auto: DAG wave — launching %d block(s) concurrently (max-active %d): %s\n", len(launch), maxActive, strings.Join(blockIDs(launch), ", "))
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+		failed := 0
+		for _, b := range launch {
+			b := b
+			if _, statErr := os.Stat(filepath.Join(pipeline.BlockWorkspace(deck, slug, b.ID), "00-prompt.md")); os.IsNotExist(statErr) {
+				if _, serr := pipeline.SeedBlockPrompt(deck, m, nil, b, time.Now()); serr != nil {
+					fmt.Fprintf(stderr, "auto: seed %q failed: %v\n", b.ID, serr)
+					return 1
+				}
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if code := autoDriveDeliberationBlock(ctx, root, deck, slug, b, participantsFlag, drafter, rounds, yes, io.Discard, io.Discard); code != 0 {
+					mu.Lock()
+					failed++
+					mu.Unlock()
+				}
+			}()
+		}
+		wg.Wait()
+		if failed > 0 {
+			fmt.Fprintf(stderr, "auto: %d block(s) in the wave did not finalize; stopping. Inspect their workspaces and re-run auto.\n", failed)
+			return 1
+		}
+		// Record newly-complete blocks in the cursor for the next wave.
+		run2, err := pipeline.LoadRun(pipeline.RunPath(deck, slug))
+		if err != nil {
+			fmt.Fprintf(stderr, "auto failed: %v\n", err)
+			return 1
+		}
+		progressed := false
+		for _, b := range launch {
+			if done, _ := complete(b); done && !contains(run2.CompletedBlocks, b.ID) {
+				run2.CompletedBlocks = append(run2.CompletedBlocks, b.ID)
+				progressed = true
+			}
+		}
+		run2.ActiveBlocks = nil
+		_ = run2.Save(pipeline.RunPath(deck, slug))
+		if !progressed {
+			fmt.Fprintf(stderr, "auto: wave made no progress (no block finalized); stopping to avoid a loop.\n")
+			return 1
+		}
+	}
+	fmt.Fprintf(stderr, "auto: hit DAG wave cap; re-run to continue.\n")
+	return 1
+}
+
+func blockIDs(blocks []pipeline.Block) []string {
+	out := make([]string, len(blocks))
+	for i, b := range blocks {
+		out[i] = b.ID
+	}
+	return out
+}
+
+func contains(xs []string, x string) bool {
+	for _, s := range xs {
+		if s == x {
+			return true
+		}
+	}
+	return false
 }
 
 // autoDriveDeliberationBlock runs the rounds + consensus + finalize for one
@@ -612,15 +760,62 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 		fmt.Fprintf(stdout, "auto: block %q has no non-implementer reviewer; Phase 6 needs another agent (non-solo review).\n", block.ID)
 		return 0
 	}
-	if _, statErr := os.Stat(filepath.Join(blockWS, "review", "round-01")); os.IsNotExist(statErr) {
-		fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-01 (%s)\n", block.ID, strings.Join(reviewers, ", "))
-		ideaRev := idea
-		ideaRev.Participants = reviewers
-		runID := fmt.Sprintf("pipe-%s-rev01-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
-		if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaRev, Round: 1, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})) {
+
+	// Phase 6-8 unattended loop: review round -> drafter writes the review
+	// consensus with the machine contract -> decide -> fix-up, bounded.
+	const maxCycles = 3
+	stamp := func() string { return time.Now().UTC().Format("20060102T150405.000000Z") }
+	for cycle := 1; cycle <= maxCycles; cycle++ {
+		roundDir := filepath.Join(blockWS, "review", fmt.Sprintf("round-%02d", cycle))
+		if _, statErr := os.Stat(roundDir); os.IsNotExist(statErr) {
+			fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-%02d (%s)\n", block.ID, cycle, strings.Join(reviewers, ", "))
+			ideaRev := idea
+			ideaRev.Participants = reviewers
+			rid := fmt.Sprintf("pipe-%s-rev%02d-%s", block.ID, cycle, stamp())
+			if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: rid, Idea: ideaRev, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", rid))})) {
+				return 1
+			}
+		}
+		fmt.Fprintf(stdout, "auto: block %q Phase 7 review consensus (drafter %s)\n", block.ID, implementer)
+		ideaDraft := idea
+		ideaDraft.Participants = []string{implementer}
+		cid := fmt.Sprintf("pipe-%s-rc%02d-%s", block.ID, cycle, stamp())
+		rc := runner.RunReviewConsensus(ctx, runner.Options{Root: root, RunID: cid, Idea: ideaDraft, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", cid))})
+		if rc.ExitError != "" || !rc.ArtifactOK {
+			fmt.Fprintf(stderr, "auto: review consensus draft failed: %s\n", rc.ExitError)
 			return 1
 		}
+		count, blocked, found, err := pipeline.ReviewAgreedFixes(filepath.Join(blockWS, "review", "consensus.md"))
+		if err != nil {
+			fmt.Fprintf(stderr, "auto: read review consensus failed: %v\n", err)
+			return 1
+		}
+		switch pipeline.Phase8Decision(count, blocked, found, cycle, maxCycles) {
+		case pipeline.Phase8Complete:
+			fmt.Fprintf(stdout, "auto: block %q implementation complete (0 outstanding agreed fixes).\n", block.ID)
+			return 0
+		case pipeline.Phase8Blocked:
+			fmt.Fprintf(stdout, "auto: block %q review BLOCKed; stopping for human resolution.\n", block.ID)
+			return 0
+		case pipeline.Phase8NoData:
+			fmt.Fprintf(stdout, "auto: block %q review consensus lacks outstanding_agreed_fixes (fail-closed); a drafter must record it.\n", block.ID)
+			return 0
+		case pipeline.Phase8Maxed:
+			fmt.Fprintf(stdout, "auto: block %q hit max fix-up cycles (%d); stopping.\n", block.ID, maxCycles)
+			return 0
+		case pipeline.Phase8Fixup:
+			fmt.Fprintf(stdout, "auto: block %q Phase 8 fix-up cycle %d (%d agreed fixes) by %s\n", block.ID, cycle, count, implementer)
+			fid := fmt.Sprintf("pipe-%s-fix%02d-%s", block.ID, cycle, stamp())
+			ideaFix := idea
+			ideaFix.Participants = []string{implementer}
+			fr := runner.RunFixup(ctx, runner.Options{Root: root, RunID: fid, Idea: ideaFix, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", fid))})
+			if fr.ExitError != "" || !fr.ArtifactOK {
+				fmt.Fprintf(stderr, "auto: fix-up failed: %s\n", fr.ExitError)
+				return 1
+			}
+		}
 	}
+	fmt.Fprintf(stdout, "auto: block %q reached max fix-up cycles.\n", block.ID)
 	return 0
 }
 
@@ -1031,8 +1226,30 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 				return true, nil
 			}
 		}
+		// Implementation blocks finish when IMPLEMENTATION.md is status: complete
+		// or the review consensus reports zero outstanding agreed fixes.
+		if b.Kind == pipeline.KindImplementation {
+			if data, err := os.ReadFile(filepath.Join(ws, "IMPLEMENTATION.md")); err == nil {
+				if implementationComplete(string(data)) {
+					return true, nil
+				}
+			}
+			rc := filepath.Join(ws, "review", "consensus.md")
+			if count, _, found, err := pipeline.ReviewAgreedFixes(rc); err == nil && found && count == 0 {
+				return true, nil
+			}
+		}
 		return false, nil
 	}
+}
+
+func implementationComplete(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		if strings.TrimSpace(line) == "status: complete" {
+			return true
+		}
+	}
+	return false
 }
 
 func isFinalized(content string) bool {

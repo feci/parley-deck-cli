@@ -34,6 +34,9 @@ type Options struct {
 	// ArtifactName, when set, makes the agent write idea.Path/<ArtifactName>
 	// (e.g. IMPLEMENTATION.md) instead of the per-agent round path.
 	ArtifactName string
+	// Overwrite allows re-running an agent even if its artifact already exists
+	// (used for per-cycle review-consensus re-drafts). Off by default.
+	Overwrite bool
 }
 
 type Result struct {
@@ -225,7 +228,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		StartedAt:  now,
 	}
 
-	if _, err := os.Stat(outputPath); err == nil {
+	if _, err := os.Stat(outputPath); err == nil && !opts.Overwrite {
 		result.Skipped = true
 		result.SkipReason = "artifact already exists"
 		result.CompletedAt = time.Now().UTC()
@@ -308,6 +311,26 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		}
 	}
 
+	// stdout-capture fallback: some print-only CLIs (e.g. agy --print) emit the
+	// artifact to stdout instead of writing the file. If the file is absent but
+	// captured stdout is a plausible artifact (starts with the YAML frontmatter
+	// fence), persist it as the agent-authored artifact. Strict "---" validation
+	// keeps narration from becoming a protocol file.
+	if _, statErr := os.Stat(outputPath); os.IsNotExist(statErr) {
+		if data, readErr := os.ReadFile(stdoutPath); readErr == nil {
+			if strings.HasPrefix(strings.TrimLeft(string(data), " \t\r\n"), "---") {
+				if writeErr := os.WriteFile(outputPath, data, 0o644); writeErr == nil {
+					result.Warning = "artifact recovered from stdout (print-only agent)"
+					_ = opts.Store.Append(store.Event{
+						Time: time.Now().UTC(),
+						Type: "agent.stdout_fallback",
+						Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
+					})
+				}
+			}
+		}
+	}
+
 	if _, statErr := os.Stat(outputPath); statErr == nil {
 		if validateErr := validateArtifactForPhase(opts, outputPath, agent.ID); validateErr != nil {
 			result.ExitError = combineError(result.ExitError, validateErr)
@@ -376,6 +399,7 @@ func BuildRoundOnePrompt(agent agents.Discovery, idea protocol.IdeaStatus, task,
 
 Rules:
 - Create exactly this file and no other protocol artifact: %s
+- Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
 - Do not read or reference other agents' round-01 answers.
@@ -453,6 +477,12 @@ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, quest
 			return "", err
 		}
 		return BuildReviewPrompt(agent, opts.Idea, roundNumber(opts), outputPath, ctx), nil
+	case "review-consensus":
+		ctx, err := gatherReviewContext(opts.Idea.Path, roundNumber(opts)+1)
+		if err != nil {
+			return "", err
+		}
+		return BuildReviewConsensusPrompt(agent, opts.Idea, outputPath, ctx), nil
 	}
 	if roundNumber(opts) <= 1 {
 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
@@ -504,6 +534,7 @@ func BuildRoundPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round in
 
 Rules:
 - Create exactly this file and no other protocol artifact: %s
+- Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
 - READ every prior-round artifact below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus.
