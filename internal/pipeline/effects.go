@@ -152,3 +152,21 @@ func LoadEffect(deckDir, slug, key string) (Effect, bool, error) {
 func (e Effect) NeedsReconcile() bool {
 	return e.Status == EffectExecuting || e.Status == EffectFailed
 }
+
+// LoadEffectByDigest reads an effect by its filename digest (as printed by the
+// execute command); the bool reports whether it exists.
+func LoadEffectByDigest(deckDir, slug, digest string) (Effect, bool, error) {
+	path := filepath.Join(PipelineDir(deckDir, slug), "effects", digest+".json")
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return Effect{}, false, nil
+	}
+	if err != nil {
+		return Effect{}, false, fmt.Errorf("read effect: %w", err)
+	}
+	var e Effect
+	if err := json.Unmarshal(data, &e); err != nil {
+		return Effect{}, false, fmt.Errorf("parse effect: %w", err)
+	}
+	return e, true, nil
+}

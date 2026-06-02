@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -236,7 +237,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	questionsDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "questions")
-	prompt, err := BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
+	prompt, err := buildPromptForRound(agent, opts, outputPath, questionsDir)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
@@ -297,7 +298,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	if _, statErr := os.Stat(outputPath); statErr == nil {
-		if validateErr := ValidateRoundOneArtifact(outputPath, agent.ID, opts.Idea.Slug); validateErr != nil {
+		if validateErr := ValidateRoundArtifact(outputPath, agent.ID, opts.Idea.Slug, roundNumber(opts)); validateErr != nil {
 			result.ExitError = combineError(result.ExitError, validateErr)
 		} else {
 			result.ArtifactOK = true
@@ -405,6 +406,107 @@ date: %s
 		runtimeValue(agent.ApprovalPolicy),
 		timeoutMSForAgent(agent),
 		string(promptData), agent.ID, idea.Slug, time.Now().Format("2006-01-02")), nil
+}
+
+func roundNumber(opts Options) int {
+	if opts.Round > 0 {
+		return opts.Round
+	}
+	return 1
+}
+
+func roundLabel(n int) string {
+	return fmt.Sprintf("round-%02d", n)
+}
+
+// RunRound runs cross-review round N (N>=2) for an idea; round 1 uses
+// RunRoundOne. It seeds each participant with the prior rounds' artifacts and
+// writes round-NN/<agent>.md, reusing the same launch/validation machinery.
+func RunRound(ctx context.Context, opts Options) []Result {
+	if opts.Round < 2 {
+		opts.Round = 2
+	}
+	if opts.RoundLabel == "" {
+		opts.RoundLabel = roundLabel(opts.Round)
+	}
+	return RunRoundOne(ctx, opts)
+}
+
+func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, questionsDir string) (string, error) {
+	if roundNumber(opts) <= 1 {
+		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
+	}
+	prior, err := gatherPriorRounds(opts.Idea.Path, roundNumber(opts))
+	if err != nil {
+		return "", err
+	}
+	return BuildRoundPrompt(agent, opts.Idea, roundNumber(opts), outputPath, questionsDir, prior), nil
+}
+
+// gatherPriorRounds concatenates every participant artifact from rounds 1..N-1
+// so a cross-review round can respond to them.
+func gatherPriorRounds(ideaPath string, round int) (string, error) {
+	var b strings.Builder
+	for r := 1; r < round; r++ {
+		dir := filepath.Join(ideaPath, roundLabel(r))
+		entries, err := os.ReadDir(dir)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" {
+				continue
+			}
+			names = append(names, e.Name())
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			data, err := os.ReadFile(filepath.Join(dir, name))
+			if err != nil {
+				return "", err
+			}
+			fmt.Fprintf(&b, "\n===== %s/%s =====\n%s\n", roundLabel(r), name, string(data))
+		}
+	}
+	return b.String(), nil
+}
+
+// BuildRoundPrompt builds the cross-review prompt for round N>=2. Unlike round
+// 1, participants are given every prior-round artifact and asked to respond to
+// each other and converge toward consensus.
+func BuildRoundPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round int, outputPath, questionsDir, prior string) string {
+	return fmt.Sprintf(`You are %s, a participant in a Parley Deck cross-review round %d.
+
+Rules:
+- Create exactly this file and no other protocol artifact: %s
+- Do not edit any other agent's file.
+- Do not overwrite the file if it already exists; report a blocker instead.
+- READ every prior-round artifact below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus.
+- Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
+- If you are blocked by missing human input, create one JSON question file under: %s
+- Be concrete, concise, and state trade-offs.
+
+Required file shape:
+---
+agent: %s
+idea: %s
+round: %d
+date: %s
+responding-to: [prior round artifacts]
+---
+
+## Summary
+## Responses to other participants
+## Refined position
+## Remaining disagreements
+
+Prior rounds (read these):
+%s
+`, agent.ID, round, outputPath, questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), prior)
 }
 
 func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
