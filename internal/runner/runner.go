@@ -26,6 +26,14 @@ type Options struct {
 	Store      store.Store
 	Round      int
 	RoundLabel string
+	// Phase selects the prompt + validation contract: "" or "deliberation"
+	// (Phase 1-4 rounds), "review" (Phase 6 code-review rounds), or
+	// "implementation" (Phase 5). Set via the RunReviewRound/RunImplementation
+	// helpers; defaults to deliberation.
+	Phase string
+	// ArtifactName, when set, makes the agent write idea.Path/<ArtifactName>
+	// (e.g. IMPLEMENTATION.md) instead of the per-agent round path.
+	ArtifactName string
 }
 
 type Result struct {
@@ -206,6 +214,9 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	stdoutPath := filepath.Join(agentDir, "stdout.log")
 	stderrPath := filepath.Join(agentDir, "stderr.log")
 	outputPath := filepath.Join(opts.Idea.Path, opts.RoundLabel, agent.ID+".md")
+	if opts.ArtifactName != "" {
+		outputPath = filepath.Join(opts.Idea.Path, opts.ArtifactName)
+	}
 	result := Result{
 		AgentID:    agent.ID,
 		OutputPath: outputPath,
@@ -298,7 +309,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	if _, statErr := os.Stat(outputPath); statErr == nil {
-		if validateErr := ValidateRoundArtifact(outputPath, agent.ID, opts.Idea.Slug, roundNumber(opts)); validateErr != nil {
+		if validateErr := validateArtifactForPhase(opts, outputPath, agent.ID); validateErr != nil {
 			result.ExitError = combineError(result.ExitError, validateErr)
 		} else {
 			result.ArtifactOK = true
@@ -433,6 +444,16 @@ func RunRound(ctx context.Context, opts Options) []Result {
 }
 
 func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, questionsDir string) (string, error) {
+	switch opts.Phase {
+	case "implementation":
+		return BuildImplementationPrompt(agent, opts.Idea, outputPath), nil
+	case "review":
+		ctx, err := gatherReviewContext(opts.Idea.Path, roundNumber(opts))
+		if err != nil {
+			return "", err
+		}
+		return BuildReviewPrompt(agent, opts.Idea, roundNumber(opts), outputPath, ctx), nil
+	}
 	if roundNumber(opts) <= 1 {
 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
 	}

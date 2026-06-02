@@ -14,12 +14,16 @@ type SLO struct {
 	Target    string `yaml:"target" json:"target"`
 }
 
-// Signal is a monitored input source and its breach threshold.
+// Signal is a monitored input source and its breach threshold. Threshold
+// expresses the BREACH condition directly (e.g. ">500", "<0.99", ">=5"): a
+// breach is raised when the observed value satisfies the comparison. Class
+// names the BreachClass used for remediation policy.
 type Signal struct {
 	Name      string `yaml:"name" json:"name"`
 	Source    string `yaml:"source" json:"source"`
 	Threshold string `yaml:"threshold" json:"threshold"`
 	Target    string `yaml:"target" json:"target"`
+	Class     string `yaml:"class" json:"class"`
 }
 
 // BreachClass categorizes a breach and declares its remediation autonomy.

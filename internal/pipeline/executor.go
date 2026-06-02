@@ -106,8 +106,12 @@ func (d Driver) Advance(run *PipelineRun, complete BlockComplete) (AdvanceResult
 	}
 	if !exists {
 		gate = NewGate(run.PipelineSlug, cur.ID, next.ID, next.Risk, next.GatePolicy, d.Now)
-		if AutoApprove(d.Manifest.Autonomy, next.Risk) {
-			gate.Resolve(true, "policy:auto-left", d.Now)
+		if AutoApproveWithDecider(d.Manifest.Autonomy, next.Risk, d.Manifest.Decider != "") {
+			by := "policy:auto-left"
+			if d.Manifest.Decider != "" && d.Manifest.Autonomy != AutonomyAutoLeft {
+				by = "decider:" + d.Manifest.Decider
+			}
+			gate.Resolve(true, by, d.Now)
 		}
 		if err := SaveGate(d.DeckDir, gate); err != nil {
 			return AdvanceResult{}, err
