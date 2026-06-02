@@ -449,13 +449,18 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 		// Action and implementation blocks are never auto-advanced past: their
 		// side effects (deploy) and code-review/fix-up are explicit gated steps.
 		if block.Kind == pipeline.KindAction {
-			if !done {
-				if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
-					return code
+			if done {
+				// A succeeded effect already exists -> the action block is complete;
+				// fall through to Advance.
+			} else {
+				if !planFinalized(deck, slug, block.ID) {
+					if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
+						return code
+					}
 				}
+				fmt.Fprintf(stdout, "auto: action block %q ready (plan finalized). status=needs_human_gate — run `parley pipeline execute [--dry-run] [--json] --dir %s %s %s <capability> <target>` (production-gated) + `record-effect`, then `parley pipeline continue` to advance. auto never auto-executes or advances past an action block.\n", block.ID, *root, slug, block.ID)
+				return 0
 			}
-			fmt.Fprintf(stdout, "auto: action block %q ready (plan finalized). status=needs_human_gate — run `parley pipeline execute [--dry-run] [--json] --dir %s %s %s <capability> <target>` (production-gated) + `record-effect`, then `parley pipeline continue` to advance. auto never auto-executes or advances past an action block.\n", block.ID, *root, slug, block.ID)
-			return 0
 		}
 		if block.Kind == pipeline.KindImplementation {
 			if !done {
@@ -552,29 +557,41 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 			fmt.Fprintf(stdout, "auto: paused — %d gate(s) await approval: %s\n  approve each: parley pipeline gate approve --dir %s %s <edge>, then re-run auto.\n", len(step.AwaitGates), strings.Join(step.AwaitGates, ", "), root, slug)
 			return 0
 		}
-		var launch []pipeline.Block
+		// Partition the ready set. Completable kinds (deliberation/watcher/impl)
+		// can finalize within a wave; action blocks only finalize their PLAN —
+		// they complete later via the gated `pipeline execute` + record-effect.
+		var completable, actionPending, actionAwaiting []pipeline.Block
 		for _, bid := range step.Ready {
 			b, _ := findBlock(m, bid)
-			switch b.Kind {
-			case pipeline.KindDeliberation, pipeline.KindWatcher:
-				launch = append(launch, b)
-			case pipeline.KindAction:
-				fmt.Fprintf(stdout, "auto: ready action block %q — status=needs_human_gate; run `parley pipeline execute ...` (production-gated) + record-effect, then re-run auto.\n", bid)
-				return 0
-			case pipeline.KindImplementation:
-				fmt.Fprintf(stdout, "auto: ready implementation block %q — run with `parley pipeline auto --max-active 1` (single-active drives Phase 5-8). status=needs_artifact\n", bid)
-				return 0
+			if b.Kind == pipeline.KindAction {
+				if planFinalized(deck, slug, b.ID) {
+					actionAwaiting = append(actionAwaiting, b)
+				} else {
+					actionPending = append(actionPending, b)
+				}
+				continue
 			}
+			completable = append(completable, b)
 		}
+		launch := append(append([]pipeline.Block{}, completable...), actionPending...)
 		if len(launch) > maxActive {
 			launch = launch[:maxActive]
+		}
+		if len(launch) == 0 {
+			// Only action blocks awaiting their gated execution remain.
+			run.Status = pipeline.StatusBlockedOnGate
+			run.ActiveBlocks = nil
+			run.ReadyBlocks = blockIDs(actionAwaiting)
+			_ = run.Save(pipeline.RunPath(deck, slug))
+			fmt.Fprintf(stdout, "auto: %d action block(s) await gated execution: %s\n  for each run `parley pipeline execute [--json] --dir %s %s <block> <capability> <target>` + `record-effect`, then re-run auto.\n", len(actionAwaiting), strings.Join(blockIDs(actionAwaiting), ", "), root, slug)
+			return 0
 		}
 		run.ActiveBlocks = blockIDs(launch)
 		run.ReadyBlocks = step.Ready
 		run.Status = pipeline.StatusRunning
 		_ = run.Save(pipeline.RunPath(deck, slug))
 
-		fmt.Fprintf(stdout, "auto: DAG wave — launching %d block(s) concurrently (max-active %d): %s\n", len(launch), maxActive, strings.Join(blockIDs(launch), ", "))
+		fmt.Fprintf(stdout, "auto: DAG wave — driving %d block(s) concurrently (max-active %d): %s\n", len(launch), maxActive, strings.Join(blockIDs(launch), ", "))
 		var wg sync.WaitGroup
 		var mu sync.Mutex
 		failed := 0
@@ -589,7 +606,13 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				if code := autoDriveDeliberationBlock(ctx, root, deck, slug, b, participantsFlag, drafter, rounds, yes, io.Discard, io.Discard); code != 0 {
+				var code int
+				if b.Kind == pipeline.KindImplementation {
+					code = autoDriveImplementationBlock(ctx, root, deck, slug, b, participantsFlag, drafter, yes, io.Discard, io.Discard)
+				} else { // deliberation, watcher, or action-plan
+					code = autoDriveDeliberationBlock(ctx, root, deck, slug, b, participantsFlag, drafter, rounds, yes, io.Discard, io.Discard)
+				}
+				if code != 0 {
 					mu.Lock()
 					failed++
 					mu.Unlock()
@@ -598,10 +621,9 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 		}
 		wg.Wait()
 		if failed > 0 {
-			fmt.Fprintf(stderr, "auto: %d block(s) in the wave did not finalize; stopping. Inspect their workspaces and re-run auto.\n", failed)
+			fmt.Fprintf(stderr, "auto: %d block(s) in the wave failed; stopping. Inspect their workspaces and re-run auto.\n", failed)
 			return 1
 		}
-		// Record newly-complete blocks in the cursor for the next wave.
 		run2, err := pipeline.LoadRun(pipeline.RunPath(deck, slug))
 		if err != nil {
 			fmt.Fprintf(stderr, "auto failed: %v\n", err)
@@ -609,6 +631,14 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 		}
 		progressed := false
 		for _, b := range launch {
+			if b.Kind == pipeline.KindAction {
+				// A driven action plan that finalized is progress; it becomes
+				// awaiting-execute next wave (not auto-completable).
+				if planFinalized(deck, slug, b.ID) {
+					progressed = true
+				}
+				continue
+			}
 			if done, _ := complete(b); done && !contains(run2.CompletedBlocks, b.ID) {
 				run2.CompletedBlocks = append(run2.CompletedBlocks, b.ID)
 				progressed = true
@@ -617,7 +647,11 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 		run2.ActiveBlocks = nil
 		_ = run2.Save(pipeline.RunPath(deck, slug))
 		if !progressed {
-			fmt.Fprintf(stderr, "auto: wave made no progress (no block finalized); stopping to avoid a loop.\n")
+			if len(actionAwaiting) > 0 {
+				fmt.Fprintf(stdout, "auto: %d action block(s) await gated execution: %s; run `pipeline execute` + `record-effect`, then re-run auto.\n", len(actionAwaiting), strings.Join(blockIDs(actionAwaiting), ", "))
+				return 0
+			}
+			fmt.Fprintf(stderr, "auto: wave made no progress; stopping to avoid a loop.\n")
 			return 1
 		}
 	}
@@ -1210,6 +1244,12 @@ func runPipelineRecordEffect(args []string, stdout, stderr io.Writer) int {
 func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 	return func(b pipeline.Block) (bool, error) {
 		ws := pipeline.BlockWorkspace(deck, slug, b.ID)
+		// Action blocks complete ONLY when a side effect has succeeded — a
+		// finalized plan must not advance the pipeline past an unexecuted deploy
+		// (§12.10). The gated `pipeline execute` + `record-effect` produces it.
+		if b.Kind == pipeline.KindAction {
+			return pipeline.BlockHasSucceededEffect(deck, slug, b.ID)
+		}
 		candidates := []string{"FINAL.md"}
 		if b.OutputArtifact != "" {
 			candidates = append([]string{b.OutputArtifact}, candidates...)
@@ -1241,6 +1281,19 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 		}
 		return false, nil
 	}
+}
+
+// planFinalized reports whether a block's plan artifact (FINAL.md or its named
+// output) is status: final — used for action blocks, whose plan finalizing is
+// distinct from the block completing (which needs a succeeded effect).
+func planFinalized(deck, slug, blockID string) bool {
+	ws := pipeline.BlockWorkspace(deck, slug, blockID)
+	for _, name := range []string{"FINAL.md", "DEPLOYMENT.md", "RUNBOOK.md", "MONITORING.md"} {
+		if data, err := os.ReadFile(filepath.Join(ws, name)); err == nil && isFinalized(string(data)) {
+			return true
+		}
+	}
+	return false
 }
 
 func implementationComplete(content string) bool {
