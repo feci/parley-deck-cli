@@ -1,0 +1,962 @@
+OpenAI Codex v0.134.0
+--------
+workdir: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e87cd-399c-7c32-8c64-572b0be8334c
+--------
+user
+You are codex, a participant in a Parley Deck cooperation round.
+
+Rules:
+- Create exactly this file and no other protocol artifact: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+- Do not edit any other agent's file.
+- Do not overwrite the file if it already exists; report a blocker instead.
+- Do not read or reference other agents' round-01 answers.
+- Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
+- Return only a short confirmation with the path written.
+- Be concrete, concise, and state trade-offs.
+- If you are blocked by missing human input, create one JSON question file under: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/runs/20260602T100714.229215000Z/questions
+- Question files use this shape: {"id":"<unique-id>","agent":"codex","prompt":"<question>","details":"<context>","default_answer":"<safe default if any>","risk":"low|normal|high","status":"open","answer":"","created_at":"<RFC3339 time>","answered_at":"0001-01-01T00:00:00Z"}
+- If you choose to wait for an answer, poll your question file until status is answered or auto_answered. Otherwise proceed with an explicit assumption in your artifact.
+
+Effective launch config:
+- model: cli-default
+- thinking/reasoning/effort/profile: cli-default
+- speed: balanced
+- sandbox: workspace-write
+- approval: on-failure
+- timeoutMs: 1800000
+
+Idea prompt:
+---
+idea: 2026-06-02T12-07-14-meta-protocol-ch
+author: user
+created: 2026-06-02
+participants: [codex, agy, hermes]
+status: round-01
+---
+
+## Problem / idea
+
+Meta-protocol-change: evolve Parley Deck into a full automatic idea-to-monitoring pipeline.
+
+We want to extend the Parley Deck cooperation protocol so that, from a single raw idea, the deck can drive the work all the way through to a deployed, operated, and monitored system — automatically, using the available local CLI agents, while preserving everything that already works. The target stages are: idea -> business specification -> technical specification -> implementation design -> implementation -> deployment -> operations -> monitoring. This idea runs as a §7 meta-protocol-change: its FINAL.md must propose the concrete COOPERATION.md additions (a new §12) plus the new canonical artifacts and CLI capabilities. Do NOT edit COOPERATION.md in this idea; only design and reach consensus on the change.
+
+You are being asked for independent Phase-1 analysis. A proposed architecture is given below as the starting point. Critique it hard, surface flaws and risks, and propose concrete protocol text and artifact schemas. Disagreement and counter-proposals are welcome; do not rubber-stamp.
+
+=== AGREED DIRECTION (locked by the project owner) ===
+1. Scope: ratify the WHOLE pipeline at once — specifications through monitoring, including the side-effecting deploy/ops/monitor stages, the effects-ledger, and the new execute sub-phase.
+2. Autonomy: "supervised-first" — fully automatic INSIDE each block (rounds -> consensus -> finalize auto-advance), but the driver PAUSES at every block boundary for human approval until the system is trusted; a per-pipeline flag later flips the left half (idea..implementation) to auto. Anything that mutates production always gates regardless of autonomy level.
+3. Side-effect execution boundary: local CLI agents only WRITE markdown (their own artifact). All side-effecting actions (deploy, ops changes, monitor setup) are executed by the driver/harness via MCP tools behind an explicit gate — agents deliberate the plan, the driver acts.
+4. Deploy provider: a provider-agnostic deploy/runtime interface from day one (Vercel is the first concrete implementation behind it).
+
+=== PROPOSED ARCHITECTURE (the starting point to critique) ===
+Composable Pipeline Manifest (spine) + staged gate-object/effects-ledger discipline. Keep today's Phase 0-8 rounds+consensus engine UNCHANGED and wrap it in a thin composition layer.
+
+- New artifact pipelines/<slug>/pipeline.yaml lists ordered/DAG BLOCKS. Each block is exactly one invocation of today's engine:
+  - deliberation block = Phase 0-4, produces a FINAL.md-shaped artifact under a stage-specific name;
+  - impl+review block = Phase 5-8 (unchanged), produces IMPLEMENTATION.md + branch;
+  - action block = Phase 1-4 plan + ONE new side-effecting `execute` sub-phase, produces a plan artifact + an execution ledger section.
+- Stage -> artifact mapping (all spec artifacts are FINAL.md by another filename, identical frontmatter, so transports/consensus need zero change):
+  - business-spec -> ideas/<slug>/BUSINESS_SPEC.md (role-lens: product-analyst)
+  - technical-spec -> ideas/<slug>/TECHNICAL_SPEC.md (derived-from: BUSINESS_SPEC.md; role-lens: architect)
+  - implementation-design -> ideas/<slug>/IMPLEMENTATION_DESIGN.md (role-lens: tech-lead)
+  - implementation -> ideas/<slug>/IMPLEMENTATION.md + code branch (Phase 5-8 unchanged)
+  - deployment -> ideas/<slug>/DEPLOYMENT.md + "## Execution Ledger" (role-lens: SRE/release)
+  - operations -> ideas/<slug>/RUNBOOK.md (role-lens: SRE/ops)
+  - monitoring -> ideas/<slug>/MONITORING.md (SLOs + watch: spec; standing watcher block; role-lens: observability)
+- New non-idea artifacts: pipelines/<slug>/pipeline-run.json (durable cursor + action_ledger[]), pipelines/<slug>/gates/<edge-id>.gate.json (typed promote-to-next-block approval reusing the existing HITL hitl.Question risk model), pipelines/<slug>/effects/<idempotency-key>.json (side-effect ledger: external_ref + dry-run result).
+- Durable driver: promote today's read-only continue/runplan.Plan into an executor that loads pipeline-run.json, runs the recommended action, seeds block N+1's 00-prompt from block N's typed output, and persists the cursor. Must survive restart purely from pipeline-run.json.
+- Safety: every production-mutating action runs only behind a gate.json and is recorded with an idempotency key in an append-only effects ledger so a restart can never double-deploy; on resume, reconcile any action that may have succeeded externally before re-attempting.
+- Monitoring closes the loop: on SLO breach the watcher opens a new root idea (gating on remediation).
+- Backward compatibility: fully additive and opt-in. A deck with no pipeline.yaml behaves exactly as today; an existing idea is a valid degenerate one-block pipeline; pipeline files live under a new parley-deck/pipelines/ dir; existing run.json/manifest gain only optional fields.
+
+=== DEFAULTS for the remaining open points (override if you disagree, with reasons) ===
+- Deadlock on strict unanimity: block-and-wait for the human by default; an always-available decider agent may break ties ONLY for explicitly low-risk, non-prod block boundaries via policy.
+- Transport: single sticky transport for the whole pipeline in v1 (revisit per-block transport later).
+- Monitoring loop-closure: notify-and-gate for all SLO breaches initially; auto-open a remediation idea only for pre-declared low-risk breach classes.
+
+=== WHAT TO DELIVER IN YOUR ROUND-01 ARTIFACT ===
+- Your independent assessment of the proposed architecture: what is sound, what is wrong or risky, what is missing.
+- Concrete proposal for COOPERATION.md §12 "Pipeline blocks & action stages": the phase/block model, the canonical artifacts and their frontmatter, the gate and effects-ledger semantics, and how auto-advance + HITL gates work.
+- The minimal CLI capability set required (manifest parser, round-02+/Phase 5-8 runner, durable executor, run-action layer for deploy/ops/monitor, typed gate primitive + policy, effects ledger + reconcile-on-resume, capability-aware dispatch).
+- The safety model for side-effecting actions (idempotency, dry-run, reconcile, non-bypassable prod gates).
+- The migration/backward-compatibility story for existing decks and ideas.
+- Your top risks and the smallest first increment you would ship.
+
+=== CONSTRAINTS ===
+- Preserve Parley Deck's vendor-neutral design; do not make any single vendor (Claude, Vercel, Atlassian, OpenAI) a required dependency. Provider integrations sit behind interfaces.
+- Preserve canonical file ownership: each participant writes only its own protocol artifact; the facilitator must not proxy-write another participant's content.
+- Preserve the non-solo execution requirement and the consensus/signoff mechanics.
+- Changes must be additive and backward-compatible: existing Phase 0-8 decks and ideas keep working with zero migration.
+- Local CLI agents write markdown only; side-effecting actions are driver/harness-executed behind gates.
+- All files under parley-deck/ are English-only.
+- Keep the change implementable incrementally; identify what needs no protocol change vs what genuinely requires this meta-change.
+
+=== NON-GOALS ===
+- Do not implement code in this idea; this is a design + consensus idea (Phase 0-4).
+- Do not replace the round/consensus model; reuse it as the engine for every block.
+- Do not add hidden autonomous execution: production mutations always gate on a human by default.
+- Do not couple the protocol to one CI/CD, ticketing, or model vendor.
+
+## Constraints
+
+- Local-directory transport for this initial run.
+- Human-in-the-loop mode by default unless the run was started with auto mode.
+
+## Non-goals
+
+- Do not make unrelated repository changes.
+
+
+Required file shape:
+---
+agent: codex
+idea: 2026-06-02T12-07-14-meta-protocol-ch
+round: 1
+date: 2026-06-02
+---
+
+## Summary
+## Proposed approach
+## Concerns / open questions
+## Risks
+
+codex
+Using the Parley Deck skill for the cooperation-round artifact rules. I’ll only check whether the required `codex.md` already exists, then write that file if it does not.
+exec
+/bin/zsh -lc 'test -e parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md && printf exists || printf missing' in /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+ succeeded in 0ms:
+missing
+codex
+The required artifact is absent, so I’m writing it now. I’ll keep the content scoped to the requested Phase-1 analysis and avoid touching any other files.
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/tomasfecko/.codex/skills/parley-deck/SKILL.md" in /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+ succeeded in 0ms:
+---
+name: parley-deck
+description: "Run Parley Deck multi-agent idea, implementation, review, or consensus workflows through local CLI agents, using defaulted or user-overridden transport: local files, GitHub PRs, or GitLab MRs. Use when a user wants a task, design, implementation plan, or code review to be independently analyzed by multiple headless or interactive agents according to parley-deck/COOPERATION.md, with each participant writing its own canonical artifacts under parley-deck/ideas/."
+---
+
+# Parley Deck
+
+## Core Rule
+
+Act as the facilitator agent. Every participant writes its own protocol artifact, including participants invoked headlessly through local CLIs. The facilitator prepares directories, discovers agent capabilities, prompts agents, and verifies outputs; it must not proxy-write another participant's round, review, or signoff content as the normal path.
+
+Always read `parley-deck/COOPERATION.md` first. Follow the active transport, roster, phase rules, and English-only rule for every file under `parley-deck/`.
+
+## Non-Solo Requirement
+
+A request to use `parley`, `parley-deck`, or this skill ALWAYS means a real multi-agent workflow with other available models or agents. Parley Deck is never satisfied by one agent working alone as a solo checklist, solo review, or solo process framework.
+
+If at least one other participant or CLI agent is available, the facilitator MUST invoke other agents. Each participant MUST create its own canonical artifact. The facilitator MUST NOT claim "Parley Deck was used" unless other participant artifacts exist, or the protocol explicitly records why multi-agent execution was impossible.
+
+If no other agent can be invoked because of auth, CLI, timeout, permissions, or tooling failure, the facilitator MUST stop before merge, finalization, or claiming completion and report the blocker to the user. The facilitator may continue only if the user explicitly authorizes a solo exception, and that exception MUST be recorded in an inbox/protocol note before work continues.
+
+## Required Protocol Context
+
+Do not run this skill from the abbreviated workflow alone. Load the full cooperation protocol before acting:
+
+1. Prefer the live project file `parley-deck/COOPERATION.md`.
+2. If the live file is unavailable, load the bundled fallback snapshot `references/COOPERATION.md`.
+3. If both are unavailable, stop and ask for the protocol.
+
+The live `parley-deck/COOPERATION.md` is canonical. The bundled reference is only a portability fallback for agents that receive the skill without the repository context.
+
+## Skill Metadata
+
+`SKILL.md` and `references/COOPERATION.md` are the vendor-neutral instructions for all agents.
+
+`agents/openai.yaml` exists only because Codex/OpenAI skill tooling uses it for UI metadata. It is not the protocol authority and does not imply that Parley Deck is OpenAI-specific.
+
+`agents/manifest.yaml` is a vendor-neutral metadata summary for other agents or tooling that want a machine-readable entrypoint.
+
+`references/WORKED_EXAMPLES.md` contains non-authoritative examples for capability matrices, local config, and installation/portability notes. Use it only after loading the protocol.
+
+`references/compatibility.json` describes the packaged protocol/metadata schema and compatibility policy. It is informational; the live project protocol remains canonical.
+
+## Automation Mode
+
+This skill implements **manual facilitation**: an agent follows this skill, invokes other CLI agents, and verifies canonical files. It is not a deterministic A2A facilitator service by itself.
+
+If the live protocol later contains an `Automation:` header, an `Automation write profile:`, or a section for automated orchestration, read that section before acting and apply it. If the live protocol and bundled fallback disagree, the live protocol wins.
+
+## Protocol Drift Check
+
+If `parley-deck-skill` is available, start with the structured status check:
+
+```bash
+parley-deck-skill status --target all --project . --json
+```
+
+Use it to report the actual system installer version, installed runtime skill versions, project metadata state, and compatibility warnings. Do not force global lockstep: stale runtime installs or project metadata are warnings unless the live protocol or installer reports an explicit blocker.
+
+When the system installer version changed or `parley-deck/meta/version.json` is missing/stale, run a dry-run project sync check:
+
+```bash
+parley-deck-skill sync-project --project . --dry-run --json
+```
+
+Ask before writing project metadata. If the user approves, run:
+
+```bash
+parley-deck-skill sync-project --project . --yes
+```
+
+`sync-project` updates only `parley-deck/meta/version.json`; it must not overwrite `parley-deck/COOPERATION.md`. Protocol content changes still require a protocol-change idea.
+
+When both the live protocol and bundled fallback exist, compare them before work:
+
+```bash
+shasum -a 256 <project-root>/parley-deck/COOPERATION.md <skill-root>/references/COOPERATION.md
+```
+
+If the hashes differ, warn that the bundled fallback is stale and use the live `parley-deck/COOPERATION.md`.
+
+## Protocol Coverage Checklist
+
+Before starting work, verify that the workflow plan covers all applicable protocol sections:
+
+- Transport choice and stickiness: choose exactly one of `local-dir`, `github-pr`, or `gitlab-mr`; do not switch later without a protocol-change idea.
+- Scope and purpose: parallel work without collisions, explicit rounds, consensus before execution, durable audit trail.
+- Non-solo execution: if any other participant or CLI agent is available, invoke at least one non-facilitator participant and verify its canonical artifacts exist.
+- Active roster: use stable agent IDs from the roster; do not silently add new quorum members.
+- Directory layout: create and maintain `00-prompt.md`, `round-NN/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, and `review/` artifacts in the required paths.
+- Phase 0 kickoff: create `ideas/<slug>/00-prompt.md` and `round-01/` with correct frontmatter.
+- Phase 1 independent analysis: every participant writes its own `round-01/<agent-id>.md` before reading other round-1 files; the facilitator MUST NOT substitute its own solo analysis for missing participant files.
+- Phase 2 cross-review rounds: each participant writes its own next-round file, explicitly addresses every other participant, and provides counter-proposals for disagreements.
+- Phase 3 consensus: draft `consensus.md`, then each participant appends its own signoff block. All active participants must accept, or blockers start another round.
+- Phase 4 finalization: the initiator or agreed drafter writes `FINAL.md`, updates status, and closes the idea per transport rules.
+- Phase 5 implementation: default implementer is the FINAL drafter unless another participant claims it; implementation must follow `FINAL.md`; deviations go into `IMPLEMENTATION.md`.
+- Phase 6 code review: every non-implementer writes `review/round-NN/<agent-id>.md` with fixed severities `CRITICAL`, `MAJOR`, `MINOR`, and `NIT`.
+- Phase 7 review consensus: draft `review/consensus.md`; all participants append signoffs; agreed fixes, deferred follow-ups, and dismissed findings are explicit.
+- Phase 8 fix-up: implement agreed fixes, update `IMPLEMENTATION.md`, repeat review until there are zero agreed fixes, then mark complete.
+- Escalation to user: use `inbox/<from>-to-user_<slug>_<topic>.md` when human judgment is needed; quote the user's answer into the next round/review file.
+- Quorum and async participation: quorum is all participants in `00-prompt.md`; dropping inactive agents requires the protocol's ping/deadline rules.
+- Participant sizing and lenses: default to 2-4 active participants, use optional per-idea `roles:` only as advisory lenses, and do not let roles change quorum, ownership, signoff weight, or drafter eligibility.
+- Conflict avoidance: one file per agent per round, append-only signoffs, never edit another agent's file, and copy external snippets when other agents may lack access.
+- Internal helpers: participants may use internal subagents/tools/retrieval/scratchpads, but those helpers are not Parley Deck participants, do not satisfy non-solo execution, and do not own canonical artifacts.
+- Version/project sync: check `parley-deck-skill status` when available; if project metadata is missing or stale after a system skill update, propose `sync-project` before starting work.
+- Protocol changes: open a meta-protocol-change idea; do not edit the protocol ad hoc.
+- Inbox: use for lightweight durable pings; promote design discussions to ideas, and mirror phase-affecting decisions into canonical round/review/consensus/final artifacts.
+- Session start: read protocol, inbox, open idea prompts, and outstanding PR/MR actions before new work.
+- Transport mechanics: apply the exact mechanics for Local Directory, GitHub PRs, or GitLab MRs from section 11 of the protocol.
+- English-only rule: every file under `parley-deck/`, PR/MR comment, review summary, and commit message is English unless the project protocol explicitly overrides it.
+
+If any checklist item is unclear for the requested workflow, ask the user before creating or modifying protocol artifacts.
+
+## Startup Flow
+
+1. Read `parley-deck/COOPERATION.md` and identify the current `Transport:` value and active roster.
+
+2. Run the version and project sync check before accepting new work:
+
+   - Prefer `parley-deck-skill status --target all --project . --json` when the command is installed.
+   - Note the actual installer version, each installed runtime skill marker version, and `parley-deck/meta/version.json` state.
+   - If metadata is missing/stale, run `parley-deck-skill sync-project --project . --dry-run --json` and ask before `--yes`.
+   - If runtime skill copies are older than the installer, warn and suggest `parley-deck-skill install --target all --force` for managed installs.
+   - If the command is unavailable, fall back to the manual hash comparison in the Protocol Drift Check section.
+
+3. Run the session-start state check before accepting new work:
+
+   - Read `parley-deck/inbox/` for messages addressed to the current agent, `all`, or unresolved `to-user` escalations.
+   - Read open `parley-deck/ideas/*/00-prompt.md` files and note ideas where the current agent owes a round, signoff, implementation update, review, or fix-up.
+   - For GitHub/GitLab transports, check the matching open PR/MR actions if tools and permissions are available.
+   - If outstanding protocol work conflicts with the user's new request, surface it and ask which to handle first.
+
+4. Use the active `COOPERATION.md` transport when it is set. If the project is new, the transport is still a placeholder, or the user starts a workflow without naming a transport, default to `local-dir` and mention the available overrides:
+
+   - `local-dir` / files only
+   - `github-pr` / GitHub Pull Requests
+   - `gitlab-mr` / GitLab Merge Requests
+
+5. Discover candidate agents generically. Do not assume any fixed vendor, model family, or CLI command. Use this order:
+
+   - User-provided agent list in the current request.
+   - `PARLEY_HEADLESS_AGENT_CONFIG` pointing to a JSON config file.
+   - `parley-deck/meta/headless-agents.local.json` when present.
+   - Active agent IDs and workspace hints in `COOPERATION.md`.
+   - If still unclear, ask the user which installed CLI commands should be considered.
+
+6. For each candidate command, verify it is installed with `command -v <cli>` or an explicit configured path.
+
+7. Build a capability matrix before starting a new idea, implementation, or review cycle. Show the matrix and the effective defaults, but do not block on optional choices. The only required startup answer is the task statement when it was not already provided.
+
+8. Verify that participant selection includes at least one non-facilitator participant when another agent or CLI is available. Optional selection MUST NOT silently collapse to only the facilitator. If no non-facilitator participant can be invoked, stop and report the blocker unless the user explicitly authorizes a recorded solo exception.
+
+9. If a candidate agent is not in the roster, list the proposed stable agent ID in the default summary. Pressing Enter accepts that agent for the current workflow. If the user explicitly rejects roster expansion, run it only as a temporary observer or skip it. Rejecting every non-facilitator participant requires an explicit solo exception note before continuing.
+
+10. Default external-backend disclosure approval is YES for the task brief and necessary repository/code context. Still redact obvious secrets and stop for explicit confirmation before sending credentials, customer data, private documents unrelated to the task, or other clearly sensitive material.
+
+## Transport Selection
+
+The user chooses the coordination transport before the first idea starts. Once `COOPERATION.md` has a concrete transport, treat that choice as sticky. Do not switch transports silently; switching later requires a protocol-change idea.
+
+Use this decision rule:
+
+- Use `local-dir` when the user wants the simplest filesystem-only flow or there is no remote git host yet.
+- Use `github-pr` when the project is on GitHub and the user wants native PR discussion/review ergonomics.
+- Use `gitlab-mr` when the project is on GitLab and the user wants native MR discussion/review ergonomics.
+
+All transports still write canonical artifacts under `parley-deck/`. PR/MR comments are ergonomic mirrors, not the source of truth.
+
+If the chosen transport is not yet reflected in `COOPERATION.md`, ask the user before updating the `Transport:` header. For GitHub or GitLab, also confirm repository URL, target integration branch, and whether the design should use a new branch or an existing one.
+
+Transport-specific facilitator duties:
+
+- `local-dir`: create kickoff files and round directories under `parley-deck/`; each participant writes its own round/review/signoff artifacts; use commits when appropriate.
+- `github-pr`: create canonical files and have each participant write its own artifacts on the design or implementation branch, then mirror the lifecycle in GitHub PRs according to `COOPERATION.md` section 11.B.
+- `gitlab-mr`: create canonical files and have each participant write its own artifacts on the design or implementation branch, then mirror the lifecycle in GitLab MRs according to `COOPERATION.md` section 11.C.
+
+Under manual facilitation with `github-pr` or `gitlab-mr`, do not assume API permissions. If GitHub/GitLab tools are unavailable, produce the canonical files and tell the user exactly which PR/MR actions remain: branch creation, PR/MR creation, labels, requested reviewers, native approvals/reviews, and merge/finalization. Native PR/MR comments never replace canonical files.
+
+## Commit Message Conventions
+
+For any committed change inside `parley-deck/`, use the protocol prefix:
+
+```text
+[<agent-id>] <slug>: <one-line description>
+```
+
+Phase-specific messages required by the local-directory transport:
+
+- Phase 4 close: `[<drafter>] <slug>: FINAL.md + close idea`
+- Phase 5 ready: `[<agent>] <slug>: IMPLEMENTATION.md — ready for review`
+- Phase 8 fix-up: `[<agent>] <slug>: IMPLEMENTATION.md fix-up cycle <N> — ready for re-review`
+- Phase 8 complete: `[<agent>] <slug>: IMPLEMENTATION.md — complete`
+
+Under GitHub/GitLab transports, keep the same commit prefix convention and also apply the PR/MR titles, labels, reviewers, and native review mirrors required by the selected transport section of `COOPERATION.md`.
+
+## Agent Capability Discovery
+
+The facilitator that starts the workflow is responsible for discovering other available agents. Discovery must produce a capability matrix, not a hardcoded vendor list.
+
+For each candidate agent, determine:
+
+- `agentId`: stable Parley agent ID from the roster, or a temporary observer ID approved by the user.
+- `cli`: executable path or command.
+- `installed`: yes/no.
+- `headlessMode`: how to run a non-interactive prompt.
+- `writeMode`: how to allow narrow workspace writes for one protocol artifact.
+- `modelOptions`: supported model names or `unknown`.
+- `thinkingOptions`: supported thinking/reasoning/effort levels or `unknown`.
+- `speedProfiles`: user-facing speed/quality choices such as `fast`, `balanced`, `deep`, `review`, or `unknown`.
+- `timeoutMs`: effective process timeout.
+- `notes`: auth, quota, workspace trust, or unsupported features.
+
+Use non-destructive discovery commands first:
+
+```bash
+<cli> --help
+<cli> help
+<cli> --version
+```
+
+
+apply patch
+patch: completed
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+diff --git a/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md b/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..ede0e41003b9a8b49d2cf14a9889543984c7479b
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+@@ -0,0 +1,191 @@
++---
++agent: codex
++idea: 2026-06-02T12-07-14-meta-protocol-ch
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++The proposed architecture is mostly sound: reusing the existing Phase 0-8 engine as the unit of composition preserves the current consensus mechanics, file ownership model, and non-solo discipline. The critical boundary is also right: agents deliberate and write markdown; the driver alone performs side effects through typed provider interfaces after gates.
++
++The main weakness is that the proposal treats several very different things as "blocks" without enough type discipline. A deliberation block, implementation block, deployment action, operations change, and monitoring watcher have different inputs, outputs, failure modes, and replay semantics. The protocol should keep the round/consensus engine unchanged, but add strict typed block contracts around it.
++
++My recommendation is to ratify the whole pipeline, but ship it behind a small, conservative v1: linear manifests only, one sticky transport, supervised-first gates at every boundary, provider interfaces with dry-run support, and append-only effects records. DAGs, per-block transports, decider agents, and automatic remediation loops should be defined as future-compatible fields, not required in the first implementation.
++
++## Proposed approach
++
++Add `COOPERATION.md` §12, "Pipeline blocks & action stages", as an additive opt-in layer:
++
++```text
++12. Pipeline blocks & action stages
++
++12.1 Scope
++When `parley-deck/pipelines/<slug>/pipeline.yaml` exists, the idea may be executed as a pipeline. If no pipeline manifest exists, the deck behaves exactly as Sections 0-11 define. Each pipeline block invokes the existing cooperation engine; the pipeline layer only sequences blocks, records gates, and executes approved side effects through the driver.
++
++12.2 Block model
++A pipeline is an ordered list of blocks. v1 pipelines are linear; future manifests may declare DAG edges, but a v1 driver must reject a non-linear graph unless it explicitly supports it.
++
++Block kinds:
++- `deliberation`: runs Phase 1-4 and produces one consensus artifact.
++- `implementation`: runs Phase 5-8 and produces `IMPLEMENTATION.md` plus the implementation branch/worktree state.
++- `action`: runs Phase 1-4 to approve an action plan, then enters `execute`, a driver-only sub-phase that performs approved side effects.
++- `watcher`: installs or updates monitoring definitions and defines breach handling policy; any remediation work starts as a new gated root idea unless predeclared low-risk policy allows auto-open.
++
++12.3 Canonical pipeline artifacts
++The default pipeline artifacts are:
++- `ideas/<slug>/BUSINESS_SPEC.md`
++- `ideas/<slug>/TECHNICAL_SPEC.md`
++- `ideas/<slug>/IMPLEMENTATION_DESIGN.md`
++- `ideas/<slug>/IMPLEMENTATION.md`
++- `ideas/<slug>/DEPLOYMENT.md`
++- `ideas/<slug>/RUNBOOK.md`
++- `ideas/<slug>/MONITORING.md`
++
++Each stage artifact uses normal `FINAL.md`-style frontmatter plus optional typed fields:
++- `artifact_kind`: business-spec | technical-spec | implementation-design | implementation | deployment | runbook | monitoring
++- `pipeline_slug`: string
++- `block_id`: string
++- `derived_from`: list of prior artifact paths
++- `risk`: low | normal | high | production
++- `providers_required`: list of provider capability names
++- `effects_intent`: none | planned | executed
++
++12.4 Manifest
++`parley-deck/pipelines/<slug>/pipeline.yaml` declares:
++- `schema_version`
++- `idea_slug`
++- `autonomy`: supervised-first | auto-left | custom
++- `transport`: local-dir | github-pr | gitlab-mr
++- `participants`
++- `blocks[]`: id, kind, stage, role_lens, input_artifacts, output_artifact, risk, provider_capabilities, gate_policy
++- `edges[]`: from, to, gate_id
++
++The transport is sticky for the whole pipeline in v1.
++
++12.5 Durable run state
++`parley-deck/pipelines/<slug>/pipeline-run.json` is the durable cursor. It records:
++- `schema_version`
++- `pipeline_slug`
++- `status`
++- `current_block`
++- `completed_blocks[]`
++- `pending_gate`
++- `action_ledger[]`
++- `created_at`, `updated_at`
++- optional driver metadata
++
++The driver must be able to resume using only the manifest, canonical artifacts, gate files, effects files, and `pipeline-run.json`.
++
++12.6 Gates
++Every edge between blocks has a typed gate file at `parley-deck/pipelines/<slug>/gates/<edge-id>.gate.json`.
++
++Gate schema:
++- `id`
++- `pipeline_slug`
++- `edge`
++- `from_block`
++- `to_block`
++- `risk`: low | normal | high | production
++- `status`: open | approved | rejected | expired | superseded
++- `prompt`
++- `details`
++- `default_answer`
++- `policy`
++- `approved_by`
++- `created_at`
++- `answered_at`
++- `decision_artifacts[]`
++
++Supervised-first means the driver pauses at every block boundary until the gate is approved. `auto-left` may auto-approve non-production gates from idea through implementation only when policy explicitly allows it. Production-mutating gates are non-bypassable and always require human approval.
++
++12.7 Execute sub-phase
++In an action block, agents produce and sign off on a markdown plan. The driver then performs `execute` only after the matching gate is approved. Agents never invoke deploy, ops, ticketing, monitoring, or production mutation tools directly as protocol work.
++
++12.8 Effects ledger
++Every side effect is recorded before execution under `parley-deck/pipelines/<slug>/effects/<idempotency-key>.json`.
++
++Effects schema:
++- `idempotency_key`
++- `pipeline_slug`
++- `block_id`
++- `action_type`
++- `provider`
++- `target`
++- `risk`
++- `status`: planned | dry_run_ok | executing | succeeded | failed | reconciled | abandoned
++- `gate_id`
++- `request_hash`
++- `dry_run_result`
++- `external_ref`
++- `attempts[]`
++- `created_at`, `updated_at`
++
++On resume, the driver must reconcile any `executing`, `failed`, or externally ambiguous effect before retrying. Retrying without an idempotency key is prohibited.
++
++12.9 Monitoring loop closure
++Monitoring artifacts define SLOs, signal sources, alert destinations, and breach classes. A breach opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes; production remediation remains gated.
++
++12.10 Compatibility
++All pipeline files are optional. Existing ideas, rounds, consensus files, reviews, and implementations remain valid without migration. Existing `run.json` or manifests may gain optional pipeline fields, but old drivers may ignore them.
++```
++
++Minimal CLI capabilities required:
++
++- Manifest parser and validator for `pipeline.yaml`, initially linear-only.
++- Block runner that can invoke Phase 1-4, Phase 5-8, and round-02+ continuation for a named block.
++- Durable executor that reads and writes `pipeline-run.json` and resumes from disk.
++- Typed gate primitive using the existing HITL question risk model, with policy evaluation.
++- Effects ledger writer plus reconcile-on-resume for ambiguous side effects.
++- Provider-neutral action layer: deploy, runtime, ops, monitoring, notification, and issue/remediation providers behind interfaces.
++- Capability-aware dispatch that matches block requirements to available local CLI agents and driver providers.
++- Seeding layer that converts one block's typed output into the next block's `00-prompt` without changing participant file ownership.
++
++Safety model:
++
++- All mutating actions require a gate; production mutation always requires human approval.
++- Agents write markdown only; the driver executes side effects.
++- Every side effect has a stable idempotency key derived from pipeline slug, block id, provider, target, action type, and request hash.
++- Dry-run is mandatory when a provider supports it; unsupported dry-run must be explicit in the action plan and raises risk.
++- The ledger is append-only in semantics even if represented as one JSON file per effect.
++- Resume first reconciles external state, then decides whether to retry, mark succeeded, or ask for human judgment.
++- Provider integrations must be optional and replaceable; Vercel can be the first deploy provider, not a protocol dependency.
++
++Migration and compatibility:
++
++- No migration is required for existing decks.
++- An existing idea is a degenerate one-block pipeline only when a manifest is added.
++- Existing Phase 0-8 commands continue to work unchanged.
++- New CLI commands should sit beside current commands, for example `pipeline validate`, `pipeline start`, `pipeline continue`, `pipeline gate`, `pipeline execute`, and `pipeline reconcile`.
++- Existing run files may add optional fields but must not require old artifacts to be rewritten.
++
++Smallest first increment:
++
++Ship a supervised, linear, local-dir pipeline with three deliberation blocks: business spec, technical spec, and implementation design. Add manifest validation, gate files, durable cursor, and prompt seeding. Do not ship real deployment yet. Then add a dry-run-only action block and effects ledger. Only after that, enable one real provider-backed deployment action behind a mandatory production gate.
++
++## Concerns / open questions
++
++The term "FINAL.md-shaped artifact" is useful for reuse but too vague for automation. Each stage needs a small typed contract so the next block can consume it without scraping prose.
++
++The proposed action block "Phase 1-4 plan + execute" needs a clear consensus boundary. Execution should not start from a draft plan or partial agreement; it starts only after the action plan has consensus and the gate is approved.
++
++The effects ledger must be per-effect, not only an array in `pipeline-run.json`. A central cursor is too easy to corrupt, merge-conflict, or rewrite. Keep `pipeline-run.json` as an index/cursor and store each effect as its own idempotency-keyed file.
++
++DAG support is premature for v1. Define enough schema to avoid painting the protocol into a corner, but require linear execution until the executor can prove deterministic gate ordering and resume behavior.
++
++The "decider agent" default is risky. I would allow it only as a future policy hook for low-risk gates and never as a default behavior. Human block-and-wait should be the default for all unresolved consensus or gate conflicts.
++
++Monitoring needs clearer ownership. A standing watcher block implies ongoing state outside a single cooperation round. The protocol should define whether the driver owns watcher scheduling, whether alert state is durable, and how duplicate breach ideas are suppressed.
++
++Capability-aware dispatch needs a failure mode. If no local CLI participant can satisfy a required lens or provider capability, the block should stop before consensus rather than silently degrading to solo or unqualified execution.
++
++## Risks
++
++- Automation may blur deliberation and execution. Mitigation: keep consensus, gate approval, and execute as separate recorded states.
++- Side effects may duplicate after restart. Mitigation: idempotency keys, per-effect ledgers, and mandatory reconcile before retry.
++- Typed schemas may become too heavy and slow adoption. Mitigation: require only minimal frontmatter fields and keep rich detail in markdown.
++- Provider interfaces may leak Vercel-specific assumptions. Mitigation: name generic capabilities such as `deploy.preview`, `deploy.production`, `runtime.rollback`, and `monitor.alert`.
++- Monitoring loop closure may create noisy remediation ideas. Mitigation: default notify-and-gate, deduplicate by breach fingerprint, and allow auto-open only for declared low-risk breach classes.
++- Auto-advance could weaken non-solo consensus. Mitigation: auto-advance only after normal quorum and signoff have completed; it must not replace participant artifacts.
++- Pipeline state may conflict with existing transport mechanics. Mitigation: make pipeline state additive and let canonical stage artifacts remain under `ideas/<slug>/`.
++- The first increment could be too ambitious if it includes production deployment. Mitigation: ship typed spec blocks and dry-run action blocks before any real provider mutation.
+
+diff --git a/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md b/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..ede0e41003b9a8b49d2cf14a9889543984c7479b
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+@@ -0,0 +1,191 @@
++---
++agent: codex
++idea: 2026-06-02T12-07-14-meta-protocol-ch
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++The proposed architecture is mostly sound: reusing the existing Phase 0-8 engine as the unit of composition preserves the current consensus mechanics, file ownership model, and non-solo discipline. The critical boundary is also right: agents deliberate and write markdown; the driver alone performs side effects through typed provider interfaces after gates.
++
++The main weakness is that the proposal treats several very different things as "blocks" without enough type discipline. A deliberation block, implementation block, deployment action, operations change, and monitoring watcher have different inputs, outputs, failure modes, and replay semantics. The protocol should keep the round/consensus engine unchanged, but add strict typed block contracts around it.
++
++My recommendation is to ratify the whole pipeline, but ship it behind a small, conservative v1: linear manifests only, one sticky transport, supervised-first gates at every boundary, provider interfaces with dry-run support, and append-only effects records. DAGs, per-block transports, decider agents, and automatic remediation loops should be defined as future-compatible fields, not required in the first implementation.
++
++## Proposed approach
++
++Add `COOPERATION.md` §12, "Pipeline blocks & action stages", as an additive opt-in layer:
++
++```text
++12. Pipeline blocks & action stages
++
++12.1 Scope
++When `parley-deck/pipelines/<slug>/pipeline.yaml` exists, the idea may be executed as a pipeline. If no pipeline manifest exists, the deck behaves exactly as Sections 0-11 define. Each pipeline block invokes the existing cooperation engine; the pipeline layer only sequences blocks, records gates, and executes approved side effects through the driver.
++
++12.2 Block model
++A pipeline is an ordered list of blocks. v1 pipelines are linear; future manifests may declare DAG edges, but a v1 driver must reject a non-linear graph unless it explicitly supports it.
++
++Block kinds:
++- `deliberation`: runs Phase 1-4 and produces one consensus artifact.
++- `implementation`: runs Phase 5-8 and produces `IMPLEMENTATION.md` plus the implementation branch/worktree state.
++- `action`: runs Phase 1-4 to approve an action plan, then enters `execute`, a driver-only sub-phase that performs approved side effects.
++- `watcher`: installs or updates monitoring definitions and defines breach handling policy; any remediation work starts as a new gated root idea unless predeclared low-risk policy allows auto-open.
++
++12.3 Canonical pipeline artifacts
++The default pipeline artifacts are:
++- `ideas/<slug>/BUSINESS_SPEC.md`
++- `ideas/<slug>/TECHNICAL_SPEC.md`
++- `ideas/<slug>/IMPLEMENTATION_DESIGN.md`
++- `ideas/<slug>/IMPLEMENTATION.md`
++- `ideas/<slug>/DEPLOYMENT.md`
++- `ideas/<slug>/RUNBOOK.md`
++- `ideas/<slug>/MONITORING.md`
++
++Each stage artifact uses normal `FINAL.md`-style frontmatter plus optional typed fields:
++- `artifact_kind`: business-spec | technical-spec | implementation-design | implementation | deployment | runbook | monitoring
++- `pipeline_slug`: string
++- `block_id`: string
++- `derived_from`: list of prior artifact paths
++- `risk`: low | normal | high | production
++- `providers_required`: list of provider capability names
++- `effects_intent`: none | planned | executed
++
++12.4 Manifest
++`parley-deck/pipelines/<slug>/pipeline.yaml` declares:
++- `schema_version`
++- `idea_slug`
++- `autonomy`: supervised-first | auto-left | custom
++- `transport`: local-dir | github-pr | gitlab-mr
++- `participants`
++- `blocks[]`: id, kind, stage, role_lens, input_artifacts, output_artifact, risk, provider_capabilities, gate_policy
++- `edges[]`: from, to, gate_id
++
++The transport is sticky for the whole pipeline in v1.
++
++12.5 Durable run state
++`parley-deck/pipelines/<slug>/pipeline-run.json` is the durable cursor. It records:
++- `schema_version`
++- `pipeline_slug`
++- `status`
++- `current_block`
++- `completed_blocks[]`
++- `pending_gate`
++- `action_ledger[]`
++- `created_at`, `updated_at`
++- optional driver metadata
++
++The driver must be able to resume using only the manifest, canonical artifacts, gate files, effects files, and `pipeline-run.json`.
++
++12.6 Gates
++Every edge between blocks has a typed gate file at `parley-deck/pipelines/<slug>/gates/<edge-id>.gate.json`.
++
++Gate schema:
++- `id`
++- `pipeline_slug`
++- `edge`
++- `from_block`
++- `to_block`
++- `risk`: low | normal | high | production
++- `status`: open | approved | rejected | expired | superseded
++- `prompt`
++- `details`
++- `default_answer`
++- `policy`
++- `approved_by`
++- `created_at`
++- `answered_at`
++- `decision_artifacts[]`
++
++Supervised-first means the driver pauses at every block boundary until the gate is approved. `auto-left` may auto-approve non-production gates from idea through implementation only when policy explicitly allows it. Production-mutating gates are non-bypassable and always require human approval.
++
++12.7 Execute sub-phase
++In an action block, agents produce and sign off on a markdown plan. The driver then performs `execute` only after the matching gate is approved. Agents never invoke deploy, ops, ticketing, monitoring, or production mutation tools directly as protocol work.
++
++12.8 Effects ledger
++Every side effect is recorded before execution under `parley-deck/pipelines/<slug>/effects/<idempotency-key>.json`.
++
++Effects schema:
++- `idempotency_key`
++- `pipeline_slug`
++- `block_id`
++- `action_type`
++- `provider`
++- `target`
++- `risk`
++- `status`: planned | dry_run_ok | executing | succeeded | failed | reconciled | abandoned
++- `gate_id`
++- `request_hash`
++- `dry_run_result`
++- `external_ref`
++- `attempts[]`
++- `created_at`, `updated_at`
++
++On resume, the driver must reconcile any `executing`, `failed`, or externally ambiguous effect before retrying. Retrying without an idempotency key is prohibited.
++
++12.9 Monitoring loop closure
++Monitoring artifacts define SLOs, signal sources, alert destinations, and breach classes. A breach opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes; production remediation remains gated.
++
++12.10 Compatibility
++All pipeline files are optional. Existing ideas, rounds, consensus files, reviews, and implementations remain valid without migration. Existing `run.json` or manifests may gain optional pipeline fields, but old drivers may ignore them.
++```
++
++Minimal CLI capabilities required:
++
++- Manifest parser and validator for `pipeline.yaml`, initially linear-only.
++- Block runner that can invoke Phase 1-4, Phase 5-8, and round-02+ continuation for a named block.
++- Durable executor that reads and writes `pipeline-run.json` and resumes from disk.
++- Typed gate primitive using the existing HITL question risk model, with policy evaluation.
++- Effects ledger writer plus reconcile-on-resume for ambiguous side effects.
++- Provider-neutral action layer: deploy, runtime, ops, monitoring, notification, and issue/remediation providers behind interfaces.
++- Capability-aware dispatch that matches block requirements to available local CLI agents and driver providers.
++- Seeding layer that converts one block's typed output into the next block's `00-prompt` without changing participant file ownership.
++
++Safety model:
++
++- All mutating actions require a gate; production mutation always requires human approval.
++- Agents write markdown only; the driver executes side effects.
++- Every side effect has a stable idempotency key derived from pipeline slug, block id, provider, target, action type, and request hash.
++- Dry-run is mandatory when a provider supports it; unsupported dry-run must be explicit in the action plan and raises risk.
++- The ledger is append-only in semantics even if represented as one JSON file per effect.
++- Resume first reconciles external state, then decides whether to retry, mark succeeded, or ask for human judgment.
++- Provider integrations must be optional and replaceable; Vercel can be the first deploy provider, not a protocol dependency.
++
++Migration and compatibility:
++
++- No migration is required for existing decks.
++- An existing idea is a degenerate one-block pipeline only when a manifest is added.
++- Existing Phase 0-8 commands continue to work unchanged.
++- New CLI commands should sit beside current commands, for example `pipeline validate`, `pipeline start`, `pipeline continue`, `pipeline gate`, `pipeline execute`, and `pipeline reconcile`.
++- Existing run files may add optional fields but must not require old artifacts to be rewritten.
++
++Smallest first increment:
++
++Ship a supervised, linear, local-dir pipeline with three deliberation blocks: business spec, technical spec, and implementation design. Add manifest validation, gate files, durable cursor, and prompt seeding. Do not ship real deployment yet. Then add a dry-run-only action block and effects ledger. Only after that, enable one real provider-backed deployment action behind a mandatory production gate.
++
++## Concerns / open questions
++
++The term "FINAL.md-shaped artifact" is useful for reuse but too vague for automation. Each stage needs a small typed contract so the next block can consume it without scraping prose.
++
++The proposed action block "Phase 1-4 plan + execute" needs a clear consensus boundary. Execution should not start from a draft plan or partial agreement; it starts only after the action plan has consensus and the gate is approved.
++
++The effects ledger must be per-effect, not only an array in `pipeline-run.json`. A central cursor is too easy to corrupt, merge-conflict, or rewrite. Keep `pipeline-run.json` as an index/cursor and store each effect as its own idempotency-keyed file.
++
++DAG support is premature for v1. Define enough schema to avoid painting the protocol into a corner, but require linear execution until the executor can prove deterministic gate ordering and resume behavior.
++
++The "decider agent" default is risky. I would allow it only as a future policy hook for low-risk gates and never as a default behavior. Human block-and-wait should be the default for all unresolved consensus or gate conflicts.
++
++Monitoring needs clearer ownership. A standing watcher block implies ongoing state outside a single cooperation round. The protocol should define whether the driver owns watcher scheduling, whether alert state is durable, and how duplicate breach ideas are suppressed.
++
++Capability-aware dispatch needs a failure mode. If no local CLI participant can satisfy a required lens or provider capability, the block should stop before consensus rather than silently degrading to solo or unqualified execution.
++
++## Risks
++
++- Automation may blur deliberation and execution. Mitigation: keep consensus, gate approval, and execute as separate recorded states.
++- Side effects may duplicate after restart. Mitigation: idempotency keys, per-effect ledgers, and mandatory reconcile before retry.
++- Typed schemas may become too heavy and slow adoption. Mitigation: require only minimal frontmatter fields and keep rich detail in markdown.
++- Provider interfaces may leak Vercel-specific assumptions. Mitigation: name generic capabilities such as `deploy.preview`, `deploy.production`, `runtime.rollback`, and `monitor.alert`.
++- Monitoring loop closure may create noisy remediation ideas. Mitigation: default notify-and-gate, deduplicate by breach fingerprint, and allow auto-open only for declared low-risk breach classes.
++- Auto-advance could weaken non-solo consensus. Mitigation: auto-advance only after normal quorum and signoff have completed; it must not replace participant artifacts.
++- Pipeline state may conflict with existing transport mechanics. Mitigation: make pipeline state additive and let canonical stage artifacts remain under `ideas/<slug>/`.
++- The first increment could be too ambitious if it includes production deployment. Mitigation: ship typed spec blocks and dry-run action blocks before any real provider mutation.
+
+codex
+Written: `parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md`
+diff --git a/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md b/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..ede0e41003b9a8b49d2cf14a9889543984c7479b
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T12-07-14-meta-protocol-ch/round-01/codex.md
+@@ -0,0 +1,191 @@
++---
++agent: codex
++idea: 2026-06-02T12-07-14-meta-protocol-ch
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++The proposed architecture is mostly sound: reusing the existing Phase 0-8 engine as the unit of composition preserves the current consensus mechanics, file ownership model, and non-solo discipline. The critical boundary is also right: agents deliberate and write markdown; the driver alone performs side effects through typed provider interfaces after gates.
++
++The main weakness is that the proposal treats several very different things as "blocks" without enough type discipline. A deliberation block, implementation block, deployment action, operations change, and monitoring watcher have different inputs, outputs, failure modes, and replay semantics. The protocol should keep the round/consensus engine unchanged, but add strict typed block contracts around it.
++
++My recommendation is to ratify the whole pipeline, but ship it behind a small, conservative v1: linear manifests only, one sticky transport, supervised-first gates at every boundary, provider interfaces with dry-run support, and append-only effects records. DAGs, per-block transports, decider agents, and automatic remediation loops should be defined as future-compatible fields, not required in the first implementation.
++
++## Proposed approach
++
++Add `COOPERATION.md` §12, "Pipeline blocks & action stages", as an additive opt-in layer:
++
++```text
++12. Pipeline blocks & action stages
++
++12.1 Scope
++When `parley-deck/pipelines/<slug>/pipeline.yaml` exists, the idea may be executed as a pipeline. If no pipeline manifest exists, the deck behaves exactly as Sections 0-11 define. Each pipeline block invokes the existing cooperation engine; the pipeline layer only sequences blocks, records gates, and executes approved side effects through the driver.
++
++12.2 Block model
++A pipeline is an ordered list of blocks. v1 pipelines are linear; future manifests may declare DAG edges, but a v1 driver must reject a non-linear graph unless it explicitly supports it.
++
++Block kinds:
++- `deliberation`: runs Phase 1-4 and produces one consensus artifact.
++- `implementation`: runs Phase 5-8 and produces `IMPLEMENTATION.md` plus the implementation branch/worktree state.
++- `action`: runs Phase 1-4 to approve an action plan, then enters `execute`, a driver-only sub-phase that performs approved side effects.
++- `watcher`: installs or updates monitoring definitions and defines breach handling policy; any remediation work starts as a new gated root idea unless predeclared low-risk policy allows auto-open.
++
++12.3 Canonical pipeline artifacts
++The default pipeline artifacts are:
++- `ideas/<slug>/BUSINESS_SPEC.md`
++- `ideas/<slug>/TECHNICAL_SPEC.md`
++- `ideas/<slug>/IMPLEMENTATION_DESIGN.md`
++- `ideas/<slug>/IMPLEMENTATION.md`
++- `ideas/<slug>/DEPLOYMENT.md`
++- `ideas/<slug>/RUNBOOK.md`
++- `ideas/<slug>/MONITORING.md`
++
++Each stage artifact uses normal `FINAL.md`-style frontmatter plus optional typed fields:
++- `artifact_kind`: business-spec | technical-spec | implementation-design | implementation | deployment | runbook | monitoring
++- `pipeline_slug`: string
++- `block_id`: string
++- `derived_from`: list of prior artifact paths
++- `risk`: low | normal | high | production
++- `providers_required`: list of provider capability names
++- `effects_intent`: none | planned | executed
++
++12.4 Manifest
++`parley-deck/pipelines/<slug>/pipeline.yaml` declares:
++- `schema_version`
++- `idea_slug`
++- `autonomy`: supervised-first | auto-left | custom
++- `transport`: local-dir | github-pr | gitlab-mr
++- `participants`
++- `blocks[]`: id, kind, stage, role_lens, input_artifacts, output_artifact, risk, provider_capabilities, gate_policy
++- `edges[]`: from, to, gate_id
++
++The transport is sticky for the whole pipeline in v1.
++
++12.5 Durable run state
++`parley-deck/pipelines/<slug>/pipeline-run.json` is the durable cursor. It records:
++- `schema_version`
++- `pipeline_slug`
++- `status`
++- `current_block`
++- `completed_blocks[]`
++- `pending_gate`
++- `action_ledger[]`
++- `created_at`, `updated_at`
++- optional driver metadata
++
++The driver must be able to resume using only the manifest, canonical artifacts, gate files, effects files, and `pipeline-run.json`.
++
++12.6 Gates
++Every edge between blocks has a typed gate file at `parley-deck/pipelines/<slug>/gates/<edge-id>.gate.json`.
++
++Gate schema:
++- `id`
++- `pipeline_slug`
++- `edge`
++- `from_block`
++- `to_block`
++- `risk`: low | normal | high | production
++- `status`: open | approved | rejected | expired | superseded
++- `prompt`
++- `details`
++- `default_answer`
++- `policy`
++- `approved_by`
++- `created_at`
++- `answered_at`
++- `decision_artifacts[]`
++
++Supervised-first means the driver pauses at every block boundary until the gate is approved. `auto-left` may auto-approve non-production gates from idea through implementation only when policy explicitly allows it. Production-mutating gates are non-bypassable and always require human approval.
++
++12.7 Execute sub-phase
++In an action block, agents produce and sign off on a markdown plan. The driver then performs `execute` only after the matching gate is approved. Agents never invoke deploy, ops, ticketing, monitoring, or production mutation tools directly as protocol work.
++
++12.8 Effects ledger
++Every side effect is recorded before execution under `parley-deck/pipelines/<slug>/effects/<idempotency-key>.json`.
++
++Effects schema:
++- `idempotency_key`
++- `pipeline_slug`
++- `block_id`
++- `action_type`
++- `provider`
++- `target`
++- `risk`
++- `status`: planned | dry_run_ok | executing | succeeded | failed | reconciled | abandoned
++- `gate_id`
++- `request_hash`
++- `dry_run_result`
++- `external_ref`
++- `attempts[]`
++- `created_at`, `updated_at`
++
++On resume, the driver must reconcile any `executing`, `failed`, or externally ambiguous effect before retrying. Retrying without an idempotency key is prohibited.
++
++12.9 Monitoring loop closure
++Monitoring artifacts define SLOs, signal sources, alert destinations, and breach classes. A breach opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes; production remediation remains gated.
++
++12.10 Compatibility
++All pipeline files are optional. Existing ideas, rounds, consensus files, reviews, and implementations remain valid without migration. Existing `run.json` or manifests may gain optional pipeline fields, but old drivers may ignore them.
++```
++
++Minimal CLI capabilities required:
++
++- Manifest parser and validator for `pipeline.yaml`, initially linear-only.
++- Block runner that can invoke Phase 1-4, Phase 5-8, and round-02+ continuation for a named block.
++- Durable executor that reads and writes `pipeline-run.json` and resumes from disk.
++- Typed gate primitive using the existing HITL question risk model, with policy evaluation.
++- Effects ledger writer plus reconcile-on-resume for ambiguous side effects.
++- Provider-neutral action layer: deploy, runtime, ops, monitoring, notification, and issue/remediation providers behind interfaces.
++- Capability-aware dispatch that matches block requirements to available local CLI agents and driver providers.
++- Seeding layer that converts one block's typed output into the next block's `00-prompt` without changing participant file ownership.
++
++Safety model:
++
++- All mutating actions require a gate; production mutation always requires human approval.
++- Agents write markdown only; the driver executes side effects.
++- Every side effect has a stable idempotency key derived from pipeline slug, block id, provider, target, action type, and request hash.
++- Dry-run is mandatory when a provider supports it; unsupported dry-run must be explicit in the action plan and raises risk.
++- The ledger is append-only in semantics even if represented as one JSON file per effect.
++- Resume first reconciles external state, then decides whether to retry, mark succeeded, or ask for human judgment.
++- Provider integrations must be optional and replaceable; Vercel can be the first deploy provider, not a protocol dependency.
++
++Migration and compatibility:
++
++- No migration is required for existing decks.
++- An existing idea is a degenerate one-block pipeline only when a manifest is added.
++- Existing Phase 0-8 commands continue to work unchanged.
++- New CLI commands should sit beside current commands, for example `pipeline validate`, `pipeline start`, `pipeline continue`, `pipeline gate`, `pipeline execute`, and `pipeline reconcile`.
++- Existing run files may add optional fields but must not require old artifacts to be rewritten.
++
++Smallest first increment:
++
++Ship a supervised, linear, local-dir pipeline with three deliberation blocks: business spec, technical spec, and implementation design. Add manifest validation, gate files, durable cursor, and prompt seeding. Do not ship real deployment yet. Then add a dry-run-only action block and effects ledger. Only after that, enable one real provider-backed deployment action behind a mandatory production gate.
++
++## Concerns / open questions
++
++The term "FINAL.md-shaped artifact" is useful for reuse but too vague for automation. Each stage needs a small typed contract so the next block can consume it without scraping prose.
++
++The proposed action block "Phase 1-4 plan + execute" needs a clear consensus boundary. Execution should not start from a draft plan or partial agreement; it starts only after the action plan has consensus and the gate is approved.
++
++The effects ledger must be per-effect, not only an array in `pipeline-run.json`. A central cursor is too easy to corrupt, merge-conflict, or rewrite. Keep `pipeline-run.json` as an index/cursor and store each effect as its own idempotency-keyed file.
++
++DAG support is premature for v1. Define enough schema to avoid painting the protocol into a corner, but require linear execution until the executor can prove deterministic gate ordering and resume behavior.
++
++The "decider agent" default is risky. I would allow it only as a future policy hook for low-risk gates and never as a default behavior. Human block-and-wait should be the default for all unresolved consensus or gate conflicts.
++
++Monitoring needs clearer ownership. A standing watcher block implies ongoing state outside a single cooperation round. The protocol should define whether the driver owns watcher scheduling, whether alert state is durable, and how duplicate breach ideas are suppressed.
++
++Capability-aware dispatch needs a failure mode. If no local CLI participant can satisfy a required lens or provider capability, the block should stop before consensus rather than silently degrading to solo or unqualified execution.
++
++## Risks
++
++- Automation may blur deliberation and execution. Mitigation: keep consensus, gate approval, and execute as separate recorded states.
++- Side effects may duplicate after restart. Mitigation: idempotency keys, per-effect ledgers, and mandatory reconcile before retry.
++- Typed schemas may become too heavy and slow adoption. Mitigation: require only minimal frontmatter fields and keep rich detail in markdown.
++- Provider interfaces may leak Vercel-specific assumptions. Mitigation: name generic capabilities such as `deploy.preview`, `deploy.production`, `runtime.rollback`, and `monitor.alert`.
++- Monitoring loop closure may create noisy remediation ideas. Mitigation: default notify-and-gate, deduplicate by breach fingerprint, and allow auto-open only for declared low-risk breach classes.
++- Auto-advance could weaken non-solo consensus. Mitigation: auto-advance only after normal quorum and signoff have completed; it must not replace participant artifacts.
++- Pipeline state may conflict with existing transport mechanics. Mitigation: make pipeline state additive and let canonical stage artifacts remain under `ideas/<slug>/`.
++- The first increment could be too ambitious if it includes production deployment. Mitigation: ship typed spec blocks and dry-run action blocks before any real provider mutation.
+
+tokens used
+38,022
