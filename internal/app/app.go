@@ -59,6 +59,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runAgents(ctx, args[1:], stdout, stderr)
 	case "consensus":
 		return runConsensus(ctx, args[1:], stdout, stderr)
+	case "pipeline":
+		return runPipeline(args[1:], stdout, stderr)
 	case "context":
 		return runContext(args[1:], stdout, stderr)
 	case "status":
@@ -138,6 +140,12 @@ Commands:
       actions for continuing the workflow. This first slice is read-only; use
       the printed commands for existing safe actions such as answering HITL
       questions or consensus operations.
+
+  pipeline
+      Compose the cooperation engine into §12 pipeline blocks via a
+      pipeline.yaml manifest. Subcommands: validate MANIFEST, start MANIFEST,
+      status SLUG, continue SLUG, gate approve|reject SLUG EDGE. Supervised-first:
+      block boundaries gate by default; production mutations are non-bypassable.
 
   status
       Show workspace, idea, consensus, run, and HITL question state.
