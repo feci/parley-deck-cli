@@ -1,3 +1,9 @@
+## 2026-06-02 — Add §12 Pipeline blocks & action stages
+
+Idea: ideas/2026-06-02T12-07-14-meta-protocol-ch/ (meta-protocol-change-end-to-end-pipeline)
+Drafted by: claude
+Summary: Added an additive, opt-in §12 that composes the unchanged Phase 0–8 engine into typed pipeline blocks (deliberation/implementation/action/watcher) driven by a `pipelines/<slug>/pipeline.yaml` manifest, turning a single idea into an automatic idea→business-spec→technical-spec→impl-design→implementation→deployment→operations→monitoring pipeline. Agents stay markdown-only; a driver performs side effects behind a provider-agnostic interface, supervised-first gates (production mutations non-bypassable), durable cursor + per-effect idempotent ledger with reconcile-on-resume, capability-dispatch-halts-not-degrades, linear v1. Unanimous signoff (codex, claude, hermes); agy excluded (headless print-mode produced no artifact). Implementation is staged; nothing in Sections 0–11 changed.
+
 ## 2026-05-27 — Replace Gemini defaults with Antigravity CLI
 
 Idea: ideas/antigravity-agent-migration/
