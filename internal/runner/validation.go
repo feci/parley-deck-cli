@@ -3,10 +3,41 @@ package runner
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"parley-deck-cli/internal/protocol"
 )
+
+// ValidateRoundArtifact validates a round-N artifact. Round 1 keeps the strict
+// round-01 contract; later (cross-review) rounds require matching frontmatter
+// and at least one section heading.
+func ValidateRoundArtifact(path, agentID, ideaSlug string, round int) error {
+	if round <= 1 {
+		return ValidateRoundOneArtifact(path, agentID, ideaSlug)
+	}
+	meta, err := readRoundOneFrontmatter(path)
+	if err != nil {
+		return err
+	}
+	for key, want := range map[string]string{
+		"agent": agentID,
+		"idea":  ideaSlug,
+		"round": strconv.Itoa(round),
+	} {
+		if got := strings.Trim(strings.TrimSpace(meta[key]), `"'`); got != want {
+			return fmt.Errorf("%s frontmatter %s=%q, want %q", path, key, got, want)
+		}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(string(data), "## ") {
+		return fmt.Errorf("%s has no section headings", path)
+	}
+	return nil
+}
 
 func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
 	meta, err := readRoundOneFrontmatter(path)

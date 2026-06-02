@@ -60,7 +60,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case "consensus":
 		return runConsensus(ctx, args[1:], stdout, stderr)
 	case "pipeline":
-		return runPipeline(args[1:], stdout, stderr)
+		return runPipeline(ctx, args[1:], stdout, stderr)
 	case "context":
 		return runContext(args[1:], stdout, stderr)
 	case "status":

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -11,13 +13,15 @@ import (
 
 	"parley-deck-cli/internal/pipeline"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
 )
 
 func printPipelineUsage(w io.Writer) {
-	fmt.Fprintln(w, "usage: parley pipeline validate MANIFEST | start [--dir DIR] MANIFEST | status [--dir DIR] SLUG | continue [--dir DIR] SLUG | gate approve|reject [--dir DIR] [--by WHO] SLUG EDGE")
+	fmt.Fprintln(w, "usage: parley pipeline validate MANIFEST | start [--dir DIR] MANIFEST | status [--dir DIR] SLUG | run-block [--dir DIR] [--participants IDS] [--round N] [--yes] SLUG | continue [--dir DIR] SLUG | execute [--dir DIR] [--provider P] [--dry-run] SLUG BLOCK CAPABILITY TARGET | record-effect [--dir DIR] --status STATUS [--external-ref REF] SLUG DIGEST | gate approve|reject [--dir DIR] [--by WHO] SLUG EDGE")
 }
 
-func runPipeline(args []string, stdout, stderr io.Writer) int {
+func runPipeline(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		printPipelineUsage(stderr)
 		return 2
@@ -29,14 +33,40 @@ func runPipeline(args []string, stdout, stderr io.Writer) int {
 		return runPipelineStart(args[1:], stdout, stderr)
 	case "status":
 		return runPipelineStatus(args[1:], stdout, stderr)
+	case "run-block":
+		return runPipelineRunBlock(ctx, args[1:], stdout, stderr)
 	case "continue":
 		return runPipelineContinue(args[1:], stdout, stderr)
+	case "execute":
+		return runPipelineExecute(args[1:], stdout, stderr)
+	case "record-effect":
+		return runPipelineRecordEffect(args[1:], stdout, stderr)
 	case "gate":
 		return runPipelineGate(args[1:], stdout, stderr)
 	default:
 		printPipelineUsage(stderr)
 		return 2
 	}
+}
+
+func selectProvider(name string) (pipeline.Provider, error) {
+	switch name {
+	case "", "vercel":
+		return pipeline.VercelProvider{}, nil
+	case "noop":
+		return pipeline.NoopProvider{}, nil
+	default:
+		return nil, fmt.Errorf("unknown provider %q (want vercel|noop)", name)
+	}
+}
+
+func findBlock(m pipeline.Manifest, id string) (pipeline.Block, bool) {
+	for _, b := range m.Blocks {
+		if b.ID == id {
+			return b, true
+		}
+	}
+	return pipeline.Block{}, false
 }
 
 func deckDirFor(root string) string { return filepath.Join(root, protocol.DeckDir) }
@@ -215,6 +245,296 @@ func runPipelineGate(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	fmt.Fprintf(stdout, "gate %q for pipeline %q -> %s (by %s)\n", edge, slug, gate.Status, *by)
+	return 0
+}
+
+// runPipelineRunBlock launches the current block's next cooperation round in
+// its engine workspace using the existing runner. This is the live-engine
+// wiring: round 1 uses RunRoundOne, later rounds use RunRound (cross-review).
+// After rounds converge, draft+finalize consensus, then `pipeline continue`.
+func runPipelineRunBlock(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("pipeline run-block", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	participantsFlag := fs.String("participants", "", "comma-separated agent IDs (default: manifest participants)")
+	roundFlag := fs.Int("round", 0, "round to run (default: next pending round)")
+	yes := fs.Bool("yes", false, "launch selected agents without interactive confirmation")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 {
+		fmt.Fprintln(stderr, "usage: parley pipeline run-block [--dir DIR] [--participants IDS] [--round N] [--yes] SLUG")
+		return 2
+	}
+	deck := deckDirFor(*root)
+	slug := fs.Arg(0)
+	m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug))
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline run-block failed: %v\n", err)
+		return 1
+	}
+	run, err := pipeline.LoadRun(pipeline.RunPath(deck, slug))
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline run-block failed: %v\n", err)
+		return 1
+	}
+	if run.CurrentBlock == "" {
+		fmt.Fprintf(stderr, "pipeline run-block failed: pipeline %q has no current block (status %s)\n", slug, run.Status)
+		return 1
+	}
+	blockWS := pipeline.BlockWorkspace(deck, slug, run.CurrentBlock)
+	if _, err := os.Stat(filepath.Join(blockWS, "00-prompt.md")); err != nil {
+		fmt.Fprintf(stderr, "pipeline run-block failed: block %q is not seeded (%v)\n", run.CurrentBlock, err)
+		return 1
+	}
+	round := *roundFlag
+	if round == 0 {
+		round = nextBlockRound(blockWS)
+	}
+
+	discovered, err := discoverConfigured(ctx, *root)
+	if err != nil {
+		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
+		return 1
+	}
+	participantsArg := *participantsFlag
+	if strings.TrimSpace(participantsArg) == "" {
+		participantsArg = strings.Join(m.Participants, ",")
+	}
+	participants, err := selectedParticipantIDs(discovered, participantsArg)
+	if err != nil {
+		fmt.Fprintf(stderr, "participant selection failed: %v\n", err)
+		return 1
+	}
+	if len(participants) == 0 {
+		fmt.Fprintln(stderr, "no installed manifest participants found; capability halt (see COOPERATION.md §12.9)")
+		return 1
+	}
+	if !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
+		fmt.Fprintln(stdout, "No round started. Use --yes to launch without confirmation.")
+		return 0
+	}
+
+	runID := fmt.Sprintf("pipe-%s-r%02d-%s", run.CurrentBlock, round, time.Now().UTC().Format("20060102T150405Z"))
+	runDir := filepath.Join(deck, "runs", runID)
+	idea := protocol.IdeaStatus{Slug: slug + "__" + run.CurrentBlock, Path: blockWS, Participants: participants}
+	opts := runner.Options{
+		Root:    *root,
+		RunID:   runID,
+		Idea:    idea,
+		Agents:  discovered,
+		Round:   round,
+		Timeout: 30 * time.Minute,
+		Store:   store.New(runDir),
+	}
+	fmt.Fprintf(stdout, "Running %s block %q round-%02d with: %s\n", slug, run.CurrentBlock, round, strings.Join(participants, ", "))
+	var results []runner.Result
+	if round <= 1 {
+		results = runner.RunRoundOne(ctx, opts)
+	} else {
+		results = runner.RunRound(ctx, opts)
+	}
+	if printRunResults(stdout, results) {
+		return 1
+	}
+	fmt.Fprintf(stdout, "Round-%02d complete in %s. Run more rounds, then draft+finalize this block's consensus (parley consensus draft/request-signoffs/finalize on idea %s), then `parley pipeline continue --dir %s %s`.\n", round, blockWS, idea.Slug, *root, slug)
+	return 0
+}
+
+// nextBlockRound returns the next round to run: one past the highest round that
+// already has participant artifacts (an empty seeded round-01 -> 1).
+func nextBlockRound(blockWS string) int {
+	highest := 0
+	for r := 1; r <= 50; r++ {
+		dir := filepath.Join(blockWS, fmt.Sprintf("round-%02d", r))
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") && e.Name() != "_index.md" {
+				highest = r
+				break
+			}
+		}
+	}
+	return highest + 1
+}
+
+// runPipelineExecute is the §12.10 execute sub-phase for action blocks. It
+// validates preconditions (action plan finalized; production gate approved for
+// production capabilities), plans the concrete provider call, and records the
+// effect ledger entry. The Go CLI does NOT perform the side effect — it emits
+// the ProviderCall for the driver/harness to execute via MCP, preserving the
+// agents-write-markdown / driver-executes boundary (§12.4).
+func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("pipeline execute", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	providerName := fs.String("provider", "vercel", "provider (vercel|noop)")
+	dryRun := fs.Bool("dry-run", false, "plan only; never mutate")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 4 {
+		fmt.Fprintln(stderr, "usage: parley pipeline execute [--dir DIR] [--provider P] [--dry-run] SLUG BLOCK CAPABILITY TARGET")
+		return 2
+	}
+	deck := deckDirFor(*root)
+	slug, blockID, capability, target := fs.Arg(0), fs.Arg(1), fs.Arg(2), fs.Arg(3)
+	cap := pipeline.Capability(capability)
+
+	m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug))
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+		return 1
+	}
+	block, ok := findBlock(m, blockID)
+	if !ok {
+		fmt.Fprintf(stderr, "pipeline execute failed: no block %q\n", blockID)
+		return 1
+	}
+	if block.Kind != pipeline.KindAction {
+		fmt.Fprintf(stderr, "pipeline execute failed: block %q is kind %q, only action blocks execute\n", blockID, block.Kind)
+		return 1
+	}
+	// Precondition: the action plan must be finalized (§12.10).
+	done, err := blockCompleteFunc(deck, slug)(block)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+		return 1
+	}
+	if !done {
+		fmt.Fprintf(stderr, "pipeline execute failed: action plan for block %q is not finalized (status: final required)\n", blockID)
+		return 1
+	}
+	prov, err := selectProvider(*providerName)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+		return 1
+	}
+	if !prov.Supports(cap) {
+		fmt.Fprintf(stderr, "pipeline execute failed: provider %q does not support %q (capability halt, §12.9)\n", prov.Name(), cap)
+		return 1
+	}
+
+	now := time.Now()
+	gateApproved := false
+	if cap.IsProduction() && !*dryRun {
+		edge := pipeline.EdgeID(blockID, "execute")
+		g, exists, err := pipeline.LoadGate(deck, slug, edge)
+		if err != nil {
+			fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+			return 1
+		}
+		if !exists {
+			g = pipeline.NewGate(slug, blockID, "execute", pipeline.RiskProduction, "execute", now)
+			if err := pipeline.SaveGate(deck, g); err != nil {
+				fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+				return 1
+			}
+			fmt.Fprintf(stdout, "production execution requires approval (non-bypassable, §12.8).\n  approve with: parley pipeline gate approve --dir %s %s %s\n", *root, slug, edge)
+			return 0
+		}
+		switch g.Status {
+		case pipeline.GateOpen:
+			fmt.Fprintf(stdout, "awaiting production gate approval. approve with: parley pipeline gate approve --dir %s %s %s\n", *root, slug, edge)
+			return 0
+		case pipeline.GateRejected:
+			fmt.Fprintf(stderr, "pipeline execute failed: production gate %s was rejected\n", edge)
+			return 1
+		case pipeline.GateApproved:
+			gateApproved = true
+		}
+	}
+
+	call, err := prov.Plan(pipeline.ActionRequest{Capability: cap, Target: target, DryRun: *dryRun, GateApproved: gateApproved})
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+		return 1
+	}
+
+	risk := block.Risk
+	if cap.IsProduction() {
+		risk = pipeline.RiskProduction
+	}
+	reqHash := pipeline.HashRequest([]byte(target))
+	key := pipeline.IdempotencyKey(slug, blockID, prov.Name(), string(cap), target, reqHash)
+	eff, exists, err := pipeline.LoadEffect(deck, slug, key)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+		return 1
+	}
+	if !exists {
+		eff = pipeline.NewEffect(slug, blockID, prov.Name(), string(cap), target, reqHash, risk, now)
+	}
+	if eff.NeedsReconcile() {
+		fmt.Fprintf(stderr, "pipeline execute blocked: effect %s is %s (external_ref %q); reconcile with record-effect before re-attempting (§12.7)\n", pipeline.KeyDigest(key), eff.Status, eff.ExternalRef)
+		return 1
+	}
+	if *dryRun {
+		eff.DryRunResult = "planned (dry-run)"
+		eff.Advance(pipeline.EffectDryRunOK, "", "dry-run planned", now)
+	} else {
+		eff.Advance(pipeline.EffectExecuting, "", "planned for harness execution", now)
+	}
+	if err := pipeline.SaveEffect(deck, eff); err != nil {
+		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
+		return 1
+	}
+
+	callJSON, _ := json.MarshalIndent(call, "", "  ")
+	fmt.Fprintf(stdout, "effect %s -> %s (risk=%s)\n", pipeline.KeyDigest(key), eff.Status, risk)
+	fmt.Fprintf(stdout, "ProviderCall (the driver/harness performs this via MCP; the CLI does not):\n%s\n", callJSON)
+	if !*dryRun {
+		fmt.Fprintf(stdout, "after the harness runs it, record the result:\n  parley pipeline record-effect --dir %s --status succeeded --external-ref <ref> %s %s\n", *root, slug, pipeline.KeyDigest(key))
+	}
+	return 0
+}
+
+// runPipelineRecordEffect persists the outcome of a harness-executed effect
+// (or reconciles an ambiguous one) by digest.
+func runPipelineRecordEffect(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("pipeline record-effect", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	status := fs.String("status", "", "succeeded|failed|reconciled|abandoned")
+	externalRef := fs.String("external-ref", "", "provider external reference (e.g. deployment id)")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 2 {
+		fmt.Fprintln(stderr, "usage: parley pipeline record-effect [--dir DIR] --status STATUS [--external-ref REF] SLUG DIGEST")
+		return 2
+	}
+	allowed := map[string]pipeline.EffectStatus{
+		"succeeded":  pipeline.EffectSucceeded,
+		"failed":     pipeline.EffectFailed,
+		"reconciled": pipeline.EffectReconciled,
+		"abandoned":  pipeline.EffectAbandoned,
+	}
+	st, ok := allowed[*status]
+	if !ok {
+		fmt.Fprintln(stderr, "record-effect --status must be succeeded|failed|reconciled|abandoned")
+		return 2
+	}
+	deck := deckDirFor(*root)
+	slug, digest := fs.Arg(0), fs.Arg(1)
+	eff, ok, err := pipeline.LoadEffectByDigest(deck, slug, digest)
+	if err != nil {
+		fmt.Fprintf(stderr, "record-effect failed: %v\n", err)
+		return 1
+	}
+	if !ok {
+		fmt.Fprintf(stderr, "record-effect failed: no effect %q for pipeline %q\n", digest, slug)
+		return 1
+	}
+	eff.Advance(st, *externalRef, "recorded by harness/driver", time.Now())
+	if err := pipeline.SaveEffect(deck, eff); err != nil {
+		fmt.Fprintf(stderr, "record-effect failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "effect %s -> %s (external_ref %q)\n", digest, eff.Status, eff.ExternalRef)
 	return 0
 }
 
