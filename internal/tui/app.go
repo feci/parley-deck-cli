@@ -154,10 +154,18 @@ func newModel(opts WorkspaceOptions) model {
 	if root == "" {
 		root = opts.Status.Root
 	}
+	// Only surface agents that were actually found on this machine; missing
+	// agents are not selectable or launchable, so they are not displayed.
+	available := make([]agents.Discovery, 0, len(opts.Agents))
+	for _, agent := range opts.Agents {
+		if agent.Found {
+			available = append(available, agent)
+		}
+	}
 	m := model{
 		root:            root,
 		status:          opts.Status,
-		agents:          opts.Agents,
+		agents:          available,
 		runs:            append([]runstate.RunSummary(nil), opts.Runs...),
 		ctx:             ctx,
 		refreshRuns:     opts.RefreshRuns,

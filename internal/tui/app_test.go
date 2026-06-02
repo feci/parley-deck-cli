@@ -152,6 +152,35 @@ func TestDashboardRendersFallbackCommandDetails(t *testing.T) {
 	}
 }
 
+func TestDashboardHidesMissingAgents(t *testing.T) {
+	discovered := append(testDiscoveries(), agents.Discovery{
+		Spec: agents.Spec{ID: "ghost", Commands: []string{"ghost"}, LaunchMode: agents.LaunchHeadless},
+		Found: false,
+	})
+	m := newModel(WorkspaceOptions{Root: "/repo", Status: testStatus(), Agents: discovered})
+	m.width = 120
+
+	if len(m.agents) != 2 {
+		t.Fatalf("expected missing agent to be dropped, got %d agents: %+v", len(m.agents), m.agents)
+	}
+	for _, agent := range m.agents {
+		if !agent.Found {
+			t.Fatalf("model retained a missing agent: %s", agent.ID)
+		}
+	}
+
+	view := m.View()
+	if strings.Contains(view, "ghost") {
+		t.Fatalf("view rendered a missing agent\n%s", view)
+	}
+	if strings.Contains(view, "missing") {
+		t.Fatalf("view rendered a missing badge\n%s", view)
+	}
+	if !strings.Contains(view, "codex") {
+		t.Fatalf("view dropped an available agent\n%s", view)
+	}
+}
+
 func TestDashboardAgentNavigationClamps(t *testing.T) {
 	m := newTestModel(nil)
 
