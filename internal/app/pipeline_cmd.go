@@ -453,7 +453,7 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 				// A succeeded effect already exists -> the action block is complete;
 				// fall through to Advance.
 			} else {
-				if !planFinalized(deck, slug, block.ID) {
+				if !planFinalized(deck, slug, block) {
 					if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
 						return code
 					}
@@ -564,7 +564,7 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 		for _, bid := range step.Ready {
 			b, _ := findBlock(m, bid)
 			if b.Kind == pipeline.KindAction {
-				if planFinalized(deck, slug, b.ID) {
+				if planFinalized(deck, slug, b) {
 					actionAwaiting = append(actionAwaiting, b)
 				} else {
 					actionPending = append(actionPending, b)
@@ -634,7 +634,7 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 			if b.Kind == pipeline.KindAction {
 				// A driven action plan that finalized is progress; it becomes
 				// awaiting-execute next wave (not auto-completable).
-				if planFinalized(deck, slug, b.ID) {
+				if planFinalized(deck, slug, b) {
 					progressed = true
 				}
 				continue
@@ -1283,12 +1283,17 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 	}
 }
 
-// planFinalized reports whether a block's plan artifact (FINAL.md or its named
-// output) is status: final — used for action blocks, whose plan finalizing is
-// distinct from the block completing (which needs a succeeded effect).
-func planFinalized(deck, slug, blockID string) bool {
-	ws := pipeline.BlockWorkspace(deck, slug, blockID)
-	for _, name := range []string{"FINAL.md", "DEPLOYMENT.md", "RUNBOOK.md", "MONITORING.md"} {
+// planFinalized reports whether a block's plan artifact (its declared
+// output_artifact, or FINAL.md / a known stage name) is status: final — used
+// for action blocks, whose plan finalizing is distinct from the block
+// completing (which needs a succeeded effect).
+func planFinalized(deck, slug string, b pipeline.Block) bool {
+	ws := pipeline.BlockWorkspace(deck, slug, b.ID)
+	candidates := []string{"FINAL.md", "DEPLOYMENT.md", "RUNBOOK.md", "MONITORING.md"}
+	if b.OutputArtifact != "" {
+		candidates = append([]string{b.OutputArtifact}, candidates...)
+	}
+	for _, name := range candidates {
 		if data, err := os.ReadFile(filepath.Join(ws, name)); err == nil && isFinalized(string(data)) {
 			return true
 		}
