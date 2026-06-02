@@ -184,6 +184,44 @@ func TestStdoutFallbackRejectsNarration(t *testing.T) {
 	}
 }
 
+func TestStdoutFallbackRejectsInvalidFrontmatter(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := protocol.CreateIdea(root, "Bad frontmatter task", []string{"badfm"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := RunRoundOne(context.Background(), Options{
+		Root: root, RunID: "bf-run", Idea: idea, Task: "x",
+		Agents: []agents.Discovery{{
+			Spec:  agents.Spec{ID: "badfm", HeadlessArgs: []string{"-test.run=TestFakeBadFrontmatterHelper", "--", "parley-fake-badfm"}, PromptMode: agents.PromptStdin},
+			Path:  os.Args[0], Found: true,
+		}},
+		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "bf-run")),
+	})
+	if len(results) != 1 || results[0].ArtifactOK {
+		t.Fatalf("invalid stdout frontmatter must NOT become an artifact: %+v", results)
+	}
+	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "badfm.md")); !os.IsNotExist(err) {
+		t.Fatal("invalid candidate must leave no artifact at the protocol path")
+	}
+	if _, err := os.Stat(filepath.Join(idea.Path, "round-01", "badfm.md.stdout-candidate")); !os.IsNotExist(err) {
+		t.Fatal("the temp candidate must be removed on validation failure")
+	}
+}
+
+func TestFakeBadFrontmatterHelper(t *testing.T) {
+	if !hasArg("parley-fake-badfm") {
+		return
+	}
+	// First line is the fence, but the frontmatter is for the wrong idea/round
+	// and the body lacks the required sections -> validation must reject it.
+	os.Stdout.WriteString("---\nagent: badfm\nidea: not-this-idea\nround: 9\n---\n\n## Nope\n")
+	os.Exit(0)
+}
+
 func TestFakeStdoutAgentHelper(t *testing.T) {
 	if !hasArg("parley-fake-stdout") {
 		return

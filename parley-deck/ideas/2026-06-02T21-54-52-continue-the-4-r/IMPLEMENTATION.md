@@ -1,6 +1,6 @@
 ---
 idea: 2026-06-02T21-54-52-continue-the-4-r
-status: implemented
+status: complete
 implementer: claude
 started: 2026-06-02
 completed: 2026-06-02
@@ -30,3 +30,14 @@ Items 1, 2, 4 implemented (additive, full suite green); item 3 escalated as bloc
 
 ## Notes for reviewers
 Focus: production never auto-approved (AutoApproveWithDecider low-risk-only decider; DAG waves); stdout fallback strictness; Phase8Decision/ReviewAgreedFixes correctness + fail-closed; cursor back-compat (ready/active additive); ComputeDAGStep topological + gate correctness. Tests: internal/pipeline (review/dag_step), internal/runner (Stdout/Narration/Impl/Review), internal/app (PipelineAuto*).
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-02
+
+### Fixes applied
+- [blockcomplete-honors-blocked] (codex MAJOR): completion predicate now requires `!blocked` so a `blocked: true` review consensus can't be bypassed by a zero fix count. Test TestBlockCompleteRespectsBlockedReviewConsensus.
+- [stdout-fallback-validate-before-persist] (codex MAJOR): stdout fallback writes a temp candidate, requires the first line to be exactly `---` (firstLineIsFence), validates before renaming to the artifact path, removes the temp on failure. Test TestStdoutFallbackRejectsInvalidFrontmatter.
+
+### Deviations from agreed fixes
+None. review/consensus.md outstanding_agreed_fixes: 0. go build/vet + full suite green.

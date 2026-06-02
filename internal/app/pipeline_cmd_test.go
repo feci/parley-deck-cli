@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"parley-deck-cli/internal/pipeline"
 )
 
 func writeFile(t *testing.T, path, content string) {
@@ -64,6 +66,27 @@ func TestPipelineAutoWalksToDoneUnderAutoLeft(t *testing.T) {
 	// Block 2's kickoff must have been seeded by the driver as it advanced.
 	if _, err := os.Stat(filepath.Join(ws, "parley-deck", "ideas", "auto-demo__b2", "00-prompt.md")); err != nil {
 		t.Fatalf("next block was not seeded: %v", err)
+	}
+}
+
+func TestBlockCompleteRespectsBlockedReviewConsensus(t *testing.T) {
+	ws := t.TempDir()
+	deck := filepath.Join(ws, "parley-deck")
+	slug := "impl-demo"
+	block := pipeline.Block{ID: "build", Kind: pipeline.KindImplementation}
+	rcDir := filepath.Join(pipeline.BlockWorkspace(deck, slug, block.ID), "review")
+	complete := blockCompleteFunc(deck, slug)
+
+	// 0 outstanding fixes but BLOCKED -> NOT complete (fail closed).
+	writeFile(t, filepath.Join(rcDir, "consensus.md"), "---\nidea: x\noutstanding_agreed_fixes: 0\nblocked: true\n---\n")
+	if done, err := complete(block); err != nil || done {
+		t.Fatalf("blocked review consensus must not be complete (done=%v err=%v)", done, err)
+	}
+
+	// 0 outstanding fixes, not blocked -> complete.
+	writeFile(t, filepath.Join(rcDir, "consensus.md"), "---\nidea: x\noutstanding_agreed_fixes: 0\nblocked: false\n---\n")
+	if done, err := complete(block); err != nil || !done {
+		t.Fatalf("unblocked zero-fix consensus should be complete (done=%v err=%v)", done, err)
 	}
 }
 

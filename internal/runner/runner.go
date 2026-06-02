@@ -317,15 +317,24 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	// fence), persist it as the agent-authored artifact. Strict "---" validation
 	// keeps narration from becoming a protocol file.
 	if _, statErr := os.Stat(outputPath); os.IsNotExist(statErr) {
-		if data, readErr := os.ReadFile(stdoutPath); readErr == nil {
-			if strings.HasPrefix(strings.TrimLeft(string(data), " \t\r\n"), "---") {
-				if writeErr := os.WriteFile(outputPath, data, 0o644); writeErr == nil {
-					result.Warning = "artifact recovered from stdout (print-only agent)"
-					_ = opts.Store.Append(store.Event{
-						Time: time.Now().UTC(),
-						Type: "agent.stdout_fallback",
-						Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
-					})
+		if data, readErr := os.ReadFile(stdoutPath); readErr == nil && firstLineIsFence(data) {
+			// Validate a CANDIDATE before placing it at the protocol path, so a
+			// malformed print-only response never poisons the artifact path.
+			tmp := outputPath + ".stdout-candidate"
+			if writeErr := os.WriteFile(tmp, data, 0o644); writeErr == nil {
+				if validateArtifactForPhase(opts, tmp, agent.ID) == nil {
+					if renameErr := os.Rename(tmp, outputPath); renameErr == nil {
+						result.Warning = "artifact recovered from stdout (print-only agent)"
+						_ = opts.Store.Append(store.Event{
+							Time: time.Now().UTC(),
+							Type: "agent.stdout_fallback",
+							Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
+						})
+					} else {
+						_ = os.Remove(tmp)
+					}
+				} else {
+					_ = os.Remove(tmp) // invalid candidate -> leave no protocol artifact
 				}
 			}
 		}
@@ -452,6 +461,17 @@ func roundNumber(opts Options) int {
 
 func roundLabel(n int) string {
 	return fmt.Sprintf("round-%02d", n)
+}
+
+// firstLineIsFence reports whether the first line is exactly the YAML frontmatter
+// fence "---". Unlike a prefix check it does not accept leading narration, so a
+// stdout stream that merely contains "---" somewhere is rejected.
+func firstLineIsFence(data []byte) bool {
+	s := string(data)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	return strings.TrimRight(s, "\r ") == "---"
 }
 
 // RunRound runs cross-review round N (N>=2) for an idea; round 1 uses

@@ -1235,7 +1235,7 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 				}
 			}
 			rc := filepath.Join(ws, "review", "consensus.md")
-			if count, _, found, err := pipeline.ReviewAgreedFixes(rc); err == nil && found && count == 0 {
+			if count, blocked, found, err := pipeline.ReviewAgreedFixes(rc); err == nil && found && !blocked && count == 0 {
 				return true, nil
 			}
 		}
