@@ -39,17 +39,28 @@ type Gate struct {
 // EdgeID is the stable identifier for the boundary between two blocks.
 func EdgeID(from, to string) string { return from + "->" + to }
 
-// AutoApprove reports whether a boundary gate may be resolved without a human.
-//
-// This is the single central policy evaluator (§12.8/§12.11): production-risk
-// mutations are NEVER auto-approvable; under supervised autonomy nothing
-// auto-approves; under auto-left only low-risk, non-production gates may.
+// AutoApprove reports whether a boundary gate may be resolved without a human
+// under the given autonomy, with no decider configured.
 func AutoApprove(autonomy Autonomy, risk Risk) bool {
+	return AutoApproveWithDecider(autonomy, risk, false)
+}
+
+// AutoApproveWithDecider is the single central policy evaluator (§12.8/§12.11):
+// production-risk mutations are NEVER auto-approvable.
+//   - auto-left autonomy auto-resolves low/normal, non-production boundaries.
+//   - a configured decider agent auto-resolves ONLY low-risk, non-production
+//     boundaries (never normal/high/production) — strictly narrower than
+//     auto-left, per FINAL.md item 6b.
+// Supervised + no decider = block-and-wait (default).
+func AutoApproveWithDecider(autonomy Autonomy, risk Risk, hasDecider bool) bool {
 	if risk == RiskProduction {
 		return false
 	}
-	if autonomy == AutonomyAutoLeft {
-		return risk == RiskLow || risk == "" || risk == RiskNormal
+	if autonomy == AutonomyAutoLeft && (risk == RiskLow || risk == "" || risk == RiskNormal) {
+		return true
+	}
+	if hasDecider && risk == RiskLow {
+		return true
 	}
 	return false
 }

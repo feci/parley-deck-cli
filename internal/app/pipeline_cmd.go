@@ -42,7 +42,7 @@ func launchBlockRound(ctx context.Context, root, deck, slug, blockID string, par
 }
 
 func printPipelineUsage(w io.Writer) {
-	fmt.Fprintln(w, "usage: parley pipeline validate MANIFEST | start [--dir DIR] MANIFEST | status [--dir DIR] SLUG | run-block [--dir DIR] [--participants IDS] [--round N] [--yes] SLUG | continue [--dir DIR] SLUG | auto [--dir DIR] [--rounds N] [--max-blocks M] [--drafter ID] [--participants IDS] [--yes] SLUG | execute [--dir DIR] [--provider P] [--dry-run] SLUG BLOCK CAPABILITY TARGET | record-effect [--dir DIR] --status STATUS [--external-ref REF] SLUG DIGEST | gate approve|reject [--dir DIR] [--by WHO] SLUG EDGE")
+	fmt.Fprintln(w, "usage: parley pipeline validate MANIFEST | start [--dir DIR] MANIFEST | status [--dir DIR] SLUG | run-block [--dir DIR] [--participants IDS] [--round N] [--yes] SLUG | continue [--dir DIR] SLUG | auto [--dir DIR] [--rounds N] [--max-blocks M] [--drafter ID] [--participants IDS] [--yes] SLUG | watch [--dir DIR] [--spec FILE] --signals FILE [--once] SLUG | execute [--dir DIR] [--provider P] [--dry-run] [--json] SLUG BLOCK CAPABILITY TARGET | record-effect [--dir DIR] --status STATUS [--external-ref REF] SLUG DIGEST | gate approve|reject [--dir DIR] [--by WHO] SLUG EDGE")
 }
 
 func runPipeline(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -63,6 +63,8 @@ func runPipeline(ctx context.Context, args []string, stdout, stderr io.Writer) i
 		return runPipelineContinue(args[1:], stdout, stderr)
 	case "auto":
 		return runPipelineAuto(ctx, args[1:], stdout, stderr)
+	case "watch":
+		return runPipelineWatch(args[1:], stdout, stderr)
 	case "execute":
 		return runPipelineExecute(args[1:], stdout, stderr)
 	case "record-effect":
@@ -431,13 +433,33 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 			fmt.Fprintf(stderr, "auto failed: %v\n", err)
 			return 1
 		}
-		if !done {
-			if block.Kind != pipeline.KindDeliberation {
-				fmt.Fprintf(stdout, "auto: reached %s block %q. auto drives deliberation blocks end-to-end; for this block run its rounds/consensus manually (action blocks: then `parley pipeline execute`; implementation: Phase 5-8), then re-run auto.\n", block.Kind, block.ID)
-				return 0
+		// Action and implementation blocks are never auto-advanced past: their
+		// side effects (deploy) and code-review/fix-up are explicit gated steps.
+		if block.Kind == pipeline.KindAction {
+			if !done {
+				if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
+					return code
+				}
 			}
+			fmt.Fprintf(stdout, "auto: action block %q ready (plan finalized). status=needs_human_gate — run `parley pipeline execute [--dry-run] [--json] --dir %s %s %s <capability> <target>` (production-gated) + `record-effect`, then `parley pipeline continue` to advance. auto never auto-executes or advances past an action block.\n", block.ID, *root, slug, block.ID)
+			return 0
+		}
+		if block.Kind == pipeline.KindImplementation {
+			if !done {
+				if code := autoDriveImplementationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *yes, stdout, stderr); code != 0 {
+					return code
+				}
+			}
+			fmt.Fprintf(stdout, "auto: implementation block %q — implementation + review round-01 done. status=needs_artifact — draft review/consensus.md (machine-readable agreed_fixes) + fix-up, then `parley pipeline continue`.\n", block.ID)
+			return 0
+		}
+		if !done {
+			// deliberation or watcher: drive Phase 1-4 to a finalized artifact.
 			if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
 				return code
+			}
+			if block.Kind == pipeline.KindWatcher {
+				fmt.Fprintf(stdout, "auto: watcher block %q spec finalized. Schedule `parley pipeline watch %s --signals <file>` (e.g. via cron) to evaluate SLOs.\n", block.ID, slug)
 			}
 		}
 
@@ -537,28 +559,263 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
 	return 0
 }
 
+// autoDriveImplementationBlock runs Phase 5 (implementation) and Phase 6
+// review round-01 for an implementation block using the runner. It stops before
+// review consensus + fix-up (human-guided). Returns 0 on success.
+func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, block pipeline.Block, participantsFlag, drafter string, yes bool, stdout, stderr io.Writer) int {
+	discovered, err := discoverConfigured(ctx, root)
+	if err != nil {
+		fmt.Fprintf(stderr, "auto: agent config failed: %v\n", err)
+		return 1
+	}
+	pArg := participantsFlag
+	if strings.TrimSpace(pArg) == "" {
+		if m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug)); err == nil {
+			pArg = strings.Join(m.Participants, ",")
+		}
+	}
+	participants, err := selectedParticipantIDs(discovered, pArg)
+	if err != nil {
+		fmt.Fprintf(stderr, "auto: participant selection failed: %v\n", err)
+		return 1
+	}
+	if len(participants) == 0 {
+		fmt.Fprintln(stderr, "auto: no installed participants for this block (capability halt, §12.9)")
+		return 1
+	}
+	implementer := drafter
+	if implementer == "" {
+		implementer = participants[0]
+	}
+	blockWS := pipeline.BlockWorkspace(deck, slug, block.ID)
+	idea := protocol.IdeaStatus{Slug: slug + "__" + block.ID, Path: blockWS}
+
+	if _, statErr := os.Stat(filepath.Join(blockWS, "IMPLEMENTATION.md")); os.IsNotExist(statErr) {
+		fmt.Fprintf(stdout, "auto: block %q Phase 5 implementation by %s\n", block.ID, implementer)
+		ideaImpl := idea
+		ideaImpl.Participants = []string{implementer}
+		runID := fmt.Sprintf("pipe-%s-impl-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
+		res := runner.RunImplementation(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaImpl, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})
+		if res.ExitError != "" || !res.ArtifactOK {
+			fmt.Fprintf(stderr, "auto: implementation failed: %s\n", res.ExitError)
+			return 1
+		}
+	}
+
+	reviewers := make([]string, 0, len(participants))
+	for _, p := range participants {
+		if p != implementer {
+			reviewers = append(reviewers, p)
+		}
+	}
+	if len(reviewers) == 0 {
+		fmt.Fprintf(stdout, "auto: block %q has no non-implementer reviewer; Phase 6 needs another agent (non-solo review).\n", block.ID)
+		return 0
+	}
+	if _, statErr := os.Stat(filepath.Join(blockWS, "review", "round-01")); os.IsNotExist(statErr) {
+		fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-01 (%s)\n", block.ID, strings.Join(reviewers, ", "))
+		ideaRev := idea
+		ideaRev.Participants = reviewers
+		runID := fmt.Sprintf("pipe-%s-rev01-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
+		if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaRev, Round: 1, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})) {
+			return 1
+		}
+	}
+	return 0
+}
+
+// runPipelineWatch performs one monitoring evaluation pass (§12.11): it loads a
+// structured watcher spec + current signal values, raises breaches, dedupes
+// them against persisted records, opens a remediation idea ONLY for predeclared
+// low-risk classes, and marks recovered breaches resolved. Periodic execution
+// is the caller's cron/scheduler invoking this repeatedly (one pass each).
+func runPipelineWatch(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("pipeline watch", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	specPath := fs.String("spec", "", "monitoring spec YAML (default: pipelines/<slug>/monitoring.yaml)")
+	signalsPath := fs.String("signals", "", "JSON file of {signal: number} current values")
+	fs.Bool("once", true, "evaluate a single pass (the only mode; schedule repeats via cron)")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() != 1 || strings.TrimSpace(*signalsPath) == "" {
+		fmt.Fprintln(stderr, "usage: parley pipeline watch [--dir DIR] [--spec FILE] --signals FILE [--once] SLUG")
+		return 2
+	}
+	deck := deckDirFor(*root)
+	slug := fs.Arg(0)
+	spec := *specPath
+	if spec == "" {
+		spec = filepath.Join(pipeline.PipelineDir(deck, slug), "monitoring.yaml")
+	}
+	m, err := pipeline.LoadMonitoring(spec)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+		return 1
+	}
+	if m.PipelineSlug == "" {
+		m.PipelineSlug = slug
+	}
+	values, err := pipeline.FileSignalSource{Path: *signalsPath}.Values()
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+		return 1
+	}
+	now := time.Now()
+	breaches, err := pipeline.EvaluateBreaches(m, values, now)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+		return 1
+	}
+
+	priorOpen, err := pipeline.ListOpenBreaches(deck, slug)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+		return 1
+	}
+
+	// Dedupe contract: Breach.Fingerprint() is deterministic over
+	// signal+target+threshold+class, so an ongoing breach maps to the same key
+	// across passes and is not re-opened.
+	current := map[string]bool{}
+	newCount, dedupCount, autoOpened, notified := 0, 0, 0, 0
+	for _, b := range breaches {
+		fp := b.Fingerprint()
+		current[fp] = true
+		rec, exists, err := pipeline.LoadBreachRecord(deck, slug, fp)
+		if err != nil {
+			fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+			return 1
+		}
+		if exists && rec.Status != pipeline.BreachResolved {
+			rec.LastSeen = now
+			rec.Breach = b
+			dedupCount++
+			_ = pipeline.SaveBreachRecord(deck, rec)
+			continue
+		}
+		rec = pipeline.BreachRecord{Fingerprint: fp, PipelineSlug: slug, Breach: b, FirstSeen: now, LastSeen: now, Status: pipeline.BreachNotified}
+		newCount++
+		if m.CanAutoOpen(b) {
+			ideaSlug, err := openRemediationIdea(deck, slug, b, fp, now)
+			if err != nil {
+				fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+				return 1
+			}
+			rec.Status = pipeline.BreachOpen
+			rec.RemediationIdea = ideaSlug
+			autoOpened++
+			fmt.Fprintf(stdout, "breach %s (%s %s, class=%s): auto-opened low-risk remediation idea %s\n", fp, b.Signal, b.Threshold, b.Class, ideaSlug)
+		} else {
+			notified++
+			fmt.Fprintf(stdout, "breach %s (%s %s, class=%s): notify+gate (no auto-remediation; not a low-risk class)\n", fp, b.Signal, b.Threshold, b.Class)
+		}
+		if err := pipeline.SaveBreachRecord(deck, rec); err != nil {
+			fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+			return 1
+		}
+	}
+
+	resolved := 0
+	for fp, rec := range priorOpen {
+		if current[fp] {
+			continue
+		}
+		rec.Status = pipeline.BreachResolved
+		rec.LastSeen = now
+		if err := pipeline.SaveBreachRecord(deck, rec); err != nil {
+			fmt.Fprintf(stderr, "pipeline watch failed: %v\n", err)
+			return 1
+		}
+		resolved++
+		fmt.Fprintf(stdout, "breach %s resolved (signal recovered)\n", fp)
+	}
+
+	fmt.Fprintf(stdout, "watch %s: %d breach(es) — %d new (%d auto-remediation, %d notify), %d ongoing, %d resolved\n", slug, len(breaches), newCount, autoOpened, notified, dedupCount, resolved)
+	return 0
+}
+
+// openRemediationIdea creates a gated remediation idea linked back to the
+// pipeline and the triggering breach fingerprint.
+func openRemediationIdea(deck, slug string, b pipeline.Breach, fp string, now time.Time) (string, error) {
+	ideaSlug := slug + "__remediation-" + fp
+	dir := filepath.Join(deck, "ideas", ideaSlug)
+	if err := os.MkdirAll(filepath.Join(dir, "round-01"), 0o755); err != nil {
+		return "", err
+	}
+	prompt := fmt.Sprintf(`---
+idea: %s
+author: watcher
+created: %s
+participants: []
+status: round-01
+pipeline_slug: %s
+breach_fingerprint: %s
+derived_from: [pipelines/%s/monitoring.yaml]
+---
+
+## Problem / idea
+
+Auto-opened by the §12.11 monitoring watcher for pipeline %q after a predeclared low-risk SLO breach.
+
+- signal: %s
+- target: %s
+- breach threshold: %s
+- observed: %s
+- breach class: %s (low-risk, auto-open permitted)
+
+Remediation work itself remains gated: any production mutation must still go through an action block's non-bypassable production gate.
+
+## Constraints
+## Non-goals
+`, ideaSlug, now.Format("2006-01-02"), slug, fp, slug, slug, b.Signal, b.Target, b.Threshold, b.Observed, b.Class)
+	if err := os.WriteFile(filepath.Join(dir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
+		return "", err
+	}
+	return ideaSlug, nil
+}
+
 // runPipelineExecute is the §12.10 execute sub-phase for action blocks. It
 // validates preconditions (action plan finalized; production gate approved for
 // production capabilities), plans the concrete provider call, and records the
 // effect ledger entry. The Go CLI does NOT perform the side effect — it emits
 // the ProviderCall for the driver/harness to execute via MCP, preserving the
 // agents-write-markdown / driver-executes boundary (§12.4).
+// ExecuteJSON is the versioned machine-readable output of `pipeline execute
+// --json` (schema_version 1). An external driver/harness consumes it, performs
+// the MCP call when the gate permits, then calls `record-effect`.
+type ExecuteJSON struct {
+	SchemaVersion  int                    `json:"schema_version"`
+	Status         string                 `json:"status"` // dry_run|pending_gate|ready_for_harness
+	ProviderCall   *pipeline.ProviderCall `json:"provider_call,omitempty"`
+	EffectDigest   string                 `json:"effect_digest,omitempty"`
+	IdempotencyKey string                 `json:"idempotency_key,omitempty"`
+	Gate           executeGateJSON        `json:"gate"`
+}
+
+type executeGateJSON struct {
+	Required bool   `json:"required"`
+	State    string `json:"state"` // open|approved|not_required
+}
+
 func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("pipeline execute", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	root := fs.String("dir", ".", "workspace directory")
 	providerName := fs.String("provider", "vercel", "provider (vercel|noop)")
 	dryRun := fs.Bool("dry-run", false, "plan only; never mutate")
+	jsonOut := fs.Bool("json", false, "emit a machine-readable execution plan for an external harness")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	if fs.NArg() != 4 {
-		fmt.Fprintln(stderr, "usage: parley pipeline execute [--dir DIR] [--provider P] [--dry-run] SLUG BLOCK CAPABILITY TARGET")
+		fmt.Fprintln(stderr, "usage: parley pipeline execute [--dir DIR] [--provider P] [--dry-run] [--json] SLUG BLOCK CAPABILITY TARGET")
 		return 2
 	}
 	deck := deckDirFor(*root)
 	slug, blockID, capability, target := fs.Arg(0), fs.Arg(1), fs.Arg(2), fs.Arg(3)
-	cap := pipeline.Capability(capability)
+	capName := pipeline.Capability(capability)
 
 	m, err := pipeline.ParseFile(pipeline.ManifestPath(deck, slug))
 	if err != nil {
@@ -589,14 +846,24 @@ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
 		return 1
 	}
-	if !prov.Supports(cap) {
-		fmt.Fprintf(stderr, "pipeline execute failed: provider %q does not support %q (capability halt, §12.9)\n", prov.Name(), cap)
+	if !prov.Supports(capName) {
+		fmt.Fprintf(stderr, "pipeline execute failed: provider %q does not support %q (capability halt, §12.9)\n", prov.Name(), capName)
 		return 1
 	}
 
 	now := time.Now()
+	risk := block.Risk
+	if capName.IsProduction() {
+		risk = pipeline.RiskProduction
+	}
+	reqHash := pipeline.HashRequest([]byte(target))
+	key := pipeline.IdempotencyKey(slug, blockID, prov.Name(), string(capName), target, reqHash)
+	digest := pipeline.KeyDigest(key)
+
+	gateRequired := capName.IsProduction()
 	gateApproved := false
-	if cap.IsProduction() && !*dryRun {
+	gateState := "not_required"
+	if gateRequired && !*dryRun {
 		edge := pipeline.EdgeID(blockID, "execute")
 		g, exists, err := pipeline.LoadGate(deck, slug, edge)
 		if err != nil {
@@ -609,48 +876,43 @@ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
 				fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
 				return 1
 			}
-			fmt.Fprintf(stdout, "production execution requires approval (non-bypassable, §12.8).\n  approve with: parley pipeline gate approve --dir %s %s %s\n", *root, slug, edge)
-			return 0
+			return emitExecutePendingGate(*jsonOut, stdout, *root, slug, edge, key, digest)
 		}
 		switch g.Status {
 		case pipeline.GateOpen:
-			fmt.Fprintf(stdout, "awaiting production gate approval. approve with: parley pipeline gate approve --dir %s %s %s\n", *root, slug, edge)
-			return 0
+			return emitExecutePendingGate(*jsonOut, stdout, *root, slug, edge, key, digest)
 		case pipeline.GateRejected:
 			fmt.Fprintf(stderr, "pipeline execute failed: production gate %s was rejected\n", edge)
 			return 1
 		case pipeline.GateApproved:
 			gateApproved = true
+			gateState = "approved"
 		}
 	}
 
-	call, err := prov.Plan(pipeline.ActionRequest{Capability: cap, Target: target, DryRun: *dryRun, GateApproved: gateApproved})
+	call, err := prov.Plan(pipeline.ActionRequest{Capability: capName, Target: target, DryRun: *dryRun, GateApproved: gateApproved})
 	if err != nil {
 		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
 		return 1
 	}
 
-	risk := block.Risk
-	if cap.IsProduction() {
-		risk = pipeline.RiskProduction
-	}
-	reqHash := pipeline.HashRequest([]byte(target))
-	key := pipeline.IdempotencyKey(slug, blockID, prov.Name(), string(cap), target, reqHash)
 	eff, exists, err := pipeline.LoadEffect(deck, slug, key)
 	if err != nil {
 		fmt.Fprintf(stderr, "pipeline execute failed: %v\n", err)
 		return 1
 	}
 	if !exists {
-		eff = pipeline.NewEffect(slug, blockID, prov.Name(), string(cap), target, reqHash, risk, now)
+		eff = pipeline.NewEffect(slug, blockID, prov.Name(), string(capName), target, reqHash, risk, now)
 	}
 	if eff.NeedsReconcile() {
-		fmt.Fprintf(stderr, "pipeline execute blocked: effect %s is %s (external_ref %q); reconcile with record-effect before re-attempting (§12.7)\n", pipeline.KeyDigest(key), eff.Status, eff.ExternalRef)
+		fmt.Fprintf(stderr, "pipeline execute blocked: effect %s is %s (external_ref %q); reconcile with record-effect before re-attempting (§12.7)\n", digest, eff.Status, eff.ExternalRef)
 		return 1
 	}
+	status := "ready_for_harness"
 	if *dryRun {
 		eff.DryRunResult = "planned (dry-run)"
 		eff.Advance(pipeline.EffectDryRunOK, "", "dry-run planned", now)
+		status = "dry_run"
 	} else {
 		eff.Advance(pipeline.EffectExecuting, "", "planned for harness execution", now)
 	}
@@ -659,12 +921,45 @@ func runPipelineExecute(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
+	if *jsonOut {
+		out := ExecuteJSON{
+			SchemaVersion:  1,
+			Status:         status,
+			ProviderCall:   &call,
+			EffectDigest:   digest,
+			IdempotencyKey: key,
+			Gate:           executeGateJSON{Required: gateRequired, State: gateState},
+		}
+		b, _ := json.MarshalIndent(out, "", "  ")
+		fmt.Fprintln(stdout, string(b))
+		return 0
+	}
+
 	callJSON, _ := json.MarshalIndent(call, "", "  ")
-	fmt.Fprintf(stdout, "effect %s -> %s (risk=%s)\n", pipeline.KeyDigest(key), eff.Status, risk)
+	fmt.Fprintf(stdout, "effect %s -> %s (risk=%s)\n", digest, eff.Status, risk)
 	fmt.Fprintf(stdout, "ProviderCall (the driver/harness performs this via MCP; the CLI does not):\n%s\n", callJSON)
 	if !*dryRun {
-		fmt.Fprintf(stdout, "after the harness runs it, record the result:\n  parley pipeline record-effect --dir %s --status succeeded --external-ref <ref> %s %s\n", *root, slug, pipeline.KeyDigest(key))
+		fmt.Fprintf(stdout, "after the harness runs it, record the result:\n  parley pipeline record-effect --dir %s --status succeeded --external-ref <ref> %s %s\n", *root, slug, digest)
 	}
+	return 0
+}
+
+// emitExecutePendingGate reports that a production gate must be approved before
+// execution, in JSON or human form.
+func emitExecutePendingGate(jsonOut bool, stdout io.Writer, root, slug, edge, key, digest string) int {
+	if jsonOut {
+		out := ExecuteJSON{
+			SchemaVersion:  1,
+			Status:         "pending_gate",
+			EffectDigest:   digest,
+			IdempotencyKey: key,
+			Gate:           executeGateJSON{Required: true, State: "open"},
+		}
+		b, _ := json.MarshalIndent(out, "", "  ")
+		fmt.Fprintln(stdout, string(b))
+		return 0
+	}
+	fmt.Fprintf(stdout, "production execution requires approval (non-bypassable, §12.8).\n  approve with: parley pipeline gate approve --dir %s %s %s\n", root, slug, edge)
 	return 0
 }
 

@@ -67,6 +67,49 @@ func TestPipelineAutoWalksToDoneUnderAutoLeft(t *testing.T) {
 	}
 }
 
+func TestPipelineAutoStopsAtActionBlockNeedsHumanGate(t *testing.T) {
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, "parley-deck"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manifest := filepath.Join(ws, "pipeline.yaml")
+	writeFile(t, manifest, `schema_version: 1
+idea_slug: act-demo
+transport: local-dir
+autonomy: auto-left
+participants: [codex, claude]
+blocks:
+  - {id: spec, kind: deliberation, output_artifact: SPEC.md}
+  - {id: deploy, kind: action, output_artifact: DEPLOYMENT.md}
+`)
+	var out, errOut bytes.Buffer
+	if code := Run([]string{"pipeline", "start", "--dir", ws, manifest}, &out, &errOut); code != 0 {
+		t.Fatalf("start exit=%d err=%s", code, errOut.String())
+	}
+	final := "---\nstatus: final\n---\n\ndone\n"
+	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "act-demo__spec", "FINAL.md"), final)
+	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "act-demo__deploy", "FINAL.md"), final)
+
+	out.Reset()
+	code := Run([]string{"pipeline", "auto", "--dir", ws, "--yes", "act-demo"}, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("auto exit=%d err=%s out=%s", code, errOut.String(), out.String())
+	}
+	if !strings.Contains(out.String(), "needs_human_gate") || !strings.Contains(out.String(), "action block") {
+		t.Fatalf("auto should stop at action block with needs_human_gate, got:\n%s", out.String())
+	}
+	// It advanced past the deliberation block to the action block, but must NOT
+	// have completed the pipeline or executed anything.
+	var statusOut bytes.Buffer
+	Run([]string{"pipeline", "status", "--dir", ws, "act-demo"}, &statusOut, &errOut)
+	if strings.Contains(statusOut.String(), "status=completed") {
+		t.Fatalf("pipeline must not complete past an unexecuted action block:\n%s", statusOut.String())
+	}
+	if !strings.Contains(statusOut.String(), "current=deploy") {
+		t.Fatalf("expected current=deploy, got:\n%s", statusOut.String())
+	}
+}
+
 func TestPipelineAutoPausesAtSupervisedGate(t *testing.T) {
 	ws := startAndFinalize(t, "supervised")
 	var out, errOut bytes.Buffer

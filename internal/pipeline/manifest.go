@@ -7,6 +7,7 @@ package pipeline
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -54,6 +55,8 @@ type Block struct {
 	Risk                Risk      `yaml:"risk,omitempty" json:"risk,omitempty"`
 	ProviderCapabilities []string `yaml:"provider_capabilities,omitempty" json:"provider_capabilities,omitempty"`
 	GatePolicy          string    `yaml:"gate_policy,omitempty" json:"gate_policy,omitempty"`
+	// Transport optionally overrides the manifest transport for this block.
+	Transport           string    `yaml:"transport,omitempty" json:"transport,omitempty"`
 }
 
 // Edge is a reserved-for-future DAG edge (§12.3). A v1 driver accepts only a
@@ -73,7 +76,27 @@ type Manifest struct {
 	Participants  []string `yaml:"participants" json:"participants"`
 	Blocks        []Block  `yaml:"blocks" json:"blocks"`
 	Edges         []Edge   `yaml:"edges,omitempty" json:"edges,omitempty"`
+	// Execution is "linear" (default) or "dag". A linear manifest keeps the
+	// strict single-chain edge rule; a dag manifest is validated as an acyclic
+	// graph and advanced by ready-set (§12.3, decided 2026-06-02).
+	Execution string `yaml:"execution,omitempty" json:"execution,omitempty"`
+	// Decider optionally names an agent authorized to auto-resolve ONLY
+	// low-risk, non-production boundary gates (§12.8). Production gates remain
+	// non-bypassable; block-and-wait stays the default with no decider.
+	Decider string `yaml:"decider,omitempty" json:"decider,omitempty"`
 }
+
+// EffectiveTransport returns a block's transport: its override if set, else the
+// manifest transport (§12 per-block transport).
+func (m Manifest) EffectiveTransport(b Block) string {
+	if strings.TrimSpace(b.Transport) != "" {
+		return b.Transport
+	}
+	return m.Transport
+}
+
+// IsDAG reports whether the manifest opts into DAG execution.
+func (m Manifest) IsDAG() bool { return m.Execution == "dag" }
 
 var validKinds = map[BlockKind]bool{
 	KindDeliberation: true, KindImplementation: true, KindAction: true, KindWatcher: true,
@@ -145,9 +168,65 @@ func (m Manifest) Validate() error {
 		if b.Risk != "" && !validRisks[b.Risk] {
 			return fmt.Errorf("block %q: invalid risk %q", b.ID, b.Risk)
 		}
+		if b.Transport != "" && !validTransports[b.Transport] {
+			return fmt.Errorf("block %q: invalid transport %q (want local-dir|github-pr|gitlab-mr)", b.ID, b.Transport)
+		}
 	}
 
-	return m.validateLinear()
+	switch m.Execution {
+	case "", "linear":
+		return m.validateLinear()
+	case "dag":
+		return m.validateDAG(seen)
+	default:
+		return fmt.Errorf("invalid execution %q (want linear|dag)", m.Execution)
+	}
+}
+
+// validateDAG checks edges form an acyclic graph with known endpoints. Unlike
+// linear, it permits branches and joins. Used when Execution == "dag".
+func (m Manifest) validateDAG(known map[string]bool) error {
+	adj := make(map[string][]string, len(m.Blocks))
+	indeg := make(map[string]int, len(m.Blocks))
+	for _, b := range m.Blocks {
+		indeg[b.ID] = 0
+	}
+	for i, e := range m.Edges {
+		if !known[e.From] {
+			return fmt.Errorf("edge %d: unknown from-block %q", i, e.From)
+		}
+		if !known[e.To] {
+			return fmt.Errorf("edge %d: unknown to-block %q", i, e.To)
+		}
+		if e.From == e.To {
+			return fmt.Errorf("edge %d: self-loop on %q", i, e.From)
+		}
+		adj[e.From] = append(adj[e.From], e.To)
+		indeg[e.To]++
+	}
+	// Kahn's algorithm for cycle detection.
+	queue := make([]string, 0, len(m.Blocks))
+	for _, b := range m.Blocks {
+		if indeg[b.ID] == 0 {
+			queue = append(queue, b.ID)
+		}
+	}
+	visited := 0
+	for len(queue) > 0 {
+		n := queue[0]
+		queue = queue[1:]
+		visited++
+		for _, to := range adj[n] {
+			indeg[to]--
+			if indeg[to] == 0 {
+				queue = append(queue, to)
+			}
+		}
+	}
+	if visited != len(m.Blocks) {
+		return fmt.Errorf("dag manifest has a cycle (visited %d of %d blocks)", visited, len(m.Blocks))
+	}
+	return nil
 }
 
 // validateLinear enforces §12.3 / §12.9: edges, if present, must describe the

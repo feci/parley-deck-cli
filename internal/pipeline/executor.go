@@ -73,6 +73,10 @@ func (d Driver) Advance(run *PipelineRun, complete BlockComplete) (AdvanceResult
 		return AdvanceResult{Action: ActionRejected, Detail: "pipeline previously stopped on a rejected gate"}, nil
 	}
 
+	if d.Manifest.IsDAG() {
+		return d.advanceDAG(run, complete)
+	}
+
 	idx := d.blockIndex(run.CurrentBlock)
 	if idx < 0 {
 		return AdvanceResult{}, fmt.Errorf("current block %q not found in manifest", run.CurrentBlock)
@@ -106,8 +110,12 @@ func (d Driver) Advance(run *PipelineRun, complete BlockComplete) (AdvanceResult
 	}
 	if !exists {
 		gate = NewGate(run.PipelineSlug, cur.ID, next.ID, next.Risk, next.GatePolicy, d.Now)
-		if AutoApprove(d.Manifest.Autonomy, next.Risk) {
-			gate.Resolve(true, "policy:auto-left", d.Now)
+		if AutoApproveWithDecider(d.Manifest.Autonomy, next.Risk, d.Manifest.Decider != "") {
+			by := "policy:auto-left"
+			if d.Manifest.Decider != "" && d.Manifest.Autonomy != AutonomyAutoLeft {
+				by = "decider:" + d.Manifest.Decider
+			}
+			gate.Resolve(true, by, d.Now)
 		}
 		if err := SaveGate(d.DeckDir, gate); err != nil {
 			return AdvanceResult{}, err
@@ -135,6 +143,101 @@ func (d Driver) Advance(run *PipelineRun, complete BlockComplete) (AdvanceResult
 	default:
 		return AdvanceResult{}, fmt.Errorf("gate %q has unknown status %q", edge, gate.Status)
 	}
+}
+
+// advanceDAG is the single-active DAG executor (Execution: dag). The next block
+// is chosen by TOPOLOGICAL readiness (all inbound-edge sources complete), not by
+// blocks[] order, so a dependent block can never run before its prerequisites
+// even if listed first. One block is active at a time; full parallel multi-active
+// execution is future work. The manifest's first listed block should be a root.
+func (d Driver) advanceDAG(run *PipelineRun, complete BlockComplete) (AdvanceResult, error) {
+	if cur := run.CurrentBlock; cur != "" {
+		b, ok := d.findBlockByID(cur)
+		if !ok {
+			return AdvanceResult{}, fmt.Errorf("current block %q not found in manifest", cur)
+		}
+		done, err := complete(b)
+		if err != nil {
+			return AdvanceResult{}, fmt.Errorf("check block %q complete: %w", cur, err)
+		}
+		if !done {
+			run.Status = StatusRunning
+			return AdvanceResult{Action: ActionRunBlock, Block: cur, Detail: "block has not finished its engine round + consensus"}, nil
+		}
+		run.recordCompleted(cur)
+	}
+	if d.Manifest.AllBlocksComplete(run.CompletedBlocks) {
+		run.CurrentBlock = ""
+		run.PendingGate = ""
+		run.Status = StatusCompleted
+		return AdvanceResult{Action: ActionDone, Block: lastBlockID(d.Manifest), Detail: "all blocks complete"}, nil
+	}
+
+	// Topologically ready blocks (inbound sources complete); gates applied below.
+	candidates := d.Manifest.ReadyBlocks(run.CompletedBlocks, func(string) bool { return true })
+	if len(candidates) == 0 {
+		return AdvanceResult{}, fmt.Errorf("dag deadlock: no ready block but pipeline incomplete (completed: %v)", run.CompletedBlocks)
+	}
+	nextID := candidates[0]
+	next, _ := d.findBlockByID(nextID)
+	from := run.CurrentBlock
+	if from == "" {
+		from = "start"
+	}
+	edge := EdgeID(from, nextID)
+
+	gate, exists, err := LoadGate(d.DeckDir, run.PipelineSlug, edge)
+	if err != nil {
+		return AdvanceResult{}, err
+	}
+	if !exists {
+		gate = NewGate(run.PipelineSlug, from, nextID, next.Risk, next.GatePolicy, d.Now)
+		if AutoApproveWithDecider(d.Manifest.Autonomy, next.Risk, d.Manifest.Decider != "") {
+			by := "policy:auto-left"
+			if d.Manifest.Decider != "" && d.Manifest.Autonomy != AutonomyAutoLeft {
+				by = "decider:" + d.Manifest.Decider
+			}
+			gate.Resolve(true, by, d.Now)
+		}
+		if err := SaveGate(d.DeckDir, gate); err != nil {
+			return AdvanceResult{}, err
+		}
+	}
+	switch gate.Status {
+	case GateRejected:
+		run.Status = StatusFailed
+		run.PendingGate = edge
+		return AdvanceResult{Action: ActionRejected, Block: nextID, Edge: edge, Detail: "boundary gate rejected"}, nil
+	case GateOpen:
+		run.Status = StatusBlockedOnGate
+		run.PendingGate = edge
+		return AdvanceResult{Action: ActionAwaitGate, Block: nextID, Edge: edge, Detail: gate.Prompt}, nil
+	case GateApproved:
+		var fromPtr *Block
+		if run.CurrentBlock != "" {
+			if fb, ok := d.findBlockByID(run.CurrentBlock); ok {
+				fromPtr = &fb
+			}
+		}
+		if _, err := SeedBlockPrompt(d.DeckDir, d.Manifest, fromPtr, next, d.Now); err != nil {
+			return AdvanceResult{}, err
+		}
+		run.CurrentBlock = nextID
+		run.PendingGate = ""
+		run.Status = StatusRunning
+		return AdvanceResult{Action: ActionSeededNext, Block: nextID, Edge: edge, Detail: "seeded next ready block"}, nil
+	default:
+		return AdvanceResult{}, fmt.Errorf("gate %q has unknown status %q", edge, gate.Status)
+	}
+}
+
+func (d Driver) findBlockByID(id string) (Block, bool) {
+	for _, b := range d.Manifest.Blocks {
+		if b.ID == id {
+			return b, true
+		}
+	}
+	return Block{}, false
 }
 
 // seedNext writes the next block's driver-authored kickoff (§12.5).

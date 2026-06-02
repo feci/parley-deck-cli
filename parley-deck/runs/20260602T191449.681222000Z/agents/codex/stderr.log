@@ -1,0 +1,744 @@
+OpenAI Codex v0.134.0
+--------
+workdir: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: medium
+reasoning summaries: none
+session id: 019e89c2-8f2e-76d2-84a8-23ccfaddff77
+--------
+user
+You are codex, a participant in a Parley Deck cooperation round.
+
+Rules:
+- Create exactly this file and no other protocol artifact: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+- Do not edit any other agent's file.
+- Do not overwrite the file if it already exists; report a blocker instead.
+- Do not read or reference other agents' round-01 answers.
+- Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
+- Return only a short confirmation with the path written.
+- Be concrete, concise, and state trade-offs.
+- If you are blocked by missing human input, create one JSON question file under: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/runs/20260602T191449.681222000Z/questions
+- Question files use this shape: {"id":"<unique-id>","agent":"codex","prompt":"<question>","details":"<context>","default_answer":"<safe default if any>","risk":"low|normal|high","status":"open","answer":"","created_at":"<RFC3339 time>","answered_at":"0001-01-01T00:00:00Z"}
+- If you choose to wait for an answer, poll your question file until status is answered or auto_answered. Otherwise proceed with an explicit assumption in your artifact.
+
+Effective launch config:
+- model: cli-default
+- thinking/reasoning/effort/profile: cli-default
+- speed: balanced
+- sandbox: workspace-write
+- approval: on-failure
+- timeoutMs: 1800000
+
+Idea prompt:
+---
+idea: 2026-06-02T21-14-49-finish-the-6-rem
+author: user
+created: 2026-06-02
+participants: [codex, hermes]
+status: round-01
+---
+
+## Problem / idea
+
+Finish the 6 remaining COOPERATION.md §12 pipeline items in parley-deck-cli. This is an IMPLEMENTATION idea (Phase 0-8): agree the implementation plan, then build it. The §12 protocol text and the internal/pipeline package (manifest, run cursor, gate + central policy evaluator, effects ledger, provider interface + VercelProvider, watcher types, Driver state machine) and the `parley pipeline validate|start|status|run-block|continue|auto|execute|record-effect|gate` command already exist and ship in cli 1.8.0. Build the remaining 6 items ON TOP without breaking existing behavior or the additive/backward-compatible guarantees.
+
+Give independent Phase-1 analysis of the proposed approach for EACH item: what is sound, what is risky, what is missing, and the smallest correct implementation. Keep changes additive; preserve the agents-write-markdown / driver-executes boundary and non-bypassable production gates.
+
+ITEM 1 — auto-loop drives action/implementation/watcher blocks.
+Today `parley pipeline auto` drives only deliberation blocks and stops at others. Proposed: auto also handles (a) action blocks — run the Phase 1-4 plan rounds+consensus+finalize, then for the execute step, perform a dry-run automatically and STOP at the production gate (never auto-execute prod); (b) implementation blocks — drive via the new Phase 5-8 runner (item 2); (c) watcher blocks — finalize the MONITORING.md spec then hand off to the watch scheduler (item 4) without blocking. Question: exact stop/continue semantics per kind so auto never performs an unsafe action.
+
+ITEM 2 — Phase 5-8 implementation+code-review runner.
+Today only RunRoundOne/RunRound (Phase 1-4) exist. Proposed: a runner that (5) launches the implementer to produce IMPLEMENTATION.md + code on a branch, (6) launches each non-implementer reviewer to write review/round-NN/<agent>.md with CRITICAL/MAJOR/MINOR/NIT, (7) drafts review/consensus.md + signoffs, (8) fix-up loop until zero agreed fixes. Reuse the existing launch machinery (CommandFor, isolated home, validation). Question: how much to automate vs leave to the facilitator; artifact paths; how to detect "zero agreed fixes"; testability with fake agents.
+
+ITEM 3 — machine-readable execute output + finalize MCP execution contract.
+Today `pipeline execute` prints a human ProviderCall and writes the effect ledger; the driver/harness performs the actual MCP call. Proposed: add `--json` so execute emits {provider_call, effect_digest, status, idempotency_key} for an external harness/CI to consume and then call `record-effect`. Document the contract: agents write markdown, CLI plans + ledgers, harness executes via MCP, record-effect persists external_ref + reconcile. Question: exact JSON schema; how a harness signals success/failure back; reconcile-on-resume responsibilities.
+
+ITEM 4 — live monitoring scheduler (`parley pipeline watch`).
+Today watcher types + breach fingerprint/dedupe exist but nothing evaluates signals. Proposed: `parley pipeline watch SLUG [--signals FILE] [--once]` that loads MONITORING.md (or a watch spec), reads current signal values from a provided JSON file or a pluggable source, evaluates thresholds, dedupes breaches by fingerprint, and for each new breach either auto-opens a remediation idea (only predeclared low-risk classes) or writes a notify/gate record. Question: signal-source abstraction (avoid hard vendor coupling); dedupe persistence across runs; how remediation ideas link back to the pipeline; --once vs loop.
+
+ITEM 5 — WinGet manifests for cli 1.6/1.7/1.8 + skill 1.3.0.
+Proposed: generate the winget manifest files (installer/locale/version YAMLs) under the packaging dir for each new version, matching the existing manifest structure. Note that actual publication needs the GitHub release .exe assets (built by CI) + a PR to the winget-pkgs fork; we generate the manifests, not publish. Question: portable .exe vs installer manifest shape; per-version directory layout; what must be filled from real release assets vs templated.
+
+ITEM 6 — per-block transport + decider-agent tie-break + DAG execution.
+(6a) Per-block transport: allow each manifest block to override the pipeline transport (the schema reserves a single sticky transport in v1). (6b) Decider-agent: a policy hook that auto-resolves ONLY low-risk, non-production boundary gates via a configured decider agent, with block-and-wait as the default. (6c) DAG execution: replace linear-only with topological execution honoring edges[]; the driver advances any block whose inputs are all complete, still gating per edge. Question: backward compatibility (linear manifests unchanged); how DAG interacts with the cursor (multiple ready blocks); credential-scope risk of per-block transport; whether decider-agent belongs in §12 text (it is already reserved there).
+
+CONSTRAINTS: additive + backward-compatible (existing manifests/decks unchanged); preserve agents-write-markdown / driver-executes boundary; production mutations always gate (non-bypassable); vendor-neutral (providers/transports behind interfaces); Go 1.26; full test coverage with fake agents (no reliance on launching real hosted agents in unit tests); English-only protocol files.
+
+DELIVER in your round-01: per-item assessment + the minimal correct implementation + top risks; call out any item that should be split, deferred, or needs a §12 protocol-text change vs pure code; and the recommended build order.
+
+## Constraints
+
+- Local-directory transport for this initial run.
+- Human-in-the-loop mode by default unless the run was started with auto mode.
+
+## Non-goals
+
+- Do not make unrelated repository changes.
+
+
+Required file shape:
+---
+agent: codex
+idea: 2026-06-02T21-14-49-finish-the-6-rem
+round: 1
+date: 2026-06-02
+---
+
+## Summary
+## Proposed approach
+## Concerns / open questions
+## Risks
+
+codex
+Using the `parley-deck` skill because this is an explicit Parley Deck cooperation artifact request. I’ll only check the target path and write that single participant file if it does not exist.
+exec
+/bin/zsh -lc "sed -n '1,220p' /Users/tomasfecko/.codex/skills/parley-deck/SKILL.md && test -e /Volumes/My\\ Shared\\ Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md; printf 'exists_status=%s\\n' \""'$?"' in /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli
+ succeeded in 0ms:
+---
+name: parley-deck
+description: "Run Parley Deck multi-agent idea, implementation, review, or consensus workflows through local CLI agents, using defaulted or user-overridden transport: local files, GitHub PRs, or GitLab MRs. Use when a user wants a task, design, implementation plan, or code review to be independently analyzed by multiple headless or interactive agents according to parley-deck/COOPERATION.md, with each participant writing its own canonical artifacts under parley-deck/ideas/."
+---
+
+# Parley Deck
+
+## Core Rule
+
+Act as the facilitator agent. Every participant writes its own protocol artifact, including participants invoked headlessly through local CLIs. The facilitator prepares directories, discovers agent capabilities, prompts agents, and verifies outputs; it must not proxy-write another participant's round, review, or signoff content as the normal path.
+
+Always read `parley-deck/COOPERATION.md` first. Follow the active transport, roster, phase rules, and English-only rule for every file under `parley-deck/`.
+
+## Non-Solo Requirement
+
+A request to use `parley`, `parley-deck`, or this skill ALWAYS means a real multi-agent workflow with other available models or agents. Parley Deck is never satisfied by one agent working alone as a solo checklist, solo review, or solo process framework.
+
+If at least one other participant or CLI agent is available, the facilitator MUST invoke other agents. Each participant MUST create its own canonical artifact. The facilitator MUST NOT claim "Parley Deck was used" unless other participant artifacts exist, or the protocol explicitly records why multi-agent execution was impossible.
+
+If no other agent can be invoked because of auth, CLI, timeout, permissions, or tooling failure, the facilitator MUST stop before merge, finalization, or claiming completion and report the blocker to the user. The facilitator may continue only if the user explicitly authorizes a solo exception, and that exception MUST be recorded in an inbox/protocol note before work continues.
+
+## Required Protocol Context
+
+Do not run this skill from the abbreviated workflow alone. Load the full cooperation protocol before acting:
+
+1. Prefer the live project file `parley-deck/COOPERATION.md`.
+2. If the live file is unavailable, load the bundled fallback snapshot `references/COOPERATION.md`.
+3. If both are unavailable, stop and ask for the protocol.
+
+The live `parley-deck/COOPERATION.md` is canonical. The bundled reference is only a portability fallback for agents that receive the skill without the repository context.
+
+## Skill Metadata
+
+`SKILL.md` and `references/COOPERATION.md` are the vendor-neutral instructions for all agents.
+
+`agents/openai.yaml` exists only because Codex/OpenAI skill tooling uses it for UI metadata. It is not the protocol authority and does not imply that Parley Deck is OpenAI-specific.
+
+`agents/manifest.yaml` is a vendor-neutral metadata summary for other agents or tooling that want a machine-readable entrypoint.
+
+`references/WORKED_EXAMPLES.md` contains non-authoritative examples for capability matrices, local config, and installation/portability notes. Use it only after loading the protocol.
+
+`references/compatibility.json` describes the packaged protocol/metadata schema and compatibility policy. It is informational; the live project protocol remains canonical.
+
+## Automation Mode
+
+This skill implements **manual facilitation**: an agent follows this skill, invokes other CLI agents, and verifies canonical files. It is not a deterministic A2A facilitator service by itself.
+
+If the live protocol later contains an `Automation:` header, an `Automation write profile:`, or a section for automated orchestration, read that section before acting and apply it. If the live protocol and bundled fallback disagree, the live protocol wins.
+
+## Protocol Drift Check
+
+If `parley-deck-skill` is available, start with the structured status check:
+
+```bash
+parley-deck-skill status --target all --project . --json
+```
+
+Use it to report the actual system installer version, installed runtime skill versions, project metadata state, and compatibility warnings. Do not force global lockstep: stale runtime installs or project metadata are warnings unless the live protocol or installer reports an explicit blocker.
+
+When the system installer version changed or `parley-deck/meta/version.json` is missing/stale, run a dry-run project sync check:
+
+```bash
+parley-deck-skill sync-project --project . --dry-run --json
+```
+
+Ask before writing project metadata. If the user approves, run:
+
+```bash
+parley-deck-skill sync-project --project . --yes
+```
+
+`sync-project` updates only `parley-deck/meta/version.json`; it must not overwrite `parley-deck/COOPERATION.md`. Protocol content changes still require a protocol-change idea.
+
+When both the live protocol and bundled fallback exist, compare them before work:
+
+```bash
+shasum -a 256 <project-root>/parley-deck/COOPERATION.md <skill-root>/references/COOPERATION.md
+```
+
+If the hashes differ, warn that the bundled fallback is stale and use the live `parley-deck/COOPERATION.md`.
+
+## Protocol Coverage Checklist
+
+Before starting work, verify that the workflow plan covers all applicable protocol sections:
+
+- Transport choice and stickiness: choose exactly one of `local-dir`, `github-pr`, or `gitlab-mr`; do not switch later without a protocol-change idea.
+- Scope and purpose: parallel work without collisions, explicit rounds, consensus before execution, durable audit trail.
+- Non-solo execution: if any other participant or CLI agent is available, invoke at least one non-facilitator participant and verify its canonical artifacts exist.
+- Active roster: use stable agent IDs from the roster; do not silently add new quorum members.
+- Directory layout: create and maintain `00-prompt.md`, `round-NN/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, and `review/` artifacts in the required paths.
+- Phase 0 kickoff: create `ideas/<slug>/00-prompt.md` and `round-01/` with correct frontmatter.
+- Phase 1 independent analysis: every participant writes its own `round-01/<agent-id>.md` before reading other round-1 files; the facilitator MUST NOT substitute its own solo analysis for missing participant files.
+- Phase 2 cross-review rounds: each participant writes its own next-round file, explicitly addresses every other participant, and provides counter-proposals for disagreements.
+- Phase 3 consensus: draft `consensus.md`, then each participant appends its own signoff block. All active participants must accept, or blockers start another round.
+- Phase 4 finalization: the initiator or agreed drafter writes `FINAL.md`, updates status, and closes the idea per transport rules.
+- Phase 5 implementation: default implementer is the FINAL drafter unless another participant claims it; implementation must follow `FINAL.md`; deviations go into `IMPLEMENTATION.md`.
+- Phase 6 code review: every non-implementer writes `review/round-NN/<agent-id>.md` with fixed severities `CRITICAL`, `MAJOR`, `MINOR`, and `NIT`.
+- Phase 7 review consensus: draft `review/consensus.md`; all participants append signoffs; agreed fixes, deferred follow-ups, and dismissed findings are explicit.
+- Phase 8 fix-up: implement agreed fixes, update `IMPLEMENTATION.md`, repeat review until there are zero agreed fixes, then mark complete.
+- Escalation to user: use `inbox/<from>-to-user_<slug>_<topic>.md` when human judgment is needed; quote the user's answer into the next round/review file.
+- Quorum and async participation: quorum is all participants in `00-prompt.md`; dropping inactive agents requires the protocol's ping/deadline rules.
+- Participant sizing and lenses: default to 2-4 active participants, use optional per-idea `roles:` only as advisory lenses, and do not let roles change quorum, ownership, signoff weight, or drafter eligibility.
+- Conflict avoidance: one file per agent per round, append-only signoffs, never edit another agent's file, and copy external snippets when other agents may lack access.
+- Internal helpers: participants may use internal subagents/tools/retrieval/scratchpads, but those helpers are not Parley Deck participants, do not satisfy non-solo execution, and do not own canonical artifacts.
+- Version/project sync: check `parley-deck-skill status` when available; if project metadata is missing or stale after a system skill update, propose `sync-project` before starting work.
+- Protocol changes: open a meta-protocol-change idea; do not edit the protocol ad hoc.
+- Inbox: use for lightweight durable pings; promote design discussions to ideas, and mirror phase-affecting decisions into canonical round/review/consensus/final artifacts.
+- Session start: read protocol, inbox, open idea prompts, and outstanding PR/MR actions before new work.
+- Transport mechanics: apply the exact mechanics for Local Directory, GitHub PRs, or GitLab MRs from section 11 of the protocol.
+- English-only rule: every file under `parley-deck/`, PR/MR comment, review summary, and commit message is English unless the project protocol explicitly overrides it.
+
+If any checklist item is unclear for the requested workflow, ask the user before creating or modifying protocol artifacts.
+
+## Startup Flow
+
+1. Read `parley-deck/COOPERATION.md` and identify the current `Transport:` value and active roster.
+
+2. Run the version and project sync check before accepting new work:
+
+   - Prefer `parley-deck-skill status --target all --project . --json` when the command is installed.
+   - Note the actual installer version, each installed runtime skill marker version, and `parley-deck/meta/version.json` state.
+   - If metadata is missing/stale, run `parley-deck-skill sync-project --project . --dry-run --json` and ask before `--yes`.
+   - If runtime skill copies are older than the installer, warn and suggest `parley-deck-skill install --target all --force` for managed installs.
+   - If the command is unavailable, fall back to the manual hash comparison in the Protocol Drift Check section.
+
+3. Run the session-start state check before accepting new work:
+
+   - Read `parley-deck/inbox/` for messages addressed to the current agent, `all`, or unresolved `to-user` escalations.
+   - Read open `parley-deck/ideas/*/00-prompt.md` files and note ideas where the current agent owes a round, signoff, implementation update, review, or fix-up.
+   - For GitHub/GitLab transports, check the matching open PR/MR actions if tools and permissions are available.
+   - If outstanding protocol work conflicts with the user's new request, surface it and ask which to handle first.
+
+4. Use the active `COOPERATION.md` transport when it is set. If the project is new, the transport is still a placeholder, or the user starts a workflow without naming a transport, default to `local-dir` and mention the available overrides:
+
+   - `local-dir` / files only
+   - `github-pr` / GitHub Pull Requests
+   - `gitlab-mr` / GitLab Merge Requests
+
+5. Discover candidate agents generically. Do not assume any fixed vendor, model family, or CLI command. Use this order:
+
+   - User-provided agent list in the current request.
+   - `PARLEY_HEADLESS_AGENT_CONFIG` pointing to a JSON config file.
+   - `parley-deck/meta/headless-agents.local.json` when present.
+   - Active agent IDs and workspace hints in `COOPERATION.md`.
+   - If still unclear, ask the user which installed CLI commands should be considered.
+
+6. For each candidate command, verify it is installed with `command -v <cli>` or an explicit configured path.
+
+7. Build a capability matrix before starting a new idea, implementation, or review cycle. Show the matrix and the effective defaults, but do not block on optional choices. The only required startup answer is the task statement when it was not already provided.
+
+8. Verify that participant selection includes at least one non-facilitator participant when another agent or CLI is available. Optional selection MUST NOT silently collapse to only the facilitator. If no non-facilitator participant can be invoked, stop and report the blocker unless the user explicitly authorizes a recorded solo exception.
+
+9. If a candidate agent is not in the roster, list the proposed stable agent ID in the default summary. Pressing Enter accepts that agent for the current workflow. If the user explicitly rejects roster expansion, run it only as a temporary observer or skip it. Rejecting every non-facilitator participant requires an explicit solo exception note before continuing.
+
+10. Default external-backend disclosure approval is YES for the task brief and necessary repository/code context. Still redact obvious secrets and stop for explicit confirmation before sending credentials, customer data, private documents unrelated to the task, or other clearly sensitive material.
+
+## Transport Selection
+
+The user chooses the coordination transport before the first idea starts. Once `COOPERATION.md` has a concrete transport, treat that choice as sticky. Do not switch transports silently; switching later requires a protocol-change idea.
+
+Use this decision rule:
+
+- Use `local-dir` when the user wants the simplest filesystem-only flow or there is no remote git host yet.
+- Use `github-pr` when the project is on GitHub and the user wants native PR discussion/review ergonomics.
+- Use `gitlab-mr` when the project is on GitLab and the user wants native MR discussion/review ergonomics.
+
+All transports still write canonical artifacts under `parley-deck/`. PR/MR comments are ergonomic mirrors, not the source of truth.
+
+If the chosen transport is not yet reflected in `COOPERATION.md`, ask the user before updating the `Transport:` header. For GitHub or GitLab, also confirm repository URL, target integration branch, and whether the design should use a new branch or an existing one.
+
+Transport-specific facilitator duties:
+
+- `local-dir`: create kickoff files and round directories under `parley-deck/`; each participant writes its own round/review/signoff artifacts; use commits when appropriate.
+- `github-pr`: create canonical files and have each participant write its own artifacts on the design or implementation branch, then mirror the lifecycle in GitHub PRs according to `COOPERATION.md` section 11.B.
+- `gitlab-mr`: create canonical files and have each participant write its own artifacts on the design or implementation branch, then mirror the lifecycle in GitLab MRs according to `COOPERATION.md` section 11.C.
+
+Under manual facilitation with `github-pr` or `gitlab-mr`, do not assume API permissions. If GitHub/GitLab tools are unavailable, produce the canonical files and tell the user exactly which PR/MR actions remain: branch creation, PR/MR creation, labels, requested reviewers, native approvals/reviews, and merge/finalization. Native PR/MR comments never replace canonical files.
+
+## Commit Message Conventions
+
+For any committed change inside `parley-deck/`, use the protocol prefix:
+
+```text
+[<agent-id>] <slug>: <one-line description>
+```
+
+Phase-specific messages required by the local-directory transport:
+
+- Phase 4 close: `[<drafter>] <slug>: FINAL.md + close idea`
+- Phase 5 ready: `[<agent>] <slug>: IMPLEMENTATION.md — ready for review`
+- Phase 8 fix-up: `[<agent>] <slug>: IMPLEMENTATION.md fix-up cycle <N> — ready for re-review`
+- Phase 8 complete: `[<agent>] <slug>: IMPLEMENTATION.md — complete`
+
+Under GitHub/GitLab transports, keep the same commit prefix convention and also apply the PR/MR titles, labels, reviewers, and native review mirrors required by the selected transport section of `COOPERATION.md`.
+
+## Agent Capability Discovery
+
+The facilitator that starts the workflow is responsible for discovering other available agents. Discovery must produce a capability matrix, not a hardcoded vendor list.
+
+For each candidate agent, determine:
+
+- `agentId`: stable Parley agent ID from the roster, or a temporary observer ID approved by the user.
+- `cli`: executable path or command.
+- `installed`: yes/no.
+- `headlessMode`: how to run a non-interactive prompt.
+- `writeMode`: how to allow narrow workspace writes for one protocol artifact.
+- `modelOptions`: supported model names or `unknown`.
+- `thinkingOptions`: supported thinking/reasoning/effort levels or `unknown`.
+- `speedProfiles`: user-facing speed/quality choices such as `fast`, `balanced`, `deep`, `review`, or `unknown`.
+- `timeoutMs`: effective process timeout.
+- `notes`: auth, quota, workspace trust, or unsupported features.
+
+Use non-destructive discovery commands first:
+
+```bash
+<cli> --help
+<cli> help
+<cli> --version
+```
+
+exists_status=1
+
+codex
+The target file does not exist, so I’m going to add only that file with the required frontmatter and concise Phase-1 assessment content.
+apply patch
+patch: completed
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+diff --git a/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md b/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..213caa32223ed540cf5cd3684999830cbd9e9b7d
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+@@ -0,0 +1,131 @@
++---
++agent: codex
++idea: 2026-06-02T21-14-49-finish-the-6-rem
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++The six items are compatible with the existing §12 pipeline if implemented as additive extensions to the current manifest, cursor, gate, ledger, provider, watcher, and Driver layers. The safest plan is to keep agents responsible for markdown artifacts and code proposals, while the CLI/driver owns state transitions, JSON contracts, gates, ledgers, and external execution handoff.
++
++Recommended build order:
++
++1. Item 3: machine-readable execute output and MCP execution contract.
++2. Item 2: Phase 5-8 implementation/review runner.
++3. Item 1: auto-loop support for action, implementation, and watcher blocks.
++4. Item 4: watch scheduler.
++5. Item 6a/6c: per-block transport and DAG cursor.
++6. Item 6b: decider-agent hook, only after gate policy tests are strong.
++7. Item 5: WinGet manifests, in parallel once release metadata is known.
++
++Item 6 should be split. Per-block transport, decider-agent, and DAG execution each touch different risk surfaces. DAG execution also likely needs §12 text updates because linear cursor semantics become insufficient. Item 5 is packaging work and should not block runtime pipeline work.
++
++## Proposed approach
++
++Item 1: auto-loop drives action/implementation/watcher blocks.
++
++What is sound: extending `pipeline auto` is reasonable if it remains a driver over existing block semantics, not a bypass around gates. The proposed action-block behavior is safe if auto may run planning/finalization and dry-run execution, then must stop at production mutation gates.
++
++Smallest correct implementation: add a dispatch table keyed by block kind. Deliberation keeps current behavior. Action blocks run Phase 1-4, finalize, invoke `execute --dry-run --json`, persist any planned effect metadata already allowed by current ledgers, then return a stopped status such as `blocked_by_gate` when production execution is required. Implementation blocks call the new Phase 5-8 runner. Watcher blocks finalize or validate `MONITORING.md`, enqueue/register watch metadata, and return without entering a long-running loop.
++
++Stop semantics: auto may continue past non-mutating completed blocks, may stop on missing artifacts, failed validation, unresolved consensus, review fixes, external harness requirement, or any production gate. Auto must never call real provider execution for production effects.
++
++Trade-off: this keeps auto useful but conservative; it may require users or CI to call `continue` more often at boundaries.
++
++Item 2: Phase 5-8 implementation and code-review runner.
++
++What is sound: reusing `CommandFor`, isolated homes, validation, and fake-agent launch machinery keeps the runner testable and avoids a second orchestration model.
++
++Smallest correct implementation: add runner methods for `RunImplementation`, `RunReviewRound`, `RunReviewConsensus`, and `RunFixupCycle`. Use fixed artifact paths: `IMPLEMENTATION.md`, `review/round-NN/<agent>.md`, `review/consensus.md`, and updated `IMPLEMENTATION.md` entries per fix-up cycle. The implementer writes code and `IMPLEMENTATION.md`; non-implementers write review files with exact severities `CRITICAL`, `MAJOR`, `MINOR`, `NIT`. The facilitator/driver may draft review consensus, but signoffs remain participant-authored.
++
++Detecting zero agreed fixes: parse `review/consensus.md` for a machine-readable agreed-fixes section, preferably YAML frontmatter or a fenced JSON/YAML block with `agreed_fixes: []`. Do not infer zero fixes from prose alone. If missing, block and ask for consensus repair.
++
++Trade-off: requiring a structured consensus field adds protocol strictness, but makes Phase 8 deterministic and testable.
++
++Item 3: machine-readable execute output and MCP execution contract.
++
++What is sound: `execute --json` is the right boundary between CLI planning/ledgering and external harness MCP execution. It preserves the agents-write-markdown / driver-executes split and keeps vendor-specific execution outside core policy.
++
++Smallest correct implementation: add `--json` to `pipeline execute` with a stable schema:
++
++```json
++{
++  "status": "dry_run|pending_gate|ready_for_harness|recorded|error",
++  "provider_call": {
++    "provider": "string",
++    "operation": "string",
++    "target": "string",
++    "arguments": {},
++    "dry_run": true
++  },
++  "effect_digest": "sha256:...",
++  "idempotency_key": "string",
++  "gate": {
++    "required": true,
++    "state": "open|approved|denied|not_required"
++  }
++}
++```
++
++Harness contract: harness reads JSON, performs the MCP call only when gate state permits it, then calls `record-effect` with `idempotency_key`, `effect_digest`, `status`, `external_ref`, provider result summary, and error details when failed. Resume must reconcile ledger entries whose planned effect exists but lacks terminal success/failure.
++
++Trade-off: the schema should be small and versioned; adding too much provider-specific detail will weaken vendor neutrality.
++
++Item 4: live monitoring scheduler.
++
++What is sound: watcher types and breach fingerprints already provide the core dedupe model, so `pipeline watch` can be additive.
++
++Smallest correct implementation: add `parley pipeline watch SLUG [--signals FILE] [--once] [--interval DURATION]`. Define a `SignalSource` interface returning named values plus timestamps. Implement JSON-file source first. Parse `MONITORING.md` only if it has a structured watch spec; otherwise require a separate structured spec generated during watcher finalization. Persist dedupe state in the existing run/pipeline state area, keyed by watcher id plus breach fingerprint. For each new breach, either open a remediation idea only for allowlisted low-risk classes, or write a notify/gate event in the ledger.
++
++Linkage: remediation ideas should carry parent pipeline slug, watcher id, breach fingerprint, source signal ids, and the triggering effect digest if applicable.
++
++Trade-off: `--once` is easy to test and CI-friendly; loop mode should be thin polling over the same evaluator and not embed vendor monitoring clients.
++
++Item 5: WinGet manifests for CLI 1.6/1.7/1.8 and skill 1.3.0.
++
++What is sound: generating manifests without publishing is low risk and separable from runtime features.
++
++Smallest correct implementation: inspect the existing packaging layout and add versioned manifest directories matching that shape. Use installer, locale, and version YAML files as the repo already does. Leave fields that require real release assets explicit and verifiable: download URL, SHA256, installer type, architecture, product code if applicable, release notes URL, and version.
++
++Portable vs installer: if release assets are standalone `.exe` binaries, use the portable manifest shape. If CI produces an installer, use installer metadata. Do not guess asset hashes.
++
++Trade-off: templated manifests are useful, but submitting to winget-pkgs must wait for immutable GitHub release assets and verified hashes.
++
++Item 6: per-block transport, decider-agent tie-break, and DAG execution.
++
++6a per-block transport: sound if credentials and execution scopes remain attached to the block and provider. Smallest implementation is an optional `transport` override on block config, defaulting to manifest-level transport. Validate that overrides are declared up front and never mutate cursor history. Risk is credential leakage or cross-transport confusion, so logs and ledgers must record effective transport per block.
++
++6b decider-agent: sound only for low-risk, non-production gates where policy explicitly permits automated resolution. Smallest implementation is a gate policy hook that may ask a configured decider agent for a recommendation, then records the decision artifact and rationale. Default remains block-and-wait. Production mutation gates must be non-bypassable and ineligible.
++
++6c DAG execution: sound but larger than the others. Smallest implementation is to preserve linear manifests as a DAG where each block depends on the previous block, then add `edges[]` validation, topological ready-set calculation, and a cursor state that tracks per-block status rather than a single current index. A block is ready when all inbound dependencies are complete and any edge gate is satisfied.
++
++Trade-off: DAG support improves parallelism but complicates status, auto-loop ordering, retries, and user display. It needs protocol text updates for cursor semantics, ready-block selection, and artifact expectations when multiple blocks are active.
++
++## Concerns / open questions
++
++Item 1 needs explicit status names for auto stops so CI and humans can distinguish `needs_human_gate`, `needs_external_harness`, `needs_artifact`, and `failed_validation`.
++
++Item 2 needs a structured review consensus format. Without it, "zero agreed fixes" becomes unreliable prose interpretation.
++
++Item 3 should include a schema version, even if the initial version is `1`, and should define whether `execute --json` writes the planned ledger entry before or after printing JSON.
++
++Item 4 should avoid making markdown parsing the source of truth unless `MONITORING.md` already has structured sections. A sidecar or embedded YAML block is safer.
++
++Item 5 depends on actual release artifact type and SHA256 values. Missing real assets should block publication but not block manifest template generation.
++
++Item 6 needs a §12 protocol update for DAG cursor semantics and probably for decider-agent eligibility. Per-block transport may be pure code if §12 already reserves it, but credential-scope rules should still be documented.
++
++## Risks
++
++Highest risk: accidentally allowing `auto` or decider-agent behavior to perform or approve production mutations. Mitigation: central policy evaluator must reject those paths regardless of command flags or manifest settings.
++
++High risk: DAG cursor migration breaking existing linear manifests. Mitigation: treat old manifests as a generated linear DAG in tests and keep old status output stable unless `edges[]` is present.
++
++Medium risk: implementation runner launches real agents in tests or depends on hosted credentials. Mitigation: fake agents must cover artifact creation, failed reviews, fix-up loops, consensus parsing, and launch failures.
++
++Medium risk: `execute --json` schema churn breaking harnesses. Mitigation: add schema versioning, golden tests, and documented compatibility rules.
++
++Medium risk: watcher dedupe either suppresses real repeated incidents or spams remediation ideas. Mitigation: persist fingerprints with explicit lifecycle states and include tests for same breach, changed breach, and resolved-then-reopened breach.
++
++Low risk: WinGet manifests become stale before assets publish. Mitigation: keep them generated from release metadata and verify hashes in packaging tests or a release checklist.
+
+diff --git a/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md b/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..213caa32223ed540cf5cd3684999830cbd9e9b7d
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+@@ -0,0 +1,131 @@
++---
++agent: codex
++idea: 2026-06-02T21-14-49-finish-the-6-rem
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++The six items are compatible with the existing §12 pipeline if implemented as additive extensions to the current manifest, cursor, gate, ledger, provider, watcher, and Driver layers. The safest plan is to keep agents responsible for markdown artifacts and code proposals, while the CLI/driver owns state transitions, JSON contracts, gates, ledgers, and external execution handoff.
++
++Recommended build order:
++
++1. Item 3: machine-readable execute output and MCP execution contract.
++2. Item 2: Phase 5-8 implementation/review runner.
++3. Item 1: auto-loop support for action, implementation, and watcher blocks.
++4. Item 4: watch scheduler.
++5. Item 6a/6c: per-block transport and DAG cursor.
++6. Item 6b: decider-agent hook, only after gate policy tests are strong.
++7. Item 5: WinGet manifests, in parallel once release metadata is known.
++
++Item 6 should be split. Per-block transport, decider-agent, and DAG execution each touch different risk surfaces. DAG execution also likely needs §12 text updates because linear cursor semantics become insufficient. Item 5 is packaging work and should not block runtime pipeline work.
++
++## Proposed approach
++
++Item 1: auto-loop drives action/implementation/watcher blocks.
++
++What is sound: extending `pipeline auto` is reasonable if it remains a driver over existing block semantics, not a bypass around gates. The proposed action-block behavior is safe if auto may run planning/finalization and dry-run execution, then must stop at production mutation gates.
++
++Smallest correct implementation: add a dispatch table keyed by block kind. Deliberation keeps current behavior. Action blocks run Phase 1-4, finalize, invoke `execute --dry-run --json`, persist any planned effect metadata already allowed by current ledgers, then return a stopped status such as `blocked_by_gate` when production execution is required. Implementation blocks call the new Phase 5-8 runner. Watcher blocks finalize or validate `MONITORING.md`, enqueue/register watch metadata, and return without entering a long-running loop.
++
++Stop semantics: auto may continue past non-mutating completed blocks, may stop on missing artifacts, failed validation, unresolved consensus, review fixes, external harness requirement, or any production gate. Auto must never call real provider execution for production effects.
++
++Trade-off: this keeps auto useful but conservative; it may require users or CI to call `continue` more often at boundaries.
++
++Item 2: Phase 5-8 implementation and code-review runner.
++
++What is sound: reusing `CommandFor`, isolated homes, validation, and fake-agent launch machinery keeps the runner testable and avoids a second orchestration model.
++
++Smallest correct implementation: add runner methods for `RunImplementation`, `RunReviewRound`, `RunReviewConsensus`, and `RunFixupCycle`. Use fixed artifact paths: `IMPLEMENTATION.md`, `review/round-NN/<agent>.md`, `review/consensus.md`, and updated `IMPLEMENTATION.md` entries per fix-up cycle. The implementer writes code and `IMPLEMENTATION.md`; non-implementers write review files with exact severities `CRITICAL`, `MAJOR`, `MINOR`, `NIT`. The facilitator/driver may draft review consensus, but signoffs remain participant-authored.
++
++Detecting zero agreed fixes: parse `review/consensus.md` for a machine-readable agreed-fixes section, preferably YAML frontmatter or a fenced JSON/YAML block with `agreed_fixes: []`. Do not infer zero fixes from prose alone. If missing, block and ask for consensus repair.
++
++Trade-off: requiring a structured consensus field adds protocol strictness, but makes Phase 8 deterministic and testable.
++
++Item 3: machine-readable execute output and MCP execution contract.
++
++What is sound: `execute --json` is the right boundary between CLI planning/ledgering and external harness MCP execution. It preserves the agents-write-markdown / driver-executes split and keeps vendor-specific execution outside core policy.
++
++Smallest correct implementation: add `--json` to `pipeline execute` with a stable schema:
++
++```json
++{
++  "status": "dry_run|pending_gate|ready_for_harness|recorded|error",
++  "provider_call": {
++    "provider": "string",
++    "operation": "string",
++    "target": "string",
++    "arguments": {},
++    "dry_run": true
++  },
++  "effect_digest": "sha256:...",
++  "idempotency_key": "string",
++  "gate": {
++    "required": true,
++    "state": "open|approved|denied|not_required"
++  }
++}
++```
++
++Harness contract: harness reads JSON, performs the MCP call only when gate state permits it, then calls `record-effect` with `idempotency_key`, `effect_digest`, `status`, `external_ref`, provider result summary, and error details when failed. Resume must reconcile ledger entries whose planned effect exists but lacks terminal success/failure.
++
++Trade-off: the schema should be small and versioned; adding too much provider-specific detail will weaken vendor neutrality.
++
++Item 4: live monitoring scheduler.
++
++What is sound: watcher types and breach fingerprints already provide the core dedupe model, so `pipeline watch` can be additive.
++
++Smallest correct implementation: add `parley pipeline watch SLUG [--signals FILE] [--once] [--interval DURATION]`. Define a `SignalSource` interface returning named values plus timestamps. Implement JSON-file source first. Parse `MONITORING.md` only if it has a structured watch spec; otherwise require a separate structured spec generated during watcher finalization. Persist dedupe state in the existing run/pipeline state area, keyed by watcher id plus breach fingerprint. For each new breach, either open a remediation idea only for allowlisted low-risk classes, or write a notify/gate event in the ledger.
++
++Linkage: remediation ideas should carry parent pipeline slug, watcher id, breach fingerprint, source signal ids, and the triggering effect digest if applicable.
++
++Trade-off: `--once` is easy to test and CI-friendly; loop mode should be thin polling over the same evaluator and not embed vendor monitoring clients.
++
++Item 5: WinGet manifests for CLI 1.6/1.7/1.8 and skill 1.3.0.
++
++What is sound: generating manifests without publishing is low risk and separable from runtime features.
++
++Smallest correct implementation: inspect the existing packaging layout and add versioned manifest directories matching that shape. Use installer, locale, and version YAML files as the repo already does. Leave fields that require real release assets explicit and verifiable: download URL, SHA256, installer type, architecture, product code if applicable, release notes URL, and version.
++
++Portable vs installer: if release assets are standalone `.exe` binaries, use the portable manifest shape. If CI produces an installer, use installer metadata. Do not guess asset hashes.
++
++Trade-off: templated manifests are useful, but submitting to winget-pkgs must wait for immutable GitHub release assets and verified hashes.
++
++Item 6: per-block transport, decider-agent tie-break, and DAG execution.
++
++6a per-block transport: sound if credentials and execution scopes remain attached to the block and provider. Smallest implementation is an optional `transport` override on block config, defaulting to manifest-level transport. Validate that overrides are declared up front and never mutate cursor history. Risk is credential leakage or cross-transport confusion, so logs and ledgers must record effective transport per block.
++
++6b decider-agent: sound only for low-risk, non-production gates where policy explicitly permits automated resolution. Smallest implementation is a gate policy hook that may ask a configured decider agent for a recommendation, then records the decision artifact and rationale. Default remains block-and-wait. Production mutation gates must be non-bypassable and ineligible.
++
++6c DAG execution: sound but larger than the others. Smallest implementation is to preserve linear manifests as a DAG where each block depends on the previous block, then add `edges[]` validation, topological ready-set calculation, and a cursor state that tracks per-block status rather than a single current index. A block is ready when all inbound dependencies are complete and any edge gate is satisfied.
++
++Trade-off: DAG support improves parallelism but complicates status, auto-loop ordering, retries, and user display. It needs protocol text updates for cursor semantics, ready-block selection, and artifact expectations when multiple blocks are active.
++
++## Concerns / open questions
++
++Item 1 needs explicit status names for auto stops so CI and humans can distinguish `needs_human_gate`, `needs_external_harness`, `needs_artifact`, and `failed_validation`.
++
++Item 2 needs a structured review consensus format. Without it, "zero agreed fixes" becomes unreliable prose interpretation.
++
++Item 3 should include a schema version, even if the initial version is `1`, and should define whether `execute --json` writes the planned ledger entry before or after printing JSON.
++
++Item 4 should avoid making markdown parsing the source of truth unless `MONITORING.md` already has structured sections. A sidecar or embedded YAML block is safer.
++
++Item 5 depends on actual release artifact type and SHA256 values. Missing real assets should block publication but not block manifest template generation.
++
++Item 6 needs a §12 protocol update for DAG cursor semantics and probably for decider-agent eligibility. Per-block transport may be pure code if §12 already reserves it, but credential-scope rules should still be documented.
++
++## Risks
++
++Highest risk: accidentally allowing `auto` or decider-agent behavior to perform or approve production mutations. Mitigation: central policy evaluator must reject those paths regardless of command flags or manifest settings.
++
++High risk: DAG cursor migration breaking existing linear manifests. Mitigation: treat old manifests as a generated linear DAG in tests and keep old status output stable unless `edges[]` is present.
++
++Medium risk: implementation runner launches real agents in tests or depends on hosted credentials. Mitigation: fake agents must cover artifact creation, failed reviews, fix-up loops, consensus parsing, and launch failures.
++
++Medium risk: `execute --json` schema churn breaking harnesses. Mitigation: add schema versioning, golden tests, and documented compatibility rules.
++
++Medium risk: watcher dedupe either suppresses real repeated incidents or spams remediation ideas. Mitigation: persist fingerprints with explicit lifecycle states and include tests for same breach, changed breach, and resolved-then-reopened breach.
++
++Low risk: WinGet manifests become stale before assets publish. Mitigation: keep them generated from release metadata and verify hashes in packaging tests or a release checklist.
+
+codex
+Wrote `/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md`
+diff --git a/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md b/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..213caa32223ed540cf5cd3684999830cbd9e9b7d
+--- /dev/null
++++ b/parley-deck/ideas/2026-06-02T21-14-49-finish-the-6-rem/round-01/codex.md
+@@ -0,0 +1,131 @@
++---
++agent: codex
++idea: 2026-06-02T21-14-49-finish-the-6-rem
++round: 1
++date: 2026-06-02
++---
++
++## Summary
++
++The six items are compatible with the existing §12 pipeline if implemented as additive extensions to the current manifest, cursor, gate, ledger, provider, watcher, and Driver layers. The safest plan is to keep agents responsible for markdown artifacts and code proposals, while the CLI/driver owns state transitions, JSON contracts, gates, ledgers, and external execution handoff.
++
++Recommended build order:
++
++1. Item 3: machine-readable execute output and MCP execution contract.
++2. Item 2: Phase 5-8 implementation/review runner.
++3. Item 1: auto-loop support for action, implementation, and watcher blocks.
++4. Item 4: watch scheduler.
++5. Item 6a/6c: per-block transport and DAG cursor.
++6. Item 6b: decider-agent hook, only after gate policy tests are strong.
++7. Item 5: WinGet manifests, in parallel once release metadata is known.
++
++Item 6 should be split. Per-block transport, decider-agent, and DAG execution each touch different risk surfaces. DAG execution also likely needs §12 text updates because linear cursor semantics become insufficient. Item 5 is packaging work and should not block runtime pipeline work.
++
++## Proposed approach
++
++Item 1: auto-loop drives action/implementation/watcher blocks.
++
++What is sound: extending `pipeline auto` is reasonable if it remains a driver over existing block semantics, not a bypass around gates. The proposed action-block behavior is safe if auto may run planning/finalization and dry-run execution, then must stop at production mutation gates.
++
++Smallest correct implementation: add a dispatch table keyed by block kind. Deliberation keeps current behavior. Action blocks run Phase 1-4, finalize, invoke `execute --dry-run --json`, persist any planned effect metadata already allowed by current ledgers, then return a stopped status such as `blocked_by_gate` when production execution is required. Implementation blocks call the new Phase 5-8 runner. Watcher blocks finalize or validate `MONITORING.md`, enqueue/register watch metadata, and return without entering a long-running loop.
++
++Stop semantics: auto may continue past non-mutating completed blocks, may stop on missing artifacts, failed validation, unresolved consensus, review fixes, external harness requirement, or any production gate. Auto must never call real provider execution for production effects.
++
++Trade-off: this keeps auto useful but conservative; it may require users or CI to call `continue` more often at boundaries.
++
++Item 2: Phase 5-8 implementation and code-review runner.
++
++What is sound: reusing `CommandFor`, isolated homes, validation, and fake-agent launch machinery keeps the runner testable and avoids a second orchestration model.
++
++Smallest correct implementation: add runner methods for `RunImplementation`, `RunReviewRound`, `RunReviewConsensus`, and `RunFixupCycle`. Use fixed artifact paths: `IMPLEMENTATION.md`, `review/round-NN/<agent>.md`, `review/consensus.md`, and updated `IMPLEMENTATION.md` entries per fix-up cycle. The implementer writes code and `IMPLEMENTATION.md`; non-implementers write review files with exact severities `CRITICAL`, `MAJOR`, `MINOR`, `NIT`. The facilitator/driver may draft review consensus, but signoffs remain participant-authored.
++
++Detecting zero agreed fixes: parse `review/consensus.md` for a machine-readable agreed-fixes section, preferably YAML frontmatter or a fenced JSON/YAML block with `agreed_fixes: []`. Do not infer zero fixes from prose alone. If missing, block and ask for consensus repair.
++
++Trade-off: requiring a structured consensus field adds protocol strictness, but makes Phase 8 deterministic and testable.
++
++Item 3: machine-readable execute output and MCP execution contract.
++
++What is sound: `execute --json` is the right boundary between CLI planning/ledgering and external harness MCP execution. It preserves the agents-write-markdown / driver-executes split and keeps vendor-specific execution outside core policy.
++
++Smallest correct implementation: add `--json` to `pipeline execute` with a stable schema:
++
++```json
++{
++  "status": "dry_run|pending_gate|ready_for_harness|recorded|error",
++  "provider_call": {
++    "provider": "string",
++    "operation": "string",
++    "target": "string",
++    "arguments": {},
++    "dry_run": true
++  },
++  "effect_digest": "sha256:...",
++  "idempotency_key": "string",
++  "gate": {
++    "required": true,
++    "state": "open|approved|denied|not_required"
++  }
++}
++```
++
++Harness contract: harness reads JSON, performs the MCP call only when gate state permits it, then calls `record-effect` with `idempotency_key`, `effect_digest`, `status`, `external_ref`, provider result summary, and error details when failed. Resume must reconcile ledger entries whose planned effect exists but lacks terminal success/failure.
++
++Trade-off: the schema should be small and versioned; adding too much provider-specific detail will weaken vendor neutrality.
++
++Item 4: live monitoring scheduler.
++
++What is sound: watcher types and breach fingerprints already provide the core dedupe model, so `pipeline watch` can be additive.
++
++Smallest correct implementation: add `parley pipeline watch SLUG [--signals FILE] [--once] [--interval DURATION]`. Define a `SignalSource` interface returning named values plus timestamps. Implement JSON-file source first. Parse `MONITORING.md` only if it has a structured watch spec; otherwise require a separate structured spec generated during watcher finalization. Persist dedupe state in the existing run/pipeline state area, keyed by watcher id plus breach fingerprint. For each new breach, either open a remediation idea only for allowlisted low-risk classes, or write a notify/gate event in the ledger.
++
++Linkage: remediation ideas should carry parent pipeline slug, watcher id, breach fingerprint, source signal ids, and the triggering effect digest if applicable.
++
++Trade-off: `--once` is easy to test and CI-friendly; loop mode should be thin polling over the same evaluator and not embed vendor monitoring clients.
++
++Item 5: WinGet manifests for CLI 1.6/1.7/1.8 and skill 1.3.0.
++
++What is sound: generating manifests without publishing is low risk and separable from runtime features.
++
++Smallest correct implementation: inspect the existing packaging layout and add versioned manifest directories matching that shape. Use installer, locale, and version YAML files as the repo already does. Leave fields that require real release assets explicit and verifiable: download URL, SHA256, installer type, architecture, product code if applicable, release notes URL, and version.
++
++Portable vs installer: if release assets are standalone `.exe` binaries, use the portable manifest shape. If CI produces an installer, use installer metadata. Do not guess asset hashes.
++
++Trade-off: templated manifests are useful, but submitting to winget-pkgs must wait for immutable GitHub release assets and verified hashes.
++
++Item 6: per-block transport, decider-agent tie-break, and DAG execution.
++
++6a per-block transport: sound if credentials and execution scopes remain attached to the block and provider. Smallest implementation is an optional `transport` override on block config, defaulting to manifest-level transport. Validate that overrides are declared up front and never mutate cursor history. Risk is credential leakage or cross-transport confusion, so logs and ledgers must record effective transport per block.
++
++6b decider-agent: sound only for low-risk, non-production gates where policy explicitly permits automated resolution. Smallest implementation is a gate policy hook that may ask a configured decider agent for a recommendation, then records the decision artifact and rationale. Default remains block-and-wait. Production mutation gates must be non-bypassable and ineligible.
++
++6c DAG execution: sound but larger than the others. Smallest implementation is to preserve linear manifests as a DAG where each block depends on the previous block, then add `edges[]` validation, topological ready-set calculation, and a cursor state that tracks per-block status rather than a single current index. A block is ready when all inbound dependencies are complete and any edge gate is satisfied.
++
++Trade-off: DAG support improves parallelism but complicates status, auto-loop ordering, retries, and user display. It needs protocol text updates for cursor semantics, ready-block selection, and artifact expectations when multiple blocks are active.
++
++## Concerns / open questions
++
++Item 1 needs explicit status names for auto stops so CI and humans can distinguish `needs_human_gate`, `needs_external_harness`, `needs_artifact`, and `failed_validation`.
++
++Item 2 needs a structured review consensus format. Without it, "zero agreed fixes" becomes unreliable prose interpretation.
++
++Item 3 should include a schema version, even if the initial version is `1`, and should define whether `execute --json` writes the planned ledger entry before or after printing JSON.
++
++Item 4 should avoid making markdown parsing the source of truth unless `MONITORING.md` already has structured sections. A sidecar or embedded YAML block is safer.
++
++Item 5 depends on actual release artifact type and SHA256 values. Missing real assets should block publication but not block manifest template generation.
++
++Item 6 needs a §12 protocol update for DAG cursor semantics and probably for decider-agent eligibility. Per-block transport may be pure code if §12 already reserves it, but credential-scope rules should still be documented.
++
++## Risks
++
++Highest risk: accidentally allowing `auto` or decider-agent behavior to perform or approve production mutations. Mitigation: central policy evaluator must reject those paths regardless of command flags or manifest settings.
++
++High risk: DAG cursor migration breaking existing linear manifests. Mitigation: treat old manifests as a generated linear DAG in tests and keep old status output stable unless `edges[]` is present.
++
++Medium risk: implementation runner launches real agents in tests or depends on hosted credentials. Mitigation: fake agents must cover artifact creation, failed reviews, fix-up loops, consensus parsing, and launch failures.
++
++Medium risk: `execute --json` schema churn breaking harnesses. Mitigation: add schema versioning, golden tests, and documented compatibility rules.
++
++Medium risk: watcher dedupe either suppresses real repeated incidents or spams remediation ideas. Mitigation: persist fingerprints with explicit lifecycle states and include tests for same breach, changed breach, and resolved-then-reopened breach.
++
++Low risk: WinGet manifests become stale before assets publish. Mitigation: keep them generated from release metadata and verify hashes in packaging tests or a release checklist.
+
+tokens used
+22,506
