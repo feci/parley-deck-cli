@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"parley-deck-cli/internal/pipeline"
 )
@@ -87,6 +88,34 @@ func TestBlockCompleteRespectsBlockedReviewConsensus(t *testing.T) {
 	writeFile(t, filepath.Join(rcDir, "consensus.md"), "---\nidea: x\noutstanding_agreed_fixes: 0\nblocked: false\n---\n")
 	if done, err := complete(block); err != nil || !done {
 		t.Fatalf("unblocked zero-fix consensus should be complete (done=%v err=%v)", done, err)
+	}
+}
+
+func TestActionBlockCompleteNeedsSucceededEffectNotJustPlan(t *testing.T) {
+	ws := t.TempDir()
+	deck := filepath.Join(ws, "parley-deck")
+	slug, blockID := "dep-demo", "deploy"
+	block := pipeline.Block{ID: blockID, Kind: pipeline.KindAction, OutputArtifact: "DEPLOYMENT.md"}
+	complete := blockCompleteFunc(deck, slug)
+
+	// A finalized PLAN alone must NOT make an action block complete (otherwise
+	// the DAG/auto could advance past an unexecuted deploy).
+	bw := pipeline.BlockWorkspace(deck, slug, blockID)
+	writeFile(t, filepath.Join(bw, "DEPLOYMENT.md"), "---\nstatus: final\n---\n\nplan\n")
+	writeFile(t, filepath.Join(bw, "FINAL.md"), "---\nstatus: final\n---\n\nplan\n")
+	if done, err := complete(block); err != nil || done {
+		t.Fatalf("action with finalized plan but no effect must NOT be complete (done=%v err=%v)", done, err)
+	}
+
+	// Record a succeeded effect for the block -> now complete.
+	now := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)
+	eff := pipeline.NewEffect(slug, blockID, "vercel", "deploy.production", "app", pipeline.HashRequest([]byte("{}")), pipeline.RiskProduction, now)
+	eff.Advance(pipeline.EffectSucceeded, "dpl_1", "done", now)
+	if err := pipeline.SaveEffect(deck, eff); err != nil {
+		t.Fatal(err)
+	}
+	if done, err := complete(block); err != nil || !done {
+		t.Fatalf("action with a succeeded effect should be complete (done=%v err=%v)", done, err)
 	}
 }
 

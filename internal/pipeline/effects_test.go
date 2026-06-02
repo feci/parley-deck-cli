@@ -63,6 +63,31 @@ func TestEffectRoundTripAndReconcile(t *testing.T) {
 	}
 }
 
+func TestBlockHasSucceededEffect(t *testing.T) {
+	deck := t.TempDir()
+	now := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)
+	// A planned (not succeeded) effect for "deploy" -> not complete.
+	planned := NewEffect("p", "deploy", "vercel", "deploy.production", "app", HashRequest([]byte("{}")), RiskProduction, now)
+	if err := SaveEffect(deck, planned); err != nil {
+		t.Fatal(err)
+	}
+	if ok, _ := BlockHasSucceededEffect(deck, "p", "deploy"); ok {
+		t.Fatal("planned effect must NOT count as a succeeded block effect")
+	}
+	// Advance it to succeeded.
+	planned.Advance(EffectSucceeded, "dpl_1", "done", now)
+	if err := SaveEffect(deck, planned); err != nil {
+		t.Fatal(err)
+	}
+	if ok, _ := BlockHasSucceededEffect(deck, "p", "deploy"); !ok {
+		t.Fatal("succeeded effect must count")
+	}
+	// A different block has no effect.
+	if ok, _ := BlockHasSucceededEffect(deck, "p", "other"); ok {
+		t.Fatal("unrelated block must not be complete")
+	}
+}
+
 func TestSameKeyOverwritesSameFile(t *testing.T) {
 	deck := t.TempDir()
 	now := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)

@@ -147,6 +147,35 @@ func LoadEffect(deckDir, slug, key string) (Effect, bool, error) {
 	return e, true, nil
 }
 
+// BlockHasSucceededEffect reports whether the block has at least one effect
+// recorded as succeeded. An action block is "complete" only when this is true —
+// a finalized plan alone must NOT advance the pipeline past an unexecuted side
+// effect (§12.10).
+func BlockHasSucceededEffect(deckDir, slug, blockID string) (bool, error) {
+	dir := filepath.Join(PipelineDir(deckDir, slug), "effects")
+	entries, err := os.ReadDir(dir)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			return false, err
+		}
+		var eff Effect
+		if json.Unmarshal(data, &eff) == nil && eff.BlockID == blockID && eff.Status == EffectSucceeded {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // NeedsReconcile reports whether an effect is in an ambiguous state that the
 // driver MUST reconcile against external state before retrying (§12.7).
 func (e Effect) NeedsReconcile() bool {
