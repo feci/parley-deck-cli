@@ -38,10 +38,36 @@ events/`steer`/`runstate`/`hitl` contracts and `--no-tui` unchanged.
       `runTUIViewWithDiscovery` → `RunLive(Home, Root, Status, Start)` instead of
       `RunWorkspace`; `runTask` also passes `Root` + `Start` so `N` works inside
       `parley run`. `installedAgentIDs` (gemini-excluded) unchanged.
-- [~] **Slice 5 — delete the old workspace model + tests** (in progress): added
-      the unified-behavior tests below; the now-dead workspace model deletion is
-      the remaining cleanup (see Deviations).
+- [x] **Slice 5 — delete the old workspace model + tests** (done in fix-up
+      cycle 1, AF5): `internal/tui/app.go` reduced to the init wizard + shared
+      styles/helpers; the workspace `model`, `RunWorkspace`/`Run`/
+      `WorkspaceOptions`, `Start*`/`Action*` launch types, workspace msg types,
+      and the app-side `runTUIAction`/`consensusActionArgs`/`commandOutput`/
+      `applySessionLaunchOverrides` all deleted, with their tests. `tui/app.go`
+      1443 → 150 lines.
 - [x] Checks: `go build ./...`, `go vet ./...`, `go test ./...` — all green.
+
+## Fix-up cycle 1 (Phase 8)
+
+Applied the Phase 7 review-consensus agreed fixes (see `review/consensus.md`):
+
+- **AF1** — TUI detach no longer cancels `N`-launched runs: `newLaunchFunc` reaps
+  each handle in a background goroutine (`Wait` → `registerWorkspaceSessions`);
+  the unconditional cancel-all-on-exit defer was removed. Only the attached run's
+  `Cancel` (ctrl+c) cancels.
+- **AF2** — `parley run` no longer owns secondary launches: `Start` is not passed
+  into `parley run`'s live TUI; `Root` is kept so Home still lists ideas/runs and
+  `N` reports that new ideas start from `parley tui`.
+- **AF3** — added `TestTranscriptPopulatesFromOnDiskRun`: writes a run dir with
+  `events.jsonl` (`agent.started` → stdout path) + `stdout.log`, drives an
+  `eventsMsg` read, and asserts the agent buffer is non-empty and the view shows
+  the output (closes the owner's #3 transcript gate end-to-end).
+- **AF4** — done-state exit hint: status line shows `[done]` and the input row
+  shows the `/quit or esc to exit` hint so a finished run never feels stuck.
+- **AF5** — retired the workspace model (see Slice 5 above and Deviations).
+- **AF6** — help wording is now `ctrl+c cancel the attached run, else quit`.
+
+Checks after fix-up: `go build ./...`, `go vet ./...`, `go test ./...` — green.
 
 ## Tests
 
@@ -53,16 +79,16 @@ tests still pass (Home prepended to tab order without breaking defaults). Existi
 
 ## Deviations from FINAL.md
 
-- **The old workspace model is retired functionally but not yet deleted.**
-  `parley tui` now launches `RunLive(Home)`, so `tui.RunWorkspace`/
-  `WorkspaceOptions`/the `internal/tui/app.go` workspace `model`/`ActionRunner`/
-  `ActionRequest`/`ActionResult`/`StartRequest`/`StartRunFunc`/`StartedRun`, and
-  `app.go`'s `runTUIAction`/`applySessionLaunchOverrides`, are now DEAD code that
-  still compiles. Deleting them safely (tui/app.go also holds shared helpers like
-  `valueOr`/`truncateText`) is the final slice-5 step, deferred to fix-up so the
-  review can pinpoint exactly what is dead. I renamed the new launch types
-  `Launch*` to avoid colliding with the old `StartRequest`/`StartRunFunc` until
-  they're removed.
+- **The old workspace model is fully retired and deleted (fix-up cycle 1, AF5).**
+  During slice 4 the workspace model was retired *functionally* (`parley tui`
+  launches `RunLive(Home)`) but left in place as dead-but-compiling code so the
+  reviewers could pinpoint exactly what to delete. In fix-up cycle 1 it was
+  removed: `internal/tui/app.go` now holds only the init wizard and the shared
+  styles/helpers `live.go` needs (`valueOr`, `truncateText`, the styles), and the
+  app-side `runTUIAction`/`consensusActionArgs`/`commandOutput`/
+  `applySessionLaunchOverrides` are gone. The `Launch*` launch types (renamed
+  during slice 2 to avoid colliding with the old `StartRequest`/`StartRunFunc`)
+  are now the only launch types and keep their names.
 - **D10 transcript gate**: verified via tests (a transcript renders from a
   loaded buffer) and by code path (stdout path flows from `agent.started` →
   `agentBuffer` lazily each tick); a full multi-agent live run is the reviewer's

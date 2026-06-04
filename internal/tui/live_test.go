@@ -591,6 +591,46 @@ func TestRunTokenDropsStaleEvents(t *testing.T) {
 	}
 }
 
+// AF3 / owner #3: a real on-disk run (events.jsonl with agent.started carrying a
+// stdout path + a stdout.log) must show that agent's live transcript.
+func TestTranscriptPopulatesFromOnDiskRun(t *testing.T) {
+	runDir := t.TempDir()
+	stdoutPath := filepath.Join(runDir, "codex-stdout.log")
+	if err := os.WriteFile(stdoutPath, []byte("reading the parser\nwriting changes\nDONE\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	s := store.New(runDir)
+	for _, e := range []store.Event{
+		{Time: base, Type: "run.created", Data: map[string]any{"idea": "x", "participants": []string{"codex"}}},
+		{Time: base.Add(time.Second), Type: "run.segment_started", Data: map[string]any{"segment_id": "segment-0001", "reason": "initial", "targets": []string{"codex"}}},
+		{Time: base.Add(2 * time.Second), Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": stdoutPath, "segment_id": "segment-0001"}},
+	} {
+		if err := s.Append(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	model := newLiveModel(LiveOptions{Idea: testIdea("x"), Participants: []string{"codex"}, RunID: "run-x", RunDir: runDir})
+	model.height, model.width = 30, 100
+	events, off, err := readEventsFromOffset(filepath.Join(runDir, "events.jsonl"), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, _ := model.Update(eventsMsg{events: events, offset: off, token: model.runToken})
+	model = updated.(liveModel)
+
+	if got := model.activeTabResolved(); got != "agent:codex" {
+		t.Fatalf("active tab = %q, want agent:codex", got)
+	}
+	if b := model.buffers["codex"]; b == nil || len(b.lines) == 0 {
+		t.Fatalf("transcript buffer is empty: %+v", b)
+	}
+	if view := model.View(); !strings.Contains(view, "writing changes") {
+		t.Fatalf("transcript not shown in the view:\n%s", view)
+	}
+}
+
 func mapByID(agents []AgentState) map[string]AgentState {
 	mapped := map[string]AgentState{}
 	for _, agent := range agents {

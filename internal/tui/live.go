@@ -518,10 +518,14 @@ func (m liveModel) renderStatusLine(width int) string {
 			openQ++
 		}
 	}
-	line := fmt.Sprintf("run=%s idea=%s round=%s  %s %s %s  q:%d",
+	doneTag := ""
+	if m.done {
+		doneTag = "  [done]"
+	}
+	line := fmt.Sprintf("run=%s idea=%s round=%s  %s %s %s  q:%d%s",
 		m.opts.RunID, m.opts.Idea.Slug,
 		displayRoundStatus(m.state.RoundStatus, m.done, m.opts.Resume),
-		label, stateStr, follow, openQ)
+		label, stateStr, follow, openQ, doneTag)
 	out := mutedStyle.Render(truncateText(line, width))
 	if m.errText != "" {
 		out = warnStyle.Render(truncateText(m.errText, width)) + "\n" + out
@@ -563,12 +567,15 @@ func (m liveModel) renderInputRow(width int) string {
 		row += "  " + warnStyle.Render(m.inputErr)
 	}
 	hint := "↑/↓ tabs · N new idea · Enter steer/answer · /help · ctrl+c"
+	if m.done {
+		hint = "[done] · ↑/↓ tabs · N new idea · /open <slug|run> · /quit or esc to exit"
+	}
 	switch {
 	case m.composing:
 		hint = "type a task · Enter launch · esc cancel"
 	case strings.HasPrefix(m.inputText, "/"):
 		hint = "commands: /help /status /follow /deck <t> /answer <qid> <t> /open <slug|run> /quit"
-	case active == homeTabID:
+	case active == homeTabID && !m.done:
 		hint = "N new idea · /open <slug|run> · ↑/↓ tabs · /help · ctrl+c"
 	}
 	return row + "\n" + mutedStyle.Render(hint)
@@ -935,7 +942,7 @@ func (m liveModel) submitInput() (tea.Model, tea.Cmd) {
 	return m.submitSteer(steer.TargetDeck, "", text)
 }
 
-// launchIdea starts a new run via the StartRunFunc and attaches to it in place.
+// launchIdea starts a new run via the LaunchFunc and attaches to it in place.
 func (m liveModel) launchIdea(task string) (tea.Model, tea.Cmd) {
 	if m.opts.Start == nil {
 		m.inputErr, m.composing = "launching is not available here", false
@@ -1170,7 +1177,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  type + Enter       answer the active agent's open question, else",
 		"                     record a steer for it (deck steer on the Status tab)",
 		"  esc                clear the input, or detach the TUI when empty",
-		"  ctrl+c             cancel the run",
+		"  ctrl+c             cancel the attached run, else quit",
 		"",
 		"Slash commands",
 		"  /help              this overlay        /status   jump to Status tab",
