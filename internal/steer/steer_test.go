@@ -1,6 +1,7 @@
 package steer
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -13,7 +14,7 @@ func TestSubmitQueuesAgentSteerWithMonotonicIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.ID != "steer-0001" || first.DeliveryMode != DeliveryQueuedNewAttempt || first.Status != StatusQueued {
+	if !strings.HasPrefix(first.ID, "steer-0001-") || first.DeliveryMode != DeliveryQueuedNewAttempt || first.Status != StatusQueued {
 		t.Fatalf("first result = %+v", first)
 	}
 
@@ -21,8 +22,11 @@ func TestSubmitQueuesAgentSteerWithMonotonicIDs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if second.ID != "steer-0002" {
-		t.Fatalf("second id = %q, want steer-0002 (monotonic)", second.ID)
+	if !strings.HasPrefix(second.ID, "steer-0002-") {
+		t.Fatalf("second id = %q, want steer-0002-* (monotonic prefix)", second.ID)
+	}
+	if first.ID == second.ID {
+		t.Fatal("steer ids must be unique (collision-resistant suffix)")
 	}
 
 	queued, err := List(dir)
@@ -32,7 +36,7 @@ func TestSubmitQueuesAgentSteerWithMonotonicIDs(t *testing.T) {
 	if len(queued) != 2 {
 		t.Fatalf("queued = %d, want 2", len(queued))
 	}
-	if queued[0].ID != "steer-0001" || queued[0].Agent != "codex" || queued[0].Target != "agent" {
+	if queued[0].ID != first.ID || queued[0].Agent != "codex" || queued[0].Target != "agent" {
 		t.Fatalf("queued[0] = %+v", queued[0])
 	}
 	if queued[0].SegmentID != "segment-0002" || queued[0].Status != StatusQueued || queued[0].Mode != DeliveryQueuedNewAttempt {

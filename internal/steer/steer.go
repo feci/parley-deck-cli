@@ -10,6 +10,8 @@
 package steer
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -121,20 +123,30 @@ func Submit(runDir string, req Request, now time.Time) (Result, error) {
 	return Result{ID: id, DeliveryMode: DeliveryQueuedNewAttempt, Status: StatusQueued}, nil
 }
 
-// nextSteerID returns the next monotonic steer-NNNN id by counting prior
-// steer.requested events.
+// nextSteerID returns a steer id with a monotonic, human-readable prefix and a
+// random suffix. The count gives ordering/readability; the random suffix makes
+// the id collision-resistant across concurrent CLI/TUI submitters (the
+// projection groups by the full id, so two distinct steers never merge even if
+// they share a count). Strict cross-process ordering/locking is a separate,
+// deferred follow-up (F4).
 func nextSteerID(s store.Store) string {
-	events, err := s.Load()
-	if err != nil {
-		return "steer-0001"
-	}
 	n := 0
-	for _, e := range events {
-		if e.Type == "steer.requested" {
-			n++
+	if events, err := s.Load(); err == nil {
+		for _, e := range events {
+			if e.Type == "steer.requested" {
+				n++
+			}
 		}
 	}
-	return fmt.Sprintf("steer-%04d", n+1)
+	return fmt.Sprintf("steer-%04d-%s", n+1, randomSuffix())
+}
+
+func randomSuffix() string {
+	var b [4]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "00000000"
+	}
+	return hex.EncodeToString(b[:])
 }
 
 // List projects the queued steering requests from a run's event log, in

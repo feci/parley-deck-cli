@@ -1,6 +1,6 @@
 ---
 idea: tui-interactivity-overhaul
-status: implemented
+status: fix-up-cycle-1
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
@@ -81,14 +81,43 @@ green before moving on.
 
 ## Deviations from FINAL.md
 
-- **Segment-event tagging on the ACP launch path is deferred.** Slice 1 tags the
-  standard subprocess events (`runAgent`, fixup). ACP agents (`acp.go`) still get
-  correct `State` AND `Segment` because the `run.segment_started` reset barrier
-  sets `Segment`, and `applyAgentEvent` only overrides it when an event carries
-  `segment_id`. So the projection is correct for ACP without tagging its events;
-  explicit ACP-event tagging is left for slice 5 (per-attempt history), per the
-  simplicity-first rule. The reset-barrier — not per-event tagging — is what
-  fixes the badge.
+- The steering composer persists intent directly to the run event log (mirroring
+  the live TUI's existing HITL-answer write) rather than via a `SubmitSteering`
+  callback; recording intent has no side effect and bypasses no gate. The
+  driver-owned execution boundary (FINAL D5) applies to slice 5, when the queued
+  attempt is actually launched / delivered live through the gates.
+- Per-stream (stdout/stderr) scrollback tabs in the focus view are deferred
+  (slice 5); the focus view shows stdout, stderr stays in the overview preview.
+- (Resolved in fix-up cycle 1) ACP segment tagging — now applied (AF6).
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-04
+head-commit: see-branch-tip
+
+Applied all agreed fixes from review/consensus.md (AF1–AF9):
+
+### Fixes applied
+- AF1 — composer/help/CLI wording no longer over-promises execution: steers are
+  "recorded / queued (auto-exec not wired yet)".
+- AF2 — focus buffer is byte-bounded as well as line-bounded: `readAppendedLines`
+  caps the per-tick read window to `maxFocusBytes`, `capFocusLines` evicts oldest
+  by both bytes and lines. Tests for an oversized line and the byte budget.
+- AF3 — steer ids are collision-resistant (`steer-NNNN-<rand>`); the by-id
+  projection never merges two distinct steers under concurrent CLI/TUI submits.
+- AF4 — `loadFocusTail`/`readAppendedLines` advance the offset only past complete
+  lines (shared `completeLinesFrom`), so a partial line is merged, not fragmented.
+- AF5 — untagged `agent.*` events inherit the current segment in `ProjectEvents`.
+- AF6 — ACP `agent.started`/terminal events are tagged with `segment_id` (closes
+  the prior deviation).
+- AF7 — added a `LoadRunAt` integration test asserting the badge unsticks through
+  the real events.jsonl path.
+- AF8 — `parley steer` validates empty text and warns on a non-participant agent.
+- AF9 — overview preview fills available rows (height-derived) instead of a hard 6.
+
+### Deviations from agreed fixes
+None. Carried deferrals: F4 (cross-process atomic append/locking) and slice 5
+(executing queued steers, live delivery, opt-in thoughts, per-stream tabs).
 
 ## Notes for reviewers
 

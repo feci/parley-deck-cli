@@ -622,7 +622,7 @@ func TestSteerQueuesAndContinueSurfacesIt(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("steer code=%d stderr=%s", code, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "Queued steer-0001 for codex") {
+	if !strings.Contains(stdout.String(), "Recorded steer-0001-") || !strings.Contains(stdout.String(), "for codex") {
 		t.Fatalf("steer output=%q", stdout.String())
 	}
 

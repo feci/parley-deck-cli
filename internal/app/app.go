@@ -1080,16 +1080,25 @@ func runSteer(args []string, stdout, stderr io.Writer) int {
 		rest = rest[1:]
 	}
 	text := strings.TrimSpace(strings.Join(rest, " "))
+	if text == "" {
+		fmt.Fprintln(stderr, "steer failed: instruction text is required")
+		fmt.Fprintln(stderr, "usage: parley steer [--dir DIR] [--agent AGENT] [--json] RUN_OR_IDEA -- TEXT...")
+		return 2
+	}
+	agentID := strings.TrimSpace(*agent)
 	target := steer.TargetDeck
-	if strings.TrimSpace(*agent) != "" {
+	if agentID != "" {
 		target = steer.TargetAgent
+		if !contains(run.Participants, agentID) {
+			fmt.Fprintf(stderr, "warning: %q is not a participant of run %s; queuing anyway\n", agentID, run.RunID)
+		}
 	}
 	result, err := steer.Submit(run.RunDir, steer.Request{
 		Target:    target,
-		Agent:     strings.TrimSpace(*agent),
+		Agent:     agentID,
 		Text:      text,
 		CreatedBy: "cli",
-		SegmentID: segmentForAgent(run, strings.TrimSpace(*agent)),
+		SegmentID: segmentForAgent(run, agentID),
 	}, time.Now().UTC())
 	if err != nil {
 		fmt.Fprintf(stderr, "steer failed: %v\n", err)
@@ -1099,9 +1108,9 @@ func runSteer(args []string, stdout, stderr io.Writer) int {
 		return printJSON(stdout, result, stderr)
 	}
 	if target == steer.TargetAgent {
-		fmt.Fprintf(stdout, "Queued %s for %s (%s); it runs on the agent's next attempt.\n", result.ID, strings.TrimSpace(*agent), result.DeliveryMode)
+		fmt.Fprintf(stdout, "Recorded %s for %s (queued; auto-exec is not wired up yet).\n", result.ID, agentID)
 	} else {
-		fmt.Fprintf(stdout, "Queued %s for the deck (%s).\n", result.ID, result.DeliveryMode)
+		fmt.Fprintf(stdout, "Recorded %s for the deck (queued; auto-exec is not wired up yet).\n", result.ID)
 	}
 	return 0
 }

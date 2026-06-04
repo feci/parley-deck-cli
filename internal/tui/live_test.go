@@ -422,6 +422,72 @@ func TestReadAppendedLinesIncremental(t *testing.T) {
 	}
 }
 
+// AF4: a partial final line in the seeded tail is not fragmented — it is
+// re-read and merged once it completes.
+func TestFocusPartialLineNotFragmented(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "stdout.log")
+	if err := os.WriteFile(path, []byte("done line\nprogress"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lines, offset, _ := loadFocusTail(path)
+	if len(lines) != 1 || lines[0] != "done line" {
+		t.Fatalf("loadFocusTail lines=%v, want [done line] (trailing partial excluded)", lines)
+	}
+	appendString(t, path, " complete\n")
+	newLines, _ := readAppendedLines(path, offset)
+	if len(newLines) != 1 || newLines[0] != "progress complete" {
+		t.Fatalf("readAppendedLines=%v, want [progress complete] (partial merged, not fragmented)", newLines)
+	}
+}
+
+// AF2: an oversized newline-less prefix is dropped so the retained buffer stays
+// within the byte cap.
+func TestFocusTailDropsOversizedLine(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "stdout.log")
+	big := strings.Repeat("x", maxFocusBytes+4096)
+	if err := os.WriteFile(path, []byte(big+"\nshort tail line\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lines, _, truncated := loadFocusTail(path)
+	total := 0
+	for _, l := range lines {
+		total += len(l) + 1
+	}
+	if total > maxFocusBytes {
+		t.Fatalf("retained %d bytes, want <= %d (byte cap)", total, maxFocusBytes)
+	}
+	if !truncated {
+		t.Fatal("expected truncated=true when dropping the oversized line")
+	}
+	if len(lines) == 0 || lines[len(lines)-1] != "short tail line" {
+		t.Fatalf("lines=%v, want the short line retained after dropping the oversized one", lines)
+	}
+}
+
+// AF2: capFocusLines evicts oldest lines until the buffer is within both the
+// line and byte budgets.
+func TestCapFocusLinesByteBudget(t *testing.T) {
+	line := strings.Repeat("y", 1000)
+	n := (maxFocusBytes / 1001) + 100 // exceeds the byte budget, under the line cap
+	lines := make([]string, n)
+	for i := range lines {
+		lines[i] = line
+	}
+	capped, truncated := capFocusLines(lines)
+	if !truncated {
+		t.Fatal("expected truncated=true")
+	}
+	total := 0
+	for _, l := range capped {
+		total += len(l) + 1
+	}
+	if total > maxFocusBytes {
+		t.Fatalf("capped total=%d bytes, want <= %d", total, maxFocusBytes)
+	}
+}
+
 func appendString(t *testing.T, path, s string) {
 	t.Helper()
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
@@ -455,8 +521,8 @@ func TestComposerQueuesAgentSteer(t *testing.T) {
 	if model.mode != modeOverview {
 		t.Fatalf("enter should submit and return to overview, mode=%d", model.mode)
 	}
-	if !strings.Contains(model.statusMsg, "queued steer-0001 for codex") {
-		t.Fatalf("statusMsg=%q, want a queued confirmation", model.statusMsg)
+	if !strings.Contains(model.statusMsg, "recorded steer-0001-") || !strings.Contains(model.statusMsg, "codex") || !strings.Contains(model.statusMsg, "queued") {
+		t.Fatalf("statusMsg=%q, want an honest recorded/queued confirmation", model.statusMsg)
 	}
 
 	queued, err := steer.List(model.opts.RunDir)

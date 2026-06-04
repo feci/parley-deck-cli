@@ -651,18 +651,26 @@ func (m *liveModel) refreshLogPreview() {
 		m.logPreview = ""
 		return
 	}
+	budget := m.previewLineBudget()
 	var parts []string
 	if agent.StdoutPath != "" {
-		if tail := tailLogFile(agent.StdoutPath, 4096, 6); strings.TrimSpace(tail) != "" {
+		if tail := tailLogFile(agent.StdoutPath, maxFocusBytes, budget); strings.TrimSpace(tail) != "" {
 			parts = append(parts, "stdout:\n"+tail)
 		}
 	}
 	if agent.StderrPath != "" {
-		if tail := tailLogFile(agent.StderrPath, 4096, 6); strings.TrimSpace(tail) != "" {
+		if tail := tailLogFile(agent.StderrPath, maxFocusBytes, budget); strings.TrimSpace(tail) != "" {
 			parts = append(parts, "stderr:\n"+tail)
 		}
 	}
 	m.logPreview = strings.Join(parts, "\n\n")
+}
+
+// previewLineBudget is how many tail lines the overview log pane shows per
+// stream, derived from the layout height (the right pane is clipped to fit
+// anyway), so the preview shows as many lines as fit rather than a hard six.
+func (m liveModel) previewLineBudget() int {
+	return clampInt((tuiHeight(m.height, defaultLiveHeight)-12)/2, 6, 30)
 }
 
 // updateFocusMode handles keys while the per-agent focus view is open. j/k and
@@ -784,9 +792,9 @@ func (m liveModel) updateComposeMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if m.composeTarget == steer.TargetAgent {
-			m.statusMsg = fmt.Sprintf("queued %s for %s (%s) — runs on next attempt", result.ID, m.composeAgent, result.DeliveryMode)
+			m.statusMsg = fmt.Sprintf("recorded %s for %s (queued; auto-exec not wired yet)", result.ID, m.composeAgent)
 		} else {
-			m.statusMsg = fmt.Sprintf("queued %s for the deck (%s)", result.ID, result.DeliveryMode)
+			m.statusMsg = fmt.Sprintf("recorded %s for the deck (queued; auto-exec not wired yet)", result.ID)
 		}
 		m.mode = modeOverview
 		m.composeText = ""
@@ -824,9 +832,10 @@ func (m liveModel) renderCompose(width, height int) string {
 	}
 	header := headerStyle.Render("Steer " + targetLabel)
 	lines := []string{
-		mutedStyle.Render("Type the next instruction. It is queued as a new attempt and runs when"),
-		mutedStyle.Render("the agent next executes — agents are one-shot, so it is NOT injected into"),
-		mutedStyle.Render("a running process. enter queue · esc cancel"),
+		mutedStyle.Render("Type the next instruction. It is RECORDED as a queued follow-up for the"),
+		mutedStyle.Render("agent (agents are one-shot — nothing is injected into a running process)."),
+		mutedStyle.Render("Note: auto-running queued steers is not wired up yet (a later slice);"),
+		mutedStyle.Render("for now this captures the instruction durably. enter record · esc cancel"),
 		"",
 		warnStyle.Render("steer> ") + m.composeText,
 	}
@@ -940,8 +949,9 @@ func (m *liveModel) refreshFocus() {
 	m.focusOffset = newOffset
 	if len(newLines) > 0 {
 		m.focusLines = append(m.focusLines, newLines...)
-		if len(m.focusLines) > maxFocusLines {
-			m.focusLines = m.focusLines[len(m.focusLines)-maxFocusLines:]
+		capped := false
+		m.focusLines, capped = capFocusLines(m.focusLines)
+		if capped {
 			m.focusTrunc = true
 		}
 	}
@@ -1023,7 +1033,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  enter / o          open agent focus view",
 		"  n / p              select question",
 		"  a                  answer the selected question",
-		"  i / I              steer: queue a prompt for the agent / deck",
+		"  i / I              steer: record a follow-up prompt (queued; not auto-run yet)",
 		"  ?                  toggle this help",
 		"  q / esc            detach TUI (the run keeps going)",
 		"  ctrl+c             cancel the run",
@@ -1042,8 +1052,10 @@ func (m liveModel) renderHelp(width, height int) string {
 	return clipLines(strings.Join([]string{header, "", body, ""}, "\n"), height)
 }
 
-// loadFocusTail reads the last maxFocusBytes / maxFocusLines of a log file as
-// cleaned lines and returns the end offset so subsequent reads are incremental.
+// loadFocusTail reads the last <= maxFocusBytes of a log file as cleaned,
+// complete lines, capped to the line + byte scrollback budget. The returned
+// offset points just past the last complete (newline-terminated) line, so any
+// trailing partial line is re-read once it completes (no fragmentation).
 func loadFocusTail(path string) (lines []string, offset int64, truncated bool) {
 	if path == "" {
 		return nil, 0, false
@@ -1070,41 +1082,89 @@ func loadFocusTail(path string) (lines []string, offset int64, truncated bool) {
 	if err != nil {
 		return nil, size, truncated
 	}
-	if start > 0 {
-		if idx := bytes.IndexByte(data, '\n'); idx >= 0 {
-			data = data[idx+1:]
-		}
-	}
-	lines = splitLogLines(data)
-	if len(lines) > maxFocusLines {
-		lines = lines[len(lines)-maxFocusLines:]
-		truncated = true
-	}
-	return lines, size, truncated
+	complete, consumed := completeLinesFrom(data, start > 0)
+	capped := false
+	lines, capped = capFocusLines(splitLogLines(complete))
+	return lines, start + int64(consumed), truncated || capped
 }
 
 // readAppendedLines returns the complete lines written after offset and the new
-// offset (advanced only past complete lines, so a partial trailing line is read
-// again next tick).
+// offset. The read window is bounded to maxFocusBytes: if more than that was
+// appended between ticks, it skips ahead to the last maxFocusBytes (older
+// unread bytes are dropped — bounded scrollback) so a giant burst or a
+// newline-less megabyte line can never make the read or buffer grow unbounded.
+// The offset advances only past complete lines, so a partial trailing line is
+// read again next tick.
 func readAppendedLines(path string, offset int64) ([]string, int64) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, offset
 	}
 	defer file.Close()
-	if _, err := file.Seek(offset, io.SeekStart); err != nil {
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, offset
+	}
+	size := stat.Size()
+	if size <= offset {
+		return nil, offset
+	}
+	start := offset
+	jumped := false
+	if size-start > int64(maxFocusBytes) {
+		start = size - int64(maxFocusBytes)
+		jumped = true
+	}
+	if _, err := file.Seek(start, io.SeekStart); err != nil {
 		return nil, offset
 	}
 	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, offset
 	}
-	lastNewline := bytes.LastIndexByte(data, '\n')
-	if lastNewline < 0 {
-		return nil, offset
+	complete, consumed := completeLinesFrom(data, jumped)
+	return splitLogLines(complete), start + int64(consumed)
+}
+
+// completeLinesFrom returns the newline-terminated byte region of data (after
+// optionally dropping a leading partial line when the read started mid-file) and
+// the number of bytes consumed up to and including the last newline. Any
+// trailing partial line is left unconsumed.
+func completeLinesFrom(data []byte, dropLeadingPartial bool) (complete []byte, consumed int) {
+	begin := 0
+	if dropLeadingPartial {
+		idx := bytes.IndexByte(data, '\n')
+		if idx < 0 {
+			return nil, len(data) // one oversized partial line: consume it, show nothing
+		}
+		begin = idx + 1
 	}
-	complete := data[:lastNewline+1]
-	return splitLogLines(complete), offset + int64(len(complete))
+	region := data[begin:]
+	lastNewline := bytes.LastIndexByte(region, '\n')
+	if lastNewline < 0 {
+		return nil, begin // no complete line yet; keep the trailing partial
+	}
+	return region[:lastNewline+1], begin + lastNewline + 1
+}
+
+// capFocusLines bounds a focus buffer to BOTH maxFocusLines and maxFocusBytes by
+// evicting the oldest lines, reporting whether anything was dropped.
+func capFocusLines(lines []string) ([]string, bool) {
+	truncated := false
+	if len(lines) > maxFocusLines {
+		lines = lines[len(lines)-maxFocusLines:]
+		truncated = true
+	}
+	total := 0
+	for _, l := range lines {
+		total += len(l) + 1
+	}
+	for total > maxFocusBytes && len(lines) > 1 {
+		total -= len(lines[0]) + 1
+		lines = lines[1:]
+		truncated = true
+	}
+	return lines, truncated
 }
 
 func splitLogLines(data []byte) []string {

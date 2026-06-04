@@ -143,6 +143,58 @@ func TestRetryAfterFailed(t *testing.T) {
 	}
 }
 
+// AF5: an untagged agent.* event after a segment boundary inherits the current
+// segment (FINAL backward-compat rule).
+func TestUntaggedAgentEventInheritsCurrentSegment(t *testing.T) {
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	events := []store.Event{
+		segStarted(base, "segment-0007", "continue", "a"),
+		{Time: base.Add(time.Second), Type: "agent.started", Data: map[string]any{"agent": "a"}}, // no segment_id
+	}
+	state := ProjectEvents([]string{"a"}, events, base.Add(2*time.Second))
+	got := mustAgent(t, state, "a")
+	if got.State != StateRunning {
+		t.Fatalf("a.State = %q, want running", got.State)
+	}
+	if got.Segment != "segment-0007" {
+		t.Fatalf("untagged event should inherit current segment, got %q", got.Segment)
+	}
+}
+
+// AF7: the sticky-badge fix holds through the real LoadRunAt path (events.jsonl
+// -> projection), not just the direct ProjectEvents unit tests. After a run
+// completes and the user continues (a new segment targeting the agent), the
+// badge must read pending, not the prior finished.
+func TestLoadRunSegmentUnsticksFinishedBadge(t *testing.T) {
+	root := t.TempDir()
+	writeIdea(t, root, "sample", []string{"codex"})
+	runID := "20260604T130000.000000000Z"
+	runDir := RunDir(root, runID)
+	base := time.Date(2026, 6, 4, 13, 0, 0, 0, time.UTC)
+	appendEvents(t, runDir,
+		store.Event{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "participants": []string{"codex"}}},
+		segStarted(base.Add(time.Second), "segment-0001", "initial", "codex"),
+		store.Event{Time: base.Add(2 * time.Second), Type: "agent.started", Data: map[string]any{"agent": "codex", "segment_id": "segment-0001"}},
+		store.Event{Time: base.Add(3 * time.Second), Type: "agent.finished", Data: map[string]any{"agent": "codex", "segment_id": "segment-0001"}},
+		store.Event{Time: base.Add(4 * time.Second), Type: "round.completed", Data: map[string]any{"completed": float64(1), "total": float64(1)}},
+		segStarted(base.Add(5*time.Second), "segment-0002", "continue", "codex"),
+	)
+	run, err := LoadRunAt(root, runID, base.Add(6*time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := agentByID(run.State, "codex")
+	if !ok {
+		t.Fatal("codex missing from projection")
+	}
+	if got.State != StatePending {
+		t.Fatalf("after continue: codex state=%q, want pending (badge must unstick via LoadRunAt)", got.State)
+	}
+	if got.Segment != "segment-0002" {
+		t.Fatalf("codex segment=%q, want segment-0002", got.Segment)
+	}
+}
+
 // A segment targeting an agent absent from the projection is a no-op (no panic,
 // no materialized ghost agent).
 func TestSegmentTargetingUnknownAgentIsNoop(t *testing.T) {

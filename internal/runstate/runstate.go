@@ -326,6 +326,7 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 	}
 
 	state := RunState{RoundStatus: "pending"}
+	currentSegment := ""
 	for _, event := range events {
 		summary := SummarizeEvent(event)
 		if summary.Type != "" {
@@ -353,7 +354,7 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 				agent.LatestEvent = event.Type
 				continue
 			}
-			applyAgentEvent(agent, event, now)
+			applyAgentEvent(agent, event, now, currentSegment)
 		case "run.segment_started":
 			// A segment boundary scopes agent state to the current run segment.
 			// Resetting the targeted agents here means a stale terminal badge
@@ -363,6 +364,7 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 			// theirs. Old, unsegmented runs emit no such event and so behave
 			// exactly as before.
 			seg := dataString(event.Data, "segment_id")
+			currentSegment = seg
 			for _, id := range dataStringSlice(event.Data, "targets") {
 				agent, ok := agentsByID[id]
 				if !ok {
@@ -427,10 +429,14 @@ func SummarizeEvent(event store.Event) EventSummary {
 	return EventSummary{Time: event.Time, Type: event.Type, Agent: agent, Text: strings.TrimSpace(text)}
 }
 
-func applyAgentEvent(agent *AgentState, event store.Event, now time.Time) {
+func applyAgentEvent(agent *AgentState, event store.Event, now time.Time, currentSegment string) {
 	agent.LatestEvent = event.Type
+	// An explicit segment_id wins; otherwise an untagged event inherits the
+	// current segment (FINAL backward-compat rule).
 	if seg := dataString(event.Data, "segment_id"); seg != "" {
 		agent.Segment = seg
+	} else if currentSegment != "" {
+		agent.Segment = currentSegment
 	}
 	if artifact := dataString(event.Data, "artifact"); artifact != "" {
 		agent.ArtifactPath = artifact

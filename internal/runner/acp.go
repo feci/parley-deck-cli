@@ -75,13 +75,14 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 		Time: result.StartedAt,
 		Type: "agent.started",
 		Data: map[string]any{
-			"agent":    agent.ID,
-			"artifact": outputPath,
-			"stdout":   stdoutPath,
-			"stderr":   stderrPath,
-			"launch":   agents.LaunchACP,
-			"command":  agent.Path,
-			"acp_args": agent.ACPArgs,
+			"agent":      agent.ID,
+			"artifact":   outputPath,
+			"stdout":     stdoutPath,
+			"stderr":     stderrPath,
+			"launch":     agents.LaunchACP,
+			"command":    agent.Path,
+			"acp_args":   agent.ACPArgs,
+			"segment_id": opts.SegmentID,
 		},
 	}); appendErr != nil {
 		return failEarly(opts, result, fmt.Errorf("event append failed: %w", appendErr))
@@ -161,6 +162,7 @@ func finishACP(opts Options, result Result, agent agents.Discovery, process *acp
 			"duration_ms": result.Duration.Milliseconds(),
 			"error":       result.ExitError,
 			"launch":      agents.LaunchACP,
+			"segment_id":  opts.SegmentID,
 		},
 	}); err != nil {
 		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", err))
