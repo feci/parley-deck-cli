@@ -18,6 +18,7 @@ import (
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runstate"
+	"parley-deck-cli/internal/steer"
 	"parley-deck-cli/internal/store"
 )
 
@@ -89,6 +90,13 @@ type liveModel struct {
 	focusOffset int64
 	focusScroll int
 	focusTrunc  bool
+
+	// Steering composer (Slice 4): active when mode == modeCompose.
+	composeTarget steer.Target
+	composeAgent  string
+	composeText   string
+	composeErr    string
+	statusMsg     string
 }
 
 type RunState = runstate.RunState
@@ -156,6 +164,8 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateAnswerMode(msg)
 		case modeAgentDetail:
 			return m.updateFocusMode(msg)
+		case modeCompose:
+			return m.updateComposeMode(msg)
 		case modeHelp:
 			return m.updateHelpMode(msg)
 		}
@@ -169,6 +179,12 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "?":
 			m.mode = modeHelp
+			return m, nil
+		case "i":
+			m.openCompose(steer.TargetAgent)
+			return m, nil
+		case "I":
+			m.openCompose(steer.TargetDeck)
 			return m, nil
 		case "enter", "o":
 			m.enterFocus()
@@ -244,6 +260,9 @@ func (m liveModel) View() string {
 	if m.mode == modeHelp {
 		return m.renderHelp(width, height)
 	}
+	if m.mode == modeCompose {
+		return m.renderCompose(width, height)
+	}
 	if m.mode == modeAgentDetail {
 		return m.renderAgentDetail(width, height)
 	}
@@ -304,13 +323,16 @@ func (m liveModel) liveHeader(layout string) string {
 }
 
 func (m liveModel) renderLiveFooter() string {
-	footerText := "Keys: j/k/tab agent  enter focus  n/p question  a answer  ? help  q/esc detach TUI  ctrl+c cancel run"
+	footerText := "Keys: j/k/tab agent  enter focus  i steer  n/p question  a answer  ? help  q/esc detach TUI  ctrl+c cancel run"
 	if m.opts.Resume {
-		footerText = "Keys: j/k/tab agent  enter focus  n/p question  a answer  ? help  q/esc/ctrl+c close resume view"
+		footerText = "Keys: j/k/tab agent  enter focus  i steer  n/p question  a answer  ? help  q/esc/ctrl+c close resume view"
 	}
 	footer := mutedStyle.Render(footerText)
 	if m.errText != "" {
 		footer = warnStyle.Render(m.errText) + "\n" + footer
+	}
+	if m.statusMsg != "" {
+		footer = okStyle.Render(m.statusMsg) + "\n" + footer
 	}
 	if m.mode == modeAnswerQuestion {
 		footer = warnStyle.Render("Answer mode: type answer, enter submit, esc cancel") + "\n" + footer
@@ -712,6 +734,109 @@ func (m liveModel) updateHelpMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// openCompose opens the steering composer for an agent (the selected one) or
+// the whole deck.
+func (m *liveModel) openCompose(target steer.Target) {
+	if target == steer.TargetAgent {
+		agent := m.selectedAgent()
+		if agent == nil {
+			return
+		}
+		m.composeAgent = agent.ID
+	} else {
+		m.composeAgent = ""
+	}
+	m.mode = modeCompose
+	m.composeTarget = target
+	m.composeText = ""
+	m.composeErr = ""
+}
+
+// updateComposeMode handles keys while the steering composer is open. enter
+// queues the steer (recorded as steer.* events); esc cancels.
+func (m liveModel) updateComposeMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		if m.opts.Cancel != nil {
+			m.opts.Cancel()
+		}
+		return m, tea.Quit
+	case "esc":
+		m.mode = modeOverview
+		m.composeText = ""
+		m.composeErr = ""
+		return m, nil
+	case "enter":
+		text := strings.TrimSpace(m.composeText)
+		if text == "" {
+			m.composeErr = "type an instruction first"
+			return m, nil
+		}
+		result, err := steer.Submit(m.opts.RunDir, steer.Request{
+			Target:    m.composeTarget,
+			Agent:     m.composeAgent,
+			Text:      text,
+			CreatedBy: "tui",
+			SegmentID: m.composeSegment(),
+		}, time.Now().UTC())
+		if err != nil {
+			m.composeErr = err.Error()
+			return m, nil
+		}
+		if m.composeTarget == steer.TargetAgent {
+			m.statusMsg = fmt.Sprintf("queued %s for %s (%s) — runs on next attempt", result.ID, m.composeAgent, result.DeliveryMode)
+		} else {
+			m.statusMsg = fmt.Sprintf("queued %s for the deck (%s)", result.ID, result.DeliveryMode)
+		}
+		m.mode = modeOverview
+		m.composeText = ""
+		m.composeErr = ""
+		return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset)
+	case "backspace", "ctrl+h":
+		if len(m.composeText) > 0 {
+			runes := []rune(m.composeText)
+			m.composeText = string(runes[:len(runes)-1])
+		}
+		return m, nil
+	}
+	if len(msg.Runes) > 0 {
+		m.composeText += string(msg.Runes)
+	}
+	return m, nil
+}
+
+func (m liveModel) composeSegment() string {
+	if m.composeTarget != steer.TargetAgent {
+		return ""
+	}
+	for i := range m.state.Agents {
+		if m.state.Agents[i].ID == m.composeAgent {
+			return m.state.Agents[i].Segment
+		}
+	}
+	return ""
+}
+
+func (m liveModel) renderCompose(width, height int) string {
+	targetLabel := "the deck"
+	if m.composeTarget == steer.TargetAgent {
+		targetLabel = "agent " + m.composeAgent
+	}
+	header := headerStyle.Render("Steer " + targetLabel)
+	lines := []string{
+		mutedStyle.Render("Type the next instruction. It is queued as a new attempt and runs when"),
+		mutedStyle.Render("the agent next executes — agents are one-shot, so it is NOT injected into"),
+		mutedStyle.Render("a running process. enter queue · esc cancel"),
+		"",
+		warnStyle.Render("steer> ") + m.composeText,
+	}
+	if m.composeErr != "" {
+		lines = append(lines, "", warnStyle.Render(m.composeErr))
+	}
+	body := boxStyle.Width(clampInt(width-4, 40, 84)).Render(strings.Join(lines, "\n"))
+	return clipLines(strings.Join([]string{header, "", body, ""}, "\n"), height)
+}
+
 // enterFocus opens the focus view on the currently selected agent and loads the
 // bounded tail of its stdout log, positioned at the bottom with follow on.
 func (m *liveModel) enterFocus() {
@@ -898,6 +1023,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  enter / o          open agent focus view",
 		"  n / p              select question",
 		"  a                  answer the selected question",
+		"  i / I              steer: queue a prompt for the agent / deck",
 		"  ?                  toggle this help",
 		"  q / esc            detach TUI (the run keeps going)",
 		"  ctrl+c             cancel the run",

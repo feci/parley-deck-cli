@@ -407,6 +407,10 @@ func SummarizeEvent(event store.Event) EventSummary {
 		text = fmt.Sprintf("idea=%s", dataString(event.Data, "idea"))
 	case "run.segment_started":
 		text = strings.TrimSpace(fmt.Sprintf("%s %s", dataString(event.Data, "segment_id"), dataString(event.Data, "reason")))
+	case "steer.requested":
+		text = strings.TrimSpace(fmt.Sprintf("%s %s %s", dataString(event.Data, "id"), dataString(event.Data, "target"), dataString(event.Data, "agent")))
+	case "steer.delivered":
+		text = strings.TrimSpace(fmt.Sprintf("%s %s/%s", dataString(event.Data, "id"), dataString(event.Data, "mode"), dataString(event.Data, "status")))
 	case "agent.failed":
 		if errText := dataString(event.Data, "error"); errText != "" {
 			text = fmt.Sprintf("%s %s", agent, errText)

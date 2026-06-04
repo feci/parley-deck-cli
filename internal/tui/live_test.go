@@ -12,6 +12,7 @@ import (
 
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/steer"
 	"parley-deck-cli/internal/store"
 )
 
@@ -432,6 +433,58 @@ func appendString(t *testing.T, path, s string) {
 	}
 	if err := file.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestComposerQueuesAgentSteer(t *testing.T) {
+	model := focusModelWithLog(t, "x\n")
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	model = updated.(liveModel)
+	if model.mode != modeCompose {
+		t.Fatalf("i should open the composer, mode=%d", model.mode)
+	}
+	if !strings.Contains(model.View(), "Steer agent codex") {
+		t.Fatalf("composer view missing target\n%s", model.View())
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("focus on the parser")})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	if model.mode != modeOverview {
+		t.Fatalf("enter should submit and return to overview, mode=%d", model.mode)
+	}
+	if !strings.Contains(model.statusMsg, "queued steer-0001 for codex") {
+		t.Fatalf("statusMsg=%q, want a queued confirmation", model.statusMsg)
+	}
+
+	queued, err := steer.List(model.opts.RunDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(queued) != 1 || queued[0].Agent != "codex" || queued[0].Text != "focus on the parser" {
+		t.Fatalf("persisted steer = %+v", queued)
+	}
+	if queued[0].SegmentID != "segment-0001" {
+		t.Fatalf("steer should capture the agent's segment, got %q", queued[0].SegmentID)
+	}
+}
+
+func TestComposerEscCancels(t *testing.T) {
+	model := focusModelWithLog(t, "x\n")
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("oops")})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	model = updated.(liveModel)
+	if model.mode != modeOverview {
+		t.Fatal("esc should cancel the composer")
+	}
+	queued, _ := steer.List(model.opts.RunDir)
+	if len(queued) != 0 {
+		t.Fatalf("cancel must not persist a steer, got %d", len(queued))
 	}
 }
 

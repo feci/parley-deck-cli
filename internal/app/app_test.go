@@ -21,6 +21,7 @@ import (
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/runstate"
+	"parley-deck-cli/internal/steer"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/tui"
 )
@@ -587,6 +588,62 @@ func TestStatusAndResumeUseRunState(t *testing.T) {
 	}
 	if len(workspacePayload.Runs) != 1 || workspacePayload.Runs[0]["run_id"] != runID {
 		t.Fatalf("workspace payload=%+v", workspacePayload)
+	}
+}
+
+func TestSteerQueuesAndContinueSurfacesIt(t *testing.T) {
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", "sample")
+	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: sample\nparticipants: [codex]\nstatus: round-01\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runID := "20260604T120000.000000000Z"
+	runDir := filepath.Join(root, protocol.DeckDir, "runs", runID)
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	s := store.New(runDir)
+	for _, event := range []store.Event{
+		{Time: base, Type: "run.created", Data: map[string]any{"idea": "sample", "participants": []string{"codex"}}},
+		{Time: base.Add(time.Second), Type: "run.segment_started", Data: map[string]any{"segment_id": "segment-0001", "reason": "initial", "targets": []string{"codex"}}},
+		{Time: base.Add(2 * time.Second), Type: "agent.started", Data: map[string]any{"agent": "codex", "segment_id": "segment-0001"}},
+	} {
+		if err := s.Append(event); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"steer", "--dir", root, "--agent", "codex", runID, "--", "focus on the parser"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("steer code=%d stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Queued steer-0001 for codex") {
+		t.Fatalf("steer output=%q", stdout.String())
+	}
+
+	queued, err := steer.List(runDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(queued) != 1 || queued[0].Text != "focus on the parser" || queued[0].SegmentID != "segment-0001" {
+		t.Fatalf("queued=%+v", queued)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"continue", "--dir", root, "--json", runID}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("continue code=%d stderr=%s", code, stderr.String())
+	}
+	for _, want := range []string{`"steers"`, "steer-0001", "focus on the parser"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("continue --json missing %q:\n%s", want, stdout.String())
+		}
 	}
 }
 

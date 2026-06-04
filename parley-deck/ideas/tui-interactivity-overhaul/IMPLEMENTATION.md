@@ -1,11 +1,11 @@
 ---
 idea: tui-interactivity-overhaul
-status: implementing
+status: implemented
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
 branch: parley-deck-cli#feat/tui-interactivity-overhaul
-head-commit: pending
+head-commit: see-branch-tip
 design-pr: https://github.com/feci/parley-deck-cli/pull/33
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/33
 ---
@@ -57,11 +57,27 @@ green before moving on.
   - [x] Footer advertises `? help` (overview + resume).
   - [x] Tests: help-overlay toggle; migrated focus/answer tests to the `mode`
         enum. Full `go test ./...` green.
-- [ ] **Slice 4 — steering composer + `steer.*` events + `parley steer` CLI**
-      (`SubmitSteering`, queued `new_attempt` default, no gate bypass).
+- [x] **Slice 4 — steering composer + `steer.*` events + `parley steer` CLI**
+  - [x] New `internal/steer` package: `Request`/`Result`/`Queued`, `Submit`
+        (records `steer.requested` + `steer.delivered` with monotonic
+        `steer-NNNN` ids, queued `new_attempt` mode), `List` projection.
+  - [x] TUI composer (`modeCompose`): `i` steers the selected agent, `I` the
+        deck; type + enter queues via `steer.Submit`, esc cancels; queued
+        confirmation shown in the footer; help + footer updated.
+  - [x] `parley steer [--dir D] [--agent A] [--json] RUN -- TEXT...` CLI;
+        `continue` surfaces queued steers (text + `--json` `steers`).
+  - [x] `runstate.SummarizeEvent` cases so `steer.*` read well in the events
+        pane. Tests: steer package, TUI composer (queue + cancel), CLI + continue.
+        Full `go test ./...` green.
+  - [x] **Deviation:** the composer persists the steer intent directly to the
+        run event log (mirroring how the live TUI already records HITL answers),
+        rather than through a `SubmitSteering` callback. Recording intent has no
+        side effect and bypasses no gate. The driver-owned execution boundary
+        (FINAL D5) applies to slice 5, where the queued attempt is actually
+        launched / delivered live and goes through the gates.
 
-- [ ] Checks to run: `go build ./...`, `go vet ./...`, `go test ./...` per slice.
-- [ ] Review notes: see Deviations below.
+- [x] Checks run per slice: `go build ./...`, `go vet ./...`, `go test ./...` all green.
+- [x] Review notes: see Deviations above and Notes for reviewers below.
 
 ## Deviations from FINAL.md
 
