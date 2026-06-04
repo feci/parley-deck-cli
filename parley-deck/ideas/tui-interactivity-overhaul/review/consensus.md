@@ -88,6 +88,8 @@ Accept the synthesis. AF1–AF9 are correct and I will apply them in fix-up cycl
 the two carried deferrals (F4 cross-process locking, slice 5 execution) are the
 right scope boundary. No blockers.
 
-<!-- codex appends its signoff after re-review -->
+### codex — ACCEPT (2026-06-04)
+Confirmed across review rounds 01, 02, and 03 that AF1-AF9 are resolved, including the cycle-2 `capFocusLines` fix, and zero agreed fixes remain. The carried deferrals F4 and slice 5 remain acceptable scope boundaries.
 
-<!-- hermes appends its signoff after re-review -->
+### hermes — ACCEPT (2026-06-04)
+Confirmed in round-02 re-review (incl. CRITICAL AF1 composer over-promise) that AF1-AF9 are resolved and zero agreed fixes remain; honest bounded viewport post-fix-up.

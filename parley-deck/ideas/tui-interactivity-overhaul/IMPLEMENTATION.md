@@ -1,6 +1,6 @@
 ---
 idea: tui-interactivity-overhaul
-status: fix-up-cycle-2
+status: complete
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
