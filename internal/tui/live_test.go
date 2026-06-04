@@ -488,6 +488,22 @@ func TestCapFocusLinesByteBudget(t *testing.T) {
 	}
 }
 
+// fix-up cycle 2: a single retained line larger than the byte cap is
+// head-truncated so the buffer still honors the budget (codex round-02 finding).
+func TestCapFocusLinesTruncatesSingleOversizedLine(t *testing.T) {
+	capped, truncated := capFocusLines([]string{strings.Repeat("z", maxFocusBytes+500)})
+	if !truncated {
+		t.Fatal("expected truncated=true for a single oversized line")
+	}
+	total := 0
+	for _, l := range capped {
+		total += len(l) + 1
+	}
+	if total > maxFocusBytes {
+		t.Fatalf("single oversized line not capped: total=%d > %d", total, maxFocusBytes)
+	}
+}
+
 func appendString(t *testing.T, path, s string) {
 	t.Helper()
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)

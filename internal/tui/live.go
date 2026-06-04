@@ -1164,6 +1164,18 @@ func capFocusLines(lines []string) ([]string, bool) {
 		lines = lines[1:]
 		truncated = true
 	}
+	// A single retained line can still exceed the byte cap; head-truncate it so
+	// the buffer honors the budget while keeping the newest content visible.
+	if total > maxFocusBytes && len(lines) == 1 {
+		keep := maxFocusBytes - 1
+		if keep < 0 {
+			keep = 0
+		}
+		if l := lines[0]; len(l) > keep {
+			lines[0] = strings.ToValidUTF8(l[len(l)-keep:], "")
+		}
+		truncated = true
+	}
 	return lines, truncated
 }
 

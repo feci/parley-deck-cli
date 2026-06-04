@@ -1,6 +1,6 @@
 ---
 idea: tui-interactivity-overhaul
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
@@ -118,6 +118,20 @@ Applied all agreed fixes from review/consensus.md (AF1–AF9):
 ### Deviations from agreed fixes
 None. Carried deferrals: F4 (cross-process atomic append/locking) and slice 5
 (executing queued steers, live delivery, opt-in thoughts, per-stream tabs).
+
+## Fix-up cycle 2
+status: complete
+completed: 2026-06-04
+head-commit: see-branch-tip
+
+### Fixes applied
+- AF2 (round-02 follow-up, codex MAJOR) — `capFocusLines` now head-truncates a
+  single retained line that still exceeds `maxFocusBytes` (UTF-8-safe via
+  `strings.ToValidUTF8`), so the byte invariant holds even for one oversized
+  line. Added `TestCapFocusLinesTruncatesSingleOversizedLine`.
+
+### Deviations from agreed fixes
+None.
 
 ## Notes for reviewers
 
