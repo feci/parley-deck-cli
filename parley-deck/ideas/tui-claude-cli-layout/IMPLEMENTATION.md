@@ -1,6 +1,6 @@
 ---
 idea: tui-claude-cli-layout
-status: fix-up-cycle-1
+status: complete
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
