@@ -13,6 +13,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -1878,27 +1880,62 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 	registerWorkspaceSessions(root, runs)
 
 	// Unified TUI: open to Home; N launches a new run (all available agents)
-	// through the same runner path used by `parley run`. Launched runs are reaped
-	// in the background; detaching the TUI (/quit, esc) does NOT cancel them —
-	// only the active run's Cancel (ctrl+c) does.
+	// through the same runner path used by `parley run`. Detaching the TUI
+	// (/quit, esc) does NOT cancel in-flight N-launched runs — only the active
+	// run's Cancel (ctrl+c inside the TUI) does. On exit we wait for any
+	// still-running launched runs so they finish and record their sessions
+	// instead of being abandoned when the process returns.
+	var reaper launchReaper
 	if err := tui.RunLive(tui.LiveOptions{
 		Home:   true,
 		Root:   root,
 		Status: status,
-		Start:  newLaunchFunc(ctx, root, results),
+		Start:  newLaunchFunc(ctx, root, results, &reaper),
 	}); err != nil {
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
 	}
+	// The parent context is still live here, so a real ctrl+c (SIGINT, now that
+	// the TUI released the terminal) still aborts a run we are waiting on.
+	reaper.waitForActive(stdout)
 	return 0
+}
+
+// launchReaper waits for TUI-launched runs that are still in flight when the TUI
+// detaches, so they complete and record their sessions rather than being killed
+// when the command returns and cancels the parent context.
+type launchReaper struct {
+	wg       sync.WaitGroup
+	inFlight atomic.Int64
+}
+
+// track runs fn (the wait+register reap) in the background and counts it as
+// in-flight until it returns.
+func (r *launchReaper) track(fn func()) {
+	r.wg.Add(1)
+	r.inFlight.Add(1)
+	go func() {
+		defer r.wg.Done()
+		defer r.inFlight.Add(-1)
+		fn()
+	}()
+}
+
+// waitForActive blocks until every tracked run has finished, printing a hint
+// first if any are still running so the now-restored terminal explains the wait.
+func (r *launchReaper) waitForActive(out io.Writer) {
+	if n := r.inFlight.Load(); n > 0 {
+		fmt.Fprintf(out, "Waiting for %d in-progress run(s) to finish (ctrl+c to abort)...\n", n)
+	}
+	r.wg.Wait()
 }
 
 // newLaunchFunc returns a tui.LaunchFunc that starts a new round-01 run with all
 // available agents through the existing runner path and returns a handle to
-// attach to (no parallel engine). The run is reaped in the background so its
-// session is recorded; it is canceled only via the returned Cancel (ctrl+c on
-// the attached run), never by TUI detach.
-func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discovery) tui.LaunchFunc {
+// attach to (no parallel engine). The run is reaped through the reaper so its
+// session is recorded and the command waits for it on exit; it is canceled only
+// via the returned Cancel (ctrl+c on the attached run), never by TUI detach.
+func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discovery, reaper *launchReaper) tui.LaunchFunc {
 	return func(req tui.LaunchRequest) (tui.LaunchResult, error) {
 		participants := installedAgentIDs(discovered)
 		if len(participants) == 0 {
@@ -1915,12 +1952,12 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 		}
 		runCtx, cancelRun := context.WithCancel(ctx)
 		handle := runner.RunRoundOneAsync(runCtx, created.RunOptions)
-		go func() {
+		reaper.track(func() {
 			handle.Wait()
 			if run, err := runstate.LoadRun(root, created.RunID); err == nil {
 				registerWorkspaceSessions(root, []runstate.RunSummary{run})
 			}
-		}()
+		})
 		return tui.LaunchResult{
 			Idea:         created.Idea,
 			Participants: participants,

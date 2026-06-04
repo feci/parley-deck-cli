@@ -1271,6 +1271,42 @@ func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
 	}
 }
 
+// AF1: detaching the TUI must wait for in-flight launched runs (so they finish
+// and record their session), not cancel/abandon them when the command returns.
+func TestLaunchReaperWaitsForInFlightRuns(t *testing.T) {
+	var reaper launchReaper
+	release := make(chan struct{})
+	reaped := make(chan struct{})
+	reaper.track(func() {
+		<-release // stand in for an N-launched run that is still running
+		close(reaped)
+	})
+
+	waited := make(chan struct{})
+	go func() {
+		reaper.waitForActive(&bytes.Buffer{})
+		close(waited)
+	}()
+
+	select {
+	case <-waited:
+		t.Fatal("waitForActive returned before the in-flight run finished (detach abandoned the run)")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(release)
+	select {
+	case <-waited:
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForActive did not return after the run finished")
+	}
+	select {
+	case <-reaped:
+	default:
+		t.Fatal("tracked reap did not run to completion")
+	}
+}
+
 type fakeAgentConfig struct {
 	ID         string
 	Path       string

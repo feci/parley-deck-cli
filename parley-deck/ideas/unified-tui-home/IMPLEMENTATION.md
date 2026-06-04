@@ -69,6 +69,26 @@ Applied the Phase 7 review-consensus agreed fixes (see `review/consensus.md`):
 
 Checks after fix-up: `go build ./...`, `go vet ./...`, `go test ./...` — green.
 
+## Fix-up cycle 2 (Phase 8)
+
+codex's round-02 re-review accepted AF2–AF6 but raised a valid MAJOR on AF1:
+removing the explicit defer-cancel-all was not sufficient because `N`-launched
+runs derive from the top-level signal context, whose `defer cancel()` fires when
+`parley tui` returns — so a normal `/quit` still canceled in-flight launched runs
+via context propagation.
+
+- **AF1 (deepened)** — added `launchReaper` in `internal/app/app.go`: each
+  launched run is tracked (`reaper.track`) and, after `RunLive` returns,
+  `runTUIViewWithDiscovery` calls `reaper.waitForActive(stdout)` to wait for any
+  still-running launched runs to finish (and record their sessions) **before** the
+  command returns and the parent cancel fires. The parent context stays live
+  during the wait, so a real ctrl+c (SIGINT, once the TUI releases the terminal)
+  still aborts; the attached run's in-TUI `Cancel` (ctrl+c) is unchanged. New
+  test `TestLaunchReaperWaitsForInFlightRuns` asserts the wait blocks until the
+  in-flight run finishes (detach waits, never abandons).
+
+Checks after cycle 2: `go build ./...`, `go vet ./...`, `go test ./...` — green.
+
 ## Tests
 
 `internal/tui/live_test.go`: `TestHomeDefaultWhenNoRunAndTabOrder`,

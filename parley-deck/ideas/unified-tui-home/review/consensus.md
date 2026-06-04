@@ -19,6 +19,17 @@ Fix: remove the unconditional defer-cancel-all; reap each launched handle in a
 goroutine (`handle.Wait()` → `registerWorkspaceSessions`) so its session is
 recorded; the active run's `Cancel` (ctrl+c) stays the only cancel path.
 
+**Cycle-2 deepening (codex round-02 MAJOR):** removing the defer was not enough —
+launched runs derive from the top-level signal context whose `defer cancel()`
+fires when `parley tui` returns, so a normal `/quit` still killed them via context
+propagation. Corrected: a `launchReaper` tracks each in-flight launched run; after
+`RunLive` returns, `runTUIViewWithDiscovery` calls `reaper.waitForActive(stdout)`
+to wait for them to finish (recording sessions) **before** the command returns and
+the parent cancel fires. The parent context stays live during the wait, so a real
+ctrl+c (SIGINT, after the TUI releases the terminal) still aborts. The attached
+run's `Cancel` (ctrl+c inside the TUI) is unchanged. Covered by
+`TestLaunchReaperWaitsForInFlightRuns`.
+
 ### AF2 — `parley run` should not own secondary N-launched runs (codex MAJOR)
 `runTask` passes `Start` into the live TUI, but after `RunLive` exits it waits/
 reports only the original handle; a secondary `N`-launched run is never reaped
@@ -92,6 +103,23 @@ workspace model (codex's exact symbol list); AF6 corrects the help wording. The
 deferrals (snapshot footer, secondary-run ownership in `parley run`) are the right
 scope boundary. No blockers.
 
-<!-- codex appends its signoff after re-review -->
+### codex — CHANGES REQUESTED (2026-06-04)
+AF2-AF6 are correctly applied and the requested build/test command is green. AF1 still has a lifecycle gap: `N`-launched runs inherit the top-level CLI context, so normal `parley tui` detach cancels or abandons them when the command returns.
 
-<!-- hermes appends its signoff after re-review -->
+### hermes — ACCEPT (2026-06-04)
+AF1–AF6 all correctly applied (background reap, no Start in `parley run`, real on-disk transcript test, done exit hint, workspace model retired, help wording). Build/tests green.
+
+## Fix-up cycle 2 — re-review (AF1 deepening)
+
+codex's round-02 raised a valid MAJOR: removing the defer-cancel-all left
+`N`-launched runs tied to the top-level signal context, so a normal `/quit` still
+canceled them when the command returned. Fix-up cycle 2 (commit pending) adds the
+`launchReaper` wait-on-exit described in the AF1 cycle-2 deepening above, with
+`TestLaunchReaperWaitsForInFlightRuns`. Re-review artifacts in
+`review/round-03/`.
+
+### codex — signoff after cycle-2 re-review
+<!-- codex appends its cycle-2 signoff here -->
+
+### hermes — signoff after cycle-2 re-review
+<!-- hermes appends its cycle-2 signoff here -->
