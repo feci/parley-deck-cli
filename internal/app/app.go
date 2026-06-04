@@ -1677,6 +1677,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		RunDir:       handle.RunDir,
 		Done:         handle.Done(),
 		Cancel:       cancelRun,
+		Root:         *root,
+		Start:        newLaunchFunc(ctx, *root, discovered, nil),
 	}); err != nil {
 		cancelRun()
 		results := handle.Wait()
@@ -1954,59 +1956,68 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 		return 1
 	}
 	registerWorkspaceSessions(root, runs)
-	refreshRuns := func() ([]runstate.RunSummary, error) {
-		return runstate.ListRuns(root)
-	}
 	var cancelMu sync.Mutex
 	var cancelRuns []context.CancelFunc
-	cancelStartedRuns := func() {
+	defer func() {
 		cancelMu.Lock()
 		defer cancelMu.Unlock()
 		for _, cancel := range cancelRuns {
 			cancel()
 		}
 		cancelRuns = nil
-	}
-	defer cancelStartedRuns()
-	startRun := func(startCtx context.Context, request tui.StartRequest) (runstate.RunSummary, error) {
-		discoveredForRun := applySessionLaunchOverrides(results, request.LaunchOverrides)
-		created, err := runcontrol.Create(runcontrol.CreateOptions{
-			Root:         root,
-			Task:         request.Task,
-			Participants: request.Participants,
-			Discovered:   discoveredForRun,
-			Auto:         request.Auto,
-		})
-		if err != nil {
-			return runstate.RunSummary{}, err
-		}
-		runCtx, cancelRun := context.WithCancel(startCtx)
+	}()
+	track := func(c context.CancelFunc) {
 		cancelMu.Lock()
-		cancelRuns = append(cancelRuns, cancelRun)
+		cancelRuns = append(cancelRuns, c)
 		cancelMu.Unlock()
-		if request.Auto {
-			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
-		}
-		_ = runner.RunRoundOneAsync(runCtx, created.RunOptions)
-		return runstate.LoadRun(root, created.RunID)
 	}
 
-	if err := tui.RunWorkspace(tui.WorkspaceOptions{
-		Root:        root,
-		Status:      status,
-		Agents:      results,
-		Runs:        runs,
-		Context:     ctx,
-		RefreshRuns: refreshRuns,
-		StartRun:    startRun,
-		ActionRunner: func(actionCtx context.Context, request tui.ActionRequest) (tui.ActionResult, error) {
-			return runTUIAction(actionCtx, root, request)
-		},
+	// Unified TUI: open to Home; N launches a new run (all available agents)
+	// through the same runner path used by `parley run`.
+	if err := tui.RunLive(tui.LiveOptions{
+		Home:   true,
+		Root:   root,
+		Status: status,
+		Start:  newLaunchFunc(ctx, root, results, track),
 	}); err != nil {
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
 	}
 	return 0
+}
+
+// newLaunchFunc returns a tui.LaunchFunc that starts a new round-01 run with all
+// available agents through the existing runner path and returns a handle to
+// attach to (no parallel engine).
+func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discovery, track func(context.CancelFunc)) tui.LaunchFunc {
+	return func(req tui.LaunchRequest) (tui.LaunchResult, error) {
+		participants := installedAgentIDs(discovered)
+		if len(participants) == 0 {
+			return tui.LaunchResult{}, fmt.Errorf("no installed agents found")
+		}
+		created, err := runcontrol.Create(runcontrol.CreateOptions{
+			Root:         root,
+			Task:         req.Task,
+			Participants: participants,
+			Discovered:   discovered,
+		})
+		if err != nil {
+			return tui.LaunchResult{}, err
+		}
+		runCtx, cancelRun := context.WithCancel(ctx)
+		if track != nil {
+			track(cancelRun)
+		}
+		handle := runner.RunRoundOneAsync(runCtx, created.RunOptions)
+		return tui.LaunchResult{
+			Idea:         created.Idea,
+			Participants: participants,
+			RunID:        created.RunID,
+			RunDir:       handle.RunDir,
+			Done:         handle.Done(),
+			Cancel:       cancelRun,
+		}, nil
+	}
 }
 
 func registerWorkspaceSessions(root string, runs []runstate.RunSummary) {

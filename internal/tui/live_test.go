@@ -507,6 +507,90 @@ func TestBufferReloadsOnFileReplace(t *testing.T) {
 	}
 }
 
+// unified-tui-home: Home is the default surface when no run is attached.
+func TestHomeDefaultWhenNoRunAndTabOrder(t *testing.T) {
+	model := newLiveModel(LiveOptions{Home: true, Status: protocol.WorkspaceStatus{}, Root: t.TempDir()})
+	model.height, model.width = 30, 100
+	if got := model.activeTabResolved(); got != homeTabID {
+		t.Fatalf("no-run default tab = %q, want home", got)
+	}
+	if ids := model.tabIDs(); len(ids) != 1 || ids[0] != homeTabID {
+		t.Fatalf("no-run tabIDs = %v, want [home]", ids)
+	}
+	view := model.View()
+	for _, want := range []string{"Home", "Ideas", "Recent runs", "N new idea"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("Home view missing %q\n%s", want, view)
+		}
+	}
+}
+
+func TestActiveRunTabOrderHomeFirst(t *testing.T) {
+	model := liveModelWithLog(t, "x\n") // running codex, hasRun
+	ids := model.tabIDs()
+	if len(ids) < 2 || ids[0] != homeTabID || ids[len(ids)-1] != statusTabID {
+		t.Fatalf("active tabIDs = %v, want home first + status last", ids)
+	}
+	if got := model.activeTabResolved(); got != "agent:codex" {
+		t.Fatalf("parley-run default = %q, want agent:codex", got)
+	}
+}
+
+func TestDoneDoesNotQuit(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	updated, _ := model.Update(doneMsg{token: model.runToken})
+	model = updated.(liveModel)
+	if !model.done {
+		t.Fatal("doneMsg should set done")
+	}
+	if _, cmd := model.Update(eventsMsg{token: model.runToken}); cmd != nil {
+		t.Fatal("after done, an eventsMsg must not quit (cmd should be nil)")
+	}
+}
+
+func TestNLaunchesViaStartFunc(t *testing.T) {
+	runDir := t.TempDir()
+	called := false
+	model := newLiveModel(LiveOptions{
+		Home: true, Root: t.TempDir(),
+		Start: func(req LaunchRequest) (LaunchResult, error) {
+			called = true
+			return LaunchResult{Idea: protocol.IdeaStatus{Slug: "x"}, Participants: []string{"codex"}, RunID: "run-x", RunDir: runDir}, nil
+		},
+	})
+	model.height, model.width = 30, 100
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'N'}})
+	model = updated.(liveModel)
+	if !model.composing {
+		t.Fatal("N should open the new-idea composer")
+	}
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("redesign the parser")})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	if !called {
+		t.Fatal("Enter in compose should call Start")
+	}
+	if !model.hasRun() || model.opts.RunID != "run-x" {
+		t.Fatalf("after launch the model should attach to run-x, got RunDir=%q", model.opts.RunDir)
+	}
+	if got := model.activeTabResolved(); got != "agent:codex" {
+		t.Fatalf("after launch active tab = %q, want agent:codex", got)
+	}
+}
+
+func TestRunTokenDropsStaleEvents(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	stale := model.runToken
+	model.activateRun(LaunchResult{Participants: []string{"claude"}, RunID: "r2", RunDir: t.TempDir()})
+	before := len(model.events)
+	updated, _ := model.Update(eventsMsg{token: stale, events: []store.Event{{Type: "agent.started", Data: map[string]any{"agent": "codex"}}}})
+	model = updated.(liveModel)
+	if len(model.events) != before {
+		t.Fatal("a stale-token eventsMsg must be ignored after a run swap")
+	}
+}
+
 func mapByID(agents []AgentState) map[string]AgentState {
 	mapped := map[string]AgentState{}
 	for _, agent := range agents {

@@ -55,10 +55,35 @@ type LiveOptions struct {
 	Done         <-chan struct{}
 	Cancel       func()
 	Resume       bool
+
+	// Unified TUI (unified-tui-home):
+	Home  bool       // open to the Home tab (no active run yet)
+	Root  string     // workspace root, for refreshing the Home recent-runs list
+	Start LaunchFunc // launch a new run (N / new idea); nil disables launching
 }
 
-// statusTabID is the stable id of the dashboard tab; agent tabs are "agent:<id>".
-const statusTabID = "status"
+// LaunchRequest is a request to launch a new idea/run from the TUI.
+type LaunchRequest struct{ Task string }
+
+// LaunchResult is what a launch returns: enough to attach to the real runner.
+type LaunchResult struct {
+	Idea         protocol.IdeaStatus
+	Participants []string
+	RunID        string
+	RunDir       string
+	Done         <-chan struct{}
+	Cancel       func()
+}
+
+// LaunchFunc launches a run through the existing runner path and returns a
+// handle to attach to — the TUI never runs a parallel engine.
+type LaunchFunc func(LaunchRequest) (LaunchResult, error)
+
+// Tab ids: Home is always first; agent tabs are "agent:<id>"; Status is last.
+const (
+	homeTabID   = "home"
+	statusTabID = "status"
+)
 
 // agentBuffer is one agent's bounded, follow-capable transcript over its stdout
 // log, fed by offset-incremental reads (reuses loadFocusTail/readAppendedLines/
@@ -91,11 +116,23 @@ type liveModel struct {
 	done      bool
 
 	// Claude-CLI tabbed layout (tui-claude-cli-layout): the default surface.
-	activeTab string                  // "" = resolve to default; else "agent:<id>" or statusTabID
+	activeTab string                  // "" = resolve to default; else home/agent:<id>/status
 	inputText string                  // persistent bottom prompt
 	inputErr  string                  // transient input/route error
 	buffers   map[string]*agentBuffer // per-agent transcript, lazily loaded for active+visited
+
+	// Unified TUI (unified-tui-home):
+	composing bool                  // new-idea input mode (opened by N)
+	runToken  int                   // identifies the active run; stale ticks/reads are ignored
+	homeRuns  []runstate.RunSummary // recent runs for the Home tab
 }
+
+// hasRun reports whether an active run is attached (vs the no-run Home state).
+func (m liveModel) hasRun() bool { return strings.TrimSpace(m.opts.RunDir) != "" }
+
+// attached reports whether this run was launched by the TUI (cancelable) vs
+// opened observationally (/open, resume).
+func (m liveModel) attached() bool { return m.opts.Cancel != nil }
 
 type RunState = runstate.RunState
 type AgentState = runstate.AgentState
@@ -105,16 +142,24 @@ type eventsMsg struct {
 	events []store.Event
 	offset int64
 	err    error
+	token  int
 }
 
 type questionsMsg struct {
 	questions []hitl.Question
 	err       error
+	token     int
 }
 
-type eventTickMsg time.Time
-type elapsedTickMsg time.Time
-type doneMsg struct{}
+type eventTickMsg struct {
+	t     time.Time
+	token int
+}
+type elapsedTickMsg struct {
+	t     time.Time
+	token int
+}
+type doneMsg struct{ token int }
 
 var ansiSequence = regexp.MustCompile(`\x1b\[[0-?]*[ -/]*[@-~]`)
 
@@ -134,21 +179,34 @@ func newLiveModel(opts LiveOptions) liveModel {
 	}
 	model.buffers = map[string]*agentBuffer{}
 	model.state = ProjectEvents(opts.Participants, nil, now)
+	model.refreshHomeRuns()
 	model.ensureActiveBuffer()
 	return model
 }
 
 func (m liveModel) Init() tea.Cmd {
+	// The elapsed clock is global (one loop forever); run-specific reads only
+	// start when a run is attached.
+	cmds := []tea.Cmd{elapsedTickCmd(m.runToken)}
+	cmds = append(cmds, m.runCmds()...)
+	return tea.Batch(cmds...)
+}
+
+// runCmds are the run-specific commands for the currently attached run (empty
+// at Home). They carry m.runToken so stale ones are ignored after a run swap.
+func (m liveModel) runCmds() []tea.Cmd {
+	if !m.hasRun() {
+		return nil
+	}
 	cmds := []tea.Cmd{
-		readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset),
-		readQuestionsCmd(m.opts.RunDir),
-		eventTickCmd(),
-		elapsedTickCmd(),
+		readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken),
+		readQuestionsCmd(m.opts.RunDir, m.runToken),
+		eventTickCmd(m.runToken),
 	}
 	if m.opts.Done != nil {
-		cmds = append(cmds, waitDoneCmd(m.opts.Done))
+		cmds = append(cmds, waitDoneCmd(m.opts.Done, m.runToken))
 	}
-	return tea.Batch(cmds...)
+	return cmds
 }
 
 func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -163,6 +221,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.updateMain(msg)
 	case eventsMsg:
+		if msg.token != m.runToken {
+			return m, nil // stale read from a previous run
+		}
 		m.offset = msg.offset
 		if msg.err != nil {
 			m.errText = msg.err.Error()
@@ -173,17 +234,20 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ensureActiveBuffer()
 			m.refreshBuffers()
 		}
-		if m.done {
-			return m, tea.Quit
-		}
-		return m, nil
+		return m, nil // never quit on done — the TUI stays open
 	case eventTickMsg:
+		if msg.token != m.runToken {
+			return m, nil // stale tick loop dies (no re-arm)
+		}
 		return m, tea.Batch(
-			readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset),
-			readQuestionsCmd(m.opts.RunDir),
-			eventTickCmd(),
+			readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken),
+			readQuestionsCmd(m.opts.RunDir, m.runToken),
+			eventTickCmd(m.runToken),
 		)
 	case questionsMsg:
+		if msg.token != m.runToken {
+			return m, nil
+		}
 		if msg.err != nil {
 			m.errText = msg.err.Error()
 		} else {
@@ -191,16 +255,65 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case elapsedTickMsg:
-		m.now = time.Time(msg)
-		m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
-		m.ensureActiveBuffer()
-		m.refreshBuffers()
-		return m, elapsedTickCmd()
+		// Global clock — not gated by runToken; one loop forever.
+		m.now = msg.t
+		if m.hasRun() {
+			m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
+			m.ensureActiveBuffer()
+			m.refreshBuffers()
+		}
+		return m, elapsedTickCmd(m.runToken)
 	case doneMsg:
+		if msg.token != m.runToken {
+			return m, nil
+		}
 		m.done = true
-		return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset)
+		m.refreshHomeRuns()
+		// one final read; do NOT quit
+		return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)
 	}
 	return m, nil
+}
+
+// refreshHomeRuns reloads the Home recent-runs list (best-effort).
+func (m *liveModel) refreshHomeRuns() {
+	if strings.TrimSpace(m.opts.Root) == "" {
+		return
+	}
+	if runs, err := runstate.ListRuns(m.opts.Root); err == nil {
+		if len(runs) > 8 {
+			runs = runs[:8]
+		}
+		m.homeRuns = runs
+	}
+}
+
+// activateRun swaps the model onto a newly launched (or opened) run in place:
+// it resets run state, bumps runToken (so stale ticks/reads from the previous
+// run are dropped), and returns the new run's command batch.
+func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
+	m.runToken++
+	m.opts.Idea = s.Idea
+	m.opts.Participants = s.Participants
+	m.opts.RunID = s.RunID
+	m.opts.RunDir = s.RunDir
+	m.opts.Done = s.Done
+	m.opts.Cancel = s.Cancel
+	m.opts.Resume = false
+	m.opts.Home = false
+	m.offset = 0
+	m.events = nil
+	m.questions = nil
+	m.done = false
+	m.errText = ""
+	m.composing = false
+	m.inputText = ""
+	m.inputErr = ""
+	m.buffers = map[string]*agentBuffer{}
+	m.activeTab = "" // resolve to the first agent
+	m.state = ProjectEvents(s.Participants, nil, m.now)
+	m.ensureActiveBuffer()
+	return tea.Batch(m.runCmds()...)
 }
 
 func (m liveModel) View() string {
@@ -217,10 +330,15 @@ func (m liveModel) View() string {
 // then a status line and a persistent input row.
 func (m liveModel) renderTabbed(width, height int) string {
 	rows := m.transcriptHeight()
+	active := m.activeTabResolved()
 	var main string
-	if agentID, ok := agentTab(m.activeTabResolved()); ok {
+	switch {
+	case active == homeTabID:
+		main = m.renderHome(width, rows)
+	case strings.HasPrefix(active, "agent:"):
+		agentID, _ := agentTab(active)
 		main = m.renderTranscript(agentID, width, rows)
-	} else {
+	default:
 		main = m.renderStatusTab(width, rows)
 	}
 	parts := []string{
@@ -237,11 +355,22 @@ func (m liveModel) renderTabbed(width, height int) string {
 
 func (m liveModel) renderTabStrip(width int) string {
 	type tab struct{ id, label string }
-	tabs := make([]tab, 0, len(m.state.Agents)+1)
-	for _, a := range m.state.Agents {
-		tabs = append(tabs, tab{"agent:" + a.ID, a.ID + " " + shortState(a.State)})
+	var tabs []tab
+	for _, id := range m.tabIDs() {
+		switch {
+		case id == homeTabID:
+			tabs = append(tabs, tab{id, "Home"})
+		case id == statusTabID:
+			tabs = append(tabs, tab{id, "Status"})
+		default:
+			agentID, _ := agentTab(id)
+			st := ""
+			if a := m.agentByID(agentID); a != nil {
+				st = " " + shortState(a.State)
+			}
+			tabs = append(tabs, tab{id, agentID + st})
+		}
 	}
-	tabs = append(tabs, tab{statusTabID, "Status"})
 
 	active := m.activeTabResolved()
 	ai := 0
@@ -405,13 +534,22 @@ func (m liveModel) renderStatusLine(width int) string {
 func (m liveModel) renderInputRow(width int) string {
 	active := m.activeTabResolved()
 	answer := false
-	label := "deck › "
-	if agentID, ok := agentTab(active); ok {
-		if q := m.openQuestionFor(agentID); q != nil {
-			label = fmt.Sprintf("answer %s/%s › ", agentID, q.ID)
-			answer = true
+	var label string
+	switch {
+	case m.composing:
+		label = "new idea › "
+	case active == homeTabID:
+		label = "› "
+	default:
+		if agentID, ok := agentTab(active); ok {
+			if q := m.openQuestionFor(agentID); q != nil {
+				label = fmt.Sprintf("answer %s/%s › ", agentID, q.ID)
+				answer = true
+			} else {
+				label = "steer " + agentID + " › "
+			}
 		} else {
-			label = "steer " + agentID + " › "
+			label = "deck › "
 		}
 	}
 	var row string
@@ -424,12 +562,47 @@ func (m liveModel) renderInputRow(width int) string {
 	if m.inputErr != "" {
 		row += "  " + warnStyle.Render(m.inputErr)
 	}
-	if strings.HasPrefix(m.inputText, "/") {
-		row += "\n" + mutedStyle.Render("commands: /help  /status  /follow  /deck <t>  /answer <qid> <t>  /quit")
-	} else {
-		row += "\n" + mutedStyle.Render("↑/↓ tabs · PgUp/PgDn scroll · Enter steer/answer · /help · ctrl+c cancel")
+	hint := "↑/↓ tabs · N new idea · Enter steer/answer · /help · ctrl+c"
+	switch {
+	case m.composing:
+		hint = "type a task · Enter launch · esc cancel"
+	case strings.HasPrefix(m.inputText, "/"):
+		hint = "commands: /help /status /follow /deck <t> /answer <qid> <t> /open <slug|run> /quit"
+	case active == homeTabID:
+		hint = "N new idea · /open <slug|run> · ↑/↓ tabs · /help · ctrl+c"
 	}
-	return row
+	return row + "\n" + mutedStyle.Render(hint)
+}
+
+// renderHome lists open ideas and recent runs; N starts a new idea, /open reopens.
+func (m liveModel) renderHome(width, rows int) string {
+	var b strings.Builder
+	b.WriteString(sectionTitle("Ideas"))
+	b.WriteString("\n")
+	if len(m.opts.Status.Ideas) == 0 {
+		b.WriteString(mutedStyle.Render("  no ideas yet — press N to start one"))
+	} else {
+		for _, idea := range m.opts.Status.Ideas {
+			b.WriteString(fmt.Sprintf("  %-34s %s\n", truncateText(idea.Slug, 34), idea.Status))
+		}
+	}
+	b.WriteString("\n")
+	b.WriteString(sectionTitle("Recent runs"))
+	b.WriteString("\n")
+	if len(m.homeRuns) == 0 {
+		b.WriteString(mutedStyle.Render("  no runs yet"))
+	} else {
+		for _, r := range m.homeRuns {
+			st := "active"
+			if r.Terminal {
+				st = strings.ToUpper(valueOr(r.Outcome, "done"))
+			}
+			b.WriteString(fmt.Sprintf("  %-26s %-10s %s\n", truncateText(r.IdeaSlug, 26), st, r.RunID))
+		}
+	}
+	b.WriteString("\n")
+	b.WriteString(mutedStyle.Render("Press N to start a new idea (all available agents) · /open <slug|run> to reopen"))
+	return strings.TrimRight(b.String(), "\n")
 }
 
 // --- Claude-CLI tabbed layout: navigation, buffers, input routing ---
@@ -443,12 +616,29 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 	case "esc":
+		if m.composing {
+			m.composing = false
+			m.inputText = ""
+			m.inputErr = ""
+			return m, nil
+		}
 		if m.inputText != "" {
 			m.inputText = ""
 			m.inputErr = ""
 			return m, nil
 		}
 		return m, tea.Quit
+	case "N":
+		// Start a new idea — only as a command (empty input) so it never eats
+		// a capital N typed mid-steer.
+		if !m.composing && m.inputText == "" && m.opts.Start != nil {
+			m.composing = true
+			m.inputErr = ""
+			return m, nil
+		}
+		m.inputText += "N"
+		m.inputErr = ""
+		return m, nil
 	case "up", "left", "shift+tab":
 		m.switchTab(-1)
 		return m, nil
@@ -495,16 +685,21 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// tabIDs are Home first, then the active run's agent tabs, then Status (only
+// when a run is attached). No-run ⇒ [Home] only.
 func (m liveModel) tabIDs() []string {
-	ids := make([]string, 0, len(m.state.Agents)+1)
+	ids := []string{homeTabID}
 	for _, a := range m.state.Agents {
 		ids = append(ids, "agent:"+a.ID)
 	}
-	return append(ids, statusTabID)
+	if m.hasRun() {
+		ids = append(ids, statusTabID)
+	}
+	return ids
 }
 
-// activeTabResolved resolves the active tab, defaulting to the first running
-// agent (else first agent, else Status) so the owner lands on a live transcript.
+// activeTabResolved resolves the active tab: an explicit selection if valid,
+// else Home (no run, or opened via `parley tui`), else the first running agent.
 func (m liveModel) activeTabResolved() string {
 	if m.activeTab != "" {
 		for _, id := range m.tabIDs() {
@@ -512,6 +707,9 @@ func (m liveModel) activeTabResolved() string {
 				return id
 			}
 		}
+	}
+	if !m.hasRun() || m.opts.Home {
+		return homeTabID
 	}
 	for _, a := range m.state.Agents {
 		if a.State == stateRunning {
@@ -521,7 +719,7 @@ func (m liveModel) activeTabResolved() string {
 	if len(m.state.Agents) > 0 {
 		return "agent:" + m.state.Agents[0].ID
 	}
-	return statusTabID
+	return homeTabID
 }
 
 func agentTab(tabID string) (string, bool) {
@@ -708,6 +906,13 @@ func (m liveModel) segmentFor(agentID string) string {
 // active agent's open question, else steer the active agent (deck on Status).
 func (m liveModel) submitInput() (tea.Model, tea.Cmd) {
 	text := strings.TrimSpace(m.inputText)
+	if m.composing {
+		if text == "" {
+			m.inputErr = "type a task for the new idea"
+			return m, nil
+		}
+		return m.launchIdea(text)
+	}
 	if text == "" {
 		if agentID, ok := agentTab(m.activeTabResolved()); ok && m.openQuestionFor(agentID) != nil {
 			m.inputErr = "type an answer first"
@@ -717,6 +922,10 @@ func (m liveModel) submitInput() (tea.Model, tea.Cmd) {
 	if strings.HasPrefix(text, "/") {
 		return m.runCommand(text)
 	}
+	if active := m.activeTabResolved(); active == homeTabID {
+		m.inputErr = "press N to start an idea, or /open <slug|run>"
+		return m, nil
+	}
 	if agentID, ok := agentTab(m.activeTabResolved()); ok {
 		if q := m.openQuestionFor(agentID); q != nil {
 			return m.answerQuestion(q.ID, text)
@@ -724,6 +933,39 @@ func (m liveModel) submitInput() (tea.Model, tea.Cmd) {
 		return m.submitSteer(steer.TargetAgent, agentID, text)
 	}
 	return m.submitSteer(steer.TargetDeck, "", text)
+}
+
+// launchIdea starts a new run via the StartRunFunc and attaches to it in place.
+func (m liveModel) launchIdea(task string) (tea.Model, tea.Cmd) {
+	if m.opts.Start == nil {
+		m.inputErr, m.composing = "launching is not available here", false
+		return m, nil
+	}
+	res, err := m.opts.Start(LaunchRequest{Task: task})
+	if err != nil {
+		m.inputErr, m.composing, m.inputText = "launch failed: "+err.Error(), false, ""
+		return m, nil
+	}
+	m.statusMsg = "launched " + res.RunID + " (" + strings.Join(res.Participants, ", ") + ")"
+	return m, m.activateRun(res)
+}
+
+// openRun attaches the TUI to an existing run observationally (no cancel).
+func (m liveModel) openRun(target string) (tea.Model, tea.Cmd) {
+	run, err := runstate.ResolveRun(m.opts.Root, target)
+	if err != nil {
+		m.inputErr = "open failed: " + err.Error()
+		return m, nil
+	}
+	m.statusMsg = "opened " + run.RunID
+	return m, m.activateRun(LaunchResult{
+		Idea:         protocol.IdeaStatus{Slug: run.IdeaSlug, Status: run.CurrentRound},
+		Participants: run.Participants,
+		RunID:        run.RunID,
+		RunDir:       run.RunDir,
+		Done:         nil, // observational: no done-wait
+		Cancel:       nil, // observational: not cancelable
+	})
 }
 
 func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.Model, tea.Cmd) {
@@ -744,7 +986,7 @@ func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.M
 		m.statusMsg = fmt.Sprintf("recorded %s for the deck (queued; auto-exec not wired yet)", res.ID)
 	}
 	m.inputText, m.inputErr = "", ""
-	return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset)
+	return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)
 }
 
 func (m liveModel) answerQuestion(qid, text string) (tea.Model, tea.Cmd) {
@@ -754,7 +996,7 @@ func (m liveModel) answerQuestion(qid, text string) (tea.Model, tea.Cmd) {
 	}
 	m.statusMsg = "answered " + qid
 	m.inputText, m.inputErr = "", ""
-	return m, readQuestionsCmd(m.opts.RunDir)
+	return m, readQuestionsCmd(m.opts.RunDir, m.runToken)
 }
 
 func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
@@ -796,6 +1038,17 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 		ans := strings.TrimSpace(strings.TrimPrefix(rest, af[0]))
 		m.inputText = ""
 		return m.answerQuestion(af[0], ans)
+	case "/open":
+		if rest == "" {
+			m.inputErr = "usage: /open <slug|run-id>"
+			return m, nil
+		}
+		m.inputText = ""
+		return m.openRun(rest)
+	case "/home":
+		m.activeTab = homeTabID
+		m.inputText, m.inputErr = "", ""
+		return m, nil
 	default:
 		m.inputErr = "unknown command: " + cmd + " (try /help)"
 		return m, nil
@@ -1079,39 +1332,39 @@ func summarizeEvent(event store.Event) EventSummary {
 	return runstate.SummarizeEvent(event)
 }
 
-func readEventsCmd(path string, offset int64) tea.Cmd {
+func readEventsCmd(path string, offset int64, token int) tea.Cmd {
 	return func() tea.Msg {
 		events, nextOffset, err := readEventsFromOffset(path, offset)
-		return eventsMsg{events: events, offset: nextOffset, err: err}
+		return eventsMsg{events: events, offset: nextOffset, err: err, token: token}
 	}
 }
 
-func readQuestionsCmd(runDir string) tea.Cmd {
+func readQuestionsCmd(runDir string, token int) tea.Cmd {
 	return func() tea.Msg {
 		questions, err := hitl.New(runDir).List()
-		return questionsMsg{questions: questions, err: err}
+		return questionsMsg{questions: questions, err: err, token: token}
 	}
 }
 
-func eventTickCmd() tea.Cmd {
+func eventTickCmd(token int) tea.Cmd {
 	return tea.Tick(250*time.Millisecond, func(t time.Time) tea.Msg {
-		return eventTickMsg(t)
+		return eventTickMsg{t: t, token: token}
 	})
 }
 
-func elapsedTickCmd() tea.Cmd {
+func elapsedTickCmd(token int) tea.Cmd {
 	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
-		return elapsedTickMsg(t)
+		return elapsedTickMsg{t: t, token: token}
 	})
 }
 
-func waitDoneCmd(done <-chan struct{}) tea.Cmd {
+func waitDoneCmd(done <-chan struct{}, token int) tea.Cmd {
 	return func() tea.Msg {
 		if done == nil {
 			return nil
 		}
 		<-done
-		return doneMsg{}
+		return doneMsg{token: token}
 	}
 }
 
