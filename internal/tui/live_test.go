@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -277,6 +278,160 @@ func TestSummarizeHITLEvents(t *testing.T) {
 	})
 	if answered.Text != "agy answered q1 answered" {
 		t.Fatalf("answered text=%q", answered.Text)
+	}
+}
+
+func focusModelWithLog(t *testing.T, content string) liveModel {
+	t.Helper()
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "stdout.log")
+	if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("tui-interactivity-overhaul"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       dir,
+	})
+	model.height = 24
+	model.width = 100
+	model.events = []store.Event{
+		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": logPath, "segment_id": "segment-0001"}},
+	}
+	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
+	return model
+}
+
+func TestFocusViewShowsAgentLogAndExits(t *testing.T) {
+	model := focusModelWithLog(t, "hello from codex\nworking on round-01\nDONE\n")
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	if !model.focus {
+		t.Fatal("enter did not open the focus view")
+	}
+	view := model.View()
+	for _, want := range []string{"agent=codex", "segment=segment-0001", "working on round-01", "f follow(on)", "esc back"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("focus view missing %q\n%s", want, view)
+		}
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	model = updated.(liveModel)
+	if model.focus {
+		t.Fatal("esc did not exit the focus view")
+	}
+	if !strings.Contains(model.View(), "Log preview") {
+		t.Fatal("after esc the overview should render again")
+	}
+}
+
+func TestFocusFollowAndScroll(t *testing.T) {
+	var sb strings.Builder
+	for i := 1; i <= 100; i++ {
+		fmt.Fprintf(&sb, "line %d\n", i)
+	}
+	model := focusModelWithLog(t, sb.String())
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	if !model.follow {
+		t.Fatal("follow must default on in focus")
+	}
+	if !strings.Contains(model.View(), "line 100") {
+		t.Fatalf("follow view should show the last line\n%s", model.View())
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	model = updated.(liveModel)
+	if model.follow {
+		t.Fatal("scrolling up (k) must disable follow")
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	model = updated.(liveModel)
+	if model.follow {
+		t.Fatal("g (top) must disable follow")
+	}
+	topView := model.View()
+	if !strings.Contains(topView, "line 1\n") || strings.Contains(topView, "line 100") {
+		t.Fatalf("g should show the top, not the bottom\n%s", topView)
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
+	model = updated.(liveModel)
+	if !model.follow {
+		t.Fatal("G (bottom) must re-enable follow")
+	}
+	if !strings.Contains(model.View(), "line 100") {
+		t.Fatal("G should show the last line again")
+	}
+}
+
+func TestLoadFocusTailBoundsLines(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "stdout.log")
+	var sb strings.Builder
+	total := maxFocusLines + 50
+	for i := 0; i < total; i++ {
+		fmt.Fprintf(&sb, "L%d\n", i)
+	}
+	if err := os.WriteFile(path, []byte(sb.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lines, _, truncated := loadFocusTail(path)
+	if len(lines) != maxFocusLines {
+		t.Fatalf("len(lines)=%d, want %d (bounded scrollback)", len(lines), maxFocusLines)
+	}
+	if !truncated {
+		t.Fatal("expected truncated=true when capping lines")
+	}
+	if want := fmt.Sprintf("L%d", total-1); lines[len(lines)-1] != want {
+		t.Fatalf("last line=%q, want %q", lines[len(lines)-1], want)
+	}
+}
+
+func TestReadAppendedLinesIncremental(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "stdout.log")
+	if err := os.WriteFile(path, []byte("a\nb\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, offset, _ := loadFocusTail(path)
+	if offset != 4 {
+		t.Fatalf("initial offset=%d, want 4", offset)
+	}
+
+	appendString(t, path, "c\npartial")
+	lines, newOffset := readAppendedLines(path, offset)
+	if len(lines) != 1 || lines[0] != "c" {
+		t.Fatalf("lines=%v, want [c] (partial trailing line excluded)", lines)
+	}
+	if newOffset != offset+2 {
+		t.Fatalf("offset=%d, want %d (advanced only past complete lines)", newOffset, offset+2)
+	}
+
+	appendString(t, path, " line\n")
+	lines, _ = readAppendedLines(path, newOffset)
+	if len(lines) != 1 || lines[0] != "partial line" {
+		t.Fatalf("lines=%v, want [partial line] (completed partial)", lines)
+	}
+}
+
+func appendString(t *testing.T, path, s string) {
+	t.Helper()
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := file.WriteString(s); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
 	}
 }
 

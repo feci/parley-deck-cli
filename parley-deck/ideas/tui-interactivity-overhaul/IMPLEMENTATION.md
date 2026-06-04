@@ -32,8 +32,22 @@ green before moving on.
         retry, unknown-target no-op); updated `TestRunRoundOneSkipsExistingArtifact`
         for the leading segment event.
   - [x] Build + vet + `go test ./...` green.
-- [ ] **Slice 2 — per-agent focus viewport** (`bubbles/viewport`, offset reads,
-      follow, bounded scrollback 20k lines / 4 MiB, `g`/`G`/`f`).
+- [x] **Slice 2 — per-agent focus viewport**
+  - [x] `enter`/`o` opens an `agentDetail` focus view; `esc` returns; `tab`
+        cycles the focused agent.
+  - [x] Offset-incremental reads (`loadFocusTail` + `readAppendedLines`) over the
+        focused agent's full stdout log; bounded scrollback (20k lines / 4 MiB)
+        with a truncation marker; ANSI stripped.
+  - [x] Follow mode (`f`, default on; manual scroll disables it); `g`/`G`
+        top/bottom; `j`/`k` line scroll; `pgup`/`pgdn` page; reload on log
+        truncation/rotation (new segment).
+  - [x] Tests: focus render/exit, follow+scroll, bounded-lines cap, incremental
+        append. Full `go test ./...` green.
+  - [x] **Deviation:** implemented a lightweight in-house viewport instead of
+        adding the `bubbles/viewport` dependency (not currently in go.mod) —
+        simpler, dependency-free, sufficient for line-oriented logs. Stream tabs
+        (stdout/stderr/thoughts) deferred; the focus view shows stdout (the
+        agent's working output); stderr stays in the overview log preview.
 - [ ] **Slice 3 — view-state machine + keymap + help overlay** (`overview |
       agentDetail | compose | answerQuestion | help`; `?` help; `a` preserved).
 - [ ] **Slice 4 — steering composer + `steer.*` events + `parley steer` CLI**

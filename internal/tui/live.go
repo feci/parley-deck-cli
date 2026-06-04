@@ -30,6 +30,14 @@ const (
 	stateUnknown  = runstate.StateUnknown
 )
 
+// Bounded scrollback for the per-agent focus view: keep at most maxFocusLines
+// lines and read at most maxFocusBytes from the tail, so a very long log never
+// blows up memory.
+const (
+	maxFocusLines = 20000
+	maxFocusBytes = 4 << 20 // 4 MiB
+)
+
 type LiveOptions struct {
 	Status       protocol.WorkspaceStatus
 	Idea         protocol.IdeaStatus
@@ -58,6 +66,16 @@ type liveModel struct {
 	logPreview string
 	errText    string
 	done       bool
+
+	// Per-agent focus view (Slice 2): a scrollable, follow-capable viewport over
+	// the focused agent's full stdout log, fed by offset-incremental reads.
+	focus       bool
+	follow      bool
+	focusAgent  string
+	focusLines  []string
+	focusOffset int64
+	focusScroll int
+	focusTrunc  bool
 }
 
 type RunState = runstate.RunState
@@ -123,6 +141,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.answerMode {
 			return m.updateAnswerMode(msg)
 		}
+		if m.focus {
+			return m.updateFocusMode(msg)
+		}
 		switch msg.String() {
 		case "q", "esc":
 			return m, tea.Quit
@@ -131,6 +152,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.opts.Cancel()
 			}
 			return m, tea.Quit
+		case "enter", "o":
+			m.enterFocus()
+			return m, nil
 		case "j", "down", "tab":
 			m.selectNext()
 			m.refreshLogPreview()
@@ -163,6 +187,7 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
 			m.clampSelection()
 			m.refreshLogPreview()
+			m.refreshFocus()
 		}
 		if m.done {
 			return m, tea.Quit
@@ -186,6 +211,7 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.now = time.Time(msg)
 		m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
 		m.refreshLogPreview()
+		m.refreshFocus()
 		return m, elapsedTickCmd()
 	case doneMsg:
 		m.done = true
@@ -197,6 +223,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m liveModel) View() string {
 	width := tuiWidth(m.width)
 	height := tuiHeight(m.height, defaultLiveHeight)
+	if m.focus {
+		return m.renderAgentDetail(width, height)
+	}
 	bodyWidth := width - 4
 	if bodyWidth < 76 {
 		bodyWidth = 76
@@ -254,9 +283,9 @@ func (m liveModel) liveHeader(layout string) string {
 }
 
 func (m liveModel) renderLiveFooter() string {
-	footerText := "Keys: j/k/tab agent  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run"
+	footerText := "Keys: j/k/tab agent  enter focus  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run"
 	if m.opts.Resume {
-		footerText = "Keys: j/k/tab agent  n/p question  a answer  q/esc/ctrl+c close resume view"
+		footerText = "Keys: j/k/tab agent  enter focus  n/p question  a answer  q/esc/ctrl+c close resume view"
 	}
 	footer := mutedStyle.Render(footerText)
 	if m.errText != "" {
@@ -591,6 +620,314 @@ func (m *liveModel) refreshLogPreview() {
 		}
 	}
 	m.logPreview = strings.Join(parts, "\n\n")
+}
+
+// updateFocusMode handles keys while the per-agent focus view is open. j/k and
+// page keys scroll (and drop follow); f toggles follow; g/G jump to top/bottom;
+// tab cycles the focused agent; esc returns to the overview.
+func (m liveModel) updateFocusMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		if m.opts.Cancel != nil {
+			m.opts.Cancel()
+		}
+		return m, tea.Quit
+	case "q":
+		return m, tea.Quit
+	case "esc":
+		m.exitFocus()
+		return m, nil
+	case "j", "down":
+		m.scrollFocus(1)
+		return m, nil
+	case "k", "up":
+		m.scrollFocus(-1)
+		return m, nil
+	case "pgdown", "ctrl+f", " ":
+		m.scrollFocus(m.focusBodyHeight())
+		return m, nil
+	case "pgup", "ctrl+b":
+		m.scrollFocus(-m.focusBodyHeight())
+		return m, nil
+	case "g":
+		m.follow = false
+		m.focusScroll = 0
+		return m, nil
+	case "G":
+		m.follow = true
+		m.focusScroll = m.focusBottom()
+		return m, nil
+	case "f":
+		m.follow = !m.follow
+		if m.follow {
+			m.focusScroll = m.focusBottom()
+		}
+		return m, nil
+	case "tab":
+		m.selectNext()
+		m.enterFocus()
+		return m, nil
+	case "shift+tab":
+		m.selectPrev()
+		m.enterFocus()
+		return m, nil
+	}
+	return m, nil
+}
+
+// enterFocus opens the focus view on the currently selected agent and loads the
+// bounded tail of its stdout log, positioned at the bottom with follow on.
+func (m *liveModel) enterFocus() {
+	agent := m.selectedAgent()
+	if agent == nil {
+		return
+	}
+	m.focus = true
+	m.follow = true
+	m.focusAgent = agent.ID
+	lines, offset, truncated := loadFocusTail(agent.StdoutPath)
+	m.focusLines = lines
+	m.focusOffset = offset
+	m.focusTrunc = truncated
+	m.focusScroll = m.focusBottom()
+}
+
+func (m *liveModel) exitFocus() {
+	m.focus = false
+	m.focusAgent = ""
+	m.focusLines = nil
+	m.focusOffset = 0
+	m.focusScroll = 0
+	m.focusTrunc = false
+}
+
+func (m *liveModel) scrollFocus(delta int) {
+	m.follow = false
+	m.focusScroll += delta
+	if m.focusScroll < 0 {
+		m.focusScroll = 0
+	}
+	if bottom := m.focusBottom(); m.focusScroll > bottom {
+		m.focusScroll = bottom
+	}
+}
+
+// focusBottom is the top-line index that shows the last page of output.
+func (m liveModel) focusBottom() int {
+	bottom := len(m.focusLines) - m.focusBodyHeight()
+	if bottom < 0 {
+		return 0
+	}
+	return bottom
+}
+
+// focusBodyHeight is how many log lines the focus viewport can show, mirroring
+// the chrome (header + info + footer) rendered by renderAgentDetail.
+func (m liveModel) focusBodyHeight() int {
+	rows := tuiHeight(m.height, defaultLiveHeight) - 8
+	if rows < 3 {
+		rows = 3
+	}
+	return rows
+}
+
+func (m liveModel) clampedFocusScroll() int {
+	scroll := m.focusScroll
+	if scroll < 0 {
+		scroll = 0
+	}
+	if bottom := m.focusBottom(); scroll > bottom {
+		scroll = bottom
+	}
+	return scroll
+}
+
+func (m liveModel) focusedAgentState() *AgentState {
+	for i := range m.state.Agents {
+		if m.state.Agents[i].ID == m.focusAgent {
+			return &m.state.Agents[i]
+		}
+	}
+	return nil
+}
+
+// refreshFocus appends newly written stdout bytes to the focus viewport using an
+// incremental offset read. If the log was truncated/rotated (a new segment
+// re-creates the file), it reloads the tail. Honors follow mode.
+func (m *liveModel) refreshFocus() {
+	if !m.focus {
+		return
+	}
+	agent := m.focusedAgentState()
+	if agent == nil || agent.StdoutPath == "" {
+		return
+	}
+	path := agent.StdoutPath
+	if info, err := os.Stat(path); err == nil && info.Size() < m.focusOffset {
+		lines, offset, truncated := loadFocusTail(path)
+		m.focusLines = lines
+		m.focusOffset = offset
+		m.focusTrunc = truncated
+		m.focusScroll = m.clampedFocusScroll()
+		if m.follow {
+			m.focusScroll = m.focusBottom()
+		}
+		return
+	}
+	newLines, newOffset := readAppendedLines(path, m.focusOffset)
+	m.focusOffset = newOffset
+	if len(newLines) > 0 {
+		m.focusLines = append(m.focusLines, newLines...)
+		if len(m.focusLines) > maxFocusLines {
+			m.focusLines = m.focusLines[len(m.focusLines)-maxFocusLines:]
+			m.focusTrunc = true
+		}
+	}
+	if m.follow {
+		m.focusScroll = m.focusBottom()
+	} else {
+		m.focusScroll = m.clampedFocusScroll()
+	}
+}
+
+func (m liveModel) renderAgentDetail(width, height int) string {
+	agent := m.focusedAgentState()
+	stateLabel, segment, elapsed, artifact := "-", "-", "-", "-"
+	if agent != nil {
+		stateLabel = stateBadge(agent.State)
+		segment = valueOr(agent.Segment, "-")
+		elapsed = formatAgentDuration(*agent, m.now)
+		artifact = valueOr(agent.ArtifactPath, "-")
+	}
+	header := headerStyle.Render(fmt.Sprintf(
+		"Parley Deck  agent=%s  %s  segment=%s  elapsed=%s  run=%s",
+		valueOr(m.focusAgent, "?"), stateLabel, segment, elapsed, m.opts.RunID,
+	))
+	info := mutedStyle.Render("artifact=" + artifact)
+	body := m.renderFocusBody(width-4, m.focusBodyHeight())
+	footer := m.renderFocusFooter()
+	return strings.Join([]string{header, info, "", body, "", footer, ""}, "\n")
+}
+
+func (m liveModel) renderFocusBody(width, rows int) string {
+	if width < 8 {
+		width = 8
+	}
+	if len(m.focusLines) == 0 {
+		return mutedStyle.Render("no log output yet (the agent has not written stdout)")
+	}
+	start := m.clampedFocusScroll()
+	end := start + rows
+	if end > len(m.focusLines) {
+		end = len(m.focusLines)
+	}
+	var b strings.Builder
+	if start == 0 && m.focusTrunc {
+		b.WriteString(mutedStyle.Render("… earlier output truncated"))
+		b.WriteString("\n")
+	}
+	for i := start; i < end; i++ {
+		b.WriteString(truncateText(m.focusLines[i], width))
+		b.WriteString("\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func (m liveModel) renderFocusFooter() string {
+	follow := "off"
+	if m.follow {
+		follow = "on"
+	}
+	position := "0/0"
+	if len(m.focusLines) > 0 {
+		position = fmt.Sprintf("%d/%d", m.clampedFocusScroll()+1, len(m.focusLines))
+	}
+	text := fmt.Sprintf(
+		"Keys: j/k scroll  pgup/pgdn page  g/G top/bottom  f follow(%s)  tab agent  esc back  q detach  ctrl+c cancel   [%s]",
+		follow, position,
+	)
+	footer := mutedStyle.Render(text)
+	if m.errText != "" {
+		footer = warnStyle.Render(m.errText) + "\n" + footer
+	}
+	return footer
+}
+
+// loadFocusTail reads the last maxFocusBytes / maxFocusLines of a log file as
+// cleaned lines and returns the end offset so subsequent reads are incremental.
+func loadFocusTail(path string) (lines []string, offset int64, truncated bool) {
+	if path == "" {
+		return nil, 0, false
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, 0, false
+	}
+	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, 0, false
+	}
+	size := stat.Size()
+	start := int64(0)
+	if size > int64(maxFocusBytes) {
+		start = size - int64(maxFocusBytes)
+		truncated = true
+	}
+	if _, err := file.Seek(start, io.SeekStart); err != nil {
+		return nil, size, truncated
+	}
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, size, truncated
+	}
+	if start > 0 {
+		if idx := bytes.IndexByte(data, '\n'); idx >= 0 {
+			data = data[idx+1:]
+		}
+	}
+	lines = splitLogLines(data)
+	if len(lines) > maxFocusLines {
+		lines = lines[len(lines)-maxFocusLines:]
+		truncated = true
+	}
+	return lines, size, truncated
+}
+
+// readAppendedLines returns the complete lines written after offset and the new
+// offset (advanced only past complete lines, so a partial trailing line is read
+// again next tick).
+func readAppendedLines(path string, offset int64) ([]string, int64) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, offset
+	}
+	defer file.Close()
+	if _, err := file.Seek(offset, io.SeekStart); err != nil {
+		return nil, offset
+	}
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, offset
+	}
+	lastNewline := bytes.LastIndexByte(data, '\n')
+	if lastNewline < 0 {
+		return nil, offset
+	}
+	complete := data[:lastNewline+1]
+	return splitLogLines(complete), offset + int64(len(complete))
+}
+
+func splitLogLines(data []byte) []string {
+	if len(data) == 0 {
+		return nil
+	}
+	cleaned := stripANSI(strings.ReplaceAll(string(data), "\r", ""))
+	cleaned = strings.TrimRight(cleaned, "\n")
+	if cleaned == "" {
+		return nil
+	}
+	return strings.Split(cleaned, "\n")
 }
 
 func ProjectEvents(participants []string, events []store.Event, now time.Time) RunState {
