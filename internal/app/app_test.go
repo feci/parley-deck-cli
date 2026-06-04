@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,7 +22,6 @@ import (
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/steer"
 	"parley-deck-cli/internal/store"
-	"parley-deck-cli/internal/tui"
 )
 
 func TestVersionCommandPrintsSemanticVersion(t *testing.T) {
@@ -1263,53 +1261,6 @@ func TestActionCommandUsesActionRoundAndAvoidsHardcodedAgent(t *testing.T) {
 	}
 }
 
-func TestConsensusActionArgsForTUIRunner(t *testing.T) {
-	run := runstate.RunSummary{RunID: "run-1", IdeaSlug: "sample"}
-	args, err := consensusActionArgs("/repo", tui.ActionRequest{
-		Run: run,
-		Action: runaction.NextAction{
-			Kind:     runaction.KindDraftConsensus,
-			IdeaSlug: "sample",
-			Round:    "round-03",
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []string{"draft", "--dir", "/repo", "--round", "3", "sample"}
-	if fmt.Sprint(args) != fmt.Sprint(want) {
-		t.Fatalf("args=%v, want %v", args, want)
-	}
-
-	args, err = consensusActionArgs("/repo", tui.ActionRequest{
-		Run:    run,
-		Action: runaction.NextAction{Kind: runaction.KindRequestSignoffs},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	want = []string{"request-signoffs", "--dir", "/repo", "--yes", "sample"}
-	if fmt.Sprint(args) != fmt.Sprint(want) {
-		t.Fatalf("args=%v, want %v", args, want)
-	}
-}
-
-func TestRunTUIActionReturnsAdvisoryForRetry(t *testing.T) {
-	result, err := runTUIAction(context.Background(), "/repo", tui.ActionRequest{
-		Run:    runstate.RunSummary{RunID: "run-1", IdeaSlug: "sample"},
-		Action: runaction.NextAction{Kind: runaction.KindRetryAgent, IdeaSlug: "sample"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(result.Message, "retry-agent is not supported") {
-		t.Fatalf("message=%q", result.Message)
-	}
-	if result.Refresh {
-		t.Fatal("retry advisory requested refresh")
-	}
-}
-
 func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
 	duration := agentDuration(runstate.AgentState{
 		State:     runstate.StateRunning,
@@ -1317,6 +1268,42 @@ func TestAgentDurationUsesElapsedForRunningSnapshot(t *testing.T) {
 	})
 	if duration <= 0 {
 		t.Fatalf("duration=%s, want elapsed duration", duration)
+	}
+}
+
+// AF1: detaching the TUI must wait for in-flight launched runs (so they finish
+// and record their session), not cancel/abandon them when the command returns.
+func TestLaunchReaperWaitsForInFlightRuns(t *testing.T) {
+	var reaper launchReaper
+	release := make(chan struct{})
+	reaped := make(chan struct{})
+	reaper.track(func() {
+		<-release // stand in for an N-launched run that is still running
+		close(reaped)
+	})
+
+	waited := make(chan struct{})
+	go func() {
+		reaper.waitForActive(&bytes.Buffer{})
+		close(waited)
+	}()
+
+	select {
+	case <-waited:
+		t.Fatal("waitForActive returned before the in-flight run finished (detach abandoned the run)")
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(release)
+	select {
+	case <-waited:
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitForActive did not return after the run finished")
+	}
+	select {
+	case <-reaped:
+	default:
+		t.Fatal("tracked reap did not run to completion")
 	}
 }
 

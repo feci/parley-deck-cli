@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -1677,6 +1678,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		RunDir:       handle.RunDir,
 		Done:         handle.Done(),
 		Cancel:       cancelRun,
+		Root:         *root,
+		// `parley run` watches one run; start new ideas from `parley tui` (N).
 	}); err != nil {
 		cancelRun()
 		results := handle.Wait()
@@ -1835,96 +1838,6 @@ The first line must be exactly:
 After the sentinel, write one short line confirming the headless probe.`, outputPath, sentinel, extra)
 }
 
-func runTUIAction(ctx context.Context, root string, request tui.ActionRequest) (tui.ActionResult, error) {
-	if strings.TrimSpace(root) == "" {
-		root = "."
-	}
-	action := request.Action
-	command := runaction.Command(action, request.Run.RunID, request.Run.IdeaSlug)
-	result := tui.ActionResult{Command: command}
-
-	switch action.Kind {
-	case runaction.KindInspect:
-		if command == "" {
-			result.Message = "inspect action has no run or idea target"
-			return result, nil
-		}
-		result.Message = "Inspect from the CLI: " + command
-		return result, nil
-	case runaction.KindAnswerQuestion:
-		if command == "" {
-			result.Message = "answer-question needs a question ID before it can run"
-			return result, nil
-		}
-		result.Message = "Answer requires text input; run from the CLI: " + command
-		return result, nil
-	case runaction.KindRetryAgent:
-		result.Message = "retry-agent is not supported by the runtime yet"
-		return result, nil
-	case runaction.KindDraftConsensus, runaction.KindRequestSignoffs, runaction.KindFinalize:
-		args, err := consensusActionArgs(root, request)
-		if err != nil {
-			return result, err
-		}
-		select {
-		case <-ctx.Done():
-			return result, ctx.Err()
-		default:
-		}
-		var stdoutBuf, stderrBuf bytes.Buffer
-		code := runConsensus(ctx, args, &stdoutBuf, &stderrBuf)
-		if code != 0 {
-			return result, fmt.Errorf("%s failed: %s", valueOr(command, action.Kind), commandOutput(stderrBuf.String(), stdoutBuf.String()))
-		}
-		result.Refresh = true
-		result.Message = commandOutput(stdoutBuf.String(), "")
-		if result.Message == "" {
-			result.Message = "Action completed: " + valueOr(command, action.Kind)
-		}
-		return result, nil
-	default:
-		if command != "" {
-			result.Message = "Action is advisory; run from the CLI: " + command
-			return result, nil
-		}
-		return result, fmt.Errorf("unsupported action kind %q", action.Kind)
-	}
-}
-
-func consensusActionArgs(root string, request tui.ActionRequest) ([]string, error) {
-	action := request.Action
-	idea := valueOr(action.IdeaSlug, request.Run.IdeaSlug)
-	if idea == "" {
-		return nil, fmt.Errorf("%s action has no idea target", action.Kind)
-	}
-	switch action.Kind {
-	case runaction.KindDraftConsensus:
-		args := []string{"draft", "--dir", root}
-		if round := runaction.RoundNumber(action.Round); round != "" {
-			args = append(args, "--round", round)
-		}
-		return append(args, idea), nil
-	case runaction.KindRequestSignoffs:
-		return []string{"request-signoffs", "--dir", root, "--yes", idea}, nil
-	case runaction.KindFinalize:
-		return []string{"finalize", "--dir", root, idea}, nil
-	default:
-		return nil, fmt.Errorf("%s is not executable from the TUI", action.Kind)
-	}
-}
-
-func commandOutput(primary, fallback string) string {
-	output := strings.TrimSpace(primary)
-	if output == "" {
-		output = strings.TrimSpace(fallback)
-	}
-	output = strings.ReplaceAll(output, "\r\n", "\n")
-	if len(output) > 240 {
-		output = output[:237] + "..."
-	}
-	return output
-}
-
 func runTUIView(ctx context.Context, root string, stdout, stderr io.Writer) int {
 	results, err := discoverConfigured(ctx, root)
 	if err != nil {
@@ -1942,10 +1855,21 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 				fmt.Fprintf(stderr, "tui failed: %v\n", err)
 				return 1
 			}
-			return 0
+			// Re-read after the init wizard quits. If the user initialized the
+			// workspace, fall through to the unified Home view; if they quit
+			// without initializing, there is nothing more to show.
+			status, err = protocol.ReadWorkspaceStatus(root)
+			if err != nil {
+				if errors.Is(err, os.ErrNotExist) {
+					return 0
+				}
+				fmt.Fprintf(stderr, "tui failed: %v\n", err)
+				return 1
+			}
+		} else {
+			fmt.Fprintf(stderr, "tui failed: %v\n", err)
+			return 1
 		}
-		fmt.Fprintf(stderr, "tui failed: %v\n", err)
-		return 1
 	}
 
 	runs, err := runstate.ListRuns(root)
@@ -1954,59 +1878,95 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 		return 1
 	}
 	registerWorkspaceSessions(root, runs)
-	refreshRuns := func() ([]runstate.RunSummary, error) {
-		return runstate.ListRuns(root)
-	}
-	var cancelMu sync.Mutex
-	var cancelRuns []context.CancelFunc
-	cancelStartedRuns := func() {
-		cancelMu.Lock()
-		defer cancelMu.Unlock()
-		for _, cancel := range cancelRuns {
-			cancel()
-		}
-		cancelRuns = nil
-	}
-	defer cancelStartedRuns()
-	startRun := func(startCtx context.Context, request tui.StartRequest) (runstate.RunSummary, error) {
-		discoveredForRun := applySessionLaunchOverrides(results, request.LaunchOverrides)
-		created, err := runcontrol.Create(runcontrol.CreateOptions{
-			Root:         root,
-			Task:         request.Task,
-			Participants: request.Participants,
-			Discovered:   discoveredForRun,
-			Auto:         request.Auto,
-		})
-		if err != nil {
-			return runstate.RunSummary{}, err
-		}
-		runCtx, cancelRun := context.WithCancel(startCtx)
-		cancelMu.Lock()
-		cancelRuns = append(cancelRuns, cancelRun)
-		cancelMu.Unlock()
-		if request.Auto {
-			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
-		}
-		_ = runner.RunRoundOneAsync(runCtx, created.RunOptions)
-		return runstate.LoadRun(root, created.RunID)
-	}
 
-	if err := tui.RunWorkspace(tui.WorkspaceOptions{
-		Root:        root,
-		Status:      status,
-		Agents:      results,
-		Runs:        runs,
-		Context:     ctx,
-		RefreshRuns: refreshRuns,
-		StartRun:    startRun,
-		ActionRunner: func(actionCtx context.Context, request tui.ActionRequest) (tui.ActionResult, error) {
-			return runTUIAction(actionCtx, root, request)
-		},
+	// Unified TUI: open to Home; N launches a new run (all available agents)
+	// through the same runner path used by `parley run`. Detaching the TUI
+	// (/quit, esc) does NOT cancel in-flight N-launched runs — only the active
+	// run's Cancel (ctrl+c inside the TUI) does. On exit we wait for any
+	// still-running launched runs so they finish and record their sessions
+	// instead of being abandoned when the process returns.
+	var reaper launchReaper
+	if err := tui.RunLive(tui.LiveOptions{
+		Home:   true,
+		Root:   root,
+		Status: status,
+		Start:  newLaunchFunc(ctx, root, results, &reaper),
 	}); err != nil {
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
 	}
+	// The parent context is still live here, so a real ctrl+c (SIGINT, now that
+	// the TUI released the terminal) still aborts a run we are waiting on.
+	reaper.waitForActive(stdout)
 	return 0
+}
+
+// launchReaper waits for TUI-launched runs that are still in flight when the TUI
+// detaches, so they complete and record their sessions rather than being killed
+// when the command returns and cancels the parent context.
+type launchReaper struct {
+	wg       sync.WaitGroup
+	inFlight atomic.Int64
+}
+
+// track runs fn (the wait+register reap) in the background and counts it as
+// in-flight until it returns.
+func (r *launchReaper) track(fn func()) {
+	r.wg.Add(1)
+	r.inFlight.Add(1)
+	go func() {
+		defer r.wg.Done()
+		defer r.inFlight.Add(-1)
+		fn()
+	}()
+}
+
+// waitForActive blocks until every tracked run has finished, printing a hint
+// first if any are still running so the now-restored terminal explains the wait.
+func (r *launchReaper) waitForActive(out io.Writer) {
+	if n := r.inFlight.Load(); n > 0 {
+		fmt.Fprintf(out, "Waiting for %d in-progress run(s) to finish (ctrl+c to abort)...\n", n)
+	}
+	r.wg.Wait()
+}
+
+// newLaunchFunc returns a tui.LaunchFunc that starts a new round-01 run with all
+// available agents through the existing runner path and returns a handle to
+// attach to (no parallel engine). The run is reaped through the reaper so its
+// session is recorded and the command waits for it on exit; it is canceled only
+// via the returned Cancel (ctrl+c on the attached run), never by TUI detach.
+func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discovery, reaper *launchReaper) tui.LaunchFunc {
+	return func(req tui.LaunchRequest) (tui.LaunchResult, error) {
+		participants := installedAgentIDs(discovered)
+		if len(participants) == 0 {
+			return tui.LaunchResult{}, fmt.Errorf("no installed agents found")
+		}
+		created, err := runcontrol.Create(runcontrol.CreateOptions{
+			Root:         root,
+			Task:         req.Task,
+			Participants: participants,
+			Discovered:   discovered,
+		})
+		if err != nil {
+			return tui.LaunchResult{}, err
+		}
+		runCtx, cancelRun := context.WithCancel(ctx)
+		handle := runner.RunRoundOneAsync(runCtx, created.RunOptions)
+		reaper.track(func() {
+			handle.Wait()
+			if run, err := runstate.LoadRun(root, created.RunID); err == nil {
+				registerWorkspaceSessions(root, []runstate.RunSummary{run})
+			}
+		})
+		return tui.LaunchResult{
+			Idea:         created.Idea,
+			Participants: participants,
+			RunID:        created.RunID,
+			RunDir:       handle.RunDir,
+			Done:         handle.Done(),
+			Cancel:       cancelRun,
+		}, nil
+	}
 }
 
 func registerWorkspaceSessions(root string, runs []runstate.RunSummary) {
@@ -2035,20 +1995,6 @@ func registerWorkspaceSessions(root string, runs []runstate.RunSummary) {
 			Terminal:      run.Terminal,
 		})
 	}
-}
-
-func applySessionLaunchOverrides(discovered []agents.Discovery, overrides map[string]string) []agents.Discovery {
-	if len(overrides) == 0 {
-		return discovered
-	}
-	out := make([]agents.Discovery, len(discovered))
-	copy(out, discovered)
-	for i := range out {
-		if mode, ok := overrides[out[i].ID]; ok {
-			out[i].LaunchMode = mode
-		}
-	}
-	return out
 }
 
 func valueOr(value, fallback string) string {
