@@ -256,8 +256,13 @@ func TestRunRoundOneSkipsExistingArtifact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := events[0].Type, "agent.skipped"; got != want {
+	// A run.segment_started boundary now leads every round-run (Slice 1) so the
+	// projection can reset the targeted agents; the skip event follows it.
+	if got, want := events[0].Type, "run.segment_started"; got != want {
 		t.Fatalf("first event=%s, want %s", got, want)
+	}
+	if got, want := events[1].Type, "agent.skipped"; got != want {
+		t.Fatalf("second event=%s, want %s", got, want)
 	}
 	if got, want := events[len(events)-1].Type, "round.completed"; got != want {
 		t.Fatalf("last event=%s, want %s", got, want)

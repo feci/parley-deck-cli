@@ -49,6 +49,7 @@ type RunState struct {
 type AgentState struct {
 	ID           string        `json:"id"`
 	State        string        `json:"state"`
+	Segment      string        `json:"segment,omitempty"`
 	StartedAt    time.Time     `json:"started_at,omitempty"`
 	Duration     time.Duration `json:"duration"`
 	LatestEvent  string        `json:"latest_event,omitempty"`
@@ -353,6 +354,28 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 				continue
 			}
 			applyAgentEvent(agent, event, now)
+		case "run.segment_started":
+			// A segment boundary scopes agent state to the current run segment.
+			// Resetting the targeted agents here means a stale terminal badge
+			// from a prior segment (e.g. an earlier round that finished) never
+			// lingers after continue/resume/retry. The next agent.* event in
+			// this segment sets the current state; non-targeted agents keep
+			// theirs. Old, unsegmented runs emit no such event and so behave
+			// exactly as before.
+			seg := dataString(event.Data, "segment_id")
+			for _, id := range dataStringSlice(event.Data, "targets") {
+				agent, ok := agentsByID[id]
+				if !ok {
+					continue
+				}
+				agent.State = StatePending
+				agent.StartedAt = time.Time{}
+				agent.Duration = 0
+				agent.Error = ""
+				agent.Reason = ""
+				agent.Segment = seg
+				agent.LatestEvent = event.Type
+			}
 		case "round.completed":
 			state.RoundStatus = "completed"
 		case "round.incomplete":
@@ -382,6 +405,8 @@ func SummarizeEvent(event store.Event) EventSummary {
 	switch event.Type {
 	case "run.created":
 		text = fmt.Sprintf("idea=%s", dataString(event.Data, "idea"))
+	case "run.segment_started":
+		text = strings.TrimSpace(fmt.Sprintf("%s %s", dataString(event.Data, "segment_id"), dataString(event.Data, "reason")))
 	case "agent.failed":
 		if errText := dataString(event.Data, "error"); errText != "" {
 			text = fmt.Sprintf("%s %s", agent, errText)
@@ -400,6 +425,9 @@ func SummarizeEvent(event store.Event) EventSummary {
 
 func applyAgentEvent(agent *AgentState, event store.Event, now time.Time) {
 	agent.LatestEvent = event.Type
+	if seg := dataString(event.Data, "segment_id"); seg != "" {
+		agent.Segment = seg
+	}
 	if artifact := dataString(event.Data, "artifact"); artifact != "" {
 		agent.ArtifactPath = artifact
 	}
