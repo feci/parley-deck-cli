@@ -38,6 +38,19 @@ const (
 	maxFocusBytes = 4 << 20 // 4 MiB
 )
 
+// liveMode is the live-run TUI view state. It replaces the previously overloaded
+// answerMode/focus booleans with one explicit machine (Slice 3). modeCompose is
+// reserved for the steering composer (Slice 4).
+type liveMode int
+
+const (
+	modeOverview liveMode = iota
+	modeAgentDetail
+	modeCompose
+	modeAnswerQuestion
+	modeHelp
+)
+
 type LiveOptions struct {
 	Status       protocol.WorkspaceStatus
 	Idea         protocol.IdeaStatus
@@ -60,7 +73,7 @@ type liveModel struct {
 	selected   int
 	questions  []hitl.Question
 	selectedQ  int
-	answerMode bool
+	mode       liveMode
 	answerText string
 	answerErr  string
 	logPreview string
@@ -69,7 +82,7 @@ type liveModel struct {
 
 	// Per-agent focus view (Slice 2): a scrollable, follow-capable viewport over
 	// the focused agent's full stdout log, fed by offset-incremental reads.
-	focus       bool
+	// Active when mode == modeAgentDetail.
 	follow      bool
 	focusAgent  string
 	focusLines  []string
@@ -138,11 +151,13 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
-		if m.answerMode {
+		switch m.mode {
+		case modeAnswerQuestion:
 			return m.updateAnswerMode(msg)
-		}
-		if m.focus {
+		case modeAgentDetail:
 			return m.updateFocusMode(msg)
+		case modeHelp:
+			return m.updateHelpMode(msg)
 		}
 		switch msg.String() {
 		case "q", "esc":
@@ -152,6 +167,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.opts.Cancel()
 			}
 			return m, tea.Quit
+		case "?":
+			m.mode = modeHelp
+			return m, nil
 		case "enter", "o":
 			m.enterFocus()
 			return m, nil
@@ -169,9 +187,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p", "[":
 			m.selectPrevQuestion()
 			return m, nil
-		case "a", "?":
+		case "a":
 			if m.canAnswerSelectedQuestion() {
-				m.answerMode = true
+				m.mode = modeAnswerQuestion
 				m.answerText = ""
 				m.answerErr = ""
 			}
@@ -223,7 +241,10 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m liveModel) View() string {
 	width := tuiWidth(m.width)
 	height := tuiHeight(m.height, defaultLiveHeight)
-	if m.focus {
+	if m.mode == modeHelp {
+		return m.renderHelp(width, height)
+	}
+	if m.mode == modeAgentDetail {
 		return m.renderAgentDetail(width, height)
 	}
 	bodyWidth := width - 4
@@ -283,15 +304,15 @@ func (m liveModel) liveHeader(layout string) string {
 }
 
 func (m liveModel) renderLiveFooter() string {
-	footerText := "Keys: j/k/tab agent  enter focus  n/p question  a answer  q/esc detach TUI  ctrl+c cancel run"
+	footerText := "Keys: j/k/tab agent  enter focus  n/p question  a answer  ? help  q/esc detach TUI  ctrl+c cancel run"
 	if m.opts.Resume {
-		footerText = "Keys: j/k/tab agent  enter focus  n/p question  a answer  q/esc/ctrl+c close resume view"
+		footerText = "Keys: j/k/tab agent  enter focus  n/p question  a answer  ? help  q/esc/ctrl+c close resume view"
 	}
 	footer := mutedStyle.Render(footerText)
 	if m.errText != "" {
 		footer = warnStyle.Render(m.errText) + "\n" + footer
 	}
-	if m.answerMode {
+	if m.mode == modeAnswerQuestion {
 		footer = warnStyle.Render("Answer mode: type answer, enter submit, esc cancel") + "\n" + footer
 	}
 	return footer
@@ -305,7 +326,7 @@ func (m liveModel) renderCompactLive(width, height int, header string) string {
 		b.WriteString(warnStyle.Render(m.errText))
 		b.WriteString("\n")
 	}
-	if m.answerMode {
+	if m.mode == modeAnswerQuestion {
 		b.WriteString(warnStyle.Render("Answer mode: type answer, enter submit, esc cancel"))
 		b.WriteString("\n")
 	}
@@ -372,7 +393,7 @@ func (m liveModel) renderCompactLiveQuestion() string {
 		prefix = warnStyle.Render("!")
 	}
 	text := fmt.Sprintf("%s %-24s %-13s %-10s %s", prefix, question.ID, question.Status, riskBadge(question.Risk), truncateText(question.Prompt, 72))
-	if m.answerMode {
+	if m.mode == modeAnswerQuestion {
 		text += "\n" + warnStyle.Render("answer> ") + m.answerText
 	}
 	if m.answerErr != "" {
@@ -465,7 +486,7 @@ func (m liveModel) renderQuestionsPane() string {
 		}
 		if selected.Status != hitl.StatusOpen {
 			b.WriteString(okStyle.Render("answer: "+selected.Answer) + "\n")
-		} else if m.answerMode {
+		} else if m.mode == modeAnswerQuestion {
 			b.WriteString(warnStyle.Render("answer> ") + m.answerText + "\n")
 		}
 	}
@@ -494,21 +515,21 @@ func (m liveModel) updateAnswerMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 	case "esc":
-		m.answerMode = false
+		m.mode = modeOverview
 		m.answerText = ""
 		m.answerErr = ""
 		return m, nil
 	case "enter":
 		question := m.selectedQuestion()
 		if question == nil {
-			m.answerMode = false
+			m.mode = modeOverview
 			return m, nil
 		}
 		if _, err := hitl.New(m.opts.RunDir).Answer(question.ID, m.answerText, false); err != nil {
 			m.answerErr = err.Error()
 			return m, nil
 		}
-		m.answerMode = false
+		m.mode = modeOverview
 		m.answerText = ""
 		m.answerErr = ""
 		return m, readQuestionsCmd(m.opts.RunDir)
@@ -675,6 +696,22 @@ func (m liveModel) updateFocusMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// updateHelpMode handles keys while the help overlay is open; esc/?/q/enter
+// dismiss it, ctrl+c still cancels the run.
+func (m liveModel) updateHelpMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		if m.opts.Cancel != nil {
+			m.opts.Cancel()
+		}
+		return m, tea.Quit
+	case "esc", "?", "q", "enter":
+		m.mode = modeOverview
+		return m, nil
+	}
+	return m, nil
+}
+
 // enterFocus opens the focus view on the currently selected agent and loads the
 // bounded tail of its stdout log, positioned at the bottom with follow on.
 func (m *liveModel) enterFocus() {
@@ -682,7 +719,7 @@ func (m *liveModel) enterFocus() {
 	if agent == nil {
 		return
 	}
-	m.focus = true
+	m.mode = modeAgentDetail
 	m.follow = true
 	m.focusAgent = agent.ID
 	lines, offset, truncated := loadFocusTail(agent.StdoutPath)
@@ -693,7 +730,7 @@ func (m *liveModel) enterFocus() {
 }
 
 func (m *liveModel) exitFocus() {
-	m.focus = false
+	m.mode = modeOverview
 	m.focusAgent = ""
 	m.focusLines = nil
 	m.focusOffset = 0
@@ -755,7 +792,7 @@ func (m liveModel) focusedAgentState() *AgentState {
 // incremental offset read. If the log was truncated/rotated (a new segment
 // re-creates the file), it reloads the tail. Honors follow mode.
 func (m *liveModel) refreshFocus() {
-	if !m.focus {
+	if m.mode != modeAgentDetail {
 		return
 	}
 	agent := m.focusedAgentState()
@@ -851,6 +888,32 @@ func (m liveModel) renderFocusFooter() string {
 		footer = warnStyle.Render(m.errText) + "\n" + footer
 	}
 	return footer
+}
+
+func (m liveModel) renderHelp(width, height int) string {
+	header := headerStyle.Render("Parley Deck — Help")
+	lines := []string{
+		"Overview",
+		"  j / k / tab        select agent",
+		"  enter / o          open agent focus view",
+		"  n / p              select question",
+		"  a                  answer the selected question",
+		"  ?                  toggle this help",
+		"  q / esc            detach TUI (the run keeps going)",
+		"  ctrl+c             cancel the run",
+		"",
+		"Agent focus view",
+		"  j / k              scroll one line",
+		"  pgup / pgdn        scroll one page",
+		"  g / G              jump top / bottom",
+		"  f                  toggle follow (tail) mode",
+		"  tab / shift+tab    cycle focused agent",
+		"  esc                back to overview",
+		"",
+		mutedStyle.Render("press esc, q, ? or enter to close"),
+	}
+	body := boxStyle.Width(clampInt(width-4, 40, 84)).Render(strings.Join(lines, "\n"))
+	return clipLines(strings.Join([]string{header, "", body, ""}, "\n"), height)
 }
 
 // loadFocusTail reads the last maxFocusBytes / maxFocusLines of a log file as

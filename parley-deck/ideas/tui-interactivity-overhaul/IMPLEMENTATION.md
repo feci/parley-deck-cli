@@ -48,8 +48,15 @@ green before moving on.
         simpler, dependency-free, sufficient for line-oriented logs. Stream tabs
         (stdout/stderr/thoughts) deferred; the focus view shows stdout (the
         agent's working output); stderr stays in the overview log preview.
-- [ ] **Slice 3 — view-state machine + keymap + help overlay** (`overview |
-      agentDetail | compose | answerQuestion | help`; `?` help; `a` preserved).
+- [x] **Slice 3 — view-state machine + keymap + help overlay**
+  - [x] Replaced the overloaded `answerMode`/`focus` booleans with a single
+        `mode` enum (`modeOverview|modeAgentDetail|modeCompose|modeAnswerQuestion|
+        modeHelp`); `modeCompose` reserved for Slice 4.
+  - [x] `?` opens a help overlay (full keymap); `esc`/`?`/`q`/`enter` dismiss it;
+        `a` remains the sole HITL answer key (preserves `hitl-tui-questions`).
+  - [x] Footer advertises `? help` (overview + resume).
+  - [x] Tests: help-overlay toggle; migrated focus/answer tests to the `mode`
+        enum. Full `go test ./...` green.
 - [ ] **Slice 4 — steering composer + `steer.*` events + `parley steer` CLI**
       (`SubmitSteering`, queued `new_attempt` default, no gate bypass).
 

@@ -253,7 +253,7 @@ func TestResumeViewHasExplicitExitPath(t *testing.T) {
 
 func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
 	model := newLiveModel(LiveOptions{RunDir: t.TempDir()})
-	model.answerMode = true
+	model.mode = modeAnswerQuestion
 	model.answerText = "á"
 
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyBackspace})
@@ -309,7 +309,7 @@ func TestFocusViewShowsAgentLogAndExits(t *testing.T) {
 
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model = updated.(liveModel)
-	if !model.focus {
+	if model.mode != modeAgentDetail {
 		t.Fatal("enter did not open the focus view")
 	}
 	view := model.View()
@@ -321,7 +321,7 @@ func TestFocusViewShowsAgentLogAndExits(t *testing.T) {
 
 	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	model = updated.(liveModel)
-	if model.focus {
+	if model.mode == modeAgentDetail {
 		t.Fatal("esc did not exit the focus view")
 	}
 	if !strings.Contains(model.View(), "Log preview") {
@@ -432,6 +432,28 @@ func appendString(t *testing.T, path, s string) {
 	}
 	if err := file.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestHelpOverlayToggles(t *testing.T) {
+	model := focusModelWithLog(t, "x\n")
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	model = updated.(liveModel)
+	if model.mode != modeHelp {
+		t.Fatalf("? should open the help overlay, mode=%d", model.mode)
+	}
+	view := model.View()
+	for _, want := range []string{"Help", "open agent focus view", "toggle follow"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("help overlay missing %q\n%s", want, view)
+		}
+	}
+
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	model = updated.(liveModel)
+	if model.mode != modeOverview {
+		t.Fatal("esc should close the help overlay")
 	}
 }
 
