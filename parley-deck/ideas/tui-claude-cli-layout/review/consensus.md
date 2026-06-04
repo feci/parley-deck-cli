@@ -66,6 +66,8 @@ Accept the synthesis. AF1 (active-tab-visible) and AF2 (replace-file reload) are
 correct must-fixes; AF3 finishes the dead-state cleanup; AF4 recovers line scroll
 without breaking the owner's ↑/↓ mapping; AF5/AF6 tighten tests/docs. No blockers.
 
-<!-- codex appends its signoff after re-review -->
+### codex — ACCEPT (2026-06-04)
+Re-review confirms AF1-AF6 are resolved: tab-strip active-windowing, reload-on-replace, dead-state removal, shift+arrow line scroll, routing tests, and comment drift are all addressed. Zero agreed fixes remain; the carried deferrals are acceptable as follow-ups.
 
-<!-- hermes appends its signoff after re-review -->
+### hermes — ACCEPT (2026-06-04)
+From adversarial UX lens: AF1 active-tab-visibility and AF4 shift+arrow line-scroll as the accepted compromise are solid; answer-vs-steer routing (AF5) is adequate with zero agreed fixes remaining.
