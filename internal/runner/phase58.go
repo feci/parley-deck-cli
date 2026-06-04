@@ -27,6 +27,7 @@ func RunImplementation(ctx context.Context, opts Options) Result {
 	if len(selected) == 0 {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
 	}
+	opts.SegmentID = appendSegmentStarted(opts, "continue", agentIDs(selected))
 	return runAgent(ctx, opts, selected[0])
 }
 
@@ -51,6 +52,7 @@ func RunFixup(ctx context.Context, opts Options) Result {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
 	}
 	agent := selected[0]
+	opts.SegmentID = appendSegmentStarted(opts, "retry", []string{agent.ID})
 	now := time.Now().UTC()
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", agent.ID)
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {
@@ -105,7 +107,7 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	if !result.ArtifactOK {
 		eventType = "agent.fixup_failed"
 	}
-	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: map[string]any{"agent": agent.ID, "error": result.ExitError}})
+	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: map[string]any{"agent": agent.ID, "error": result.ExitError, "segment_id": opts.SegmentID}})
 	return result
 }
 
@@ -249,6 +251,7 @@ func RunReviewConsensus(ctx context.Context, opts Options) Result {
 	if len(selected) == 0 {
 		return Result{AgentID: "drafter", ExitError: "no drafter available in participants"}
 	}
+	opts.SegmentID = appendSegmentStarted(opts, "continue", agentIDs(selected))
 	return runAgent(ctx, opts, selected[0])
 }
 

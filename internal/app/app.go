@@ -29,6 +29,7 @@ import (
 	"parley-deck-cli/internal/runplan"
 	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/sessionstore"
+	"parley-deck-cli/internal/steer"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/tui"
 )
@@ -71,6 +72,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runTask(ctx, args[1:], stdout, stderr)
 	case "continue":
 		return runContinue(args[1:], stdout, stderr)
+	case "steer":
+		return runSteer(args[1:], stdout, stderr)
 	case "resume":
 		return runResume(args[1:], stdout, stderr)
 	case "answer":
@@ -1030,11 +1033,13 @@ func runContinue(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "continue failed: %v\n", err)
 		return 1
 	}
+	steers, _ := steer.List(run.RunDir)
 	if *jsonOut {
 		payload := struct {
 			Run     runstate.RunSummary  `json:"run"`
 			Actions []runplan.NextAction `json:"actions"`
-		}{Run: run, Actions: run.NextActions}
+			Steers  []steer.Queued       `json:"steers,omitempty"`
+		}{Run: run, Actions: run.NextActions, Steers: steers}
 		return printJSON(stdout, payload, stderr)
 	}
 
@@ -1042,7 +1047,106 @@ func runContinue(args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "Idea: %s\n", valueOr(run.IdeaSlug, "unknown"))
 	fmt.Fprintf(stdout, "State: %s\n", displayRunState(run))
 	printNextActions(stdout, run)
+	printQueuedSteers(stdout, steers)
 	return 0
+}
+
+// runSteer queues a follow-up / steering instruction for an agent (or the whole
+// deck) on an existing run. It records the steer as durable events; it does not
+// execute delivery (the queued attempt runs when the agent next executes).
+func runSteer(args []string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("steer", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	root := fs.String("dir", ".", "workspace directory")
+	agent := fs.String("agent", "", "target agent ID (omit to steer the whole deck)")
+	jsonOut := fs.Bool("json", false, "print unstable JSON output")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if fs.NArg() < 2 {
+		fmt.Fprintln(stderr, "usage: parley steer [--dir DIR] [--agent AGENT] [--json] RUN_OR_IDEA -- TEXT...")
+		return 2
+	}
+
+	run, err := runstate.ResolveRun(*root, fs.Arg(0))
+	if err != nil {
+		fmt.Fprintf(stderr, "steer failed: %v\n", err)
+		return 1
+	}
+	// The run id is a positional, so Go's flag parser stops before any trailing
+	// "--"; accept it as an optional separator before the text.
+	rest := fs.Args()[1:]
+	if len(rest) > 0 && rest[0] == "--" {
+		rest = rest[1:]
+	}
+	text := strings.TrimSpace(strings.Join(rest, " "))
+	if text == "" {
+		fmt.Fprintln(stderr, "steer failed: instruction text is required")
+		fmt.Fprintln(stderr, "usage: parley steer [--dir DIR] [--agent AGENT] [--json] RUN_OR_IDEA -- TEXT...")
+		return 2
+	}
+	agentID := strings.TrimSpace(*agent)
+	target := steer.TargetDeck
+	if agentID != "" {
+		target = steer.TargetAgent
+		if !contains(run.Participants, agentID) {
+			fmt.Fprintf(stderr, "warning: %q is not a participant of run %s; queuing anyway\n", agentID, run.RunID)
+		}
+	}
+	result, err := steer.Submit(run.RunDir, steer.Request{
+		Target:    target,
+		Agent:     agentID,
+		Text:      text,
+		CreatedBy: "cli",
+		SegmentID: segmentForAgent(run, agentID),
+	}, time.Now().UTC())
+	if err != nil {
+		fmt.Fprintf(stderr, "steer failed: %v\n", err)
+		return 1
+	}
+	if *jsonOut {
+		return printJSON(stdout, result, stderr)
+	}
+	if target == steer.TargetAgent {
+		fmt.Fprintf(stdout, "Recorded %s for %s (queued; auto-exec is not wired up yet).\n", result.ID, agentID)
+	} else {
+		fmt.Fprintf(stdout, "Recorded %s for the deck (queued; auto-exec is not wired up yet).\n", result.ID)
+	}
+	return 0
+}
+
+func segmentForAgent(run runstate.RunSummary, agentID string) string {
+	if agentID == "" {
+		return ""
+	}
+	for _, a := range run.State.Agents {
+		if a.ID == agentID {
+			return a.Segment
+		}
+	}
+	return ""
+}
+
+func printQueuedSteers(stdout io.Writer, steers []steer.Queued) {
+	if len(steers) == 0 {
+		return
+	}
+	fmt.Fprintf(stdout, "Queued steers (%d):\n", len(steers))
+	for _, s := range steers {
+		target := s.Target
+		if s.Agent != "" {
+			target = s.Agent
+		}
+		fmt.Fprintf(stdout, "  %s  %-8s  %-7s  %s\n", s.ID, target, s.Status, truncateForList(s.Text))
+	}
+}
+
+func truncateForList(text string) string {
+	text = strings.TrimSpace(strings.ReplaceAll(text, "\n", " "))
+	if len(text) > 60 {
+		return text[:57] + "..."
+	}
+	return text
 }
 
 func resumePendingConsensusSignoffs(root string, run runstate.RunSummary, stdout io.Writer) error {

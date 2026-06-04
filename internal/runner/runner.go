@@ -37,6 +37,11 @@ type Options struct {
 	// Overwrite allows re-running an agent even if its artifact already exists
 	// (used for per-cycle review-consensus re-drafts). Off by default.
 	Overwrite bool
+	// SegmentID tags agent events with the current run.segment_started segment so
+	// the projection can scope state to the active segment (fixes stale terminal
+	// badges after continue/resume/retry). Set by the round-run entry points via
+	// appendSegmentStarted; empty for legacy/unsegmented callers.
+	SegmentID string
 }
 
 type Result struct {
@@ -124,6 +129,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 	}
 
 	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
+	opts.SegmentID = appendSegmentStarted(opts, segmentReason(opts), agentIDs(selected))
 	results := make([]Result, len(selected))
 	var wg sync.WaitGroup
 	for i, agent := range selected {
@@ -194,6 +200,61 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 	return results
 }
 
+// appendSegmentStarted records a run.segment_started boundary and returns the
+// new monotonic segment id. The projection (runstate.ProjectEvents) resets the
+// targeted agents to pending for this segment so a stale terminal badge from a
+// prior segment never lingers after continue/resume/retry.
+func appendSegmentStarted(opts Options, reason string, targets []string) string {
+	seg := nextSegmentID(opts.Store)
+	_ = opts.Store.Append(store.Event{
+		Time: time.Now().UTC(),
+		Type: "run.segment_started",
+		Data: map[string]any{
+			"segment_id": seg,
+			"reason":     reason,
+			"round":      opts.RoundLabel,
+			"targets":    targets,
+		},
+	})
+	return seg
+}
+
+// nextSegmentID returns the next monotonic segment-NNNN id by counting prior
+// run.segment_started events. Round-runs are sequential per run, so the count is
+// stable. Falls back to segment-0001 when the log cannot be read.
+func nextSegmentID(s store.Store) string {
+	events, err := s.Load()
+	if err != nil {
+		return "segment-0001"
+	}
+	n := 0
+	for _, e := range events {
+		if e.Type == "run.segment_started" {
+			n++
+		}
+	}
+	return fmt.Sprintf("segment-%04d", n+1)
+}
+
+// segmentReason classifies why a round-run is starting, for the audit trail.
+// Only the first deliberation round is "initial"; everything else is "continue"
+// (RunFixup overrides this with "retry").
+func segmentReason(opts Options) string {
+	if opts.Phase == "" && opts.Round <= 1 {
+		return "initial"
+	}
+	return "continue"
+}
+
+// agentIDs extracts the stable IDs from discovered agents (segment targets).
+func agentIDs(selected []agents.Discovery) []string {
+	ids := make([]string, 0, len(selected))
+	for _, a := range selected {
+		ids = append(ids, a.ID)
+	}
+	return ids
+}
+
 func selectedAgents(participants []string, discovered []agents.Discovery) []agents.Discovery {
 	byID := make(map[string]agents.Discovery, len(discovered))
 	for _, agent := range discovered {
@@ -236,7 +297,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		if err := opts.Store.Append(store.Event{
 			Time: result.CompletedAt,
 			Type: "agent.skipped",
-			Data: map[string]any{"agent": agent.ID, "reason": result.SkipReason, "artifact": outputPath},
+			Data: map[string]any{"agent": agent.ID, "reason": result.SkipReason, "artifact": outputPath, "segment_id": opts.SegmentID},
 		}); err != nil {
 			result.ExitError = "event append failed: " + err.Error()
 		}
@@ -292,10 +353,11 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		Time: now,
 		Type: "agent.started",
 		Data: map[string]any{
-			"agent":    agent.ID,
-			"artifact": outputPath,
-			"stdout":   stdoutPath,
-			"stderr":   stderrPath,
+			"agent":      agent.ID,
+			"artifact":   outputPath,
+			"stdout":     stdoutPath,
+			"stderr":     stderrPath,
+			"segment_id": opts.SegmentID,
 		},
 	}); err != nil {
 		return failEarly(opts, result, fmt.Errorf("event append failed: %w", err))
@@ -361,6 +423,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 			"artifact_ok": result.ArtifactOK,
 			"duration_ms": result.Duration.Milliseconds(),
 			"error":       result.ExitError,
+			"segment_id":  opts.SegmentID,
 		},
 	}); err != nil {
 		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", err))
@@ -382,6 +445,7 @@ func failEarly(opts Options, result Result, err error) Result {
 			"artifact_ok": false,
 			"duration_ms": result.Duration.Milliseconds(),
 			"error":       result.ExitError,
+			"segment_id":  opts.SegmentID,
 		},
 	}); eventErr != nil {
 		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", eventErr))
