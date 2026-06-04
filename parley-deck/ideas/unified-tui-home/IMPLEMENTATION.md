@@ -1,6 +1,6 @@
 ---
 idea: unified-tui-home
-status: implemented
+status: complete
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
@@ -124,3 +124,9 @@ tests still pass (Home prepended to tab order without breaking defaults). Existi
 - Attached (`N`/`parley run`) runs have a `Cancel`; `/open`-ed runs are
   observational (no cancel/done-wait).
 - PLEASE flag the exact dead workspace-model symbols to delete in fix-up.
+
+## Phase 8 complete (2026-06-04)
+
+Fix-up cycle 2 re-review: codex and hermes both signed ACCEPT (see
+`review/consensus.md` "Fix-up cycle 2" + `review/round-03/`). Zero remaining
+agreed fixes. Shipped as parley-deck-cli **1.14.0**.

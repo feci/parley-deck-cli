@@ -119,7 +119,9 @@ canceled them when the command returned. Fix-up cycle 2 (commit pending) adds th
 `review/round-03/`.
 
 ### codex — signoff after cycle-2 re-review
-<!-- codex appends its cycle-2 signoff here -->
+### codex — ACCEPT (2026-06-04)
+The AF1 wait-on-exit fix resolves the cycle-1 gap: TUI detach now waits for in-flight N-launched runs before the parent cancel fires, while SIGINT and attached-run cancel behavior remain correct. The requested build/test command is green.
 
 ### hermes — signoff after cycle-2 re-review
-<!-- hermes appends its cycle-2 signoff here -->
+### hermes — ACCEPT (2026-06-04)
+AF1 wait-on-exit fix (launchReaper + waitForActive) is sound; in-flight N-launched runs now finish and record before parent cancel, real ctrl+c still works, test passes, build/tests green. AF2–AF6 untouched.
