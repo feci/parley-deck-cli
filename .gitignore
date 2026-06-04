@@ -11,3 +11,7 @@ tmp-test-plugin/
 # agy (Antigravity CLI) writes a project->UUID map to ./cache/projects.json
 # in its working directory when launched; it is a runtime artifact, not ours.
 /cache/
+# Local Go build/module caches (used by sandboxed agent runs with
+# GOCACHE=$PWD/.gocache). Build artifacts, not source.
+/.gocache/
+/.gomodcache/
