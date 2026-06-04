@@ -1,6 +1,6 @@
 ---
 idea: tui-claude-cli-layout
-status: implemented
+status: fix-up-cycle-1
 implementer: claude
 started: 2026-06-04
 completed: 2026-06-04
@@ -65,6 +65,30 @@ focus-read pipeline + projection + summarize tests unchanged.
 - The retained dashboard renderer `renderQuestionsPane` still has an answer-mode
   branch (`mode == modeAnswerQuestion`) that is now never entered from the
   default surface; harmless, slated for cleanup.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-04
+head-commit: see-branch-tip
+
+Applied the agreed fixes from review/consensus.md (AF1–AF6):
+- AF1 — `renderTabStrip` now windows around the active tab (always visible) with
+  `…+N` markers for clipped sides; test `TestTabStripKeepsActiveTabVisible`.
+- AF2 — `agentBuffer` records `os.FileInfo`; `refreshBuffers` reloads on
+  truncation OR `!os.SameFile` (file replaced past the old offset); test
+  `TestBufferReloadsOnFileReplace`.
+- AF3 — removed the retired modal state (`modeAgentDetail`/`modeCompose`/
+  `modeAnswerQuestion`, `answerText`/`answerErr`/`logPreview`/`focus*`/`compose*`
+  fields, the `renderQuestionsPane` answer branch, orphaned `previewLineBudget`).
+  `liveMode` is now `{modeOverview, modeHelp}`.
+- AF4 — added `shift+↑`/`shift+↓` one-line scroll (plain `↑/↓` stay tab switches,
+  per owner); help updated; test `TestShiftArrowLineScroll`.
+- AF5 — added `TestSlashDeckAndStatus` (and the existing steer/answer tests cover
+  Enter answer-before-steer).
+- AF6 — fixed the bounded-scrollback comment.
+
+Carried deferrals: mouse-wheel scroll, `bubbles/textinput` editing, `/agent`/
+`/tab`, Events tab; (carried) executing queued steers, live ACP delivery.
 
 ## Notes for reviewers
 

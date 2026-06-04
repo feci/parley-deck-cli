@@ -30,24 +30,19 @@ const (
 	stateUnknown  = runstate.StateUnknown
 )
 
-// Bounded scrollback for the per-agent focus view: keep at most maxFocusLines
-// lines and read at most maxFocusBytes from the tail, so a very long log never
-// blows up memory.
+// Bounded scrollback for per-agent transcript buffers: keep at most 20000 lines
+// and at most 4 MiB from the tail, so a very long log never blows up memory.
 const (
 	maxFocusLines = 20000
 	maxFocusBytes = 4 << 20 // 4 MiB
 )
 
-// liveMode is the live-run TUI view state. It replaces the previously overloaded
-// answerMode/focus booleans with one explicit machine (Slice 3). modeCompose is
-// reserved for the steering composer (Slice 4).
+// liveMode is the live-run TUI view state. The default tabbed surface is
+// modeOverview; modeHelp is the only overlay (opened by /help).
 type liveMode int
 
 const (
 	modeOverview liveMode = iota
-	modeAgentDetail
-	modeCompose
-	modeAnswerQuestion
 	modeHelp
 )
 
@@ -70,6 +65,7 @@ const statusTabID = "status"
 // capFocusLines). Kept per agent so switching tabs is instant and retains scroll.
 type agentBuffer struct {
 	path   string
+	info   os.FileInfo // identity at load, to detect file replacement (rotation)
 	lines  []string
 	offset int64
 	scroll int
@@ -79,36 +75,20 @@ type agentBuffer struct {
 }
 
 type liveModel struct {
-	opts       LiveOptions
-	width      int
-	height     int
-	now        time.Time
-	offset     int64
-	events     []store.Event
-	state      RunState
-	selected   int
-	questions  []hitl.Question
-	selectedQ  int
-	mode       liveMode // only modeHelp is used now (overlay opened by /help)
-	answerText string
-	answerErr  string
-	logPreview string
-	errText    string
-	done       bool
-
-	// Retained focus fields (reused by the Status dashboard's log preview).
-	follow      bool
-	focusAgent  string
-	focusLines  []string
-	focusOffset int64
-	focusScroll int
-	focusTrunc  bool
-
-	composeTarget steer.Target
-	composeAgent  string
-	composeText   string
-	composeErr    string
-	statusMsg     string
+	opts      LiveOptions
+	width     int
+	height    int
+	now       time.Time
+	offset    int64
+	events    []store.Event
+	state     RunState
+	selected  int
+	questions []hitl.Question
+	selectedQ int
+	mode      liveMode // modeOverview (tabbed surface) or modeHelp (overlay)
+	errText   string
+	statusMsg string
+	done      bool
 
 	// Claude-CLI tabbed layout (tui-claude-cli-layout): the default surface.
 	activeTab string                  // "" = resolve to default; else "agent:<id>" or statusTabID
@@ -256,13 +236,58 @@ func (m liveModel) renderTabbed(width, height int) string {
 }
 
 func (m liveModel) renderTabStrip(width int) string {
-	active := m.activeTabResolved()
-	parts := make([]string, 0, len(m.state.Agents)+1)
+	type tab struct{ id, label string }
+	tabs := make([]tab, 0, len(m.state.Agents)+1)
 	for _, a := range m.state.Agents {
-		parts = append(parts, m.styleTab(a.ID+" "+shortState(a.State), "agent:"+a.ID == active))
+		tabs = append(tabs, tab{"agent:" + a.ID, a.ID + " " + shortState(a.State)})
 	}
-	parts = append(parts, m.styleTab("Status", active == statusTabID))
-	return truncateText(strings.Join(parts, " "), width)
+	tabs = append(tabs, tab{statusTabID, "Status"})
+
+	active := m.activeTabResolved()
+	ai := 0
+	for i, t := range tabs {
+		if t.id == active {
+			ai = i
+			break
+		}
+	}
+	rendered := make([]string, len(tabs))
+	w := make([]int, len(tabs))
+	for i, t := range tabs {
+		rendered[i] = m.styleTab(t.label, i == ai)
+		w[i] = len(stripANSI(rendered[i])) + 1 // +1 for the join space (conservative)
+	}
+	// Window that always includes the active tab, expanding to neighbors while
+	// it fits, with "…+N" markers for any clipped tabs (reserve ~8 cols).
+	budget := width - 8
+	if budget < 1 {
+		budget = width
+	}
+	lo, hi, total := ai, ai, w[ai]
+	for {
+		grew := false
+		if hi+1 < len(tabs) && total+w[hi+1] <= budget {
+			hi++
+			total += w[hi]
+			grew = true
+		}
+		if lo-1 >= 0 && total+w[lo-1] <= budget {
+			lo--
+			total += w[lo]
+			grew = true
+		}
+		if !grew {
+			break
+		}
+	}
+	strip := strings.Join(rendered[lo:hi+1], " ")
+	if lo > 0 {
+		strip = mutedStyle.Render(fmt.Sprintf("…+%d ", lo)) + strip
+	}
+	if hi < len(tabs)-1 {
+		strip = strip + mutedStyle.Render(fmt.Sprintf(" …+%d", len(tabs)-1-hi))
+	}
+	return strip
 }
 
 func (m liveModel) styleTab(label string, on bool) string {
@@ -430,6 +455,12 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "down", "right", "tab":
 		m.switchTab(1)
 		return m, nil
+	case "shift+up":
+		m.scrollActive(-1)
+		return m, nil
+	case "shift+down":
+		m.scrollActive(1)
+		return m, nil
 	case "pgup":
 		m.scrollActive(-m.transcriptHeight())
 		return m, nil
@@ -564,6 +595,7 @@ func (m *liveModel) ensureBuffer(agentID string) *agentBuffer {
 	}
 	if !b.loaded && b.path != "" {
 		b.lines, b.offset, b.trunc = loadFocusTail(b.path)
+		b.info, _ = os.Stat(b.path)
 		b.loaded = true
 		b.scroll = m.bufferBottom(b)
 	}
@@ -595,8 +627,12 @@ func (m *liveModel) refreshBuffers() {
 		if b.path == "" || !b.loaded {
 			continue
 		}
-		if info, err := os.Stat(b.path); err == nil && info.Size() < b.offset {
+		// Reload when the log shrank (truncation) OR was replaced by a different
+		// file (rotation) — os.SameFile compares inode/file-index, catching a
+		// replacement even if it already grew past the old offset.
+		if info, err := os.Stat(b.path); err == nil && (info.Size() < b.offset || (b.info != nil && !os.SameFile(b.info, info))) {
 			b.lines, b.offset, b.trunc = loadFocusTail(b.path)
+			b.info, _ = os.Stat(b.path)
 			if b.follow {
 				b.scroll = m.bufferBottom(b)
 			}
@@ -838,12 +874,9 @@ func (m liveModel) renderQuestionsPane() string {
 		}
 		if selected.Status != hitl.StatusOpen {
 			b.WriteString(okStyle.Render("answer: "+selected.Answer) + "\n")
-		} else if m.mode == modeAnswerQuestion {
-			b.WriteString(warnStyle.Render("answer> ") + m.answerText + "\n")
+		} else {
+			b.WriteString(mutedStyle.Render("open this agent's tab and type the answer + Enter (or /answer " + selected.ID + " …)") + "\n")
 		}
-	}
-	if m.answerErr != "" {
-		b.WriteString(warnStyle.Render(m.answerErr))
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
@@ -853,13 +886,6 @@ func (m liveModel) selectedQuestion() *hitl.Question {
 		return nil
 	}
 	return &m.questions[m.selectedQ]
-}
-
-// previewLineBudget is how many tail lines the overview log pane shows per
-// stream, derived from the layout height (the right pane is clipped to fit
-// anyway), so the preview shows as many lines as fit rather than a hard six.
-func (m liveModel) previewLineBudget() int {
-	return clampInt((tuiHeight(m.height, defaultLiveHeight)-12)/2, 6, 30)
 }
 
 // updateHelpMode handles keys while the help overlay is open; esc/?/q/enter
@@ -884,8 +910,8 @@ func (m liveModel) renderHelp(width, height int) string {
 		"Tabs & navigation",
 		"  ↑ / ↓              switch tab (agents, then Status)",
 		"  ← / → · tab        switch tab (aliases)",
-		"  PgUp / PgDn        scroll the transcript a page",
-		"  ctrl+u / ctrl+d    scroll a half page · Home/End top/bottom",
+		"  shift+↑ / shift+↓  scroll one line",
+		"  PgUp / PgDn        scroll a page · ctrl+u/ctrl+d half · Home/End ends",
 		"",
 		"Input (always typeable)",
 		"  type + Enter       answer the active agent's open question, else",

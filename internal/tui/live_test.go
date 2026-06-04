@@ -429,6 +429,84 @@ func TestResumeStatusAndEscDetach(t *testing.T) {
 	}
 }
 
+// AF1: the active tab stays visible (with a …+N marker) when the strip overflows.
+func TestTabStripKeepsActiveTabVisible(t *testing.T) {
+	parts := make([]string, 0, 8)
+	for i := 0; i < 8; i++ {
+		parts = append(parts, fmt.Sprintf("agent%d", i))
+	}
+	model := newLiveModel(LiveOptions{Idea: testIdea("x"), Participants: parts, RunID: "r", RunDir: t.TempDir()})
+	model.width = 40
+	model.state = ProjectEvents(parts, nil, model.now)
+	model.activeTab = "agent:agent7" // far right
+	strip := stripANSI(model.renderTabStrip(40))
+	if !strings.Contains(strip, "agent7") {
+		t.Fatalf("active tab agent7 not visible in narrow strip: %q", strip)
+	}
+	if !strings.Contains(strip, "…+") {
+		t.Fatalf("expected an overflow marker in: %q", strip)
+	}
+}
+
+// AF4: shift+↑ scrolls one line and drops follow (plain ↑/↓ stay tab switches).
+func TestShiftArrowLineScroll(t *testing.T) {
+	var sb strings.Builder
+	for i := 1; i <= 100; i++ {
+		fmt.Fprintf(&sb, "line %d\n", i)
+	}
+	model := liveModelWithLog(t, sb.String())
+	if !model.buffers["codex"].follow {
+		t.Fatal("buffer should start following")
+	}
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyShiftUp})
+	model = updated.(liveModel)
+	if model.buffers["codex"].follow {
+		t.Fatal("shift+↑ must drop follow (line scroll)")
+	}
+}
+
+// AF5: slash commands route — /status switches tab, /deck records a deck steer.
+func TestSlashDeckAndStatus(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	model.inputText = "/status"
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	if model.activeTabResolved() != statusTabID {
+		t.Fatalf("/status should switch to the Status tab, got %q", model.activeTabResolved())
+	}
+	model.inputText = "/deck wrap it up"
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	queued, err := steer.List(model.opts.RunDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(queued) != 1 || queued[0].Target != "deck" || queued[0].Text != "wrap it up" {
+		t.Fatalf("/deck queued=%+v", queued)
+	}
+}
+
+// AF2: a replaced log file (different inode, grown past the old offset) reloads.
+func TestBufferReloadsOnFileReplace(t *testing.T) {
+	model := liveModelWithLog(t, "old line\n")
+	b := model.buffers["codex"]
+	if b == nil || !b.loaded {
+		t.Fatal("active buffer should be loaded")
+	}
+	path := b.path
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("fresh line one\nfresh line two\nfresh line three\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	model.refreshBuffers()
+	joined := strings.Join(model.buffers["codex"].lines, "\n")
+	if !strings.Contains(joined, "fresh line three") || strings.Contains(joined, "old line") {
+		t.Fatalf("buffer did not reload from the replaced file: %q", joined)
+	}
+}
+
 func mapByID(agents []AgentState) map[string]AgentState {
 	mapped := map[string]AgentState{}
 	for _, agent := range agents {
