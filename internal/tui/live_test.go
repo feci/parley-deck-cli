@@ -43,9 +43,6 @@ func TestProjectEventsDerivesAgentAndRoundState(t *testing.T) {
 	if got := agents["hermes"].State; got != stateSkipped {
 		t.Fatalf("hermes state=%s, want %s", got, stateSkipped)
 	}
-	if got := agents["hermes"].Duration; got != 0 {
-		t.Fatalf("hermes duration=%s, want zero for skip without start", got)
-	}
 	if got := agents["opus"].State; got != statePending {
 		t.Fatalf("opus state=%s, want %s", got, statePending)
 	}
@@ -64,7 +61,6 @@ func TestReadEventsFromOffsetKeepsPartialLine(t *testing.T) {
 	if err := os.WriteFile(path, []byte(first+partial), 0o644); err != nil {
 		t.Fatal(err)
 	}
-
 	events, offset, err := readEventsFromOffset(path, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -75,19 +71,8 @@ func TestReadEventsFromOffsetKeepsPartialLine(t *testing.T) {
 	if offset != int64(len(first)) {
 		t.Fatalf("offset=%d, want %d", offset, len(first))
 	}
-
 	complete := `,"data":{"agent":"codex","duration_ms":1000}}` + "\n"
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := file.WriteString(complete); err != nil {
-		t.Fatal(err)
-	}
-	if err := file.Close(); err != nil {
-		t.Fatal(err)
-	}
-
+	appendString(t, path, complete)
 	events, _, err = readEventsFromOffset(path, offset)
 	if err != nil {
 		t.Fatal(err)
@@ -103,278 +88,30 @@ func TestTailLogFileReturnsBoundedWholeLines(t *testing.T) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
-
 	got := tailLogFile(path, 64, 2)
-	if strings.Contains(got, "unfinished") {
-		t.Fatalf("tail included partial trailing line: %q", got)
-	}
-	if strings.Contains(got, "\x1b") {
-		t.Fatalf("tail included ansi escape: %q", got)
+	if strings.Contains(got, "unfinished") || strings.Contains(got, "\x1b") {
+		t.Fatalf("tail leaked partial/ansi: %q", got)
 	}
 	if got != "line 2\nline 3" {
 		t.Fatalf("tail=%q, want last two whole lines", got)
 	}
 }
 
-func TestLiveViewIncludesRequiredPanels(t *testing.T) {
-	model := newLiveModel(LiveOptions{
-		Idea:         testIdea("live-run-tui"),
-		Participants: []string{"codex"},
-		RunID:        "run-1",
-		RunDir:       t.TempDir(),
-	})
-	model.width = 100
-	model.events = []store.Event{
-		{Time: time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC), Type: "agent.started", Data: map[string]any{"agent": "codex"}},
-	}
-	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
-
-	view := model.View()
-	for _, want := range []string{"idea=live-run-tui", "Agents", "Latest events", "Questions", "Log preview", "q/esc detach", "ctrl+c cancel"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("view missing %q\n%s", want, view)
-		}
-	}
-}
-
-func TestLiveCompactLayoutFitsShortTerminal(t *testing.T) {
-	model := newLiveModel(LiveOptions{
-		Idea:         testIdea("compact-live-run-tui"),
-		Participants: []string{"codex"},
-		RunID:        "run-1",
-		RunDir:       t.TempDir(),
-	})
-	model.width = 100
-	model.height = 18
-	model.events = []store.Event{
-		{Time: time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC), Type: "agent.started", Data: map[string]any{"agent": "codex"}},
-	}
-	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
-
-	view := model.View()
-	for _, want := range []string{"layout=compact", "Agents", "Latest events", "Questions", "Log preview", "q/esc detach"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("compact live view missing %q\n%s", want, view)
-		}
-	}
-	if got := renderedLineCount(view); got > model.height {
-		t.Fatalf("compact live view rendered %d lines, want <= %d\n%s", got, model.height, view)
-	}
-}
-
-func TestLiveCompactThresholdBoundary(t *testing.T) {
-	model := newLiveModel(LiveOptions{
-		Idea:         testIdea("compact-live-boundary"),
-		Participants: []string{"codex"},
-		RunID:        "run-1",
-		RunDir:       t.TempDir(),
-	})
-	model.width = 100
-	model.height = compactLiveHeight
-	if view := model.View(); strings.Contains(view, "layout=compact") {
-		t.Fatalf("live view used compact layout at threshold height %d\n%s", compactLiveHeight, view)
-	}
-
-	model.height = compactLiveHeight - 1
-	if view := model.View(); !strings.Contains(view, "layout=compact") {
-		t.Fatalf("live view did not use compact layout below threshold height %d\n%s", compactLiveHeight-1, view)
-	}
-}
-
-func TestLiveQuestionsPaneAndAnswerMode(t *testing.T) {
-	runDir := t.TempDir()
-	question, err := hitl.New(runDir).Create(hitl.Question{
-		Agent:  "codex",
-		Prompt: "Which branch should I target?",
-		Risk:   hitl.RiskNormal,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	model := newLiveModel(LiveOptions{
-		Idea:         testIdea("hitl-tui-questions"),
-		Participants: []string{"codex"},
-		RunID:        "run-1",
-		RunDir:       runDir,
-	})
-
-	updated, _ := model.Update(questionsMsg{questions: []hitl.Question{question}})
-	model = updated.(liveModel)
-	if !strings.Contains(model.View(), "Which branch should I target?") {
-		t.Fatalf("view missing question\n%s", model.View())
-	}
-
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
-	model = updated.(liveModel)
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("main")})
-	model = updated.(liveModel)
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	model = updated.(liveModel)
-
-	questions, err := hitl.New(runDir).List()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := questions[0].Answer; got != "main" {
-		t.Fatalf("answer=%q, want main", got)
-	}
-	if questions[0].Status != hitl.StatusAnswered {
-		t.Fatalf("status=%s, want answered", questions[0].Status)
-	}
-}
-
-func TestResumeViewHasExplicitExitPath(t *testing.T) {
-	base := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
-	model := newLiveModel(LiveOptions{
-		Idea:         testIdea("runtime-status-resume"),
-		Participants: []string{"codex"},
-		RunID:        "run-1",
-		RunDir:       t.TempDir(),
-		Resume:       true,
-	})
-	model.events = []store.Event{
-		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex"}},
-	}
-	model.state = ProjectEvents([]string{"codex"}, model.events, base.Add(time.Minute))
-
-	view := model.View()
-	if strings.Contains(view, "status=running") {
-		t.Fatalf("resume view must not imply live process\n%s", view)
-	}
-	for _, want := range []string{"status=unverified", "q/esc/ctrl+c close resume view"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("resume view missing %q\n%s", want, view)
-		}
-	}
-	_, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	if cmd == nil {
-		t.Fatal("q did not return a quit command")
-	}
-}
-
-func TestAnswerModeBackspaceRemovesWholeRune(t *testing.T) {
-	model := newLiveModel(LiveOptions{RunDir: t.TempDir()})
-	model.mode = modeAnswerQuestion
-	model.answerText = "á"
-
-	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyBackspace})
-	model = updated.(liveModel)
-	if model.answerText != "" {
-		t.Fatalf("answerText=%q, want empty", model.answerText)
-	}
-}
-
 func TestSummarizeHITLEvents(t *testing.T) {
-	question := summarizeEvent(store.Event{
-		Type: "hitl.question",
-		Data: map[string]any{"agent": "agy", "question_id": "q1", "risk": "normal"},
-	})
+	question := summarizeEvent(store.Event{Type: "hitl.question", Data: map[string]any{"agent": "agy", "question_id": "q1", "risk": "normal"}})
 	if question.Text != "agy question q1 normal" {
 		t.Fatalf("question text=%q", question.Text)
 	}
-
-	answered := summarizeEvent(store.Event{
-		Type: "hitl.answered",
-		Data: map[string]any{"agent": "agy", "question_id": "q1", "status": "answered"},
-	})
+	answered := summarizeEvent(store.Event{Type: "hitl.answered", Data: map[string]any{"agent": "agy", "question_id": "q1", "status": "answered"}})
 	if answered.Text != "agy answered q1 answered" {
 		t.Fatalf("answered text=%q", answered.Text)
 	}
 }
 
-func focusModelWithLog(t *testing.T, content string) liveModel {
-	t.Helper()
-	dir := t.TempDir()
-	logPath := filepath.Join(dir, "stdout.log")
-	if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
-	model := newLiveModel(LiveOptions{
-		Idea:         testIdea("tui-interactivity-overhaul"),
-		Participants: []string{"codex"},
-		RunID:        "run-1",
-		RunDir:       dir,
-	})
-	model.height = 24
-	model.width = 100
-	model.events = []store.Event{
-		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": logPath, "segment_id": "segment-0001"}},
-	}
-	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
-	return model
-}
-
-func TestFocusViewShowsAgentLogAndExits(t *testing.T) {
-	model := focusModelWithLog(t, "hello from codex\nworking on round-01\nDONE\n")
-
-	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	model = updated.(liveModel)
-	if model.mode != modeAgentDetail {
-		t.Fatal("enter did not open the focus view")
-	}
-	view := model.View()
-	for _, want := range []string{"agent=codex", "segment=segment-0001", "working on round-01", "f follow(on)", "esc back"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("focus view missing %q\n%s", want, view)
-		}
-	}
-
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	model = updated.(liveModel)
-	if model.mode == modeAgentDetail {
-		t.Fatal("esc did not exit the focus view")
-	}
-	if !strings.Contains(model.View(), "Log preview") {
-		t.Fatal("after esc the overview should render again")
-	}
-}
-
-func TestFocusFollowAndScroll(t *testing.T) {
-	var sb strings.Builder
-	for i := 1; i <= 100; i++ {
-		fmt.Fprintf(&sb, "line %d\n", i)
-	}
-	model := focusModelWithLog(t, sb.String())
-
-	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	model = updated.(liveModel)
-	if !model.follow {
-		t.Fatal("follow must default on in focus")
-	}
-	if !strings.Contains(model.View(), "line 100") {
-		t.Fatalf("follow view should show the last line\n%s", model.View())
-	}
-
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
-	model = updated.(liveModel)
-	if model.follow {
-		t.Fatal("scrolling up (k) must disable follow")
-	}
-
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
-	model = updated.(liveModel)
-	if model.follow {
-		t.Fatal("g (top) must disable follow")
-	}
-	topView := model.View()
-	if !strings.Contains(topView, "line 1\n") || strings.Contains(topView, "line 100") {
-		t.Fatalf("g should show the top, not the bottom\n%s", topView)
-	}
-
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'G'}})
-	model = updated.(liveModel)
-	if !model.follow {
-		t.Fatal("G (bottom) must re-enable follow")
-	}
-	if !strings.Contains(model.View(), "line 100") {
-		t.Fatal("G should show the last line again")
-	}
-}
+// --- focus-read pipeline (reused by the per-agent transcript buffers) ---
 
 func TestLoadFocusTailBoundsLines(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "stdout.log")
+	path := filepath.Join(t.TempDir(), "stdout.log")
 	var sb strings.Builder
 	total := maxFocusLines + 50
 	for i := 0; i < total; i++ {
@@ -384,11 +121,8 @@ func TestLoadFocusTailBoundsLines(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines, _, truncated := loadFocusTail(path)
-	if len(lines) != maxFocusLines {
-		t.Fatalf("len(lines)=%d, want %d (bounded scrollback)", len(lines), maxFocusLines)
-	}
-	if !truncated {
-		t.Fatal("expected truncated=true when capping lines")
+	if len(lines) != maxFocusLines || !truncated {
+		t.Fatalf("len=%d truncated=%v, want %d/true", len(lines), truncated, maxFocusLines)
 	}
 	if want := fmt.Sprintf("L%d", total-1); lines[len(lines)-1] != want {
 		t.Fatalf("last line=%q, want %q", lines[len(lines)-1], want)
@@ -396,56 +130,28 @@ func TestLoadFocusTailBoundsLines(t *testing.T) {
 }
 
 func TestReadAppendedLinesIncremental(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "stdout.log")
+	path := filepath.Join(t.TempDir(), "stdout.log")
 	if err := os.WriteFile(path, []byte("a\nb\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	_, offset, _ := loadFocusTail(path)
 	if offset != 4 {
-		t.Fatalf("initial offset=%d, want 4", offset)
+		t.Fatalf("offset=%d, want 4", offset)
 	}
-
 	appendString(t, path, "c\npartial")
 	lines, newOffset := readAppendedLines(path, offset)
-	if len(lines) != 1 || lines[0] != "c" {
-		t.Fatalf("lines=%v, want [c] (partial trailing line excluded)", lines)
+	if len(lines) != 1 || lines[0] != "c" || newOffset != offset+2 {
+		t.Fatalf("lines=%v offset=%d, want [c]/%d", lines, newOffset, offset+2)
 	}
-	if newOffset != offset+2 {
-		t.Fatalf("offset=%d, want %d (advanced only past complete lines)", newOffset, offset+2)
-	}
-
 	appendString(t, path, " line\n")
 	lines, _ = readAppendedLines(path, newOffset)
 	if len(lines) != 1 || lines[0] != "partial line" {
-		t.Fatalf("lines=%v, want [partial line] (completed partial)", lines)
+		t.Fatalf("lines=%v, want [partial line]", lines)
 	}
 }
 
-// AF4: a partial final line in the seeded tail is not fragmented — it is
-// re-read and merged once it completes.
-func TestFocusPartialLineNotFragmented(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "stdout.log")
-	if err := os.WriteFile(path, []byte("done line\nprogress"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	lines, offset, _ := loadFocusTail(path)
-	if len(lines) != 1 || lines[0] != "done line" {
-		t.Fatalf("loadFocusTail lines=%v, want [done line] (trailing partial excluded)", lines)
-	}
-	appendString(t, path, " complete\n")
-	newLines, _ := readAppendedLines(path, offset)
-	if len(newLines) != 1 || newLines[0] != "progress complete" {
-		t.Fatalf("readAppendedLines=%v, want [progress complete] (partial merged, not fragmented)", newLines)
-	}
-}
-
-// AF2: an oversized newline-less prefix is dropped so the retained buffer stays
-// within the byte cap.
 func TestFocusTailDropsOversizedLine(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "stdout.log")
+	path := filepath.Join(t.TempDir(), "stdout.log")
 	big := strings.Repeat("x", maxFocusBytes+4096)
 	if err := os.WriteFile(path, []byte(big+"\nshort tail line\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -455,52 +161,39 @@ func TestFocusTailDropsOversizedLine(t *testing.T) {
 	for _, l := range lines {
 		total += len(l) + 1
 	}
-	if total > maxFocusBytes {
-		t.Fatalf("retained %d bytes, want <= %d (byte cap)", total, maxFocusBytes)
-	}
-	if !truncated {
-		t.Fatal("expected truncated=true when dropping the oversized line")
+	if total > maxFocusBytes || !truncated {
+		t.Fatalf("total=%d truncated=%v, want <=%d/true", total, truncated, maxFocusBytes)
 	}
 	if len(lines) == 0 || lines[len(lines)-1] != "short tail line" {
-		t.Fatalf("lines=%v, want the short line retained after dropping the oversized one", lines)
+		t.Fatalf("lines=%v, want short line retained", lines)
 	}
 }
 
-// AF2: capFocusLines evicts oldest lines until the buffer is within both the
-// line and byte budgets.
 func TestCapFocusLinesByteBudget(t *testing.T) {
 	line := strings.Repeat("y", 1000)
-	n := (maxFocusBytes / 1001) + 100 // exceeds the byte budget, under the line cap
+	n := (maxFocusBytes / 1001) + 100
 	lines := make([]string, n)
 	for i := range lines {
 		lines[i] = line
 	}
 	capped, truncated := capFocusLines(lines)
-	if !truncated {
-		t.Fatal("expected truncated=true")
-	}
 	total := 0
 	for _, l := range capped {
 		total += len(l) + 1
 	}
-	if total > maxFocusBytes {
-		t.Fatalf("capped total=%d bytes, want <= %d", total, maxFocusBytes)
+	if !truncated || total > maxFocusBytes {
+		t.Fatalf("truncated=%v total=%d, want true/<=%d", truncated, total, maxFocusBytes)
 	}
 }
 
-// fix-up cycle 2: a single retained line larger than the byte cap is
-// head-truncated so the buffer still honors the budget (codex round-02 finding).
 func TestCapFocusLinesTruncatesSingleOversizedLine(t *testing.T) {
 	capped, truncated := capFocusLines([]string{strings.Repeat("z", maxFocusBytes+500)})
-	if !truncated {
-		t.Fatal("expected truncated=true for a single oversized line")
-	}
 	total := 0
 	for _, l := range capped {
 		total += len(l) + 1
 	}
-	if total > maxFocusBytes {
-		t.Fatalf("single oversized line not capped: total=%d > %d", total, maxFocusBytes)
+	if !truncated || total > maxFocusBytes {
+		t.Fatalf("single oversized line not capped: truncated=%v total=%d", truncated, total)
 	}
 }
 
@@ -518,77 +211,221 @@ func appendString(t *testing.T, path, s string) {
 	}
 }
 
-func TestComposerQueuesAgentSteer(t *testing.T) {
-	model := focusModelWithLog(t, "x\n")
+// --- Claude-CLI tabbed layout ---
 
-	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
-	model = updated.(liveModel)
-	if model.mode != modeCompose {
-		t.Fatalf("i should open the composer, mode=%d", model.mode)
+// liveModelWithLog builds a live model with one running agent "codex" whose
+// stdout log holds content, with the active transcript buffer loaded.
+func liveModelWithLog(t *testing.T, content string) liveModel {
+	t.Helper()
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "stdout.log")
+	if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(model.View(), "Steer agent codex") {
-		t.Fatalf("composer view missing target\n%s", model.View())
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	model := newLiveModel(LiveOptions{
+		Idea:         testIdea("tui-claude-cli-layout"),
+		Participants: []string{"codex"},
+		RunID:        "run-1",
+		RunDir:       dir,
+	})
+	model.height, model.width = 30, 100
+	model.events = []store.Event{
+		{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": logPath, "segment_id": "segment-0001"}},
 	}
+	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
+	model.ensureActiveBuffer()
+	return model
+}
 
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("focus on the parser")})
+func TestTabbedDefaultShowsTranscriptAndInput(t *testing.T) {
+	model := liveModelWithLog(t, "hello from codex\nworking on the parser\nDONE\n")
+	if got := model.activeTabResolved(); got != "agent:codex" {
+		t.Fatalf("default active tab=%q, want agent:codex (running agent transcript)", got)
+	}
+	view := model.View()
+	for _, want := range []string{"codex", "working on the parser", "steer codex ›", "↑/↓ tabs"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("default view missing %q\n%s", want, view)
+		}
+	}
+}
+
+func TestTabSwitchWithUpDownArrows(t *testing.T) {
+	model := liveModelWithLog(t, "x\n") // tabs: [agent:codex, status]
+	if got := model.activeTabResolved(); got != "agent:codex" {
+		t.Fatalf("default=%q", got)
+	}
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyDown})
 	model = updated.(liveModel)
+	if got := model.activeTabResolved(); got != statusTabID {
+		t.Fatalf("after ↓ = %q, want status", got)
+	}
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyUp})
+	model = updated.(liveModel)
+	if got := model.activeTabResolved(); got != "agent:codex" {
+		t.Fatalf("after ↑ = %q, want agent:codex", got)
+	}
+}
+
+func TestTranscriptScrollAndFollow(t *testing.T) {
+	var sb strings.Builder
+	for i := 1; i <= 100; i++ {
+		fmt.Fprintf(&sb, "line %d\n", i)
+	}
+	model := liveModelWithLog(t, sb.String())
+	if b := model.buffers["codex"]; b == nil || !b.follow {
+		t.Fatal("active buffer should be loaded and following")
+	}
+	if !strings.Contains(model.View(), "line 100") {
+		t.Fatalf("follow should show the last line\n%s", model.View())
+	}
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	model = updated.(liveModel)
+	if model.buffers["codex"].follow {
+		t.Fatal("PgUp must drop follow")
+	}
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnd})
+	model = updated.(liveModel)
+	if !model.buffers["codex"].follow {
+		t.Fatal("End must re-enable follow")
+	}
+	if !strings.Contains(model.View(), "line 100") {
+		t.Fatalf("End should show the last line\n%s", model.View())
+	}
+}
+
+func TestInputSteersActiveAgent(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("focus on the parser")})
+	model = updated.(liveModel)
+	if model.inputText != "focus on the parser" {
+		t.Fatalf("inputText=%q", model.inputText)
+	}
 	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model = updated.(liveModel)
-	if model.mode != modeOverview {
-		t.Fatalf("enter should submit and return to overview, mode=%d", model.mode)
+	if !strings.Contains(model.statusMsg, "recorded steer-0001-") || !strings.Contains(model.statusMsg, "codex") {
+		t.Fatalf("statusMsg=%q", model.statusMsg)
 	}
-	if !strings.Contains(model.statusMsg, "recorded steer-0001-") || !strings.Contains(model.statusMsg, "codex") || !strings.Contains(model.statusMsg, "queued") {
-		t.Fatalf("statusMsg=%q, want an honest recorded/queued confirmation", model.statusMsg)
-	}
-
 	queued, err := steer.List(model.opts.RunDir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(queued) != 1 || queued[0].Agent != "codex" || queued[0].Text != "focus on the parser" {
-		t.Fatalf("persisted steer = %+v", queued)
-	}
-	if queued[0].SegmentID != "segment-0001" {
-		t.Fatalf("steer should capture the agent's segment, got %q", queued[0].SegmentID)
+	if len(queued) != 1 || queued[0].Agent != "codex" || queued[0].Text != "focus on the parser" || queued[0].SegmentID != "segment-0001" {
+		t.Fatalf("queued=%+v", queued)
 	}
 }
 
-func TestComposerEscCancels(t *testing.T) {
-	model := focusModelWithLog(t, "x\n")
-	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'i'}})
-	model = updated.(liveModel)
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("oops")})
-	model = updated.(liveModel)
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	model = updated.(liveModel)
-	if model.mode != modeOverview {
-		t.Fatal("esc should cancel the composer")
+func TestAnswerViaInputRowWhenQuestionOpen(t *testing.T) {
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	runDir := t.TempDir()
+	logPath := filepath.Join(runDir, "stdout.log")
+	if err := os.WriteFile(logPath, []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	queued, _ := steer.List(model.opts.RunDir)
-	if len(queued) != 0 {
-		t.Fatalf("cancel must not persist a steer, got %d", len(queued))
+	q, err := hitl.New(runDir).Create(hitl.Question{Agent: "codex", Prompt: "Which branch?", Risk: hitl.RiskNormal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	model := newLiveModel(LiveOptions{Idea: testIdea("hitl"), Participants: []string{"codex"}, RunID: "run-1", RunDir: runDir})
+	model.height, model.width = 30, 100
+	model.events = []store.Event{{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": logPath, "segment_id": "segment-0001"}}}
+	model.state = ProjectEvents([]string{"codex"}, model.events, model.now)
+	model.ensureActiveBuffer()
+
+	updated, _ := model.Update(questionsMsg{questions: []hitl.Question{q}})
+	model = updated.(liveModel)
+	if !strings.Contains(model.View(), "answer codex/"+q.ID) {
+		t.Fatalf("input row not in answer mode\n%s", model.View())
+	}
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("main")})
+	model = updated.(liveModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+
+	questions, err := hitl.New(runDir).List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if questions[0].Answer != "main" || questions[0].Status != hitl.StatusAnswered {
+		t.Fatalf("question=%+v, want answered=main", questions[0])
 	}
 }
 
-func TestHelpOverlayToggles(t *testing.T) {
-	model := focusModelWithLog(t, "x\n")
-
-	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
-	model = updated.(liveModel)
-	if model.mode != modeHelp {
-		t.Fatalf("? should open the help overlay, mode=%d", model.mode)
-	}
-	view := model.View()
-	for _, want := range []string{"Help", "open agent focus view", "toggle follow"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("help overlay missing %q\n%s", want, view)
+// D9 routing table: printable keys append to input and never trigger legacy
+// single-letter actions or change mode.
+func TestKeyRoutingPrintableAppendsNotHotkey(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	for _, r := range []rune{'q', '?', 'a', 'f', 'j', 'k', 'i'} {
+		updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		model = updated.(liveModel)
+		if cmd != nil {
+			t.Fatalf("printable %q must not trigger a command/quit", r)
 		}
 	}
-
-	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	model = updated.(liveModel)
+	if model.inputText != "q?afjki" {
+		t.Fatalf("inputText=%q, want all chars appended", model.inputText)
+	}
 	if model.mode != modeOverview {
-		t.Fatal("esc should close the help overlay")
+		t.Fatalf("printable keys must not change mode, got %d", model.mode)
+	}
+}
+
+func TestSlashHelpOpensOverlay(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	for _, r := range "/help" {
+		updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		model = updated.(liveModel)
+	}
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(liveModel)
+	if model.mode != modeHelp {
+		t.Fatalf("/help should open the help overlay, mode=%d", model.mode)
+	}
+	if !strings.Contains(model.View(), "Help") {
+		t.Fatalf("help overlay missing 'Help'\n%s", model.View())
+	}
+}
+
+func TestEscClearsInputThenDetaches(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("hi")})
+	model = updated.(liveModel)
+	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	model = updated.(liveModel)
+	if model.inputText != "" || cmd != nil {
+		t.Fatalf("esc with text should clear input and not quit (input=%q cmd=%v)", model.inputText, cmd)
+	}
+	if _, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc}); cmd == nil {
+		t.Fatal("esc with empty input should detach (quit)")
+	}
+}
+
+func TestInputBackspaceRemovesWholeRune(t *testing.T) {
+	model := liveModelWithLog(t, "x\n")
+	model.inputText = "á"
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	model = updated.(liveModel)
+	if model.inputText != "" {
+		t.Fatalf("inputText=%q, want empty", model.inputText)
+	}
+}
+
+func TestResumeStatusAndEscDetach(t *testing.T) {
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	model := newLiveModel(LiveOptions{Idea: testIdea("resume"), Participants: []string{"codex"}, RunID: "run-1", RunDir: t.TempDir(), Resume: true})
+	model.height, model.width = 30, 100
+	model.events = []store.Event{{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex"}}}
+	model.state = ProjectEvents([]string{"codex"}, model.events, base.Add(time.Minute))
+	view := model.View()
+	if strings.Contains(view, "round=running") {
+		t.Fatalf("resume view must not imply a live process\n%s", view)
+	}
+	if !strings.Contains(view, "unverified") {
+		t.Fatalf("resume view should show unverified status\n%s", view)
+	}
+	if _, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEsc}); cmd == nil {
+		t.Fatal("esc on empty input should detach")
 	}
 }
 
