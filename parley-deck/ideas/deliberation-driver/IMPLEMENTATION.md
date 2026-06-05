@@ -1,6 +1,6 @@
 ---
 idea: deliberation-driver
-status: implemented
+status: fix-up-cycle-1
 implementer: claude
 started: 2026-06-05
 completed: 2026-06-05
@@ -73,18 +73,45 @@ brief asked for is realized as the second `round.completed` + its segment-start.
 
 ## Deviations from FINAL.md
 
-- **Round≥2 completeness check uses `responding-to` presence, NOT per-agent
-  `### @<other>` headings.** FINAL D4 listed a stricter driver-side check
-  requiring a `### @<participant>` heading for every other participant. But the
-  runner's built-in cross-review prompt (`runner.BuildRoundPrompt`) instructs
-  agents to write a single `## Responses to other participants` section with
-  `responding-to` frontmatter — it does NOT produce per-agent `### @` headings.
-  Requiring those headings would reject valid runner output and block promotion in
-  the real run. The driver therefore gates round≥2 on
-  `runner.ValidateRoundArtifact` (frontmatter agent/idea/round + a `## ` heading)
-  plus `responding-to` presence — both of which the runner actually produces. The
-  stricter per-agent-heading check is dropped. Flag for reviewers: confirm this is
-  the right call vs. changing the runner prompt to emit `### @` headings.
+- **(RESOLVED in fix-up cycle 1, AF2)** Slice 1 initially weakened the round≥2 gate
+  to `responding-to` presence because the runner prompt did not emit per-agent
+  headings. Per review consensus AF2 this was reversed: `runner.BuildRoundPrompt`
+  now requires a `### @<other participant>` subsection for each other participant,
+  and the driver re-enforces the full D4 check (`### @<other>` heading for every
+  other participant + `responding-to`). No remaining deviation from D4.
+
+## Fix-up cycle 1 (Phase 8)
+
+status: complete
+head-commit: see-branch-tip
+
+Applied the Phase 7 review-consensus agreed fixes (review/consensus.md):
+
+- **AF1 — Atomic driver.lock** (`loop.go`): `acquireLock` now creates the lock
+  with `os.OpenFile(O_CREATE|O_EXCL|O_WRONLY)`, refuses if held by this PID or a
+  live PID, reclaims only a different dead PID, and releases only when the file
+  still carries our token. New `TestAcquireLockIsExclusive` (8 goroutines race →
+  exactly one holder).
+- **AF2 — Restore D4 cross-review gate**: `runner.BuildRoundPrompt` emits a
+  `### @<other>` subsection per other participant; `driver.validateCrossReviewBody`
+  enforces it for round≥2; `terminalRoundEvent` now matches idea+round (codex OQ).
+  New `TestRound02RequiresCrossReviewHeadings`; fake artifacts carry the headings.
+- **AF3 — Durable escalation** (`loop.go`): generalized `escalateDeadline` into
+  `escalate(cursor, topic, body)` writing a blocking inbox note; `Run` routes
+  `Advance` errors (malformed event log, runner failure) through it instead of
+  stderr-only.
+- **AF4 — Robust per-tick transport** (`transport.go`, `driver.go`):
+  `EffectiveTransport` global fallback now uses `protocol.ReadWorkspaceStatus`
+  (tolerates no-backtick `**Transport:** local-dir`); `Config.AutoLocalDir` was
+  replaced by `Root`+`Auto` and `Advance` re-reads the effective transport from
+  disk every tick (D8). New `TestAdvanceSurfaceOnlyWhenTransportNotLocalDir`.
+
+Checks after fix-up: `go build ./...`, `go vet ./...`, `go test ./...` — all green.
+**Real-run acceptance re-verified** (`/tmp/dd-accept2`): with the AF2 prompt change,
+codex and agy each wrote a valid `round-02/<id>.md` carrying a `### @<other>`
+heading (codex→@agy, agy→@codex), the stricter D4 gate promoted to round-02,
+status=`round-02`, and the driver stopped at the consensus boundary. The
+strengthen-the-prompt-then-enforce approach works with live agents.
 - **Slice scope:** only the round phase is driven (D15). Consensus/final/impl gates
   (D6/D7), the `internal/signoffs` extraction (D9), and MaxRounds reopen (D11) are
   later slices (S2–S5 in FINAL.md); `Advance` returns `surface-only` once the cursor

@@ -1,37 +1,28 @@
 package driver
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"parley-deck-cli/internal/protocol"
 )
 
 // EffectiveTransport returns the transport governing this idea: the idea-level
 // `transport:` in 00-prompt.md if present, else the project COOPERATION.md global
 // (consensus D8). Returns "" if neither is found. This is why a local-dir idea
 // can run inside an otherwise github-pr project without auto-driving the project.
+// The global is read via protocol.ReadWorkspaceStatus, whose parser tolerates the
+// `**Transport:** local-dir` (no-backtick) Markdown variation.
 func EffectiveTransport(ideaDir, root string) string {
 	if t, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "transport"); ok {
 		if n := normalizeTransport(t); n != "" {
 			return n
 		}
 	}
-	// COOPERATION.md is two levels up from …/ideas/<slug>.
-	for _, candidate := range []string{
-		filepath.Join(ideaDir, "..", "..", "COOPERATION.md"),
-		filepath.Join(root, "parley-deck", "COOPERATION.md"),
-	} {
-		data, err := os.ReadFile(candidate)
-		if err != nil {
-			continue
-		}
-		for _, line := range strings.Split(string(data), "\n") {
-			if strings.Contains(line, "Transport:") {
-				if n := normalizeTransport(backtickValue(line)); n != "" {
-					return n
-				}
-			}
+	if status, err := protocol.ReadWorkspaceStatus(root); err == nil {
+		if n := normalizeTransport(status.Transport); n != "" {
+			return n
 		}
 	}
 	return ""
@@ -50,23 +41,10 @@ func ReadCrossReviewRounds(ideaDir string) int {
 }
 
 func normalizeTransport(raw string) string {
-	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), "`'\" "))
+	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), "`'\"* "))
 	switch v {
 	case "local-dir", "github-pr", "gitlab-mr":
 		return v
 	}
 	return ""
-}
-
-func backtickValue(line string) string {
-	start := strings.Index(line, "`")
-	if start < 0 {
-		return ""
-	}
-	rest := line[start+1:]
-	end := strings.Index(rest, "`")
-	if end < 0 {
-		return ""
-	}
-	return rest[:end]
 }

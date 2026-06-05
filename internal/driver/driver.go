@@ -39,10 +39,11 @@ type Config struct {
 	IdeaSlug          string      // idea slug (for artifact validation + events)
 	Participants      []string    // expected participant set (00-prompt participants)
 	RunDir            string      // …/runs/<runID> (cursor + lock live here)
+	Root              string      // workspace root (for per-tick transport read, D8)
 	Events            store.Store // run event store (Append + Load events.jsonl)
 	CrossReviewRounds int         // default 1 (one independent + N cross-review rounds)
 	MaxRounds         int         // circuit breaker, default 4
-	AutoLocalDir      bool        // --auto AND effective transport == local-dir
+	Auto              bool        // --auto flag; transport is read from disk per tick
 	Out               io.Writer   // progress output (nil → discard)
 }
 
@@ -68,6 +69,12 @@ func New(cfg Config, r RoundRunner) *Driver {
 
 func (d *Driver) cursorPath() string { return filepath.Join(d.cfg.RunDir, "driver.json") }
 
+// autoLocalDir re-reads the effective transport from disk (D8): auto-advance is
+// enabled only with --auto AND an effective transport of local-dir.
+func (d *Driver) autoLocalDir() bool {
+	return d.cfg.Auto && EffectiveTransport(d.cfg.IdeaDir, d.cfg.Root) == "local-dir"
+}
+
 // Advance performs ONE re-entrant, idempotent tick. Disk is authoritative: it
 // rebuilds the cursor from disk, then runs at most one gated action. Every branch
 // is a no-op when its output already exists, so a duplicated tick or crash-restart
@@ -75,8 +82,9 @@ func (d *Driver) cursorPath() string { return filepath.Join(d.cfg.RunDir, "drive
 func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	c := Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds)
 
-	// Transport/auto gate, re-evaluated every tick (consensus D8).
-	if !d.cfg.AutoLocalDir {
+	// Transport/auto gate, re-read from disk every tick (consensus D8) so a
+	// mid-run transport change in 00-prompt.md/COOPERATION.md is honored.
+	if !d.autoLocalDir() {
 		return ActionSurfaceOnly, c, nil
 	}
 	// Slice 1 drives only the round phase; consensus/final are later slices.
@@ -138,10 +146,17 @@ func (d *Driver) roundComplete(round int) (bool, error) {
 		if err := runner.ValidateRoundArtifact(artifact, participant, d.cfg.IdeaSlug, round); err != nil {
 			return false, nil // present but not yet valid → incomplete, not an error
 		}
-		if round >= 2 && !hasRespondingTo(artifact) {
-			// Runner's cross-review prompt requires responding-to frontmatter; its
-			// absence means the artifact is not a real cross-review response yet.
-			return false, nil
+		if round >= 2 {
+			// D4 cross-review evidence: responding-to frontmatter AND a per-agent
+			// `### @<other>` heading for every other participant (the runner's
+			// BuildRoundPrompt now emits these). Absence → not a real cross-review
+			// response yet → incomplete.
+			if !hasRespondingTo(artifact) {
+				return false, nil
+			}
+			if err := validateCrossReviewBody(artifact, participant, d.cfg.Participants); err != nil {
+				return false, nil
+			}
 		}
 	}
 	terminal, err := d.terminalRoundEvent(label)
@@ -187,9 +202,15 @@ func (d *Driver) terminalRoundEvent(label string) (string, error) {
 		if e.Type != "round.completed" && e.Type != "round.incomplete" {
 			continue
 		}
-		if r, _ := e.Data["round"].(string); r == label {
-			terminal = e.Type
+		if r, _ := e.Data["round"].(string); r != label {
+			continue
 		}
+		// D4: the terminal event is scoped to idea+round. Tolerate a missing idea
+		// field (older events) but reject a mismatching one.
+		if idea, _ := e.Data["idea"].(string); idea != "" && idea != d.cfg.IdeaSlug {
+			continue
+		}
+		terminal = e.Type
 	}
 	return terminal, nil
 }
@@ -197,6 +218,25 @@ func (d *Driver) terminalRoundEvent(label string) (string, error) {
 func hasRespondingTo(path string) bool {
 	_, ok := readFrontmatterField(path, "responding-to")
 	return ok
+}
+
+// validateCrossReviewBody enforces the D4 cross-review evidence: the artifact must
+// contain a `### @<other>` heading for every other active participant.
+func validateCrossReviewBody(path, agent string, participants []string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	body := string(data)
+	for _, other := range participants {
+		if other == agent {
+			continue
+		}
+		if !strings.Contains(body, "### @"+other) {
+			return fmt.Errorf("%s missing cross-review heading ### @%s", path, other)
+		}
+	}
+	return nil
 }
 
 // setIdeaStatus rewrites the status: field in the idea 00-prompt.md frontmatter

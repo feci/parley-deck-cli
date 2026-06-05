@@ -614,6 +614,16 @@ func gatherPriorRounds(ideaPath string, round int) (string, error) {
 // 1, participants are given every prior-round artifact and asked to respond to
 // each other and converge toward consensus.
 func BuildRoundPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round int, outputPath, questionsDir, prior string) string {
+	others := make([]string, 0, len(idea.Participants))
+	for _, p := range idea.Participants {
+		if p != agent.ID {
+			others = append(others, p)
+		}
+	}
+	var headings strings.Builder
+	for _, other := range others {
+		fmt.Fprintf(&headings, "### @%s\n", other)
+	}
 	return fmt.Sprintf(`You are %s, a participant in a Parley Deck cross-review round %d.
 
 Rules:
@@ -622,6 +632,7 @@ Rules:
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
 - READ every prior-round artifact below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus.
+- Under "## Responses to other participants", you MUST include one "### @<agent-id>" subsection for EACH other participant (%s) and address that participant specifically.
 - Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
 - If you are blocked by missing human input, create one JSON question file under: %s
 - Be concrete, concise, and state trade-offs.
@@ -637,12 +648,12 @@ responding-to: [prior round artifacts]
 
 ## Summary
 ## Responses to other participants
-## Refined position
+%s## Refined position
 ## Remaining disagreements
 
 Prior rounds (read these):
 %s
-`, agent.ID, round, outputPath, questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), prior)
+`, agent.ID, round, outputPath, strings.Join(others, ", "), questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), headings.String(), prior)
 }
 
 func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {

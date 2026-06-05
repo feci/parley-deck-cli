@@ -1661,15 +1661,15 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		// only) under --auto AND local-dir transport. Round-01 must have succeeded.
 		// Non-auto keeps today's one-shot behavior.
 		if *auto && !failed {
-			transport := driver.EffectiveTransport(created.Idea.Path, *root)
 			d := driver.New(driver.Config{
 				IdeaDir:           created.Idea.Path,
 				IdeaSlug:          created.Idea.Slug,
 				Participants:      created.Idea.Participants,
 				RunDir:            created.RunDir,
+				Root:              *root,
 				Events:            runOpts.Store,
 				CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
-				AutoLocalDir:      transport == "local-dir",
+				Auto:              *auto,
 				Out:               stdout,
 			}, driver.NewRunnerAdapter(runOpts))
 			if err := d.Run(runCtx); err != nil {
