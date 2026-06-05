@@ -167,8 +167,29 @@ adapter) with far less churn than moving the 856-line
 `consensus_request_signoffs.go`. The extraction can still happen later if the
 adapter grows; the interface seam is the minimum needed for the gate.
 
-**Slice 2.2 (PENDING): the app-side `ConsensusOps` adapter + live wiring.** Needs
-real agent-launch code that does not exist yet: a consensus-content drafter and a
-FINAL-content drafter (consensus.Draft/Finalize only scaffold), plus reusing the
-existing request-signoffs path. Then wire `runTask` to pass `Consensus` and a live
-multi-agent acceptance run through consensus→final. Deferred to the next checkpoint.
+**Slice 2.2 (DONE): the app-side `ConsensusOps` adapter + live wiring.**
+`internal/app/driver_consensus.go` implements `driver.ConsensusOps`:
+- `Draft` — `consensus.Draft` (scaffold + status=consensus) then a drafter agent
+  (`runHeadlessSignoffAgent` + `buildConsensusDraftPrompt`) authors the real
+  synthesis into consensus.md.
+- `RequestSignoffs` — reuses `requestConsensusSignoffs` (existing path) for the
+  missing signers.
+- `DraftFinal` — `consensus.Finalize` (scaffold + status=final) then a drafter
+  agent authors the real FINAL content.
+- `Reopen` — `consensus.Reopen`.
+`runTask` now passes `Consensus: newDriverConsensusOps(...)` so `parley run --auto
+--no-tui` (local-dir) auto-drives the consensus phase. The driver still imports only
+`internal/runner`+`internal/store`+`internal/consensus` — never `internal/app` (the
+adapter is injected).
+
+**Live acceptance (PASS, `/tmp/dd-s2`):** `parley run --auto --no-tui --participants
+codex,agy` on a fresh local-dir workspace drove a one-line task ALL THE WAY to final
+with zero human input: round-01 → round-02 → drafted consensus.md (via codex) →
+requested signoffs (codex AND agy both ✅ ACCEPT) → authored FINAL.md (1257 bytes,
+populated `## Final plan / specification`, passed the D7 non-scaffold check) →
+`00-prompt.md` status=`final`. No escalations. Driver log:
+`driver: opened round-02 … drafted consensus.md … requested missing consensus
+signoffs … authored FINAL.md; idea … is final`.
+
+Remaining (FINAL S4–S5, deferred): PhaseFinal→RunImplementation, PhaseImpl→
+RunReviewRound + fix-up loop, `runContinue --auto` executes the next action.
