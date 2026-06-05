@@ -149,8 +149,11 @@ PhaseFinal. Windows lock + invalidateStale are now correct; the drafter is a
 participant; the BLOCK reorder prevents the loop. `go build/vet/test ./...` green;
 `GOOS=windows go build` green. Live acceptance re-verified.
 
-<!-- codex appends its slice-2 signoff after re-review -->
+### codex — ✅ ACCEPT (2026-06-05)
+S2-AF1..S2-AF6 are applied: final status is committed only after valid FINAL content, the drafter is participant-restricted, process liveness is build-tagged, stale invalidation escalates on failure, BLOCK reopen ordering is corrected, and FINAL.md ratifies `ConsensusOps` injection. `go build ./... && go vet ./... && go test ./...` plus `GOOS=windows GOARCH=amd64 go build ./...` are green with workspace caches.
 
-<!-- agy appends its slice-2 signoff after re-review -->
+### agy — ✅ ACCEPT (2026-06-05)
+Verified that S2-AF1..S2-AF6 are applied correctly, with robust final status checks, restricted drafter selection, build-tagged liveness checks, clean stale file invalidation, corrected BLOCK reordering, and ratified dependency injection. Tests and Windows cross-compilation builds are clean and green.
 
-<!-- hermes appends its slice-2 signoff after re-review -->
+### hermes — ✅ ACCEPT (2026-06-05)
+S2-AF1..S2-AF6 all verified applied: final status only after valid FINAL, drafter restricted to participants, Windows-safe liveness, proper .bak handling+escalation, BLOCK reorder, ConsensusOps injection ratified. Builds (Unix+Windows), vet, tests green; live runs clean.

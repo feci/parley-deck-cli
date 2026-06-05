@@ -1,6 +1,6 @@
 ---
 idea: deliberation-driver
-status: slice-2-in-progress
+status: complete
 implementer: claude
 started: 2026-06-05
 completed: 2026-06-05
@@ -222,3 +222,13 @@ case, `TestFirstHeadlessAgentRestrictedToParticipants` (app). `go build/vet/test
 task round→consensus→signoffs(both ✅)→FINAL→status=final, zero escalations; and an
 intermediate run proved the S2-AF1 safety path (a placeholder FINAL was refused, status
 left at consensus, blocking escalation written — not stranded at final).
+
+## Phase 8 complete (slice 2) — 2026-06-05
+
+Slice-2 fix-up cycle 1 re-review: codex, agy, hermes all signed ✅ ACCEPT
+(review/consensus.md "Slice 2 review (cycle 2)" + review/round-04/). Zero remaining
+agreed fixes. **Slice 2 (consensus auto-drive) is complete and proven**: `parley run
+--auto --no-tui` (local-dir) now drives a deliberation round → cross-review →
+consensus draft → signoffs → FINAL → status=final with zero human input, with safe
+escalation when an agent produces unacceptable content. Remaining: FINAL S4–S5
+(implementation + review-phase auto-drive), deferred.
