@@ -1,6 +1,6 @@
 ---
 idea: deliberation-driver
-status: fix-up-cycle-1
+status: complete
 implementer: claude
 started: 2026-06-05
 completed: 2026-06-05
@@ -132,3 +132,11 @@ strengthen-the-prompt-then-enforce approach works with live agents.
 - The driver imports `internal/runner` + `internal/store` only — never
   `internal/app` (the D9 extraction is deferred with the signoff slice, which
   slice 1 does not need).
+
+## Phase 8 complete (slice 1) — 2026-06-05
+
+Fix-up cycle 1 re-review: codex, agy, hermes all signed ✅ ACCEPT (review/consensus.md
++ review/round-02/). Zero remaining agreed fixes. **Slice 1 (round-phase driver) is
+complete**: the months-long round-01 stall is fixed and proven with live agents.
+Later slices S2–S5 (consensus→final→impl→review auto-drive + internal/signoffs
+extraction) remain as scoped follow-ups per FINAL.md.

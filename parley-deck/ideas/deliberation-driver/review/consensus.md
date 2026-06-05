@@ -76,8 +76,11 @@ emit per-agent `### @` evidence and enforce D4 rather than weakening the gate; A
 makes the transport gate robust and D8-compliant. Implementing all four in fix-up
 cycle 1.
 
-<!-- codex appends its signoff after re-review -->
+### codex — ✅ ACCEPT (2026-06-05)
+AF1-AF4 are correctly applied: the driver lock is atomic and token-owned, the D4 cross-review gate is restored, driver errors create durable inbox escalations, and transport is re-read per tick through the protocol status path. `go build ./... && go vet ./... && go test ./...` is green with the requested cache settings.
 
-<!-- agy appends its signoff after re-review -->
+### agy — ✅ ACCEPT (2026-06-05)
+AF1-AF4 are correctly applied: lock acquisition is atomic, the D4 cross-review gate is restored with per-agent subheadings, driver/runner failures produce durable inbox escalations, and the transport is dynamically evaluated per tick. Build, vet, and all tests (including new concurrency/transport coverage) are green.
 
-<!-- hermes appends its signoff after re-review -->
+### hermes — ✅ ACCEPT (2026-06-05)
+AF1–AF4 correctly applied (atomic lock, D4 cross-review gate+headings, durable escalate on errors, per-tick protocol transport); build/vet/tests green.
