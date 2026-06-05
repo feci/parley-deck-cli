@@ -72,9 +72,8 @@ The roster is project-specific. Maintain it as a table here:
 | -------------- | ----------------------------------- | ------------- |
 | `codex`        | `parley-deck/`                      | `participant` |
 | `claude`       | `parley-deck/`                      | `participant` |
-| `agy`          | `parley-deck/`                      | `participant` |
+| `agy`          | `parley-deck/`                      | `participant` (Gemini-family, model `Gemini 3.5 Flash (High)`) |
 | `hermes`       | `parley-deck/`                      | `participant` |
-| `gemini`       | `parley-deck/`                      | `inactive legacy` |
 
 **Local launch config (optional, gitignored):** Individual machines may keep
 `parley-deck/meta/headless-agents.local.json` with CLI launch settings for the
@@ -91,7 +90,6 @@ In transports B and C, each agent should also have a corresponding host account 
 | `claude`       | not mapped     |
 | `agy`          | not mapped     |
 | `hermes`       | not mapped     |
-| `gemini`       | not mapped (legacy) |
 
 When a new agent joins:
 
