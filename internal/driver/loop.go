@@ -51,16 +51,28 @@ func (d *Driver) Run(ctx context.Context) error {
 		case ActionPromoted:
 			fmt.Fprintf(d.cfg.Out, "driver: opened %s (idea status=%s)\n", roundLabel(c.CurrentRound), c.IdeaStatus)
 			deadline = time.Now().Add(roundDeadline)
+		case ActionConsensusDrafted:
+			fmt.Fprintf(d.cfg.Out, "driver: drafted consensus.md for %s\n", d.cfg.IdeaSlug)
+			deadline = time.Now().Add(roundDeadline)
+		case ActionSignoffsRequested:
+			fmt.Fprintf(d.cfg.Out, "driver: requested missing consensus signoffs\n")
+			deadline = time.Now().Add(roundDeadline)
+		case ActionReopened:
+			fmt.Fprintf(d.cfg.Out, "driver: consensus blocked — reopened %s (idea status=%s)\n", roundLabel(c.CurrentRound), c.IdeaStatus)
+			deadline = time.Now().Add(roundDeadline)
 		case ActionAwait:
 			if time.Now().After(deadline) {
 				return d.escalateDeadline(c)
 			}
 			time.Sleep(2 * time.Second)
+		case ActionFinalized:
+			fmt.Fprintf(d.cfg.Out, "driver: authored FINAL.md; idea %s is final (implementation auto-drive is a later slice)\n", d.cfg.IdeaSlug)
+			return nil
 		case ActionConsensus:
-			fmt.Fprintf(d.cfg.Out, "driver: cross-review complete at %s; next step is `parley consensus draft %s` (consensus auto-drive is a later slice)\n", roundLabel(c.CurrentRound), d.cfg.IdeaSlug)
+			fmt.Fprintf(d.cfg.Out, "driver: cross-review complete at %s; next step is `parley consensus draft %s` (consensus auto-drive not wired)\n", roundLabel(c.CurrentRound), d.cfg.IdeaSlug)
 			return nil
 		case ActionSurfaceOnly:
-			fmt.Fprintf(d.cfg.Out, "driver: auto-advance not enabled here (needs --auto and local-dir transport, round phase); idea left at %s\n", c.IdeaStatus)
+			fmt.Fprintf(d.cfg.Out, "driver: auto-advance not enabled here (needs --auto and local-dir transport); idea left at %s\n", c.IdeaStatus)
 			return nil
 		case ActionEscalated:
 			return nil

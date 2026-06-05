@@ -26,11 +26,15 @@ type RoundRunner interface {
 type Action string
 
 const (
-	ActionPromoted    Action = "promoted"        // opened the next round
-	ActionAwait       Action = "await"           // round present but incomplete; wait
-	ActionConsensus   Action = "consensus-ready" // cross-review budget spent → draft consensus (slice-1 stop)
-	ActionSurfaceOnly Action = "surface-only"    // not auto-drivable here (gate/phase)
-	ActionEscalated   Action = "escalated"       // halted; caller writes escalation
+	ActionPromoted          Action = "promoted"           // opened the next round
+	ActionAwait             Action = "await"              // round present but incomplete; wait
+	ActionConsensus         Action = "consensus-ready"    // cross-review budget spent, gate unwired (slice-1 stop)
+	ActionConsensusDrafted  Action = "consensus-drafted"  // authored consensus.md → PhaseConsensus
+	ActionSignoffsRequested Action = "signoffs-requested" // invoked missing signers
+	ActionFinalized         Action = "finalized"         // authored FINAL.md → PhaseFinal
+	ActionReopened          Action = "reopened"          // BLOCK → reopened a cross-review round
+	ActionSurfaceOnly       Action = "surface-only"      // not auto-drivable here (gate/phase)
+	ActionEscalated         Action = "escalated"         // halted; caller writes escalation
 )
 
 // Config carries everything the driver needs; it never imports internal/app.
@@ -44,7 +48,10 @@ type Config struct {
 	CrossReviewRounds int         // default 1 (one independent + N cross-review rounds)
 	MaxRounds         int         // circuit breaker, default 4
 	Auto              bool        // --auto flag; transport is read from disk per tick
-	Out               io.Writer   // progress output (nil → discard)
+	// Consensus, when set, enables the consensus gate (slice 2). nil keeps the
+	// slice-1 behavior: stop at the consensus boundary (ActionConsensus).
+	Consensus ConsensusOps
+	Out       io.Writer // progress output (nil → discard)
 }
 
 // Driver advances one idea through the deliberation phases via Advance ticks.
@@ -87,11 +94,21 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	if !d.autoLocalDir() {
 		return ActionSurfaceOnly, c, nil
 	}
-	// Slice 1 drives only the round phase; consensus/final are later slices.
-	if c.Phase != PhaseRound {
+	switch c.Phase {
+	case PhaseRound:
+		return d.advanceRound(ctx, c)
+	case PhaseConsensus:
+		return d.advanceConsensus(ctx, c)
+	default:
+		// PhaseFinal/Impl/Review are later slices (S4+); the consensus gate stops
+		// here after FINAL.md is authored.
 		return ActionSurfaceOnly, c, nil
 	}
+}
 
+// advanceRound drives the round phase: promote a completed round to the next
+// cross-review round, or (budget spent) draft consensus / stop.
+func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, error) {
 	done, err := d.roundComplete(c.CurrentRound)
 	if err != nil {
 		return ActionEscalated, c, err
@@ -101,7 +118,17 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	}
 	// Round complete. Cross-review policy: rounds 1..(1+CrossReviewRounds).
 	if c.CurrentRound >= 1+d.cfg.CrossReviewRounds {
-		return ActionConsensus, c, nil
+		if d.cfg.Consensus == nil {
+			return ActionConsensus, c, nil // gate not wired (slice-1 stop)
+		}
+		if err := d.cfg.Consensus.Draft(ctx); err != nil {
+			return ActionEscalated, c, fmt.Errorf("draft consensus: %w", err)
+		}
+		c.Phase = PhaseConsensus
+		c.IdeaStatus = "consensus"
+		c.UpdatedAt = nowRFC3339()
+		_ = c.Save(d.cursorPath())
+		return ActionConsensusDrafted, c, nil
 	}
 
 	next := c.CurrentRound + 1
@@ -117,7 +144,7 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	}
 	c.CurrentRound = next
 	c.RoundsRun = next
-	c.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	c.UpdatedAt = nowRFC3339()
 	_ = c.Save(d.cursorPath())
 	return ActionPromoted, c, nil
 }

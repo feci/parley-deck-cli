@@ -135,6 +135,8 @@ func roundOrdinal(label string) int {
 
 func roundLabel(n int) string { return fmt.Sprintf("round-%02d", n) }
 
+func nowRFC3339() string { return time.Now().UTC().Format(time.RFC3339) }
+
 // readIdeaStatus reads the status: field from the idea 00-prompt.md frontmatter.
 func readIdeaStatus(ideaDir string) string {
 	field, _ := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "status")

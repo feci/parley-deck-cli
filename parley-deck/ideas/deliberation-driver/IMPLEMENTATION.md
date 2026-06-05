@@ -1,6 +1,6 @@
 ---
 idea: deliberation-driver
-status: complete
+status: slice-2-in-progress
 implementer: claude
 started: 2026-06-05
 completed: 2026-06-05
@@ -140,3 +140,35 @@ Fix-up cycle 1 re-review: codex, agy, hermes all signed ✅ ACCEPT (review/conse
 complete**: the months-long round-01 stall is fixed and proven with live agents.
 Later slices S2–S5 (consensus→final→impl→review auto-drive + internal/signoffs
 extraction) remain as scoped follow-ups per FINAL.md.
+
+## Slice 2 — consensus gate (FINAL S3) — in progress
+
+**Slice 2.1 (DONE): the testable consensus-gate core** (`internal/driver/consensus.go`).
+`Advance` is split into `advanceRound` + `advanceConsensus`; `Config.Consensus`
+(a `ConsensusOps` interface) enables the gate. When nil (the current binary wiring),
+behavior is unchanged from slice 1 (stop at the consensus boundary). Gate per D6/D7:
+- round budget spent → `Consensus.Draft` (author consensus.md) → PhaseConsensus.
+- TriageReady/Reserved + no FINAL.md → `Consensus.DraftFinal` → `finalScaffoldReason`
+  non-scaffold check (D7) → PhaseFinal; scaffold/failure → escalate.
+- TriagePartial → `Consensus.RequestSignoffs(missing)`; if still Partial after the
+  (synchronous) request → escalate (no infinite re-request).
+- TriageBlocked → `Consensus.Reopen` + invalidate stale consensus.md/FINAL.md
+  (`*.bak`) + open the re-deliberation round (bounded by MaxRounds=4) → PhaseRound.
+- TriageMalformed/MaxRounds-exceeded → escalate.
+
+10 new unit tests (`consensus_test.go`) cover every branch with a fake
+`ConsensusOps` — no live agents. `go build/vet/test ./...` green.
+
+**Deviation from FINAL D9 (for reviewers):** instead of extracting
+`internal/signoffs` out of `internal/app`, the driver depends on an injected
+`ConsensusOps` interface whose production adapter lives in the app layer. This gives
+the SAME import-direction guarantee (driver never imports app; app injects the
+adapter) with far less churn than moving the 856-line
+`consensus_request_signoffs.go`. The extraction can still happen later if the
+adapter grows; the interface seam is the minimum needed for the gate.
+
+**Slice 2.2 (PENDING): the app-side `ConsensusOps` adapter + live wiring.** Needs
+real agent-launch code that does not exist yet: a consensus-content drafter and a
+FINAL-content drafter (consensus.Draft/Finalize only scaffold), plus reusing the
+existing request-signoffs path. Then wire `runTask` to pass `Consensus` and a live
+multi-agent acceptance run through consensus→final. Deferred to the next checkpoint.
