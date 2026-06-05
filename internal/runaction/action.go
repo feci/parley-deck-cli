@@ -8,6 +8,7 @@ import (
 const (
 	KindAnswerQuestion  = "answer-question"
 	KindRetryAgent      = "retry-agent"
+	KindOpenNextRound   = "open-next-round"
 	KindDraftConsensus  = "draft-consensus"
 	KindRequestSignoffs = "request-signoffs"
 	KindFinalize        = "finalize"
@@ -42,6 +43,14 @@ func Command(action NextAction, fallbackRunID, fallbackIdeaSlug string) string {
 			return ""
 		}
 		return fmt.Sprintf("parley answer %s %s <answer>", runID, questionID)
+	case KindOpenNextRound:
+		if idea == "" {
+			return ""
+		}
+		// Visibility only: the next cross-review round is opened automatically by
+		// internal/driver under `parley run --auto` (local-dir). The surfaced
+		// command re-runs the task to advance the idea.
+		return fmt.Sprintf("parley run --auto --dir . \"continue %s\"", idea)
 	case KindDraftConsensus:
 		if idea == "" {
 			return ""

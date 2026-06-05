@@ -60,6 +60,10 @@ func TestPlanUsesCurrentRoundForMissingArtifacts(t *testing.T) {
 
 func TestPlanDraftsConsensusWhenRoundArtifactsExist(t *testing.T) {
 	root := newWorkspace(t, "sample", []string{"codex"})
+	// cross_review_rounds: 0 is the explicit straight-to-consensus bypass, so a
+	// completed first round drafts consensus directly (no cross-review round).
+	writeFile(t, filepath.Join(root, protocol.DeckDir, "ideas", "sample", "00-prompt.md"),
+		"---\nidea: sample\nparticipants: [codex]\ncross_review_rounds: 0\nstatus: round-01\n---\n")
 	writeFile(t, filepath.Join(root, protocol.DeckDir, "ideas", "sample", "round-01", "codex.md"), "# codex\n")
 
 	actions := Plan(root, Input{
@@ -71,6 +75,27 @@ func TestPlanDraftsConsensusWhenRoundArtifactsExist(t *testing.T) {
 	})
 	if len(actions) != 1 || actions[0].Kind != KindDraftConsensus {
 		t.Fatalf("actions=%+v", actions)
+	}
+}
+
+func TestPlanOpensNextRoundAfterCompletedFirstRound(t *testing.T) {
+	// Default cross_review_rounds (1): a completed independent round-01 must open
+	// a cross-review round-02 before consensus (the stall this idea fixes).
+	root := newWorkspace(t, "sample", []string{"codex"})
+	writeFile(t, filepath.Join(root, protocol.DeckDir, "ideas", "sample", "round-01", "codex.md"), "# codex\n")
+
+	actions := Plan(root, Input{
+		RunID:        "run-1",
+		IdeaSlug:     "sample",
+		Participants: []string{"codex"},
+		Terminal:     true,
+		Agents:       []AgentState{{ID: "codex", State: "finished"}},
+	})
+	if len(actions) != 1 || actions[0].Kind != KindOpenNextRound {
+		t.Fatalf("actions=%+v, want a single open-next-round action", actions)
+	}
+	if actions[0].Round != "round-02" {
+		t.Fatalf("open-next-round Round=%q, want round-02", actions[0].Round)
 	}
 }
 

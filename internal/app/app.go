@@ -21,6 +21,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runaction"
@@ -1652,11 +1653,33 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
 		}
 		results := runner.RunRoundOne(runCtx, runOpts)
-		cancelRun()
+		failed := printRunResults(stdout, results)
 		if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
 			registerWorkspaceSessions(*root, []runstate.RunSummary{run})
 		}
-		failed := printRunResults(stdout, results)
+		// Auto-advance past round-01 (deliberation-driver slice 1: round promotion
+		// only) under --auto AND local-dir transport. Round-01 must have succeeded.
+		// Non-auto keeps today's one-shot behavior.
+		if *auto && !failed {
+			transport := driver.EffectiveTransport(created.Idea.Path, *root)
+			d := driver.New(driver.Config{
+				IdeaDir:           created.Idea.Path,
+				IdeaSlug:          created.Idea.Slug,
+				Participants:      created.Idea.Participants,
+				RunDir:            created.RunDir,
+				Events:            runOpts.Store,
+				CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
+				AutoLocalDir:      transport == "local-dir",
+				Out:               stdout,
+			}, driver.NewRunnerAdapter(runOpts))
+			if err := d.Run(runCtx); err != nil {
+				fmt.Fprintf(stderr, "driver: %v\n", err)
+			}
+			if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
+				registerWorkspaceSessions(*root, []runstate.RunSummary{run})
+			}
+		}
+		cancelRun()
 		if failed {
 			return 1
 		}

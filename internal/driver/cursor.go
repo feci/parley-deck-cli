@@ -1,0 +1,176 @@
+// Package driver advances a Parley Deck deliberation past round-01: it owns the
+// "next tick" that the one-shot runner never had. The deliberation phase graph is
+// degenerate-linear (round → cross-review → consensus → final → impl →
+// review/fix-up) with one back-edge (consensus BLOCK → reopen round), so the
+// driver is a small ordered switch over a disk-derived cursor — NOT a DAG,
+// scheduler, worker pool, or claim-locked task kernel. Disk is the single source
+// of truth; the cursor is a rebuildable cache. See
+// parley-deck/ideas/deliberation-driver/FINAL.md (consensus D1-D15).
+//
+// Slice 1 (this file set) implements ONLY the round phase: promote a completed
+// round-01 to round-02 via the injected RoundRunner. Consensus/final/impl phases
+// are later slices.
+package driver
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// Phase is the deliberation phase the cursor currently rests in.
+type Phase string
+
+const (
+	PhaseRound     Phase = "round"
+	PhaseConsensus Phase = "consensus"
+	PhaseFinal     Phase = "final"
+	PhaseImpl      Phase = "impl"
+	PhaseReview    Phase = "review"
+	PhaseDone      Phase = "done"
+	PhaseBlocked   Phase = "blocked"
+)
+
+// Cursor is a rebuildable cache of the deliberation phase. Disk is authoritative:
+// Rebuild derives every field from on-disk artifacts and the persisted Phase is
+// never trusted over disk. Only MaxRounds is config-derived.
+type Cursor struct {
+	Phase        Phase  `json:"phase"`
+	CurrentRound int    `json:"current_round"`
+	IdeaStatus   string `json:"idea_status"`
+	RoundsRun    int    `json:"rounds_run"`
+	MaxRounds    int    `json:"max_rounds"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+// Save writes the cursor atomically (tmp + rename, same dir) so a crash mid-write
+// cannot corrupt the durable state. Mirrors internal/pipeline/run.go Save.
+func (c Cursor) Save(path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("create driver dir: %w", err)
+	}
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode cursor: %w", err)
+	}
+	data = append(data, '\n')
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return fmt.Errorf("write cursor: %w", err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return fmt.Errorf("commit cursor: %w", err)
+	}
+	return nil
+}
+
+// LoadCursor best-effort reads a persisted cursor. A missing or corrupt file is
+// non-fatal: callers Rebuild from disk, which is authoritative.
+func LoadCursor(path string) (Cursor, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Cursor{}, err
+	}
+	var c Cursor
+	if err := json.Unmarshal(data, &c); err != nil {
+		return Cursor{}, err
+	}
+	return c, nil
+}
+
+// Rebuild derives the phase purely from disk (consensus D2/D3). ideaDir is the
+// idea directory (…/ideas/<slug>). maxRounds is the config circuit-breaker bound.
+func Rebuild(ideaDir string, maxRounds int) Cursor {
+	c := Cursor{Phase: PhaseRound, CurrentRound: 1, MaxRounds: maxRounds}
+	c.IdeaStatus = readIdeaStatus(ideaDir)
+	if highest := highestRound(ideaDir); highest >= 1 {
+		c.CurrentRound = highest
+		c.RoundsRun = highest
+	}
+	switch {
+	case fileExists(filepath.Join(ideaDir, "FINAL.md")):
+		c.Phase = PhaseFinal
+	case fileExists(filepath.Join(ideaDir, "consensus.md")):
+		c.Phase = PhaseConsensus
+	default:
+		c.Phase = PhaseRound
+	}
+	c.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	return c
+}
+
+// highestRound returns the largest N for which a round-NN/ directory exists, or 0.
+func highestRound(ideaDir string) int {
+	entries, err := os.ReadDir(ideaDir)
+	if err != nil {
+		return 0
+	}
+	highest := 0
+	for _, e := range entries {
+		if !e.IsDir() || !strings.HasPrefix(e.Name(), "round-") {
+			continue
+		}
+		if n := roundOrdinal(e.Name()); n > highest {
+			highest = n
+		}
+	}
+	return highest
+}
+
+// roundOrdinal parses "round-NN" → N, or 0 when the label is not a round dir.
+func roundOrdinal(label string) int {
+	if !strings.HasPrefix(label, "round-") {
+		return 0
+	}
+	n, err := strconv.Atoi(strings.TrimLeft(strings.TrimPrefix(label, "round-"), "0"))
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func roundLabel(n int) string { return fmt.Sprintf("round-%02d", n) }
+
+// readIdeaStatus reads the status: field from the idea 00-prompt.md frontmatter.
+func readIdeaStatus(ideaDir string) string {
+	field, _ := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "status")
+	return field
+}
+
+// readFrontmatterField returns the trimmed value of a top-level frontmatter key.
+func readFrontmatterField(path, key string) (string, bool) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	inFrontmatter := false
+	prefix := key + ":"
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			break
+		}
+		if inFrontmatter && strings.HasPrefix(trimmed, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(trimmed, prefix)), true
+		}
+	}
+	return "", false
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
