@@ -276,7 +276,9 @@ func TestRebuildDerivesPhaseFromDisk(t *testing.T) {
 	if c := Rebuild(ideaDir, 4); c.Phase != PhaseConsensus {
 		t.Fatalf("phase=%s, want consensus", c.Phase)
 	}
-	if err := os.WriteFile(filepath.Join(ideaDir, "FINAL.md"), []byte("x"), 0o644); err != nil {
+	// A valid (non-scaffold) FINAL.md is required for PhaseFinal; a scaffold stays
+	// in the consensus phase (AF1).
+	if err := os.WriteFile(filepath.Join(ideaDir, "FINAL.md"), []byte(validFinal), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if c := Rebuild(ideaDir, 4); c.Phase != PhaseFinal {

@@ -91,11 +91,19 @@ func Rebuild(ideaDir string, maxRounds int) Cursor {
 		c.CurrentRound = highest
 		c.RoundsRun = highest
 	}
+	finalPath := filepath.Join(ideaDir, "FINAL.md")
 	switch {
-	case fileExists(filepath.Join(ideaDir, "FINAL.md")):
+	case fileExists(finalPath) && finalScaffoldReason(finalPath) == "":
+		// Only a VALID (non-scaffold) FINAL.md is truly final. A scaffold FINAL.md
+		// from a failed/partial draft must NOT strand the idea at PhaseFinal — it
+		// stays in the consensus phase so the gate re-drafts it (AF1).
 		c.Phase = PhaseFinal
 	case fileExists(filepath.Join(ideaDir, "consensus.md")):
 		c.Phase = PhaseConsensus
+	case fileExists(finalPath):
+		// Scaffold FINAL.md with no consensus.md to re-drive: treat as final to
+		// avoid a phantom round phase; the surface-only stop surfaces it to a human.
+		c.Phase = PhaseFinal
 	default:
 		c.Phase = PhaseRound
 	}

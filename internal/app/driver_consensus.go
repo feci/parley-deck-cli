@@ -20,15 +20,16 @@ import (
 // interface, so internal/driver never imports internal/app (the import-direction
 // guarantee D9 sought, achieved by injection instead of extraction).
 type driverConsensusOps struct {
-	root       string
-	ideaSlug   string
-	ideaDir    string
-	discovered []agents.Discovery
-	out        io.Writer
+	root         string
+	ideaSlug     string
+	ideaDir      string
+	participants []string
+	discovered   []agents.Discovery
+	out          io.Writer
 }
 
-func newDriverConsensusOps(root, ideaSlug, ideaDir string, discovered []agents.Discovery, out io.Writer) driver.ConsensusOps {
-	return driverConsensusOps{root: root, ideaSlug: ideaSlug, ideaDir: ideaDir, discovered: discovered, out: out}
+func newDriverConsensusOps(root, ideaSlug, ideaDir string, participants []string, discovered []agents.Discovery, out io.Writer) driver.ConsensusOps {
+	return driverConsensusOps{root: root, ideaSlug: ideaSlug, ideaDir: ideaDir, participants: participants, discovered: discovered, out: out}
 }
 
 func (o driverConsensusOps) Status() (consensus.Summary, error) {
@@ -60,17 +61,13 @@ func (o driverConsensusOps) RequestSignoffs(ctx context.Context, missing []strin
 	}, o.out, o.out)
 }
 
-// DraftFinal writes the FINAL.md scaffold (+ status=final) via consensus.Finalize
-// if absent, then invokes a drafter agent to author the real FINAL content.
+// DraftFinal invokes a drafter agent to author the FINAL.md content directly. It
+// deliberately does NOT call consensus.Finalize: Finalize sets idea status=final
+// before the content exists, which would strand the idea at status=final with a
+// scaffold if the drafter failed (AF1). The driver commits the idea status to
+// "final" only AFTER validating the authored content (D7).
 func (o driverConsensusOps) DraftFinal(ctx context.Context) error {
 	path := filepath.Join(o.ideaDir, "FINAL.md")
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		if _, _, ferr := consensus.Finalize(o.root, o.ideaSlug, consensus.FinalizeOptions{By: "driver"}); ferr != nil {
-			return ferr
-		}
-	} else if err != nil {
-		return err
-	}
 	return o.runDrafter(ctx, "FINAL", buildFinalDraftPrompt(o.ideaDir, path))
 }
 
@@ -82,9 +79,9 @@ func (o driverConsensusOps) Reopen(ctx context.Context, reason string) error {
 // runDrafter invokes the first available headless agent to author the target file
 // per the given prompt. Drafting is a single-agent facilitator action (D6).
 func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string) error {
-	drafter, ok := firstHeadlessAgent(o.discovered)
+	drafter, ok := firstHeadlessAgent(o.discovered, o.participants)
 	if !ok {
-		return fmt.Errorf("no headless agent available to draft %s", kind)
+		return fmt.Errorf("no headless idea participant available to draft %s", kind)
 	}
 	rootAbs, err := filepath.Abs(o.root)
 	if err != nil {
@@ -94,9 +91,16 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 	return runHeadlessSignoffAgent(ctx, rootAbs, drafter, prompt, o.out, o.out)
 }
 
-func firstHeadlessAgent(discovered []agents.Discovery) (agents.Discovery, bool) {
+// firstHeadlessAgent returns the first discovered headless agent that is also an
+// idea participant (Parley Deck §4/§6: the facilitator-drafter must be a
+// participant of the deliberation, not an arbitrary installed agent — AF2).
+func firstHeadlessAgent(discovered []agents.Discovery, participants []string) (agents.Discovery, bool) {
+	isParticipant := make(map[string]bool, len(participants))
+	for _, p := range participants {
+		isParticipant[p] = true
+	}
 	for _, agent := range discovered {
-		if agent.Found && agent.ID != "gemini" && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
+		if agent.Found && isParticipant[agent.ID] && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
 			return agent, true
 		}
 	}
@@ -128,8 +132,8 @@ func buildFinalDraftPrompt(ideaDir, path string) string {
 	return fmt.Sprintf(`You are the Parley Deck facilitator drafting FINAL.md.
 
 Read %s/consensus.md (the accepted consensus + signoffs) and the round artifacts.
-OVERWRITE %s with the final specification, keeping YAML frontmatter that includes
-"status: final", and a populated section:
+WRITE (create or overwrite) %s with the final specification, keeping YAML
+frontmatter that includes "status: final", and a populated section:
 
 ## Final plan / specification
 

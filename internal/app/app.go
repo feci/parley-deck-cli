@@ -1670,7 +1670,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 				Events:            runOpts.Store,
 				CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
 				Auto:              *auto,
-				Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, discovered, stdout),
+				Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, stdout),
 				Out:               stdout,
 			}, driver.NewRunnerAdapter(runOpts))
 			if err := d.Run(runCtx); err != nil {

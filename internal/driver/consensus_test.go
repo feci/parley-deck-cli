@@ -152,6 +152,42 @@ func TestConsensusReadyButFinalScaffoldEscalates(t *testing.T) {
 	if action != ActionEscalated {
 		t.Fatalf("action=%s, want escalated", action)
 	}
+	// AF1: a failed/scaffold draft must NOT commit the idea to status=final.
+	if got := readIdeaStatus(ideaDir); got == "final" {
+		t.Fatalf("idea status must not be final after a scaffold draft, got %q", got)
+	}
+}
+
+func TestConsensusReadyRevalidatesExistingScaffoldFinal(t *testing.T) {
+	// A stale scaffold FINAL.md from a prior failed draft must be re-drafted, not
+	// blindly accepted, and status is committed only after the content validates
+	// (AF1 — the failure mode where status=final was set before the content).
+	parts := []string{"codex", "claude"}
+	ideaDir, runDir := setupIdea(t, parts, "")
+	writeConsensusDoc(t, ideaDir, "consensus")
+	if err := os.WriteFile(filepath.Join(ideaDir, "FINAL.md"),
+		[]byte("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<todo>\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fc := &fakeConsensus{
+		statusSeq:    []string{consensus.TriageReady},
+		onDraftFinal: func() { os.WriteFile(filepath.Join(ideaDir, "FINAL.md"), []byte(validFinal), 0o644) },
+	}
+	d := newConsensusDriver(ideaDir, runDir, parts, fc, &fakeRunner{})
+
+	action, _, err := d.Advance(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action != ActionFinalized {
+		t.Fatalf("action=%s, want finalized after re-draft", action)
+	}
+	if len(fc.calls) != 1 || fc.calls[0] != "final" {
+		t.Fatalf("expected a re-draft of the stale scaffold, calls=%v", fc.calls)
+	}
+	if got := readIdeaStatus(ideaDir); got != "final" {
+		t.Fatalf("idea status=%q, want final after a valid re-draft", got)
+	}
 }
 
 func TestConsensusPartialRequestsSignoffsThenProceeds(t *testing.T) {
@@ -301,7 +337,12 @@ func TestFinalScaffoldReason(t *testing.T) {
 	if finalScaffoldReason(write("---\nidea: demo\nstatus: draft\n---\n\n## Final plan / specification\nplenty of words here to exceed the length threshold for the scaffold check, padding padding padding padding padding padding padding.\nline two\nline three\n")) == "" {
 		t.Fatal("non-final status should be rejected")
 	}
-	if finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<placeholder> padding padding padding padding padding padding padding padding padding padding padding padding padding padding padding.\nline two\nline three\n")) == "" {
-		t.Fatal("unexpanded <…> placeholder should be rejected")
+	if finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<...> padding padding padding padding padding padding padding padding padding padding padding padding padding padding padding.\nline two\nline three\n")) == "" {
+		t.Fatal("unexpanded <...> placeholder should be rejected")
+	}
+	// Legitimate angle-bracket content (e.g. a help-text example) must be allowed,
+	// not treated as a scaffold placeholder (false positive found in the live run).
+	if r := finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\nReword the error to `Unknown option '<option>'` and point users at --help for the path `<path>`.\nKeep the change to wording only and verify the help output renders.\nThis line pads the section beyond the length threshold for the scaffold check comfortably.\n")); r != "" {
+		t.Fatalf("legitimate <option>/<path> content rejected: %s", r)
 	}
 }

@@ -158,8 +158,13 @@ round-01, opens round-02, writes valid `round-02/<agent>.md` for every participa
 `round.started`/`round.completed`, and a repeated tick does NOT re-dispatch.
 
 ## Later slices (after slice 1 proven)
-- S2: extract `internal/signoffs` from `internal/app/consensus_request_signoffs.go`
-  (D9) — prerequisite for any driver→signoff/FINAL-draft wiring.
+- S2: ~~extract `internal/signoffs`~~ → **RATIFIED ALTERNATIVE (slice-2 review,
+  AF6):** instead of extracting `internal/signoffs` from
+  `internal/app/consensus_request_signoffs.go`, the driver depends on an injected
+  `driver.ConsensusOps` interface whose production adapter lives in `internal/app`.
+  This preserves the same import-direction guarantee D9 sought (`internal/driver`
+  never imports `internal/app`; the app injects the adapter) with far less churn.
+  The physical `internal/signoffs` extraction is deferred and optional.
 - S3: consensus gate (D6/D7) — Draft, FINAL-drafter agent launch + non-scaffold
   verify, request-signoffs via `internal/signoffs`, Reopen + stale invalidation.
 - S4: PhaseFinal → RunImplementation; PhaseImpl → RunReviewRound + fix-up loop.

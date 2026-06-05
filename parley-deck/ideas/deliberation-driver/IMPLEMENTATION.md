@@ -193,3 +193,32 @@ signoffs … authored FINAL.md; idea … is final`.
 
 Remaining (FINAL S4–S5, deferred): PhaseFinal→RunImplementation, PhaseImpl→
 RunReviewRound + fix-up loop, `runContinue --auto` executes the next action.
+
+## Slice 2 fix-up cycle 1 (Phase 8)
+
+status: complete
+
+Applied the slice-2 review-consensus agreed fixes (review/consensus.md "Slice 2
+review (cycle 2)", review/round-03/):
+- **S2-AF1** — status=final committed ONLY after `finalScaffoldReason` passes; the
+  adapter no longer calls `consensus.Finalize` (the agent authors FINAL.md, the
+  driver commits status); `Rebuild` treats only a VALID FINAL.md as PhaseFinal so a
+  scaffold can't strand the idea. Also narrowed `finalScaffoldReason` to real
+  template placeholders (`<...>`/`<slug>`/…) — a live run revealed it false-rejected
+  legitimate `'<option>'`/`<path>` help-text content.
+- **S2-AF2** — drafter restricted to idea participants (`firstHeadlessAgent` +
+  participant list).
+- **S2-AF3** — Windows-safe `processAlive` (build-tagged `proclive_unix.go` /
+  `proclive_windows.go`; Unix EPERM→alive). `GOOS=windows go build` verified.
+- **S2-AF4** — `invalidateStale` removes a pre-existing `.bak`, returns an error,
+  and `advanceConsensus` escalates on failure.
+- **S2-AF5** — BLOCK path opens the re-deliberation round before `Reopen`/invalidate.
+- **S2-AF6** — FINAL.md ratifies the `ConsensusOps` injection (vs D9 extraction).
+
+New/updated tests: `TestConsensusReadyRevalidatesExistingScaffoldFinal`,
+`TestFinalScaffoldReason` (placeholder + legit-`<option>` cases), Rebuild scaffold
+case, `TestFirstHeadlessAgentRestrictedToParticipants` (app). `go build/vet/test
+./...` green; `GOOS=windows go build ./...` green. **Live re-acceptance:** drove a
+task round→consensus→signoffs(both ✅)→FINAL→status=final, zero escalations; and an
+intermediate run proved the S2-AF1 safety path (a placeholder FINAL was refused, status
+left at consensus, blocking escalation written — not stranded at final).

@@ -47,13 +47,21 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 	switch summary.Triage {
 	case consensus.TriageReady, consensus.TriageReserved:
 		finalPath := filepath.Join(d.cfg.IdeaDir, "FINAL.md")
-		if !fileExists(finalPath) {
+		// Validate even if FINAL.md already exists: a stale scaffold from a prior
+		// failed/partial draft must be re-drafted, never accepted (D7, AF1). The
+		// idea status is committed to "final" ONLY after the content validates, so a
+		// failed drafter can never strand the idea at status=final with scaffold
+		// content.
+		if finalScaffoldReason(finalPath) != "" {
 			if err := d.cfg.Consensus.DraftFinal(ctx); err != nil {
 				return ActionEscalated, c, fmt.Errorf("draft FINAL.md: %w", err)
 			}
 			if reason := finalScaffoldReason(finalPath); reason != "" {
-				return ActionEscalated, c, fmt.Errorf("FINAL.md is not acceptable: %s", reason)
+				return ActionEscalated, c, fmt.Errorf("FINAL.md is not acceptable after drafting: %s", reason)
 			}
+		}
+		if err := setIdeaStatus(d.cfg.IdeaDir, "final"); err != nil {
+			return ActionEscalated, c, fmt.Errorf("commit idea status final: %w", err)
 		}
 		c.Phase = PhaseFinal
 		c.IdeaStatus = "final"
@@ -82,20 +90,25 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 		if next > 1+d.cfg.MaxRounds {
 			return ActionEscalated, c, fmt.Errorf("consensus still blocked at round %d (MaxRounds=%d); escalating", next, d.cfg.MaxRounds)
 		}
-		if err := d.cfg.Consensus.Reopen(ctx, "consensus blocked; opening another cross-review round seeded by the BLOCK counter-proposal"); err != nil {
-			return ActionEscalated, c, fmt.Errorf("reopen consensus: %w", err)
-		}
-		// Invalidate the stale consensus.md/FINAL.md so Rebuild classifies the idea
-		// as back in the round phase, not at a completed consensus (consensus D6,
-		// hermes/agy cross-review point).
-		d.invalidateStale()
-		// Open the re-deliberation round now (beyond the cross_review budget, bounded
-		// by MaxRounds) so the next tick re-drafts consensus from the new round.
+		// Open the re-deliberation round FIRST (beyond the cross_review budget,
+		// bounded by MaxRounds). If RunRound fails, the BLOCK state is preserved —
+		// consensus.md is still present, so the next tick re-enters this branch and
+		// retries, rather than forgetting the BLOCK and re-drafting the old round
+		// (AF5).
 		if err := d.runner.RunRound(ctx, next); err != nil {
 			return ActionEscalated, c, fmt.Errorf("run reopened %s: %w", roundLabel(next), err)
 		}
-		if err := setIdeaStatus(d.cfg.IdeaDir, roundLabel(next)); err != nil {
-			return ActionEscalated, c, fmt.Errorf("set idea status: %w", err)
+		// Commit the reopen: consensus.Reopen renames consensus.md to an aborted
+		// artifact and sets idea status back to the latest (now `next`) round.
+		if err := d.cfg.Consensus.Reopen(ctx, "consensus blocked; opening another cross-review round seeded by the BLOCK counter-proposal"); err != nil {
+			return ActionEscalated, c, fmt.Errorf("reopen consensus: %w", err)
+		}
+		// Invalidate any remaining stale consensus.md/FINAL.md so Rebuild classifies
+		// the idea as back in the round phase (consensus D6, hermes/agy point). A
+		// failure here must halt rather than leave a stale FINAL.md that Rebuild
+		// would misread as PhaseFinal (AF4).
+		if err := d.invalidateStale(); err != nil {
+			return ActionEscalated, c, fmt.Errorf("invalidate stale consensus/FINAL after reopen: %w", err)
 		}
 		c.CurrentRound = next
 		c.RoundsRun = next
@@ -111,14 +124,27 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 
 // invalidateStale renames a stale consensus.md / FINAL.md to *.bak after a BLOCK
 // reopen so Rebuild cannot misclassify the reopened round as already at consensus
-// or final (consensus D6).
-func (d *Driver) invalidateStale() {
+// or final (consensus D6). It removes a pre-existing *.bak first so the rename
+// works across BLOCK cycles and on Windows (where os.Rename fails if the
+// destination exists), and returns an error so the caller can halt rather than
+// silently leave a stale FINAL.md behind (AF4).
+func (d *Driver) invalidateStale() error {
 	for _, name := range []string{"consensus.md", "FINAL.md"} {
 		path := filepath.Join(d.cfg.IdeaDir, name)
-		if fileExists(path) {
-			_ = os.Rename(path, path+".bak")
+		if !fileExists(path) {
+			continue
+		}
+		bak := path + ".bak"
+		if fileExists(bak) {
+			if err := os.Remove(bak); err != nil {
+				return err
+			}
+		}
+		if err := os.Rename(path, bak); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
 // finalScaffoldReason returns a non-empty reason when FINAL.md is still a scaffold
@@ -150,8 +176,15 @@ func finalScaffoldReason(path string) string {
 		if trimmed == "" || strings.HasPrefix(trimmed, "<!--") {
 			continue
 		}
-		if strings.Contains(trimmed, "<") && strings.Contains(trimmed, ">") {
-			return "FINAL.md '## Final plan / specification' still contains an unexpanded <…> placeholder"
+		// Reject only actual unexpanded TEMPLATE placeholders, not legitimate
+		// angle-bracket content (e.g. a help-text example `'<option>'` or a path
+		// `<path>` that is part of the subject matter). Match the scaffold's tokens
+		// and ellipsis placeholders.
+		lower := strings.ToLower(trimmed)
+		for _, ph := range []string{"<...>", "<…>", "<slug>", "<agent-id>", "<agent>", "<fill", "<todo", "<tbd", "<your ", "<replace", "<insert"} {
+			if strings.Contains(lower, ph) {
+				return "FINAL.md '## Final plan / specification' still contains an unexpanded placeholder " + ph
+			}
 		}
 		content++
 	}

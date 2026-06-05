@@ -84,3 +84,73 @@ AF1-AF4 are correctly applied: lock acquisition is atomic, the D4 cross-review g
 
 ### hermes — ✅ ACCEPT (2026-06-05)
 AF1–AF4 correctly applied (atomic lock, D4 cross-review gate+headings, durable escalate on errors, per-tick protocol transport); build/vet/tests green.
+
+---
+
+# Slice 2 review (cycle 2) — consensus gate
+
+drafted-by: claude · date: 2026-06-05 · reviewed-commit: a83efa8 → fix-up pending.
+Synthesis of review/round-03 (codex, agy, hermes) on slice 2 (the consensus gate).
+All findings accepted as agreed fixes (applied in slice-2 fix-up cycle 1).
+
+## Agreed fixes (slice 2)
+
+### S2-AF1 — FINAL status committed only after non-scaffold validation (CRITICAL: all three)
+`DraftFinal` called `consensus.Finalize`, which set idea `status: final` + a scaffold
+FINAL.md BEFORE the drafter ran; a failed drafter stranded the idea at `final` with
+scaffold content, and `Rebuild` (FINAL.md present → PhaseFinal) never revalidated.
+Fix: the adapter no longer calls `consensus.Finalize` — the drafter agent authors
+FINAL.md directly, and the DRIVER commits idea status to `final` only after
+`finalScaffoldReason` passes. `Rebuild` treats only a VALID (non-scaffold) FINAL.md as
+PhaseFinal; a scaffold stays in the consensus phase so the gate re-drafts it.
+
+### S2-AF2 — Drafter must be an idea participant (MAJOR: agy)
+`firstHeadlessAgent` picked the first installed headless agent regardless of the
+roster. Fix: it is restricted to the idea's `participants` (COOPERATION.md §4/§6);
+`newDriverConsensusOps` takes the participant list.
+
+### S2-AF3 — Windows-safe process liveness (MAJOR: agy)
+`processAlive` (signal 0) always failed on Windows → the driver lock always reclaimed
+→ concurrent drivers. Fix: build-tagged `proclive_unix.go` (signal 0, EPERM→alive) +
+`proclive_windows.go` (conservatively alive → refuses a second driver). Verified with
+`GOOS=windows go build`.
+
+### S2-AF4 — invalidateStale removes existing .bak, returns error, escalates (MAJOR: agy + codex)
+`os.Rename(path, path+".bak")` discarded errors and fails on Windows / repeat BLOCK
+cycles when `.bak` exists, leaving a stale FINAL.md. Fix: remove a pre-existing
+`.bak` first, return the error, and `advanceConsensus` escalates rather than running
+the next round with stale state.
+
+### S2-AF5 — Reorder BLOCK: open round before Reopen/invalidate (MINOR: agy)
+A `RunRound` failure after `Reopen`/invalidate forgot the BLOCK and re-drafted the
+old consensus (loop). Fix: open the re-deliberation round FIRST; only on success run
+`consensus.Reopen` + `invalidateStale` + commit the cursor.
+
+### S2-AF6 — Ratify the ConsensusOps injection vs D9 extraction (MAJOR: hermes)
+The driver injects `ConsensusOps` (app-side adapter) instead of extracting
+`internal/signoffs`. codex/agy/hermes agree the import-direction guarantee is
+preserved by injection. FINAL.md S2 updated to ratify the injection; the physical
+extraction is deferred/optional.
+
+## Deferred follow-ups (slice 2)
+- Configurable facilitator-drafter in 00-prompt.md (agy/codex OQ) vs first
+  participant.
+- Human-in-the-loop signoffs on local-dir (agy OQ) — currently escalates under
+  Partial; intended fallback.
+- A failed consensus *content* enrich (vs FINAL) leaves a scaffold consensus that
+  proceeds to signoffs — lower severity; revisit if it bites.
+
+## Signoffs (slice 2)
+
+### claude — ✅ ACCEPT (2026-06-05)
+All six agreed fixes applied. S2-AF1 is the important one — status=final is now
+committed only after the content validates, and `Rebuild` won't strand a scaffold at
+PhaseFinal. Windows lock + invalidateStale are now correct; the drafter is a
+participant; the BLOCK reorder prevents the loop. `go build/vet/test ./...` green;
+`GOOS=windows go build` green. Live acceptance re-verified.
+
+<!-- codex appends its slice-2 signoff after re-review -->
+
+<!-- agy appends its slice-2 signoff after re-review -->
+
+<!-- hermes appends its slice-2 signoff after re-review -->
