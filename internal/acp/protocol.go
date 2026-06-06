@@ -63,12 +63,12 @@ type FSCapabilities struct {
 
 // InitializeResult is the agent's response to initialize.
 type InitializeResult struct {
-	ProtocolVersion   int                    `json:"protocolVersion"`
-	AgentCapabilities map[string]any         `json:"agentCapabilities,omitempty"`
-	AgentInfo         *AgentInfo             `json:"agentInfo,omitempty"`
-	AuthMethods       []map[string]any       `json:"authMethods,omitempty"`
-	Meta              map[string]any         `json:"_meta,omitempty"`
-	Modes             map[string]any         `json:"modes,omitempty"`
+	ProtocolVersion   int              `json:"protocolVersion"`
+	AgentCapabilities map[string]any   `json:"agentCapabilities,omitempty"`
+	AgentInfo         *AgentInfo       `json:"agentInfo,omitempty"`
+	AuthMethods       []map[string]any `json:"authMethods,omitempty"`
+	Meta              map[string]any   `json:"_meta,omitempty"`
+	Modes             map[string]any   `json:"modes,omitempty"`
 }
 
 type AgentInfo struct {
@@ -79,9 +79,9 @@ type AgentInfo struct {
 
 // NewSessionParams creates a fresh session in the agent's working directory.
 type NewSessionParams struct {
-	CWD                  string         `json:"cwd"`
-	MCPServers           []map[string]any `json:"mcpServers"`
-	AdditionalDirectories []string      `json:"additionalDirectories,omitempty"`
+	CWD                   string           `json:"cwd"`
+	MCPServers            []map[string]any `json:"mcpServers"`
+	AdditionalDirectories []string         `json:"additionalDirectories,omitempty"`
 }
 
 type NewSessionResult struct {
@@ -118,8 +118,8 @@ type CancelParams struct {
 // SessionUpdate is the notification the agent sends while answering a prompt.
 // The discriminator is the nested "sessionUpdate" field on Update.
 type SessionUpdate struct {
-	SessionID string         `json:"sessionId"`
-	Update    UpdatePayload  `json:"update"`
+	SessionID string        `json:"sessionId"`
+	Update    UpdatePayload `json:"update"`
 }
 
 type UpdatePayload struct {

@@ -1323,6 +1323,31 @@ func TestFirstHeadlessAgentRestrictedToParticipants(t *testing.T) {
 	}
 }
 
+// AF6: the implementer is resolved from durable role metadata (IMPLEMENTATION.md /
+// FINAL.md), not blindly participants[0].
+func TestResolveImplementerFromRoleMetadata(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "FINAL.md"), []byte("---\nidea: x\nimplementer: agy\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveImplementer(dir, []string{"codex", "agy"}); got != "agy" {
+		t.Fatalf("got %q, want agy (FINAL.md implementer, not participants[0])", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "IMPLEMENTATION.md"), []byte("---\nidea: x\nimplementer: codex\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveImplementer(dir, []string{"codex", "agy"}); got != "codex" {
+		t.Fatalf("got %q, want codex (IMPLEMENTATION.md takes precedence)", got)
+	}
+	_ = os.Remove(filepath.Join(dir, "IMPLEMENTATION.md"))
+	if err := os.WriteFile(filepath.Join(dir, "FINAL.md"), []byte("---\nidea: x\nimplementer: hermes\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := resolveImplementer(dir, []string{"codex", "agy"}); got != "codex" {
+		t.Fatalf("got %q, want codex (fallback; hermes not a participant)", got)
+	}
+}
+
 type fakeAgentConfig struct {
 	ID         string
 	Path       string

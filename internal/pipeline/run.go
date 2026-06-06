@@ -31,12 +31,12 @@ type PipelineRun struct {
 	// ReadyBlocks / ActiveBlocks support multi-active DAG execution. They are
 	// additive: a linear/single-active run leaves them empty and uses
 	// current_block, so older cursors load unchanged.
-	ReadyBlocks  []string `json:"ready_blocks,omitempty"`
-	ActiveBlocks []string `json:"active_blocks,omitempty"`
-	PendingGate  string   `json:"pending_gate,omitempty"`
-	EffectKeys      []string  `json:"effect_keys,omitempty"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ReadyBlocks  []string  `json:"ready_blocks,omitempty"`
+	ActiveBlocks []string  `json:"active_blocks,omitempty"`
+	PendingGate  string    `json:"pending_gate,omitempty"`
+	EffectKeys   []string  `json:"effect_keys,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // RunFileName is the cursor filename within pipelines/<slug>/.

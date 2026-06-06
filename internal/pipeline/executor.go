@@ -34,19 +34,19 @@ func BlockWorkspace(deckDir, slug, blockID string) string {
 type Action string
 
 const (
-	ActionRunBlock   Action = "run-block"    // current block has not finished its engine round
-	ActionAwaitGate  Action = "await-gate"   // a boundary gate is open and needs resolution
-	ActionSeededNext Action = "seeded-next"  // advanced: next block's prompt was seeded
-	ActionDone       Action = "done"         // final block complete; pipeline finished
-	ActionRejected   Action = "rejected"     // a boundary gate was rejected; pipeline stopped
+	ActionRunBlock   Action = "run-block"   // current block has not finished its engine round
+	ActionAwaitGate  Action = "await-gate"  // a boundary gate is open and needs resolution
+	ActionSeededNext Action = "seeded-next" // advanced: next block's prompt was seeded
+	ActionDone       Action = "done"        // final block complete; pipeline finished
+	ActionRejected   Action = "rejected"    // a boundary gate was rejected; pipeline stopped
 )
 
 // AdvanceResult is the outcome of one driver step.
 type AdvanceResult struct {
-	Action  Action
-	Block   string // the block the action concerns (current or newly-current)
-	Edge    string // set for await-gate
-	Detail  string
+	Action Action
+	Block  string // the block the action concerns (current or newly-current)
+	Edge   string // set for await-gate
+	Detail string
 }
 
 // BlockComplete reports whether a block's engine round has finished and its

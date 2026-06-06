@@ -31,10 +31,10 @@ const (
 	ActionConsensus         Action = "consensus-ready"    // cross-review budget spent, gate unwired (slice-1 stop)
 	ActionConsensusDrafted  Action = "consensus-drafted"  // authored consensus.md → PhaseConsensus
 	ActionSignoffsRequested Action = "signoffs-requested" // invoked missing signers
-	ActionFinalized         Action = "finalized"         // authored FINAL.md → PhaseFinal
-	ActionReopened          Action = "reopened"          // BLOCK → reopened a cross-review round
-	ActionSurfaceOnly       Action = "surface-only"      // not auto-drivable here (gate/phase)
-	ActionEscalated         Action = "escalated"         // halted; caller writes escalation
+	ActionFinalized         Action = "finalized"          // authored FINAL.md → PhaseFinal
+	ActionReopened          Action = "reopened"           // BLOCK → reopened a cross-review round
+	ActionSurfaceOnly       Action = "surface-only"       // not auto-drivable here (gate/phase)
+	ActionEscalated         Action = "escalated"          // halted; caller writes escalation
 )
 
 // Config carries everything the driver needs; it never imports internal/app.
@@ -51,7 +51,15 @@ type Config struct {
 	// Consensus, when set, enables the consensus gate (slice 2). nil keeps the
 	// slice-1 behavior: stop at the consensus boundary (ActionConsensus).
 	Consensus ConsensusOps
-	Out       io.Writer // progress output (nil → discard)
+	// Impl, when set, enables the implementation/review gate (driver-impl-phase).
+	// nil keeps the prior behavior: stop at FINAL.md (surface-only).
+	Impl ImplOps
+	// AutoImplement gates the code-writing phases (Implement/Fixup): true only when
+	// the idea opted in (00-prompt auto_implement) AND --no-implement was not set.
+	AutoImplement bool
+	// MaxFixupCycles bounds the review→fix-up loop (default 3).
+	MaxFixupCycles int
+	Out            io.Writer // progress output (nil → discard)
 }
 
 // Driver advances one idea through the deliberation phases via Advance ticks.
@@ -67,6 +75,9 @@ func New(cfg Config, r RoundRunner) *Driver {
 	}
 	if cfg.CrossReviewRounds < 0 {
 		cfg.CrossReviewRounds = 1
+	}
+	if cfg.MaxFixupCycles <= 0 {
+		cfg.MaxFixupCycles = 3
 	}
 	if cfg.Out == nil {
 		cfg.Out = io.Discard
@@ -99,9 +110,14 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 		return d.advanceRound(ctx, c)
 	case PhaseConsensus:
 		return d.advanceConsensus(ctx, c)
+	case PhaseFinal:
+		return d.advanceFinal(ctx, c)
+	case PhaseImpl:
+		return d.advanceImpl(ctx, c)
+	case PhaseReview:
+		return d.advanceReview(ctx, c)
 	default:
-		// PhaseFinal/Impl/Review are later slices (S4+); the consensus gate stops
-		// here after FINAL.md is authored.
+		// PhaseDone / PhaseBlocked: nothing to auto-drive (ready to merge / halted).
 		return ActionSurfaceOnly, c, nil
 	}
 }

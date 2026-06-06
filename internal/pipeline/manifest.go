@@ -20,10 +20,10 @@ const SchemaVersion = 1
 type BlockKind string
 
 const (
-	KindDeliberation  BlockKind = "deliberation"
+	KindDeliberation   BlockKind = "deliberation"
 	KindImplementation BlockKind = "implementation"
-	KindAction        BlockKind = "action"
-	KindWatcher       BlockKind = "watcher"
+	KindAction         BlockKind = "action"
+	KindWatcher        BlockKind = "watcher"
 )
 
 // Risk is the §12.2 risk level. "production" mutations are non-bypassable.
@@ -46,17 +46,17 @@ const (
 
 // Block is one entry in the manifest's ordered block list (§12.1, §12.3).
 type Block struct {
-	ID                  string    `yaml:"id" json:"id"`
-	Kind                BlockKind `yaml:"kind" json:"kind"`
-	Stage               string    `yaml:"stage,omitempty" json:"stage,omitempty"`
-	RoleLens            string    `yaml:"role_lens,omitempty" json:"role_lens,omitempty"`
-	InputArtifacts      []string  `yaml:"input_artifacts,omitempty" json:"input_artifacts,omitempty"`
-	OutputArtifact      string    `yaml:"output_artifact,omitempty" json:"output_artifact,omitempty"`
-	Risk                Risk      `yaml:"risk,omitempty" json:"risk,omitempty"`
-	ProviderCapabilities []string `yaml:"provider_capabilities,omitempty" json:"provider_capabilities,omitempty"`
-	GatePolicy          string    `yaml:"gate_policy,omitempty" json:"gate_policy,omitempty"`
+	ID                   string    `yaml:"id" json:"id"`
+	Kind                 BlockKind `yaml:"kind" json:"kind"`
+	Stage                string    `yaml:"stage,omitempty" json:"stage,omitempty"`
+	RoleLens             string    `yaml:"role_lens,omitempty" json:"role_lens,omitempty"`
+	InputArtifacts       []string  `yaml:"input_artifacts,omitempty" json:"input_artifacts,omitempty"`
+	OutputArtifact       string    `yaml:"output_artifact,omitempty" json:"output_artifact,omitempty"`
+	Risk                 Risk      `yaml:"risk,omitempty" json:"risk,omitempty"`
+	ProviderCapabilities []string  `yaml:"provider_capabilities,omitempty" json:"provider_capabilities,omitempty"`
+	GatePolicy           string    `yaml:"gate_policy,omitempty" json:"gate_policy,omitempty"`
 	// Transport optionally overrides the manifest transport for this block.
-	Transport           string    `yaml:"transport,omitempty" json:"transport,omitempty"`
+	Transport string `yaml:"transport,omitempty" json:"transport,omitempty"`
 }
 
 // Edge is a reserved-for-future DAG edge (§12.3). A v1 driver accepts only a

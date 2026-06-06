@@ -120,13 +120,13 @@ const (
 // BreachRecord persists a breach across watch passes so an ongoing breach is
 // deduplicated and a recovered one can be marked resolved (§12.11).
 type BreachRecord struct {
-	Fingerprint string             `json:"fingerprint"`
-	PipelineSlug string            `json:"pipeline_slug"`
-	Breach      Breach             `json:"breach"`
-	Status      BreachRecordStatus `json:"status"`
-	RemediationIdea string         `json:"remediation_idea,omitempty"`
-	FirstSeen   time.Time          `json:"first_seen"`
-	LastSeen    time.Time          `json:"last_seen"`
+	Fingerprint     string             `json:"fingerprint"`
+	PipelineSlug    string             `json:"pipeline_slug"`
+	Breach          Breach             `json:"breach"`
+	Status          BreachRecordStatus `json:"status"`
+	RemediationIdea string             `json:"remediation_idea,omitempty"`
+	FirstSeen       time.Time          `json:"first_seen"`
+	LastSeen        time.Time          `json:"last_seen"`
 }
 
 func breachDir(deckDir, slug string) string {

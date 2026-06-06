@@ -143,8 +143,8 @@ func TestStdoutFallbackRecoversArtifact(t *testing.T) {
 	results := RunRoundOne(context.Background(), Options{
 		Root: root, RunID: "sf-run", Idea: idea, Task: "x",
 		Agents: []agents.Discovery{{
-			Spec:  agents.Spec{ID: "printer", HeadlessArgs: []string{"-test.run=TestFakeStdoutAgentHelper", "--", "parley-fake-stdout"}, PromptMode: agents.PromptStdin},
-			Path:  os.Args[0], Found: true,
+			Spec: agents.Spec{ID: "printer", HeadlessArgs: []string{"-test.run=TestFakeStdoutAgentHelper", "--", "parley-fake-stdout"}, PromptMode: agents.PromptStdin},
+			Path: os.Args[0], Found: true,
 		}},
 		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "sf-run")),
 	})
@@ -171,8 +171,8 @@ func TestStdoutFallbackRejectsNarration(t *testing.T) {
 	results := RunRoundOne(context.Background(), Options{
 		Root: root, RunID: "nar-run", Idea: idea, Task: "x",
 		Agents: []agents.Discovery{{
-			Spec:  agents.Spec{ID: "narrator", HeadlessArgs: []string{"-test.run=TestFakeNarrateAgentHelper", "--", "parley-fake-narrate"}, PromptMode: agents.PromptStdin},
-			Path:  os.Args[0], Found: true,
+			Spec: agents.Spec{ID: "narrator", HeadlessArgs: []string{"-test.run=TestFakeNarrateAgentHelper", "--", "parley-fake-narrate"}, PromptMode: agents.PromptStdin},
+			Path: os.Args[0], Found: true,
 		}},
 		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "nar-run")),
 	})
@@ -196,8 +196,8 @@ func TestStdoutFallbackRejectsInvalidFrontmatter(t *testing.T) {
 	results := RunRoundOne(context.Background(), Options{
 		Root: root, RunID: "bf-run", Idea: idea, Task: "x",
 		Agents: []agents.Discovery{{
-			Spec:  agents.Spec{ID: "badfm", HeadlessArgs: []string{"-test.run=TestFakeBadFrontmatterHelper", "--", "parley-fake-badfm"}, PromptMode: agents.PromptStdin},
-			Path:  os.Args[0], Found: true,
+			Spec: agents.Spec{ID: "badfm", HeadlessArgs: []string{"-test.run=TestFakeBadFrontmatterHelper", "--", "parley-fake-badfm"}, PromptMode: agents.PromptStdin},
+			Path: os.Args[0], Found: true,
 		}},
 		Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", "bf-run")),
 	})
