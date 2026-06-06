@@ -78,8 +78,11 @@ and AF9 (git-error = unsafe) harden the parsers and the safety precondition; AF5
 prevents an infinite reviewer retry; AF6/AF7 align roles/status with D6/D10.
 Implementing all nine in fix-up cycle 1.
 
-<!-- codex appends its signoff after re-review -->
+### codex — ✅ ACCEPT (2026-06-06)
+AF1-AF9 are applied, including the post-fixup RunChecks gate, fix-up marker idempotency, non-implementer review-consensus drafter, parser hardening, malformed-review pruning, role metadata resolution, in-progress await behavior, and safer git cleanliness handling. `go build ./... && go vet ./... && go test ./...` plus `GOOS=windows GOARCH=amd64 go build ./...` are green with explicit Go caches.
 
-<!-- agy appends its signoff after re-review -->
+### agy — ✅ ACCEPT (2026-06-06)
+All agreed fixes (AF1–AF9) are verified successfully. Unit tests coverage added, and local builds (including Windows cross-compilation) are fully green.
 
-<!-- hermes appends its signoff after re-review -->
+### hermes — ✅ ACCEPT (2026-06-06)
+AF1-AF9 verified in 3336b37 (RunChecks post-fixup, .fixup-done marker, non-implementer drafter, quote stripping, pruning, role metadata, in-progress await, git probe); native+Windows builds/tests green.

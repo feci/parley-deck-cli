@@ -1,6 +1,6 @@
 ---
 idea: driver-impl-phase
-status: implemented
+status: complete
 implementer: claude
 started: 2026-06-06
 completed: 2026-06-06
@@ -125,3 +125,13 @@ codex + agy converged on the RunChecks-after-fixup gap + hardening.
   is treated as dirty/unsafe.
 
 Checks: `go build/vet/test ./...` green; `GOOS=windows go build ./...` green.
+
+## Phase 8 complete — 2026-06-06
+
+Fix-up cycle 1 re-review: codex, agy, hermes all signed ✅ ACCEPT (review/consensus.md
++ review/round-02/). Zero remaining agreed fixes. **driver-impl-phase is complete**:
+`parley run --auto` / `parley continue --auto` auto-drive a local-dir idea (opted in
+via `auto_implement: true`) all the way from a task to reviewed, complete code —
+implementation → review → fix-up → status=complete — with the safety boundary
+(opt-in + clean tree + checks gate + no-land + MaxFixupCycles) and zero human input.
+Shipped as parley-deck-cli 1.16.0.
