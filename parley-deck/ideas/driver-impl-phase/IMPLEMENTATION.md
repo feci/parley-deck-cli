@@ -74,5 +74,26 @@ failures). MaxFixupCycles=3 breaker.
   PhaseReview not PhaseImpl.
 - The fix-up cycle number == the current review round; bounded by MaxFixupCycles.
 
-## Live acceptance
-(appended after the run.)
+## Live acceptance (PASS — both paths)
+
+`parley run --auto` creates the idea + drives to FINAL; without `auto_implement` it
+STOPS at FINAL ("auto-advance not enabled here; idea left at final") — the safety
+opt-in confirmed. After adding `auto_implement: true` to 00-prompt.md,
+`parley continue --auto <idea>` resumes.
+
+**Happy path (`/tmp/dd-s4b`, clean self-contained task):** the driver drove FINAL →
+`implementing via codex` (created TIPS.md + IMPLEMENTATION.md status=implemented) →
+`opening review round 1 (reviewers: agy)` → `drafting review consensus via codex` →
+`idea … is complete (review consensus clean); ready to merge — the driver does not
+merge/push/release`. IMPLEMENTATION.md status=`complete`, the deliverable (TIPS.md)
+present, **zero escalations** — full Phase 5-8 auto-drive to complete with real
+agents and zero human input.
+
+**Safety path (`/tmp/dd-s4`, task with no real codebase):** same chain through
+implement → review → review consensus, but agy's review correctly flagged a CRITICAL
+(IMPLEMENTATION.md marked implemented while the workspace has no source to modify);
+the drafter set `blocked: true`, and the driver **escalated** (blocking inbox note),
+never marking a hollow implementation complete. The blocked-review safety gate works.
+
+`continue --auto` (D9) is the resume mechanism; the no-land boundary held in both
+runs (the driver stops at "ready to merge").
