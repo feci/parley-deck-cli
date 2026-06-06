@@ -642,3 +642,306 @@ func mapByID(agents []AgentState) map[string]AgentState {
 func testIdea(slug string) protocol.IdeaStatus {
 	return protocol.IdeaStatus{Slug: slug, Status: "round-01"}
 }
+
+// --- tui-command-picker tests ---
+
+func pressRunes(t *testing.T, m liveModel, s string) liveModel {
+	t.Helper()
+	u, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)})
+	return u.(liveModel)
+}
+
+func pressKey(t *testing.T, m liveModel, k tea.KeyType) (liveModel, tea.Cmd) {
+	t.Helper()
+	u, c := m.Update(tea.KeyMsg{Type: k})
+	return u.(liveModel), c
+}
+
+// runCmd types a slash command into the input row and presses Enter.
+func runCmd(t *testing.T, m liveModel, cmd string) (liveModel, tea.Cmd) {
+	t.Helper()
+	m = pressRunes(t, m, cmd)
+	return pressKey(t, m, tea.KeyEnter)
+}
+
+// homeModelWithIdeas is a no-run Home model carrying the given idea slugs.
+func homeModelWithIdeas(t *testing.T, slugs ...string) liveModel {
+	t.Helper()
+	ideas := make([]protocol.IdeaStatus, 0, len(slugs))
+	for _, s := range slugs {
+		ideas = append(ideas, protocol.IdeaStatus{Slug: s, Status: "final"})
+	}
+	m := newLiveModel(LiveOptions{Home: true, Root: t.TempDir(), Status: protocol.WorkspaceStatus{Ideas: ideas}})
+	m.height, m.width = 30, 100
+	return m
+}
+
+// runModelWithQuestion is a model attached to a run with one open question.
+func runModelWithQuestion(t *testing.T) (liveModel, string, hitl.Question) {
+	t.Helper()
+	runDir := t.TempDir()
+	logPath := filepath.Join(runDir, "stdout.log")
+	if err := os.WriteFile(logPath, []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	q, err := hitl.New(runDir).Create(hitl.Question{Agent: "codex", Prompt: "Which branch?", Risk: hitl.RiskNormal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)
+	m := newLiveModel(LiveOptions{Idea: testIdea("hitl"), Participants: []string{"codex"}, RunID: "run-1", RunDir: runDir})
+	m.height, m.width = 30, 100
+	m.events = []store.Event{{Time: base, Type: "agent.started", Data: map[string]any{"agent": "codex", "stdout": logPath, "segment_id": "segment-0001"}}}
+	m.state = ProjectEvents([]string{"codex"}, m.events, m.now)
+	m.ensureActiveBuffer()
+	u, _ := m.Update(questionsMsg{questions: []hitl.Question{q}})
+	return u.(liveModel), runDir, q
+}
+
+// 1. Bare /open opens the picker; explicit /open <target> does not.
+func TestPickerOpenBareVsExplicit(t *testing.T) {
+	m := homeModelWithIdeas(t, "alpha", "beta")
+	m, _ = runCmd(t, m, "/open")
+	if !m.picker.Active || m.picker.Kind != pickerOpen {
+		t.Fatalf("bare /open should open the open-picker, got active=%v kind=%q", m.picker.Active, m.picker.Kind)
+	}
+	if len(m.picker.filtered()) != 2 {
+		t.Fatalf("picker should list 2 ideas, got %d", len(m.picker.filtered()))
+	}
+
+	m2 := homeModelWithIdeas(t, "alpha", "beta")
+	m2, _ = runCmd(t, m2, "/open alpha")
+	if m2.picker.Active {
+		t.Fatal("explicit /open <target> must NOT open the picker")
+	}
+}
+
+// 11. Empty candidates set inputErr and do not open the picker.
+func TestPickerOpenEmptyCandidates(t *testing.T) {
+	m := homeModelWithIdeas(t) // no ideas, no runs
+	m, _ = runCmd(t, m, "/open")
+	if m.picker.Active {
+		t.Fatal("/open with no candidates must not open a picker")
+	}
+	if m.inputErr != "nothing to open yet" {
+		t.Fatalf("inputErr=%q, want 'nothing to open yet'", m.inputErr)
+	}
+
+	mq := liveModelWithLog(t, "x\n") // run, but no open questions
+	mq, _ = runCmd(t, mq, "/answer")
+	if mq.picker.Active {
+		t.Fatal("/answer with no open questions must not open a picker")
+	}
+	if mq.inputErr != "no open questions" {
+		t.Fatalf("inputErr=%q, want 'no open questions'", mq.inputErr)
+	}
+}
+
+// 3. Picker ↑/↓ moves the selection, not the active tab.
+func TestPickerArrowsMoveSelectionNotTab(t *testing.T) {
+	m := homeModelWithIdeas(t, "alpha", "beta")
+	tabBefore := m.activeTabResolved()
+	m, _ = runCmd(t, m, "/open")
+	if m.picker.Index != 0 {
+		t.Fatalf("picker starts at index 0, got %d", m.picker.Index)
+	}
+	m, _ = pressKey(t, m, tea.KeyDown)
+	if m.picker.Index != 1 {
+		t.Fatalf("down should move selection to 1, got %d", m.picker.Index)
+	}
+	if got := m.activeTabResolved(); got != tabBefore {
+		t.Fatalf("picker arrows changed the active tab: %q -> %q", tabBefore, got)
+	}
+	m, _ = pressKey(t, m, tea.KeyUp)
+	if m.picker.Index != 0 {
+		t.Fatalf("up should move selection back to 0, got %d", m.picker.Index)
+	}
+}
+
+// 4. Printable runes (incl. N and /) filter the picker, never touch inputText.
+func TestPickerPrintableFiltersNotInput(t *testing.T) {
+	m := homeModelWithIdeas(t, "alpha", "beta")
+	m, _ = runCmd(t, m, "/open")
+	m = pressRunes(t, m, "N")
+	m = pressRunes(t, m, "/")
+	if m.picker.Filter != "N/" {
+		t.Fatalf("picker.Filter=%q, want 'N/'", m.picker.Filter)
+	}
+	if m.inputText != "" {
+		t.Fatalf("inputText=%q, want empty while picker filters", m.inputText)
+	}
+	if m.composing {
+		t.Fatal("typing N while picking must not open the new-idea composer")
+	}
+}
+
+// 5. reclamp keeps Index inside the filtered list.
+func TestPickerReclampClampsIndex(t *testing.T) {
+	p := pickerState{Items: []pickerItem{{Label: "a"}, {Label: "b"}, {Label: "c"}}, Index: 5}
+	p.reclamp(8)
+	if p.Index != 2 {
+		t.Fatalf("reclamp should clamp Index to 2 (len-1), got %d", p.Index)
+	}
+	p.Filter = "a"
+	p.Index = 2
+	p.reclamp(8)
+	if p.Index != 0 {
+		t.Fatalf("after filtering to 1 match, Index should clamp to 0, got %d", p.Index)
+	}
+}
+
+// 6. Picker Enter for /open dispatches through the same openRun path as explicit /open <value>.
+func TestPickerOpenEnterUsesOpenRun(t *testing.T) {
+	mPick := homeModelWithIdeas(t, "zzz")
+	mPick, _ = runCmd(t, mPick, "/open")
+	mPick, _ = pressKey(t, mPick, tea.KeyEnter) // select "zzz"
+	if mPick.picker.Active {
+		t.Fatal("Enter on a candidate should close the picker")
+	}
+	mExpl := homeModelWithIdeas(t, "zzz")
+	mExpl, _ = runCmd(t, mExpl, "/open zzz")
+	if mPick.inputErr != mExpl.inputErr {
+		t.Fatalf("picker-select and explicit /open differ: %q vs %q", mPick.inputErr, mExpl.inputErr)
+	}
+	if !strings.HasPrefix(mPick.inputErr, "open failed:") {
+		t.Fatalf("expected an open-failed error from openRun, got %q", mPick.inputErr)
+	}
+}
+
+// 2 + 9. Bare /answer opens the answer-picker; selecting a question enters answer
+// composition; submitting answers the question and clears compose state.
+func TestPickerAnswerTwoStepSubmit(t *testing.T) {
+	m, runDir, q := runModelWithQuestion(t)
+	m, _ = runCmd(t, m, "/answer")
+	if !m.picker.Active || m.picker.Kind != pickerAnswer {
+		t.Fatalf("bare /answer should open the answer-picker, got active=%v kind=%q", m.picker.Active, m.picker.Kind)
+	}
+	m, _ = pressKey(t, m, tea.KeyEnter) // select the one question
+	if m.picker.Active {
+		t.Fatal("selecting a question should close the picker")
+	}
+	if !m.composing || m.answerQID != q.ID || m.inputText != "" {
+		t.Fatalf("after select: composing=%v answerQID=%q inputText=%q, want composing=true qid=%s empty", m.composing, m.answerQID, m.inputText, q.ID)
+	}
+	if !strings.Contains(m.View(), "answer "+q.ID) {
+		t.Fatalf("input row should show the answer label\n%s", m.View())
+	}
+	m = pressRunes(t, m, "main")
+	m, _ = pressKey(t, m, tea.KeyEnter)
+	if m.composing || m.answerQID != "" || m.inputText != "" {
+		t.Fatalf("after submit: composing=%v answerQID=%q inputText=%q, want all cleared", m.composing, m.answerQID, m.inputText)
+	}
+	qs, err := hitl.New(runDir).List()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if qs[0].Answer != "main" || qs[0].Status != hitl.StatusAnswered {
+		t.Fatalf("question=%+v, want answered=main", qs[0])
+	}
+}
+
+// 7. esc cancels only the picker and preserves the attached run / active tab.
+func TestPickerEscPreservesRunContext(t *testing.T) {
+	m, runDir, _ := runModelWithQuestion(t)
+	tabBefore := m.activeTabResolved()
+	m, _ = runCmd(t, m, "/answer")
+	if !m.picker.Active {
+		t.Fatal("/answer should have opened the picker")
+	}
+	m, cmd := pressKey(t, m, tea.KeyEsc)
+	if cmd != nil {
+		t.Fatal("esc on an open picker must not quit")
+	}
+	if m.picker.Active {
+		t.Fatal("esc should cancel the picker")
+	}
+	if !m.hasRun() || m.opts.RunDir != runDir {
+		t.Fatalf("esc on the picker must not detach the run (RunDir=%q)", m.opts.RunDir)
+	}
+	if got := m.activeTabResolved(); got != tabBefore {
+		t.Fatalf("esc on the picker changed the active tab: %q -> %q", tabBefore, got)
+	}
+}
+
+// 8. Empty filtered results show an empty state; Enter selects nothing.
+func TestPickerEmptyFilterShowsStateAndEnterNoops(t *testing.T) {
+	m := homeModelWithIdeas(t, "alpha")
+	m, _ = runCmd(t, m, "/open")
+	m = pressRunes(t, m, "zzzz") // matches nothing
+	if len(m.picker.filtered()) != 0 {
+		t.Fatalf("filter should match nothing, got %d", len(m.picker.filtered()))
+	}
+	if !strings.Contains(m.View(), "no matches") {
+		t.Fatalf("empty filter should show a 'no matches' state\n%s", m.View())
+	}
+	before := m
+	m, _ = pressKey(t, m, tea.KeyEnter)
+	if !m.picker.Active {
+		t.Fatal("Enter on an empty filtered list should keep the picker open")
+	}
+	if m.composing != before.composing || m.opts.RunDir != before.opts.RunDir {
+		t.Fatal("Enter on empty results must not mutate run/answer state")
+	}
+}
+
+// 10. Cancelling an answer clears answerQID so a later composition can't answer it.
+func TestPickerAnswerCancelClearsQID(t *testing.T) {
+	m, _, q := runModelWithQuestion(t)
+	m, _ = runCmd(t, m, "/answer")
+	m, _ = pressKey(t, m, tea.KeyEnter) // enter answer composition
+	if m.answerQID != q.ID {
+		t.Fatalf("expected answerQID=%s, got %q", q.ID, m.answerQID)
+	}
+	m, _ = pressKey(t, m, tea.KeyEsc) // cancel composition
+	if m.composing || m.answerQID != "" {
+		t.Fatalf("esc should clear answer composition, got composing=%v answerQID=%q", m.composing, m.answerQID)
+	}
+}
+
+// FINAL §8: a background questionsMsg while the /answer picker is open rebuilds
+// the items without resetting the filter or the cursor.
+func TestPickerAnswerRefreshesOnBackgroundUpdate(t *testing.T) {
+	m, runDir, q1 := runModelWithQuestion(t)
+	q2, err := hitl.New(runDir).Create(hitl.Question{Agent: "codex", Prompt: "Deploy now?", Risk: hitl.RiskNormal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, _ = runCmd(t, m, "/answer")
+	if len(m.picker.filtered()) != 1 {
+		t.Fatalf("picker should start with 1 known question, got %d", len(m.picker.filtered()))
+	}
+	m = pressRunes(t, m, "Deploy") // matches q2's prompt once it arrives
+	u, _ := m.Update(questionsMsg{questions: []hitl.Question{q1, q2}, token: m.runToken})
+	m = u.(liveModel)
+	if !m.picker.Active {
+		t.Fatal("picker should stay open across a background refresh")
+	}
+	if m.picker.Filter != "Deploy" {
+		t.Fatalf("filter must be preserved across refresh, got %q", m.picker.Filter)
+	}
+	got := m.picker.filtered()
+	if len(got) != 1 || got[0].Value != q2.ID {
+		t.Fatalf("rebuilt+filtered list should be [q2], got %+v", got)
+	}
+	m, _ = pressKey(t, m, tea.KeyEnter)
+	if m.answerQID != q2.ID {
+		t.Fatalf("Enter should select q2 from the rebuilt list, answerQID=%q", m.answerQID)
+	}
+}
+
+// agy #1: a failed answer write keeps the user in answer composition to retry,
+// rather than stranding the qid.
+func TestPickerAnswerFailureKeepsCompose(t *testing.T) {
+	m, _, _ := runModelWithQuestion(t)
+	m, _ = runCmd(t, m, "/answer")
+	m, _ = pressKey(t, m, tea.KeyEnter) // enter answer composition
+	m.answerQID = "nope-does-not-exist" // force the write to fail
+	m = pressRunes(t, m, "x")
+	m, _ = pressKey(t, m, tea.KeyEnter)
+	if !m.composing || m.answerQID != "nope-does-not-exist" {
+		t.Fatalf("a failed answer must keep compose state: composing=%v answerQID=%q", m.composing, m.answerQID)
+	}
+	if m.inputErr == "" {
+		t.Fatal("a failed answer should surface an error")
+	}
+}

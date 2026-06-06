@@ -99,6 +99,82 @@ type agentBuffer struct {
 	loaded bool
 }
 
+// pickerKind discriminates what a confirmed picker selection dispatches to.
+type pickerKind string
+
+const (
+	pickerOpen   pickerKind = "open"   // select an idea/run to open
+	pickerAnswer pickerKind = "answer" // select an open question to answer
+)
+
+// pickerItem is one selectable row: Label is shown, Value is what the command
+// runs with. No per-item kind/callback — dispatch is by the active picker.Kind.
+type pickerItem struct{ Label, Value string }
+
+// pickerState is the reusable arrow-key picker sub-mode (mirrors composing). It
+// temporarily owns ↑/↓/Enter/esc/printable/backspace while Active; everything
+// else is a no-op. Index/Offset index into the FILTERED view.
+type pickerState struct {
+	Active bool
+	Kind   pickerKind
+	Title  string
+	Items  []pickerItem
+	Index  int
+	Filter string // case-insensitive substring over Label+Value
+	Offset int    // top of the visible scroll window
+}
+
+// filtered returns the items matching Filter (case-insensitive substring over
+// Label+Value); empty filter returns all items.
+func (p pickerState) filtered() []pickerItem {
+	needle := strings.ToLower(strings.TrimSpace(p.Filter))
+	if needle == "" {
+		return p.Items
+	}
+	var out []pickerItem
+	for _, it := range p.Items {
+		if strings.Contains(strings.ToLower(it.Label+" "+it.Value), needle) {
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
+// reclamp keeps Index inside the filtered list and Offset a window of `visible`
+// rows that always contains Index.
+func (p *pickerState) reclamp(visible int) {
+	n := len(p.filtered())
+	if n == 0 {
+		p.Index, p.Offset = 0, 0
+		return
+	}
+	if p.Index < 0 {
+		p.Index = 0
+	}
+	if p.Index >= n {
+		p.Index = n - 1
+	}
+	if visible < 1 {
+		visible = 1
+	}
+	if p.Index < p.Offset {
+		p.Offset = p.Index
+	}
+	if p.Index >= p.Offset+visible {
+		p.Offset = p.Index - visible + 1
+	}
+	maxOff := n - visible
+	if maxOff < 0 {
+		maxOff = 0
+	}
+	if p.Offset > maxOff {
+		p.Offset = maxOff
+	}
+	if p.Offset < 0 {
+		p.Offset = 0
+	}
+}
+
 type liveModel struct {
 	opts      LiveOptions
 	width     int
@@ -125,6 +201,11 @@ type liveModel struct {
 	composing bool                  // new-idea input mode (opened by N)
 	runToken  int                   // identifies the active run; stale ticks/reads are ignored
 	homeRuns  []runstate.RunSummary // recent runs for the Home tab
+
+	// Command picker (tui-command-picker): a bare arg-taking slash command
+	// (/open, /answer) opens an arrow-key picker instead of erroring.
+	picker    pickerState
+	answerQID string // non-empty while composing an answer chosen via the /answer picker
 }
 
 // hasRun reports whether an active run is attached (vs the no-run Home state).
@@ -214,6 +295,9 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		if m.picker.Active {
+			m.picker.reclamp(m.pickerRows()) // visible-row count may have changed
+		}
 		return m, nil
 	case tea.KeyMsg:
 		if m.mode == modeHelp {
@@ -252,6 +336,7 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.errText = msg.err.Error()
 		} else {
 			m.questions = msg.questions
+			m.refreshPickerItems() // keep an open /answer picker in sync
 		}
 		return m, nil
 	case elapsedTickMsg:
@@ -285,6 +370,7 @@ func (m *liveModel) refreshHomeRuns() {
 			runs = runs[:8]
 		}
 		m.homeRuns = runs
+		m.refreshPickerItems() // keep an open /open picker in sync
 	}
 }
 
@@ -307,6 +393,8 @@ func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
 	m.done = false
 	m.errText = ""
 	m.composing = false
+	m.answerQID = ""
+	m.picker = pickerState{}
 	m.inputText = ""
 	m.inputErr = ""
 	m.buffers = map[string]*agentBuffer{}
@@ -330,6 +418,16 @@ func (m liveModel) View() string {
 // then a status line and a persistent input row.
 func (m liveModel) renderTabbed(width, height int) string {
 	rows := m.transcriptHeight()
+	// The picker overlays above the input row; shrink the transcript area by its
+	// height so a tiny terminal never overflows.
+	var pickerBlock string
+	if m.picker.Active {
+		pickerBlock = m.renderPicker(width)
+		rows -= strings.Count(pickerBlock, "\n") + 1
+		if rows < 1 {
+			rows = 1
+		}
+	}
 	active := m.activeTabResolved()
 	var main string
 	switch {
@@ -348,6 +446,9 @@ func (m liveModel) renderTabbed(width, height int) string {
 	}
 	if banner := m.renderQuestionBanner(width); banner != "" {
 		parts = append(parts, banner)
+	}
+	if pickerBlock != "" {
+		parts = append(parts, pickerBlock)
 	}
 	parts = append(parts, m.renderStatusLine(width), m.renderInputRow(width))
 	return strings.Join(parts, "\n")
@@ -420,7 +521,9 @@ func (m liveModel) renderTabStrip(width int) string {
 }
 
 func (m liveModel) styleTab(label string, on bool) string {
-	if on {
+	// While the picker is active, dim every tab so focus reads as "on the picker"
+	// and the disabled tab navigation is visually obvious.
+	if on && !m.picker.Active {
 		return headerStyle.Render("▸ " + label)
 	}
 	return mutedStyle.Render("  " + label)
@@ -540,6 +643,10 @@ func (m liveModel) renderInputRow(width int) string {
 	answer := false
 	var label string
 	switch {
+	case m.composing && m.answerQID != "":
+		// Step 2 of the /answer picker: colour-flip so an answer is never accidental.
+		label = "answer " + m.answerQID + " › "
+		answer = true
 	case m.composing:
 		label = "new idea › "
 	case active == homeTabID:
@@ -571,12 +678,16 @@ func (m liveModel) renderInputRow(width int) string {
 		hint = "[done] · ↑/↓ tabs · N new idea · /open <slug|run> · /quit or esc to exit"
 	}
 	switch {
+	case m.picker.Active:
+		hint = "↑/↓ select · type filter · Enter choose · esc cancel"
+	case m.composing && m.answerQID != "":
+		hint = "type the answer · Enter submit · esc cancel"
 	case m.composing:
 		hint = "type a task · Enter launch · esc cancel"
 	case strings.HasPrefix(m.inputText, "/"):
-		hint = "commands: /help /status /follow /deck <t> /answer <qid> <t> /open <slug|run> /quit"
+		hint = "commands: /help /status /follow /deck <t> /answer [pick] /open [pick] /quit"
 	case active == homeTabID && !m.done:
-		hint = "N new idea · /open <slug|run> · ↑/↓ tabs · /help · ctrl+c"
+		hint = "N new idea · /open (pick) · ↑/↓ tabs · /help · ctrl+c"
 	}
 	return row + "\n" + mutedStyle.Render(hint)
 }
@@ -616,17 +727,22 @@ func (m liveModel) renderHome(width, rows int) string {
 
 // updateMain handles all keys on the default tabbed surface.
 func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+c":
+	// ctrl+c is global; then the picker (when active) owns navigation/filter keys
+	// BEFORE any tab/input handling can see them — this ordering is the whole
+	// correctness gate for the feature.
+	if msg.String() == "ctrl+c" {
 		if m.opts.Cancel != nil {
 			m.opts.Cancel()
 		}
 		return m, tea.Quit
+	}
+	if m.picker.Active {
+		return m.updatePicker(msg)
+	}
+	switch msg.String() {
 	case "esc":
 		if m.composing {
-			m.composing = false
-			m.inputText = ""
-			m.inputErr = ""
+			m.clearComposition()
 			return m, nil
 		}
 		if m.inputText != "" {
@@ -637,9 +753,11 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "N":
 		// Start a new idea — only as a command (empty input) so it never eats
-		// a capital N typed mid-steer.
-		if !m.composing && m.inputText == "" && m.opts.Start != nil {
+		// a capital N typed mid-steer. The !m.picker.Active term is redundant given
+		// the early picker branch above, but documents the invariant.
+		if !m.composing && m.inputText == "" && !m.picker.Active && m.opts.Start != nil {
 			m.composing = true
+			m.answerQID = ""
 			m.inputErr = ""
 			return m, nil
 		}
@@ -915,8 +1033,17 @@ func (m liveModel) submitInput() (tea.Model, tea.Cmd) {
 	text := strings.TrimSpace(m.inputText)
 	if m.composing {
 		if text == "" {
-			m.inputErr = "type a task for the new idea"
+			if m.answerQID != "" {
+				m.inputErr = "type an answer first"
+			} else {
+				m.inputErr = "type a task for the new idea"
+			}
 			return m, nil
+		}
+		if m.answerQID != "" {
+			// Keep composing/answerQID set; answerQuestion clears them only on a
+			// successful write so a failed answer leaves the user in compose to retry.
+			return m.answerQuestion(m.answerQID, text)
 		}
 		return m.launchIdea(text)
 	}
@@ -950,7 +1077,8 @@ func (m liveModel) launchIdea(task string) (tea.Model, tea.Cmd) {
 	}
 	res, err := m.opts.Start(LaunchRequest{Task: task})
 	if err != nil {
-		m.inputErr, m.composing, m.inputText = "launch failed: "+err.Error(), false, ""
+		// Keep the user in compose with their task text intact so they can retry.
+		m.inputErr = "launch failed: " + err.Error()
 		return m, nil
 	}
 	m.statusMsg = "launched " + res.RunID + " (" + strings.Join(res.Participants, ", ") + ")"
@@ -998,9 +1126,13 @@ func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.M
 
 func (m liveModel) answerQuestion(qid, text string) (tea.Model, tea.Cmd) {
 	if _, err := hitl.New(m.opts.RunDir).Answer(qid, text, false); err != nil {
+		// On failure keep any answer-composition state so the user can edit + retry.
 		m.inputErr = err.Error()
 		return m, nil
 	}
+	// Success: exit answer composition cleanly (no-op for the non-picker callers).
+	m.composing = false
+	m.answerQID = ""
 	m.statusMsg = "answered " + qid
 	m.inputText, m.inputErr = "", ""
 	return m, readQuestionsCmd(m.opts.RunDir, m.runToken)
@@ -1037,9 +1169,18 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 		m.inputText = ""
 		return m.submitSteer(steer.TargetDeck, "", rest)
 	case "/answer":
+		if rest == "" {
+			items := m.answerItems()
+			if len(items) == 0 {
+				m.inputText, m.inputErr = "", "no open questions"
+				return m, nil
+			}
+			m.openPicker(pickerAnswer, "Answer a question", items)
+			return m, nil
+		}
 		af := strings.Fields(rest)
 		if len(af) < 2 {
-			m.inputErr = "usage: /answer <qid> <text>"
+			m.inputErr = "usage: /answer <qid> <text> (or just /answer to pick)"
 			return m, nil
 		}
 		ans := strings.TrimSpace(strings.TrimPrefix(rest, af[0]))
@@ -1047,7 +1188,12 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 		return m.answerQuestion(af[0], ans)
 	case "/open":
 		if rest == "" {
-			m.inputErr = "usage: /open <slug|run-id>"
+			items := m.openItems()
+			if len(items) == 0 {
+				m.inputText, m.inputErr = "", "nothing to open yet"
+				return m, nil
+			}
+			m.openPicker(pickerOpen, "Open an idea or run", items)
 			return m, nil
 		}
 		m.inputText = ""
@@ -1060,6 +1206,219 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 		m.inputErr = "unknown command: " + cmd + " (try /help)"
 		return m, nil
 	}
+}
+
+// --- command picker (tui-command-picker) ---
+
+// pickerRows is the number of picker rows visible at once: capped at 8 and at
+// the available transcript height so tiny terminals don't overflow.
+func (m liveModel) pickerRows() int {
+	rows := m.transcriptHeight() // already floored at 3
+	if rows > 8 {
+		rows = 8
+	}
+	if rows < 1 {
+		rows = 1
+	}
+	return rows
+}
+
+// clearPicker zeroes the picker sub-mode.
+func (m *liveModel) clearPicker() { m.picker = pickerState{} }
+
+// clearComposition exits both new-idea and answer composition cleanly so a later
+// composition can never submit to a stale qid.
+func (m *liveModel) clearComposition() {
+	m.composing = false
+	m.answerQID = ""
+	m.inputText = ""
+	m.inputErr = ""
+}
+
+// openPicker activates the picker over items, leaving compose/input cleared.
+func (m *liveModel) openPicker(kind pickerKind, title string, items []pickerItem) {
+	m.composing = false
+	m.answerQID = ""
+	m.inputText = ""
+	m.inputErr = ""
+	m.picker = pickerState{Active: true, Kind: kind, Title: title, Items: items}
+	m.picker.reclamp(m.pickerRows())
+}
+
+// refreshPickerItems rebuilds an open picker's candidate list from the latest
+// cached data when a background tick changes the source, preserving the filter
+// and selection cursor and re-clamping (FINAL §8). A no-op when no picker is open.
+func (m *liveModel) refreshPickerItems() {
+	if !m.picker.Active {
+		return
+	}
+	switch m.picker.Kind {
+	case pickerOpen:
+		m.picker.Items = m.openItems()
+	case pickerAnswer:
+		m.picker.Items = m.answerItems()
+	}
+	m.picker.reclamp(m.pickerRows())
+}
+
+// updatePicker owns ↑/↓/Enter/esc/printable/backspace while the picker is active;
+// every other key is a no-op (scroll/paging keys are intentionally ignored).
+func (m liveModel) updatePicker(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	visible := m.pickerRows()
+	switch msg.String() {
+	case "esc":
+		m.clearPicker()
+		m.inputErr = ""
+		return m, nil
+	case "up":
+		m.picker.Index--
+	case "down":
+		m.picker.Index++
+	case "enter":
+		items := m.picker.filtered()
+		m.picker.reclamp(visible)
+		if len(items) == 0 {
+			return m, nil // empty state: select nothing, keep the picker open
+		}
+		return m.selectPickerItem(items[m.picker.Index])
+	case "backspace", "ctrl+h":
+		if r := []rune(m.picker.Filter); len(r) > 0 {
+			m.picker.Filter = string(r[:len(r)-1])
+			m.picker.Index = 0
+		}
+	default:
+		if len(msg.Runes) > 0 {
+			m.picker.Filter += string(msg.Runes)
+			m.picker.Index = 0
+		}
+	}
+	m.picker.reclamp(visible)
+	m.inputErr = ""
+	return m, nil
+}
+
+// selectPickerItem dispatches a confirmed selection by the active picker kind.
+func (m liveModel) selectPickerItem(item pickerItem) (tea.Model, tea.Cmd) {
+	switch m.picker.Kind {
+	case pickerOpen:
+		m.clearPicker()
+		return m.openRun(item.Value)
+	case pickerAnswer:
+		m.clearPicker()
+		m.composing = true
+		m.answerQID = item.Value
+		m.inputText = ""
+		m.inputErr = ""
+		return m, nil
+	default:
+		m.clearPicker()
+		return m, nil
+	}
+}
+
+// openItems are the /open candidates: ideas (from Status) then recent runs,
+// deduped by Value, each labelled with its kind.
+func (m liveModel) openItems() []pickerItem {
+	var items []pickerItem
+	seen := map[string]bool{}
+	for _, idea := range m.opts.Status.Ideas {
+		if idea.Slug == "" || seen[idea.Slug] {
+			continue
+		}
+		seen[idea.Slug] = true
+		items = append(items, pickerItem{
+			Label: fmt.Sprintf("idea  %-30s [%s]", truncateText(idea.Slug, 30), idea.Status),
+			Value: idea.Slug,
+		})
+	}
+	for _, r := range m.homeRuns {
+		if r.RunID == "" || seen[r.RunID] {
+			continue
+		}
+		seen[r.RunID] = true
+		st := "active"
+		if r.Terminal {
+			st = strings.ToUpper(valueOr(r.Outcome, "done"))
+		}
+		items = append(items, pickerItem{
+			Label: fmt.Sprintf("run   %-24s %-20s [%s]", truncateText(r.RunID, 24), truncateText(r.IdeaSlug, 20), st),
+			Value: r.RunID,
+		})
+	}
+	return items
+}
+
+// answerItems are the /answer candidates: the currently open questions.
+func (m liveModel) answerItems() []pickerItem {
+	var items []pickerItem
+	for _, q := range m.questions {
+		if q.Status != hitl.StatusOpen {
+			continue
+		}
+		who := q.Agent
+		if who == "" {
+			who = "deck"
+		}
+		items = append(items, pickerItem{
+			Label: fmt.Sprintf("%-26s %-8s %s", truncateText(q.ID, 26), who, truncateText(strings.TrimSpace(q.Prompt), 48)),
+			Value: q.ID,
+		})
+	}
+	return items
+}
+
+// renderPicker draws the picker list (a bordered box) shown above the input row.
+func (m liveModel) renderPicker(width int) string {
+	items := m.picker.filtered()
+	var b strings.Builder
+	title := m.picker.Title
+	if m.picker.Filter != "" {
+		title += "  filter: " + m.picker.Filter
+	}
+	b.WriteString(headerStyle.Render(truncateText(title, width-4)))
+	b.WriteString("\n")
+	if len(items) == 0 {
+		empty := "(no matches)" // a picker only opens with candidates, so empty == filtered out
+		if m.picker.Filter == "" {
+			switch m.picker.Kind {
+			case pickerOpen:
+				empty = "(no recent runs or ideas to open)"
+			case pickerAnswer:
+				empty = "(no open questions to answer)"
+			}
+		}
+		b.WriteString(mutedStyle.Render("  " + empty))
+		return boxStyle.Width(clampInt(width-4, 40, 84)).Render(strings.TrimRight(b.String(), "\n"))
+	}
+	// reclamp a local copy so the view never mutates model state but Index/Offset
+	// are always consistent (reclamp is the single source of the window math).
+	visible := m.pickerRows()
+	p := m.picker
+	p.reclamp(visible)
+	off := p.Offset
+	end := off + visible
+	if end > len(items) {
+		end = len(items)
+	}
+	if off > 0 {
+		b.WriteString(mutedStyle.Render("  ↑ more"))
+		b.WriteString("\n")
+	}
+	for i := off; i < end; i++ {
+		line := truncateText(items[i].Label, width-6)
+		if i == p.Index {
+			b.WriteString(okStyle.Render("> " + line))
+		} else {
+			b.WriteString("  " + mutedStyle.Render(line))
+		}
+		b.WriteString("\n")
+	}
+	if end < len(items) {
+		b.WriteString(mutedStyle.Render("  ↓ more"))
+		b.WriteString("\n")
+	}
+	b.WriteString(mutedStyle.Render("↑/↓ select · type filter · Enter choose · esc cancel"))
+	return boxStyle.Width(clampInt(width-4, 40, 84)).Render(strings.TrimRight(b.String(), "\n"))
 }
 
 func (m liveModel) renderAgentTable() string {
@@ -1183,8 +1542,13 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  /help              this overlay        /status   jump to Status tab",
 		"  /follow            re-pin to the bottom (tail)",
 		"  /deck <text>       record a deck-level steer",
-		"  /answer <qid> <t>  answer a specific question",
+		"  /open              pick an idea/run to open (↑/↓ + Enter); /open <slug|run> direct",
+		"  /answer            pick an open question, then type the answer; /answer <qid> <t> direct",
 		"  /quit              detach the TUI",
+		"",
+		"Picker (after a bare /open or /answer)",
+		"  ↑ / ↓              move the selection      type   filter the list",
+		"  Enter              choose                  esc    cancel the picker",
 		"",
 		mutedStyle.Render("steers are recorded/queued; auto-execution is a later slice. esc/Enter to close"),
 	}
