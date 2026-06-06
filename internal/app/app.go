@@ -73,7 +73,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	case "run":
 		return runTask(ctx, args[1:], stdout, stderr)
 	case "continue":
-		return runContinue(args[1:], stdout, stderr)
+		return runContinue(ctx, args[1:], stdout, stderr)
 	case "steer":
 		return runSteer(args[1:], stdout, stderr)
 	case "resume":
@@ -1017,16 +1017,18 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func runContinue(args []string, stdout, stderr io.Writer) int {
+func runContinue(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("continue", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	root := fs.String("dir", ".", "workspace directory")
 	jsonOut := fs.Bool("json", false, "print unstable JSON output")
+	auto := fs.Bool("auto", false, "execute the next action (auto-drive) instead of only printing it")
+	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
 	if fs.NArg() != 1 {
-		fmt.Fprintln(stderr, "usage: parley continue [--dir DIR] [--json] RUN_OR_IDEA")
+		fmt.Fprintln(stderr, "usage: parley continue [--dir DIR] [--json] [--auto] RUN_OR_IDEA")
 		return 2
 	}
 
@@ -1034,6 +1036,9 @@ func runContinue(args []string, stdout, stderr io.Writer) int {
 	if err != nil {
 		fmt.Fprintf(stderr, "continue failed: %v\n", err)
 		return 1
+	}
+	if *auto {
+		return continueAuto(ctx, *root, run, *noImplement, stdout, stderr)
 	}
 	steers, _ := steer.List(run.RunDir)
 	if *jsonOut {
@@ -1050,6 +1055,52 @@ func runContinue(args []string, stdout, stderr io.Writer) int {
 	fmt.Fprintf(stdout, "State: %s\n", displayRunState(run))
 	printNextActions(stdout, run)
 	printQueuedSteers(stdout, steers)
+	return 0
+}
+
+// continueAuto reconstructs the driver for an existing run and ticks it forward
+// (consensus D9): `parley continue --auto` EXECUTES the next action instead of
+// only printing it. Reuses the same gates/adapters as `parley run --auto`.
+func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noImplement bool, stdout, stderr io.Writer) int {
+	if run.IdeaSlug == "" || run.IdeaSlug == "unknown" {
+		fmt.Fprintln(stderr, "continue --auto failed: run has no idea slug")
+		return 1
+	}
+	discovered, err := discoverConfigured(ctx, root)
+	if err != nil {
+		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
+		return 1
+	}
+	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", run.IdeaSlug)
+	idea := protocol.IdeaStatus{Slug: run.IdeaSlug, Path: ideaDir, Participants: run.Participants}
+	runOpts := runner.Options{
+		Root:   root,
+		RunID:  run.RunID,
+		Idea:   idea,
+		Agents: discovered,
+		Store:  store.New(run.RunDir),
+	}
+	d := driver.New(driver.Config{
+		IdeaDir:           ideaDir,
+		IdeaSlug:          run.IdeaSlug,
+		Participants:      run.Participants,
+		RunDir:            run.RunDir,
+		Root:              root,
+		Events:            runOpts.Store,
+		CrossReviewRounds: driver.ReadCrossReviewRounds(ideaDir),
+		Auto:              true,
+		Consensus:         newDriverConsensusOps(root, run.IdeaSlug, ideaDir, run.Participants, discovered, stdout),
+		Impl:              newDriverImplOps(runOpts, root, run.IdeaSlug, ideaDir, run.Participants, stdout),
+		AutoImplement:     driver.ReadAutoImplement(ideaDir) && !noImplement,
+		Out:               stdout,
+	}, driver.NewRunnerAdapter(runOpts))
+	if err := d.Run(ctx); err != nil {
+		fmt.Fprintf(stderr, "continue --auto: %v\n", err)
+		return 1
+	}
+	if updated, err := runstate.LoadRun(root, run.RunID); err == nil {
+		registerWorkspaceSessions(root, []runstate.RunSummary{updated})
+	}
 	return 0
 }
 
@@ -1589,6 +1640,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	noTUI := fs.Bool("no-tui", false, "run without opening the TUI after the round")
 	auto := fs.Bool("auto", false, "enable automatic low-risk progression policy")
+	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
 	yes := fs.Bool("yes", false, "launch selected agents without interactive confirmation")
 	root := fs.String("dir", ".", "workspace directory")
@@ -1671,6 +1723,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 				CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
 				Auto:              *auto,
 				Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, stdout),
+				Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, stdout),
+				AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
 				Out:               stdout,
 			}, driver.NewRunnerAdapter(runOpts))
 			if err := d.Run(runCtx); err != nil {

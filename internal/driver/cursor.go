@@ -92,11 +92,21 @@ func Rebuild(ideaDir string, maxRounds int) Cursor {
 		c.RoundsRun = highest
 	}
 	finalPath := filepath.Join(ideaDir, "FINAL.md")
+	implPath := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	reviewConsensus := filepath.Join(ideaDir, "review", "consensus.md")
 	switch {
+	// Most-terminal-first (D2): implementation/review artifacts win over FINAL/
+	// consensus so a valid FINAL.md never hides later phases.
+	case fileExists(implPath) && implementationStatus(implPath) == "complete":
+		c.Phase = PhaseDone
+	case fileExists(reviewConsensus) || highestReviewRound(ideaDir) >= 1:
+		c.Phase = PhaseReview
+	case fileExists(implPath):
+		c.Phase = PhaseImpl
 	case fileExists(finalPath) && finalScaffoldReason(finalPath) == "":
 		// Only a VALID (non-scaffold) FINAL.md is truly final. A scaffold FINAL.md
 		// from a failed/partial draft must NOT strand the idea at PhaseFinal — it
-		// stays in the consensus phase so the gate re-drafts it (AF1).
+		// stays in the consensus phase so the gate re-drafts it (slice-2 AF1).
 		c.Phase = PhaseFinal
 	case fileExists(filepath.Join(ideaDir, "consensus.md")):
 		c.Phase = PhaseConsensus
@@ -109,6 +119,29 @@ func Rebuild(ideaDir string, maxRounds int) Cursor {
 	}
 	c.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	return c
+}
+
+// implementationStatus returns the status: frontmatter of an IMPLEMENTATION.md.
+func implementationStatus(implPath string) string {
+	v, _ := readFrontmatterField(implPath, "status")
+	return v
+}
+
+// highestReviewRound returns the largest N for which review/round-NN/ exists, or 0.
+func highestReviewRound(ideaDir string) int {
+	entries, err := os.ReadDir(filepath.Join(ideaDir, "review"))
+	if err != nil {
+		return 0
+	}
+	highest := 0
+	for _, e := range entries {
+		if e.IsDir() && strings.HasPrefix(e.Name(), "round-") {
+			if n := roundOrdinal(e.Name()); n > highest {
+				highest = n
+			}
+		}
+	}
+	return highest
 }
 
 // highestRound returns the largest N for which a round-NN/ directory exists, or 0.
