@@ -22,6 +22,9 @@ var (
 	mutedStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 	okStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	warnStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	// steerStyle (cyan) marks the steer input prefix so a message to an agent is
+	// visually distinct from plain input and never sent by accident.
+	steerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("44")).Bold(true)
 )
 
 type initModel struct {
