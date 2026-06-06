@@ -1003,6 +1003,7 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	idea := ideaForRun(status, run)
+	resumeKill, resumeLiveness := reattachSeams(run.RunDir)
 	if err := tui.RunLive(tui.LiveOptions{
 		Status:       status,
 		Idea:         idea,
@@ -1010,6 +1011,11 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 		RunID:        run.RunID,
 		RunDir:       run.RunDir,
 		Resume:       true,
+		KillAgent:    resumeKill,     // durable kill across the restart
+		Liveness:     resumeLiveness, // RUN vs STALE badge
+		Root:         *root,
+		ReattachKill: func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
+		ReattachLiveness: func(runID string) tui.LivenessFunc { _, l := reattachSeams(runDirFor(*root, runID)); return l },
 	}); err != nil {
 		fmt.Fprintf(stderr, "resume tui failed: %v\n", err)
 		return 1
@@ -1748,7 +1754,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	handle := runner.RunRoundOneAsync(runCtx, runOpts)
 	workspaceStatus.Ideas = []protocol.IdeaStatus{created.Idea}
-	steerFn, killFn := liveSteerKillSeams(runCtx, handle)
+	steerFn, killFn, livenessFn := liveSteerKillSeams(runCtx, handle)
 	if err := tui.RunLive(tui.LiveOptions{
 		Status:       workspaceStatus,
 		Idea:         created.Idea,
@@ -1759,6 +1765,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		Cancel:       cancelRun,
 		SubmitSteer:  steerFn,
 		KillAgent:    killFn,
+		Liveness:     livenessFn,
+		ReattachKill: func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
+		ReattachLiveness: func(runID string) tui.LivenessFunc { _, l := reattachSeams(runDirFor(*root, runID)); return l },
 		Root:         *root,
 		// `parley run` watches one run; start new ideas from `parley tui` (N).
 	}); err != nil {
@@ -1972,6 +1981,10 @@ func runTUIViewWithDiscovery(ctx context.Context, root string, results []agents.
 		Root:   root,
 		Status: status,
 		Start:  newLaunchFunc(ctx, root, results, &reaper),
+		// Opening an existing run (/open) is observational, but it can still kill
+		// that run's agents via their persisted process identity, and show RUN/STALE.
+		ReattachKill:     func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(root, runID)); return k },
+		ReattachLiveness: func(runID string) tui.LivenessFunc { _, l := reattachSeams(runDirFor(root, runID)); return l },
 	}); err != nil {
 		fmt.Fprintf(stderr, "tui failed: %v\n", err)
 		return 1
@@ -2015,7 +2028,7 @@ func (r *launchReaper) waitForActive(out io.Writer) {
 // TUI execute a steer (a fresh single-agent attempt whose stdout is the reply)
 // and kill one agent, against a live runner.Handle. internal/tui never imports
 // internal/runner; these plain func seams are the only bridge.
-func liveSteerKillSeams(runCtx context.Context, handle *runner.Handle) (tui.SteerFunc, tui.KillAgentFunc) {
+func liveSteerKillSeams(runCtx context.Context, handle *runner.Handle) (tui.SteerFunc, tui.KillAgentFunc, tui.LivenessFunc) {
 	runDir := handle.RunDir
 	submit := func(req tui.SteerRequest) (tui.SteerResult, error) {
 		// Always keep the durable audit trail (steer.requested/delivered) first.
@@ -2049,14 +2062,41 @@ func liveSteerKillSeams(runCtx context.Context, handle *runner.Handle) (tui.Stee
 		}
 		return out, nil
 	}
-	kill := func(agentID string) error {
-		res := handle.KillAgent(agentID)
-		if !res.Killed {
-			return fmt.Errorf("%s", res.Message)
+	kill := killOutcome(func(agentID string) runner.KillResult { return handle.KillAgent(agentID) })
+	liveness := func(agentID string) string { return runner.AgentLivenessAt(runDir, agentID) }
+	return submit, kill, liveness
+}
+
+// killOutcome adapts a KillResult-returning kill into the TUI seam: a failed
+// operation returns a Go error (shown red); success returns its outcome message.
+func killOutcome(do func(agentID string) runner.KillResult) tui.KillAgentFunc {
+	return func(agentID string) (string, error) {
+		res := do(agentID)
+		if res.Failed {
+			return "", fmt.Errorf("%s", res.Message)
 		}
-		return nil
+		if res.Message != "" {
+			return res.Message, nil
+		}
+		if res.Killed {
+			return "killed " + agentID, nil
+		}
+		return "", nil
 	}
-	return submit, kill
+}
+
+// runDirFor is the on-disk directory for a run id (mirrors runner.Handle.RunDir).
+func runDirFor(root, runID string) string {
+	return filepath.Join(root, protocol.DeckDir, "runs", runID)
+}
+
+// reattachSeams builds the durable kill + liveness seams for a run that has no
+// live in-process handle (resume / open): they operate purely on the run dir's
+// persisted process identities.
+func reattachSeams(runDir string) (tui.KillAgentFunc, tui.LivenessFunc) {
+	kill := killOutcome(func(agentID string) runner.KillResult { return runner.DurableKillAt(runDir, agentID) })
+	liveness := func(agentID string) string { return runner.AgentLivenessAt(runDir, agentID) }
+	return kill, liveness
 }
 
 // newLaunchFunc returns a tui.LaunchFunc that starts a new round-01 run with all
@@ -2087,7 +2127,7 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 				registerWorkspaceSessions(root, []runstate.RunSummary{run})
 			}
 		})
-		steerFn, killFn := liveSteerKillSeams(runCtx, handle)
+		steerFn, killFn, livenessFn := liveSteerKillSeams(runCtx, handle)
 		return tui.LaunchResult{
 			Idea:         created.Idea,
 			Participants: participants,
@@ -2097,6 +2137,7 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 			Cancel:       cancelRun,
 			SubmitSteer:  steerFn,
 			KillAgent:    killFn,
+			Liveness:     livenessFn,
 		}, nil
 	}
 }

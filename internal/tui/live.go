@@ -67,6 +67,14 @@ type LiveOptions struct {
 	// kill-unavailable (e.g. observational /open runs).
 	SubmitSteer SteerFunc     // execute a steer (agent reply round-trip)
 	KillAgent   KillAgentFunc // terminate one agent; the rest of the run continues
+
+	// Durable kill / liveness (tui-durable-kill). ReattachKill/ReattachLiveness
+	// build per-run seams for an opened run from only its run id (kills via
+	// persisted process identity across a parley restart; RUN/STALE badge).
+	// Liveness reports the active run's agent process states for the badge.
+	ReattachKill     func(runID string) KillAgentFunc
+	ReattachLiveness func(runID string) LivenessFunc
+	Liveness         LivenessFunc
 }
 
 // LaunchRequest is a request to launch a new idea/run from the TUI.
@@ -82,6 +90,7 @@ type LaunchResult struct {
 	Cancel       func()
 	SubmitSteer  SteerFunc
 	KillAgent    KillAgentFunc
+	Liveness     LivenessFunc
 }
 
 // LaunchFunc launches a run through the existing runner path and returns a
@@ -106,9 +115,16 @@ type SteerResult struct {
 	StdoutPath string
 }
 
-// SteerFunc executes/records a steer. KillAgentFunc terminates one agent.
+// SteerFunc executes/records a steer. KillAgentFunc terminates one agent (or, on
+// a restarted/observational run, kills it via its persisted process identity, or
+// clears a stale "running" badge). It returns a user-facing outcome message.
 type SteerFunc func(SteerRequest) (SteerResult, error)
-type KillAgentFunc func(agentID string) error
+type KillAgentFunc func(agentID string) (string, error)
+
+// LivenessFunc reports a running agent's true process state for the badge:
+// "live" (attributed process alive), "stale" (no attributable live process), or
+// "" (unknown / not applicable). Injected so internal/tui stays decoupled.
+type LivenessFunc func(agentID string) string
 
 // Tab ids: Home is always first; agent tabs are "agent:<id>"; Status is last.
 const (
@@ -440,6 +456,7 @@ func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
 	// launched from Home (newLaunchFunc) would silently lose steering and kill.
 	m.opts.SubmitSteer = s.SubmitSteer
 	m.opts.KillAgent = s.KillAgent
+	m.opts.Liveness = s.Liveness
 	m.opts.Resume = false
 	m.opts.Home = false
 	m.offset = 0
@@ -551,7 +568,11 @@ func (m liveModel) renderTabStrip(width int) string {
 			agentID, _ := agentTab(id)
 			st := ""
 			if a := m.agentByID(agentID); a != nil {
-				st = " " + shortState(a.State)
+				if a.State == stateRunning && m.agentLiveness(agentID) == "stale" {
+					st = " STALE" // projected running but no attributable live process
+				} else {
+					st = " " + shortState(a.State)
+				}
 			}
 			tabs = append(tabs, tab{id, agentID + st})
 		}
@@ -771,8 +792,14 @@ func (m liveModel) renderStatusLine(width int) string {
 func (m liveModel) renderInputRow(width int) string {
 	// Modal kill confirmation takes over the input row.
 	if m.confirmKillAgent != "" {
-		row := warnStyle.Render(truncateText("kill agent "+m.confirmKillAgent+"? (y/N)", width))
-		return row + "\n" + mutedStyle.Render("y confirm · n/esc cancel (the rest of the run keeps going)")
+		prompt := "kill agent " + m.confirmKillAgent + " and its process tree? (y/N)"
+		hint := "y confirm · n/esc cancel (the rest of the run keeps going)"
+		if m.agentLiveness(m.confirmKillAgent) == "stale" {
+			prompt = "clear stale running status for " + m.confirmKillAgent + "? (y/N)"
+			hint = "y clears the stale badge (no live process found) · n/esc cancel"
+		}
+		row := warnStyle.Render(truncateText(prompt, width))
+		return row + "\n" + mutedStyle.Render(hint)
 	}
 	active := m.activeTabResolved()
 	answer := false
@@ -842,6 +869,10 @@ func (m liveModel) renderInputRow(width int) string {
 // renderHome lists open ideas and recent runs; N starts a new idea, /open reopens.
 func (m liveModel) renderHome(width, rows int) string {
 	var b strings.Builder
+	if n := m.staleAgentCount(); n > 0 {
+		b.WriteString(warnStyle.Render(truncateText(fmt.Sprintf("⚠ %d stale agent process(es) — open the agent's tab and ctrl+k to clear", n), width-1)))
+		b.WriteString("\n\n")
+	}
 	b.WriteString(sectionTitle("Ideas"))
 	b.WriteString("\n")
 	if len(m.opts.Status.Ideas) == 0 {
@@ -997,6 +1028,30 @@ func (m liveModel) agentIsRunning(agentID string) bool {
 	return a != nil && a.State == stateRunning
 }
 
+// agentLiveness returns the true process state ("live"/"stale"/"") of a running
+// agent via the injected seam, for the RUN/STALE badge and confirm copy.
+func (m liveModel) agentLiveness(agentID string) string {
+	if m.opts.Liveness == nil {
+		return ""
+	}
+	return m.opts.Liveness(agentID)
+}
+
+// staleAgentCount counts projected-running agents whose process is actually gone.
+func (m liveModel) staleAgentCount() int {
+	if m.opts.Liveness == nil {
+		return 0
+	}
+	n := 0
+	for i := range m.state.Agents {
+		a := m.state.Agents[i]
+		if a.State == stateRunning && m.agentLiveness(a.ID) == "stale" {
+			n++
+		}
+	}
+	return n
+}
+
 // updateConfirmKill handles the modal "kill <agent>? (y/N)" confirmation. It
 // blocks every other key; y/enter confirms, n/esc cancels.
 func (m liveModel) updateConfirmKill(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -1008,12 +1063,15 @@ func (m liveModel) updateConfirmKill(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.inputErr = "kill is not available for this run"
 			return m, nil
 		}
-		if err := m.opts.KillAgent(id); err != nil {
+		msg, err := m.opts.KillAgent(id)
+		if err != nil {
 			m.inputErr = "kill failed: " + err.Error()
+		} else if msg != "" {
+			m.statusMsg = msg
 		} else {
 			m.statusMsg = "killed " + id
 		}
-		return m, nil
+		return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)
 	case "n", "N", "esc":
 		m.confirmKillAgent = ""
 		return m, nil
@@ -1509,14 +1567,23 @@ func (m liveModel) openRun(target string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.statusMsg = "opened " + run.RunID
-	return m, m.activateRun(LaunchResult{
+	res := LaunchResult{
 		Idea:         protocol.IdeaStatus{Slug: run.IdeaSlug, Status: run.CurrentRound},
 		Participants: run.Participants,
 		RunID:        run.RunID,
 		RunDir:       run.RunDir,
 		Done:         nil, // observational: no done-wait
 		Cancel:       nil, // observational: not cancelable
-	})
+	}
+	// An opened run is observational, but it can still durably kill its agents and
+	// show RUN/STALE via their persisted process identity.
+	if m.opts.ReattachKill != nil {
+		res.KillAgent = m.opts.ReattachKill(run.RunID)
+	}
+	if m.opts.ReattachLiveness != nil {
+		res.Liveness = m.opts.ReattachLiveness(run.RunID)
+	}
+	return m, m.activateRun(res)
 }
 
 func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.Model, tea.Cmd) {

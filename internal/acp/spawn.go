@@ -115,7 +115,7 @@ func (p *Process) Stop(ctx context.Context) error {
 		return err
 	case <-ctx.Done():
 		if p.cmd.Process != nil {
-			_ = p.cmd.Process.Kill()
+			_ = killProcessGroup(p.cmd.Process.Pid) // reap the whole tree, not just the child
 		}
 		<-done
 		p.wg.Wait()
@@ -130,12 +130,12 @@ func (p *Process) Wait() error {
 	return err
 }
 
-// Kill sends SIGKILL (or the platform equivalent) immediately.
+// Kill sends SIGKILL to the whole process group (reaping grandchildren).
 func (p *Process) Kill() error {
 	if p.cmd.Process == nil {
 		return nil
 	}
-	return p.cmd.Process.Kill()
+	return killProcessGroup(p.cmd.Process.Pid)
 }
 
 // PlatformIsWindows reports whether the runtime is Windows. Exposed so
