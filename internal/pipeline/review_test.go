@@ -31,11 +31,11 @@ func TestReviewAgreedFixesParsesContract(t *testing.T) {
 
 func TestPhase8Decision(t *testing.T) {
 	cases := []struct {
-		name                       string
-		outstanding                int
-		blocked, found             bool
-		cycle, max                 int
-		want                       Phase8Action
+		name           string
+		outstanding    int
+		blocked, found bool
+		cycle, max     int
+		want           Phase8Action
 	}{
 		{"missing contract fails closed", 0, false, false, 1, 3, Phase8NoData},
 		{"blocked stops", 2, true, true, 1, 3, Phase8Blocked},

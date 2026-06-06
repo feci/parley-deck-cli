@@ -97,3 +97,31 @@ never marking a hollow implementation complete. The blocked-review safety gate w
 
 `continue --auto` (D9) is the resume mechanism; the no-land boundary held in both
 runs (the driver stops at "ready to merge").
+
+## Fix-up cycle 1 (Phase 8)
+
+status: complete
+
+Applied the Phase 7 agreed fixes (review/consensus.md). hermes: no findings;
+codex + agy converged on the RunChecks-after-fixup gap + hardening.
+- **AF1** (CRITICAL) — `advanceReview` runs `RunChecks` after `Fixup` before opening
+  the next review round; failure escalates. Tests:
+  `TestPhaseReviewFixupChecksFailEscalates`, fixup test asserts `checks`.
+- **AF2** — driver-owned `review/round-NN/.fixup-done` marker; a crash after Fixup
+  before the next round re-enters via the marker fast-path (no re-Fixup/re-draft).
+  Test: `TestPhaseReviewFixupMarkerSkipsRefixup`.
+- **AF3** — review-consensus drafter is now a non-implementer reviewer (was the
+  implementer); prevents the implementer filtering reviewer findings.
+- **AF4** — `ReviewStatus` strips quotes from `outstanding_agreed_fixes`/`blocked`.
+- **AF5** — `OpenReviewRound` (adapter) removes malformed reviewer artifacts before
+  re-running so a bad file regenerates instead of spinning to the deadline.
+- **AF6** — `resolveImplementer` reads IMPLEMENTATION.md/FINAL.md role metadata
+  (validated vs participants), else participants[0]; reviewers = the rest. Test:
+  `TestResolveImplementerFromRoleMetadata`.
+- **AF7** — known in-progress IMPLEMENTATION statuses await; empty/unknown escalate.
+  Test: `TestPhaseImplInProgressAwaits`.
+- **AF8** — `ReadAutoImplement`/`ReadCrossReviewRounds` strip quotes.
+- **AF9** — `gitTreeClean` probes `--is-inside-work-tree`; a git error INSIDE a repo
+  is treated as dirty/unsafe.
+
+Checks: `go build/vet/test ./...` green; `GOOS=windows go build ./...` green.

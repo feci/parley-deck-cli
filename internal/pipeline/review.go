@@ -50,10 +50,10 @@ func ReviewAgreedFixes(path string) (count int, blocked bool, found bool, err er
 type Phase8Action string
 
 const (
-	Phase8Complete Phase8Action = "complete"      // zero outstanding fixes -> block done
-	Phase8Blocked  Phase8Action = "blocked"       // a reviewer BLOCKed -> stop for human
-	Phase8Fixup    Phase8Action = "fixup"          // outstanding>0 and under the cap -> apply fixes, re-review
-	Phase8Maxed    Phase8Action = "max-cycles"     // hit the safety cap -> stop
+	Phase8Complete Phase8Action = "complete"         // zero outstanding fixes -> block done
+	Phase8Blocked  Phase8Action = "blocked"          // a reviewer BLOCKed -> stop for human
+	Phase8Fixup    Phase8Action = "fixup"            // outstanding>0 and under the cap -> apply fixes, re-review
+	Phase8Maxed    Phase8Action = "max-cycles"       // hit the safety cap -> stop
 	Phase8NoData   Phase8Action = "missing-contract" // review consensus lacked the machine field -> fail closed
 )
 

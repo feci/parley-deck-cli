@@ -56,8 +56,8 @@ type pendingResp struct {
 // Client owns the ACP session: it sends requests on a Transport and routes
 // incoming messages to either pending request channels or the Handler.
 type Client struct {
-	transport *Transport
-	handler   Handler
+	transport  *Transport
+	handler    Handler
 	clientInfo ClientInfo
 
 	mu       sync.Mutex

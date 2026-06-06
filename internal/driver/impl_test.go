@@ -250,6 +250,7 @@ func TestPhaseReviewFixupWhenFixesOutstanding(t *testing.T) {
 	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
 	fi := &fakeImpl{
 		roundComplete: true,
+		checksOK:      true, // AF1: RunChecks runs after Fixup before the next round
 		review:        ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 2},
 		onOpenReview:  func(round int) { os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(round)), 0o755) },
 	}
@@ -261,8 +262,11 @@ func TestPhaseReviewFixupWhenFixesOutstanding(t *testing.T) {
 	if action != ActionFixup {
 		t.Fatalf("action=%s want fixup", action)
 	}
-	if !contains(fi.calls, "fixup") || !contains(fi.calls, "open-review") {
-		t.Fatalf("expected fixup + open-review, calls=%v", fi.calls)
+	if !contains(fi.calls, "fixup") || !contains(fi.calls, "checks") || !contains(fi.calls, "open-review") {
+		t.Fatalf("expected fixup + checks + open-review, calls=%v", fi.calls)
+	}
+	if !fileExists(filepath.Join(ideaDir, "review", "round-01", ".fixup-done")) {
+		t.Fatal("AF2: expected a .fixup-done marker after the fix-up")
 	}
 	// consensus archived to review/round-01/consensus.md, root cleared.
 	if fileExists(filepath.Join(ideaDir, "review", "consensus.md")) {
@@ -270,6 +274,76 @@ func TestPhaseReviewFixupWhenFixesOutstanding(t *testing.T) {
 	}
 	if !fileExists(filepath.Join(ideaDir, "review", "round-01", "consensus.md")) {
 		t.Fatal("expected archived review/round-01/consensus.md")
+	}
+}
+
+func TestPhaseReviewFixupChecksFailEscalates(t *testing.T) {
+	// AF1: a fix-up that breaks the build escalates and does NOT open the next round.
+	ideaDir, runDir, parts := setupReviewPhase(t, "auto_implement: true\n")
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	opened := false
+	fi := &fakeImpl{
+		roundComplete: true,
+		checksOK:      false, // checks fail after fix-up
+		review:        ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1},
+		onOpenReview:  func(round int) { opened = true },
+	}
+	d := newImplDriver(ideaDir, runDir, parts, true, fi)
+	action, _, err := d.Advance(context.Background())
+	if err == nil || action != ActionEscalated {
+		t.Fatalf("action=%s err=%v want escalated", action, err)
+	}
+	if !contains(fi.calls, "fixup") || !contains(fi.calls, "checks") {
+		t.Fatalf("expected fixup + checks, calls=%v", fi.calls)
+	}
+	if opened {
+		t.Fatal("must not open the next review round when post-fix-up checks fail")
+	}
+	if fileExists(filepath.Join(ideaDir, "review", "round-01", ".fixup-done")) {
+		t.Fatal("must not write the fix-up marker when checks fail")
+	}
+}
+
+func TestPhaseReviewFixupMarkerSkipsRefixup(t *testing.T) {
+	// AF2: a present .fixup-done marker (crash before the next round opened) must
+	// finish the transition without re-running Fixup.
+	ideaDir, runDir, parts := setupReviewPhase(t, "auto_implement: true\n")
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "review", "round-01", ".fixup-done"), []byte("done"), 0o644)
+	fi := &fakeImpl{
+		review:       ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1},
+		onOpenReview: func(round int) { os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(round)), 0o755) },
+	}
+	d := newImplDriver(ideaDir, runDir, parts, true, fi)
+	action, _, err := d.Advance(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action != ActionFixup {
+		t.Fatalf("action=%s want fixup", action)
+	}
+	if contains(fi.calls, "fixup") {
+		t.Fatal("AF2: must NOT re-run Fixup when the marker is present")
+	}
+	if !contains(fi.calls, "open-review") {
+		t.Fatalf("expected open-review, calls=%v", fi.calls)
+	}
+}
+
+func TestPhaseImplInProgressAwaits(t *testing.T) {
+	// AF7: a known in-progress status awaits rather than escalating.
+	parts := []string{"codex", "agy"}
+	ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+	writeFinalValid(t, ideaDir)
+	writeImpl(t, ideaDir, "in-progress")
+	fi := &fakeImpl{status: "in-progress"}
+	d := newImplDriver(ideaDir, runDir, parts, true, fi)
+	action, _, err := d.Advance(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action != ActionAwait {
+		t.Fatalf("action=%s want await for in-progress status", action)
 	}
 }
 

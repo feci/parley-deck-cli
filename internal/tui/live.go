@@ -1135,7 +1135,7 @@ func (m liveModel) renderQuestionsPane() string {
 		if selected.Status != hitl.StatusOpen {
 			b.WriteString(okStyle.Render("answer: "+selected.Answer) + "\n")
 		} else {
-			b.WriteString(mutedStyle.Render("open this agent's tab and type the answer + Enter (or /answer " + selected.ID + " …)") + "\n")
+			b.WriteString(mutedStyle.Render("open this agent's tab and type the answer + Enter (or /answer "+selected.ID+" …)") + "\n")
 		}
 	}
 	return strings.TrimRight(b.String(), "\n")

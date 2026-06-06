@@ -80,7 +80,13 @@ func (d *Driver) advanceImpl(ctx context.Context, c Cursor) (Action, Cursor, err
 		return ActionEscalated, c, fmt.Errorf("read implementation status: %w", err)
 	}
 	if !implReadyForReview(status) {
-		return ActionEscalated, c, fmt.Errorf("IMPLEMENTATION.md status=%q is not review-ready", status)
+		// A known in-progress status means the implementation attempt is mid-flight
+		// (e.g. a crash/re-entry); await rather than fail. An empty/unknown status is
+		// fail-closed (AF7/D6).
+		if implInProgress(status) {
+			return ActionAwait, c, nil
+		}
+		return ActionEscalated, c, fmt.Errorf("IMPLEMENTATION.md status=%q is neither review-ready nor a known in-progress state", status)
 	}
 	// Build/test gate before spending reviewer agents (D4); failure escalates.
 	if ok, detail := d.cfg.Impl.RunChecks(ctx); !ok {
@@ -107,6 +113,22 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	round := highestReviewRound(d.cfg.IdeaDir)
 	if round < 1 {
 		round = 1
+	}
+	// AF2 crash-idempotency: if this round's fix-up already completed (a crash after
+	// Fixup+RunChecks but before the next round opened), finish the transition
+	// without re-running Fixup or re-drafting the consensus.
+	fixupMarker := filepath.Join(d.cfg.IdeaDir, "review", roundLabel(round), ".fixup-done")
+	if fileExists(fixupMarker) {
+		if err := d.archiveReviewConsensus(round); err != nil {
+			return ActionEscalated, c, fmt.Errorf("archive review consensus: %w", err)
+		}
+		if err := d.cfg.Impl.OpenReviewRound(ctx, round+1); err != nil {
+			return ActionEscalated, c, fmt.Errorf("open review round %d: %w", round+1, err)
+		}
+		c.Phase = PhaseReview
+		c.UpdatedAt = nowRFC3339()
+		_ = c.Save(d.cursorPath())
+		return ActionFixup, c, nil
 	}
 	complete, err := d.cfg.Impl.ReviewRoundComplete(round)
 	if err != nil {
@@ -181,6 +203,16 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if err := d.cfg.Impl.Fixup(ctx, cycle); err != nil {
 		return ActionEscalated, c, fmt.Errorf("fix-up cycle %d: %w", cycle, err)
 	}
+	// AF1: re-run the build/test gate after the fix-up, before spending reviewers on
+	// the next round; a fix-up that broke the build escalates immediately.
+	if ok, detail := d.cfg.Impl.RunChecks(ctx); !ok {
+		return ActionEscalated, c, fmt.Errorf("checks failed after fix-up cycle %d before review:\n%s", cycle, strings.TrimSpace(detail))
+	}
+	// AF2: mark the fix-up done so a crash before the next round opens does not
+	// re-run Fixup on re-entry.
+	if err := os.WriteFile(fixupMarker, []byte(nowRFC3339()+"\n"), 0o644); err != nil {
+		return ActionEscalated, c, fmt.Errorf("write fix-up marker: %w", err)
+	}
 	// Archive the just-reviewed consensus and open the next review round so the next
 	// tick drafts a fresh consensus for round N+1 (consensus D8 + agy's archiving).
 	if err := d.archiveReviewConsensus(round); err != nil {
@@ -225,14 +257,26 @@ func implReadyForReview(status string) bool {
 	return false
 }
 
+func implInProgress(status string) bool {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "in-progress", "in_progress", "wip", "draft", "drafting":
+		return true
+	}
+	return false
+}
+
 // gitTreeClean reports whether the workspace git tree has no uncommitted changes.
 // A non-git workspace (or missing git) is treated as clean — there is nothing to
-// clobber (consensus D3).
+// clobber. But INSIDE a real repo, a git error (e.g. a stale index.lock) is treated
+// as dirty/unsafe rather than clean, so we never run a code-writing agent on a
+// possibly-dirty tree (consensus D3/AF9).
 func gitTreeClean(root string) bool {
-	cmd := exec.Command("git", "-C", root, "status", "--porcelain")
-	out, err := cmd.Output()
+	if err := exec.Command("git", "-C", root, "rev-parse", "--is-inside-work-tree").Run(); err != nil {
+		return true // not inside a git work tree (or git missing) → nothing to clobber
+	}
+	out, err := exec.Command("git", "-C", root, "status", "--porcelain").Output()
 	if err != nil {
-		return true
+		return false // inside a repo but the status probe failed → assume unsafe
 	}
 	return strings.TrimSpace(string(out)) == ""
 }

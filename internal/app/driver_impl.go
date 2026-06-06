@@ -33,20 +33,60 @@ type driverImplOps struct {
 }
 
 func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, participants []string, out io.Writer) driver.ImplOps {
-	implementer := ""
-	if len(participants) > 0 {
-		implementer = participants[0]
-	}
+	implementer := resolveImplementer(ideaDir, participants)
 	var reviewers []string
 	for _, p := range participants {
 		if p != implementer {
 			reviewers = append(reviewers, p)
 		}
 	}
+	// The review-consensus drafter MUST be a non-implementer so the implementer
+	// cannot filter reviewer findings out of the consensus (AF3). Fall back to the
+	// implementer only if there are somehow no reviewers.
+	drafter := implementer
+	if len(reviewers) > 0 {
+		drafter = reviewers[0]
+	}
 	return driverImplOps{
 		base: base, root: root, ideaSlug: ideaSlug, ideaDir: ideaDir,
-		implementer: implementer, reviewers: reviewers, drafter: implementer, out: out,
+		implementer: implementer, reviewers: reviewers, drafter: drafter, out: out,
 	}
+}
+
+// resolveImplementer picks the implementer from durable role metadata (D10/AF6):
+// IMPLEMENTATION.md `implementer` (on re-entry), else FINAL.md `implementer` /
+// `drafted-by`, validated against participants; otherwise participants[0].
+func resolveImplementer(ideaDir string, participants []string) string {
+	isParticipant := func(id string) bool {
+		for _, p := range participants {
+			if p == id {
+				return true
+			}
+		}
+		return false
+	}
+	for _, src := range []struct {
+		file string
+		keys []string
+	}{
+		{"IMPLEMENTATION.md", []string{"implementer"}},
+		{"FINAL.md", []string{"implementer", "drafted-by"}},
+	} {
+		meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, src.file))
+		if err != nil {
+			continue
+		}
+		for _, k := range src.keys {
+			id := strings.Trim(strings.TrimSpace(meta[k]), `"'`)
+			if id != "" && isParticipant(id) {
+				return id
+			}
+		}
+	}
+	if len(participants) > 0 {
+		return participants[0]
+	}
+	return ""
 }
 
 // withParticipants clones the base run options with a narrowed participant set.
@@ -94,6 +134,18 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 		return fmt.Errorf("no non-implementer reviewers available")
 	}
 	fmt.Fprintf(o.out, "driver: opening review round %d (reviewers: %s) ...\n", round, strings.Join(o.reviewers, ", "))
+	// AF5: drop any reviewer artifact that exists but fails validation, so
+	// RunReviewRound (Overwrite=false) regenerates it instead of skipping a
+	// malformed file forever (which would spin the driver to the deadline).
+	dir := filepath.Join(o.ideaDir, "review", roundDirLabel(round))
+	for _, reviewer := range o.reviewers {
+		path := filepath.Join(dir, reviewer+".md")
+		if _, err := os.Stat(path); err == nil {
+			if runner.ValidateReviewArtifact(path, reviewer, o.ideaSlug, round) != nil {
+				_ = os.Remove(path)
+			}
+		}
+	}
 	opts := o.withParticipants(o.reviewers...)
 	opts.Round = round
 	results := runner.RunReviewRound(ctx, opts)
@@ -144,12 +196,12 @@ func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
 	if err != nil {
 		return driver.ReviewStatus{}, err
 	}
-	rawFixes := strings.TrimSpace(meta["outstanding_agreed_fixes"])
+	rawFixes := strings.Trim(strings.TrimSpace(meta["outstanding_agreed_fixes"]), `"'`)
 	fixes, err := strconv.Atoi(rawFixes)
 	if err != nil || fixes < 0 {
 		return driver.ReviewStatus{}, fmt.Errorf("review/consensus.md outstanding_agreed_fixes=%q is not a non-negative integer", rawFixes)
 	}
-	blocked := strings.EqualFold(strings.TrimSpace(meta["blocked"]), "true")
+	blocked := strings.EqualFold(strings.Trim(strings.TrimSpace(meta["blocked"]), `"'`), "true")
 	return driver.ReviewStatus{Summary: summary, OutstandingAgreedFixes: fixes, Blocked: blocked}, nil
 }
 

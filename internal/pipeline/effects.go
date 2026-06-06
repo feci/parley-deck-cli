@@ -27,10 +27,10 @@ const (
 
 // Attempt is one recorded try at performing an effect.
 type Attempt struct {
-	At          time.Time `json:"at"`
+	At          time.Time    `json:"at"`
 	Status      EffectStatus `json:"status"`
-	ExternalRef string    `json:"external_ref,omitempty"`
-	Note        string    `json:"note,omitempty"`
+	ExternalRef string       `json:"external_ref,omitempty"`
+	Note        string       `json:"note,omitempty"`
 }
 
 // Effect is one side-effect ledger record at

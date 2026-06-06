@@ -22,18 +22,18 @@ const (
 // model: a human (or, for low-risk non-production gates under auto-left
 // autonomy, the policy evaluator) resolves it before the driver may advance.
 type Gate struct {
-	ID            string     `json:"id"`
-	PipelineSlug  string     `json:"pipeline_slug"`
-	Edge          string     `json:"edge"`
-	FromBlock     string     `json:"from_block"`
-	ToBlock       string     `json:"to_block"`
-	Risk          Risk       `json:"risk"`
-	Status        GateStatus `json:"status"`
-	Prompt        string     `json:"prompt"`
-	Policy        string     `json:"policy,omitempty"`
-	ApprovedBy    string     `json:"approved_by,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	AnsweredAt    time.Time  `json:"answered_at,omitempty"`
+	ID           string     `json:"id"`
+	PipelineSlug string     `json:"pipeline_slug"`
+	Edge         string     `json:"edge"`
+	FromBlock    string     `json:"from_block"`
+	ToBlock      string     `json:"to_block"`
+	Risk         Risk       `json:"risk"`
+	Status       GateStatus `json:"status"`
+	Prompt       string     `json:"prompt"`
+	Policy       string     `json:"policy,omitempty"`
+	ApprovedBy   string     `json:"approved_by,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	AnsweredAt   time.Time  `json:"answered_at,omitempty"`
 }
 
 // EdgeID is the stable identifier for the boundary between two blocks.
@@ -51,6 +51,7 @@ func AutoApprove(autonomy Autonomy, risk Risk) bool {
 //   - a configured decider agent auto-resolves ONLY low-risk, non-production
 //     boundaries (never normal/high/production) — strictly narrower than
 //     auto-left, per FINAL.md item 6b.
+//
 // Supervised + no decider = block-and-wait (default).
 func AutoApproveWithDecider(autonomy Autonomy, risk Risk, hasDecider bool) bool {
 	if risk == RiskProduction {

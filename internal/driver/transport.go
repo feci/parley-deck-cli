@@ -33,7 +33,7 @@ func EffectiveTransport(ideaDir, root string) string {
 func ReadCrossReviewRounds(ideaDir string) int {
 	const def = 1
 	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "cross_review_rounds"); ok {
-		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n >= 0 {
+		if n, err := strconv.Atoi(strings.Trim(strings.TrimSpace(v), `"'`)); err == nil && n >= 0 {
 			return n
 		}
 	}
@@ -44,7 +44,7 @@ func ReadCrossReviewRounds(ideaDir string) int {
 // default false. Code-writing phases (Implement/Fixup) require this true (D3).
 func ReadAutoImplement(ideaDir string) bool {
 	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "auto_implement"); ok {
-		return strings.EqualFold(strings.TrimSpace(v), "true")
+		return strings.EqualFold(strings.Trim(strings.TrimSpace(v), `"'`), "true")
 	}
 	return false
 }
