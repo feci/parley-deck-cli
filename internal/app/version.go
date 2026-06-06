@@ -1,6 +1,6 @@
 package app
 
-const version = "1.14.1"
+const version = "1.15.0"
 
 func versionLine() string {
 	return appName + " " + version

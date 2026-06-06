@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"parley-deck-cli/internal/consensus"
@@ -16,6 +17,7 @@ import (
 const (
 	KindAnswerQuestion  = runaction.KindAnswerQuestion
 	KindRetryAgent      = runaction.KindRetryAgent
+	KindOpenNextRound   = runaction.KindOpenNextRound
 	KindDraftConsensus  = runaction.KindDraftConsensus
 	KindRequestSignoffs = runaction.KindRequestSignoffs
 	KindFinalize        = runaction.KindFinalize
@@ -105,6 +107,28 @@ func Plan(root string, input Input) []NextAction {
 
 	if missingRoundArtifact {
 		return appendInspectIfEmpty(actions, input, "Inspect incomplete round state")
+	}
+
+	// Round complete. If the cross-review policy (00-prompt cross_review_rounds,
+	// default 1) wants another round and no consensus exists yet, the next protocol
+	// step is to open that round — executed automatically by internal/driver under
+	// `parley run --auto` (local-dir), surfaced here so `parley continue` no longer
+	// jumps a completed independent round straight to consensus.
+	if next := nextCrossReviewRound(ideaDir, round); next != "" {
+		if _, statusErr := consensus.Status(root, input.IdeaSlug, false); errors.Is(statusErr, os.ErrNotExist) {
+			actions = append(actions, NextAction{
+				ID:          "open-next-round." + input.IdeaSlug,
+				Kind:        KindOpenNextRound,
+				RunID:       input.RunID,
+				IdeaSlug:    input.IdeaSlug,
+				Phase:       "round",
+				Round:       next,
+				Risk:        RiskNormal,
+				RequiresYes: true,
+				Summary:     "Open " + next + " (cross-review) before drafting consensus",
+			})
+			return actions
+		}
 	}
 
 	summary, err := consensus.Status(root, input.IdeaSlug, false)
@@ -198,6 +222,61 @@ func currentRound(input Input) string {
 		return "round-01"
 	}
 	return round
+}
+
+// nextCrossReviewRound returns the next round label ("round-NN") when the
+// cross-review policy in 00-prompt.md (cross_review_rounds, default 1) wants
+// another cross-review round after the given completed round, or "" when the
+// budget is exhausted (→ proceed to consensus). round-01 is the independent
+// round; the policy adds N cross-review rounds, so the last deliberation round is
+// 1+cross_review_rounds.
+func nextCrossReviewRound(ideaDir, completedRound string) string {
+	n := roundOrdinal(completedRound)
+	if n < 1 || n >= 1+readCrossReviewRounds(ideaDir) {
+		return ""
+	}
+	return fmt.Sprintf("round-%02d", n+1)
+}
+
+func roundOrdinal(label string) int {
+	num := runaction.RoundNumber(label)
+	if num == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(num)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+// readCrossReviewRounds reads cross_review_rounds from the idea 00-prompt.md
+// frontmatter; defaults to 1. N=0 is an explicit straight-to-consensus bypass.
+func readCrossReviewRounds(ideaDir string) int {
+	const def = 1
+	data, err := os.ReadFile(filepath.Join(ideaDir, "00-prompt.md"))
+	if err != nil {
+		return def
+	}
+	inFrontmatter := false
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			break
+		}
+		if inFrontmatter && strings.HasPrefix(trimmed, "cross_review_rounds:") {
+			value := strings.TrimSpace(strings.TrimPrefix(trimmed, "cross_review_rounds:"))
+			if n, err := strconv.Atoi(value); err == nil && n >= 0 {
+				return n
+			}
+			return def
+		}
+	}
+	return def
 }
 
 func participantOrder(input Input) []string {

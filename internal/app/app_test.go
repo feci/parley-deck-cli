@@ -1307,6 +1307,22 @@ func TestLaunchReaperWaitsForInFlightRuns(t *testing.T) {
 	}
 }
 
+// AF2: the consensus/FINAL drafter must be an idea participant, not just any
+// installed headless agent.
+func TestFirstHeadlessAgentRestrictedToParticipants(t *testing.T) {
+	discovered := []agents.Discovery{
+		{Spec: agents.Spec{ID: "hermes", LaunchMode: agents.LaunchHeadless}, Found: true},
+		{Spec: agents.Spec{ID: "codex", LaunchMode: agents.LaunchHeadless}, Found: true},
+	}
+	got, ok := firstHeadlessAgent(discovered, []string{"codex", "agy"})
+	if !ok || got.ID != "codex" {
+		t.Fatalf("got %q ok=%v, want codex (the only headless participant)", got.ID, ok)
+	}
+	if _, ok := firstHeadlessAgent(discovered, []string{"agy"}); ok {
+		t.Fatal("no discovered agent is a participant; expected no drafter selected")
+	}
+}
+
 type fakeAgentConfig struct {
 	ID         string
 	Path       string
