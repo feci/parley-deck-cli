@@ -1008,7 +1008,7 @@ func TestConditionalTabSwitchesTabsWhenNotSlash(t *testing.T) {
 func TestConfirmKillModal(t *testing.T) {
 	m := liveModelWithLog(t, "x\n") // codex running, active tab = agent:codex
 	var killed string
-	m.opts.KillAgent = func(agentID string) error { killed = agentID; return nil }
+	m.opts.KillAgent = func(agentID string) (string, error) { killed = agentID; return "killed " + agentID, nil }
 
 	m, _ = pressKey(t, m, tea.KeyCtrlK)
 	if m.confirmKillAgent != "codex" {
@@ -1088,6 +1088,29 @@ func TestKilledAgentShortState(t *testing.T) {
 	}
 }
 
+// A running agent with a "stale" liveness shows the STALE badge, and ctrl+k
+// offers to clear it (not kill).
+func TestStaleBadgeAndClearConfirm(t *testing.T) {
+	m := liveModelWithLog(t, "x\n") // codex projected running
+	m.opts.Liveness = func(string) string { return "stale" }
+	m.opts.KillAgent = func(string) (string, error) { return "cleared stale codex", nil }
+
+	if view := m.View(); !strings.Contains(view, "STALE") {
+		t.Fatalf("a stale running agent should show the STALE badge\n%s", view)
+	}
+	m, _ = pressKey(t, m, tea.KeyCtrlK)
+	if m.confirmKillAgent != "codex" {
+		t.Fatalf("ctrl+k should open the confirm for codex, got %q", m.confirmKillAgent)
+	}
+	if view := m.View(); !strings.Contains(view, "clear stale running status") {
+		t.Fatalf("a stale agent's confirm should offer to clear, not kill\n%s", view)
+	}
+	m = pressRunes(t, m, "y")
+	if m.confirmKillAgent != "" || !strings.Contains(m.statusMsg, "cleared stale") {
+		t.Fatalf("y should clear via the seam, got confirm=%q status=%q", m.confirmKillAgent, m.statusMsg)
+	}
+}
+
 // activateRun must copy the SubmitSteer/KillAgent seams onto the active run, or
 // runs launched from Home silently lose steering/kill.
 func TestActivateRunCopiesSteerKillSeams(t *testing.T) {
@@ -1099,7 +1122,8 @@ func TestActivateRunCopiesSteerKillSeams(t *testing.T) {
 		RunID:        "r",
 		RunDir:       t.TempDir(),
 		SubmitSteer:  func(SteerRequest) (SteerResult, error) { return SteerResult{}, nil },
-		KillAgent:    func(string) error { return nil },
+		KillAgent:    func(string) (string, error) { return "", nil },
+		Liveness:     func(string) string { return "live" },
 	})
 	if m.opts.SubmitSteer == nil || m.opts.KillAgent == nil {
 		t.Fatal("activateRun must copy SubmitSteer and KillAgent onto opts")

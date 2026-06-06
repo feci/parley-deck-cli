@@ -13,6 +13,7 @@ import (
 
 	"parley-deck-cli/internal/acp"
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/store"
 )
 
@@ -77,18 +78,26 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	client := acp.NewClient(transport, handler, acp.ClientInfo{Name: acpClientName, Version: "0.1.0"})
 	client.Start()
 
+	// Capture the durable process identity so a restarted parley can re-attribute
+	// and group-kill this ACP agent (same as the headless path).
+	sp := procctl.CaptureByPID(process.PID(), opts.RunID+":"+agent.ID)
 	if appendErr := opts.Store.Append(store.Event{
-		Time: result.StartedAt,
+		Time: time.Now().UTC(),
 		Type: "agent.started",
 		Data: map[string]any{
-			"agent":      agent.ID,
-			"artifact":   outputPath,
-			"stdout":     stdoutPath,
-			"stderr":     stderrPath,
-			"launch":     agents.LaunchACP,
-			"command":    agent.Path,
-			"acp_args":   agent.ACPArgs,
-			"segment_id": opts.SegmentID,
+			"agent":       agent.ID,
+			"artifact":    outputPath,
+			"stdout":      stdoutPath,
+			"stderr":      stderrPath,
+			"launch":      agents.LaunchACP,
+			"command":     sp.Command,
+			"acp_args":    agent.ACPArgs,
+			"segment_id":  opts.SegmentID,
+			"pid":         sp.PID,
+			"pgid":        sp.PGID,
+			"boot_id":     sp.BootID,
+			"proc_start":  sp.ProcStart,
+			"proc_marker": sp.Marker,
 		},
 	}); appendErr != nil {
 		return failEarly(opts, result, fmt.Errorf("event append failed: %w", appendErr))

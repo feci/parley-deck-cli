@@ -16,3 +16,12 @@ func setSysProcAttr(cmd *exec.Cmd) {
 	}
 	cmd.SysProcAttr.Setsid = true
 }
+
+// killProcessGroup terminates the agent's whole process group (Setsid makes
+// pgid == pid), reaping grandchildren rather than just the direct child.
+func killProcessGroup(pid int) error {
+	if pid <= 0 {
+		return nil
+	}
+	return syscall.Kill(-pid, syscall.SIGKILL)
+}

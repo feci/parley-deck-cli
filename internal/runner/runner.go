@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 )
@@ -356,23 +357,31 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
 	defer cancel()
 
-	if err := opts.Store.Append(store.Event{
-		Time: now,
-		Type: "agent.started",
-		Data: map[string]any{
-			"agent":      agent.ID,
-			"artifact":   outputPath,
-			"stdout":     stdoutPath,
-			"stderr":     stderrPath,
-			"segment_id": opts.SegmentID,
-		},
-	}); err != nil {
-		return failEarly(opts, result, fmt.Errorf("event append failed: %w", err))
-	}
-
-	// Register this attempt so Handle.KillAgent can cancel just this agent.
+	// Register this attempt so Handle.KillAgent can cancel just this agent (the
+	// cancel triggers execAgentProcess's watcher → group kill).
 	opts.tracker.register(agent.ID, opts.SegmentID, "round", "", cancel)
-	err = execAgentProcess(ctx, opts.Root, agent, prompt, stdoutPath, stderrPath)
+	// agent.started is emitted once the process is live, enriched with its durable
+	// process identity so a restarted parley can re-attribute and kill it.
+	onStarted := func(sp procctl.Spawned) {
+		_ = opts.Store.Append(store.Event{
+			Time: time.Now().UTC(), // stamp at actual process start, not before setup
+			Type: "agent.started",
+			Data: map[string]any{
+				"agent":       agent.ID,
+				"artifact":    outputPath,
+				"stdout":      stdoutPath,
+				"stderr":      stderrPath,
+				"segment_id":  opts.SegmentID,
+				"pid":         sp.PID,
+				"pgid":        sp.PGID,
+				"boot_id":     sp.BootID,
+				"proc_start":  sp.ProcStart,
+				"proc_marker": sp.Marker,
+				"command":     sp.Command,
+			},
+		})
+	}
+	_, err = execAgentProcess(ctx, opts.Root, opts.RunID, agent.ID, opts.RunID+":"+agent.ID, agent, prompt, stdoutPath, stderrPath, onStarted)
 	killed := opts.tracker.finish(agent.ID)
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(result.StartedAt)
@@ -674,23 +683,35 @@ Prior rounds (read these):
 // given log paths (and stdin for stdin-prompt agents), and runs it to
 // completion. Shared by the round path (runAgent) and the steer path
 // (runSteerAgent) so both honor the same exec + cancellation semantics.
-func execAgentProcess(ctx context.Context, root string, agent agents.Discovery, prompt, stdoutPath, stderrPath string) error {
-	cmd, cleanup, err := CommandFor(ctx, root, agent, prompt)
+// execAgentProcess spawns an agent in its OWN process group (so a kill reaps the
+// whole tree), captures its durable identity (pid/pgid/boot/start/command) via
+// procctl and hands it to onStarted (which records agent.started), then owns
+// cancellation: one goroutine Waits, and on ctx cancel the whole group is killed
+// (fixing orphan-on-timeout). Shared by the round path and steer attempts.
+func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, agent agents.Discovery, prompt, stdoutPath, stderrPath string, onStarted func(procctl.Spawned)) (procctl.Spawned, error) {
+	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
 	if cleanup != nil {
 		defer cleanup()
 	}
 	if err != nil {
-		return err
+		return procctl.Spawned{}, err
 	}
+	cmd := exec.Command(path, args...)
+	if env == nil {
+		env = os.Environ()
+	}
+	cmd.Env = append(env, procctl.MarkerEnv(runID, agentID, marker)...)
 	cmd.Dir = root
+	procctl.SetNewProcessGroup(cmd)
+
 	stdoutFile, err := os.Create(stdoutPath)
 	if err != nil {
-		return err
+		return procctl.Spawned{}, err
 	}
 	defer stdoutFile.Close()
 	stderrFile, err := os.Create(stderrPath)
 	if err != nil {
-		return err
+		return procctl.Spawned{}, err
 	}
 	defer stderrFile.Close()
 	cmd.Stdout = stdoutFile
@@ -698,11 +719,30 @@ func execAgentProcess(ctx context.Context, root string, agent agents.Discovery, 
 	if agent.PromptMode == agents.PromptStdin {
 		cmd.Stdin = strings.NewReader(prompt)
 	}
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return procctl.Spawned{}, err
+	}
+	sp := procctl.Capture(cmd, marker)
+	if onStarted != nil {
+		onStarted(sp)
+	}
+	waitErr := make(chan error, 1)
+	go func() { waitErr <- cmd.Wait() }()
+	select {
+	case e := <-waitErr:
+		return sp, e
+	case <-ctx.Done():
+		_ = procctl.KillGroup(sp) // reap the whole tree, not just the direct child
+		<-waitErr                 // drain Wait so the process is reaped
+		return sp, ctx.Err()
+	}
 }
 
-func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
-	args := make([]string, 0, len(agent.HeadlessArgs))
+// buildAgentInvocation resolves the agent's command path, args (with {root}/
+// {prompt} substitution), and isolated-home env, without binding a context. Used
+// by both CommandFor (ctx-bound, for one-shot helpers) and execAgentProcess.
+func buildAgentInvocation(root string, agent agents.Discovery, prompt string) (path string, args, env []string, cleanup func(), err error) {
+	args = make([]string, 0, len(agent.HeadlessArgs))
 	for _, arg := range agent.HeadlessArgs {
 		switch arg {
 		case "{root}":
@@ -713,18 +753,29 @@ func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt
 			args = append(args, arg)
 		}
 	}
-	cmd := exec.CommandContext(ctx, agent.Path, args...)
-	cleanup := func() {}
+	cleanup = func() {}
 	if agent.IsolateHome {
-		env, remove, err := isolatedAgentHome(agent)
+		e, remove, err := isolatedAgentHome(agent)
 		if err != nil {
-			return nil, nil, err
+			return "", nil, nil, nil, err
 		}
 		cleanup = remove
-		cmd.Env = append(os.Environ(), env...)
+		env = append(os.Environ(), e...)
 		if agent.ID == "hermes" {
-			cmd.Env = append(cmd.Env, "HERMES_ACCEPT_HOOKS=1", "HERMES_SESSION_SOURCE=parley")
+			env = append(env, "HERMES_ACCEPT_HOOKS=1", "HERMES_SESSION_SOURCE=parley")
 		}
+	}
+	return agent.Path, args, env, cleanup, nil
+}
+
+func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
+	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
+	if err != nil {
+		return nil, nil, err
+	}
+	cmd := exec.CommandContext(ctx, path, args...)
+	if env != nil {
+		cmd.Env = env
 	}
 	return cmd, cleanup, nil
 }

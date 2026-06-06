@@ -17,6 +17,8 @@ import (
 type KillResult struct {
 	AgentID   string
 	Killed    bool
+	Cleared   bool // a stale "running" badge was cleared (no live process to kill)
+	Failed    bool // the operation could not be completed (shown as an error)
 	SegmentID string
 	Message   string
 }
@@ -89,8 +91,10 @@ func (h *Handle) KillAgent(agentID string) KillResult {
 	h.mu.Lock()
 	att := h.active[agentID]
 	if att == nil {
+		// Not in this process's memory — fall back to the durable path (handles
+		// agents from a previous parley run, and stale badges).
 		h.mu.Unlock()
-		return KillResult{AgentID: agentID, Killed: false, Message: agentID + " is not running"}
+		return KillAgentDurable(h.opts.Store, agentID)
 	}
 	if att.killed {
 		// A concurrent kill already won; don't cancel or emit a second event.
@@ -210,7 +214,7 @@ func (h *Handle) runSteerAgent(ctx context.Context, agent agents.Discovery, req 
 	attemptCtx, cancel := context.WithTimeout(parent, timeoutForAgent(h.opts.Timeout, agent))
 	defer cancel()
 	h.register(req.AgentID, seg, "steer", steerID, cancel)
-	err := execAgentProcess(attemptCtx, h.opts.Root, agent, prompt, stdoutPath, stderrPath)
+	_, err := execAgentProcess(attemptCtx, h.opts.Root, h.opts.RunID, req.AgentID, h.opts.RunID+":"+req.AgentID+":"+steerID, agent, prompt, stdoutPath, stderrPath, nil)
 	killed := h.finish(req.AgentID)
 	duration := time.Since(start)
 
