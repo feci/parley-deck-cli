@@ -87,6 +87,8 @@ func stateBadge(value string) string {
 		return badge(label, activeBadge)
 	case "failed", "error", "missing":
 		return badge(label, dangerBadge)
+	case "killed":
+		return badge(label, warnBadge)
 	case "skipped", "unknown", "idle":
 		return badge(label, neutralBadge)
 	default:

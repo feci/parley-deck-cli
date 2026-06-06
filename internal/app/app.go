@@ -1748,6 +1748,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	handle := runner.RunRoundOneAsync(runCtx, runOpts)
 	workspaceStatus.Ideas = []protocol.IdeaStatus{created.Idea}
+	steerFn, killFn := liveSteerKillSeams(runCtx, handle)
 	if err := tui.RunLive(tui.LiveOptions{
 		Status:       workspaceStatus,
 		Idea:         created.Idea,
@@ -1756,6 +1757,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		RunDir:       handle.RunDir,
 		Done:         handle.Done(),
 		Cancel:       cancelRun,
+		SubmitSteer:  steerFn,
+		KillAgent:    killFn,
 		Root:         *root,
 		// `parley run` watches one run; start new ideas from `parley tui` (N).
 	}); err != nil {
@@ -2008,6 +2011,54 @@ func (r *launchReaper) waitForActive(out io.Writer) {
 	r.wg.Wait()
 }
 
+// liveSteerKillSeams builds the injected SubmitSteer/KillAgent seams that let the
+// TUI execute a steer (a fresh single-agent attempt whose stdout is the reply)
+// and kill one agent, against a live runner.Handle. internal/tui never imports
+// internal/runner; these plain func seams are the only bridge.
+func liveSteerKillSeams(runCtx context.Context, handle *runner.Handle) (tui.SteerFunc, tui.KillAgentFunc) {
+	runDir := handle.RunDir
+	submit := func(req tui.SteerRequest) (tui.SteerResult, error) {
+		// Always keep the durable audit trail (steer.requested/delivered) first.
+		rec, err := steer.Submit(runDir, steer.Request{
+			Target:    req.Target,
+			Agent:     req.AgentID,
+			Text:      req.Text,
+			CreatedBy: "tui",
+		}, time.Now().UTC())
+		if err != nil {
+			return tui.SteerResult{}, err
+		}
+		out := tui.SteerResult{ID: rec.ID, Status: "recorded"}
+		// Only agent-targeted steers execute; deck steers stay record-only for now.
+		if req.Target == steer.TargetAgent {
+			att, aerr := handle.RunSteerAttempt(runCtx, runner.SteerAttemptRequest{
+				AgentID: req.AgentID,
+				Text:    req.Text,
+				SteerID: rec.ID,
+			})
+			if aerr != nil {
+				return out, aerr
+			}
+			if !att.Accepted {
+				out.Status = "rejected"
+				return out, fmt.Errorf("%s", att.Message)
+			}
+			out.Status = att.Status
+			out.SegmentID = att.SegmentID
+			out.StdoutPath = att.StdoutPath
+		}
+		return out, nil
+	}
+	kill := func(agentID string) error {
+		res := handle.KillAgent(agentID)
+		if !res.Killed {
+			return fmt.Errorf("%s", res.Message)
+		}
+		return nil
+	}
+	return submit, kill
+}
+
 // newLaunchFunc returns a tui.LaunchFunc that starts a new round-01 run with all
 // available agents through the existing runner path and returns a handle to
 // attach to (no parallel engine). The run is reaped through the reaper so its
@@ -2036,6 +2087,7 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 				registerWorkspaceSessions(root, []runstate.RunSummary{run})
 			}
 		})
+		steerFn, killFn := liveSteerKillSeams(runCtx, handle)
 		return tui.LaunchResult{
 			Idea:         created.Idea,
 			Participants: participants,
@@ -2043,6 +2095,8 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 			RunDir:       handle.RunDir,
 			Done:         handle.Done(),
 			Cancel:       cancelRun,
+			SubmitSteer:  steerFn,
+			KillAgent:    killFn,
 		}, nil
 	}
 }

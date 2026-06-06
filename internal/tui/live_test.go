@@ -304,7 +304,9 @@ func TestInputSteersActiveAgent(t *testing.T) {
 	}
 	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	model = updated.(liveModel)
-	if !strings.Contains(model.statusMsg, "recorded steer-0001-") || !strings.Contains(model.statusMsg, "codex") {
+	// No SubmitSteer seam here → record-only path; the queued list below verifies
+	// the steer was persisted for the active agent.
+	if !strings.Contains(model.statusMsg, "recorded steer steer-0001-") {
 		t.Fatalf("statusMsg=%q", model.statusMsg)
 	}
 	queued, err := steer.List(model.opts.RunDir)
@@ -943,5 +945,163 @@ func TestPickerAnswerFailureKeepsCompose(t *testing.T) {
 	}
 	if m.inputErr == "" {
 		t.Fatal("a failed answer should surface an error")
+	}
+}
+
+// --- tui-live-steering tests ---
+
+// Tab completes a single-match slash command (no-arg → exact name).
+func TestSuggestTabCompletesSingleMatch(t *testing.T) {
+	m := homeModelWithIdeas(t)
+	m = pressRunes(t, m, "/q")
+	if !m.suggest || len(m.suggestItems) != 1 || m.suggestItems[0].Name != "/quit" {
+		t.Fatalf("expected suggest=[/quit], got suggest=%v items=%v", m.suggest, m.suggestItems)
+	}
+	m, _ = pressKey(t, m, tea.KeyTab)
+	if m.inputText != "/quit" {
+		t.Fatalf("Tab should complete to /quit, got %q", m.inputText)
+	}
+}
+
+// Tab completes the longest common prefix when several commands match.
+func TestSuggestTabCompletesCommonPrefix(t *testing.T) {
+	m := homeModelWithIdeas(t)
+	m = pressRunes(t, m, "/h") // matches /help and /home → LCP "/h"
+	if len(m.suggestItems) != 2 {
+		t.Fatalf("expected 2 matches for /h, got %v", m.suggestItems)
+	}
+	m, _ = pressKey(t, m, tea.KeyTab)
+	if m.inputText != "/h" {
+		t.Fatalf("Tab should leave the common prefix /h, got %q", m.inputText)
+	}
+	m = pressRunes(t, m, "o") // → /home only
+	m, _ = pressKey(t, m, tea.KeyTab)
+	if m.inputText != "/home" {
+		t.Fatalf("Tab should complete /home, got %q", m.inputText)
+	}
+}
+
+// The suggest menu clears once the input is no longer a bare slash command.
+func TestSuggestClearsOnSpace(t *testing.T) {
+	m := homeModelWithIdeas(t)
+	m = pressRunes(t, m, "/open")
+	if !m.suggest {
+		t.Fatal("/open should show a suggestion")
+	}
+	m = pressRunes(t, m, " ")
+	if m.suggest {
+		t.Fatal("a space after the command must close the suggest menu")
+	}
+}
+
+// Conditional Tab: with non-slash input, Tab switches tabs (legacy behavior).
+func TestConditionalTabSwitchesTabsWhenNotSlash(t *testing.T) {
+	m := liveModelWithLog(t, "x\n") // run attached → Home + agent:codex + Status tabs
+	before := m.activeTabResolved()
+	m, _ = pressKey(t, m, tea.KeyTab)
+	if m.activeTabResolved() == before {
+		t.Fatalf("Tab on empty input should switch tabs (was %q)", before)
+	}
+}
+
+// ctrl+k on a running agent tab opens a modal confirm; y kills via the seam.
+func TestConfirmKillModal(t *testing.T) {
+	m := liveModelWithLog(t, "x\n") // codex running, active tab = agent:codex
+	var killed string
+	m.opts.KillAgent = func(agentID string) error { killed = agentID; return nil }
+
+	m, _ = pressKey(t, m, tea.KeyCtrlK)
+	if m.confirmKillAgent != "codex" {
+		t.Fatalf("ctrl+k should open confirm for codex, got %q", m.confirmKillAgent)
+	}
+	// n cancels without calling the seam.
+	m = pressRunes(t, m, "n")
+	if m.confirmKillAgent != "" || killed != "" {
+		t.Fatalf("n should cancel the confirm (confirm=%q killed=%q)", m.confirmKillAgent, killed)
+	}
+	// ctrl+k again, then y confirms.
+	m, _ = pressKey(t, m, tea.KeyCtrlK)
+	m = pressRunes(t, m, "y")
+	if m.confirmKillAgent != "" {
+		t.Fatal("y should close the confirm")
+	}
+	if killed != "codex" {
+		t.Fatalf("y should kill codex via the seam, got %q", killed)
+	}
+}
+
+// A steer on an agent tab routes through the SubmitSteer seam and registers the
+// reply for inline display.
+func TestSubmitInputSteerViaSeam(t *testing.T) {
+	m := liveModelWithLog(t, "x\n") // active tab = agent:codex, no open question
+	replyLog := filepath.Join(t.TempDir(), "steer-stdout.log")
+	if err := os.WriteFile(replyLog, []byte("codex: here is my reply\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var got SteerRequest
+	m.opts.SubmitSteer = func(req SteerRequest) (SteerResult, error) {
+		got = req
+		return SteerResult{ID: "steer-9", Status: "running", StdoutPath: replyLog}, nil
+	}
+	m = pressRunes(t, m, "hello there")
+	m, _ = pressKey(t, m, tea.KeyEnter)
+
+	if got.Target != steer.TargetAgent || got.AgentID != "codex" || got.Text != "hello there" {
+		t.Fatalf("steer request not routed correctly: %+v", got)
+	}
+	sr := m.steerReplies["codex"]
+	if sr == nil || sr.stdoutPath != replyLog || sr.query != "hello there" {
+		t.Fatalf("steer reply not registered for inline display: %+v", sr)
+	}
+}
+
+// A steer.replied / steer.reply_failed event flips the inline reply's state so
+// the "replying…" indicator clears.
+func TestSteerReplyEventTransitionsState(t *testing.T) {
+	m := liveModelWithLog(t, "x\n")
+	m.steerReplies = map[string]*steerReply{"codex": {id: "s1", query: "hi"}}
+	updated, _ := m.Update(eventsMsg{
+		token:  m.runToken,
+		events: []store.Event{{Type: "steer.replied", Data: map[string]any{"agent": "codex", "id": "s1"}}},
+	})
+	m = updated.(liveModel)
+	if sr := m.steerReplies["codex"]; sr == nil || !sr.done || sr.failed {
+		t.Fatalf("steer.replied should mark done (not failed): %+v", m.steerReplies["codex"])
+	}
+
+	m2 := liveModelWithLog(t, "x\n")
+	m2.steerReplies = map[string]*steerReply{"codex": {id: "s2", query: "hi"}}
+	updated, _ = m2.Update(eventsMsg{
+		token:  m2.runToken,
+		events: []store.Event{{Type: "steer.reply_failed", Data: map[string]any{"agent": "codex", "id": "s2"}}},
+	})
+	m2 = updated.(liveModel)
+	if sr := m2.steerReplies["codex"]; sr == nil || !sr.done || !sr.failed {
+		t.Fatalf("steer.reply_failed should mark done+failed: %+v", m2.steerReplies["codex"])
+	}
+}
+
+// A killed agent shows the KILL badge, not ERR.
+func TestKilledAgentShortState(t *testing.T) {
+	if got := shortState(stateKilled); got != "KILL" {
+		t.Fatalf("killed badge = %q, want KILL", got)
+	}
+}
+
+// activateRun must copy the SubmitSteer/KillAgent seams onto the active run, or
+// runs launched from Home silently lose steering/kill.
+func TestActivateRunCopiesSteerKillSeams(t *testing.T) {
+	m := newLiveModel(LiveOptions{Home: true, Root: t.TempDir()})
+	m.height, m.width = 30, 100
+	m.activateRun(LaunchResult{
+		Idea:         testIdea("x"),
+		Participants: []string{"codex"},
+		RunID:        "r",
+		RunDir:       t.TempDir(),
+		SubmitSteer:  func(SteerRequest) (SteerResult, error) { return SteerResult{}, nil },
+		KillAgent:    func(string) error { return nil },
+	})
+	if m.opts.SubmitSteer == nil || m.opts.KillAgent == nil {
+		t.Fatal("activateRun must copy SubmitSteer and KillAgent onto opts")
 	}
 }

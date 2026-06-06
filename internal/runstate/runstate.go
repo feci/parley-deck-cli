@@ -21,6 +21,7 @@ const (
 	StateFinished = "finished"
 	StateFailed   = "failed"
 	StateSkipped  = "skipped"
+	StateKilled   = "killed"
 	StateUnknown  = "unknown"
 
 	OutcomeCompleted  = "completed"
@@ -58,6 +59,9 @@ type AgentState struct {
 	ArtifactPath string        `json:"artifact_path,omitempty"`
 	StdoutPath   string        `json:"stdout_path,omitempty"`
 	StderrPath   string        `json:"stderr_path,omitempty"`
+	// Killed is sticky: set by an agent.killed event so the subsequent (canceled)
+	// agent.failed does not downgrade the badge from killed to a generic failure.
+	Killed bool `json:"killed,omitempty"`
 }
 
 type EventSummary struct {
@@ -337,7 +341,7 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 		}
 
 		switch event.Type {
-		case "agent.started", "agent.finished", "agent.failed", "agent.skipped":
+		case "agent.started", "agent.finished", "agent.failed", "agent.skipped", "agent.killed":
 			id := dataString(event.Data, "agent")
 			if id == "" {
 				continue
@@ -375,6 +379,7 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 				agent.Duration = 0
 				agent.Error = ""
 				agent.Reason = ""
+				agent.Killed = false
 				agent.Segment = seg
 				agent.LatestEvent = event.Type
 			}
@@ -450,8 +455,19 @@ func applyAgentEvent(agent *AgentState, event store.Event, now time.Time, curren
 	case "agent.finished":
 		agent.State = StateFinished
 		agent.Duration = dataDuration(event.Data, "duration_ms", now.Sub(agent.StartedAt))
+	case "agent.killed":
+		// The user terminated this agent; sticky so a later agent.failed keeps it.
+		agent.Killed = true
+		agent.State = StateKilled
+		if agent.Error == "" {
+			agent.Error = "killed by user"
+		}
 	case "agent.failed":
-		agent.State = StateFailed
+		if agent.Killed {
+			agent.State = StateKilled // killed wins over the trailing cancel failure
+		} else {
+			agent.State = StateFailed
+		}
 		agent.Error = dataString(event.Data, "error")
 		agent.Duration = dataDuration(event.Data, "duration_ms", now.Sub(agent.StartedAt))
 	case "agent.skipped":

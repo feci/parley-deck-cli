@@ -27,6 +27,7 @@ const (
 	stateFinished = runstate.StateFinished
 	stateFailed   = runstate.StateFailed
 	stateSkipped  = runstate.StateSkipped
+	stateKilled   = runstate.StateKilled
 	stateUnknown  = runstate.StateUnknown
 )
 
@@ -60,6 +61,12 @@ type LiveOptions struct {
 	Home  bool       // open to the Home tab (no active run yet)
 	Root  string     // workspace root, for refreshing the Home recent-runs list
 	Start LaunchFunc // launch a new run (N / new idea); nil disables launching
+
+	// Live steering / kill (tui-live-steering). Injected func seams so the TUI
+	// stays decoupled from internal/runner and internal/app. nil = record-only /
+	// kill-unavailable (e.g. observational /open runs).
+	SubmitSteer SteerFunc     // execute a steer (agent reply round-trip)
+	KillAgent   KillAgentFunc // terminate one agent; the rest of the run continues
 }
 
 // LaunchRequest is a request to launch a new idea/run from the TUI.
@@ -73,11 +80,35 @@ type LaunchResult struct {
 	RunDir       string
 	Done         <-chan struct{}
 	Cancel       func()
+	SubmitSteer  SteerFunc
+	KillAgent    KillAgentFunc
 }
 
 // LaunchFunc launches a run through the existing runner path and returns a
 // handle to attach to — the TUI never runs a parallel engine.
 type LaunchFunc func(LaunchRequest) (LaunchResult, error)
+
+// SteerRequest asks the live run to deliver/execute a steer. SteerFunc executes
+// an agent-targeted steer as a fresh single-agent attempt whose stdout is the
+// reply; deck/record-only steers just persist the audit trail.
+type SteerRequest struct {
+	Target  steer.Target
+	AgentID string
+	Text    string
+}
+
+// SteerResult reports what happened. StdoutPath (when non-empty) is the steer
+// attempt's live stdout, which the TUI tails into the agent's tab as the reply.
+type SteerResult struct {
+	ID         string
+	Status     string // "running" | "queued" | "recorded" | "rejected"
+	SegmentID  string
+	StdoutPath string
+}
+
+// SteerFunc executes/records a steer. KillAgentFunc terminates one agent.
+type SteerFunc func(SteerRequest) (SteerResult, error)
+type KillAgentFunc func(agentID string) error
 
 // Tab ids: Home is always first; agent tabs are "agent:<id>"; Status is last.
 const (
@@ -206,6 +237,25 @@ type liveModel struct {
 	// (/open, /answer) opens an arrow-key picker instead of erroring.
 	picker    pickerState
 	answerQID string // non-empty while composing an answer chosen via the /answer picker
+
+	// Live steering / kill / autocomplete (tui-live-steering).
+	suggest          bool          // slash-command suggestion menu visible
+	suggestItems     []commandSpec // current matches for inputText prefix
+	suggestIndex     int           // highlighted suggestion
+	confirmKillAgent string        // non-empty = modal "kill <agent>? (y/N)" confirm
+	steerReplies     map[string]*steerReply // per-agent live steer reply (tailed inline)
+}
+
+// steerReply is one agent's in-flight/finished steer reply, surfaced inline in
+// that agent's transcript tab. buf tails the attempt's stdout; done/failed are
+// flipped from the steer.replied / steer.reply_failed events.
+type steerReply struct {
+	id         string
+	query      string
+	stdoutPath string
+	buf        *agentBuffer
+	done       bool
+	failed     bool
 }
 
 // hasRun reports whether an active run is attached (vs the no-run Home state).
@@ -314,6 +364,7 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.errText = ""
 			m.events = append(m.events, msg.events...)
+			m.applySteerReplyEvents(msg.events)
 			m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
 			m.ensureActiveBuffer()
 			m.refreshBuffers()
@@ -385,6 +436,10 @@ func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
 	m.opts.RunDir = s.RunDir
 	m.opts.Done = s.Done
 	m.opts.Cancel = s.Cancel
+	// Copy the live-steering/kill seams onto the active run — without this, runs
+	// launched from Home (newLaunchFunc) would silently lose steering and kill.
+	m.opts.SubmitSteer = s.SubmitSteer
+	m.opts.KillAgent = s.KillAgent
 	m.opts.Resume = false
 	m.opts.Home = false
 	m.offset = 0
@@ -395,6 +450,10 @@ func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
 	m.composing = false
 	m.answerQID = ""
 	m.picker = pickerState{}
+	m.suggest = false
+	m.suggestItems = nil
+	m.confirmKillAgent = ""
+	m.steerReplies = map[string]*steerReply{}
 	m.inputText = ""
 	m.inputErr = ""
 	m.buffers = map[string]*agentBuffer{}
@@ -418,12 +477,16 @@ func (m liveModel) View() string {
 // then a status line and a persistent input row.
 func (m liveModel) renderTabbed(width, height int) string {
 	rows := m.transcriptHeight()
-	// The picker overlays above the input row; shrink the transcript area by its
-	// height so a tiny terminal never overflows.
-	var pickerBlock string
+	// The picker / suggestion menu overlay above the input row; shrink the
+	// transcript area by their height so a tiny terminal never overflows.
+	var overlay string
 	if m.picker.Active {
-		pickerBlock = m.renderPicker(width)
-		rows -= strings.Count(pickerBlock, "\n") + 1
+		overlay = m.renderPicker(width)
+	} else if m.suggest {
+		overlay = m.renderSuggest(width)
+	}
+	if overlay != "" {
+		rows -= strings.Count(overlay, "\n") + 1
 		if rows < 1 {
 			rows = 1
 		}
@@ -447,11 +510,32 @@ func (m liveModel) renderTabbed(width, height int) string {
 	if banner := m.renderQuestionBanner(width); banner != "" {
 		parts = append(parts, banner)
 	}
-	if pickerBlock != "" {
-		parts = append(parts, pickerBlock)
+	if overlay != "" {
+		parts = append(parts, overlay)
 	}
 	parts = append(parts, m.renderStatusLine(width), m.renderInputRow(width))
 	return strings.Join(parts, "\n")
+}
+
+// renderSuggest draws the slim slash-command autocomplete menu above the input row.
+func (m liveModel) renderSuggest(width int) string {
+	var b strings.Builder
+	b.WriteString(headerStyle.Render("commands"))
+	b.WriteString("\n")
+	for i, s := range m.suggestItems {
+		label := s.Name
+		if s.Usage != "" {
+			label = s.Usage
+		}
+		if i == m.suggestIndex {
+			b.WriteString(okStyle.Render("> " + truncateText(label, width-6)))
+		} else {
+			b.WriteString("  " + mutedStyle.Render(truncateText(label, width-6)))
+		}
+		b.WriteString("\n")
+	}
+	b.WriteString(mutedStyle.Render("Tab complete · ↑/↓ pick · Enter run"))
+	return boxStyle.Width(clampInt(width-4, 40, 84)).Render(strings.TrimRight(b.String(), "\n"))
 }
 
 func (m liveModel) renderTabStrip(width int) string {
@@ -537,6 +621,8 @@ func shortState(s string) string {
 		return "FIN"
 	case stateFailed:
 		return "ERR"
+	case stateKilled:
+		return "KILL"
 	case stateSkipped:
 		return "SKIP"
 	case statePending:
@@ -547,6 +633,12 @@ func shortState(s string) string {
 }
 
 func (m liveModel) renderTranscript(agentID string, width, rows int) string {
+	// When a steer reply is in flight/just-finished for this agent, the tab shows
+	// the reply (that's what the owner just asked for); the round transcript is
+	// still on disk and returns once the steer reply is cleared.
+	if sr := m.steerReplies[agentID]; sr != nil {
+		return m.renderSteerReply(agentID, sr, width, rows)
+	}
 	b := m.buffers[agentID]
 	if b == nil || len(b.lines) == 0 {
 		return mutedStyle.Render("no output yet from " + agentID + " (waiting for the agent to write stdout)")
@@ -570,6 +662,44 @@ func (m liveModel) renderTranscript(agentID string, width, rows int) string {
 	for i := start; i < end; i++ {
 		sb.WriteString(truncateText(b.lines[i], width-1))
 		sb.WriteString("\n")
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+// renderSteerReply renders an agent's live steer reply inline: a divider with
+// the owner's query, the reply text (the attempt's stdout), and a status line.
+func (m liveModel) renderSteerReply(agentID string, sr *steerReply, width, rows int) string {
+	query := strings.TrimSpace(sr.query)
+	if len(query) > 60 {
+		query = query[:57] + "…"
+	}
+	var sb strings.Builder
+	sb.WriteString(headerStyle.Render(truncateText("── steer "+sr.id+`: "`+query+`" ──`, width-1)))
+	sb.WriteString("\n")
+	bodyRows := rows - 2
+	if bodyRows < 1 {
+		bodyRows = 1
+	}
+	if sr.buf != nil && len(sr.buf.lines) > 0 {
+		start := len(sr.buf.lines) - bodyRows
+		if start < 0 {
+			start = 0
+		}
+		for _, line := range sr.buf.lines[start:] {
+			sb.WriteString(mutedStyle.Render(truncateText(line, width-1)))
+			sb.WriteString("\n")
+		}
+	} else if !sr.done {
+		sb.WriteString(mutedStyle.Render("  (waiting for " + agentID + " to reply…)"))
+		sb.WriteString("\n")
+	}
+	switch {
+	case sr.failed:
+		sb.WriteString(warnStyle.Render("  [steer reply failed — esc to dismiss]"))
+	case sr.done:
+		sb.WriteString(okStyle.Render("  [reply complete — esc to return to the transcript]"))
+	default:
+		sb.WriteString(okStyle.Render("  " + agentID + " is replying…"))
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }
@@ -639,8 +769,15 @@ func (m liveModel) renderStatusLine(width int) string {
 }
 
 func (m liveModel) renderInputRow(width int) string {
+	// Modal kill confirmation takes over the input row.
+	if m.confirmKillAgent != "" {
+		row := warnStyle.Render(truncateText("kill agent "+m.confirmKillAgent+"? (y/N)", width))
+		return row + "\n" + mutedStyle.Render("y confirm · n/esc cancel (the rest of the run keeps going)")
+	}
 	active := m.activeTabResolved()
 	answer := false
+	steerRow := false
+	steerAgent := ""
 	var label string
 	switch {
 	case m.composing && m.answerQID != "":
@@ -658,34 +795,44 @@ func (m liveModel) renderInputRow(width int) string {
 				answer = true
 			} else {
 				label = "steer " + agentID + " › "
+				steerRow = true
+				steerAgent = agentID
 			}
 		} else {
 			label = "deck › "
 		}
 	}
 	var row string
-	if answer {
+	switch {
+	case answer:
 		// Colour-flip the whole row in answer mode so an answer is never accidental.
 		row = warnStyle.Render(truncateText(label+m.inputText, width))
-	} else {
+	case steerRow:
+		// Cyan prefix marks "this goes to the agent" so a steer is never accidental.
+		row = steerStyle.Render(label) + truncateText(m.inputText, width-len(label))
+	default:
 		row = okStyle.Render(label) + truncateText(m.inputText, width-len(label))
 	}
 	if m.inputErr != "" {
 		row += "  " + warnStyle.Render(m.inputErr)
 	}
-	hint := "↑/↓ tabs · N new idea · Enter steer/answer · /help · ctrl+c"
+	hint := "↑/↓ tabs · N new idea · Enter steer/answer · ctrl+k kill · /help · ctrl+c"
 	if m.done {
-		hint = "[done] · ↑/↓ tabs · N new idea · /open <slug|run> · /quit or esc to exit"
+		hint = "[done] · ↑/↓ tabs · N new idea · /open (pick) · /quit or esc to exit"
 	}
 	switch {
 	case m.picker.Active:
 		hint = "↑/↓ select · type filter · Enter choose · esc cancel"
+	case m.suggest:
+		hint = "Tab complete · ↑/↓ pick · Enter run · esc close"
 	case m.composing && m.answerQID != "":
 		hint = "type the answer · Enter submit · esc cancel"
 	case m.composing:
 		hint = "type a task · Enter launch · esc cancel"
 	case strings.HasPrefix(m.inputText, "/"):
-		hint = "commands: /help /status /follow /deck <t> /answer [pick] /open [pick] /quit"
+		hint = "Tab to complete · commands: /help /status /follow /deck /answer /open /home /quit"
+	case steerRow:
+		hint = "Enter sends to " + steerAgent + " · ctrl+k kill · ↑/↓ tabs · /help"
 	case active == homeTabID && !m.done:
 		hint = "N new idea · /open (pick) · ↑/↓ tabs · /help · ctrl+c"
 	}
@@ -723,6 +870,157 @@ func (m liveModel) renderHome(width, rows int) string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
+// --- slash-command autocomplete + per-agent kill (tui-live-steering) ---
+
+// commandSpec describes one slash command — the single source for runCommand
+// dispatch hints, the autocomplete menu, and /help.
+type commandSpec struct {
+	Name        string
+	Usage       string
+	OpensPicker bool // bare form opens the existing picker (/open, /answer)
+	TakesArg    bool // needs free-text after the name (/deck) or a picker target
+}
+
+var commandSpecs = []commandSpec{
+	{Name: "/help"},
+	{Name: "/status"},
+	{Name: "/follow"},
+	{Name: "/home"},
+	{Name: "/deck", Usage: "/deck <text>", TakesArg: true},
+	{Name: "/open", Usage: "/open [slug|run]", OpensPicker: true, TakesArg: true},
+	{Name: "/answer", Usage: "/answer [qid text]", OpensPicker: true, TakesArg: true},
+	{Name: "/quit"},
+}
+
+// commandMatches returns the specs whose name has the typed command as a prefix
+// ("/" alone matches all). token is the command word (before any space).
+func commandMatches(input string) []commandSpec {
+	token := strings.ToLower(strings.TrimSpace(input))
+	var out []commandSpec
+	for _, s := range commandSpecs {
+		if strings.HasPrefix(s.Name, token) {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// recomputeSuggest refreshes the autocomplete menu after any input edit. It is
+// visible only while the input is a bare slash command (starts with "/", no
+// space) with at least one match and enough vertical room.
+func (m *liveModel) recomputeSuggest() {
+	m.suggest = false
+	m.suggestItems = nil
+	if !strings.HasPrefix(m.inputText, "/") || strings.Contains(m.inputText, " ") {
+		m.suggestIndex = 0
+		return
+	}
+	// Suppress on very short terminals. transcriptHeight() is clamped to >=3, so
+	// check the raw (pre-clamp) available rows.
+	if tuiHeight(m.height, defaultLiveHeight)-7 < 3 {
+		return
+	}
+	matches := commandMatches(m.inputText)
+	if len(matches) == 0 {
+		m.suggestIndex = 0
+		return
+	}
+	m.suggestItems = matches
+	if m.suggestIndex >= len(matches) {
+		m.suggestIndex = 0
+	}
+	m.suggest = true
+}
+
+// applyTabComplete completes the input to the longest common prefix of the
+// matches; a single match completes the full command (+ space when it takes args).
+func (m *liveModel) applyTabComplete() {
+	matches := m.suggestItems
+	if len(matches) == 0 {
+		return
+	}
+	if len(matches) == 1 {
+		m.inputText = matches[0].Name
+		if matches[0].TakesArg {
+			m.inputText += " "
+		}
+	} else {
+		names := make([]string, len(matches))
+		for i, s := range matches {
+			names[i] = s.Name
+		}
+		m.inputText = longestCommonPrefix(names)
+	}
+	m.recomputeSuggest()
+}
+
+// acceptSuggestion runs/extends the highlighted command: a no-arg command runs
+// immediately; an arg command is completed (a picker command opens its picker).
+func (m liveModel) acceptSuggestion() (tea.Model, tea.Cmd) {
+	if m.suggestIndex < 0 || m.suggestIndex >= len(m.suggestItems) {
+		return m, nil
+	}
+	spec := m.suggestItems[m.suggestIndex]
+	m.suggest, m.suggestItems = false, nil
+	if spec.OpensPicker {
+		// Bare /open or /answer opens the existing arrow-key picker.
+		m.inputText = ""
+		return m.runCommand(spec.Name)
+	}
+	if spec.TakesArg {
+		m.inputText = spec.Name + " "
+		return m, nil
+	}
+	m.inputText = ""
+	return m.runCommand(spec.Name)
+}
+
+func longestCommonPrefix(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	prefix := items[0]
+	for _, s := range items[1:] {
+		for !strings.HasPrefix(s, prefix) {
+			prefix = prefix[:len(prefix)-1]
+			if prefix == "" {
+				return ""
+			}
+		}
+	}
+	return prefix
+}
+
+// agentIsRunning reports whether the named agent currently has a running attempt.
+func (m liveModel) agentIsRunning(agentID string) bool {
+	a := m.agentByID(agentID)
+	return a != nil && a.State == stateRunning
+}
+
+// updateConfirmKill handles the modal "kill <agent>? (y/N)" confirmation. It
+// blocks every other key; y/enter confirms, n/esc cancels.
+func (m liveModel) updateConfirmKill(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y", "enter":
+		id := m.confirmKillAgent
+		m.confirmKillAgent = ""
+		if m.opts.KillAgent == nil {
+			m.inputErr = "kill is not available for this run"
+			return m, nil
+		}
+		if err := m.opts.KillAgent(id); err != nil {
+			m.inputErr = "kill failed: " + err.Error()
+		} else {
+			m.statusMsg = "killed " + id
+		}
+		return m, nil
+	case "n", "N", "esc":
+		m.confirmKillAgent = ""
+		return m, nil
+	}
+	return m, nil // modal: ignore everything else
+}
+
 // --- Claude-CLI tabbed layout: navigation, buffers, input routing ---
 
 // updateMain handles all keys on the default tabbed surface.
@@ -736,25 +1034,75 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, tea.Quit
 	}
+	// Modal confirm-kill is the highest-priority interceptor: it blocks every
+	// other key so a stray Enter can't send a steer mid-confirmation.
+	if m.confirmKillAgent != "" {
+		return m.updateConfirmKill(msg)
+	}
 	if m.picker.Active {
 		return m.updatePicker(msg)
 	}
-	switch msg.String() {
+	key := msg.String()
+	slash := strings.HasPrefix(m.inputText, "/")
+	// Slash-command autocomplete: while the suggestion menu is visible it owns
+	// Tab/↑/↓/Enter/Esc; printable keys still edit the input below and re-filter.
+	if m.suggest {
+		switch key {
+		case "tab":
+			m.applyTabComplete()
+			return m, nil
+		case "up":
+			if m.suggestIndex > 0 {
+				m.suggestIndex--
+			}
+			return m, nil
+		case "down":
+			if m.suggestIndex < len(m.suggestItems)-1 {
+				m.suggestIndex++
+			}
+			return m, nil
+		case "enter":
+			return m.acceptSuggestion()
+		case "esc":
+			m.suggest, m.suggestItems = false, nil
+			return m, nil
+		}
+	}
+	switch key {
 	case "esc":
 		if m.composing {
 			m.clearComposition()
 			return m, nil
 		}
+		// Dismiss a steer-reply panel on the active agent tab → back to its transcript.
+		if id, ok := agentTab(m.activeTabResolved()); ok {
+			if _, has := m.steerReplies[id]; has {
+				delete(m.steerReplies, id)
+				return m, nil
+			}
+		}
 		if m.inputText != "" {
 			m.inputText = ""
 			m.inputErr = ""
+			m.recomputeSuggest()
 			return m, nil
 		}
 		return m, tea.Quit
+	case "ctrl+k":
+		// Kill the focused agent (modal confirm). Only when on a running agent tab
+		// of a live run with the kill seam wired.
+		if id, ok := agentTab(m.activeTabResolved()); ok && m.agentIsRunning(id) {
+			if m.opts.KillAgent == nil {
+				m.inputErr = "kill is not available for this run"
+			} else {
+				m.confirmKillAgent = id
+				m.inputErr = ""
+			}
+		}
+		return m, nil
 	case "N":
 		// Start a new idea — only as a command (empty input) so it never eats
-		// a capital N typed mid-steer. The !m.picker.Active term is redundant given
-		// the early picker branch above, but documents the invariant.
+		// a capital N typed mid-steer.
 		if !m.composing && m.inputText == "" && !m.picker.Active && m.opts.Start != nil {
 			m.composing = true
 			m.answerQID = ""
@@ -763,11 +1111,24 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.inputText += "N"
 		m.inputErr = ""
+		m.recomputeSuggest()
 		return m, nil
-	case "up", "left", "shift+tab":
+	case "tab":
+		// Conditional Tab: switch tabs ONLY when the input is not slash-prefixed
+		// (when it is, Tab drives autocomplete — handled in the suggest block above).
+		if !slash {
+			m.switchTab(1)
+		}
+		return m, nil
+	case "shift+tab":
+		if !slash {
+			m.switchTab(-1)
+		}
+		return m, nil
+	case "up", "left":
 		m.switchTab(-1)
 		return m, nil
-	case "down", "right", "tab":
+	case "down", "right":
 		m.switchTab(1)
 		return m, nil
 	case "shift+up":
@@ -801,11 +1162,13 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.inputText = string(r[:len(r)-1])
 		}
 		m.inputErr = ""
+		m.recomputeSuggest()
 		return m, nil
 	}
 	if len(msg.Runes) > 0 {
 		m.inputText += string(msg.Runes)
 		m.inputErr = ""
+		m.recomputeSuggest()
 	}
 	return m, nil
 }
@@ -977,6 +1340,59 @@ func (m *liveModel) refreshBuffers() {
 			b.scroll = bottom
 		}
 	}
+	m.refreshSteerBuffers()
+}
+
+// refreshSteerBuffers tails each in-flight steer reply's stdout into its buffer
+// so the reply streams into the agent's tab.
+func (m *liveModel) refreshSteerBuffers() {
+	for _, sr := range m.steerReplies {
+		if sr == nil || sr.stdoutPath == "" {
+			continue
+		}
+		if sr.buf == nil {
+			sr.buf = &agentBuffer{path: sr.stdoutPath, follow: true}
+		}
+		b := sr.buf
+		if !b.loaded {
+			if _, err := os.Stat(b.path); err != nil {
+				continue // not written yet
+			}
+			b.lines, b.offset, b.trunc = loadFocusTail(b.path)
+			b.info, _ = os.Stat(b.path)
+			b.loaded = true
+			continue
+		}
+		if info, err := os.Stat(b.path); err == nil && (info.Size() < b.offset || (b.info != nil && !os.SameFile(b.info, info))) {
+			b.lines, b.offset, b.trunc = loadFocusTail(b.path)
+			b.info, _ = os.Stat(b.path)
+			continue
+		}
+		newLines, newOff := readAppendedLines(b.path, b.offset)
+		b.offset = newOff
+		if len(newLines) > 0 {
+			b.lines = append(b.lines, newLines...)
+			b.lines, _ = capFocusLines(b.lines)
+		}
+	}
+}
+
+// applySteerReplyEvents flips a steer reply to done/failed when its terminal
+// event arrives, so the "replying…" indicator clears.
+func (m *liveModel) applySteerReplyEvents(events []store.Event) {
+	for _, e := range events {
+		if e.Type != "steer.replied" && e.Type != "steer.reply_failed" {
+			continue
+		}
+		agentID, _ := e.Data["agent"].(string)
+		id, _ := e.Data["id"].(string)
+		sr := m.steerReplies[agentID]
+		if sr == nil || (id != "" && sr.id != id) {
+			continue
+		}
+		sr.done = true
+		sr.failed = e.Type == "steer.reply_failed"
+	}
 }
 
 func (m *liveModel) scrollActive(delta int) {
@@ -1104,6 +1520,33 @@ func (m liveModel) openRun(target string) (tea.Model, tea.Cmd) {
 }
 
 func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.Model, tea.Cmd) {
+	// When a live seam is injected (TUI-launched run), the steer EXECUTES: an
+	// agent-targeted steer spawns a fresh attempt whose stdout reply is tailed
+	// inline into the agent's tab. Without a seam (observational /open run) it
+	// falls back to recording only.
+	if m.opts.SubmitSteer != nil {
+		res, err := m.opts.SubmitSteer(SteerRequest{Target: target, AgentID: agentID, Text: text})
+		if err != nil {
+			m.inputErr = err.Error()
+			return m, nil
+		}
+		m.inputText, m.inputErr = "", ""
+		if target == steer.TargetAgent && res.StdoutPath != "" {
+			if m.steerReplies == nil {
+				m.steerReplies = map[string]*steerReply{}
+			}
+			m.steerReplies[agentID] = &steerReply{id: res.ID, query: text, stdoutPath: res.StdoutPath}
+			if res.Status == "queued" {
+				m.statusMsg = agentID + " busy — steer queued (ctrl+k the active attempt to run it sooner)"
+			} else {
+				m.statusMsg = agentID + " is replying…"
+			}
+		} else {
+			m.statusMsg = "recorded steer " + res.ID
+		}
+		return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)
+	}
+
 	res, err := steer.Submit(m.opts.RunDir, steer.Request{
 		Target:    target,
 		Agent:     agentID,
@@ -1115,11 +1558,7 @@ func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.M
 		m.inputErr = err.Error()
 		return m, nil
 	}
-	if target == steer.TargetAgent {
-		m.statusMsg = fmt.Sprintf("recorded %s for %s (queued; auto-exec not wired yet)", res.ID, agentID)
-	} else {
-		m.statusMsg = fmt.Sprintf("recorded %s for the deck (queued; auto-exec not wired yet)", res.ID)
-	}
+	m.statusMsg = fmt.Sprintf("recorded steer %s (this run is observational — open the live run to get a reply)", res.ID)
 	m.inputText, m.inputErr = "", ""
 	return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)
 }
@@ -1533,12 +1972,13 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  PgUp / PgDn        scroll a page · ctrl+u/ctrl+d half · Home/End ends",
 		"",
 		"Input (always typeable)",
-		"  type + Enter       answer the active agent's open question, else",
-		"                     record a steer for it (deck steer on the Status tab)",
-		"  esc                clear the input, or detach the TUI when empty",
+		"  type + Enter       on an agent tab: send a steer — the agent replies in",
+		"                     this tab; answers its open question if one is pending",
+		"  ctrl+k             kill the focused agent (confirm y/N); the run continues",
+		"  esc                close a reply/menu, clear the input, or detach when empty",
 		"  ctrl+c             cancel the attached run, else quit",
 		"",
-		"Slash commands",
+		"Slash commands  (type / then Tab to complete; ↑/↓ + Enter to pick)",
 		"  /help              this overlay        /status   jump to Status tab",
 		"  /follow            re-pin to the bottom (tail)",
 		"  /deck <text>       record a deck-level steer",
@@ -1550,7 +1990,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  ↑ / ↓              move the selection      type   filter the list",
 		"  Enter              choose                  esc    cancel the picker",
 		"",
-		mutedStyle.Render("steers are recorded/queued; auto-execution is a later slice. esc/Enter to close"),
+		mutedStyle.Render("a steer to an agent runs a fresh reply attempt; esc/Enter to close this overlay"),
 	}
 	body := boxStyle.Width(clampInt(width-4, 40, 84)).Render(strings.Join(lines, "\n"))
 	return clipLines(strings.Join([]string{header, "", body, ""}, "\n"), height)

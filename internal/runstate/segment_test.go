@@ -36,6 +36,31 @@ func agentEvent(at time.Time, typ, id, segment string) store.Event {
 	return store.Event{Time: at, Type: typ, Data: map[string]any{"agent": id, "segment_id": segment}}
 }
 
+// A killed agent projects to StateKilled, and a sticky kill survives the trailing
+// agent.failed that the canceled process emits (tui-live-steering).
+func TestProjectEventsKilledIsSticky(t *testing.T) {
+	base := time.Date(2026, 6, 6, 12, 0, 0, 0, time.UTC)
+	events := []store.Event{
+		agentEvent(base, "agent.started", "agy", "segment-0001"),
+		agentEvent(base.Add(time.Second), "agent.killed", "agy", "segment-0001"),
+		agentEvent(base.Add(2*time.Second), "agent.failed", "agy", "segment-0001"),
+	}
+	state := ProjectEvents([]string{"agy"}, events, base.Add(3*time.Second))
+	a := mustAgent(t, state, "agy")
+	if a.State != StateKilled {
+		t.Fatalf("killed agent should project to %q, got %q", StateKilled, a.State)
+	}
+	if !a.Killed {
+		t.Fatal("the Killed flag should be set")
+	}
+	// A later segment resets the killed state (re-run).
+	events = append(events, segStarted(base.Add(4*time.Second), "segment-0002", "continue", "agy"))
+	state = ProjectEvents([]string{"agy"}, events, base.Add(5*time.Second))
+	if a := mustAgent(t, state, "agy"); a.Killed || a.State != StatePending {
+		t.Fatalf("a new segment should clear killed (got state=%q killed=%v)", a.State, a.Killed)
+	}
+}
+
 // Old runs emit no segment events; the projection must behave exactly as before.
 func TestProjectEventsLegacyUnsegmentedUnchanged(t *testing.T) {
 	base := time.Date(2026, 6, 4, 12, 0, 0, 0, time.UTC)

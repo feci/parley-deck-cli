@@ -47,6 +47,12 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
 	defer cancel()
 
+	// Register so Handle.KillAgent can cancel this ACP attempt's context (the same
+	// per-agent kill path as headless agents); deregister on return. The KILLED
+	// badge comes from the agent.killed event the kill emits, projected as sticky.
+	opts.tracker.register(agent.ID, opts.SegmentID, "round", "", cancel)
+	defer opts.tracker.finish(agent.ID)
+
 	env := acp.MergedEnv(ctx, nil)
 	process, err := acp.Spawn(ctx, acp.SpawnOptions{
 		Command:    agent.Path,

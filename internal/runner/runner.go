@@ -42,6 +42,9 @@ type Options struct {
 	// badges after continue/resume/retry). Set by the round-run entry points via
 	// appendSegmentStarted; empty for legacy/unsegmented callers.
 	SegmentID string
+	// tracker, when set (by RunRoundOneAsync), registers each agent attempt's
+	// cancel func so the live Handle can KillAgent one agent. nil on the sync path.
+	tracker *Handle
 }
 
 type Result struct {
@@ -57,6 +60,20 @@ type Result struct {
 	SkipReason  string
 	Warning     string
 	Duration    time.Duration
+	// Killed is set when the attempt was terminated by Handle.KillAgent (vs a
+	// timeout or self-exit), so projection can show a distinct "killed" badge.
+	Killed bool
+}
+
+// attempt tracks one in-flight agent process so the live Handle can cancel just
+// that agent (kill) without touching the run-wide context.
+type attempt struct {
+	agentID   string
+	segmentID string
+	kind      string // "round" | "steer"
+	steerID   string
+	cancel    context.CancelFunc
+	killed    bool
 }
 
 type Handle struct {
@@ -66,14 +83,29 @@ type Handle struct {
 	done    chan struct{}
 	results []Result
 	mu      sync.Mutex
+
+	// Live attempt control (tui-live-steering). opts/rootCtx are captured so the
+	// handle can spawn steer attempts; active maps agentID->in-flight attempt;
+	// steerBusy enforces the depth-1 per-agent steer queue; segmentMu serializes
+	// segment-id allocation so concurrent steer attempts never collide.
+	opts      Options
+	rootCtx   context.Context
+	active    map[string]*attempt
+	steerBusy map[string]bool
+	steerSeq  int // fallback unique steer id when a caller supplies none
 }
 
 func RunRoundOneAsync(ctx context.Context, opts Options) *Handle {
 	handle := &Handle{
-		RunID:  opts.RunID,
-		RunDir: filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID),
-		done:   make(chan struct{}),
+		RunID:     opts.RunID,
+		RunDir:    filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID),
+		done:      make(chan struct{}),
+		rootCtx:   ctx,
+		active:    map[string]*attempt{},
+		steerBusy: map[string]bool{},
 	}
+	opts.tracker = handle
+	handle.opts = opts
 	go func() {
 		defer close(handle.done)
 		defer func() {
@@ -324,31 +356,6 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
 	defer cancel()
 
-	cmd, cleanup, err := CommandFor(ctx, opts.Root, agent, prompt)
-	if cleanup != nil {
-		defer cleanup()
-	}
-	if err != nil {
-		return failEarly(opts, result, err)
-	}
-	cmd.Dir = opts.Root
-
-	stdoutFile, err := os.Create(stdoutPath)
-	if err != nil {
-		return failEarly(opts, result, err)
-	}
-	defer stdoutFile.Close()
-	stderrFile, err := os.Create(stderrPath)
-	if err != nil {
-		return failEarly(opts, result, err)
-	}
-	defer stderrFile.Close()
-	cmd.Stdout = stdoutFile
-	cmd.Stderr = stderrFile
-	if agent.PromptMode == agents.PromptStdin {
-		cmd.Stdin = strings.NewReader(prompt)
-	}
-
 	if err := opts.Store.Append(store.Event{
 		Time: now,
 		Type: "agent.started",
@@ -363,7 +370,10 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		return failEarly(opts, result, fmt.Errorf("event append failed: %w", err))
 	}
 
-	err = cmd.Run()
+	// Register this attempt so Handle.KillAgent can cancel just this agent.
+	opts.tracker.register(agent.ID, opts.SegmentID, "round", "", cancel)
+	err = execAgentProcess(ctx, opts.Root, agent, prompt, stdoutPath, stderrPath)
+	killed := opts.tracker.finish(agent.ID)
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(result.StartedAt)
 	if err != nil {
@@ -371,6 +381,10 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		if ctx.Err() != nil {
 			result.ExitError = ctx.Err().Error()
 		}
+	}
+	if killed {
+		result.Killed = true
+		result.ExitError = "killed by user"
 	}
 
 	// stdout-capture fallback: some print-only CLIs (e.g. agy --print) emit the
@@ -654,6 +668,37 @@ responding-to: [prior round artifacts]
 Prior rounds (read these):
 %s
 `, agent.ID, round, outputPath, strings.Join(others, ", "), questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), headings.String(), prior)
+}
+
+// execAgentProcess builds the agent command, wires its stdout/stderr to the
+// given log paths (and stdin for stdin-prompt agents), and runs it to
+// completion. Shared by the round path (runAgent) and the steer path
+// (runSteerAgent) so both honor the same exec + cancellation semantics.
+func execAgentProcess(ctx context.Context, root string, agent agents.Discovery, prompt, stdoutPath, stderrPath string) error {
+	cmd, cleanup, err := CommandFor(ctx, root, agent, prompt)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return err
+	}
+	cmd.Dir = root
+	stdoutFile, err := os.Create(stdoutPath)
+	if err != nil {
+		return err
+	}
+	defer stdoutFile.Close()
+	stderrFile, err := os.Create(stderrPath)
+	if err != nil {
+		return err
+	}
+	defer stderrFile.Close()
+	cmd.Stdout = stdoutFile
+	cmd.Stderr = stderrFile
+	if agent.PromptMode == agents.PromptStdin {
+		cmd.Stdin = strings.NewReader(prompt)
+	}
+	return cmd.Run()
 }
 
 func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
