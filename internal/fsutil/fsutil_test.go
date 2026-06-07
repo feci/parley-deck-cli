@@ -94,7 +94,7 @@ func Test_AlreadyExists(t *testing.T) {
 
 // Test_GenuineFailure: persistent failure, path never appears → returns the LAST mkdir
 // error (distinct from earlier ones) after the bounded retries, sleeping exactly
-// 5ms,20ms,50ms.
+// 15ms,35ms,100ms,250ms,500ms,1000ms (the d>0 entries of retryDelays).
 func Test_GenuineFailure(t *testing.T) {
 	saveSeams(t)
 	errLast := errors.New("final-boom")
@@ -102,7 +102,7 @@ func Test_GenuineFailure(t *testing.T) {
 	var sleeps []time.Duration
 	mkdirAll = func(string, os.FileMode) error {
 		mkdirCalls++
-		if mkdirCalls == 5 { // distinct error on the final attempt
+		if mkdirCalls == 8 { // distinct error on the final attempt
 			return errLast
 		}
 		return errBoom
@@ -117,10 +117,10 @@ func Test_GenuineFailure(t *testing.T) {
 	if errors.Is(err, errBoom) {
 		t.Fatalf("must return the last error, not an earlier one; got %v", err)
 	}
-	if mkdirCalls != 5 {
-		t.Fatalf("want 5 mkdir attempts (initial + 4 retries), got %d", mkdirCalls)
+	if mkdirCalls != 8 {
+		t.Fatalf("want 8 mkdir attempts (initial + 7 retries), got %d", mkdirCalls)
 	}
-	want := []time.Duration{5 * time.Millisecond, 20 * time.Millisecond, 50 * time.Millisecond}
+	want := []time.Duration{15 * time.Millisecond, 35 * time.Millisecond, 100 * time.Millisecond, 250 * time.Millisecond, 500 * time.Millisecond, 1000 * time.Millisecond}
 	if len(sleeps) != len(want) {
 		t.Fatalf("want sleeps %v, got %v", want, sleeps)
 	}

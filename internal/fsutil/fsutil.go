@@ -19,11 +19,22 @@ var (
 )
 
 // retryDelays are the sleeps before each retry after the initial attempt. The first
-// retry is immediate (the retry itself often forces a cache revalidation); later
-// retries give a weakly-coherent attribute cache a brief window to settle. This is 5
-// total MkdirAll attempts with a worst-case added latency of 75ms — paid only on the
-// error path, never on a healthy first success.
-var retryDelays = []time.Duration{0 /* immediate first retry, no sleep */, 5 * time.Millisecond, 20 * time.Millisecond, 50 * time.Millisecond}
+// retry is immediate (the retry itself often forces a cache revalidation); later retries
+// give a weakly-coherent attribute cache time to settle. The window is sized to outlast
+// a virtio-fs / NFS attribute+entry cache timeout (typically ~1s): 8 total MkdirAll
+// attempts with a worst-case added latency of ~1.9s — paid ONLY on the error path, never
+// on a healthy first success. A spurious stale-cache failure is recoverable within this
+// window; a genuine error simply costs ~1.9s before surfacing (permission errors fail
+// fast and never wait).
+var retryDelays = []time.Duration{
+	0, // immediate first retry, no sleep
+	15 * time.Millisecond,
+	35 * time.Millisecond,
+	100 * time.Millisecond,
+	250 * time.Millisecond,
+	500 * time.Millisecond,
+	1000 * time.Millisecond,
+}
 
 // MkdirAllResilient behaves like os.MkdirAll but tolerates spurious, transient failures
 // from weakly-coherent filesystems whose dentry/attribute cache can be momentarily stale
