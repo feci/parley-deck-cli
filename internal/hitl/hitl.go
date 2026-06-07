@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode"
 
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/store"
 )
 
@@ -180,7 +181,7 @@ func (s Store) write(question Question) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(s.QuestionsDir(), 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(s.QuestionsDir(), 0o755); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(question, "", "  ")

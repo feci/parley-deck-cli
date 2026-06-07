@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"parley-deck-cli/internal/fsutil"
 )
 
 type Event struct {
@@ -38,7 +40,7 @@ func (s Store) Append(event Event) error {
 	if event.Time.IsZero() {
 		event.Time = time.Now().UTC()
 	}
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(s.dir, 0o755); err != nil {
 		return err
 	}
 	file, err := os.OpenFile(filepath.Join(s.dir, "events.jsonl"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
