@@ -31,6 +31,9 @@ type CreatedRun struct {
 	RunOptions runner.Options
 }
 
+// writeManifest is a seam so tests can exercise the best-effort manifest path.
+var writeManifest = runmanifest.Write
+
 func Create(opts CreateOptions) (CreatedRun, error) {
 	now := opts.Now
 	if now.IsZero() {
@@ -62,7 +65,7 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	}); err != nil {
 		return CreatedRun{}, err
 	}
-	if err := runmanifest.Write(opts.Root, runID, runmanifest.New(runmanifest.Options{
+	if err := writeManifest(opts.Root, runID, runmanifest.New(runmanifest.Options{
 		Root:         opts.Root,
 		RunID:        runID,
 		IdeaSlug:     idea.Slug,
@@ -77,7 +80,15 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	})); err != nil {
-		return CreatedRun{}, err
+		// Best-effort: a transient manifest-write failure on a weakly-coherent mount
+		// (e.g. virtio-fs) must NOT orphan an already-created run. The run is defined by
+		// events.jsonl; runstate degrades gracefully when run.json is absent. Record the
+		// deferral for the audit trail and let the run proceed.
+		_ = runStore.Append(store.Event{
+			Time: now.UTC(),
+			Type: "run.manifest_deferred",
+			Data: map[string]any{"error": err.Error()},
+		})
 	}
 
 	registerSession(opts.Root, idea, runID, opts.Task, opts.Participants, now)
