@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -495,7 +496,7 @@ func TestBufferReloadsOnFileReplace(t *testing.T) {
 	if b == nil || !b.loaded {
 		t.Fatal("active buffer should be loaded")
 	}
-	path := b.path
+	path := b.stdout.path
 	if err := os.Remove(path); err != nil {
 		t.Fatal(err)
 	}
@@ -503,10 +504,19 @@ func TestBufferReloadsOnFileReplace(t *testing.T) {
 		t.Fatal(err)
 	}
 	model.refreshBuffers()
-	joined := strings.Join(model.buffers["codex"].lines, "\n")
-	if !strings.Contains(joined, "fresh line three") || strings.Contains(joined, "old line") {
-		t.Fatalf("buffer did not reload from the replaced file: %q", joined)
+	joined := transcriptText(model.buffers["codex"])
+	if !strings.Contains(joined, "fresh line three") {
+		t.Fatalf("buffer did not pick up the replaced file: %q", joined)
 	}
+}
+
+// transcriptText joins a buffer's committed transcript lines for assertions.
+func transcriptText(b *agentBuffer) string {
+	var parts []string
+	for _, l := range b.lines {
+		parts = append(parts, l.Text)
+	}
+	return strings.Join(parts, "\n")
 }
 
 // unified-tui-home: Home is the default surface when no run is attached.
@@ -1049,35 +1059,40 @@ func TestSubmitInputSteerViaSeam(t *testing.T) {
 	if got.Target != steer.TargetAgent || got.AgentID != "codex" || got.Text != "hello there" {
 		t.Fatalf("steer request not routed correctly: %+v", got)
 	}
-	sr := m.steerReplies["codex"]
-	if sr == nil || sr.stdoutPath != replyLog || sr.query != "hello there" {
-		t.Fatalf("steer reply not registered for inline display: %+v", sr)
+	// The steer is woven into the agent's transcript: a "❯ you:" line + the reply
+	// stdout is tailed via the steer cursor (NOT a replacing panel).
+	b := m.buffers["codex"]
+	if b == nil || !strings.Contains(transcriptText(b), "❯ you: hello there") {
+		t.Fatalf("steer should append a '❯ you:' line into the transcript: %q", transcriptText(b))
+	}
+	if b.steer.path != replyLog {
+		t.Fatalf("steer reply stdout should be tailed via the steer cursor, got %q", b.steer.path)
 	}
 }
 
-// A steer.replied / steer.reply_failed event flips the inline reply's state so
-// the "replying…" indicator clears.
-func TestSteerReplyEventTransitionsState(t *testing.T) {
+// A steer.replied / steer.reply_failed event weaves a final marker into the
+// agent's transcript (the conversation stays scrollable).
+func TestSteerReplyEventWeavesMarker(t *testing.T) {
 	m := liveModelWithLog(t, "x\n")
-	m.steerReplies = map[string]*steerReply{"codex": {id: "s1", query: "hi"}}
+	m.ensureBuffer("codex")
 	updated, _ := m.Update(eventsMsg{
 		token:  m.runToken,
 		events: []store.Event{{Type: "steer.replied", Data: map[string]any{"agent": "codex", "id": "s1"}}},
 	})
 	m = updated.(liveModel)
-	if sr := m.steerReplies["codex"]; sr == nil || !sr.done || sr.failed {
-		t.Fatalf("steer.replied should mark done (not failed): %+v", m.steerReplies["codex"])
+	if !strings.Contains(transcriptText(m.buffers["codex"]), "[reply complete]") {
+		t.Fatalf("steer.replied should weave '[reply complete]': %q", transcriptText(m.buffers["codex"]))
 	}
 
 	m2 := liveModelWithLog(t, "x\n")
-	m2.steerReplies = map[string]*steerReply{"codex": {id: "s2", query: "hi"}}
+	m2.ensureBuffer("codex")
 	updated, _ = m2.Update(eventsMsg{
 		token:  m2.runToken,
 		events: []store.Event{{Type: "steer.reply_failed", Data: map[string]any{"agent": "codex", "id": "s2"}}},
 	})
 	m2 = updated.(liveModel)
-	if sr := m2.steerReplies["codex"]; sr == nil || !sr.done || !sr.failed {
-		t.Fatalf("steer.reply_failed should mark done+failed: %+v", m2.steerReplies["codex"])
+	if !strings.Contains(transcriptText(m2.buffers["codex"]), "[reply failed]") {
+		t.Fatalf("steer.reply_failed should weave '[reply failed]': %q", transcriptText(m2.buffers["codex"]))
 	}
 }
 
@@ -1127,5 +1142,220 @@ func TestActivateRunCopiesSteerKillSeams(t *testing.T) {
 	})
 	if m.opts.SubmitSteer == nil || m.opts.KillAgent == nil {
 		t.Fatal("activateRun must copy SubmitSteer and KillAgent onto opts")
+	}
+}
+
+// --- tui-agent-output tests ---
+
+// The CR ingester: lone \r rewrites the live line in place ("potom sa to prepíše"),
+// \r\n and \n commit, committed lines stay immutable, ANSI is stripped.
+func TestIngestTranscriptCRCases(t *testing.T) {
+	cases := []struct {
+		name         string
+		chunks       []string
+		wantLines    []string
+		wantPartial  string
+	}{
+		{"lone-cr-rewrites", []string{"a\rb"}, nil, "b"},
+		{"cr-then-newline-commits", []string{"a\rb\n"}, []string{"b"}, ""},
+		{"crlf-is-newline", []string{"a\r\nb\n"}, []string{"a", "b"}, ""},
+		{"multi-cr", []string{"a\rb\rc"}, nil, "c"},
+		{"newline-then-cr", []string{"a\nb\rc"}, []string{"a"}, "c"},
+		{"split-across-ticks", []string{"… 10%\r… 5", "0%\r… 90%"}, nil, "… 90%"},
+		{"ansi-stripped", []string{"\x1b[32mgreen\x1b[0m\n"}, []string{"green"}, ""},
+		{"progress-then-final", []string{"working 0%\rworking 50%\rdone\n"}, []string{"done"}, ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var lines []transcriptLine
+			partial := ""
+			crPending := false
+			for _, ch := range c.chunks {
+				lines, partial, crPending = ingestTranscriptBytes(lines, partial, crPending, transcriptStdout, []byte(ch))
+			}
+			var got []string
+			for _, l := range lines {
+				got = append(got, l.Text)
+			}
+			if strings.Join(got, "|") != strings.Join(c.wantLines, "|") {
+				t.Fatalf("lines = %v, want %v", got, c.wantLines)
+			}
+			if partial != c.wantPartial {
+				t.Fatalf("partial = %q, want %q", partial, c.wantPartial)
+			}
+		})
+	}
+}
+
+// The live partial (not-yet-newlined line) is surfaced as the bottom visible line
+// and rewrites in place across ticks (the Codex-CLI feel).
+func TestLivePartialSurfacedAndRewrites(t *testing.T) {
+	b := &agentBuffer{partial: map[transcriptStream]string{}, crPending: map[transcriptStream]bool{}}
+	b.lines, b.partial[transcriptStdout], b.crPending[transcriptStdout] = ingestTranscriptBytes(b.lines, "", false, transcriptStdout, []byte("thinking… 10%"))
+	vis := b.visibleLines()
+	if len(vis) != 1 || vis[0].Text != "thinking… 10%" {
+		t.Fatalf("live partial should be the bottom line, got %+v", vis)
+	}
+	// A lone \r rewrites it in place — still one line, new content.
+	b.lines, b.partial[transcriptStdout], b.crPending[transcriptStdout] = ingestTranscriptBytes(b.lines, b.partial[transcriptStdout], b.crPending[transcriptStdout], transcriptStdout, []byte("\rthinking… 90%"))
+	vis = b.visibleLines()
+	if len(vis) != 1 || vis[0].Text != "thinking… 90%" {
+		t.Fatalf("partial should have rewritten in place, got %+v", vis)
+	}
+}
+
+// stderr is merged and tagged; /stderr hides it.
+func TestStderrMergedAndToggle(t *testing.T) {
+	b := &agentBuffer{partial: map[transcriptStream]string{}, crPending: map[transcriptStream]bool{}}
+	b.lines, _, _ = ingestTranscriptBytes(b.lines, "", false, transcriptStdout, []byte("out line\n"))
+	b.lines, _, _ = ingestTranscriptBytes(b.lines, "", false, transcriptStderr, []byte("resolving model…\n"))
+	if got := len(b.visibleLines()); got != 2 {
+		t.Fatalf("both streams should be visible, got %d lines", got)
+	}
+	if s := styleTranscriptLine(transcriptLine{Text: "resolving model…", Stream: transcriptStderr}, 80); !strings.Contains(s, "[err]") {
+		t.Fatalf("stderr line should be [err]-tagged: %q", s)
+	}
+	b.hideStderr = true
+	if got := len(b.visibleLines()); got != 1 {
+		t.Fatalf("/stderr hidden → only stdout visible, got %d", got)
+	}
+}
+
+// The always-on status header is never blank and reflects the agent's state.
+func TestAgentStatusHeaderNeverBlank(t *testing.T) {
+	m := liveModelWithLog(t, "") // codex running, no stdout yet
+	if h := m.renderAgentStatusHeader("codex", 100); !strings.Contains(h, "codex") || !strings.Contains(h, "working") {
+		t.Fatalf("running header should say working: %q", h)
+	}
+	// The tab body is never the old "no output yet" blank.
+	if v := m.View(); strings.Contains(v, "no output yet from") {
+		t.Fatalf("the empty-state should be replaced by the status header\n%s", v)
+	}
+}
+
+// /stderr and /artifact toggle the buffer flags.
+func TestStderrAndArtifactCommands(t *testing.T) {
+	m := liveModelWithLog(t, "x\n")
+	m, _ = runCmd(t, m, "/stderr")
+	if !m.buffers["codex"].hideStderr {
+		t.Fatal("/stderr should hide stderr")
+	}
+	m, _ = runCmd(t, m, "/artifact")
+	if !m.buffers["codex"].showArtifact {
+		t.Fatal("/artifact should toggle the artifact view")
+	}
+}
+
+// Fix-up cycle 1: a \r\n split across two ingest ticks is a newline (not a lost
+// line) — the trailing \r is deferred and resolved against the next chunk.
+func TestIngestSplitCRLFAcrossTicks(t *testing.T) {
+	var lines []transcriptLine
+	partial, cr := "", false
+	lines, partial, cr = ingestTranscriptBytes(lines, partial, cr, transcriptStdout, []byte("alpha\r"))
+	if len(lines) != 0 || partial != "alpha" || !cr {
+		t.Fatalf("trailing \\r should defer: lines=%v partial=%q cr=%v", lines, partial, cr)
+	}
+	lines, partial, cr = ingestTranscriptBytes(lines, partial, cr, transcriptStdout, []byte("\nbeta\n"))
+	if len(lines) != 2 || lines[0].Text != "alpha" || lines[1].Text != "beta" || partial != "" || cr {
+		t.Fatalf("split \\r\\n must commit alpha then beta, got %v partial=%q", lines, partial)
+	}
+	// A trailing \r followed by a non-\n is a lone rewrite across ticks.
+	var l2 []transcriptLine
+	l2, p2, c2 := ingestTranscriptBytes(nil, "", false, transcriptStdout, []byte("x\r"))
+	l2, p2, c2 = ingestTranscriptBytes(l2, p2, c2, transcriptStdout, []byte("y"))
+	if len(l2) != 0 || p2 != "y" {
+		t.Fatalf("trailing \\r then non-\\n should rewrite: lines=%v partial=%q", l2, p2)
+	}
+}
+
+// The byte cap keeps the partial on a UTF-8 rune boundary (no mojibake).
+func TestPartialCapIsRuneSafe(t *testing.T) {
+	big := strings.Repeat("é", partialMaxBytes) // 2 bytes each → exceeds the cap
+	_, partial, _ := ingestTranscriptBytes(nil, "", false, transcriptStdout, []byte(big))
+	if !utf8.ValidString(partial) {
+		t.Fatalf("capped partial must remain valid UTF-8, got %q", partial)
+	}
+	if len(partial) > partialMaxBytes {
+		t.Fatalf("partial must be byte-capped, got %d bytes", len(partial))
+	}
+}
+
+// readAppendedChunk advances the offset by the bytes actually read, so growth
+// between Stat and ReadAll is not re-read (no duplication).
+func TestReadAppendedChunkNoDuplication(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "out.log")
+	if err := os.WriteFile(path, []byte("one\ntwo\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := &tailCursor{path: path}
+	chunk1, _, _ := readAppendedChunk(c)
+	if string(chunk1) != "one\ntwo\n" {
+		t.Fatalf("first read = %q", chunk1)
+	}
+	if err := os.WriteFile(path, []byte("one\ntwo\nthree\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	chunk2, _, _ := readAppendedChunk(c)
+	if string(chunk2) != "three\n" {
+		t.Fatalf("second read should only be the appended bytes, got %q", chunk2)
+	}
+}
+
+// A steer whose reply is fully written when steer.replied arrives keeps BOTH the
+// reply text and the marker (the drain-before-clear fix).
+func TestSteerReplyTextAndMarkerBothKept(t *testing.T) {
+	m := liveModelWithLog(t, "x\n")
+	replyLog := filepath.Join(t.TempDir(), "steer-stdout.log")
+	if err := os.WriteFile(replyLog, []byte("the answer is 42\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.opts.SubmitSteer = func(SteerRequest) (SteerResult, error) {
+		return SteerResult{ID: "s1", Status: "running", StdoutPath: replyLog}, nil
+	}
+	m = pressRunes(t, m, "what is it")
+	m, _ = pressKey(t, m, tea.KeyEnter)
+	// steer.replied arrives in the same read as the (already complete) reply file.
+	updated, _ := m.Update(eventsMsg{
+		token:  m.runToken,
+		events: []store.Event{{Type: "steer.replied", Data: map[string]any{"agent": "codex", "id": "s1"}}},
+	})
+	m = updated.(liveModel)
+	got := transcriptText(m.buffers["codex"])
+	if !strings.Contains(got, "the answer is 42") {
+		t.Fatalf("the reply text must be drained into the transcript, got %q", got)
+	}
+	if !strings.Contains(got, "[reply complete]") {
+		t.Fatalf("the marker must be present, got %q", got)
+	}
+}
+
+// Scrolling up disables follow; a rewriting partial then does NOT yank the view.
+func TestScrollUpDisablesFollowNoYank(t *testing.T) {
+	var sb strings.Builder
+	for i := 1; i <= 100; i++ {
+		fmt.Fprintf(&sb, "line %d\n", i)
+	}
+	m := liveModelWithLog(t, sb.String())
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	m = updated.(liveModel)
+	b := m.buffers["codex"]
+	if b.follow {
+		t.Fatal("PgUp must disable follow")
+	}
+	scrollBefore := b.scroll
+	// A live partial arrives on stdout; refresh must NOT move the scrolled-up view.
+	b.partial[transcriptStdout] = "working 50%"
+	m.refreshBuffers()
+	if m.buffers["codex"].scroll != scrollBefore {
+		t.Fatalf("a partial update must not yank a scrolled-up view: %d → %d", scrollBefore, m.buffers["codex"].scroll)
+	}
+}
+
+// /artifact on a missing artifact is graceful.
+func TestArtifactViewMissingFile(t *testing.T) {
+	m := liveModelWithLog(t, "x\n")
+	out := m.renderArtifactView("codex", 80, 10)
+	if !strings.Contains(out, "Artifact not yet written") {
+		t.Fatalf("missing artifact should be graceful, got %q", out)
 	}
 }

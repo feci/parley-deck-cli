@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -135,15 +136,51 @@ const (
 // agentBuffer is one agent's bounded, follow-capable transcript over its stdout
 // log, fed by offset-incremental reads (reuses loadFocusTail/readAppendedLines/
 // capFocusLines). Kept per agent so switching tabs is instant and retains scroll.
-type agentBuffer struct {
+// transcriptStream tags where a transcript line came from, so it can be styled.
+type transcriptStream int
+
+const (
+	transcriptStdout transcriptStream = iota
+	transcriptStderr
+	transcriptSteer
+	transcriptEvent
+)
+
+// partialMaxBytes bounds a single not-yet-newlined live line (a verbose,
+// newline-less progress stream can never grow memory).
+const partialMaxBytes = 8192
+
+// transcriptLine is one committed line of an agent's transcript, tagged by stream.
+type transcriptLine struct {
+	Text   string
+	Stream transcriptStream
+}
+
+// tailCursor tracks the read position of one log file (stdout/stderr/steer).
+type tailCursor struct {
 	path   string
-	info   os.FileInfo // identity at load, to detect file replacement (rotation)
-	lines  []string
 	offset int64
-	scroll int
-	follow bool
-	trunc  bool
-	loaded bool
+	info   os.FileInfo // identity, to detect truncation/rotation
+}
+
+// agentBuffer is one agent's live, scrollable transcript: it tails stdout, stderr
+// AND the in-flight steer reply into a single CR-aware history, keeping a live
+// "partial" (not-yet-newlined) line per stream that rewrites in place on \r.
+type agentBuffer struct {
+	stdout tailCursor
+	stderr tailCursor
+	steer  tailCursor
+
+	lines     []transcriptLine
+	partial   map[transcriptStream]string
+	crPending map[transcriptStream]bool // a \r at a chunk boundary, awaiting \n
+	scroll    int
+	follow    bool
+	trunc     bool
+	loaded    bool
+
+	hideStderr   bool // /stderr toggle
+	showArtifact bool // /artifact toggle
 }
 
 // pickerKind discriminates what a confirmed picker selection dispatches to.
@@ -259,19 +296,6 @@ type liveModel struct {
 	suggestItems     []commandSpec // current matches for inputText prefix
 	suggestIndex     int           // highlighted suggestion
 	confirmKillAgent string        // non-empty = modal "kill <agent>? (y/N)" confirm
-	steerReplies     map[string]*steerReply // per-agent live steer reply (tailed inline)
-}
-
-// steerReply is one agent's in-flight/finished steer reply, surfaced inline in
-// that agent's transcript tab. buf tails the attempt's stdout; done/failed are
-// flipped from the steer.replied / steer.reply_failed events.
-type steerReply struct {
-	id         string
-	query      string
-	stdoutPath string
-	buf        *agentBuffer
-	done       bool
-	failed     bool
 }
 
 // hasRun reports whether an active run is attached (vs the no-run Home state).
@@ -380,10 +404,10 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.errText = ""
 			m.events = append(m.events, msg.events...)
-			m.applySteerReplyEvents(msg.events)
 			m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
 			m.ensureActiveBuffer()
-			m.refreshBuffers()
+			m.refreshBuffers()           // drain steer reply stdout into the transcript FIRST
+			m.appendSteerEvents(msg.events) // then commit the trailing line + the marker
 		}
 		return m, nil // never quit on done — the TUI stays open
 	case eventTickMsg:
@@ -470,7 +494,6 @@ func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
 	m.suggest = false
 	m.suggestItems = nil
 	m.confirmKillAgent = ""
-	m.steerReplies = map[string]*steerReply{}
 	m.inputText = ""
 	m.inputErr = ""
 	m.buffers = map[string]*agentBuffer{}
@@ -654,15 +677,25 @@ func shortState(s string) string {
 }
 
 func (m liveModel) renderTranscript(agentID string, width, rows int) string {
-	// When a steer reply is in flight/just-finished for this agent, the tab shows
-	// the reply (that's what the owner just asked for); the round transcript is
-	// still on disk and returns once the steer reply is cleared.
-	if sr := m.steerReplies[agentID]; sr != nil {
-		return m.renderSteerReply(agentID, sr, width, rows)
+	header := m.renderAgentStatusHeader(agentID, width)
+	bodyRows := rows - 1 // header takes a row
+	if bodyRows < 1 {
+		bodyRows = 1
 	}
-	b := m.buffers[agentID]
-	if b == nil || len(b.lines) == 0 {
-		return mutedStyle.Render("no output yet from " + agentID + " (waiting for the agent to write stdout)")
+	b := m.ensureBuffer(agentID)
+
+	// /artifact mode: show the produced artifact instead of the live logs.
+	if b.showArtifact {
+		return header + "\n" + m.renderArtifactView(agentID, width, bodyRows)
+	}
+
+	lines := b.visibleLines()
+	var sb strings.Builder
+	sb.WriteString(header)
+	sb.WriteString("\n")
+	if len(lines) == 0 {
+		sb.WriteString(mutedStyle.Render("  (no output yet — the agent is starting; stderr/replies appear here live)"))
+		return strings.TrimRight(sb.String(), "\n")
 	}
 	start := b.scroll
 	if start < 0 {
@@ -671,58 +704,112 @@ func (m liveModel) renderTranscript(agentID string, width, rows int) string {
 	if bottom := m.bufferBottom(b); start > bottom {
 		start = bottom
 	}
-	end := start + rows
-	if end > len(b.lines) {
-		end = len(b.lines)
+	end := start + bodyRows
+	if end > len(lines) {
+		end = len(lines)
 	}
-	var sb strings.Builder
 	if start == 0 && b.trunc {
 		sb.WriteString(mutedStyle.Render("… earlier output truncated"))
 		sb.WriteString("\n")
 	}
 	for i := start; i < end; i++ {
-		sb.WriteString(truncateText(b.lines[i], width-1))
+		sb.WriteString(styleTranscriptLine(lines[i], width))
 		sb.WriteString("\n")
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-// renderSteerReply renders an agent's live steer reply inline: a divider with
-// the owner's query, the reply text (the attempt's stdout), and a status line.
-func (m liveModel) renderSteerReply(agentID string, sr *steerReply, width, rows int) string {
-	query := strings.TrimSpace(sr.query)
-	if len(query) > 60 {
-		query = query[:57] + "…"
+// styleTranscriptLine renders one transcript line styled by its stream: stdout
+// plain, stderr dimmed + [err], steer cyan with a ❯ user prefix, events dimmed.
+func styleTranscriptLine(l transcriptLine, width int) string {
+	switch l.Stream {
+	case transcriptStderr:
+		return mutedStyle.Render(truncateText("[err] "+l.Text, width-1))
+	case transcriptSteer:
+		return steerStyle.Render(truncateText(l.Text, width-1))
+	case transcriptEvent:
+		return okStyle.Render(truncateText(l.Text, width-1))
+	default:
+		return truncateText(l.Text, width-1)
 	}
+}
+
+// renderAgentStatusHeader is the always-on one-line status so the tab is never
+// blank, derived from the projection (state, elapsed/duration, artifact, error).
+func (m liveModel) renderAgentStatusHeader(agentID string, width int) string {
+	a := m.agentByID(agentID)
+	if a == nil {
+		return mutedStyle.Render(agentID)
+	}
+	dur := formatAgentDuration(*a, m.now)
+	var line string
+	switch a.State {
+	case stateRunning:
+		tag := "● " + agentID + " working… " + dur
+		if m.agentLiveness(agentID) == "stale" {
+			tag += " · STALE"
+		}
+		line = warnStyle.Render(truncateText(tag, width-1))
+	case stateFinished:
+		art := relArtifact(a.ArtifactPath)
+		msg := "✓ " + agentID + " finished " + dur
+		if art != "" {
+			msg += " · wrote " + art
+		}
+		line = okStyle.Render(truncateText(msg, width-1))
+	case stateFailed:
+		msg := "✗ " + agentID + " failed " + dur
+		if a.Error != "" {
+			msg += ": " + a.Error
+		}
+		line = warnStyle.Render(truncateText(msg, width-1))
+	case stateKilled:
+		line = mutedStyle.Render(truncateText("◌ "+agentID+" killed", width-1))
+	case stateSkipped:
+		line = mutedStyle.Render(truncateText("– "+agentID+" skipped: "+a.Reason, width-1))
+	default:
+		line = mutedStyle.Render(truncateText("○ "+agentID+" pending", width-1))
+	}
+	return line
+}
+
+// renderArtifactView shows a bounded tail of the agent's produced artifact.
+func (m liveModel) renderArtifactView(agentID string, width, rows int) string {
+	a := m.agentByID(agentID)
+	if a == nil || strings.TrimSpace(a.ArtifactPath) == "" {
+		return mutedStyle.Render("[Artifact not yet written]")
+	}
+	lines, _, _ := loadFocusTail(a.ArtifactPath)
 	var sb strings.Builder
-	sb.WriteString(headerStyle.Render(truncateText("── steer "+sr.id+`: "`+query+`" ──`, width-1)))
+	sb.WriteString(okStyle.Render(truncateText("[Viewing Artifact: "+relArtifact(a.ArtifactPath)+"]  (/artifact to return)", width-1)))
 	sb.WriteString("\n")
-	bodyRows := rows - 2
-	if bodyRows < 1 {
-		bodyRows = 1
+	if len(lines) == 0 {
+		sb.WriteString(mutedStyle.Render("[Artifact not yet written]"))
+		return sb.String()
 	}
-	if sr.buf != nil && len(sr.buf.lines) > 0 {
-		start := len(sr.buf.lines) - bodyRows
-		if start < 0 {
-			start = 0
-		}
-		for _, line := range sr.buf.lines[start:] {
-			sb.WriteString(mutedStyle.Render(truncateText(line, width-1)))
-			sb.WriteString("\n")
-		}
-	} else if !sr.done {
-		sb.WriteString(mutedStyle.Render("  (waiting for " + agentID + " to reply…)"))
+	if len(lines) > rows {
+		lines = lines[len(lines)-rows:] // show the newest rows of the bounded tail
+	}
+	for _, l := range lines {
+		sb.WriteString(truncateText(l, width-1))
 		sb.WriteString("\n")
 	}
-	switch {
-	case sr.failed:
-		sb.WriteString(warnStyle.Render("  [steer reply failed — esc to dismiss]"))
-	case sr.done:
-		sb.WriteString(okStyle.Render("  [reply complete — esc to return to the transcript]"))
-	default:
-		sb.WriteString(okStyle.Render("  " + agentID + " is replying…"))
-	}
 	return strings.TrimRight(sb.String(), "\n")
+}
+
+// relArtifact shows the artifact path from the idea slug down (readable).
+func relArtifact(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return ""
+	}
+	if i := strings.LastIndex(path, "/ideas/"); i >= 0 {
+		return path[i+len("/ideas/"):]
+	}
+	if strings.HasPrefix(path, "ideas/") {
+		return path[len("ideas/"):]
+	}
+	return filepath.Base(path)
 }
 
 // renderStatusTab reuses the original dashboard panes as the Status tab content.
@@ -917,6 +1004,8 @@ var commandSpecs = []commandSpec{
 	{Name: "/status"},
 	{Name: "/follow"},
 	{Name: "/home"},
+	{Name: "/stderr"},
+	{Name: "/artifact"},
 	{Name: "/deck", Usage: "/deck <text>", TakesArg: true},
 	{Name: "/open", Usage: "/open [slug|run]", OpensPicker: true, TakesArg: true},
 	{Name: "/answer", Usage: "/answer [qid text]", OpensPicker: true, TakesArg: true},
@@ -1132,13 +1221,6 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.clearComposition()
 			return m, nil
 		}
-		// Dismiss a steer-reply panel on the active agent tab → back to its transcript.
-		if id, ok := agentTab(m.activeTabResolved()); ok {
-			if _, has := m.steerReplies[id]; has {
-				delete(m.steerReplies, id)
-				return m, nil
-			}
-		}
 		if m.inputText != "" {
 			m.inputText = ""
 			m.inputErr = ""
@@ -1315,31 +1397,66 @@ func (m liveModel) transcriptHeight() int {
 	return rows
 }
 
+// visibleLines is the transcript to display: committed lines (stderr filtered
+// out when hidden) followed by the live partials (the streaming lines that
+// rewrite in place) at the bottom.
+func (b *agentBuffer) visibleLines() []transcriptLine {
+	out := make([]transcriptLine, 0, len(b.lines)+3)
+	for _, l := range b.lines {
+		if b.hideStderr && l.Stream == transcriptStderr {
+			continue
+		}
+		out = append(out, l)
+	}
+	for _, s := range []transcriptStream{transcriptStdout, transcriptSteer, transcriptStderr} {
+		if s == transcriptStderr && b.hideStderr {
+			continue
+		}
+		if text := cleanLogText(b.partial[s]); strings.TrimSpace(text) != "" {
+			out = append(out, transcriptLine{Text: text, Stream: s})
+		}
+	}
+	return out
+}
+
 func (m liveModel) bufferBottom(b *agentBuffer) int {
-	if bottom := len(b.lines) - m.transcriptHeight(); bottom > 0 {
+	body := m.transcriptHeight() - 1 // the always-on status header takes one row
+	if body < 1 {
+		body = 1
+	}
+	if bottom := len(b.visibleLines()) - body; bottom > 0 {
 		return bottom
 	}
 	return 0
 }
 
-// ensureBuffer lazily creates and loads an agent's transcript buffer.
+// ensureBuffer lazily creates and loads an agent's transcript buffer (stdout +
+// stderr; the steer cursor is pointed when a steer is sent).
 func (m *liveModel) ensureBuffer(agentID string) *agentBuffer {
 	if m.buffers == nil {
 		m.buffers = map[string]*agentBuffer{}
 	}
 	b := m.buffers[agentID]
 	if b == nil {
-		b = &agentBuffer{follow: true}
+		b = &agentBuffer{follow: true, partial: map[transcriptStream]string{}, crPending: map[transcriptStream]bool{}}
 		m.buffers[agentID] = b
 	}
-	if b.path == "" {
-		if a := m.agentByID(agentID); a != nil {
-			b.path = a.StdoutPath
+	if b.partial == nil {
+		b.partial = map[transcriptStream]string{}
+	}
+	if b.crPending == nil {
+		b.crPending = map[transcriptStream]bool{}
+	}
+	if a := m.agentByID(agentID); a != nil {
+		if b.stdout.path == "" {
+			b.stdout.path = a.StdoutPath
+		}
+		if b.stderr.path == "" {
+			b.stderr.path = a.StderrPath
 		}
 	}
-	if !b.loaded && b.path != "" {
-		b.lines, b.offset, b.trunc = loadFocusTail(b.path)
-		b.info, _ = os.Stat(b.path)
+	if !b.loaded && (b.stdout.path != "" || b.stderr.path != "") {
+		m.advanceBuffer(b)
 		b.loaded = true
 		b.scroll = m.bufferBottom(b)
 	}
@@ -1359,97 +1476,102 @@ func (m liveModel) activeBuffer() *agentBuffer {
 	return nil
 }
 
-// refreshBuffers advances every loaded buffer (active + visited) with the new
-// stdout bytes, reloading on log truncation/rotation, honoring follow.
+// advanceBuffer ingests new bytes from all of an agent's streams (stdout, stderr,
+// the in-flight steer reply) into the CR-aware transcript, honoring rotation and
+// the bounded scrollback.
+func (m *liveModel) advanceBuffer(b *agentBuffer) {
+	for _, sc := range []struct {
+		c *tailCursor
+		s transcriptStream
+	}{
+		{&b.stdout, transcriptStdout},
+		{&b.stderr, transcriptStderr},
+		{&b.steer, transcriptSteer},
+	} {
+		if sc.c.path == "" {
+			continue
+		}
+		chunk, rotated, jumped := readAppendedChunk(sc.c)
+		if rotated {
+			b.partial[sc.s] = ""
+			b.crPending[sc.s] = false
+		}
+		if jumped {
+			b.trunc = true
+			b.partial[sc.s] = ""
+			b.crPending[sc.s] = false
+		}
+		if len(chunk) > 0 {
+			b.lines, b.partial[sc.s], b.crPending[sc.s] = ingestTranscriptBytes(b.lines, b.partial[sc.s], b.crPending[sc.s], sc.s, chunk)
+		}
+	}
+	capped := false
+	b.lines, capped = capTranscriptLines(b.lines)
+	if capped {
+		b.trunc = true
+	}
+}
+
+// refreshBuffers advances every loaded buffer (active + visited), honoring follow.
 func (m *liveModel) refreshBuffers() {
 	for id, b := range m.buffers {
-		if b.path == "" {
-			if a := m.agentByID(id); a != nil {
-				b.path = a.StdoutPath
+		if b.partial == nil {
+			b.partial = map[transcriptStream]string{}
+		}
+		if b.crPending == nil {
+			b.crPending = map[transcriptStream]bool{}
+		}
+		if a := m.agentByID(id); a != nil {
+			if b.stdout.path == "" {
+				b.stdout.path = a.StdoutPath
+			}
+			if b.stderr.path == "" {
+				b.stderr.path = a.StderrPath
 			}
 		}
-		if b.path == "" || !b.loaded {
+		if !b.loaded {
 			continue
 		}
-		// Reload when the log shrank (truncation) OR was replaced by a different
-		// file (rotation) — os.SameFile compares inode/file-index, catching a
-		// replacement even if it already grew past the old offset.
-		if info, err := os.Stat(b.path); err == nil && (info.Size() < b.offset || (b.info != nil && !os.SameFile(b.info, info))) {
-			b.lines, b.offset, b.trunc = loadFocusTail(b.path)
-			b.info, _ = os.Stat(b.path)
-			if b.follow {
-				b.scroll = m.bufferBottom(b)
-			}
-			continue
-		}
-		newLines, newOff := readAppendedLines(b.path, b.offset)
-		b.offset = newOff
-		if len(newLines) > 0 {
-			b.lines = append(b.lines, newLines...)
-			capped := false
-			b.lines, capped = capFocusLines(b.lines)
-			if capped {
-				b.trunc = true
-			}
-		}
+		m.advanceBuffer(b)
 		if b.follow {
 			b.scroll = m.bufferBottom(b)
 		} else if bottom := m.bufferBottom(b); b.scroll > bottom {
 			b.scroll = bottom
 		}
 	}
-	m.refreshSteerBuffers()
 }
 
-// refreshSteerBuffers tails each in-flight steer reply's stdout into its buffer
-// so the reply streams into the agent's tab.
-func (m *liveModel) refreshSteerBuffers() {
-	for _, sr := range m.steerReplies {
-		if sr == nil || sr.stdoutPath == "" {
-			continue
-		}
-		if sr.buf == nil {
-			sr.buf = &agentBuffer{path: sr.stdoutPath, follow: true}
-		}
-		b := sr.buf
-		if !b.loaded {
-			if _, err := os.Stat(b.path); err != nil {
-				continue // not written yet
-			}
-			b.lines, b.offset, b.trunc = loadFocusTail(b.path)
-			b.info, _ = os.Stat(b.path)
-			b.loaded = true
-			continue
-		}
-		if info, err := os.Stat(b.path); err == nil && (info.Size() < b.offset || (b.info != nil && !os.SameFile(b.info, info))) {
-			b.lines, b.offset, b.trunc = loadFocusTail(b.path)
-			b.info, _ = os.Stat(b.path)
-			continue
-		}
-		newLines, newOff := readAppendedLines(b.path, b.offset)
-		b.offset = newOff
-		if len(newLines) > 0 {
-			b.lines = append(b.lines, newLines...)
-			b.lines, _ = capFocusLines(b.lines)
-		}
-	}
-}
-
-// applySteerReplyEvents flips a steer reply to done/failed when its terminal
-// event arrives, so the "replying…" indicator clears.
-func (m *liveModel) applySteerReplyEvents(events []store.Event) {
+// appendSteerEvents weaves steer outcomes into the agent's transcript: a final
+// marker line when a reply completes or fails (the conversation stays scrollable).
+func (m *liveModel) appendSteerEvents(events []store.Event) {
 	for _, e := range events {
 		if e.Type != "steer.replied" && e.Type != "steer.reply_failed" {
 			continue
 		}
 		agentID, _ := e.Data["agent"].(string)
-		id, _ := e.Data["id"].(string)
-		sr := m.steerReplies[agentID]
-		if sr == nil || (id != "" && sr.id != id) {
+		b := m.buffers[agentID]
+		if b == nil {
 			continue
 		}
-		sr.done = true
-		sr.failed = e.Type == "steer.reply_failed"
+		// Drain any last reply bytes, then commit the trailing (no-newline) reply
+		// line before clearing the cursor, so a final answer line isn't lost.
+		m.advanceBuffer(b)
+		if p := cleanLogText(b.partial[transcriptSteer]); strings.TrimSpace(p) != "" {
+			b.lines = append(b.lines, transcriptLine{Text: p, Stream: transcriptSteer})
+		}
+		marker := "[reply complete]"
+		if e.Type == "steer.reply_failed" {
+			marker = "[reply failed]"
+		}
+		b.lines = append(b.lines, transcriptLine{Text: marker, Stream: transcriptEvent})
+		b.steer = tailCursor{} // stop tailing the finished steer
+		b.partial[transcriptSteer] = ""
+		if b.crPending != nil {
+			b.crPending[transcriptSteer] = false
+		}
+		if b.follow {
+			b.scroll = m.bufferBottom(b)
+		}
 	}
 }
 
@@ -1599,10 +1721,14 @@ func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.M
 		}
 		m.inputText, m.inputErr = "", ""
 		if target == steer.TargetAgent && res.StdoutPath != "" {
-			if m.steerReplies == nil {
-				m.steerReplies = map[string]*steerReply{}
-			}
-			m.steerReplies[agentID] = &steerReply{id: res.ID, query: text, stdoutPath: res.StdoutPath}
+			// Weave the steer into the agent's scrollable transcript: a "❯ you:"
+			// line, then tail the reply stdout as a steer stream (streams in place).
+			b := m.ensureBuffer(agentID)
+			b.lines = append(b.lines, transcriptLine{Text: "❯ you: " + text, Stream: transcriptSteer})
+			b.steer = tailCursor{path: res.StdoutPath}
+			b.partial[transcriptSteer] = ""
+			b.follow = true
+			b.scroll = m.bufferBottom(b)
 			if res.Status == "queued" {
 				m.statusMsg = agentID + " busy — steer queued (ctrl+k the active attempt to run it sooner)"
 			} else {
@@ -1666,6 +1792,29 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 			b.scroll = m.bufferBottom(b)
 		}
 		m.inputText, m.inputErr = "", ""
+		return m, nil
+	case "/stderr":
+		if agentID, ok := agentTab(m.activeTabResolved()); ok {
+			b := m.ensureBuffer(agentID)
+			b.hideStderr = !b.hideStderr
+			b.scroll = m.bufferBottom(b)
+			if b.hideStderr {
+				m.statusMsg = "stderr hidden (/stderr to show)"
+			} else {
+				m.statusMsg = "stderr shown"
+			}
+		}
+		m.inputText, m.inputErr = "", ""
+		return m, nil
+	case "/artifact":
+		m.inputText = ""
+		if agentID, ok := agentTab(m.activeTabResolved()); ok {
+			b := m.ensureBuffer(agentID)
+			b.showArtifact = !b.showArtifact
+			m.inputErr = ""
+		} else {
+			m.inputErr = "open an agent tab to view its artifact"
+		}
 		return m, nil
 	case "/deck":
 		if rest == "" {
@@ -2067,6 +2216,142 @@ func (m liveModel) renderHelp(width, height int) string {
 // complete lines, capped to the line + byte scrollback budget. The returned
 // offset points just past the last complete (newline-terminated) line, so any
 // trailing partial line is re-read once it completes (no fragmentation).
+// readAppendedChunk returns the bytes appended since cursor.offset (bounded to
+// the last maxFocusBytes on a huge burst) and advances the offset to EOF.
+// rotated is true when the file shrank or was replaced (truncation/rotation),
+// so the caller resets that stream's partial. jumped is true when older unread
+// bytes were skipped (bounded scrollback) — the caller drops the leading partial.
+func readAppendedChunk(c *tailCursor) (chunk []byte, rotated, jumped bool) {
+	if c.path == "" {
+		return nil, false, false
+	}
+	f, err := os.Open(c.path)
+	if err != nil {
+		return nil, false, false
+	}
+	defer f.Close()
+	st, err := f.Stat()
+	if err != nil {
+		return nil, false, false
+	}
+	size := st.Size()
+	if size < c.offset || (c.info != nil && !os.SameFile(c.info, st)) {
+		rotated = true
+		c.offset = 0
+	}
+	c.info = st
+	if size <= c.offset {
+		return nil, rotated, false
+	}
+	start := c.offset
+	if size-start > int64(maxFocusBytes) {
+		start = size - int64(maxFocusBytes)
+		jumped = true
+	}
+	if _, err := f.Seek(start, io.SeekStart); err != nil {
+		return nil, rotated, false
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return nil, rotated, false
+	}
+	// Advance the offset by the bytes ACTUALLY read (not the stat size), so bytes
+	// the process appended between Stat and ReadAll aren't re-read next tick.
+	c.offset = start + int64(len(data))
+	if jumped {
+		// Started mid-file: drop the partial leading line so we don't render a
+		// fragment as if it were a whole line.
+		if i := bytes.IndexByte(data, '\n'); i >= 0 {
+			data = data[i+1:]
+		} else {
+			data = nil
+		}
+	}
+	return data, rotated, jumped
+}
+
+// ingestTranscriptBytes folds a new chunk into the committed lines + the live
+// partial for one stream, honoring carriage returns: \r\n and \n COMMIT the
+// current partial line; a lone \r REWRITES the live line (Codex-CLI "potom sa to
+// prepíše"); committed lines are never mutated. ANSI is stripped at commit and a
+// line that is empty after cleaning is dropped. The partial is byte-capped.
+func ingestTranscriptBytes(lines []transcriptLine, partial string, crPending bool, stream transcriptStream, chunk []byte) ([]transcriptLine, string, bool) {
+	seg := []byte(partial)
+	commit := func() {
+		text := cleanLogText(string(seg))
+		if strings.TrimSpace(text) != "" {
+			lines = append(lines, transcriptLine{Text: text, Stream: stream})
+		}
+		seg = seg[:0]
+	}
+	capSeg := func() {
+		if len(seg) > partialMaxBytes {
+			seg = seg[len(seg)-partialMaxBytes:]
+			for len(seg) > 0 && !utf8.RuneStart(seg[0]) {
+				seg = seg[1:] // keep the cap on a rune boundary (no mojibake)
+			}
+		}
+	}
+	i := 0
+	for i < len(chunk) {
+		// A \r seen at the end of a previous chunk is resolved here: followed by
+		// \n it is a CRLF newline; otherwise it was a lone \r (rewrite).
+		if crPending {
+			crPending = false
+			if chunk[i] == '\n' {
+				commit()
+				i++
+				continue
+			}
+			seg = seg[:0] // lone \r rewrites the live line; reprocess chunk[i]
+		}
+		switch chunk[i] {
+		case '\n':
+			commit()
+			i++
+		case '\r':
+			crPending = true // defer: disambiguate against the next byte
+			i++
+		default:
+			j := i
+			for j < len(chunk) && chunk[j] != '\n' && chunk[j] != '\r' {
+				j++
+			}
+			seg = append(seg, chunk[i:j]...)
+			capSeg()
+			i = j
+		}
+	}
+	return lines, string(seg), crPending
+}
+
+// cleanLogText strips ANSI escapes and stray carriage returns from raw log text
+// (the TUI applies its own styling; raw colour/cursor escapes would corrupt the
+// width/scroll math). CR handling already happened in the ingester.
+func cleanLogText(s string) string {
+	return strings.ReplaceAll(stripANSI(s), "\r", "")
+}
+
+// capTranscriptLines bounds the committed transcript to maxFocusLines + the byte
+// budget by evicting the oldest lines, reporting whether anything was dropped.
+func capTranscriptLines(lines []transcriptLine) ([]transcriptLine, bool) {
+	truncated := false
+	if len(lines) > maxFocusLines {
+		lines = lines[len(lines)-maxFocusLines:]
+		truncated = true
+	}
+	total := 0
+	for _, l := range lines {
+		total += len(l.Text) + 1
+	}
+	for total > maxFocusBytes && len(lines) > 1 {
+		total -= len(lines[0].Text) + 1
+		lines = lines[1:]
+		truncated = true
+	}
+	return lines, truncated
+}
+
 func loadFocusTail(path string) (lines []string, offset int64, truncated bool) {
 	if path == "" {
 		return nil, 0, false
