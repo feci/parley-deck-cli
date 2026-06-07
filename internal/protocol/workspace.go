@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"parley-deck-cli/internal/fsutil"
 )
 
 const DeckDir = "parley-deck"
@@ -64,7 +66,7 @@ func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
 	now := time.Now()
 	slug := uniqueSlug(filepath.Join(root, DeckDir, "ideas"), timestampedSlug(task, now))
 	ideaDir := filepath.Join(root, DeckDir, "ideas", slug)
-	if err := os.MkdirAll(filepath.Join(ideaDir, "round-01"), 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(filepath.Join(ideaDir, "round-01"), 0o755); err != nil {
 		return IdeaStatus{}, err
 	}
 

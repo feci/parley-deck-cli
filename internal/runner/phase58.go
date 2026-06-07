@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 )
@@ -55,7 +56,7 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	opts.SegmentID = appendSegmentStarted(opts, "retry", []string{agent.ID})
 	now := time.Now().UTC()
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", agent.ID)
-	if err := os.MkdirAll(agentDir, 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return Result{AgentID: agent.ID, ExitError: err.Error()}
 	}
 	stdoutPath := filepath.Join(agentDir, "stdout.log")

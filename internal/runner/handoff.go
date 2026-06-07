@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 )
 
@@ -33,7 +34,7 @@ func WriteHandoffPacket(opts HandoffOptions) (HandoffPacket, error) {
 		return HandoffPacket{}, fmt.Errorf("run id is required for handoff packet")
 	}
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", opts.Agent.ID)
-	if err := os.MkdirAll(agentDir, 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return HandoffPacket{}, err
 	}
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 )
@@ -149,7 +150,7 @@ func (h *Handle) RunSteerAttempt(ctx context.Context, req SteerAttemptRequest) (
 	h.mu.Unlock()
 
 	steerDir := filepath.Join(h.RunDir, "agents", req.AgentID, "steers", steerID)
-	if err := os.MkdirAll(steerDir, 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(steerDir, 0o755); err != nil {
 		h.clearSteerBusy(req.AgentID)
 		return SteerAttemptResult{Accepted: false, Status: "rejected", Message: "mkdir: " + err.Error()}, nil
 	}

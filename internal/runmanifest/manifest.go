@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runaction"
 )
@@ -139,7 +140,7 @@ func Write(root, runID string, manifest Manifest) error {
 		manifest.UpdatedAt = time.Now().UTC()
 	}
 	path := Path(root, runID)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(manifest, "", "  ")

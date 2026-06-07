@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 )
 
@@ -82,7 +83,7 @@ func asciiLower(value byte) byte {
 func writeRoundIndex(idea protocol.IdeaStatus, roundLabel string, results []Result) (string, error) {
 	roundDir := filepath.Join(idea.Path, roundLabel)
 	indexPath := filepath.Join(roundDir, "_index.md")
-	if err := os.MkdirAll(roundDir, 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(roundDir, 0o755); err != nil {
 		return indexPath, err
 	}
 	data := BuildRoundIndex(idea, roundLabel, results)

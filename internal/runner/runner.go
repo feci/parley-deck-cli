@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
@@ -337,10 +338,10 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		return result
 	}
 
-	if err := os.MkdirAll(agentDir, 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return failEarly(opts, result, err)
 	}
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+	if err := fsutil.MkdirAllResilient(filepath.Dir(outputPath), 0o755); err != nil {
 		return failEarly(opts, result, err)
 	}
 
