@@ -187,11 +187,13 @@ func (m *liveModel) noteRuntimeFlags(events []store.Event) {
 			if agent == "" {
 				continue
 			}
-			if buffers, _ := data["buffers_stdout"].(bool); buffers {
+			// Tri-state: record explicit true AND false — a declared false must
+			// suppress the heuristic (review cycle-1 fix 4).
+			if buffers, ok := data["buffers_stdout"].(bool); ok {
 				if m.buffersStdout == nil {
 					m.buffersStdout = map[string]bool{}
 				}
-				m.buffersStdout[agent] = true
+				m.buffersStdout[agent] = buffers
 			}
 		}
 	}
@@ -201,13 +203,65 @@ func (m *liveModel) noteRuntimeFlags(events []store.Event) {
 
 // narratorLine renders one woven protocol rule-line.
 func narratorLine(e store.Event) string {
-	s := runstate.SummarizeEvent(e)
-	text := strings.TrimSpace(s.Type + " " + s.Text)
 	stamp := ""
 	if !e.Time.IsZero() {
 		stamp = e.Time.Local().Format("15:04:05") + " "
 	}
-	return "── " + stamp + text + " ──"
+	return "── " + stamp + friendlyEventText(e) + " ──"
+}
+
+// friendlyEventText turns an event into a concise human line: the raw type is
+// dropped when the summary is self-describing, otherwise mapped to a verb
+// (review cycle-1 fix 10).
+func friendlyEventText(e store.Event) string {
+	s := runstate.SummarizeEvent(e)
+	round, _ := e.Data["round"].(string)
+	switch e.Type {
+	case "agent.started":
+		return s.Agent + " started"
+	case "agent.finished":
+		if s.Text != "" && s.Text != s.Agent {
+			return s.Text // already "codex wrote round-02/codex.md"
+		}
+		return s.Agent + " finished"
+	case "agent.failed":
+		if detail := strings.TrimSpace(strings.TrimPrefix(s.Text, s.Agent)); detail != "" {
+			return s.Agent + " failed: " + detail
+		}
+		return s.Agent + " failed"
+	case "agent.skipped":
+		if detail := strings.TrimSpace(strings.TrimPrefix(s.Text, s.Agent)); detail != "" {
+			return s.Agent + " skipped: " + detail
+		}
+		return s.Agent + " skipped"
+	case "agent.killed":
+		return s.Agent + " killed"
+	case "round.completed":
+		return strings.TrimSpace(round+" complete") + " (" + s.Text + ")"
+	case "round.incomplete":
+		return strings.TrimSpace(round+" incomplete") + " (" + s.Text + ")"
+	case "run.phase":
+		phase, _ := e.Data["phase"].(string)
+		action, _ := e.Data["action"].(string)
+		label, _ := e.Data["round_label"].(string)
+		return strings.TrimSpace("phase → " + phase + " " + label + " (" + action + ")")
+	case "run.created":
+		return strings.TrimSpace("run created " + s.Text)
+	case "run.segment_started":
+		return strings.TrimSpace("segment started " + s.Text)
+	case "run.failed":
+		return "run failed"
+	case "run.manifest_deferred":
+		return "run manifest deferred (transient write failure)"
+	case "hitl.question":
+		return "question from " + s.Agent + " — /answer to reply"
+	case "hitl.answered":
+		return "question answered (" + s.Agent + ")"
+	default:
+		// Fallback: humanize the type and keep the summary text.
+		t := strings.NewReplacer(".", " ", "_", " ").Replace(e.Type)
+		return strings.TrimSpace(t + " " + s.Text)
+	}
 }
 
 // appendProtocolEvents weaves allowlisted protocol events into every loaded
@@ -313,11 +367,12 @@ func (m liveModel) agentOutputFlowing(agentID string) bool {
 	return false
 }
 
-// agentBuffersStdout: declared flag first (run.created runtime), heuristic
-// fallback (running, zero stdout, >30s elapsed).
+// agentBuffersStdout: declared flag first (run.created runtime, tri-state — an
+// explicit false suppresses the heuristic), heuristic fallback only when
+// undeclared (running, zero stdout, >30s elapsed).
 func (m liveModel) agentBuffersStdout(agentID string) bool {
-	if m.buffersStdout[agentID] {
-		return true
+	if declared, ok := m.buffersStdout[agentID]; ok {
+		return declared
 	}
 	a := m.agentByID(agentID)
 	if a == nil || a.State != stateRunning || a.StartedAt.IsZero() {
@@ -371,7 +426,7 @@ func (m liveModel) renderRibbon(width int) string {
 	} else {
 		fmt.Fprintf(&b, "◆ Ph %d: %s", p.Step, stepTitles[p.StepName])
 		if p.Step == 1 || p.Step == 2 {
-			fmt.Fprintf(&b, " (R%02d/%d)", p.CurrentRound, p.TotalRounds)
+			fmt.Fprintf(&b, " (R%02d)", p.CurrentRound) // D9 string: no /total denominator
 		}
 		if p.Blocked {
 			fmt.Fprintf(&b, " BLOCKED → reopening round-%02d", p.CurrentRound+1)
@@ -549,6 +604,11 @@ func (m liveModel) renderProtocolPanes() string {
 			marker = "[▶]"
 		}
 		title := stepTitles[stepNames[i]]
+		if i == p.Step {
+			// The current row uses the snapshot's actual step name so step 8
+			// reads "Fix-Up" during a fix-up cycle, "Complete" when done.
+			title = stepTitles[p.StepName]
+		}
 		detail := ""
 		if i == p.Step {
 			if n, total := deliveredCount(p.Delivery); total > 0 {
@@ -612,21 +672,25 @@ func (m liveModel) renderProtocolPanes() string {
 // protocol activity (all from memory — zero I/O).
 func (m liveModel) renderSilentPlaceholder(agentID string, width int) string {
 	var b strings.Builder
+	// Two-space indent on every line, matching the transcript placeholders
+	// (review cycle-1 fix 7).
+	writeLine := func(text string) {
+		b.WriteString(mutedStyle.Render(truncateText("  "+text, width-1)))
+		b.WriteString("\n")
+	}
 	a := m.agentByID(agentID)
 	buffers := m.agentBuffersStdout(agentID)
 	if buffers {
-		b.WriteString(mutedStyle.Render(truncateText("◆ "+agentID+" buffers all stdout until exit; stderr is live.", width-1)))
+		writeLine("◆ " + agentID + " buffers all stdout until exit; stderr is live.")
 	} else {
-		b.WriteString(mutedStyle.Render(truncateText("◆ no output yet", width-1)))
+		writeLine("◆ no output yet")
 	}
-	b.WriteString("\n")
 	if a != nil {
 		status := fmt.Sprintf("status: %s %s", strings.ToUpper(a.State), formatAgentDuration(*a, m.now))
 		if lv := m.agentLiveness(agentID); lv != "" {
 			status += " · proc:" + lv
 		}
-		b.WriteString(mutedStyle.Render(truncateText(status, width-1)))
-		b.WriteString("\n")
+		writeLine(status)
 	}
 	if buf := m.buffers[agentID]; buf != nil && buf.loaded {
 		counters := fmt.Sprintf("stdout: %s", formatByteCount(buf.stdout.offset))
@@ -634,17 +698,14 @@ func (m liveModel) renderSilentPlaceholder(agentID string, width int) string {
 			counters += " (buffered)"
 		}
 		counters += fmt.Sprintf(" · stderr: %s", formatByteCount(buf.stderr.offset))
-		b.WriteString(mutedStyle.Render(truncateText(counters, width-1)))
-		b.WriteString("\n")
+		writeLine(counters)
 	}
 	recent := m.recentAgentActivity(agentID, 5)
 	if len(recent) > 0 {
 		b.WriteString("\n")
-		b.WriteString(mutedStyle.Render("recent activity:"))
-		b.WriteString("\n")
+		writeLine("recent activity:")
 		for _, line := range recent {
-			b.WriteString(mutedStyle.Render(truncateText("· "+line, width-1)))
-			b.WriteString("\n")
+			writeLine("· " + line)
 		}
 	}
 	return strings.TrimRight(b.String(), "\n")
@@ -665,12 +726,11 @@ func (m liveModel) recentAgentActivity(agentID string, n int) []string {
 		if e.Type == "agent.acp.message_chunk" {
 			continue
 		}
-		s := runstate.SummarizeEvent(e)
 		stamp := ""
 		if !e.Time.IsZero() {
 			stamp = e.Time.Local().Format("15:04:05") + " "
 		}
-		out = append(out, stamp+strings.TrimSpace(s.Type+" "+s.Text))
+		out = append(out, stamp+friendlyEventText(e))
 	}
 	// reverse to chronological order
 	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {

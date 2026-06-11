@@ -145,6 +145,21 @@ func BuildProtocolSnapshot(in ProtocolSnapshotInput) (ProtocolSnapshot, error) {
 	}
 	out.Implementer = implementerOf(in.IdeaDir)
 
+	// Participants precedence (D5): live = opts → run.created payload →
+	// 00-prompt frontmatter; display = ordered union. Delivery rows render the
+	// display set; the waiting list counts only the live set (a dropped agent's
+	// delivered artifact still shows, but nobody waits on it).
+	live := append([]string(nil), in.Participants...)
+	fromEvents := participantsFromEvents(in.Events)
+	fromFM := participantsFromFrontmatter(in.IdeaDir)
+	if len(live) == 0 {
+		live = fromEvents
+	}
+	if len(live) == 0 {
+		live = fromFM
+	}
+	display := unionOrdered(live, fromEvents, fromFM)
+
 	// Signoff matrices: design schema at steps 3-4, review schema at 7+.
 	switch {
 	case step == 3 || step == 4:
@@ -158,7 +173,7 @@ func BuildProtocolSnapshot(in ProtocolSnapshotInput) (ProtocolSnapshot, error) {
 		}
 	}
 
-	out.Delivery, out.Waiting, out.DiskFallback = deliveryMatrix(in, detail, step, out.Implementer, out.Signoffs)
+	out.Delivery, out.Waiting, out.DiskFallback = deliveryMatrix(in, detail, step, out.Implementer, out.Signoffs, display, live)
 
 	terminal, outcome := runstate.Outcome(in.Events)
 	if actions := runplan.Plan(in.Root, runplan.Input{
@@ -203,7 +218,9 @@ func keepLast(in ProtocolSnapshotInput, msg string) ProtocolSnapshot {
 
 // deliveryMatrix merges event-projected agent state (primary) with a bounded
 // disk fallback (secondary) for the artifacts awaited at the current step.
-func deliveryMatrix(in ProtocolSnapshotInput, detail driver.PhaseDetail, step int, implementer string, signoffs *consensus.Summary) ([]AgentDelivery, []string, bool) {
+// display is the wider union roster (rows rendered); live is the narrower
+// active roster (waiting math).
+func deliveryMatrix(in ProtocolSnapshotInput, detail driver.PhaseDetail, step int, implementer string, signoffs *consensus.Summary, display, live []string) ([]AgentDelivery, []string, bool) {
 	switch step {
 	case 3, 7:
 		// Consensus steps: "delivery" is the signoff matrix; waiting = missing signers.
@@ -215,7 +232,7 @@ func deliveryMatrix(in ProtocolSnapshotInput, detail driver.PhaseDetail, step in
 		return nil, nil, false
 	}
 
-	awaited := append([]string(nil), in.Participants...)
+	awaited := append([]string(nil), display...)
 	roundDir := filepath.Join(in.IdeaDir, roundLabelFor(detail.Cursor.CurrentRound))
 	if step == 5 {
 		if implementer != "" {
@@ -269,12 +286,76 @@ func deliveryMatrix(in ProtocolSnapshotInput, detail driver.PhaseDetail, step in
 				diskFallback = true
 			}
 		}
-		if row.State != "delivered" {
+		if row.State != "delivered" && contains(live, id) {
 			waiting = append(waiting, id)
 		}
 		delivery = append(delivery, row)
 	}
 	return delivery, waiting, diskFallback
+}
+
+// participantsFromEvents reads the roster from the run.created payload.
+func participantsFromEvents(events []store.Event) []string {
+	for _, e := range events {
+		if e.Type != "run.created" {
+			continue
+		}
+		raw, _ := e.Data["participants"].([]any)
+		out := make([]string, 0, len(raw))
+		for _, v := range raw {
+			if s, _ := v.(string); s != "" {
+				out = append(out, s)
+			}
+		}
+		if ps, _ := e.Data["participants"].([]string); len(ps) > 0 {
+			out = append(out, ps...)
+		}
+		return out
+	}
+	return nil
+}
+
+// participantsFromFrontmatter reads the roster from 00-prompt.md ("[a, b, c]").
+func participantsFromFrontmatter(ideaDir string) []string {
+	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
+	if err != nil {
+		return nil
+	}
+	raw := strings.TrimSpace(meta["participants"])
+	raw = strings.TrimPrefix(raw, "[")
+	raw = strings.TrimSuffix(raw, "]")
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// unionOrdered merges rosters preserving first-seen order.
+func unionOrdered(lists ...[]string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, list := range lists {
+		for _, item := range list {
+			if item == "" || seen[item] {
+				continue
+			}
+			seen[item] = true
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func contains(items []string, want string) bool {
+	for _, item := range items {
+		if item == want {
+			return true
+		}
+	}
+	return false
 }
 
 // artifactOnDisk is the bounded disk-fallback probe: one Stat with a single

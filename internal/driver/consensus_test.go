@@ -132,6 +132,7 @@ func TestConsensusReadyDraftsFinalAndAdvances(t *testing.T) {
 	if len(fc.calls) != 1 || fc.calls[0] != "final" {
 		t.Fatalf("calls=%v, want [final]", fc.calls)
 	}
+	wantLastRunPhase(t, runDir, "finalized", PhaseFinal, PhaseConsensus)
 }
 
 func TestConsensusReadyButFinalScaffoldEscalates(t *testing.T) {
@@ -258,6 +259,7 @@ func TestConsensusBlockedReopensRound(t *testing.T) {
 	if fileExists(filepath.Join(ideaDir, "consensus.md")) {
 		t.Fatal("consensus.md should be gone after reopen invalidation")
 	}
+	wantLastRunPhase(t, runDir, "reopened", PhaseRound, PhaseConsensus)
 }
 
 func TestConsensusBlockedMaxRoundsEscalates(t *testing.T) {

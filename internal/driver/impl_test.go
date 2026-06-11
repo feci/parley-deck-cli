@@ -137,6 +137,7 @@ func TestPhaseFinalImplementsWhenOptedIn(t *testing.T) {
 	if c.Phase != PhaseImpl || len(fi.calls) != 1 || fi.calls[0] != "implement" {
 		t.Fatalf("phase=%s calls=%v", c.Phase, fi.calls)
 	}
+	wantLastRunPhase(t, runDir, "implemented", PhaseImpl, PhaseFinal)
 }
 
 func TestPhaseFinalSurfaceWhenNotOptedIn(t *testing.T) {
@@ -189,6 +190,7 @@ func TestPhaseImplChecksGate(t *testing.T) {
 	if action != ActionReviewOpened || c.Phase != PhaseReview {
 		t.Fatalf("checks pass: action=%s phase=%s want review-opened/review", action, c.Phase)
 	}
+	wantLastRunPhase(t, runDir, "review-opened", PhaseReview, PhaseImpl)
 }
 
 func TestPhaseImplNotReadyEscalates(t *testing.T) {
@@ -243,6 +245,7 @@ func TestPhaseReviewDraftsThenCompletes(t *testing.T) {
 	if !contains(fi.calls, "complete") {
 		t.Fatalf("expected Complete call, calls=%v", fi.calls)
 	}
+	wantLastRunPhase(t, runDir, "complete", PhaseDone, PhaseReview)
 }
 
 func TestPhaseReviewFixupWhenFixesOutstanding(t *testing.T) {
@@ -275,6 +278,7 @@ func TestPhaseReviewFixupWhenFixesOutstanding(t *testing.T) {
 	if !fileExists(filepath.Join(ideaDir, "review", "round-01", "consensus.md")) {
 		t.Fatal("expected archived review/round-01/consensus.md")
 	}
+	wantLastRunPhase(t, runDir, "fixup", PhaseReview, PhaseReview)
 }
 
 func TestPhaseReviewFixupChecksFailEscalates(t *testing.T) {
@@ -328,6 +332,7 @@ func TestPhaseReviewFixupMarkerSkipsRefixup(t *testing.T) {
 	if !contains(fi.calls, "open-review") {
 		t.Fatalf("expected open-review, calls=%v", fi.calls)
 	}
+	wantLastRunPhase(t, runDir, "fixup", PhaseReview, PhaseReview)
 }
 
 func TestPhaseImplInProgressAwaits(t *testing.T) {

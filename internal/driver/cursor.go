@@ -106,13 +106,23 @@ type PhaseDetail struct {
 }
 
 // RebuildDetail derives the cursor and its display evidence in one disk pass.
-// Missing artifacts are normal zero values; an unreadable idea or review
-// directory returns the partial detail with a non-nil error so callers can keep
-// their previous snapshot instead of trusting a half-read state.
+// Missing artifacts are normal zero values; an unreadable idea/review directory
+// or an unexpected stat/read error returns the partial detail with a non-nil
+// error so callers can keep their previous snapshot instead of trusting a
+// half-read state (consensus D2; review cycle-1 fix 1).
 func RebuildDetail(ideaDir string, maxRounds int) (PhaseDetail, error) {
+	var firstErr error
+	keepErr := func(err error) {
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
 	c := Cursor{Phase: PhaseRound, CurrentRound: 1, MaxRounds: maxRounds}
-	c.IdeaStatus = readIdeaStatus(ideaDir)
-	highest, firstErr := highestRoundErr(ideaDir)
+	status, _, err := readFrontmatterFieldErr(filepath.Join(ideaDir, "00-prompt.md"), "status")
+	keepErr(err)
+	c.IdeaStatus = status
+	highest, err := highestRoundErr(ideaDir)
+	keepErr(err)
 	if highest >= 1 {
 		c.CurrentRound = highest
 		c.RoundsRun = highest
@@ -120,21 +130,32 @@ func RebuildDetail(ideaDir string, maxRounds int) (PhaseDetail, error) {
 	finalPath := filepath.Join(ideaDir, "FINAL.md")
 	implPath := filepath.Join(ideaDir, "IMPLEMENTATION.md")
 	reviewConsensus := filepath.Join(ideaDir, "review", "consensus.md")
-	detail := PhaseDetail{
-		ReviewConsensusExists: fileExists(reviewConsensus),
-	}
-	if reviewRound, err := highestReviewRoundErr(ideaDir); err != nil && firstErr == nil {
-		firstErr = err
-	} else {
-		detail.HighestReviewRound = reviewRound
-	}
-	implExists := fileExists(implPath)
+	var detail PhaseDetail
+	reviewConsensusExists, err := statRegular(reviewConsensus)
+	keepErr(err)
+	detail.ReviewConsensusExists = reviewConsensusExists
+	reviewRound, err := highestReviewRoundErr(ideaDir)
+	keepErr(err)
+	detail.HighestReviewRound = reviewRound
+	implExists, err := statRegular(implPath)
+	keepErr(err)
 	if implExists {
-		detail.ImplementationStatus = implementationStatus(implPath)
+		implStatus, _, err := readFrontmatterFieldErr(implPath, "status")
+		keepErr(err)
+		detail.ImplementationStatus = implStatus
 	}
-	if fileExists(finalPath) {
+	finalExists, err := statRegular(finalPath)
+	keepErr(err)
+	if finalExists {
 		detail.FinalScaffoldReason = finalScaffoldReason(finalPath)
+		if detail.FinalScaffoldReason == "FINAL.md is missing" {
+			// The stat saw the file but the read failed — surface it instead of
+			// classifying the idea as pre-final.
+			keepErr(fmt.Errorf("FINAL.md exists but could not be read"))
+		}
 	}
+	consensusExists, err := statRegular(filepath.Join(ideaDir, "consensus.md"))
+	keepErr(err)
 	switch {
 	// Most-terminal-first (D2): implementation/review artifacts win over FINAL/
 	// consensus so a valid FINAL.md never hides later phases.
@@ -144,14 +165,14 @@ func RebuildDetail(ideaDir string, maxRounds int) (PhaseDetail, error) {
 		c.Phase = PhaseReview
 	case implExists:
 		c.Phase = PhaseImpl
-	case fileExists(finalPath) && detail.FinalScaffoldReason == "":
+	case finalExists && detail.FinalScaffoldReason == "":
 		// Only a VALID (non-scaffold) FINAL.md is truly final. A scaffold FINAL.md
 		// from a failed/partial draft must NOT strand the idea at PhaseFinal — it
 		// stays in the consensus phase so the gate re-drafts it (slice-2 AF1).
 		c.Phase = PhaseFinal
-	case fileExists(filepath.Join(ideaDir, "consensus.md")):
+	case consensusExists:
 		c.Phase = PhaseConsensus
-	case fileExists(finalPath):
+	case finalExists:
 		// Scaffold FINAL.md with no consensus.md to re-drive: treat as final to
 		// avoid a phantom round phase; the surface-only stop surfaces it to a human.
 		c.Phase = PhaseFinal
@@ -245,11 +266,34 @@ func readIdeaStatus(ideaDir string) string {
 	return field
 }
 
+// statRegular reports whether a regular file exists at path; a missing file is
+// (false, nil), any other stat error is surfaced (consensus D2).
+func statRegular(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return false, nil
+		}
+		return false, err
+	}
+	return info.Mode().IsRegular(), nil
+}
+
 // readFrontmatterField returns the trimmed value of a top-level frontmatter key.
 func readFrontmatterField(path, key string) (string, bool) {
+	value, ok, _ := readFrontmatterFieldErr(path, key)
+	return value, ok
+}
+
+// readFrontmatterFieldErr is readFrontmatterField with non-NotExist read errors
+// surfaced (a missing file stays a normal zero value).
+func readFrontmatterFieldErr(path, key string) (string, bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", false
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", false, nil
+		}
+		return "", false, err
 	}
 	inFrontmatter := false
 	prefix := key + ":"
@@ -263,10 +307,10 @@ func readFrontmatterField(path, key string) (string, bool) {
 			break
 		}
 		if inFrontmatter && strings.HasPrefix(trimmed, prefix) {
-			return strings.TrimSpace(strings.TrimPrefix(trimmed, prefix)), true
+			return strings.TrimSpace(strings.TrimPrefix(trimmed, prefix)), true, nil
 		}
 	}
-	return "", false
+	return "", false, nil
 }
 
 func fileExists(path string) bool {

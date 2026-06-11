@@ -1057,9 +1057,21 @@ func (m liveModel) renderHome(width, rows int) string {
 		for _, idea := range m.opts.Status.Ideas {
 			chip := m.ideaPhases[idea.Slug]
 			if chip == "" {
-				chip = idea.Status
+				chip = "—" // never duplicate the raw status into the chip column
 			}
-			b.WriteString(fmt.Sprintf("  %-34s %-22s %s\n", truncateText(idea.Slug, 34), truncateText(chip, 22), idea.Status))
+			row := fmt.Sprintf("  %-34s %-22s %-14s", truncateText(idea.Slug, 34), truncateText(chip, 22), idea.Status)
+			// Attention badge from the idea's latest run (D14); homeRuns is
+			// already in memory — no I/O on the render path.
+			for _, r := range m.homeRuns {
+				if r.IdeaSlug == idea.Slug {
+					if r.Attention != "" {
+						row += " " + attentionBadge(r.Attention)
+					}
+					break
+				}
+			}
+			b.WriteString(strings.TrimRight(row, " "))
+			b.WriteString("\n")
 		}
 	}
 	b.WriteString("\n")

@@ -1,7 +1,7 @@
 ---
 idea: tui-protocol-visibility
 agent: claude
-status: implemented
+status: fix-up-cycle-1
 date: 2026-06-12
 ---
 
@@ -86,6 +86,41 @@ date: 2026-06-12
   string; (b) `narrateProtocol` is the zero-value default so a fresh model
   narrates without initialization; (c) gofmt applied to new files only —
   live.go/app.go/procctl were already unformatted on main and were left alone.
+
+## Fix-up cycle 1 (review/round-01 → review/round-01/consensus.md)
+
+All 11 agreed fixes applied:
+
+1. (codex M1) `RebuildDetail` now surfaces non-NotExist stat/read errors via
+   `statRegular` + `readFrontmatterFieldErr`; an existing-but-unreadable
+   FINAL.md is an error, not "pre-final". Tests: chmod-0 cases for 00-prompt /
+   IMPLEMENTATION / FINAL (`TestRebuildDetailSurfacesReadErrors`).
+2. (codex M2) Participants precedence opts → run.created → 00-prompt
+   frontmatter inside `BuildProtocolSnapshot`; delivery rows render the ordered
+   union, the waiting list counts only the live set
+   (`TestSnapshotParticipantsFallback`).
+3. (codex M3, scoped) `TestRenderPathPureCache` proves ribbon/panes/segment/
+   glyphs render purely from the cached snapshot with nonexistent paths.
+   **Documented exception:** `/artifact` (renderArtifactView → loadFocusTail)
+   performs a bounded, user-triggered tail read from View — pre-existing
+   behavior since 1.20.0; async rework is a deferred follow-up.
+4. (codex m4) `buffers_stdout` is tri-state: explicit false from the
+   run.created runtime suppresses the heuristic (`TestBuffersStdoutTriState`,
+   `TestNoteRuntimeFlagsTriState`).
+5. (codex m5) Full run.phase emission matrix: all 9 commit sites asserted via
+   `wantLastRunPhase` appended to the existing branch tests.
+6. (agy M1) Home ideas rows show the `runstate.Attention` badge from the
+   idea's latest run (in-memory homeRuns lookup).
+7. (agy M2) `renderSilentPlaceholder` indents every line by two spaces.
+8. (agy m3) The current pipeline row uses the snapshot's StepName ("Fix-Up"
+   vs "Complete").
+9. (agy m4) Collapsed ribbon renders `(R02)` — no `/total` denominator.
+10. (agy m5) `friendlyEventText` humanizes narrator/placeholder lines (raw
+    event types dropped or mapped to verbs).
+11. (agy n6) Home chip column shows "—" instead of duplicating idea.Status.
+
+Deferred (per review consensus): spinner ASCII fallback, spinner 1fps,
+async /artifact view, impl.checks event, review-cycle naming.
 
 ## Sandbox note for reviewers
 

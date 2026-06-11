@@ -30,6 +30,24 @@ func runPhaseEvents(t *testing.T, runDir string) []store.Event {
 	return out
 }
 
+// wantLastRunPhase asserts the most recent run.phase event carries the given
+// action/phase/previous_phase — the D17 emission matrix check, appended to the
+// existing branch tests so every one of the 9 commit sites is covered.
+func wantLastRunPhase(t *testing.T, runDir, action string, phase, previous Phase) {
+	t.Helper()
+	got := runPhaseEvents(t, runDir)
+	if len(got) == 0 {
+		t.Fatalf("no run.phase events; want action=%s", action)
+	}
+	data := got[len(got)-1].Data
+	if data["action"] != action || data["phase"] != string(phase) || data["previous_phase"] != string(previous) {
+		t.Fatalf("last run.phase=%+v, want action=%s phase=%s previous=%s", data, action, phase, previous)
+	}
+	if data["source"] != "driver" || data["round_label"] == "" {
+		t.Fatalf("run.phase payload incomplete: %+v", data)
+	}
+}
+
 // TestPromotedEmitsRunPhase: the round-promotion commit emits exactly one
 // run.phase event carrying the action and the new round, after the cursor save.
 func TestPromotedEmitsRunPhase(t *testing.T) {
@@ -121,6 +139,53 @@ func TestSaveFailureEscalatesAndEmitsNothing(t *testing.T) {
 	if got := runPhaseEvents(t, runDir); len(got) != 0 {
 		t.Fatalf("run.phase events=%d, want 0 after save failure", len(got))
 	}
+}
+
+// TestRebuildDetailSurfacesReadErrors: unexpected (non-NotExist) read errors on
+// the probed artifacts surface as the partial-detail error instead of being
+// classified as "missing" (consensus D2; review cycle-1 fix 1).
+func TestRebuildDetailSurfacesReadErrors(t *testing.T) {
+	parts := []string{"codex", "claude"}
+
+	t.Run("unreadable 00-prompt.md", func(t *testing.T) {
+		ideaDir, _ := setupIdea(t, parts, "")
+		if err := os.Chmod(filepath.Join(ideaDir, "00-prompt.md"), 0); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := RebuildDetail(ideaDir, 4); err == nil {
+			t.Fatal("want an error for an unreadable 00-prompt.md")
+		}
+	})
+	t.Run("unreadable IMPLEMENTATION.md", func(t *testing.T) {
+		ideaDir, _ := setupIdea(t, parts, "")
+		impl := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+		if err := os.WriteFile(impl, []byte("---\nstatus: implemented\n---\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(impl, 0); err != nil {
+			t.Fatal(err)
+		}
+		detail, err := RebuildDetail(ideaDir, 4)
+		if err == nil {
+			t.Fatal("want an error for an unreadable IMPLEMENTATION.md")
+		}
+		if detail.Cursor.Phase != PhaseImpl {
+			t.Fatalf("partial detail phase=%s, want impl (the stat still saw the file)", detail.Cursor.Phase)
+		}
+	})
+	t.Run("unreadable FINAL.md", func(t *testing.T) {
+		ideaDir, _ := setupIdea(t, parts, "")
+		final := filepath.Join(ideaDir, "FINAL.md")
+		if err := os.WriteFile(final, []byte(validFinal), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(final, 0); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := RebuildDetail(ideaDir, 4); err == nil {
+			t.Fatal("want an error when FINAL.md stats as existing but cannot be read")
+		}
+	})
 }
 
 // TestRebuildDetailReviewEvidence: RebuildDetail carries the display evidence

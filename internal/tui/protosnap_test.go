@@ -159,6 +159,122 @@ func TestSnapshotRegressionNeedsTwoAgreeingReconciles(t *testing.T) {
 	}
 }
 
+// TestSnapshotParticipantsFallback: roster precedence opts → run.created →
+// frontmatter, with the wider union displayed and only the live set waited on
+// (review cycle-1 fix 2).
+func TestSnapshotParticipantsFallback(t *testing.T) {
+	now := time.Date(2026, 6, 12, 10, 0, 0, 0, time.UTC)
+
+	t.Run("empty opts fall back to run.created", func(t *testing.T) {
+		root, ideaDir := setupSnapIdea(t)
+		events := []store.Event{{Time: now, Type: "run.created", Data: map[string]any{
+			"idea": "demo", "participants": []any{"codex", "agy"},
+		}}}
+		in := snapInput(root, ideaDir, events, nil, now)
+		in.Participants = nil
+		snap, err := BuildProtocolSnapshot(in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(snap.Delivery) != 3 { // union: codex, agy (events) + hermes (frontmatter)
+			t.Fatalf("delivery rows=%d (%+v), want 3 (union with frontmatter)", len(snap.Delivery), snap.Delivery)
+		}
+		// live set = run.created roster → hermes is displayed but never waited on.
+		for _, w := range snap.Waiting {
+			if w == "hermes" {
+				t.Fatalf("waiting=%v must not include hermes (display-only)", snap.Waiting)
+			}
+		}
+		if len(snap.Waiting) != 2 {
+			t.Fatalf("waiting=%v, want codex+agy", snap.Waiting)
+		}
+	})
+
+	t.Run("empty opts and events fall back to frontmatter", func(t *testing.T) {
+		root, ideaDir := setupSnapIdea(t)
+		in := snapInput(root, ideaDir, nil, nil, now)
+		in.Participants = nil
+		snap, err := BuildProtocolSnapshot(in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(snap.Delivery) != 3 || len(snap.Waiting) != 3 {
+			t.Fatalf("delivery=%d waiting=%d, want 3/3 from 00-prompt frontmatter", len(snap.Delivery), len(snap.Waiting))
+		}
+	})
+}
+
+// TestRenderPathPureCache: the new surfaces render purely from the cached
+// snapshot — nonexistent run/idea paths must not panic or change the output
+// (the scoped D17 render-path check; /artifact is the documented exception).
+func TestRenderPathPureCache(t *testing.T) {
+	m := newLiveModel(LiveOptions{
+		Participants: []string{"codex"},
+		RunID:        "r",
+		RunDir:       "/nonexistent/run/dir",
+	})
+	m.opts.Idea.Slug = "ghost"
+	m.state.Agents = []AgentState{{ID: "codex", State: stateRunning}}
+	m.proto = &ProtocolSnapshot{
+		Step: 2, StepName: "cross-review", RoundLabel: "round-02", CurrentRound: 2,
+		Delivery:     []AgentDelivery{{ID: "codex", State: "running"}},
+		Waiting:      []string{"codex"},
+		ReconciledAt: m.now,
+	}
+	rib := m.renderRibbon(100)
+	if !strings.Contains(rib, "Ph 2: Cross-Review (R02)") || !strings.Contains(rib, "Waiting: codex") {
+		t.Fatalf("ribbon=%q, want cached phase + waiting rendered without disk access", rib)
+	}
+	if strings.Contains(rib, "/2") && strings.Contains(rib, "(R02/") {
+		t.Fatalf("ribbon=%q must not render the /total denominator (D9)", rib)
+	}
+	panes := m.renderProtocolPanes()
+	if !strings.Contains(panes, "[▶] 2 Cross-Review") {
+		t.Fatalf("panes=%q, want the current pipeline row marked", panes)
+	}
+	if got := m.statusPhaseSegment(); got != "ph=2:xrev-r02 wait=codex" {
+		t.Fatalf("segment=%q", got)
+	}
+	_ = m.renderTabStrip(100) // glyphs render from cache; must not panic
+}
+
+// TestBuffersStdoutTriState: a declared false suppresses the 30s/0B heuristic
+// (review cycle-1 fix 4).
+func TestBuffersStdoutTriState(t *testing.T) {
+	m := newLiveModel(LiveOptions{Participants: []string{"codex"}})
+	m.state.Agents = []AgentState{{ID: "codex", State: stateRunning, StartedAt: m.now.Add(-time.Minute)}}
+	m.buffers["codex"] = &agentBuffer{loaded: true} // stdout offset 0, >30s elapsed
+
+	if !m.agentBuffersStdout("codex") {
+		t.Fatal("undeclared + silent >30s must fall back to the heuristic (true)")
+	}
+	m.buffersStdout = map[string]bool{"codex": false}
+	if m.agentBuffersStdout("codex") {
+		t.Fatal("declared buffers_stdout=false must suppress the heuristic")
+	}
+	m.buffersStdout["codex"] = true
+	if !m.agentBuffersStdout("codex") {
+		t.Fatal("declared true must win")
+	}
+}
+
+// TestNoteRuntimeFlagsTriState: run.created runtime carries explicit false too.
+func TestNoteRuntimeFlagsTriState(t *testing.T) {
+	m := newLiveModel(LiveOptions{Participants: []string{"codex", "agy"}})
+	m.noteRuntimeFlags([]store.Event{{Type: "run.created", Data: map[string]any{
+		"runtime": []any{
+			map[string]any{"agent": "agy", "buffers_stdout": true},
+			map[string]any{"agent": "codex", "buffers_stdout": false},
+		},
+	}}})
+	if v, ok := m.buffersStdout["agy"]; !ok || !v {
+		t.Fatalf("agy declared true, got %v/%v", v, ok)
+	}
+	if v, ok := m.buffersStdout["codex"]; !ok || v {
+		t.Fatalf("codex declared false must be recorded, got %v/%v", v, ok)
+	}
+}
+
 // --- model-side gating (consensus D5: budget + coalescing) ----------------------
 
 // TestTickBudgetAndCoalescing: ticks alone schedule no snapshot; only trigger
