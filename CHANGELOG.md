@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.23.0 - 2026-06-12
+
+- Protocol visibility in the live TUI (idea `tui-protocol-visibility`):
+  collapsible protocol ribbon on every tab (Ctrl+P), tab activity glyphs
+  (spinner/silent/delivered/failed/STALE), woven narrator lines, a Protocol
+  tab with pipeline/delivery/signoff/next panes, and a Home phase column.
+- New `run.phase` event emitted by the driver after every phase-changing
+  cursor commit; cursor save errors are no longer discarded.
+- `driver.RebuildDetail` exports the phase evidence (review round, review
+  consensus, implementation status) in one disk pass.
+- Declared `buffers_stdout` agent flag (TOML + run.created runtime payload);
+  silent buffered agents get a structured placeholder instead of a blank tab.
+- Status line shows `ph=N:<phase> wait=<agents>` instead of `round=<status>`.
+
 ## v1.5.4 - 2026-05-27
 
 - Treat ACP as a selectable launch mode on an existing agent instead of

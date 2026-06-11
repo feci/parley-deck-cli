@@ -1096,10 +1096,12 @@ func TestSteerReplyEventWeavesMarker(t *testing.T) {
 	}
 }
 
-// A killed agent shows the KILL badge, not ERR.
-func TestKilledAgentShortState(t *testing.T) {
-	if got := shortState(stateKilled); got != "KILL" {
-		t.Fatalf("killed badge = %q, want KILL", got)
+// A killed agent shows the x glyph, not the failed ✗ (consensus D8 glyph set).
+func TestKilledAgentGlyph(t *testing.T) {
+	m := newLiveModel(LiveOptions{Participants: []string{"codex"}})
+	m.state.Agents = []AgentState{{ID: "codex", State: stateKilled}}
+	if got := m.agentGlyph("codex"); got != "x" {
+		t.Fatalf("killed glyph = %q, want x", got)
 	}
 }
 

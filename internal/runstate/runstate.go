@@ -418,6 +418,13 @@ func SummarizeEvent(event store.Event) EventSummary {
 		text = strings.TrimSpace(fmt.Sprintf("%s %s %s", dataString(event.Data, "id"), dataString(event.Data, "target"), dataString(event.Data, "agent")))
 	case "steer.delivered":
 		text = strings.TrimSpace(fmt.Sprintf("%s %s/%s", dataString(event.Data, "id"), dataString(event.Data, "mode"), dataString(event.Data, "status")))
+	case "run.phase":
+		text = strings.TrimSpace(fmt.Sprintf("%s %s %s",
+			dataString(event.Data, "phase"), dataString(event.Data, "round_label"), dataString(event.Data, "action")))
+	case "agent.finished":
+		if artifact := relIdeaPath(dataString(event.Data, "artifact")); artifact != "" {
+			text = fmt.Sprintf("%s wrote %s", agent, artifact)
+		}
 	case "agent.failed":
 		if errText := dataString(event.Data, "error"); errText != "" {
 			text = fmt.Sprintf("%s %s", agent, errText)
@@ -475,6 +482,24 @@ func applyAgentEvent(agent *AgentState, event store.Event, now time.Time, curren
 		agent.Reason = dataString(event.Data, "reason")
 		agent.Duration = dataDuration(event.Data, "duration_ms", 0)
 	}
+}
+
+// relIdeaPath shortens an artifact path to the idea-relative form for display.
+func relIdeaPath(path string) string {
+	path = filepath.ToSlash(strings.TrimSpace(path))
+	if path == "" {
+		return ""
+	}
+	if i := strings.LastIndex(path, "/ideas/"); i >= 0 {
+		return path[i+len("/ideas/"):]
+	}
+	return filepath.Base(path)
+}
+
+// Outcome exposes the terminal/outcome projection for callers that already hold
+// the event list (the TUI protocol snapshot) and must not reload run state.
+func Outcome(events []store.Event) (bool, string) {
+	return deriveOutcome(events)
 }
 
 func deriveOutcome(events []store.Event) (bool, string) {

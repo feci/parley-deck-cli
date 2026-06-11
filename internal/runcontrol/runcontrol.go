@@ -163,6 +163,7 @@ func RuntimeEventData(discovered []agents.Discovery) []map[string]any {
 			"speed":            result.Speed,
 			"timeout_ms":       result.TimeoutMS,
 			"isolate_home":     result.IsolateHome,
+			"buffers_stdout":   result.BuffersStdout,
 			"external_backend": result.ExternalBackend,
 			"sources":          result.Sources,
 		})

@@ -65,7 +65,9 @@ func (d *Driver) advanceFinal(ctx context.Context, c Cursor) (Action, Cursor, er
 	c.Phase = PhaseImpl
 	c.IdeaStatus = "implemented"
 	c.UpdatedAt = nowRFC3339()
-	_ = c.Save(d.cursorPath())
+	if err := d.commitCursor(c, ActionImplemented, PhaseFinal); err != nil {
+		return ActionEscalated, c, err
+	}
 	return ActionImplemented, c, nil
 }
 
@@ -100,7 +102,9 @@ func (d *Driver) advanceImpl(ctx context.Context, c Cursor) (Action, Cursor, err
 	}
 	c.Phase = PhaseReview
 	c.UpdatedAt = nowRFC3339()
-	_ = c.Save(d.cursorPath())
+	if err := d.commitCursor(c, ActionReviewOpened, PhaseImpl); err != nil {
+		return ActionEscalated, c, err
+	}
 	return ActionReviewOpened, c, nil
 }
 
@@ -127,7 +131,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		}
 		c.Phase = PhaseReview
 		c.UpdatedAt = nowRFC3339()
-		_ = c.Save(d.cursorPath())
+		if err := d.commitCursor(c, ActionFixup, PhaseReview); err != nil {
+			return ActionEscalated, c, err
+		}
 		return ActionFixup, c, nil
 	}
 	complete, err := d.cfg.Impl.ReviewRoundComplete(round)
@@ -185,7 +191,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		c.Phase = PhaseDone
 		c.IdeaStatus = "complete"
 		c.UpdatedAt = nowRFC3339()
-		_ = c.Save(d.cursorPath())
+		if err := d.commitCursor(c, ActionComplete, PhaseReview); err != nil {
+			return ActionEscalated, c, err
+		}
 		return ActionComplete, c, nil
 	}
 
@@ -223,7 +231,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 	c.Phase = PhaseReview
 	c.UpdatedAt = nowRFC3339()
-	_ = c.Save(d.cursorPath())
+	if err := d.commitCursor(c, ActionFixup, PhaseReview); err != nil {
+		return ActionEscalated, c, err
+	}
 	return ActionFixup, c, nil
 }
 
