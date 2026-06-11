@@ -37,7 +37,11 @@ type Spec struct {
 	ExternalBackend       string
 	Telemetry             string
 	Notes                 string
-	Sources               map[string]string
+	// BuffersStdout declares that the CLI buffers ALL stdout until process exit
+	// (e.g. agy --print), so a silent transcript is expected, not a hang. The TUI
+	// uses it for the buffered-agent placeholder hint.
+	BuffersStdout bool
+	Sources       map[string]string
 	// ACPArgs are the launch flags that put an ACP-capable CLI into ACP mode
 	// (e.g. ["--experimental-acp"] for claude, ["acp"] for goose, ["--acp"] for qwen).
 	// When LaunchMode == LaunchACP, the runner spawns Commands[0] with ACPArgs
@@ -156,6 +160,7 @@ func defaultBuiltinSpecs() []Spec {
 			TimeoutMS:             DefaultTimeoutMS,
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "unknown",
+			BuffersStdout:         true, // agy --print emits nothing until exit
 			Notes:                 "Antigravity CLI (active Gemini-family participant); agy 1.0.5 exposes --model. Best Gemini model: Gemini 3.5 Flash (High); see `agy models`",
 		}),
 		withBuiltinSources(Spec{

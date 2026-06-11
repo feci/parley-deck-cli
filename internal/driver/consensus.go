@@ -66,7 +66,9 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 		c.Phase = PhaseFinal
 		c.IdeaStatus = "final"
 		c.UpdatedAt = nowRFC3339()
-		_ = c.Save(d.cursorPath())
+		if err := d.commitCursor(c, ActionFinalized, PhaseConsensus); err != nil {
+			return ActionEscalated, c, err
+		}
 		return ActionFinalized, c, nil
 
 	case consensus.TriagePartial:
@@ -114,7 +116,9 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 		c.RoundsRun = next
 		c.Phase = PhaseRound
 		c.UpdatedAt = nowRFC3339()
-		_ = c.Save(d.cursorPath())
+		if err := d.commitCursor(c, ActionReopened, PhaseConsensus); err != nil {
+			return ActionEscalated, c, err
+		}
 		return ActionReopened, c, nil
 
 	default: // TriageMalformed or unknown

@@ -87,6 +87,39 @@ func New(cfg Config, r RoundRunner) *Driver {
 
 func (d *Driver) cursorPath() string { return filepath.Join(d.cfg.RunDir, "driver.json") }
 
+// saveCursor is a seam so tests can force a cursor-save failure.
+var saveCursor = func(c Cursor, path string) error { return c.Save(path) }
+
+// commitCursor persists a phase-changing cursor and, only after a successful
+// save, appends a best-effort run.phase event so the TUI sees phase flips
+// event-driven (consensus tui-protocol-visibility D4). A failed save is
+// returned so the branch escalates instead of letting the event log claim a
+// phase the cursor never persisted; a failed event append is healed by the
+// snapshot's disk reconcile.
+func (d *Driver) commitCursor(c Cursor, action Action, previous Phase) error {
+	if err := saveCursor(c, d.cursorPath()); err != nil {
+		return fmt.Errorf("save driver cursor: %w", err)
+	}
+	_ = d.cfg.Events.Append(store.Event{
+		Time: time.Now().UTC(),
+		Type: "run.phase",
+		Data: map[string]any{
+			"idea":           d.cfg.IdeaSlug,
+			"run_id":         filepath.Base(d.cfg.RunDir),
+			"action":         string(action),
+			"phase":          string(c.Phase),
+			"previous_phase": string(previous),
+			"current_round":  c.CurrentRound,
+			"round_label":    roundLabel(c.CurrentRound),
+			"idea_status":    c.IdeaStatus,
+			"rounds_run":     c.RoundsRun,
+			"max_rounds":     c.MaxRounds,
+			"source":         "driver",
+		},
+	})
+	return nil
+}
+
 // autoLocalDir re-reads the effective transport from disk (D8): auto-advance is
 // enabled only with --auto AND an effective transport of local-dir.
 func (d *Driver) autoLocalDir() bool {
@@ -143,7 +176,9 @@ func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, er
 		c.Phase = PhaseConsensus
 		c.IdeaStatus = "consensus"
 		c.UpdatedAt = nowRFC3339()
-		_ = c.Save(d.cursorPath())
+		if err := d.commitCursor(c, ActionConsensusDrafted, PhaseRound); err != nil {
+			return ActionEscalated, c, err
+		}
 		return ActionConsensusDrafted, c, nil
 	}
 
@@ -161,7 +196,9 @@ func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, er
 	c.CurrentRound = next
 	c.RoundsRun = next
 	c.UpdatedAt = nowRFC3339()
-	_ = c.Save(d.cursorPath())
+	if err := d.commitCursor(c, ActionPromoted, PhaseRound); err != nil {
+		return ActionEscalated, c, err
+	}
 	return ActionPromoted, c, nil
 }
 

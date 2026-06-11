@@ -45,6 +45,7 @@ type agentOverride struct {
 	Speed                 string            `toml:"speed"`
 	TimeoutMS             int               `toml:"timeout_ms"`
 	IsolateHome           *bool             `toml:"isolate_home"`
+	BuffersStdout         *bool             `toml:"buffers_stdout"`
 	IsolatedHomeEnv       map[string]string `toml:"isolated_home_env"`
 	ExternalBackend       string            `toml:"external_backend"`
 	Telemetry             string            `toml:"telemetry"`
@@ -269,6 +270,10 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 	if override.IsolateHome != nil {
 		spec.IsolateHome = *override.IsolateHome
 		spec.Sources["isolate_home"] = source
+	}
+	if override.BuffersStdout != nil {
+		spec.BuffersStdout = *override.BuffersStdout
+		spec.Sources["buffers_stdout"] = source
 	}
 	if len(override.IsolatedHomeEnv) > 0 {
 		spec.IsolatedHomeEnv = map[string]string{}

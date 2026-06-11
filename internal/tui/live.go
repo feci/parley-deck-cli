@@ -181,6 +181,11 @@ type agentBuffer struct {
 
 	hideStderr   bool // /stderr toggle
 	showArtifact bool // /artifact toggle
+
+	// Protocol visibility (tui-protocol-visibility): lastGrowthAt feeds the
+	// spinner-vs-silent tab glyph; narratorSeq dedups the woven replay ring.
+	lastGrowthAt time.Time
+	narratorSeq  int
 }
 
 // pickerKind discriminates what a confirmed picker selection dispatches to.
@@ -296,6 +301,20 @@ type liveModel struct {
 	suggestItems     []commandSpec // current matches for inputText prefix
 	suggestIndex     int           // highlighted suggestion
 	confirmKillAgent string        // non-empty = modal "kill <agent>? (y/N)" confirm
+
+	// Protocol visibility (tui-protocol-visibility): the cached snapshot plus
+	// the async-build gates, the woven-narrator ring, and the stat growth cache.
+	proto         *ProtocolSnapshot
+	protoSeq      int
+	protoBusy     bool
+	protoDirty    bool
+	ribbonMode    int // ribbonCollapsed | ribbonExpanded | ribbonHidden (Ctrl+P)
+	narrateMode   int // narrateProtocol | narrateVerbose | narrateOff (/narrate)
+	narratorRing  []narratorEntry
+	narratorTotal int
+	growth        map[string]growthInfo // unvisited-tab activity (2s stat cache)
+	buffersStdout map[string]bool       // declared buffers_stdout per agent (run.created)
+	ideaPhases    map[string]string     // Home phase chips, computed in refreshHomeRuns
 }
 
 // hasRun reports whether an active run is attached (vs the no-run Home state).
@@ -373,6 +392,10 @@ func (m liveModel) runCmds() []tea.Cmd {
 		readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken),
 		readQuestionsCmd(m.opts.RunDir, m.runToken),
 		eventTickCmd(m.runToken),
+		// First protocol snapshot lands ~1s after attach; the handler re-arms
+		// at the 15s/60s reconcile cadence. Growth probes run on their own 2s tick.
+		protoTickCmd(m.runToken, time.Second),
+		growthTickCmd(m.runToken),
 	}
 	if m.opts.Done != nil {
 		cmds = append(cmds, waitDoneCmd(m.opts.Done, m.runToken))
@@ -406,8 +429,13 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.events = append(m.events, msg.events...)
 			m.state = ProjectEvents(m.opts.Participants, m.events, m.now)
 			m.ensureActiveBuffer()
-			m.refreshBuffers()           // drain steer reply stdout into the transcript FIRST
+			m.refreshBuffers()              // drain steer reply stdout into the transcript FIRST
 			m.appendSteerEvents(msg.events) // then commit the trailing line + the marker
+			m.noteRuntimeFlags(msg.events)
+			m.appendProtocolEvents(msg.events)
+			if hasProtoTrigger(msg.events) {
+				return m, m.scheduleProtoRefresh()
+			}
 		}
 		return m, nil // never quit on done — the TUI stays open
 	case eventTickMsg:
@@ -445,8 +473,58 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.done = true
 		m.refreshHomeRuns()
-		// one final read; do NOT quit
-		return m, readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)
+		// one final read + a final protocol reconcile; do NOT quit
+		cmds := []tea.Cmd{readEventsCmd(filepath.Join(m.opts.RunDir, "events.jsonl"), m.offset, m.runToken)}
+		if c := m.scheduleProtoRefresh(); c != nil {
+			cmds = append(cmds, c)
+		}
+		return m, tea.Batch(cmds...)
+	case protoMsg:
+		if msg.token != m.runToken || msg.seq != m.protoSeq {
+			return m, nil // stale snapshot (run swap or superseded build)
+		}
+		m.protoBusy = false
+		snap := msg.snap
+		m.proto = &snap
+		if m.protoDirty {
+			m.protoDirty = false
+			return m, m.scheduleProtoRefresh()
+		}
+		return m, nil
+	case protoTickMsg:
+		if msg.token != m.runToken {
+			return m, nil
+		}
+		cmds := []tea.Cmd{protoTickCmd(m.runToken, m.protoInterval())}
+		if c := m.scheduleProtoRefresh(); c != nil {
+			cmds = append(cmds, c)
+		}
+		return m, tea.Batch(cmds...)
+	case growthTickMsg:
+		if msg.token != m.runToken {
+			return m, nil
+		}
+		cmds := []tea.Cmd{growthTickCmd(m.runToken)}
+		if paths := m.growthPaths(); len(paths) > 0 {
+			cmds = append(cmds, statGrowthCmd(paths, m.runToken))
+		}
+		return m, tea.Batch(cmds...)
+	case growthMsg:
+		if msg.token != m.runToken {
+			return m, nil
+		}
+		if m.growth == nil {
+			m.growth = map[string]growthInfo{}
+		}
+		for id, sizes := range msg.sizes {
+			prev := m.growth[id]
+			next := growthInfo{stdout: sizes[0], stderr: sizes[1], lastGrowth: prev.lastGrowth}
+			if sizes[0] > prev.stdout || sizes[1] > prev.stderr {
+				next.lastGrowth = msg.at
+			}
+			m.growth[id] = next
+		}
+		return m, nil
 	}
 	return m, nil
 }
@@ -463,6 +541,15 @@ func (m *liveModel) refreshHomeRuns() {
 		m.homeRuns = runs
 		m.refreshPickerItems() // keep an open /open picker in sync
 	}
+	// Home phase chips: per-idea pipeline position, computed only here (on
+	// launch/open/done) — never on a tick (consensus D14).
+	chips := make(map[string]string, len(m.opts.Status.Ideas))
+	for _, idea := range m.opts.Status.Ideas {
+		if chip := ideaPhaseChip(idea.Path); chip != "" {
+			chips[idea.Slug] = chip
+		}
+	}
+	m.ideaPhases = chips
 }
 
 // activateRun swaps the model onto a newly launched (or opened) run in place:
@@ -499,6 +586,15 @@ func (m *liveModel) activateRun(s LaunchResult) tea.Cmd {
 	m.buffers = map[string]*agentBuffer{}
 	m.activeTab = "" // resolve to the first agent
 	m.state = ProjectEvents(s.Participants, nil, m.now)
+	// Reset the protocol-visibility caches for the new run.
+	m.proto = nil
+	m.protoSeq = 0
+	m.protoBusy = false
+	m.protoDirty = false
+	m.narratorRing = nil
+	m.narratorTotal = 0
+	m.growth = map[string]growthInfo{}
+	m.buffersStdout = map[string]bool{}
 	m.ensureActiveBuffer()
 	return tea.Batch(m.runCmds()...)
 }
@@ -542,11 +638,11 @@ func (m liveModel) renderTabbed(width, height int) string {
 	default:
 		main = m.renderStatusTab(width, rows)
 	}
-	parts := []string{
-		m.renderTabStrip(width),
-		"",
-		clipLines(main, rows),
+	parts := []string{m.renderTabStrip(width)}
+	if m.ribbonHeight() > 0 {
+		parts = append(parts, m.renderRibbon(width))
 	}
+	parts = append(parts, "", clipLines(main, rows))
 	if banner := m.renderQuestionBanner(width); banner != "" {
 		parts = append(parts, banner)
 	}
@@ -589,15 +685,9 @@ func (m liveModel) renderTabStrip(width int) string {
 			tabs = append(tabs, tab{id, "Status"})
 		default:
 			agentID, _ := agentTab(id)
-			st := ""
-			if a := m.agentByID(agentID); a != nil {
-				if a.State == stateRunning && m.agentLiveness(agentID) == "stale" {
-					st = " STALE" // projected running but no attributable live process
-				} else {
-					st = " " + shortState(a.State)
-				}
-			}
-			tabs = append(tabs, tab{id, agentID + st})
+			// Conservative single-cell activity glyph (consensus D8): spinner =
+			// output flowing, · = running silent, ! = STALE, ✓/✗/x/-/○ terminal.
+			tabs = append(tabs, tab{id, agentID + " " + m.agentGlyph(agentID)})
 		}
 	}
 
@@ -657,25 +747,6 @@ func (m liveModel) styleTab(label string, on bool) string {
 	return mutedStyle.Render("  " + label)
 }
 
-func shortState(s string) string {
-	switch s {
-	case stateRunning:
-		return "RUN"
-	case stateFinished:
-		return "FIN"
-	case stateFailed:
-		return "ERR"
-	case stateKilled:
-		return "KILL"
-	case stateSkipped:
-		return "SKIP"
-	case statePending:
-		return "·"
-	default:
-		return "?"
-	}
-}
-
 func (m liveModel) renderTranscript(agentID string, width, rows int) string {
 	header := m.renderAgentStatusHeader(agentID, width)
 	bodyRows := rows - 1 // header takes a row
@@ -694,6 +765,13 @@ func (m liveModel) renderTranscript(agentID string, width, rows int) string {
 	sb.WriteString(header)
 	sb.WriteString("\n")
 	if len(lines) == 0 {
+		// A running-but-silent agent gets the structured placeholder (declared
+		// buffering, liveness, byte counters, own recent activity) instead of a
+		// dead-looking blank pane.
+		if a := m.agentByID(agentID); a != nil && a.State == stateRunning {
+			sb.WriteString(m.renderSilentPlaceholder(agentID, width))
+			return strings.TrimRight(sb.String(), "\n")
+		}
 		sb.WriteString(mutedStyle.Render("  (no output yet — the agent is starting; stderr/replies appear here live)"))
 		return strings.TrimRight(sb.String(), "\n")
 	}
@@ -746,8 +824,16 @@ func (m liveModel) renderAgentStatusHeader(agentID string, width int) string {
 	switch a.State {
 	case stateRunning:
 		tag := "● " + agentID + " working… " + dur
-		if m.agentLiveness(agentID) == "stale" {
+		if lv := m.agentLiveness(agentID); lv == "stale" {
 			tag += " · STALE"
+		} else if lv != "" {
+			tag += " · proc:" + lv
+		}
+		if b := m.buffers[agentID]; b != nil && b.loaded {
+			tag += fmt.Sprintf(" · stdout %s · stderr %s", formatByteCount(b.stdout.offset), formatByteCount(b.stderr.offset))
+		}
+		if art := relArtifact(a.ArtifactPath); art != "" {
+			tag += " · → " + art
 		}
 		line = warnStyle.Render(truncateText(tag, width-1))
 	case stateFinished:
@@ -812,9 +898,12 @@ func relArtifact(path string) string {
 	return filepath.Base(path)
 }
 
-// renderStatusTab reuses the original dashboard panes as the Status tab content.
+// renderStatusTab is the Protocol tab: the pipeline/delivery/signoff/next panes
+// above the original dashboard panes (/status and /protocol both land here).
 func (m liveModel) renderStatusTab(width, rows int) string {
 	body := strings.Join([]string{
+		m.renderProtocolPanes(),
+		"",
 		m.renderAgentTable(),
 		"",
 		m.renderEventPane(),
@@ -863,9 +952,9 @@ func (m liveModel) renderStatusLine(width int) string {
 	if m.done {
 		doneTag = "  [done]"
 	}
-	line := fmt.Sprintf("run=%s idea=%s round=%s  %s %s %s  q:%d%s",
+	line := fmt.Sprintf("run=%s idea=%s %s  %s %s %s  q:%d%s",
 		m.opts.RunID, m.opts.Idea.Slug,
-		displayRoundStatus(m.state.RoundStatus, m.done, m.opts.Resume),
+		m.statusPhaseSegment(),
 		label, stateStr, follow, openQ, doneTag)
 	out := mutedStyle.Render(truncateText(line, width))
 	if m.errText != "" {
@@ -944,7 +1033,7 @@ func (m liveModel) renderInputRow(width int) string {
 	case m.composing:
 		hint = "type a task · Enter launch · esc cancel"
 	case strings.HasPrefix(m.inputText, "/"):
-		hint = "Tab to complete · commands: /help /status /follow /deck /answer /open /home /quit"
+		hint = "Tab to complete · commands: /help /protocol /refresh /narrate /follow /deck /answer /open /home /quit"
 	case steerRow:
 		hint = "Enter sends to " + steerAgent + " · ctrl+k kill · ↑/↓ tabs · /help"
 	case active == homeTabID && !m.done:
@@ -966,7 +1055,11 @@ func (m liveModel) renderHome(width, rows int) string {
 		b.WriteString(mutedStyle.Render("  no ideas yet — press N to start one"))
 	} else {
 		for _, idea := range m.opts.Status.Ideas {
-			b.WriteString(fmt.Sprintf("  %-34s %s\n", truncateText(idea.Slug, 34), idea.Status))
+			chip := m.ideaPhases[idea.Slug]
+			if chip == "" {
+				chip = idea.Status
+			}
+			b.WriteString(fmt.Sprintf("  %-34s %-22s %s\n", truncateText(idea.Slug, 34), truncateText(chip, 22), idea.Status))
 		}
 	}
 	b.WriteString("\n")
@@ -1002,6 +1095,9 @@ type commandSpec struct {
 var commandSpecs = []commandSpec{
 	{Name: "/help"},
 	{Name: "/status"},
+	{Name: "/protocol"},
+	{Name: "/refresh"},
+	{Name: "/narrate"},
 	{Name: "/follow"},
 	{Name: "/home"},
 	{Name: "/stderr"},
@@ -1228,6 +1324,10 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, tea.Quit
+	case "ctrl+p":
+		// Cycle the protocol ribbon: collapsed → expanded → hidden.
+		m.ribbonMode = (m.ribbonMode + 1) % 3
+		return m, nil
 	case "ctrl+k":
 		// Kill the focused agent (modal confirm). Only when on a running agent tab
 		// of a live run with the kill seam wired.
@@ -1390,7 +1490,7 @@ func (m liveModel) agentByID(id string) *AgentState {
 }
 
 func (m liveModel) transcriptHeight() int {
-	rows := tuiHeight(m.height, defaultLiveHeight) - 7
+	rows := tuiHeight(m.height, defaultLiveHeight) - 7 - m.ribbonHeight()
 	if rows < 3 {
 		rows = 3
 	}
@@ -1458,6 +1558,7 @@ func (m *liveModel) ensureBuffer(agentID string) *agentBuffer {
 	if !b.loaded && (b.stdout.path != "" || b.stderr.path != "") {
 		m.advanceBuffer(b)
 		b.loaded = true
+		m.replayNarrator(b) // backfill woven protocol lines exactly once
 		b.scroll = m.bufferBottom(b)
 	}
 	return b
@@ -1503,6 +1604,7 @@ func (m *liveModel) advanceBuffer(b *agentBuffer) {
 		}
 		if len(chunk) > 0 {
 			b.lines, b.partial[sc.s], b.crPending[sc.s] = ingestTranscriptBytes(b.lines, b.partial[sc.s], b.crPending[sc.s], sc.s, chunk)
+			b.lastGrowthAt = m.now // feeds the spinner-vs-silent tab glyph
 		}
 	}
 	capped := false
@@ -1564,6 +1666,13 @@ func (m *liveModel) appendSteerEvents(events []store.Event) {
 			marker = "[reply failed]"
 		}
 		b.lines = append(b.lines, transcriptLine{Text: marker, Stream: transcriptEvent})
+		// The cap is the actual memory guard — re-run it after the append (the
+		// pre-existing path appended after advanceBuffer's cap pass).
+		var capped bool
+		b.lines, capped = capTranscriptLines(b.lines)
+		if capped {
+			b.trunc = true
+		}
 		b.steer = tailCursor{} // stop tailing the finished steer
 		b.partial[transcriptSteer] = ""
 		if b.crPending != nil {
@@ -1781,9 +1890,27 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "/quit":
 		return m, tea.Quit
-	case "/status":
+	case "/status", "/protocol":
 		m.activeTab = statusTabID
 		m.inputText, m.inputErr = "", ""
+		return m, m.scheduleProtoRefresh() // the tab shows reconciled state
+	case "/refresh":
+		m.inputText, m.inputErr = "", ""
+		m.statusMsg = "reconciling protocol state…"
+		return m, m.scheduleProtoRefresh()
+	case "/narrate":
+		m.inputText, m.inputErr = "", ""
+		switch m.narrateMode {
+		case narrateProtocol:
+			m.narrateMode = narrateVerbose
+			m.statusMsg = "narrator: verbose (protocol + agent tool activity)"
+		case narrateVerbose:
+			m.narrateMode = narrateOff
+			m.statusMsg = "narrator: off"
+		default:
+			m.narrateMode = narrateProtocol
+			m.statusMsg = "narrator: protocol events"
+		}
 		return m, nil
 	case "/follow":
 		if agentID, ok := agentTab(m.activeTabResolved()); ok {
