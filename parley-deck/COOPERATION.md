@@ -148,6 +148,9 @@ The agent (or user) who starts the idea creates `ideas/<slug>/00-prompt.md`:
       <agent-id-1>: <lens-or-role>
       <agent-id-2>: <lens-or-role>
     deadline: YYYY-MM-DD        # optional
+    strict_gate: true|false     # optional; exact case-insensitive "true" opts into
+                                # the strict review gate (Phase 8); absent or any
+                                # other value keeps the default close rule
     status: round-01            # round-N | consensus | final | abandoned
     ---
 

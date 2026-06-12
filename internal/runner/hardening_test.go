@@ -285,6 +285,64 @@ func TestClassifyFailure(t *testing.T) {
 			t.Errorf("class %q must carry a hint", class)
 		}
 	}
+
+	// Lock the agreed class/hint contract (review consensus cycle-1 fix 7):
+	// the table — not prose elsewhere — is the UX source of truth.
+	exact := map[string]string{
+		"rate-limit":      "Wait for reset or switch provider keys/endpoints.",
+		"auth":            "Run the agent CLI's auth command (e.g. 'claude login', 'hermes auth') to refresh credentials.",
+		"overloaded":      "Retry in a few minutes or choose a less busy model.",
+		"context-window":  "Reduce the prompt size or prune file attachments/logs from scope.",
+		"billing":         "Check your API account balance and credit card status.",
+		"model-not-found": "Check the model spelling and access permissions in your API settings.",
+		"sandbox":         "Adjust the local sandbox configuration or run with lower restriction.",
+		"budget":          "Increase the session budget limit (e.g. raise spend caps in settings).",
+		"invalid-request": "Verify the prompt structure and system constraints in config.",
+	}
+	for _, rule := range failureRules {
+		want, ok := exact[rule.class]
+		if !ok {
+			t.Errorf("class %q is not in the locked contract table — update the test deliberately", rule.class)
+			continue
+		}
+		if rule.hint != want {
+			t.Errorf("class %q hint drifted: got %q want %q", rule.class, rule.hint, want)
+		}
+	}
+	for class, want := range map[string]string{
+		"no_first_output": "Verify the agent executable is not blocking or waiting for stdin.",
+		"stalled":         "Check the process tree; the agent emitted no output within the stall window.",
+		"timeout":         "The hard per-agent timeout elapsed; raise timeout_ms or split the task.",
+	} {
+		if got := watchdogHints[class]; got != want {
+			t.Errorf("watchdog hint %q drifted: got %q want %q", class, got, want)
+		}
+	}
+}
+
+// TestMoveAsideInvalidArtifact (review fix 3): unique destination, never
+// overwrite an earlier recovery file, remove-on-rename-failure.
+func TestMoveAsideInvalidArtifact(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "agent.md")
+	prior := out + ".attempt-1.invalid"
+	if err := os.WriteFile(prior, []byte("earlier recovery"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(out, []byte("new invalid"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	moveAsideInvalidArtifact(out)
+	if _, err := os.Stat(out); !os.IsNotExist(err) {
+		t.Fatalf("invalid artifact must leave the canonical path, stat err=%v", err)
+	}
+	if data, err := os.ReadFile(prior); err != nil || string(data) != "earlier recovery" {
+		t.Fatalf("pre-existing recovery file must never be overwritten: %q err=%v", data, err)
+	}
+	entries, _ := os.ReadDir(dir)
+	if len(entries) != 2 { // prior + uniquely-suffixed new one
+		t.Fatalf("want 2 recovery files, got %d", len(entries))
+	}
 }
 
 // --- D8: participant env shedding --------------------------------------------------

@@ -1,7 +1,7 @@
 ---
 idea: meta-protocol-change-review-gate-honesty
 agent: claude
-status: implemented
+status: fix-up-cycle-1
 date: 2026-06-12
 ---
 
@@ -48,6 +48,12 @@ in-repo copies:
 - None. No driver enforcement was added (per D5); `strict_gate` is normative
   for humans now and machine-readable later via the documented
   ReadAutoImplement-style parser.
+
+## Fix-up cycle 1
+
+Agreed fix applied: the Phase 0 kickoff frontmatter template in BOTH protocol
+copies now carries the optional `strict_gate: true|false` line with the
+exact-true semantics comment, so idea authors see the opt-in at kickoff.
 
 ## Notes for reviewers
 

@@ -188,6 +188,19 @@ func (s *ReviewSnapshot) MoveArtifactBack(relPath, canonicalPath string) error {
 	return os.Rename(tmp, canonicalPath)
 }
 
+// Abandon keeps the snapshot directory for manual recovery (a failed artifact
+// move-back, consensus D9 review fix 2) and removes only the marker — the
+// stale sweep skips directories without a .pid marker, so the retained
+// artifact survives later runs.
+func (s *ReviewSnapshot) Abandon() {
+	if s == nil {
+		return
+	}
+	if s.marker != "" {
+		_ = os.Remove(s.marker)
+	}
+}
+
 // Cleanup deletes the snapshot worktree and its marker (plain delete — the
 // shared clone never wrote the origin's .git).
 func (s *ReviewSnapshot) Cleanup() {

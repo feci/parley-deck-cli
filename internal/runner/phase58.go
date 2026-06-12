@@ -67,42 +67,57 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	result := Result{AgentID: agent.ID, StartedAt: now, StdoutPath: stdoutPath, StderrPath: stderrPath}
 
 	prompt := BuildFixupPrompt(agent, opts.Idea)
-	cctx, cancel := context.WithTimeout(ctx, timeoutForAgent(opts.Timeout, agent))
+	hardTimeout := timeoutForAgent(opts.Timeout, agent)
+	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
-	cmd, cleanup, err := CommandFor(cctx, opts.Root, agent, prompt)
-	if cleanup != nil {
-		defer cleanup()
+
+	// The fix-up runs through the same hardened exec path as every other agent
+	// launch (review fix 4): process group + procctl marker + participant env
+	// shedding + counting writers + supervised wait. No retry — a code-mutating
+	// phase is not safely re-runnable after a watchdog kill.
+	act := &activityTracker{}
+	cfg := supervisionForAgent(agent, hardTimeout)
+	hooks := supervisionHooks{
+		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent.heartbeat",
+				Data: map[string]any{
+					"agent": agent.ID, "segment_id": opts.SegmentID, "attempt_id": 1,
+					"phase": "fixup", "launch": agents.LaunchHeadless,
+					"elapsed_ms": elapsed.Milliseconds(), "timeout_ms": hardTimeout.Milliseconds(),
+					"stdout_bytes": snap.StdoutBytes, "stderr_bytes": snap.StderrBytes,
+					"last_activity_ms_ago": activityAgeMS(snap),
+				},
+			})
+		},
+		onWatchdog: func(kind string, snap activitySnapshot, elapsed time.Duration) {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent." + kind,
+				Data: map[string]any{
+					"agent": agent.ID, "segment_id": opts.SegmentID, "attempt_id": 1,
+					"elapsed_ms":   elapsed.Milliseconds(),
+					"stdout_bytes": snap.StdoutBytes, "stderr_bytes": snap.StderrBytes,
+					"action": "failed",
+				},
+			})
+		},
 	}
-	if err != nil {
-		result.ExitError = err.Error()
-		result.CompletedAt = time.Now().UTC()
-		return result
-	}
-	cmd.Dir = opts.Root
-	so, err := os.Create(stdoutPath)
-	if err != nil {
-		result.ExitError = err.Error()
-		return result
-	}
-	defer so.Close()
-	se, err := os.Create(stderrPath)
-	if err != nil {
-		result.ExitError = err.Error()
-		return result
-	}
-	defer se.Close()
-	cmd.Stdout = so
-	cmd.Stderr = se
-	if agent.PromptMode == agents.PromptStdin {
-		cmd.Stdin = strings.NewReader(prompt)
-	}
-	runErr := cmd.Run()
+	_, runErr := execAgentProcess(cctx, opts.Root, opts.RunID, agent.ID, opts.RunID+":"+agent.ID+":fixup", agent, prompt, stdoutPath, stderrPath, nil, act, cfg, hooks)
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(now)
-	cancelled := cctx.Err() != nil
+	watchdog := ""
+	switch {
+	case errors.Is(runErr, errNoFirstOutput):
+		watchdog = "no_first_output"
+	case errors.Is(runErr, errStalled):
+		watchdog = "stalled"
+	}
+	cancelled := cctx.Err() != nil || watchdog != ""
 	if runErr != nil {
 		result.ExitError = runErr.Error()
-		if cancelled {
+		if cctx.Err() != nil {
 			result.ExitError = cctx.Err().Error()
 		}
 	}
@@ -128,7 +143,7 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	eventType := "agent.fixup_finished"
 	if failed {
 		eventType = "agent.fixup_failed"
-		class, hint := terminalFailureClass("", cctx.Err(), false, stderrPath, stdoutPath, result.ExitError)
+		class, hint := terminalFailureClass(watchdog, cctx.Err(), false, stderrPath, stdoutPath, result.ExitError)
 		result.FailureClass = class
 		result.RecoveryHint = hint
 		data["failure_class"] = class

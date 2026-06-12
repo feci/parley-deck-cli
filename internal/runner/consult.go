@@ -37,6 +37,12 @@ type ConsultResult struct {
 	RecoveryHint string
 	AgentExit    int
 	Duration     time.Duration
+	// EffectiveTimeout is the timeout RunConsult actually enforced (the flag
+	// or the agent's timeout_ms default) — recorded in the artifact provenance.
+	EffectiveTimeout time.Duration
+	// SessionID is the consulted CLI's session id when discoverable; one-shot
+	// CLIs expose none today, so it is usually empty (written regardless).
+	SessionID string
 }
 
 // BuildConsultPrompt frames the advisory contract (adapted from kindly's
@@ -60,9 +66,9 @@ Question:
 // stdout as the answer.
 func RunConsult(ctx context.Context, opts ConsultOptions) ConsultResult {
 	started := time.Now()
-	result := ConsultResult{}
 	prompt := BuildConsultPrompt(opts.Agent, opts.Question)
 	hardTimeout := timeoutForAgent(opts.Timeout, opts.Agent)
+	result := ConsultResult{EffectiveTimeout: hardTimeout}
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
 

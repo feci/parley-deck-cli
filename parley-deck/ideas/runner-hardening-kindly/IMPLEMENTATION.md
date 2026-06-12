@@ -1,7 +1,7 @@
 ---
 idea: runner-hardening-kindly
 agent: claude
-status: implemented
+status: fix-up-cycle-1
 date: 2026-06-12
 ---
 
@@ -102,6 +102,34 @@ app consultSlug. Full suite green; `-race` green on runner+fsutil.
   per-OS files.
 - Consult artifact frontmatter adds `agent_exit` (the consult-flavor
   artifact-wins exit) alongside the agreed fields.
+
+## Fix-up cycle 1 (review/round-01 → review/consensus.md)
+
+All seven agreed fixes applied:
+
+1. ACP contract: initialize/session-open/prompt-complete now mark activity;
+   attempt_id threads through the ACP procctl marker, agent.started, heartbeat,
+   watchdog, and terminal payloads; ACP attempts share the exec
+   retry-once-for-no_first_output loop (lifted into runAgent's ACP branch).
+2. Snapshot retention: cleanup is conditional — a move-back failure flips
+   keepForRecovery, Abandon() drops only the marker (the stale sweep skips
+   marker-less dirs) and the snapshot copy survives; terminal events now report
+   the LIVE canonical path even on publish failure (publishArtifact always
+   returns it).
+3. moveAsideInvalidArtifact: unique suffix when .attempt-1.invalid exists
+   (never overwrite an earlier recovery file); rename failure removes the
+   invalid artifact. Test: TestMoveAsideInvalidArtifact.
+4. RunFixup runs through the hardened exec path (process group + marker
+   runID:agentID:fixup + cleanParticipantEnv + counting writers +
+   waitSupervised + watchdog/heartbeat events, phase "fixup"); no retry by
+   design (code-mutating phase).
+5. failEarly emits the classified payload (failure_class + recovery_hint).
+6. Consult provenance: frontmatter + ledger gain session_id (written even when
+   empty — one-shot CLIs expose none) and timeout_ms now records the EFFECTIVE
+   timeout (ConsultResult.EffectiveTimeout).
+7. TestClassifyFailure locks the exact class/hint contract for all 9 provider
+   classes + 3 watchdog hints (the dismissed verbatim-strings finding's
+   testable half).
 
 ## Notes for reviewers
 

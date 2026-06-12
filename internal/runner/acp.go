@@ -25,7 +25,7 @@ const acpClientName = "parley-deck"
 // piping a prompt through one-shot text stdio. The agent is expected to write
 // the canonical artifact file (outputPath) via its own filesystem tools.
 // Streaming session/update notifications are appended to the run's event log.
-func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, result Result, outputPath, stdoutPath, stderrPath, prompt string) Result {
+func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, result Result, outputPath, stdoutPath, stderrPath, prompt string, attemptID int) Result {
 	if agent.ACPArgs == nil && agent.Path != "" {
 		// Defensive: an ACP-mode agent must declare its launch flags; AionUi
 		// defaults to ["--experimental-acp"] for claude when unset. Requiring
@@ -80,7 +80,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 
 	// Capture the durable process identity so a restarted parley can re-attribute
 	// and group-kill this ACP agent (same as the headless path).
-	sp := procctl.CaptureByPID(process.PID(), opts.RunID+":"+agent.ID)
+	sp := procctl.CaptureByPID(process.PID(), fmt.Sprintf("%s:%s:%d", opts.RunID, agent.ID, attemptID))
 	if appendErr := opts.Store.Append(store.Event{
 		Time: time.Now().UTC(),
 		Type: "agent.started",
@@ -93,6 +93,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 			"command":     sp.Command,
 			"acp_args":    agent.ACPArgs,
 			"segment_id":  opts.SegmentID,
+			"attempt_id":  attemptID,
 			"pid":         sp.PID,
 			"pgid":        sp.PGID,
 			"boot_id":     sp.BootID,
@@ -119,7 +120,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 				Data: map[string]any{
 					"agent":                agent.ID,
 					"segment_id":           opts.SegmentID,
-					"attempt_id":           1,
+					"attempt_id":           attemptID,
 					"phase":                phaseOrDefault(opts.Phase),
 					"launch":               agents.LaunchACP,
 					"elapsed_ms":           elapsed.Milliseconds(),
@@ -132,17 +133,21 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 		},
 		onWatchdog: func(kind string, snap activitySnapshot, elapsed time.Duration) {
 			// Appended BEFORE the kill fires (consensus D1).
+			action := "failed"
+			if kind == "no_first_output" && attemptID == 1 {
+				action = "retrying" // ACP shares the exec retry-once contract
+			}
 			_ = opts.Store.Append(store.Event{
 				Time: time.Now().UTC(),
 				Type: "agent." + kind,
 				Data: map[string]any{
 					"agent":        agent.ID,
 					"segment_id":   opts.SegmentID,
-					"attempt_id":   1,
+					"attempt_id":   attemptID,
 					"elapsed_ms":   elapsed.Milliseconds(),
 					"stdout_bytes": snap.StdoutBytes,
 					"stderr_bytes": snap.StderrBytes,
-					"action":       "failed", // ACP attempts are not retried in v1
+					"action":       action,
 				},
 			})
 		},
@@ -157,6 +162,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 			finishCh <- fmt.Errorf("initialize: %w", err)
 			return
 		}
+		act.MarkEvent() // a live initialize is agent activity (review fix 1a)
 		_ = opts.Store.Append(store.Event{
 			Type: "agent.acp.initialized",
 			Data: map[string]any{
@@ -172,6 +178,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 			return
 		}
 		handler.sessionID = session.SessionID
+		act.MarkEvent()
 		_ = opts.Store.Append(store.Event{
 			Type: "agent.acp.session_opened",
 			Data: map[string]any{"agent": agent.ID, "session_id": session.SessionID},
@@ -180,6 +187,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 		promptText := strings.TrimRight(prompt, "\n")
 		promptRes, err := client.Prompt(acpCtx, session.SessionID, promptText)
 		if err == nil {
+			act.MarkEvent()
 			_ = opts.Store.Append(store.Event{
 				Type: "agent.acp.prompt_completed",
 				Data: map[string]any{"agent": agent.ID, "stop_reason": promptRes.StopReason},
@@ -199,7 +207,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	case errors.Is(finishErr, errStalled):
 		watchdog = "stalled"
 	}
-	return finishACP(opts, result, agent, process, stderrFile, teeOut, finishErr, handler, watchdog, ctx.Err())
+	return finishACP(opts, result, agent, process, stderrFile, teeOut, finishErr, handler, watchdog, ctx.Err(), attemptID)
 }
 
 // finishACP centralises shutdown, stderr capture, artifact validation and
@@ -207,7 +215,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 // decision table: a validated artifact overrides an ACP prompt error that
 // happened AFTER the session opened (agent_exit_kind=acp_error); initialize/
 // session-setup errors, watchdog kills, and the hard timeout always fail.
-func finishACP(opts Options, result Result, agent agents.Discovery, process *acp.Process, stderrFile *os.File, teeOut chan struct{}, runErr error, handler *acpRunnerHandler, watchdog string, ctxErr error) Result {
+func finishACP(opts Options, result Result, agent agents.Discovery, process *acp.Process, stderrFile *os.File, teeOut chan struct{}, runErr error, handler *acpRunnerHandler, watchdog string, ctxErr error, attemptID int) Result {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	_ = process.Stop(shutdownCtx)
@@ -265,7 +273,7 @@ func finishACP(opts Options, result Result, agent agents.Discovery, process *acp
 		"error":       result.ExitError,
 		"launch":      agents.LaunchACP,
 		"segment_id":  opts.SegmentID,
-		"attempt_id":  1,
+		"attempt_id":  attemptID,
 	}
 	eventType := "agent.finished"
 	if failed {

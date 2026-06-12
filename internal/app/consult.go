@@ -118,13 +118,14 @@ workspace_root: %s
 timeout_ms: %d
 exit_code: %d
 agent_exit: %d
+session_id: %q
 stdout_log: %s
 stderr_log: %s
 quorum: false
 ---
 
 `, agentID, valueOr(agent.Model, "cli-default"), created.Format(time.RFC3339), slug, question,
-		root, timeout.Milliseconds(), exitCode, res.AgentExit,
+		root, res.EffectiveTimeout.Milliseconds(), exitCode, res.AgentExit, res.SessionID,
 		relOrSelf(root, stdoutLog), relOrSelf(root, stderrLog))
 	if res.ExitError != "" {
 		fmt.Fprintf(&body, "## Consult failed\n\n- error: %s\n- class: %s\n- hint: %s\n", res.ExitError, res.FailureClass, res.RecoveryHint)
@@ -141,6 +142,7 @@ quorum: false
 		"ts": created.Format(time.RFC3339), "agent": agentID, "model": valueOr(agent.Model, "cli-default"),
 		"question": question, "slug": slug, "path": relOrSelf(root, artifactPath),
 		"outcome": outcome, "exit_code": exitCode, "agent_exit": res.AgentExit,
+		"session_id": res.SessionID, "timeout_ms": res.EffectiveTimeout.Milliseconds(),
 		"duration_ms": res.Duration.Milliseconds(),
 	})
 	if err := fsutil.AppendLine(filepath.Join(consultsDir, "index.jsonl"), ledger); err != nil {

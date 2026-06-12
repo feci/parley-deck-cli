@@ -49,9 +49,10 @@ type Options struct {
 	// cancel func so the live Handle can KillAgent one agent. nil on the sync path.
 	tracker *Handle
 	// publishArtifact, when set (review snapshots, consensus D9), moves a
-	// VALIDATED artifact from the snapshot to its canonical path and returns
-	// the live path the terminal event must report. A publish failure turns
-	// the result into a failure (the snapshot is retained for recovery).
+	// VALIDATED artifact from the snapshot to its canonical path. It ALWAYS
+	// returns the live canonical path (terminal events must report it even on
+	// failure); a publish failure turns the result into a failure and the
+	// snapshot is retained for recovery (review fix 2).
 	publishArtifact func(snapshotPath string) (string, error)
 }
 
@@ -389,7 +390,14 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 				Data: map[string]any{"agent": agent.ID, "reason": snapErr.Error(), "segment_id": opts.SegmentID},
 			})
 		} else {
-			defer snap.Cleanup()
+			keepForRecovery := false
+			defer func() {
+				if keepForRecovery {
+					snap.Abandon() // retain the dir; the artifact inside is the recovery copy
+				} else {
+					snap.Cleanup()
+				}
+			}()
 			_ = opts.Store.Append(store.Event{
 				Time: time.Now().UTC(),
 				Type: "review.snapshot_created",
@@ -405,12 +413,13 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 				result.OutputPath = outputPath
 				opts.publishArtifact = func(snapshotPath string) (string, error) {
 					if err := snap.MoveArtifactBack(relOutput, liveOutput); err != nil {
+						keepForRecovery = true // the snapshot copy is now the recovery artifact
 						_ = opts.Store.Append(store.Event{
 							Time: time.Now().UTC(),
 							Type: "review.snapshot_artifact_move_failed",
 							Data: map[string]any{"agent": agent.ID, "snapshot_path": snapshotPath, "recovery_path": liveOutput, "error": err.Error(), "segment_id": opts.SegmentID},
 						})
-						return "", err
+						return liveOutput, err
 					}
 					return liveOutput, nil
 				}
@@ -426,14 +435,27 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		return failEarly(opts, result, err)
 	}
 
-	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchACP {
-		return runACPAgent(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt)
-	}
-
 	// preexisted guards the retry's move-aside: never disturb an artifact that
 	// existed before this runner call (consensus D3; Overwrite runs land here).
 	_, statErr := os.Stat(outputPath)
 	preexisted := statErr == nil
+
+	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchACP {
+		// ACP attempts share the exec retry contract (review fix 1c): retry
+		// ONCE, only for a first-output watchdog kill.
+		for attemptID := 1; ; attemptID++ {
+			res := runACPAgent(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt, attemptID)
+			if attemptID == 1 && res.FailureClass == "no_first_output" && !res.Killed {
+				if !preexisted {
+					if _, err := os.Stat(outputPath); err == nil && validateArtifactForPhase(opts, outputPath, agent.ID) != nil {
+						moveAsideInvalidArtifact(outputPath)
+					}
+				}
+				continue
+			}
+			return res
+		}
+	}
 
 	// Attempt loop: retry ONCE, and only for a first-output watchdog kill.
 	for attemptID := 1; ; attemptID++ {
@@ -444,12 +466,28 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 			// newest attempt). Move an invalid attempt-1 artifact aside.
 			if !preexisted {
 				if _, err := os.Stat(outputPath); err == nil && validateArtifactForPhase(opts, outputPath, agent.ID) != nil {
-					_ = os.Rename(outputPath, outputPath+".attempt-1.invalid")
+					moveAsideInvalidArtifact(outputPath)
 				}
 			}
 			continue
 		}
 		return attempt.result
+	}
+}
+
+// moveAsideInvalidArtifact relocates an invalid attempt-1 artifact before the
+// retry. The destination is guaranteed not to exist (unique suffix when the
+// stable name is taken — never overwrite an earlier recovery file); when the
+// rename itself fails, the invalid artifact — created by THIS attempt, the
+// preexisted guard excludes foreign files — is removed so it cannot linger on
+// the canonical path (review fix 3).
+func moveAsideInvalidArtifact(outputPath string) {
+	dest := outputPath + ".attempt-1.invalid"
+	if _, err := os.Stat(dest); err == nil {
+		dest = fmt.Sprintf("%s.%d", dest, time.Now().UnixNano())
+	}
+	if err := os.Rename(outputPath, dest); err != nil {
+		_ = os.Remove(outputPath)
 	}
 }
 
@@ -606,12 +644,17 @@ func finalizeExecResult(opts Options, result *Result, agent agents.Discovery, ru
 	// path (consensus D9). A publish failure fails the step; the snapshot is
 	// retained for recovery.
 	if result.ArtifactOK && opts.publishArtifact != nil {
-		if livePath, err := opts.publishArtifact(outputPath); err != nil {
-			result.ArtifactOK = false
-			result.ExitError = combineError(result.ExitError, fmt.Errorf("snapshot artifact move-back: %w", err))
-		} else {
+		livePath, err := opts.publishArtifact(outputPath)
+		if livePath != "" {
+			// Terminal events report the LIVE canonical path even when the
+			// move-back failed (the snapshot path travels only as recovery
+			// metadata in review.snapshot_artifact_move_failed).
 			outputPath = livePath
 			result.OutputPath = livePath
+		}
+		if err != nil {
+			result.ArtifactOK = false
+			result.ExitError = combineError(result.ExitError, fmt.Errorf("snapshot artifact move-back: %w", err))
 		}
 	}
 
@@ -707,16 +750,22 @@ func failEarly(opts Options, result Result, err error) Result {
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(result.StartedAt)
 	result.ExitError = err.Error()
+	// Setup failures get the same classified payload as terminal failures
+	// (review fix 5): the regex runs over the error text plus whatever log
+	// tails already exist.
+	result.FailureClass, result.RecoveryHint = classifyFailure(result.StderrPath, result.StdoutPath, result.ExitError)
 	if eventErr := opts.Store.Append(store.Event{
 		Time: result.CompletedAt,
 		Type: "agent.failed",
 		Data: map[string]any{
-			"agent":       result.AgentID,
-			"artifact":    result.OutputPath,
-			"artifact_ok": false,
-			"duration_ms": result.Duration.Milliseconds(),
-			"error":       result.ExitError,
-			"segment_id":  opts.SegmentID,
+			"agent":         result.AgentID,
+			"artifact":      result.OutputPath,
+			"artifact_ok":   false,
+			"duration_ms":   result.Duration.Milliseconds(),
+			"error":         result.ExitError,
+			"segment_id":    opts.SegmentID,
+			"failure_class": result.FailureClass,
+			"recovery_hint": result.RecoveryHint,
 		},
 	}); eventErr != nil {
 		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", eventErr))
