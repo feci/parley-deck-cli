@@ -343,6 +343,24 @@ func TestMoveAsideInvalidArtifact(t *testing.T) {
 	if len(entries) != 2 { // prior + uniquely-suffixed new one
 		t.Fatalf("want 2 recovery files, got %d", len(entries))
 	}
+
+	// Rename failure: a source basename near NAME_MAX makes the
+	// ".attempt-1.invalid" destination exceed it, so the rename fails
+	// (ENAMETOOLONG) while the source itself stays removable — the invalid
+	// artifact must then be removed from the canonical path.
+	failDir := t.TempDir()
+	longOut := filepath.Join(failDir, strings.Repeat("x", 250)+".md")
+	if err := os.WriteFile(longOut, []byte("invalid"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	moveAsideInvalidArtifact(longOut)
+	if _, err := os.Stat(longOut); !os.IsNotExist(err) {
+		t.Fatalf("rename failure must remove the invalid artifact, stat err=%v", err)
+	}
+	failEntries, _ := os.ReadDir(failDir)
+	if len(failEntries) != 0 {
+		t.Fatalf("no recovery file should exist after a failed rename, got %v", failEntries)
+	}
 }
 
 // --- D8: participant env shedding --------------------------------------------------

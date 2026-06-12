@@ -243,11 +243,16 @@ func finishACP(opts Options, result Result, agent agents.Discovery, process *acp
 	// Review snapshots (D9): publish a validated artifact to the canonical
 	// path before the terminal event reports it.
 	if result.ArtifactOK && opts.publishArtifact != nil {
-		if livePath, err := opts.publishArtifact(result.OutputPath); err != nil {
+		livePath, err := opts.publishArtifact(result.OutputPath)
+		if livePath != "" {
+			// Terminal events report the LIVE canonical path even when the
+			// move-back failed (the snapshot path travels only as recovery
+			// metadata in review.snapshot_artifact_move_failed).
+			result.OutputPath = livePath
+		}
+		if err != nil {
 			result.ArtifactOK = false
 			result.ExitError = combineError(result.ExitError, fmt.Errorf("snapshot artifact move-back: %w", err))
-		} else {
-			result.OutputPath = livePath
 		}
 	}
 

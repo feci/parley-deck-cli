@@ -1,11 +1,14 @@
 ---
 idea: runner-hardening-kindly
-cycle: 1
+cycle: 2
 drafted-by: claude
 date: 2026-06-12
-reviewed-commit: 8a5d4c7
-outstanding_agreed_fixes: 7
+reviewed-commit: 6e20f1e
+outstanding_agreed_fixes: 2
 ---
+
+<!-- Cycle 1 (reviewed-commit 8a5d4c7) follows; cycle 2 is appended below the
+     cycle-1 signoffs. -->
 
 ## Agreed fixes
 
@@ -86,3 +89,57 @@ Notes: Round-01 triage faithful; verbatim-hint dismissal accepted (author accept
 ### Signoff: agy — 2026-06-12
 Status: ✅ ACCEPT
 Notes: Round-01 findings faithfully triaged; I concur with the hint-string dismissal as the taxonomy author.
+
+## Cycle 2 (review/round-02 → fix-up cycle 2)
+
+Reviewed commit: 6e20f1e. Verdicts: codex ACCEPT-WITH-FIXES, agy ACCEPT,
+hermes ACCEPT. codex verified fixes 1, 4, 5, 6, 7 and flagged remainders of
+fixes 2 and 3; agy independently surfaced the same finishACP gap as a NIT.
+Both remainders are agreed:
+
+### Agreed fixes (cycle 2)
+
+1. **[MAJOR remainder] ACP live-path on publish failure (codex fix-2
+   NOT-FIXED, merged with agy's NIT).** `finishACP` assigns
+   `result.OutputPath` only on the publish success branch; an ACP review
+   snapshot publish failure would emit a terminal event carrying the snapshot
+   path. Mirror `finalizeExecResult`: whenever `publishArtifact` returns a
+   non-empty live path, the terminal event reports it — even when the
+   move-back failed.
+2. **[TEST remainder] rename-failure case (codex fix-3 NOT-FIXED).**
+   `TestMoveAsideInvalidArtifact` covers only the pre-existing-destination
+   case; the agreed rename-failure case (rename fails → the invalid artifact
+   is removed from the canonical path) is missing. Add it (forced
+   deterministically via a destination basename beyond NAME_MAX, which fails
+   the rename while the source stays removable).
+
+### Dismissed findings (cycle 2)
+
+- None.
+
+### Dispositions (cycle 2)
+
+- `TestDurableKillEndToEndRealProcess` under the codex seatbelt sandbox:
+  re-confirmed by all three reviewers (codex reproduced the identical
+  kern.boottime/boot-id attribution failure); remains dismissed as an
+  environment artifact.
+
+### Signoffs (cycle 2)
+
+<!-- Each agent APPENDS their cycle-2 signoff block below. Do NOT edit others' blocks. -->
+
+### Signoff: claude — 2026-06-12 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Two remainders agreed for fix-up cycle 2; both are narrow (one ACP branch mirror, one test case).
+
+### Signoff: codex — 2026-06-12 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Cycle-2 triage matches my round-02 findings, including both runner remainders and the sandbox-test dismissal.
+
+### Signoff: hermes — 2026-06-12 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Cycle-2 triage faithfully reflects my round-02 ACCEPT verdict and sandbox dismissal.
+
+### Signoff: agy — 2026-06-12 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Verified all cycle 2 fixes and concur with the triage and sandbox dismissal.

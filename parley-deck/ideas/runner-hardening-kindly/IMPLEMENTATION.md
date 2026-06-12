@@ -1,7 +1,7 @@
 ---
 idea: runner-hardening-kindly
 agent: claude
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 date: 2026-06-12
 ---
 
@@ -130,6 +130,20 @@ All seven agreed fixes applied:
 7. TestClassifyFailure locks the exact class/hint contract for all 9 provider
    classes + 3 watchdog hints (the dismissed verbatim-strings finding's
    testable half).
+
+## Fix-up cycle 2 (review/round-02 → review/consensus.md cycle 2)
+
+Both agreed remainders applied:
+
+1. `finishACP` now mirrors `finalizeExecResult`: whenever publishArtifact
+   returns a non-empty live path, `result.OutputPath` carries it — the ACP
+   terminal event reports the LIVE canonical path even when the snapshot
+   move-back failed (closes codex's fix-2 remainder and agy's NIT).
+2. `TestMoveAsideInvalidArtifact` gains the rename-failure case: a source
+   basename near NAME_MAX makes the `.attempt-1.invalid` destination exceed
+   it, the rename fails deterministically (ENAMETOOLONG), and the test asserts
+   the invalid artifact is removed from the canonical path with no recovery
+   file left behind.
 
 ## Notes for reviewers
 
