@@ -15,3 +15,7 @@ tmp-test-plugin/
 # GOCACHE=$PWD/.gocache). Build artifacts, not source.
 /.gocache/
 /.gomodcache/
+# graphify knowledge graph: rebuilt by the post-commit hook; never commit
+# (a committed graph would go stale AND the hook rebuild would dirty the
+# tree right after every commit, tripping the driver gitTreeClean gate).
+/graphify-out/
