@@ -33,3 +33,24 @@ Summary: Clarified that participant-spawned helpers may contribute only through 
 Idea: ideas/meta-protocol-change-roster-headless-config/
 Drafted by: codex
 Summary: Replaced placeholder roster rows with `codex`, `claude`, `gemini`, and `hermes`; marked host handles as not mapped; and documented that `parley-deck/meta/headless-agents.local.json` is optional, gitignored, machine-local launch configuration rather than canonical project state.
+
+## 2026-06-12 — review-gate honesty (idea: meta-protocol-change-review-gate-honesty)
+
+- Phase 6 gains **"Review briefs and dispositions"**: briefs must never suppress
+  findings; known-finding dispositions travel openly with a standard shape and
+  the reviewer states concurrence per disposition. Disputed findings close only
+  via reviewer withdrawal, normal review consensus, or a verbatim-quoted
+  operator ruling.
+- Phase 8 gains the opt-in **"Strict review gate"** (`strict_gate: true` in
+  00-prompt.md frontmatter): closing requires a fresh full-scope review pass
+  with zero findings of any severity; fix-verification passes converge but
+  never close; findings must be objective and code-grounded; mutability only
+  via consensus or recorded operator direction.
+- Phase 8 gains **"Stopping judgment"**: trajectory over pass counters
+  (converging / churning / blocked); MaxFixupCycles is an escalation threshold,
+  never a close criterion.
+- §8 gains **"Consults"**: parley-deck/consults/ artifacts are advisory and
+  non-canonical — never quorum evidence.
+- Mirrored into the embedded default protocol
+  (internal/protocol/defaults/COOPERATION.md). The external parley-deck-skill
+  bundled snapshot still needs a sync — flagged via inbox.

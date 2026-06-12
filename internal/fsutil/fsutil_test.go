@@ -183,3 +183,44 @@ func Test_NonDirCollision(t *testing.T) {
 		t.Fatal("fs.ErrExist must not be trusted blindly when a regular file collides; want error, got nil")
 	}
 }
+
+// Test_AppendLine: lines land newline-terminated, appends accumulate, and the
+// claim directory never lingers.
+func Test_AppendLine(t *testing.T) {
+	saveSeams(t)
+	sleep = func(time.Duration) {}
+	path := filepath.Join(t.TempDir(), "ledger", "index.jsonl")
+	if err := AppendLine(path, []byte(`{"a":1}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := AppendLine(path, []byte(`{"b":2}`+"\n")); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != `{"a":1}`+"\n"+`{"b":2}`+"\n" {
+		t.Fatalf("ledger content: %q", data)
+	}
+	if _, err := os.Stat(path + ".lock"); !os.IsNotExist(err) {
+		t.Fatalf("claim dir must be removed, stat err=%v", err)
+	}
+}
+
+// Test_AppendLine_StuckClaim: a wedged claim degrades to an unlocked append
+// after the bounded wait instead of losing the record.
+func Test_AppendLine_StuckClaim(t *testing.T) {
+	saveSeams(t)
+	sleep = func(time.Duration) {}
+	path := filepath.Join(t.TempDir(), "index.jsonl")
+	if err := os.Mkdir(path+".lock", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := AppendLine(path, []byte("x")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("record lost behind a stuck claim: %v", err)
+	}
+}

@@ -32,11 +32,18 @@ type Spec struct {
 	Profile               string
 	Speed                 string
 	TimeoutMS             int
-	IsolateHome           bool
-	IsolatedHomeEnv       map[string]string
-	ExternalBackend       string
-	Telemetry             string
-	Notes                 string
+	// Supervision windows (runner-hardening-kindly D2). 0 = use the default
+	// (first-event 120s, stall 30m clamped under timeout_ms, heartbeat 60s);
+	// negative = guard explicitly disabled (the TOML layer maps an explicit 0
+	// override to -1).
+	FirstEventTimeoutMS int
+	StallTimeoutMS      int
+	HeartbeatMS         int
+	IsolateHome         bool
+	IsolatedHomeEnv     map[string]string
+	ExternalBackend     string
+	Telemetry           string
+	Notes               string
 	// BuffersStdout declares that the CLI buffers ALL stdout until process exit
 	// (e.g. agy --print), so a silent transcript is expected, not a hang. The TUI
 	// uses it for the buffered-agent placeholder hint.

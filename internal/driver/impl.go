@@ -281,10 +281,18 @@ func implInProgress(status string) bool {
 // as dirty/unsafe rather than clean, so we never run a code-writing agent on a
 // possibly-dirty tree (consensus D3/AF9).
 func gitTreeClean(root string) bool {
-	if err := exec.Command("git", "-C", root, "rev-parse", "--is-inside-work-tree").Run(); err != nil {
+	// GIT_OPTIONAL_LOCKS=0: read-only probes must never take optional locks
+	// (index refresh writes .git) on the weakly-coherent virtio-fs mount
+	// (runner-hardening-kindly D8).
+	probe := func(args ...string) *exec.Cmd {
+		cmd := exec.Command("git", args...)
+		cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+		return cmd
+	}
+	if err := probe("-C", root, "rev-parse", "--is-inside-work-tree").Run(); err != nil {
 		return true // not inside a git work tree (or git missing) → nothing to clobber
 	}
-	out, err := exec.Command("git", "-C", root, "status", "--porcelain").Output()
+	out, err := probe("-C", root, "status", "--porcelain").Output()
 	if err != nil {
 		return false // inside a repo but the status probe failed → assume unsafe
 	}

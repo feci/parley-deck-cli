@@ -2,8 +2,10 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -44,9 +46,10 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 }
 
 // RunFixup runs a Phase 8 fix-up: it re-invokes the implementer to apply the
-// agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Unlike
-// RunImplementation it edits existing files, so success is exit-code based (no
-// single new-artifact validation). opts.Idea.Participants must be [implementer].
+// agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Success
+// requires the updated IMPLEMENTATION.md to validate (ValidateFixupArtifact);
+// an ordinary nonzero exit with a valid artifact succeeds with agent_exit
+// (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
 	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
 	if len(selected) == 0 {
@@ -64,52 +67,120 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	result := Result{AgentID: agent.ID, StartedAt: now, StdoutPath: stdoutPath, StderrPath: stderrPath}
 
 	prompt := BuildFixupPrompt(agent, opts.Idea)
-	cctx, cancel := context.WithTimeout(ctx, timeoutForAgent(opts.Timeout, agent))
+	hardTimeout := timeoutForAgent(opts.Timeout, agent)
+	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
-	cmd, cleanup, err := CommandFor(cctx, opts.Root, agent, prompt)
-	if cleanup != nil {
-		defer cleanup()
+
+	// The fix-up runs through the same hardened exec path as every other agent
+	// launch (review fix 4): process group + procctl marker + participant env
+	// shedding + counting writers + supervised wait. No retry — a code-mutating
+	// phase is not safely re-runnable after a watchdog kill.
+	act := &activityTracker{}
+	cfg := supervisionForAgent(agent, hardTimeout)
+	hooks := supervisionHooks{
+		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent.heartbeat",
+				Data: map[string]any{
+					"agent": agent.ID, "segment_id": opts.SegmentID, "attempt_id": 1,
+					"phase": "fixup", "launch": agents.LaunchHeadless,
+					"elapsed_ms": elapsed.Milliseconds(), "timeout_ms": hardTimeout.Milliseconds(),
+					"stdout_bytes": snap.StdoutBytes, "stderr_bytes": snap.StderrBytes,
+					"last_activity_ms_ago": activityAgeMS(snap),
+				},
+			})
+		},
+		onWatchdog: func(kind string, snap activitySnapshot, elapsed time.Duration) {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent." + kind,
+				Data: map[string]any{
+					"agent": agent.ID, "segment_id": opts.SegmentID, "attempt_id": 1,
+					"elapsed_ms":   elapsed.Milliseconds(),
+					"stdout_bytes": snap.StdoutBytes, "stderr_bytes": snap.StderrBytes,
+					"action": "failed",
+				},
+			})
+		},
 	}
-	if err != nil {
-		result.ExitError = err.Error()
-		result.CompletedAt = time.Now().UTC()
-		return result
-	}
-	cmd.Dir = opts.Root
-	so, err := os.Create(stdoutPath)
-	if err != nil {
-		result.ExitError = err.Error()
-		return result
-	}
-	defer so.Close()
-	se, err := os.Create(stderrPath)
-	if err != nil {
-		result.ExitError = err.Error()
-		return result
-	}
-	defer se.Close()
-	cmd.Stdout = so
-	cmd.Stderr = se
-	if agent.PromptMode == agents.PromptStdin {
-		cmd.Stdin = strings.NewReader(prompt)
-	}
-	runErr := cmd.Run()
+	_, runErr := execAgentProcess(cctx, opts.Root, opts.RunID, agent.ID, opts.RunID+":"+agent.ID+":fixup", agent, prompt, stdoutPath, stderrPath, nil, act, cfg, hooks)
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(now)
+	watchdog := ""
+	switch {
+	case errors.Is(runErr, errNoFirstOutput):
+		watchdog = "no_first_output"
+	case errors.Is(runErr, errStalled):
+		watchdog = "stalled"
+	}
+	cancelled := cctx.Err() != nil || watchdog != ""
 	if runErr != nil {
 		result.ExitError = runErr.Error()
 		if cctx.Err() != nil {
 			result.ExitError = cctx.Err().Error()
 		}
-	} else {
+	}
+
+	// Fix-up success is no longer exit-code based (consensus D7): the updated
+	// IMPLEMENTATION.md must validate, and only then can an ordinary nonzero
+	// exit be overridden (artifact-wins). Timeouts/cancellations always fail.
+	validateErr := ValidateFixupArtifact(opts.Idea.Path, opts.Idea.Slug)
+	if validateErr == nil {
 		result.ArtifactOK = true
+		var exitErr *exec.ExitError
+		if !cancelled && runErr != nil && errors.As(runErr, &exitErr) {
+			result.AgentExit = exitErr.ExitCode()
+			result.AgentExitKind = "exec"
+			result.ExitError = ""
+		}
+	} else if !cancelled && runErr == nil {
+		result.ExitError = combineError(result.ExitError, validateErr)
 	}
+
+	failed := result.ExitError != "" || !result.ArtifactOK
+	data := map[string]any{"agent": agent.ID, "error": result.ExitError, "segment_id": opts.SegmentID}
 	eventType := "agent.fixup_finished"
-	if !result.ArtifactOK {
+	if failed {
 		eventType = "agent.fixup_failed"
+		class, hint := terminalFailureClass(watchdog, cctx.Err(), false, stderrPath, stdoutPath, result.ExitError)
+		result.FailureClass = class
+		result.RecoveryHint = hint
+		data["failure_class"] = class
+		data["recovery_hint"] = hint
+	} else if result.AgentExitKind != "" {
+		data["agent_exit"] = result.AgentExit
+		data["agent_exit_kind"] = result.AgentExitKind
 	}
-	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: map[string]any{"agent": agent.ID, "error": result.ExitError, "segment_id": opts.SegmentID}})
+	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: data})
 	return result
+}
+
+// ValidateFixupArtifact checks that a fix-up cycle left IMPLEMENTATION.md in a
+// reviewable state: the file exists, its frontmatter idea matches, its status
+// is review-ready, and a fix-up section is present (consensus D7).
+func ValidateFixupArtifact(ideaPath, ideaSlug string) error {
+	implPath := filepath.Join(ideaPath, "IMPLEMENTATION.md")
+	data, err := os.ReadFile(implPath)
+	if err != nil {
+		return fmt.Errorf("fix-up validation: %w", err)
+	}
+	meta, err := protocol.ReadFrontmatter(implPath)
+	if err != nil {
+		return fmt.Errorf("fix-up validation: read frontmatter: %w", err)
+	}
+	if got := strings.TrimSpace(meta["idea"]); got != "" && got != ideaSlug {
+		return fmt.Errorf("fix-up validation: IMPLEMENTATION.md frontmatter idea=%q, want %q", got, ideaSlug)
+	}
+	status := strings.TrimSpace(meta["status"])
+	reviewReady := status == "implemented" || status == "ready-for-review" || strings.HasPrefix(status, "fix-up-cycle")
+	if !reviewReady {
+		return fmt.Errorf("fix-up validation: IMPLEMENTATION.md status=%q is not review-ready", status)
+	}
+	if !strings.Contains(string(data), "## Fix-up cycle") {
+		return fmt.Errorf("fix-up validation: IMPLEMENTATION.md has no \"## Fix-up cycle\" section")
+	}
+	return nil
 }
 
 // BuildFixupPrompt is the Phase 8 fix-up prompt for the implementer.

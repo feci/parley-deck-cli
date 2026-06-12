@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -47,6 +48,12 @@ type Options struct {
 	// tracker, when set (by RunRoundOneAsync), registers each agent attempt's
 	// cancel func so the live Handle can KillAgent one agent. nil on the sync path.
 	tracker *Handle
+	// publishArtifact, when set (review snapshots, consensus D9), moves a
+	// VALIDATED artifact from the snapshot to its canonical path. It ALWAYS
+	// returns the live canonical path (terminal events must report it even on
+	// failure); a publish failure turns the result into a failure and the
+	// snapshot is retained for recovery (review fix 2).
+	publishArtifact func(snapshotPath string) (string, error)
 }
 
 type Result struct {
@@ -65,6 +72,30 @@ type Result struct {
 	// Killed is set when the attempt was terminated by Handle.KillAgent (vs a
 	// timeout or self-exit), so projection can show a distinct "killed" badge.
 	Killed bool
+	// AgentExit records an ordinary nonzero exit that was OVERRIDDEN by a
+	// validated artifact (artifact-wins, consensus D7): the step succeeded,
+	// the exit code is preserved for display. 0 when unset.
+	AgentExit int
+	// AgentExitKind distinguishes the artifact-wins source: "exec" for a
+	// process exit code, "acp_error" for an ACP prompt error after the session
+	// opened. Empty when AgentExit is unset.
+	AgentExitKind string
+	// FailureClass/RecoveryHint classify a failure for operators (consensus D5).
+	FailureClass string
+	RecoveryHint string
+}
+
+// Success reports whether the step counts as succeeded for gating purposes:
+// skipped (artifact pre-existed) or finished with a validated artifact —
+// including artifact-wins completions that carry a nonzero AgentExit.
+func (r Result) Success() bool {
+	if r.Killed {
+		return false
+	}
+	if r.Skipped {
+		return true
+	}
+	return r.ExitError == "" && r.ArtifactOK
 }
 
 // attempt tracks one in-flight agent process so the live Handle can cancel just
@@ -179,7 +210,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 	eventType := "round.completed"
 	okCount := 0
 	for _, result := range results {
-		if result.ExitError == "" && (result.ArtifactOK || result.Skipped) {
+		if result.Success() {
 			okCount++
 			continue
 		}
@@ -341,26 +372,142 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return failEarly(opts, result, err)
 	}
+
+	// HITL questions are polled from the LIVE runs dir; capture before any
+	// snapshot root swap.
+	questionsDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "questions")
+
+	// Phase 6 review isolation (consensus D9): the reviewer reads a disposable
+	// shared-clone checkout on local tmp; its artifact is moved back to the
+	// canonical deck path after validation. Any unavailability falls back to
+	// the live tree with a loud event.
+	if opts.Phase == "review" {
+		snap, snapErr := CreateReviewSnapshot(opts.Root, opts.Idea.Slug, opts.RoundLabel, agent.ID, opts.RunID)
+		if snapErr != nil {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "review.snapshot_fallback",
+				Data: map[string]any{"agent": agent.ID, "reason": snapErr.Error(), "segment_id": opts.SegmentID},
+			})
+		} else {
+			keepForRecovery := false
+			defer func() {
+				if keepForRecovery {
+					snap.Abandon() // retain the dir; the artifact inside is the recovery copy
+				} else {
+					snap.Cleanup()
+				}
+			}()
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "review.snapshot_created",
+				Data: map[string]any{"agent": agent.ID, "sha": snap.SHA, "mode": snap.Mode, "dir": snap.Dir, "segment_id": opts.SegmentID},
+			})
+			liveRoot, liveOutput := opts.Root, outputPath
+			relOutput, relErr := filepath.Rel(liveRoot, liveOutput)
+			relIdea, relIdeaErr := filepath.Rel(liveRoot, opts.Idea.Path)
+			if relErr == nil && relIdeaErr == nil {
+				opts.Root = snap.Dir
+				opts.Idea.Path = filepath.Join(snap.Dir, relIdea)
+				outputPath = filepath.Join(snap.Dir, relOutput)
+				result.OutputPath = outputPath
+				opts.publishArtifact = func(snapshotPath string) (string, error) {
+					if err := snap.MoveArtifactBack(relOutput, liveOutput); err != nil {
+						keepForRecovery = true // the snapshot copy is now the recovery artifact
+						_ = opts.Store.Append(store.Event{
+							Time: time.Now().UTC(),
+							Type: "review.snapshot_artifact_move_failed",
+							Data: map[string]any{"agent": agent.ID, "snapshot_path": snapshotPath, "recovery_path": liveOutput, "error": err.Error(), "segment_id": opts.SegmentID},
+						})
+						return liveOutput, err
+					}
+					return liveOutput, nil
+				}
+			}
+		}
+	}
+
 	if err := fsutil.MkdirAllResilient(filepath.Dir(outputPath), 0o755); err != nil {
 		return failEarly(opts, result, err)
 	}
-
-	questionsDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "questions")
 	prompt, err := buildPromptForRound(agent, opts, outputPath, questionsDir)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
 
+	// preexisted guards the retry's move-aside: never disturb an artifact that
+	// existed before this runner call (consensus D3; Overwrite runs land here).
+	_, statErr := os.Stat(outputPath)
+	preexisted := statErr == nil
+
 	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchACP {
-		return runACPAgent(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt)
+		// ACP attempts share the exec retry contract (review fix 1c): retry
+		// ONCE, only for a first-output watchdog kill.
+		for attemptID := 1; ; attemptID++ {
+			res := runACPAgent(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt, attemptID)
+			if attemptID == 1 && res.FailureClass == "no_first_output" && !res.Killed {
+				if !preexisted {
+					if _, err := os.Stat(outputPath); err == nil && validateArtifactForPhase(opts, outputPath, agent.ID) != nil {
+						moveAsideInvalidArtifact(outputPath)
+					}
+				}
+				continue
+			}
+			return res
+		}
 	}
 
-	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
+	// Attempt loop: retry ONCE, and only for a first-output watchdog kill.
+	for attemptID := 1; ; attemptID++ {
+		attempt := runExecAttempt(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt, attemptID)
+		if attemptID == 1 && attempt.watchdog == "no_first_output" && !attempt.result.Killed {
+			// The killed attempt's terminal agent.failed is already appended
+			// (before this retry's agent.started — durable kill targets the
+			// newest attempt). Move an invalid attempt-1 artifact aside.
+			if !preexisted {
+				if _, err := os.Stat(outputPath); err == nil && validateArtifactForPhase(opts, outputPath, agent.ID) != nil {
+					moveAsideInvalidArtifact(outputPath)
+				}
+			}
+			continue
+		}
+		return attempt.result
+	}
+}
+
+// moveAsideInvalidArtifact relocates an invalid attempt-1 artifact before the
+// retry. The destination is guaranteed not to exist (unique suffix when the
+// stable name is taken — never overwrite an earlier recovery file); when the
+// rename itself fails, the invalid artifact — created by THIS attempt, the
+// preexisted guard excludes foreign files — is removed so it cannot linger on
+// the canonical path (review fix 3).
+func moveAsideInvalidArtifact(outputPath string) {
+	dest := outputPath + ".attempt-1.invalid"
+	if _, err := os.Stat(dest); err == nil {
+		dest = fmt.Sprintf("%s.%d", dest, time.Now().UnixNano())
+	}
+	if err := os.Rename(outputPath, dest); err != nil {
+		_ = os.Remove(outputPath)
+	}
+}
+
+// execAttempt is one supervised exec-mode invocation's outcome.
+type execAttempt struct {
+	result   Result
+	watchdog string // "no_first_output" | "stalled" | "" — which guard killed it
+}
+
+func runExecAttempt(parent context.Context, opts Options, agent agents.Discovery, base Result, outputPath, stdoutPath, stderrPath, prompt string, attemptID int) execAttempt {
+	result := base
+	result.StartedAt = time.Now().UTC()
+	hardTimeout := timeoutForAgent(opts.Timeout, agent)
+	ctx, cancel := context.WithTimeout(parent, hardTimeout)
 	defer cancel()
 
 	// Register this attempt so Handle.KillAgent can cancel just this agent (the
-	// cancel triggers execAgentProcess's watcher → group kill).
+	// cancel triggers the supervised wait's kill → group kill).
 	opts.tracker.register(agent.ID, opts.SegmentID, "round", "", cancel)
+	marker := fmt.Sprintf("%s:%s:%d", opts.RunID, agent.ID, attemptID)
 	// agent.started is emitted once the process is live, enriched with its durable
 	// process identity so a restarted parley can re-attribute and kill it.
 	onStarted := func(sp procctl.Spawned) {
@@ -373,6 +520,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 				"stdout":      stdoutPath,
 				"stderr":      stderrPath,
 				"segment_id":  opts.SegmentID,
+				"attempt_id":  attemptID,
 				"pid":         sp.PID,
 				"pgid":        sp.PGID,
 				"boot_id":     sp.BootID,
@@ -382,15 +530,72 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 			},
 		})
 	}
-	_, err = execAgentProcess(ctx, opts.Root, opts.RunID, agent.ID, opts.RunID+":"+agent.ID, agent, prompt, stdoutPath, stderrPath, onStarted)
+	act := &activityTracker{}
+	cfg := supervisionForAgent(agent, hardTimeout)
+	hooks := supervisionHooks{
+		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent.heartbeat",
+				Data: map[string]any{
+					"agent":                agent.ID,
+					"segment_id":           opts.SegmentID,
+					"attempt_id":           attemptID,
+					"phase":                phaseOrDefault(opts.Phase),
+					"launch":               agents.LaunchHeadless,
+					"elapsed_ms":           elapsed.Milliseconds(),
+					"timeout_ms":           hardTimeout.Milliseconds(),
+					"stdout_bytes":         snap.StdoutBytes,
+					"stderr_bytes":         snap.StderrBytes,
+					"last_activity_ms_ago": activityAgeMS(snap),
+				},
+			})
+		},
+		onWatchdog: func(kind string, snap activitySnapshot, elapsed time.Duration) {
+			// Appended BEFORE the kill fires (consensus D1): the event log names
+			// the killer ahead of any durable-kill attribution race.
+			action := "failed"
+			if kind == "no_first_output" && attemptID == 1 {
+				action = "retrying"
+			}
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent." + kind,
+				Data: map[string]any{
+					"agent":        agent.ID,
+					"segment_id":   opts.SegmentID,
+					"attempt_id":   attemptID,
+					"elapsed_ms":   elapsed.Milliseconds(),
+					"stdout_bytes": snap.StdoutBytes,
+					"stderr_bytes": snap.StderrBytes,
+					"action":       action,
+				},
+			})
+		},
+	}
+	_, err := execAgentProcess(ctx, opts.Root, opts.RunID, agent.ID, marker, agent, prompt, stdoutPath, stderrPath, onStarted, act, cfg, hooks)
 	killed := opts.tracker.finish(agent.ID)
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(result.StartedAt)
-	if err != nil {
-		result.ExitError = err.Error()
-		if ctx.Err() != nil {
-			result.ExitError = ctx.Err().Error()
-		}
+
+	watchdog := ""
+	switch {
+	case errors.Is(err, errNoFirstOutput):
+		watchdog = "no_first_output"
+	case errors.Is(err, errStalled):
+		watchdog = "stalled"
+	}
+	finalizeExecResult(opts, &result, agent, err, killed, ctx.Err(), watchdog, attemptID, outputPath, stdoutPath, stderrPath)
+	return execAttempt{result: result, watchdog: watchdog}
+}
+
+// finalizeExecResult applies the stdout fallback, validates the artifact, and
+// makes the single terminal decision (consensus D7): a VALIDATED artifact with
+// an ordinary nonzero exit finishes with agent_exit; watchdog finals, the hard
+// timeout, and user kills always fail; everything else fails with a class+hint.
+func finalizeExecResult(opts Options, result *Result, agent agents.Discovery, runErr error, killed bool, ctxErr error, watchdog string, attemptID int, outputPath, stdoutPath, stderrPath string) {
+	if runErr != nil {
+		result.ExitError = runErr.Error()
 	}
 	if killed {
 		result.Killed = true
@@ -434,42 +639,133 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		}
 	}
 
-	eventType := "agent.finished"
-	if result.ExitError != "" || !result.ArtifactOK {
-		eventType = "agent.failed"
-	}
-	if err := opts.Store.Append(store.Event{
-		Time: result.CompletedAt,
-		Type: eventType,
-		Data: map[string]any{
-			"agent":       agent.ID,
-			"artifact":    outputPath,
-			"artifact_ok": result.ArtifactOK,
-			"duration_ms": result.Duration.Milliseconds(),
-			"error":       result.ExitError,
-			"segment_id":  opts.SegmentID,
-		},
-	}); err != nil {
-		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", err))
+	// Review snapshots: a validated artifact is published (moved back) to its
+	// canonical path BEFORE the terminal event, which must report the live
+	// path (consensus D9). A publish failure fails the step; the snapshot is
+	// retained for recovery.
+	if result.ArtifactOK && opts.publishArtifact != nil {
+		livePath, err := opts.publishArtifact(outputPath)
+		if livePath != "" {
+			// Terminal events report the LIVE canonical path even when the
+			// move-back failed (the snapshot path travels only as recovery
+			// metadata in review.snapshot_artifact_move_failed).
+			outputPath = livePath
+			result.OutputPath = livePath
+		}
+		if err != nil {
+			result.ArtifactOK = false
+			result.ExitError = combineError(result.ExitError, fmt.Errorf("snapshot artifact move-back: %w", err))
+		}
 	}
 
-	return result
+	// Artifact-wins: an ordinary process exit error is overridden by a
+	// validated artifact. Watchdog finals, the hard timeout, and user kills
+	// are cancellations — they always win over the artifact.
+	cancellation := killed || watchdog != "" || errors.Is(ctxErr, context.DeadlineExceeded) || errors.Is(ctxErr, context.Canceled)
+	var exitErr *exec.ExitError
+	if result.ArtifactOK && !cancellation && runErr != nil && errors.As(runErr, &exitErr) {
+		result.AgentExit = exitErr.ExitCode()
+		result.AgentExitKind = "exec"
+		result.ExitError = ""
+	}
+
+	failed := result.ExitError != "" || !result.ArtifactOK
+	if failed && result.ExitError == "" {
+		result.ExitError = "artifact missing or invalid"
+	}
+	data := map[string]any{
+		"agent":       agent.ID,
+		"artifact":    outputPath,
+		"artifact_ok": result.ArtifactOK,
+		"duration_ms": result.Duration.Milliseconds(),
+		"error":       result.ExitError,
+		"segment_id":  opts.SegmentID,
+		"attempt_id":  attemptID,
+	}
+	eventType := "agent.finished"
+	if failed {
+		eventType = "agent.failed"
+		class, hint := terminalFailureClass(watchdog, ctxErr, killed, stderrPath, stdoutPath, result.ExitError)
+		result.FailureClass = class
+		result.RecoveryHint = hint
+		data["failure_class"] = class
+		data["recovery_hint"] = hint
+		if exitErr != nil {
+			data["exit_code"] = exitErr.ExitCode()
+		}
+		if sig := signalFromError(result.ExitError); sig != "" {
+			data["signal"] = sig
+		}
+		data["stderr_tail_bytes"] = len(tailOfFile(stderrPath, failTailBytes))
+	} else if result.AgentExitKind != "" {
+		data["agent_exit"] = result.AgentExit
+		data["agent_exit_kind"] = result.AgentExitKind
+	}
+	if err := opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: data}); err != nil {
+		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", err))
+	}
+}
+
+// terminalFailureClass picks the failure class: watchdog/timeout/kill causes
+// are authoritative (consensus D5); everything else goes through the regex
+// classifier over the bounded log tails.
+func terminalFailureClass(watchdog string, ctxErr error, killed bool, stderrPath, stdoutPath, exitError string) (string, string) {
+	switch {
+	case killed:
+		return "killed", "Killed by user request."
+	case watchdog != "":
+		return watchdog, watchdogHints[watchdog]
+	case errors.Is(ctxErr, context.DeadlineExceeded):
+		return "timeout", watchdogHints["timeout"]
+	}
+	return classifyFailure(stderrPath, stdoutPath, exitError)
+}
+
+func signalFromError(errText string) string {
+	if i := strings.Index(errText, "signal: "); i >= 0 {
+		rest := errText[i+len("signal: "):]
+		if j := strings.IndexAny(rest, " \n("); j > 0 {
+			return rest[:j]
+		}
+		return rest
+	}
+	return ""
+}
+
+func activityAgeMS(snap activitySnapshot) int64 {
+	if snap.LastActivity.IsZero() {
+		return -1
+	}
+	return time.Since(snap.LastActivity).Milliseconds()
+}
+
+func phaseOrDefault(phase string) string {
+	if phase == "" {
+		return "deliberation"
+	}
+	return phase
 }
 
 func failEarly(opts Options, result Result, err error) Result {
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(result.StartedAt)
 	result.ExitError = err.Error()
+	// Setup failures get the same classified payload as terminal failures
+	// (review fix 5): the regex runs over the error text plus whatever log
+	// tails already exist.
+	result.FailureClass, result.RecoveryHint = classifyFailure(result.StderrPath, result.StdoutPath, result.ExitError)
 	if eventErr := opts.Store.Append(store.Event{
 		Time: result.CompletedAt,
 		Type: "agent.failed",
 		Data: map[string]any{
-			"agent":       result.AgentID,
-			"artifact":    result.OutputPath,
-			"artifact_ok": false,
-			"duration_ms": result.Duration.Milliseconds(),
-			"error":       result.ExitError,
-			"segment_id":  opts.SegmentID,
+			"agent":         result.AgentID,
+			"artifact":      result.OutputPath,
+			"artifact_ok":   false,
+			"duration_ms":   result.Duration.Milliseconds(),
+			"error":         result.ExitError,
+			"segment_id":    opts.SegmentID,
+			"failure_class": result.FailureClass,
+			"recovery_hint": result.RecoveryHint,
 		},
 	}); eventErr != nil {
 		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", eventErr))
@@ -689,7 +985,7 @@ Prior rounds (read these):
 // procctl and hands it to onStarted (which records agent.started), then owns
 // cancellation: one goroutine Waits, and on ctx cancel the whole group is killed
 // (fixing orphan-on-timeout). Shared by the round path and steer attempts.
-func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, agent agents.Discovery, prompt, stdoutPath, stderrPath string, onStarted func(procctl.Spawned)) (procctl.Spawned, error) {
+func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, agent agents.Discovery, prompt, stdoutPath, stderrPath string, onStarted func(procctl.Spawned), act *activityTracker, cfg SupervisionConfig, hooks supervisionHooks) (procctl.Spawned, error) {
 	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
 	if cleanup != nil {
 		defer cleanup()
@@ -701,7 +997,7 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	if env == nil {
 		env = os.Environ()
 	}
-	cmd.Env = append(env, procctl.MarkerEnv(runID, agentID, marker)...)
+	cmd.Env = append(cleanParticipantEnv(agent.ID, env), procctl.MarkerEnv(runID, agentID, marker)...)
 	cmd.Dir = root
 	procctl.SetNewProcessGroup(cmd)
 
@@ -715,8 +1011,13 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 		return procctl.Spawned{}, err
 	}
 	defer stderrFile.Close()
-	cmd.Stdout = stdoutFile
-	cmd.Stderr = stderrFile
+	if act == nil {
+		act = &activityTracker{}
+	}
+	// Counting writers attribute output bytes in-process — supervision adds no
+	// filesystem probing on the healthy path (consensus D1).
+	cmd.Stdout = &countingWriter{w: stdoutFile, t: act, stream: "stdout"}
+	cmd.Stderr = &countingWriter{w: stderrFile, t: act, stream: "stderr"}
 	if agent.PromptMode == agents.PromptStdin {
 		cmd.Stdin = strings.NewReader(prompt)
 	}
@@ -729,14 +1030,30 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	}
 	waitErr := make(chan error, 1)
 	go func() { waitErr <- cmd.Wait() }()
-	select {
-	case e := <-waitErr:
-		return sp, e
-	case <-ctx.Done():
-		_ = procctl.KillGroup(sp) // reap the whole tree, not just the direct child
-		<-waitErr                 // drain Wait so the process is reaped
-		return sp, ctx.Err()
+	kill := func() { _ = procctl.KillGroup(sp) } // reap the whole tree, not just the direct child
+	return sp, waitSupervised(ctx.Done(), ctx.Err, waitErr, kill, act, cfg, hooks)
+}
+
+// cleanParticipantEnv sheds nested host-session markers when the spawned
+// participant is the claude CLI: a participant is independent by definition
+// and must not inherit the facilitator's session identity (consensus D8).
+// Parley's own PARLEY_* markers are kept.
+func cleanParticipantEnv(agentID string, env []string) []string {
+	if agentID != "claude" {
+		return env
 	}
+	out := env[:0:0]
+	for _, kv := range env {
+		key, _, _ := strings.Cut(kv, "=")
+		switch {
+		case key == "CLAUDECODE", key == "AI_AGENT":
+			continue
+		case strings.HasPrefix(key, "CLAUDE_CODE_"), strings.HasPrefix(key, "AI_AGENT_"):
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
 }
 
 // buildAgentInvocation resolves the agent's command path, args (with {root}/

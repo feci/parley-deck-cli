@@ -839,13 +839,23 @@ func (m liveModel) renderAgentStatusHeader(agentID string, width int) string {
 	case stateFinished:
 		art := relArtifact(a.ArtifactPath)
 		msg := "✓ " + agentID + " finished " + dur
+		if a.AgentExit != 0 {
+			// Artifact-wins completion: succeeded despite a nonzero exit; keep
+			// the rendering calm — no error styling (consensus D7/agy UX).
+			msg += fmt.Sprintf(" (exit %d, artifact verified)", a.AgentExit)
+		}
 		if art != "" {
 			msg += " · wrote " + art
 		}
 		line = okStyle.Render(truncateText(msg, width-1))
 	case stateFailed:
 		msg := "✗ " + agentID + " failed " + dur
-		if a.Error != "" {
+		if a.FailureClass != "" {
+			msg += " · class: " + a.FailureClass
+			if a.RecoveryHint != "" {
+				msg += " — " + a.RecoveryHint
+			}
+		} else if a.Error != "" {
 			msg += ": " + a.Error
 		}
 		line = warnStyle.Render(truncateText(msg, width-1))

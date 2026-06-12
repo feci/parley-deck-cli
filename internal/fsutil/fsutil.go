@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -74,4 +75,38 @@ func MkdirAllResilient(path string, perm os.FileMode) error {
 func isDir(path string) bool {
 	info, e := stat(path)
 	return e == nil && info.IsDir()
+}
+
+// AppendLine appends one line to a ledger file as a single O_APPEND write
+// (mirroring the event store's append discipline). Because O_APPEND atomicity
+// is weak on weakly-coherent mounts (virtio-fs), cross-process writers are
+// serialized through an adjacent mkdir claim — mkdir IS atomic even there
+// (runner-hardening-kindly D10). A wedged claim degrades to an unlocked append
+// after the bounded wait rather than losing the record.
+func AppendLine(path string, line []byte) error {
+	if err := MkdirAllResilient(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	claim := path + ".lock"
+	acquired := false
+	for attempt := 0; attempt < 50; attempt++ { // ~5s bound; a ledger append is tiny
+		if err := os.Mkdir(claim, 0o755); err == nil {
+			acquired = true
+			break
+		}
+		sleep(100 * time.Millisecond)
+	}
+	if acquired {
+		defer os.Remove(claim)
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if len(line) == 0 || line[len(line)-1] != '\n' {
+		line = append(append([]byte(nil), line...), '\n')
+	}
+	_, err = file.Write(line)
+	return err
 }

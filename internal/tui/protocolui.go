@@ -220,15 +220,34 @@ func friendlyEventText(e store.Event) string {
 	case "agent.started":
 		return s.Agent + " started"
 	case "agent.finished":
+		base := s.Agent + " finished"
 		if s.Text != "" && s.Text != s.Agent {
-			return s.Text // already "codex wrote round-02/codex.md"
+			base = s.Text // already "codex wrote round-02/codex.md"
 		}
-		return s.Agent + " finished"
+		if exitCode, ok := e.Data["agent_exit"]; ok {
+			base += fmt.Sprintf(" (exit %v, artifact verified)", exitCode)
+		}
+		return base
 	case "agent.failed":
+		if class, _ := e.Data["failure_class"].(string); class != "" {
+			line := s.Agent + " failed: " + class
+			if hint, _ := e.Data["recovery_hint"].(string); hint != "" {
+				line += " — " + hint
+			}
+			return line
+		}
 		if detail := strings.TrimSpace(strings.TrimPrefix(s.Text, s.Agent)); detail != "" {
 			return s.Agent + " failed: " + detail
 		}
 		return s.Agent + " failed"
+	case "agent.no_first_output":
+		action, _ := e.Data["action"].(string)
+		if action == "retrying" {
+			return s.Agent + " produced no output in the grace window — killing and retrying (attempt 2)"
+		}
+		return s.Agent + " produced no output in the grace window — killing process tree"
+	case "agent.stalled":
+		return s.Agent + " stalled (no new output) — killing process tree"
 	case "agent.skipped":
 		if detail := strings.TrimSpace(strings.TrimPrefix(s.Text, s.Agent)); detail != "" {
 			return s.Agent + " skipped: " + detail

@@ -157,3 +157,7 @@ Notes: Consensus matches my PhaseDetail/snapshot/run.phase/glyph/narrator positi
 ### Signoff: agy — 2026-06-11
 Status: ✅ ACCEPT
 Notes: The converged positions on glyph portability, placeholder layout, status grammar, and ribbon styling are faithfully recorded.
+
+### Signoff: hermes — 2026-06-12
+Status: ✅ ACCEPT
+Notes: Late append after CLI outage on 2026-06-12; tooling exception recorded in inbox/; round-02 position was ACCEPT with no blockers; shipped in 1.23.0 with all-ACCEPT reviews.

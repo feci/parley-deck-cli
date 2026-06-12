@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.24.0 - 2026-06-12
+
+Adopted from the MIT-licensed "kindly" skill (ideas `runner-hardening-kindly` +
+`meta-protocol-change-review-gate-honesty`):
+
+- **Agent supervision**: first-output watchdog (120s, one retry), stall guard
+  (30m, output-growth based), persisted `agent.heartbeat` events (60s; excluded
+  from transcripts/triggers); counting writers — zero healthy-path I/O; typed
+  `agent.no_first_output`/`agent.stalled` events appended BEFORE the kill.
+  Config: `first_event_timeout_ms`, `stall_timeout_ms`, `heartbeat_ms`.
+- **Failure classification**: `agent.failed` now carries `failure_class` +
+  `recovery_hint` (rate-limit/auth/billing/overloaded/…); surfaced in the TUI
+  narrator and agent headers.
+- **Artifact beats exit code**: a validated artifact with an ordinary nonzero
+  exit finishes with `agent_exit` instead of failing (removes the agy
+  wrote-then-exit-1 flake); ACP validation now respects the run phase; fix-ups
+  validate IMPLEMENTATION.md instead of trusting exit 0; `Result.Success()`.
+- **Review snapshots**: Phase 6 reviewers read a disposable shared-clone
+  checkout on local tmp (dirty trees become temp-index snapshot commits);
+  artifacts move back via copy+fsync+rename; loud fallback events.
+- **parley consult** + `parley consults list`: advisory cross-agent questions
+  with durable artifacts under parley-deck/consults/ (never quorum evidence).
+- Hardening: claude participants shed nested host markers; read-only git probes
+  set GIT_OPTIONAL_LOCKS=0; `fsutil.AppendLine`; docs/agent-cli-mechanics.md.
+- **Protocol**: Phase 6 "Review briefs and dispositions" (no-suppression),
+  Phase 8 opt-in `strict_gate` + "Stopping judgment", §8 "Consults" standing;
+  mirrored to the embedded default protocol.
+
 ## v1.23.0 - 2026-06-12
 
 - Protocol visibility in the live TUI (idea `tui-protocol-visibility`):

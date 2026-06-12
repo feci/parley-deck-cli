@@ -44,6 +44,9 @@ type agentOverride struct {
 	Profile               string            `toml:"profile"`
 	Speed                 string            `toml:"speed"`
 	TimeoutMS             int               `toml:"timeout_ms"`
+	FirstEventTimeoutMS   *int              `toml:"first_event_timeout_ms"`
+	StallTimeoutMS        *int              `toml:"stall_timeout_ms"`
+	HeartbeatMS           *int              `toml:"heartbeat_ms"`
 	IsolateHome           *bool             `toml:"isolate_home"`
 	BuffersStdout         *bool             `toml:"buffers_stdout"`
 	IsolatedHomeEnv       map[string]string `toml:"isolated_home_env"`
@@ -267,6 +270,22 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 		spec.TimeoutMS = override.TimeoutMS
 		spec.Sources["timeout_ms"] = source
 	}
+	// Supervision knobs are pointer-typed so an explicit `0` (disable) is
+	// distinguishable from "not set"; 0 maps to -1 (disabled) on the Spec.
+	applySupervisionMS := func(value *int, field *int, key string) {
+		if value == nil {
+			return
+		}
+		if *value == 0 {
+			*field = -1
+		} else {
+			*field = *value
+		}
+		spec.Sources[key] = source
+	}
+	applySupervisionMS(override.FirstEventTimeoutMS, &spec.FirstEventTimeoutMS, "first_event_timeout_ms")
+	applySupervisionMS(override.StallTimeoutMS, &spec.StallTimeoutMS, "stall_timeout_ms")
+	applySupervisionMS(override.HeartbeatMS, &spec.HeartbeatMS, "heartbeat_ms")
 	if override.IsolateHome != nil {
 		spec.IsolateHome = *override.IsolateHome
 		spec.Sources["isolate_home"] = source
