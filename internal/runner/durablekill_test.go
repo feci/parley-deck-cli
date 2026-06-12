@@ -100,7 +100,7 @@ func TestDurableKillEndToEndRealProcess(t *testing.T) {
 			})
 		}
 		_, _ = execAgentProcess(ctx, runDir, "run-x", "sleeper", "m", agent,
-			"", filepath.Join(agentDir, "stdout.log"), filepath.Join(agentDir, "stderr.log"), onStarted)
+			"", filepath.Join(agentDir, "stdout.log"), filepath.Join(agentDir, "stderr.log"), onStarted, nil, SupervisionConfig{}, supervisionHooks{})
 	}()
 
 	// Wait until the process is recorded + alive (a separate "parley" would see this).

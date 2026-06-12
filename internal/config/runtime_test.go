@@ -216,3 +216,40 @@ func findSpec(t *testing.T, specs []agents.Spec, id string) agents.Spec {
 	t.Fatalf("missing spec %s", id)
 	return agents.Spec{}
 }
+
+// Supervision knobs are tri-state: absent leaves the spec default, an explicit
+// 0 maps to -1 (disabled), a positive value passes through.
+func TestSupervisionKnobOverrides(t *testing.T) {
+	root := t.TempDir()
+	deck := filepath.Join(root, "parley-deck")
+	if err := os.MkdirAll(deck, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	toml := `[agents.codex]
+first_event_timeout_ms = 0
+stall_timeout_ms = 900000
+`
+	if err := os.WriteFile(filepath.Join(deck, "agents.toml"), []byte(toml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	specs, err := LoadAgentSpecs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, spec := range specs {
+		if spec.ID != "codex" {
+			continue
+		}
+		if spec.FirstEventTimeoutMS != -1 {
+			t.Fatalf("explicit 0 must map to -1 (disabled), got %d", spec.FirstEventTimeoutMS)
+		}
+		if spec.StallTimeoutMS != 900000 {
+			t.Fatalf("stall_timeout_ms=%d, want 900000", spec.StallTimeoutMS)
+		}
+		if spec.HeartbeatMS != 0 {
+			t.Fatalf("untouched heartbeat must stay 0 (default), got %d", spec.HeartbeatMS)
+		}
+		return
+	}
+	t.Fatal("codex spec not found")
+}

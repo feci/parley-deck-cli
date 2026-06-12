@@ -337,6 +337,29 @@ Rules for later review rounds mirror Phase 2: never edit another reviewer's file
 
 _(Transport B/C: each review file is mirrored by a native PR review on the implementation PR/MR — see §11.)_
 
+#### Review briefs and dispositions
+
+Review briefs MUST NOT suppress findings. A facilitator, implementer, or prior
+review consensus MAY describe known findings, rebuttals, accepted trade-offs,
+sandbox artifacts, deferred follow-ups, and operator rulings as dispositions for
+the reviewer to weigh openly. The brief MUST NOT say or imply "do not report",
+"do not re-raise", "ignore", "only report above severity X", or otherwise narrow
+what the reviewer may inspect or report.
+
+When a brief includes a disposition, it SHOULD use this shape:
+
+    - Finding/disposition: <short identifier or summary>
+      Prior disposition: rebutted | accepted trade-off | deferred | dismissed | operator-ruling
+      Rationale: <one or two lines>
+      Authority: <review consensus path, follow-up idea, or quoted operator answer>
+      Reviewer prompt: Please evaluate whether this rationale holds under the current scope. Do you concur?
+
+The reviewer decides independently whether they concur with each disposition and
+states that decision in their review file. A disputed finding closes only when
+the reviewer withdraws it, the review consensus resolves it through the normal
+signoff process, or the operator explicitly rules on it and that ruling is quoted
+into the next review artifact.
+
 ### Phase 7 — Review consensus
 
 When review discussion has converged, any participant (typically the implementer) drafts `ideas/<slug>/review/consensus.md`:
@@ -381,6 +404,55 @@ The implementer applies the **Agreed fixes** from `review/consensus.md` on the s
 They also update the top-level frontmatter: bump `status:` to `fix-up-cycle-N`, update `head-commit:`. Then publish per the active transport (see §11) with message `[<agent-id>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`.
 
 Phases 6 → 7 → 8 repeat until a Phase 7 consensus lists **zero Agreed fixes**. At that point the implementer sets `status: complete` in `IMPLEMENTATION.md` frontmatter and publishes with `[<agent-id>] <slug>: IMPLEMENTATION.md — complete`. The implementation PR/MR is merged (B/C) or the idea is simply marked closed (A). Later invalidation follows the same rule as FINAL.md: open a new idea, do not edit the closed IMPLEMENTATION.md.
+
+#### Strict review gate (optional)
+
+An idea may opt into a strict review gate by setting `strict_gate: true` in
+`00-prompt.md` frontmatter (exact, case-insensitive `true`; absent, empty, or any
+other value means the default rule applies). If absent, the default Phase 8 rule
+remains unchanged: the implementation may complete when Phase 7 consensus lists
+zero Agreed fixes.
+
+For `strict_gate: true`, zero Agreed fixes is necessary but not sufficient. The
+gate closes only after a fresh full-scope Phase 6 review round — covering the
+complete implementation diff at the time of the pass: all files changed since the
+design FINAL plus every fix-up commit — produces no findings of any severity or
+kind, and the subsequent Phase 7 consensus records that clean result. A
+fix-verification or resumed pass may converge the gate by checking prior fixes,
+but it never closes the gate by itself. Findings classified as NIT, deferred
+follow-up, or accepted low severity still keep the strict gate open unless the
+reviewer withdraws the finding or the operator explicitly rules it closed.
+
+A finding under a strict gate must be an objective, code-grounded issue —
+correctness, security, robustness, maintainability, or a factual documentation
+error — in code the reviewer actually read; a subjective stylistic preference is
+never a finding at any severity. NITs (dead code, typos, misleading comments)
+remain findings and remain blocking.
+
+`strict_gate` may be set at kickoff by the idea author. After kickoff, adding,
+removing, or changing it requires either review/design consensus or explicit
+operator direction recorded in the idea. A participant MUST NOT silently relax a
+strict gate during implementation or review.
+
+#### Stopping judgment
+
+Review cycles are judged by trajectory, not by a pass counter. If findings are
+fewer, lower severity, and confined to code changed by the latest fix-up, continue
+within the configured fix-up budget. If fresh CRITICAL/MAJOR findings keep landing
+on fix-up code, or the same ground is re-litigated despite open rebuttals, stop and
+escalate with a short trajectory summary. If a finding requires an operator
+decision, pause that finding's thread until the operator answers; unrelated fixes
+may continue.
+
+Illustrative triggers (examples, not normative thresholds): converging looks like
+"total findings dropping sharply each pass, new ones low-severity and confined to
+fresh fix code"; churning looks like "the finding count holding steady over two
+passes, or new CRITICAL/MAJOR findings on previously unchanged code".
+
+`MaxFixupCycles` and any driver retry budget are escalation thresholds, not close
+criteria. Hitting the budget never marks an implementation complete; it requires
+human review of the trajectory and either a new fix-up plan, a recorded operator
+ruling, or a decision to abandon/defer the work.
 
 ### Escalation to user (any phase)
 
@@ -458,6 +530,13 @@ Inbox messages are outside the round/consensus protocol. Recipients read them at
 Mid-round discoveries, handoffs, and progress notes may use `inbox/`, but substantive decisions and positions that influence a phase transition MUST be mirrored in the next round/review file, `consensus.md`, `FINAL.md`, or `IMPLEMENTATION.md`. Inbox messages are coordination aids, not a substitute for canonical artifacts.
 
 **In transports B and C**, casual inbox-style chatter _may_ additionally happen in PR/MR conversations or in a dedicated chat channel, but **escalations to the user (`to-user`) and any handoff that influences phase transitions MUST be filed as inbox files**. PR/MR threads are too easy to bury and not durable enough for audit purposes.
+
+### Consults
+
+Consult artifacts (`parley-deck/consults/`, written by `parley consult`) are
+advisory and non-canonical: they are never round artifacts, signoffs, quorum
+evidence, or dispositions. Promoting a consult's conclusion into protocol state
+requires a normal idea/round/consensus artifact authored by a participant.
 
 ## 9. Session-start checklist for every agent
 

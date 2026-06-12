@@ -62,6 +62,11 @@ type AgentState struct {
 	// Killed is sticky: set by an agent.killed event so the subsequent (canceled)
 	// agent.failed does not downgrade the badge from killed to a generic failure.
 	Killed bool `json:"killed,omitempty"`
+	// Failure classification + operator hint (runner-hardening-kindly D5/D6).
+	FailureClass string `json:"failure_class,omitempty"`
+	RecoveryHint string `json:"recovery_hint,omitempty"`
+	// AgentExit preserves an artifact-wins nonzero exit on a FINISHED agent.
+	AgentExit int `json:"agent_exit,omitempty"`
 }
 
 type EventSummary struct {
@@ -332,6 +337,9 @@ func ProjectEvents(participants []string, events []store.Event, now time.Time) R
 	state := RunState{RoundStatus: "pending"}
 	currentSegment := ""
 	for _, event := range events {
+		if event.Type == "agent.heartbeat" {
+			continue // status surfaces read the live snapshot, not Recent (D4)
+		}
 		summary := SummarizeEvent(event)
 		if summary.Type != "" {
 			state.Recent = append(state.Recent, summary)
@@ -426,9 +434,20 @@ func SummarizeEvent(event store.Event) EventSummary {
 			text = fmt.Sprintf("%s wrote %s", agent, artifact)
 		}
 	case "agent.failed":
-		if errText := dataString(event.Data, "error"); errText != "" {
+		if class := dataString(event.Data, "failure_class"); class != "" {
+			text = fmt.Sprintf("%s failed: %s", agent, class)
+			if hint := dataString(event.Data, "recovery_hint"); hint != "" {
+				text += " — " + hint
+			}
+		} else if errText := dataString(event.Data, "error"); errText != "" {
 			text = fmt.Sprintf("%s %s", agent, errText)
 		}
+	case "agent.no_first_output", "agent.stalled":
+		text = strings.TrimSpace(fmt.Sprintf("%s %s after %ds (%s)",
+			agent, strings.TrimPrefix(event.Type, "agent."), dataInt(event.Data, "elapsed_ms")/1000, dataString(event.Data, "action")))
+	case "agent.heartbeat":
+		text = strings.TrimSpace(fmt.Sprintf("%s %ds elapsed, %d+%d bytes",
+			agent, dataInt(event.Data, "elapsed_ms")/1000, dataInt(event.Data, "stdout_bytes"), dataInt(event.Data, "stderr_bytes")))
 	case "agent.skipped":
 		text = fmt.Sprintf("%s %s", agent, dataString(event.Data, "reason"))
 	case "hitl.question":
@@ -462,6 +481,9 @@ func applyAgentEvent(agent *AgentState, event store.Event, now time.Time, curren
 	case "agent.finished":
 		agent.State = StateFinished
 		agent.Duration = dataDuration(event.Data, "duration_ms", now.Sub(agent.StartedAt))
+		agent.AgentExit = dataInt(event.Data, "agent_exit")
+		agent.FailureClass = ""
+		agent.RecoveryHint = ""
 	case "agent.killed":
 		// The user terminated this agent; sticky so a later agent.failed keeps it.
 		agent.Killed = true
@@ -476,6 +498,8 @@ func applyAgentEvent(agent *AgentState, event store.Event, now time.Time, curren
 			agent.State = StateFailed
 		}
 		agent.Error = dataString(event.Data, "error")
+		agent.FailureClass = dataString(event.Data, "failure_class")
+		agent.RecoveryHint = dataString(event.Data, "recovery_hint")
 		agent.Duration = dataDuration(event.Data, "duration_ms", now.Sub(agent.StartedAt))
 	case "agent.skipped":
 		agent.State = StateSkipped
@@ -602,6 +626,18 @@ func dataString(data map[string]any, key string) string {
 	default:
 		return ""
 	}
+}
+
+func dataInt(data map[string]any, key string) int {
+	switch v := data[key].(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	}
+	return 0
 }
 
 func dataStringSlice(data map[string]any, key string) []string {

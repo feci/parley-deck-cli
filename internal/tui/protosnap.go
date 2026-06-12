@@ -78,17 +78,22 @@ var narratorTypes = map[string]bool{
 	"run.created": true, "run.phase": true, "run.segment_started": true,
 	"agent.started": true, "agent.finished": true, "agent.failed": true,
 	"agent.skipped": true, "agent.killed": true,
+	"agent.no_first_output": true, "agent.stalled": true,
 	"round.completed": true, "round.incomplete": true,
 	"hitl.question": true, "hitl.answered": true,
 	"run.failed": true, "run.manifest_deferred": true,
+	// agent.heartbeat is deliberately ABSENT (consensus D4): heartbeats are
+	// status-surface data, never transcript lines.
 }
 
 var protoTriggerTypes = map[string]bool{
 	"run.created": true, "run.phase": true, "run.segment_started": true,
 	"agent.started": true, "agent.finished": true, "agent.failed": true,
 	"agent.skipped": true, "agent.killed": true,
+	"agent.no_first_output": true, "agent.stalled": true,
 	"agent.fixup_finished": true, "agent.fixup_failed": true,
 	"round.completed": true, "round.incomplete": true, "run.failed": true,
+	// agent.heartbeat never triggers snapshot reconciliation (consensus D4).
 }
 
 var stepNames = [9]string{"kickoff", "round-01", "cross-review", "consensus", "final", "implement", "review", "review-consensus", "complete"}

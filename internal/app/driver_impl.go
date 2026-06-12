@@ -99,7 +99,7 @@ func (o driverImplOps) withParticipants(ids ...string) runner.Options {
 func (o driverImplOps) Implement(ctx context.Context) error {
 	fmt.Fprintf(o.out, "driver: implementing via %s ...\n", o.implementer)
 	r := runner.RunImplementation(ctx, o.withParticipants(o.implementer))
-	if r.ExitError != "" {
+	if !r.Success() {
 		return fmt.Errorf("implementer %s: %s", r.AgentID, r.ExitError)
 	}
 	return nil
@@ -180,7 +180,7 @@ func (o driverImplOps) DraftReviewConsensus(ctx context.Context, round int) erro
 	opts := o.withParticipants(o.drafter)
 	opts.Round = round
 	r := runner.RunReviewConsensus(ctx, opts)
-	if r.ExitError != "" {
+	if !r.Success() {
 		return fmt.Errorf("review-consensus drafter %s: %s", r.AgentID, r.ExitError)
 	}
 	path := filepath.Join(o.ideaDir, "review", "consensus.md")
@@ -218,7 +218,7 @@ func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []stri
 func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 	fmt.Fprintf(o.out, "driver: running fix-up cycle %d via %s ...\n", cycle, o.implementer)
 	r := runner.RunFixup(ctx, o.withParticipants(o.implementer))
-	if r.ExitError != "" {
+	if !r.Success() {
 		return fmt.Errorf("fix-up implementer %s: %s", r.AgentID, r.ExitError)
 	}
 	return nil

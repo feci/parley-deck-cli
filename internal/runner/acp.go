@@ -103,44 +103,111 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 		return failEarly(opts, result, fmt.Errorf("event append failed: %w", appendErr))
 	}
 
-	initResult, err := client.Initialize(ctx, acp.ClientCapabilities{})
-	if err != nil {
-		return finishACP(opts, result, agent, process, stderrFile, teeOut, fmt.Errorf("initialize: %w", err))
-	}
-	_ = opts.Store.Append(store.Event{
-		Type: "agent.acp.initialized",
-		Data: map[string]any{
-			"agent":            agent.ID,
-			"protocol_version": initResult.ProtocolVersion,
-			"agent_info":       initResult.AgentInfo,
+	// The initialize→session→prompt sequence runs in a goroutine so the same
+	// supervised wait (first-output watchdog, stall guard, heartbeats) covers
+	// ACP agents (consensus D1). Activity arrives via the handler; the
+	// agent.started event itself never satisfies the first-output guard.
+	act := &activityTracker{}
+	handler.activity = act
+	cfg := supervisionForAgent(agent, timeoutForAgent(opts.Timeout, agent))
+	hardTimeout := timeoutForAgent(opts.Timeout, agent)
+	hooks := supervisionHooks{
+		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent.heartbeat",
+				Data: map[string]any{
+					"agent":                agent.ID,
+					"segment_id":           opts.SegmentID,
+					"attempt_id":           1,
+					"phase":                phaseOrDefault(opts.Phase),
+					"launch":               agents.LaunchACP,
+					"elapsed_ms":           elapsed.Milliseconds(),
+					"timeout_ms":           hardTimeout.Milliseconds(),
+					"stdout_bytes":         snap.StdoutBytes,
+					"stderr_bytes":         snap.StderrBytes,
+					"last_activity_ms_ago": activityAgeMS(snap),
+				},
+			})
 		},
-	})
-
-	session, err := client.NewSession(ctx, acp.NewSessionParams{CWD: opts.Root})
-	if err != nil {
-		return finishACP(opts, result, agent, process, stderrFile, teeOut, fmt.Errorf("session/new: %w", err))
+		onWatchdog: func(kind string, snap activitySnapshot, elapsed time.Duration) {
+			// Appended BEFORE the kill fires (consensus D1).
+			_ = opts.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent." + kind,
+				Data: map[string]any{
+					"agent":        agent.ID,
+					"segment_id":   opts.SegmentID,
+					"attempt_id":   1,
+					"elapsed_ms":   elapsed.Milliseconds(),
+					"stdout_bytes": snap.StdoutBytes,
+					"stderr_bytes": snap.StderrBytes,
+					"action":       "failed", // ACP attempts are not retried in v1
+				},
+			})
+		},
 	}
-	handler.sessionID = session.SessionID
-	_ = opts.Store.Append(store.Event{
-		Type: "agent.acp.session_opened",
-		Data: map[string]any{"agent": agent.ID, "session_id": session.SessionID},
-	})
 
-	promptText := strings.TrimRight(prompt, "\n")
-	promptRes, err := client.Prompt(ctx, session.SessionID, promptText)
-	finishErr := err
-	if finishErr == nil {
+	acpCtx, acpCancel := context.WithCancel(ctx)
+	defer acpCancel()
+	finishCh := make(chan error, 1)
+	go func() {
+		initResult, err := client.Initialize(acpCtx, acp.ClientCapabilities{})
+		if err != nil {
+			finishCh <- fmt.Errorf("initialize: %w", err)
+			return
+		}
 		_ = opts.Store.Append(store.Event{
-			Type: "agent.acp.prompt_completed",
-			Data: map[string]any{"agent": agent.ID, "stop_reason": promptRes.StopReason},
+			Type: "agent.acp.initialized",
+			Data: map[string]any{
+				"agent":            agent.ID,
+				"protocol_version": initResult.ProtocolVersion,
+				"agent_info":       initResult.AgentInfo,
+			},
 		})
+
+		session, err := client.NewSession(acpCtx, acp.NewSessionParams{CWD: opts.Root})
+		if err != nil {
+			finishCh <- fmt.Errorf("session/new: %w", err)
+			return
+		}
+		handler.sessionID = session.SessionID
+		_ = opts.Store.Append(store.Event{
+			Type: "agent.acp.session_opened",
+			Data: map[string]any{"agent": agent.ID, "session_id": session.SessionID},
+		})
+
+		promptText := strings.TrimRight(prompt, "\n")
+		promptRes, err := client.Prompt(acpCtx, session.SessionID, promptText)
+		if err == nil {
+			_ = opts.Store.Append(store.Event{
+				Type: "agent.acp.prompt_completed",
+				Data: map[string]any{"agent": agent.ID, "stop_reason": promptRes.StopReason},
+			})
+		}
+		finishCh <- err
+	}()
+	kill := func() {
+		acpCancel()
+		_ = process.Kill()
 	}
-	return finishACP(opts, result, agent, process, stderrFile, teeOut, finishErr)
+	finishErr := waitSupervised(ctx.Done(), ctx.Err, finishCh, kill, act, cfg, hooks)
+	watchdog := ""
+	switch {
+	case errors.Is(finishErr, errNoFirstOutput):
+		watchdog = "no_first_output"
+	case errors.Is(finishErr, errStalled):
+		watchdog = "stalled"
+	}
+	return finishACP(opts, result, agent, process, stderrFile, teeOut, finishErr, handler, watchdog, ctx.Err())
 }
 
 // finishACP centralises shutdown, stderr capture, artifact validation and
-// the terminal agent.finished/agent.failed event.
-func finishACP(opts Options, result Result, agent agents.Discovery, process *acp.Process, stderrFile *os.File, teeOut chan struct{}, runErr error) Result {
+// the terminal agent.finished/agent.failed event, applying the consensus D7
+// decision table: a validated artifact overrides an ACP prompt error that
+// happened AFTER the session opened (agent_exit_kind=acp_error); initialize/
+// session-setup errors, watchdog kills, and the hard timeout always fail.
+func finishACP(opts Options, result Result, agent agents.Discovery, process *acp.Process, stderrFile *os.File, teeOut chan struct{}, runErr error, handler *acpRunnerHandler, watchdog string, ctxErr error) Result {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	_ = process.Stop(shutdownCtx)
@@ -156,33 +223,74 @@ func finishACP(opts Options, result Result, agent agents.Discovery, process *acp
 	}
 
 	if _, statErr := os.Stat(result.OutputPath); statErr == nil {
-		if validateErr := ValidateRoundOneArtifact(result.OutputPath, agent.ID, opts.Idea.Slug); validateErr != nil {
+		// Validate per the run's phase contract (was: hard-coded round-one
+		// validation, which broke ACP review/implementation artifacts).
+		if validateErr := validateArtifactForPhase(opts, result.OutputPath, agent.ID); validateErr != nil {
 			result.ExitError = combineError(result.ExitError, validateErr)
 		} else {
 			result.ArtifactOK = true
 		}
 	}
 
-	eventType := "agent.finished"
-	if result.ExitError != "" || !result.ArtifactOK {
-		eventType = "agent.failed"
+	// Review snapshots (D9): publish a validated artifact to the canonical
+	// path before the terminal event reports it.
+	if result.ArtifactOK && opts.publishArtifact != nil {
+		if livePath, err := opts.publishArtifact(result.OutputPath); err != nil {
+			result.ArtifactOK = false
+			result.ExitError = combineError(result.ExitError, fmt.Errorf("snapshot artifact move-back: %w", err))
+		} else {
+			result.OutputPath = livePath
+		}
 	}
-	if err := opts.Store.Append(store.Event{
-		Time: result.CompletedAt,
-		Type: eventType,
-		Data: map[string]any{
-			"agent":       agent.ID,
-			"artifact":    result.OutputPath,
-			"artifact_ok": result.ArtifactOK,
-			"duration_ms": result.Duration.Milliseconds(),
-			"error":       result.ExitError,
-			"launch":      agents.LaunchACP,
-			"segment_id":  opts.SegmentID,
-		},
-	}); err != nil {
+
+	// Artifact-wins (D7): only a post-session prompt error qualifies — and
+	// never a watchdog kill or the outer timeout/cancel.
+	cancellation := watchdog != "" || errors.Is(ctxErr, context.DeadlineExceeded) || errors.Is(ctxErr, context.Canceled)
+	if result.ArtifactOK && !cancellation && runErr != nil && handler != nil && handler.sessionID != "" {
+		result.AgentExit = 1
+		result.AgentExitKind = "acp_error"
+		result.Warning = combineWarning(result.Warning, "acp prompt error overridden by validated artifact: "+runErr.Error())
+		result.ExitError = ""
+	}
+
+	failed := result.ExitError != "" || !result.ArtifactOK
+	if failed && result.ExitError == "" {
+		result.ExitError = "artifact missing or invalid"
+	}
+	data := map[string]any{
+		"agent":       agent.ID,
+		"artifact":    result.OutputPath,
+		"artifact_ok": result.ArtifactOK,
+		"duration_ms": result.Duration.Milliseconds(),
+		"error":       result.ExitError,
+		"launch":      agents.LaunchACP,
+		"segment_id":  opts.SegmentID,
+		"attempt_id":  1,
+	}
+	eventType := "agent.finished"
+	if failed {
+		eventType = "agent.failed"
+		class, hint := terminalFailureClass(watchdog, ctxErr, false, result.StderrPath, result.StdoutPath, result.ExitError)
+		result.FailureClass = class
+		result.RecoveryHint = hint
+		data["failure_class"] = class
+		data["recovery_hint"] = hint
+		data["stderr_tail_bytes"] = len(tailOfFile(result.StderrPath, failTailBytes))
+	} else if result.AgentExitKind != "" {
+		data["agent_exit"] = result.AgentExit
+		data["agent_exit_kind"] = result.AgentExitKind
+	}
+	if err := opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: data}); err != nil {
 		result.ExitError = combineError(result.ExitError, fmt.Errorf("event append failed: %w", err))
 	}
 	return result
+}
+
+func combineWarning(existing, extra string) string {
+	if existing == "" {
+		return extra
+	}
+	return existing + "; " + extra
 }
 
 // acpRunnerHandler bridges ACP callbacks to the parley event store. Streaming
@@ -197,6 +305,9 @@ type acpRunnerHandler struct {
 	artifact  string
 	stdoutTap *os.File
 	sessionID string
+	// activity feeds the supervision watchdogs: any ACP session update counts
+	// as agent activity (consensus D1); message text additionally counts bytes.
+	activity *activityTracker
 
 	mu         sync.Mutex
 	messageBuf strings.Builder
@@ -206,6 +317,12 @@ type acpRunnerHandler struct {
 }
 
 func (h *acpRunnerHandler) SessionUpdate(update acp.SessionUpdate) error {
+	if h.activity != nil {
+		h.activity.MarkEvent()
+		if update.Update.Content != nil {
+			h.activity.Mark("stdout", len(update.Update.Content.Text))
+		}
+	}
 	switch update.Update.SessionUpdate {
 	case acp.UpdateAgentMessageChunk:
 		if update.Update.Content != nil && update.Update.Content.Text != "" {

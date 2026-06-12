@@ -2,8 +2,10 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -44,9 +46,10 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 }
 
 // RunFixup runs a Phase 8 fix-up: it re-invokes the implementer to apply the
-// agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Unlike
-// RunImplementation it edits existing files, so success is exit-code based (no
-// single new-artifact validation). opts.Idea.Participants must be [implementer].
+// agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Success
+// requires the updated IMPLEMENTATION.md to validate (ValidateFixupArtifact);
+// an ordinary nonzero exit with a valid artifact succeeds with agent_exit
+// (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
 	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
 	if len(selected) == 0 {
@@ -96,20 +99,73 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	runErr := cmd.Run()
 	result.CompletedAt = time.Now().UTC()
 	result.Duration = result.CompletedAt.Sub(now)
+	cancelled := cctx.Err() != nil
 	if runErr != nil {
 		result.ExitError = runErr.Error()
-		if cctx.Err() != nil {
+		if cancelled {
 			result.ExitError = cctx.Err().Error()
 		}
-	} else {
+	}
+
+	// Fix-up success is no longer exit-code based (consensus D7): the updated
+	// IMPLEMENTATION.md must validate, and only then can an ordinary nonzero
+	// exit be overridden (artifact-wins). Timeouts/cancellations always fail.
+	validateErr := ValidateFixupArtifact(opts.Idea.Path, opts.Idea.Slug)
+	if validateErr == nil {
 		result.ArtifactOK = true
+		var exitErr *exec.ExitError
+		if !cancelled && runErr != nil && errors.As(runErr, &exitErr) {
+			result.AgentExit = exitErr.ExitCode()
+			result.AgentExitKind = "exec"
+			result.ExitError = ""
+		}
+	} else if !cancelled && runErr == nil {
+		result.ExitError = combineError(result.ExitError, validateErr)
 	}
+
+	failed := result.ExitError != "" || !result.ArtifactOK
+	data := map[string]any{"agent": agent.ID, "error": result.ExitError, "segment_id": opts.SegmentID}
 	eventType := "agent.fixup_finished"
-	if !result.ArtifactOK {
+	if failed {
 		eventType = "agent.fixup_failed"
+		class, hint := terminalFailureClass("", cctx.Err(), false, stderrPath, stdoutPath, result.ExitError)
+		result.FailureClass = class
+		result.RecoveryHint = hint
+		data["failure_class"] = class
+		data["recovery_hint"] = hint
+	} else if result.AgentExitKind != "" {
+		data["agent_exit"] = result.AgentExit
+		data["agent_exit_kind"] = result.AgentExitKind
 	}
-	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: map[string]any{"agent": agent.ID, "error": result.ExitError, "segment_id": opts.SegmentID}})
+	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: data})
 	return result
+}
+
+// ValidateFixupArtifact checks that a fix-up cycle left IMPLEMENTATION.md in a
+// reviewable state: the file exists, its frontmatter idea matches, its status
+// is review-ready, and a fix-up section is present (consensus D7).
+func ValidateFixupArtifact(ideaPath, ideaSlug string) error {
+	implPath := filepath.Join(ideaPath, "IMPLEMENTATION.md")
+	data, err := os.ReadFile(implPath)
+	if err != nil {
+		return fmt.Errorf("fix-up validation: %w", err)
+	}
+	meta, err := protocol.ReadFrontmatter(implPath)
+	if err != nil {
+		return fmt.Errorf("fix-up validation: read frontmatter: %w", err)
+	}
+	if got := strings.TrimSpace(meta["idea"]); got != "" && got != ideaSlug {
+		return fmt.Errorf("fix-up validation: IMPLEMENTATION.md frontmatter idea=%q, want %q", got, ideaSlug)
+	}
+	status := strings.TrimSpace(meta["status"])
+	reviewReady := status == "implemented" || status == "ready-for-review" || strings.HasPrefix(status, "fix-up-cycle")
+	if !reviewReady {
+		return fmt.Errorf("fix-up validation: IMPLEMENTATION.md status=%q is not review-ready", status)
+	}
+	if !strings.Contains(string(data), "## Fix-up cycle") {
+		return fmt.Errorf("fix-up validation: IMPLEMENTATION.md has no \"## Fix-up cycle\" section")
+	}
+	return nil
 }
 
 // BuildFixupPrompt is the Phase 8 fix-up prompt for the implementer.

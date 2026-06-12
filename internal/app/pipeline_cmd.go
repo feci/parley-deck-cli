@@ -778,7 +778,7 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 		ideaImpl.Participants = []string{implementer}
 		runID := fmt.Sprintf("pipe-%s-impl-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
 		res := runner.RunImplementation(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaImpl, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})
-		if res.ExitError != "" || !res.ArtifactOK {
+		if !res.Success() {
 			fmt.Fprintf(stderr, "auto: implementation failed: %s\n", res.ExitError)
 			return 1
 		}
@@ -815,7 +815,7 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 		ideaDraft.Participants = []string{implementer}
 		cid := fmt.Sprintf("pipe-%s-rc%02d-%s", block.ID, cycle, stamp())
 		rc := runner.RunReviewConsensus(ctx, runner.Options{Root: root, RunID: cid, Idea: ideaDraft, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", cid))})
-		if rc.ExitError != "" || !rc.ArtifactOK {
+		if !rc.Success() {
 			fmt.Fprintf(stderr, "auto: review consensus draft failed: %s\n", rc.ExitError)
 			return 1
 		}
@@ -843,7 +843,7 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 			ideaFix := idea
 			ideaFix.Participants = []string{implementer}
 			fr := runner.RunFixup(ctx, runner.Options{Root: root, RunID: fid, Idea: ideaFix, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", fid))})
-			if fr.ExitError != "" || !fr.ArtifactOK {
+			if !fr.Success() {
 				fmt.Fprintf(stderr, "auto: fix-up failed: %s\n", fr.ExitError)
 				return 1
 			}

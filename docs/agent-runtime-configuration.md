@@ -167,3 +167,6 @@ Configured isolated-home environment values may use placeholders:
 - `{tempdir}` in command/path fields: the operating system temp directory resolved when configuration is loaded.
 
 Probe outputs are not source artifacts and are ignored by Git.
+
+See also: [agent-cli-mechanics.md](agent-cli-mechanics.md) — verified per-CLI
+invocation behaviors (stdin/flag gotchas, failure modes) the runner relies on.
