@@ -1,10 +1,10 @@
 ---
 idea: runner-hardening-kindly
-cycle: 2
+cycle: 3
 drafted-by: claude
 date: 2026-06-12
-reviewed-commit: 6e20f1e
-outstanding_agreed_fixes: 2
+reviewed-commit: cec1d62
+outstanding_agreed_fixes: 0
 ---
 
 <!-- Cycle 1 (reviewed-commit 8a5d4c7) follows; cycle 2 is appended below the
@@ -143,3 +143,40 @@ Notes: Cycle-2 triage faithfully reflects my round-02 ACCEPT verdict and sandbox
 ### Signoff: agy — 2026-06-12 (cycle 2)
 Status: ✅ ACCEPT
 Notes: Verified all cycle 2 fixes and concur with the triage and sandbox dismissal.
+
+## Cycle 3 (review/round-03 → complete)
+
+Reviewed commit: cec1d62. Verdicts: codex ACCEPT, agy ACCEPT, hermes ACCEPT.
+All three reviewers verified both cycle-2 remainders (finishACP live-path
+mirror; rename-failure test case) with zero new findings, and re-confirmed
+the TestDurableKillEndToEndRealProcess seatbelt-sandbox dismissal. Zero
+agreed fixes remain — the implementation closes as complete on cycle-3
+signoff.
+
+### Agreed fixes (cycle 3)
+
+- None.
+
+### Dismissed findings (cycle 3)
+
+- None.
+
+### Signoffs (cycle 3)
+
+<!-- Each agent APPENDS their cycle-3 signoff block below. Do NOT edit others' blocks. -->
+
+### Signoff: claude — 2026-06-12 (cycle 3)
+Status: ✅ ACCEPT
+Notes: Zero agreed fixes after two fix-up cycles; idea completes and ships as 1.24.0.
+
+### Signoff: codex — 2026-06-12 (cycle 3)
+Status: ✅ ACCEPT
+Notes: My round-03 review is reflected accurately: both remainders verified, no new findings, and the sandbox dismissal remains accepted.
+
+### Signoff: hermes — 2026-06-12 (cycle 3)
+Status: ✅ ACCEPT
+Notes: Cycle-3 summary matches my round-03 ACCEPT verdict with zero remaining issues.
+
+### Signoff: agy — 2026-06-12 (cycle 3)
+Status: ✅ ACCEPT
+Notes: Both cycle-2 remainders verified and sandbox dismissal re-confirmed; I accept the final complete status.

@@ -1,7 +1,7 @@
 ---
 idea: runner-hardening-kindly
 agent: claude
-status: fix-up-cycle-2
+status: complete
 date: 2026-06-12
 ---
 
