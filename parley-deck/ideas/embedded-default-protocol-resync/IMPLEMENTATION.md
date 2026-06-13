@@ -1,11 +1,12 @@
 ---
 idea: embedded-default-protocol-resync
-status: implemented
+status: fix-up-cycle-1
 implementer: claude
 started: 2026-06-13
 completed: 2026-06-13
 branch: parley-deck-cli#feature/embedded-default-resync
-head-commit: bc0af15
+head-commit: 9fb1d42
+reviewed-commit-cycle-1: efe76d0
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -63,6 +64,28 @@ invariant is enforced by `TestEmbeddedDefaultMatchesLiveDeck` and documented in:
 1. the package-level comment block at the top of `drift_test.go`, and
 2. that test's failure message, which names both files and the allowlist.
 A §7 protocol-text pointer remains available as a future meta-protocol-change.
+
+## Fix-up cycle 1 (review/round-01 → review/consensus.md)
+
+Both agreed fixes applied:
+
+1. **[MINOR] Drift guard now asserts the embedded D2/D3 invariants** (closes the
+   in-zone-edit blind spot codex + agy converged on). `drift_test.go` gained
+   `assertEmbeddedBootstrapShape` (the three genericized header lines verbatim,
+   via `embWorkspaceLine`/`embCreatedLine`/`embTransportLine`) and
+   `assertEmptyTableBody` (each §2 table has its separator and an empty body),
+   plus explicit `**Protocol synced:**` occurrence checks (0 in the embedded
+   default, exactly 1 in the live deck). These run before normalization, so an
+   illustrative roster row, an altered placeholder value, or a stray sync line in
+   the embedded copy now fails the guard instead of being normalized away.
+   Negative controls confirmed: a stray Protocol-synced line fails the D2 check;
+   an `agent-1` roster row fails the D3 empty-body check; the clean tree passes.
+   (agy's optional body-row delimiter check is subsumed — the embedded bodies are
+   asserted empty; the deck's rows are project-specific data, not protocol logic.)
+2. **[NIT] head-commit corrected** from the stale `bc0af15` to the fix-up cycle 1
+   commit.
+
+`gofmt` clean; `go build ./...` and full `go test ./...` green.
 
 ## Deviations from FINAL.md
 

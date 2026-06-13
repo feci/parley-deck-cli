@@ -29,6 +29,17 @@ const (
 	handleHeaderLine   = "| Agent ID       | Host handle    |"
 )
 
+// The exact bootstrap-shape lines the embedded default must hold (D2/D3). The
+// drift guard ASSERTS these directly so that an in-allowlist edit — an
+// illustrative roster row, a placeholder value changed while keeping the key
+// prefix, or a stray `**Protocol synced:**` line — cannot be silently
+// normalized away and pass.
+const (
+	embWorkspaceLine = "**Workspace:** `<workspace-name>`"
+	embCreatedLine   = "**Created:** `<date> — created by parley init`"
+	embTransportLine = "**Transport:** `github-pr`"
+)
+
 // TestEmbeddedDefaultMatchesLiveDeck is the anti-drift guard (idea
 // embedded-default-protocol-resync, D5). It fails closed: a missing deck file or
 // a missing/duplicated structural anchor is a hard failure, never a silent skip.
@@ -50,6 +61,19 @@ func TestEmbeddedDefaultMatchesLiveDeck(t *testing.T) {
 		assertExactLineOnce(t, f.name, f.text, handleHeaderLine)
 		assertLinePrefixOnce(t, f.name, f.text, workspacePrefix)
 		assertLinePrefixOnce(t, f.name, f.text, createdPrefix)
+	}
+
+	// D2/D3: assert the embedded default actually holds the generic bootstrap
+	// shape, turning the allowlisted (normalized-away) zones into asserted
+	// invariants on the embedded side.
+	assertEmbeddedBootstrapShape(t, defaultCooperation)
+	// Provenance line: the live deck carries exactly one; the embedded default
+	// (bootstrap template) must carry none.
+	if n := countLinePrefix(deck, protocolSyncPrefix); n != 1 {
+		t.Fatalf("live deck: %q* appears %d times, want exactly 1", protocolSyncPrefix, n)
+	}
+	if n := countLinePrefix(defaultCooperation, protocolSyncPrefix); n != 0 {
+		t.Fatalf("embedded default: %q* appears %d times, want exactly 0 (D2 — bootstrap output carries no sync provenance)", protocolSyncPrefix, n)
 	}
 
 	embNorm := normalizeProtocol(t, "embedded default", defaultCooperation)
@@ -114,15 +138,54 @@ func assertExactLineOnce(t *testing.T, name, text, anchor string) {
 
 func assertLinePrefixOnce(t *testing.T, name, text, prefix string) {
 	t.Helper()
+	if n := countLinePrefix(text, prefix); n != 1 {
+		t.Fatalf("%s: header line %q* appears %d times, want exactly 1 (drift guard fails closed)", name, prefix, n)
+	}
+}
+
+// assertEmbeddedBootstrapShape verifies the embedded default holds the exact
+// D2/D3 bootstrap shape: the three genericized header lines verbatim, and empty
+// §2 table bodies (header + separator retained).
+func assertEmbeddedBootstrapShape(t *testing.T, text string) {
+	t.Helper()
+	for _, want := range []string{embWorkspaceLine, embCreatedLine, embTransportLine} {
+		if n := countExactLines(text, want); n != 1 {
+			t.Fatalf("embedded default must contain exactly the bootstrap line %q once (D2), found %d", want, n)
+		}
+	}
+	assertEmptyTableBody(t, text, rosterHeaderLine)
+	assertEmptyTableBody(t, text, handleHeaderLine)
+}
+
+// assertEmptyTableBody confirms the §2 table under the given header has its
+// separator row and an empty body (the line after the separator is not a table
+// row), so no illustrative roster member can ship in the bootstrap template.
+func assertEmptyTableBody(t *testing.T, text, header string) {
+	t.Helper()
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if line != header {
+			continue
+		}
+		if i+1 >= len(lines) || !strings.HasPrefix(lines[i+1], "| -") {
+			t.Fatalf("embedded default: table %q is not immediately followed by a separator row", header)
+		}
+		if i+2 < len(lines) && strings.HasPrefix(lines[i+2], "|") {
+			t.Fatalf("embedded default: §2 table %q must have an empty body (D3), found row: %q", header, lines[i+2])
+		}
+		return
+	}
+	t.Fatalf("embedded default: table header %q not found", header)
+}
+
+func countLinePrefix(text, prefix string) int {
 	n := 0
 	for _, line := range strings.Split(text, "\n") {
 		if strings.HasPrefix(line, prefix) {
 			n++
 		}
 	}
-	if n != 1 {
-		t.Fatalf("%s: header line %q* appears %d times, want exactly 1 (drift guard fails closed)", name, prefix, n)
-	}
+	return n
 }
 
 func countExactLines(text, anchor string) int {
