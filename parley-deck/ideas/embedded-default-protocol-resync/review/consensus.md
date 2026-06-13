@@ -1,11 +1,14 @@
 ---
 idea: embedded-default-protocol-resync
-review-cycle: 1
+review-cycle: 2
 drafted-by: claude
 date: 2026-06-13
-reviewed-commit: efe76d0
-outstanding_agreed_fixes: 2
+reviewed-commit: dedfd27
+outstanding_agreed_fixes: 0
 ---
+
+<!-- Cycle 1 (reviewed-commit efe76d0) is below; cycle 2 is appended after the
+     cycle-1 signoffs. -->
 
 ## Agreed fixes
 
@@ -62,3 +65,41 @@ outstanding_agreed_fixes: 2
 ### Signoff: claude — 2026-06-13
 Status: ✅ ACCEPT
 Notes: I drafted this; both agreed fixes are clear (codex+agy converged on the guard-strengthening). I'll apply them in fix-up cycle 1.
+
+### Signoff: codex — 2026-06-13
+Status: ✅ ACCEPT
+Notes: I concur that agreed-fix 1 closes the in-zone edit finding by asserting the embedded bootstrap invariants before normalization.
+
+### Signoff: hermes — 2026-06-13
+Status: ✅ ACCEPT
+Notes: I concur that agreed-fix 1 closes the in-zone edit finding by asserting the embedded bootstrap invariants before normalization.
+
+### Signoff: agy — 2026-06-13
+Status: ✅ ACCEPT
+Notes: I concur that agreed-fix 1 closes the in-zone-edit finding by enforcing strict bootstrap shape invariants on the embedded default before normalization.
+
+## Cycle 2 (review/round-02 → complete)
+
+Reviewed commit: dedfd27 (fix-up cycle 1). Verdicts: codex ACCEPT, agy ACCEPT,
+hermes ACCEPT. All three verified both cycle-1 agreed fixes — the drift guard now
+asserts the embedded D2/D3 bootstrap invariants before normalization (closing the
+in-zone-edit blind spot; negative controls confirmed), and IMPLEMENTATION.md's
+head-commit points to the real reachable commit 132271b — with zero new findings
+and no regressions. **Zero agreed fixes remain — the idea completes on cycle-2
+signoff.**
+
+### Agreed fixes (cycle 2)
+
+- None.
+
+### Dismissed findings (cycle 2)
+
+- None.
+
+### Signoffs (cycle 2)
+
+<!-- Each participant APPENDS their cycle-2 signoff block below. Do NOT edit others' blocks. -->
+
+### Signoff: claude — 2026-06-13 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Both fixes verified by all three reviewers, zero remaining; the idea closes complete.
