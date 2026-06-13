@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.26.0 - 2026-06-13
+
+- **New TUI `/run` command.** Advance the protocol on demand from inside the live
+  TUI — it kicks the auto-driver (cross-review → consensus → finalize → opted-in
+  implementation) for the current run. Most useful with `--no-auto` runs; under
+  the default auto-drive it is a no-op once driving has started (idempotent). The
+  command appears in `/help` and slash autocomplete.
+
 ## v1.25.0 - 2026-06-13
 
 Auto-drive is now the default.
