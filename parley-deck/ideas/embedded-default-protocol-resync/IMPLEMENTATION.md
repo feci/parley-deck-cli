@@ -1,6 +1,6 @@
 ---
 idea: embedded-default-protocol-resync
-status: fix-up-cycle-1
+status: complete
 implementer: claude
 started: 2026-06-13
 completed: 2026-06-13

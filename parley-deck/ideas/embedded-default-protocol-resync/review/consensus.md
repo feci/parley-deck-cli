@@ -103,3 +103,15 @@ signoff.**
 ### Signoff: claude — 2026-06-13 (cycle 2)
 Status: ✅ ACCEPT
 Notes: Both fixes verified by all three reviewers, zero remaining; the idea closes complete.
+
+### Signoff: codex — 2026-06-13 (cycle 2)
+Status: ✅ ACCEPT
+Notes: My round-02 re-review verified both fixes at dedfd27, found no new issues, and recorded ACCEPT.
+
+### Signoff: hermes — 2026-06-13 (cycle 2)
+Status: ✅ ACCEPT
+Notes: My round-02 re-review at dedfd27 confirmed both fixes, zero new findings, ACCEPT.
+
+### Signoff: agy — 2026-06-13 (cycle 2)
+Status: ✅ ACCEPT
+Notes: I verified both cycle-1 fixes at dedfd27, confirmed zero regressions, and support closing the idea.
