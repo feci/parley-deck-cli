@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.25.0 - 2026-06-13
+
+Auto-drive is now the default.
+
+- **`parley run` auto-drives by default.** After round-01 the protocol now
+  advances automatically — cross-review rounds, consensus draft, signoff
+  requests, and finalize — without you running the next step. Pass **`--no-auto`**
+  to opt out (stop after round-01 and advance manually). The flipped flag also
+  governs the launch prompt: a default run launches and drives unattended, while
+  `--no-auto` (without `--yes`) restores the pre-launch confirmation.
+- **Auto-drive now runs inside the TUI.** Previously the driver only ran on the
+  `--no-tui` path, so a TUI run stalled at round-01. The driver now runs in the
+  background while the live TUI shows it advancing (its output is discarded so it
+  never corrupts the render; quitting the TUI stops it).
+- **Code-mutation stays gated.** The implementation/fix-up phases (Phase 5–8) are
+  still only auto-driven when the idea opts in via `auto_implement`; flipping the
+  auto default does not auto-write code. `--no-implement` still stops the driver
+  at `FINAL.md`.
+- `parley continue` is unchanged: it still prints the next action by default and
+  executes it only with `--auto`.
+
 ## v1.24.1 - 2026-06-13
 
 Maintenance (idea `embedded-default-protocol-resync`, PR #47):

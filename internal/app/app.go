@@ -117,7 +117,7 @@ Usage:
   %s sessions inspect [--dir DIR] [--json] RUN_ID
   %s consult [--dir DIR] [--timeout D] AGENT [QUESTION]
   %s consults list [--dir DIR]
-  %s run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK
+  %s run [--no-tui] [--no-auto] [--participants AGENTS] [--yes] TASK
   %s continue [--dir DIR] [--json] RUN_OR_IDEA
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
@@ -140,7 +140,11 @@ Commands:
 
   run
       Create a new idea from TASK and start round-01 with selected agents.
-      Without --yes or --auto, Parley asks before launching hosted agents.
+      Auto-drive is ON by default: after round-01 the protocol advances
+      automatically (cross-review, consensus, finalize, and — if the idea opts
+      into auto_implement — the implementation/fix-up phases), shown live in the
+      TUI. Pass --no-auto to stop after round-01 and advance manually; with
+      --no-auto and without --yes, Parley asks before launching hosted agents.
 
   resume
       Re-open a run by run ID or idea slug, validate pending handoffs, and
@@ -1013,16 +1017,16 @@ func runResume(args []string, stdout, stderr io.Writer) int {
 	idea := ideaForRun(status, run)
 	resumeKill, resumeLiveness := reattachSeams(run.RunDir)
 	if err := tui.RunLive(tui.LiveOptions{
-		Status:       status,
-		Idea:         idea,
-		Participants: run.Participants,
-		RunID:        run.RunID,
-		RunDir:       run.RunDir,
-		Resume:       true,
-		KillAgent:    resumeKill,     // durable kill across the restart
-		Liveness:     resumeLiveness, // RUN vs STALE badge
-		Root:         *root,
-		ReattachKill: func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
+		Status:           status,
+		Idea:             idea,
+		Participants:     run.Participants,
+		RunID:            run.RunID,
+		RunDir:           run.RunDir,
+		Resume:           true,
+		KillAgent:        resumeKill,     // durable kill across the restart
+		Liveness:         resumeLiveness, // RUN vs STALE badge
+		Root:             *root,
+		ReattachKill:     func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
 		ReattachLiveness: func(runID string) tui.LivenessFunc { _, l := reattachSeams(runDirFor(*root, runID)); return l },
 	}); err != nil {
 		fmt.Fprintf(stderr, "resume tui failed: %v\n", err)
@@ -1653,7 +1657,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	noTUI := fs.Bool("no-tui", false, "run without opening the TUI after the round")
-	auto := fs.Bool("auto", false, "enable automatic low-risk progression policy")
+	auto := fs.Bool("auto", true, "auto-drive the protocol past round-01 (default; use --no-auto to disable)")
+	noAuto := fs.Bool("no-auto", false, "disable auto-drive: stop after round-01 and advance the protocol manually")
 	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
 	yes := fs.Bool("yes", false, "launch selected agents without interactive confirmation")
@@ -1661,9 +1666,13 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	// Auto-drive is on by default; --no-auto is the explicit opt-out.
+	if *noAuto {
+		*auto = false
+	}
 	task := strings.TrimSpace(strings.Join(fs.Args(), " "))
 	if task == "" {
-		fmt.Fprintln(stderr, "usage: parley run [--no-tui] [--auto] [--participants AGENTS] [--yes] TASK")
+		fmt.Fprintln(stderr, "usage: parley run [--no-tui] [--no-auto] [--participants AGENTS] [--yes] TASK")
 		return 2
 	}
 
@@ -1757,26 +1766,61 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 
 	runCtx, cancelRun := context.WithCancel(ctx)
 	defer cancelRun()
+	handle := runner.RunRoundOneAsync(runCtx, runOpts)
 	if *auto {
 		runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
+		// Auto-drive the protocol while the live TUI shows it advancing: once
+		// round-01 finishes successfully, run the same driver the headless path
+		// uses. The driver emits run.phase/agent events the TUI renders; its
+		// output goes to io.Discard so it never corrupts the TUI render, and
+		// quitting the TUI cancels runCtx, which stops the driver.
+		go func() {
+			select {
+			case <-runCtx.Done():
+				return
+			case <-handle.Done():
+			}
+			if anyRunFailed(handle.Results()) {
+				return
+			}
+			d := driver.New(driver.Config{
+				IdeaDir:           created.Idea.Path,
+				IdeaSlug:          created.Idea.Slug,
+				Participants:      created.Idea.Participants,
+				RunDir:            created.RunDir,
+				Root:              *root,
+				Events:            runOpts.Store,
+				CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
+				Auto:              true,
+				Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, io.Discard),
+				Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, io.Discard),
+				AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
+				Out:               io.Discard,
+			}, driver.NewRunnerAdapter(runOpts))
+			if err := d.Run(runCtx); err != nil {
+				_ = runOpts.Store.Append(store.Event{Time: time.Now().UTC(), Type: "driver.error", Data: map[string]any{"error": err.Error()}})
+			}
+			if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
+				registerWorkspaceSessions(*root, []runstate.RunSummary{run})
+			}
+		}()
 	}
-	handle := runner.RunRoundOneAsync(runCtx, runOpts)
 	workspaceStatus.Ideas = []protocol.IdeaStatus{created.Idea}
 	steerFn, killFn, livenessFn := liveSteerKillSeams(runCtx, handle)
 	if err := tui.RunLive(tui.LiveOptions{
-		Status:       workspaceStatus,
-		Idea:         created.Idea,
-		Participants: participants,
-		RunID:        created.RunID,
-		RunDir:       handle.RunDir,
-		Done:         handle.Done(),
-		Cancel:       cancelRun,
-		SubmitSteer:  steerFn,
-		KillAgent:    killFn,
-		Liveness:     livenessFn,
-		ReattachKill: func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
+		Status:           workspaceStatus,
+		Idea:             created.Idea,
+		Participants:     participants,
+		RunID:            created.RunID,
+		RunDir:           handle.RunDir,
+		Done:             handle.Done(),
+		Cancel:           cancelRun,
+		SubmitSteer:      steerFn,
+		KillAgent:        killFn,
+		Liveness:         livenessFn,
+		ReattachKill:     func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
 		ReattachLiveness: func(runID string) tui.LivenessFunc { _, l := reattachSeams(runDirFor(*root, runID)); return l },
-		Root:         *root,
+		Root:             *root,
 		// `parley run` watches one run; start new ideas from `parley tui` (N).
 	}); err != nil {
 		cancelRun()
@@ -2237,6 +2281,21 @@ func confirmLaunch(stdin *os.File, stdout io.Writer, participants []string) bool
 	}
 	answer := strings.ToLower(strings.TrimSpace(line))
 	return answer == "y" || answer == "yes"
+}
+
+// anyRunFailed reports whether round-01 should block auto-drive: no participants,
+// or any non-successful result (mirrors printRunResults' failure verdict without
+// printing, for the TUI auto-drive goroutine).
+func anyRunFailed(results []runner.Result) bool {
+	if len(results) == 0 {
+		return true
+	}
+	for _, result := range results {
+		if !result.Success() {
+			return true
+		}
+	}
+	return false
 }
 
 func printRunResults(stdout io.Writer, results []runner.Result) bool {

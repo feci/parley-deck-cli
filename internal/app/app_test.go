@@ -389,7 +389,7 @@ approval_policy = "on-failure"
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"run", "--dir", root, "--no-tui", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
+	code := Run([]string{"run", "--dir", root, "--no-tui", "--no-auto", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
@@ -422,6 +422,60 @@ approval_policy = "on-failure"
 	}
 	if _, err := os.Stat(filepath.Join(parleyHome, "sessions.json")); err != nil {
 		t.Fatalf("session registry was not written: %v", err)
+	}
+}
+
+// TestRunDefaultsToAutoMode locks the flipped default: `parley run` with neither
+// --auto nor --no-auto records mode "auto", and --no-auto records "hitl". The
+// fake agent is discoverable but fails round-01 so the auto-driver is skipped and
+// the test only inspects the recorded run mode.
+func TestRunDefaultsToAutoMode(t *testing.T) {
+	modeFor := func(t *testing.T, extraArgs ...string) string {
+		t.Helper()
+		root := t.TempDir()
+		t.Setenv("PARLEY_HOME", t.TempDir())
+		if err := protocol.InitWorkspace(root); err != nil {
+			t.Fatal(err)
+		}
+		localConfig := filepath.Join(root, protocol.DeckDir, "agents.local.toml")
+		if err := os.WriteFile(localConfig, []byte("\n[agents.codex]\nmodel = \"local-model\"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		bin := t.TempDir()
+		writeFailingRoundAgentCLI(t, bin, "codex", "codex test 1.0")
+		t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+		var stdout, stderr bytes.Buffer
+		args := append([]string{"run", "--dir", root, "--no-tui", "--yes", "--participants", "codex"}, extraArgs...)
+		Run(append(args, "Task"), &stdout, &stderr)
+
+		entries, err := os.ReadDir(filepath.Join(root, protocol.DeckDir, "runs"))
+		if err != nil || len(entries) != 1 {
+			t.Fatalf("runs=%v err=%v", entries, err)
+		}
+		events, err := store.New(filepath.Join(root, protocol.DeckDir, "runs", entries[0].Name())).Load()
+		if err != nil || len(events) == 0 || events[0].Type != "run.created" {
+			t.Fatalf("events=%+v err=%v", events, err)
+		}
+		mode, _ := events[0].Data["mode"].(string)
+		return mode
+	}
+
+	if got := modeFor(t); got != "auto" {
+		t.Fatalf("default run mode = %q, want \"auto\" (auto-drive must be the default)", got)
+	}
+	if got := modeFor(t, "--no-auto"); got != "hitl" {
+		t.Fatalf("--no-auto run mode = %q, want \"hitl\"", got)
+	}
+}
+
+// writeFailingRoundAgentCLI is discoverable (answers --version) but exits nonzero
+// on a real invocation, so round-01 fails and the auto-driver is skipped.
+func writeFailingRoundAgentCLI(t *testing.T, dir, name, version string) {
+	t.Helper()
+	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo '" + version + "'; exit 0; fi\nexit 1\n"
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o755); err != nil {
+		t.Fatal(err)
 	}
 }
 
