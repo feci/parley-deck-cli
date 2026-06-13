@@ -5,7 +5,7 @@ implementer: claude
 started: 2026-06-13
 completed: 2026-06-13
 branch: parley-deck-cli#feature/embedded-default-resync
-head-commit: 9fb1d42
+head-commit: 132271b
 reviewed-commit-cycle-1: efe76d0
 design-pr: n/a
 implementation-pr: n/a
