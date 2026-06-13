@@ -390,6 +390,33 @@ func TestSlashHelpOpensOverlay(t *testing.T) {
 	}
 }
 
+func TestRunCommandTriggersAutoDrive(t *testing.T) {
+	called := 0
+	model := newLiveModel(LiveOptions{
+		Idea:           testIdea("drive"),
+		Participants:   []string{"codex"},
+		RunID:          "run-1",
+		RunDir:         t.TempDir(),
+		StartAutoDrive: func() { called++ },
+	})
+	updated, _ := model.runCommand("/run")
+	model = updated.(liveModel)
+	if called != 1 {
+		t.Fatalf("/run should invoke StartAutoDrive once, called=%d", called)
+	}
+	if !strings.Contains(model.statusMsg, "auto-drive") {
+		t.Fatalf("/run should report auto-drive, statusMsg=%q", model.statusMsg)
+	}
+
+	// No seam (observational run): /run reports unavailable, does not panic.
+	noSeam := newLiveModel(LiveOptions{Idea: testIdea("drive"), Participants: []string{"codex"}, RunID: "run-2", RunDir: t.TempDir()})
+	updated, _ = noSeam.runCommand("/run")
+	noSeam = updated.(liveModel)
+	if noSeam.inputErr == "" {
+		t.Fatalf("/run without a StartAutoDrive seam should set inputErr")
+	}
+}
+
 func TestEscClearsInputThenDetaches(t *testing.T) {
 	model := liveModelWithLog(t, "x\n")
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("hi")})
@@ -1153,10 +1180,10 @@ func TestActivateRunCopiesSteerKillSeams(t *testing.T) {
 // \r\n and \n commit, committed lines stay immutable, ANSI is stripped.
 func TestIngestTranscriptCRCases(t *testing.T) {
 	cases := []struct {
-		name         string
-		chunks       []string
-		wantLines    []string
-		wantPartial  string
+		name        string
+		chunks      []string
+		wantLines   []string
+		wantPartial string
 	}{
 		{"lone-cr-rewrites", []string{"a\rb"}, nil, "b"},
 		{"cr-then-newline-commits", []string{"a\rb\n"}, []string{"b"}, ""},

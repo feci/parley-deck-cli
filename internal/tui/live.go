@@ -76,6 +76,13 @@ type LiveOptions struct {
 	ReattachKill     func(runID string) KillAgentFunc
 	ReattachLiveness func(runID string) LivenessFunc
 	Liveness         LivenessFunc
+
+	// StartAutoDrive kicks the auto-driver for this run (advance past round-01:
+	// cross-review → consensus → finalize → opted-in implementation). It is
+	// idempotent — calling it again while already driving is a no-op. Wired by
+	// `parley run`; nil on observational/opened runs. Bound to the `/run`
+	// command so a --no-auto run can be advanced on demand.
+	StartAutoDrive func()
 }
 
 // LaunchRequest is a request to launch a new idea/run from the TUI.
@@ -1124,6 +1131,7 @@ var commandSpecs = []commandSpec{
 	{Name: "/home"},
 	{Name: "/stderr"},
 	{Name: "/artifact"},
+	{Name: "/run", Usage: "/run — advance the protocol now (auto-drive)"},
 	{Name: "/deck", Usage: "/deck <text>", TakesArg: true},
 	{Name: "/open", Usage: "/open [slug|run]", OpensPicker: true, TakesArg: true},
 	{Name: "/answer", Usage: "/answer [qid text]", OpensPicker: true, TakesArg: true},
@@ -1919,6 +1927,15 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 	case "/refresh":
 		m.inputText, m.inputErr = "", ""
 		m.statusMsg = "reconciling protocol state…"
+		return m, m.scheduleProtoRefresh()
+	case "/run":
+		m.inputText, m.inputErr = "", ""
+		if m.opts.StartAutoDrive == nil {
+			m.inputErr = "auto-drive is not available for this run"
+			return m, nil
+		}
+		m.opts.StartAutoDrive()
+		m.statusMsg = "auto-drive started — advancing the protocol (watch the Protocol tab)"
 		return m, m.scheduleProtoRefresh()
 	case "/narrate":
 		m.inputText, m.inputErr = "", ""

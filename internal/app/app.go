@@ -1767,43 +1767,50 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	runCtx, cancelRun := context.WithCancel(ctx)
 	defer cancelRun()
 	handle := runner.RunRoundOneAsync(runCtx, runOpts)
+	// startAutoDrive advances the protocol past round-01 while the live TUI shows
+	// it (cross-review → consensus → finalize → opted-in implementation). It is
+	// idempotent (sync.Once): the auto default calls it now; the `/run` command
+	// lets a --no-auto run kick it on demand. The driver emits run.phase/agent
+	// events the TUI renders; its output is io.Discard so it never corrupts the
+	// render, and quitting the TUI cancels runCtx, which stops the driver.
+	var driveOnce sync.Once
+	startAutoDrive := func() {
+		driveOnce.Do(func() {
+			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
+			go func() {
+				select {
+				case <-runCtx.Done():
+					return
+				case <-handle.Done():
+				}
+				if anyRunFailed(handle.Results()) {
+					return
+				}
+				d := driver.New(driver.Config{
+					IdeaDir:           created.Idea.Path,
+					IdeaSlug:          created.Idea.Slug,
+					Participants:      created.Idea.Participants,
+					RunDir:            created.RunDir,
+					Root:              *root,
+					Events:            runOpts.Store,
+					CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
+					Auto:              true,
+					Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, io.Discard),
+					Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, io.Discard),
+					AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
+					Out:               io.Discard,
+				}, driver.NewRunnerAdapter(runOpts))
+				if err := d.Run(runCtx); err != nil {
+					_ = runOpts.Store.Append(store.Event{Time: time.Now().UTC(), Type: "driver.error", Data: map[string]any{"error": err.Error()}})
+				}
+				if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
+					registerWorkspaceSessions(*root, []runstate.RunSummary{run})
+				}
+			}()
+		})
+	}
 	if *auto {
-		runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
-		// Auto-drive the protocol while the live TUI shows it advancing: once
-		// round-01 finishes successfully, run the same driver the headless path
-		// uses. The driver emits run.phase/agent events the TUI renders; its
-		// output goes to io.Discard so it never corrupts the TUI render, and
-		// quitting the TUI cancels runCtx, which stops the driver.
-		go func() {
-			select {
-			case <-runCtx.Done():
-				return
-			case <-handle.Done():
-			}
-			if anyRunFailed(handle.Results()) {
-				return
-			}
-			d := driver.New(driver.Config{
-				IdeaDir:           created.Idea.Path,
-				IdeaSlug:          created.Idea.Slug,
-				Participants:      created.Idea.Participants,
-				RunDir:            created.RunDir,
-				Root:              *root,
-				Events:            runOpts.Store,
-				CrossReviewRounds: driver.ReadCrossReviewRounds(created.Idea.Path),
-				Auto:              true,
-				Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, io.Discard),
-				Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, io.Discard),
-				AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
-				Out:               io.Discard,
-			}, driver.NewRunnerAdapter(runOpts))
-			if err := d.Run(runCtx); err != nil {
-				_ = runOpts.Store.Append(store.Event{Time: time.Now().UTC(), Type: "driver.error", Data: map[string]any{"error": err.Error()}})
-			}
-			if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
-				registerWorkspaceSessions(*root, []runstate.RunSummary{run})
-			}
-		}()
+		startAutoDrive()
 	}
 	workspaceStatus.Ideas = []protocol.IdeaStatus{created.Idea}
 	steerFn, killFn, livenessFn := liveSteerKillSeams(runCtx, handle)
@@ -1820,6 +1827,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		Liveness:         livenessFn,
 		ReattachKill:     func(runID string) tui.KillAgentFunc { k, _ := reattachSeams(runDirFor(*root, runID)); return k },
 		ReattachLiveness: func(runID string) tui.LivenessFunc { _, l := reattachSeams(runDirFor(*root, runID)); return l },
+		StartAutoDrive:   startAutoDrive,
 		Root:             *root,
 		// `parley run` watches one run; start new ideas from `parley tui` (N).
 	}); err != nil {
