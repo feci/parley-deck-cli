@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.24.1 - 2026-06-13
+
+Maintenance (idea `embedded-default-protocol-resync`, PR #47):
+
+- **Embedded default protocol resynced** with the live deck. The `parley init`
+  bootstrap template (`internal/protocol/defaults/COOPERATION.md`) gained the
+  missing `## 12. Pipeline blocks & action stages` section (byte-identical to the
+  live deck) and was **genericized**: header `Workspace`/`Created` are now
+  placeholders and both §2 tables ship empty bodies, so a freshly `parley init`-ed
+  project no longer inherits this repo's roster/workspace.
+- **Anti-drift guard**: a fail-closed Go test (`TestEmbeddedDefaultMatchesLiveDeck`)
+  asserts the embedded default stays in sync with `parley-deck/COOPERATION.md`
+  (modulo five documented, anchored project-specific zones) and that the embedded
+  bootstrap shape holds — so a protocol edit landing in only one copy now breaks
+  the build. Plus `TestDefaultCooperationForInit` for the init output.
+- Synced the project deck to `parley-deck-skill` 1.3.1 (§12 was already present).
+
 ## v1.24.0 - 2026-06-12
 
 Adopted from the MIT-licensed "kindly" skill (ideas `runner-hardening-kindly` +
