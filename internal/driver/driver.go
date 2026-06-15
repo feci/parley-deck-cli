@@ -120,10 +120,15 @@ func (d *Driver) commitCursor(c Cursor, action Action, previous Phase) error {
 	return nil
 }
 
-// autoLocalDir re-reads the effective transport from disk (D8): auto-advance is
-// enabled only with --auto AND an effective transport of local-dir.
-func (d *Driver) autoLocalDir() bool {
-	return d.cfg.Auto && EffectiveTransport(d.cfg.IdeaDir, d.cfg.Root) == "local-dir"
+// autoDriveEnabled reports whether the driver should auto-advance. As of 1.27.0
+// this is transport-independent (relaxing the original local-dir-only gate from
+// consensus D8): the canonical artifacts (rounds, consensus, FINAL, …) are the
+// source of truth under every transport, so auto-drive advances them on
+// github-pr / gitlab-mr too. The driver does NOT create PR/MR branches — that
+// mirroring stays a manual, ergonomic step. Only the --auto flag (default on;
+// --no-auto to disable) gates auto-drive now.
+func (d *Driver) autoDriveEnabled() bool {
+	return d.cfg.Auto
 }
 
 // Advance performs ONE re-entrant, idempotent tick. Disk is authoritative: it
@@ -133,9 +138,9 @@ func (d *Driver) autoLocalDir() bool {
 func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	c := Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds)
 
-	// Transport/auto gate, re-read from disk every tick (consensus D8) so a
-	// mid-run transport change in 00-prompt.md/COOPERATION.md is honored.
-	if !d.autoLocalDir() {
+	// Auto gate (1.27.0): auto-drive is transport-independent; only --auto/--no-auto
+	// decides. See autoDriveEnabled.
+	if !d.autoDriveEnabled() {
 		return ActionSurfaceOnly, c, nil
 	}
 	switch c.Phase {

@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.27.0 - 2026-06-15
+
+- **Auto-drive now works on every transport.** The driver's auto-advance was
+  hard-gated to `local-dir`, so a `github-pr` / `gitlab-mr` run stalled at
+  round-01 even with auto-drive on. The gate is now transport-independent: the
+  canonical artifacts (rounds, consensus, FINAL, …) are the source of truth under
+  every transport, so auto-drive advances them everywhere. Only `--auto` /
+  `--no-auto` gates it now. The driver still does NOT create PR/MR branches — that
+  mirroring stays a manual, ergonomic step.
+
 ## v1.26.0 - 2026-06-13
 
 - **New TUI `/run` command.** Advance the protocol on demand from inside the live
