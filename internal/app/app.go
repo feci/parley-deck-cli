@@ -1732,9 +1732,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
 			registerWorkspaceSessions(*root, []runstate.RunSummary{run})
 		}
-		// Auto-advance past round-01 (deliberation-driver slice 1: round promotion
-		// only) under --auto AND local-dir transport. Round-01 must have succeeded.
-		// Non-auto keeps today's one-shot behavior.
+		// Auto-advance past round-01 under --auto (any transport as of 1.27.0;
+		// the driver advances canonical artifacts, not PR/MR branches). Round-01
+		// must have succeeded. --no-auto keeps the one-shot behavior.
 		if *auto && !failed {
 			d := driver.New(driver.Config{
 				IdeaDir:           created.Idea.Path,

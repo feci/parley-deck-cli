@@ -322,8 +322,9 @@ func TestAdvanceSurfaceOnlyWhenAutoOff(t *testing.T) {
 	}
 }
 
-func TestAdvanceSurfaceOnlyWhenTransportNotLocalDir(t *testing.T) {
-	// Idea-level transport github-pr must disable auto-advance even with --auto.
+func TestAdvanceDrivesUnderGithubPrTransport(t *testing.T) {
+	// 1.27.0: auto-advance is transport-independent. A github-pr idea with --auto
+	// must still advance the canonical artifacts (here: promote round-01 → 02).
 	parts := []string{"codex", "claude"}
 	ideaDir, runDir := setupIdea(t, parts, "")
 	// Override transport to github-pr.
@@ -334,17 +335,17 @@ func TestAdvanceSurfaceOnlyWhenTransportNotLocalDir(t *testing.T) {
 	writeAll(t, ideaDir, 1, parts)
 	appendEvent(t, runDir, "round.completed", "round-01")
 	fr := &fakeRunner{}
-	d := newTestDriver(ideaDir, runDir, parts, 1, true, fr) // Auto=true but transport=github-pr
+	d := newTestDriver(ideaDir, runDir, parts, 1, true, fr) // Auto=true, transport=github-pr
 
 	action, _, err := d.Advance(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if action != ActionSurfaceOnly {
-		t.Fatalf("action=%s, want surface-only (github-pr must never auto-drive)", action)
+	if action != ActionPromoted {
+		t.Fatalf("action=%s, want promoted (github-pr now auto-drives canonical artifacts)", action)
 	}
-	if len(fr.calls) != 0 {
-		t.Fatal("RunRound must not run for github-pr transport")
+	if len(fr.calls) != 1 || fr.calls[0] != 2 {
+		t.Fatalf("RunRound calls=%v, want [2] (round-02 opened under github-pr)", fr.calls)
 	}
 }
 
