@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.28.1 - 2026-06-16
+
+- **`parley retro` precision fix.** The deterministic scanner matched signal
+  patterns in free text, so it false-positived on prose that merely *discussed*
+  them — e.g. it flagged `rho-retro-tooling` as "blocked-or-abandoned" because its
+  own review consensus quoted ``Verdict: BLOCK``. Blocker detection is now
+  anchored to structure: a real `Status: ❌` signoff line, or a `## Verdict`
+  heading whose leading token is `BLOCK`/`BLOCKER` (or contains ❌) — not the
+  substring "block" in prose, and not a `REQUEST-CHANGES`/"no blocking issues"
+  explanation. NOT-FIXED is counted only in review round files, dismissed-findings
+  only in consensus files. Regression test included
+  (`TestBlockerDetectionIgnoresProse`). Surfaced by dogfooding `parley retro` on
+  this repo right after the 1.28.0 ship.
+
 ## v1.28.0 - 2026-06-16
 
 Retrospective optimization (RHO adoption — two reviewed ideas,

@@ -167,6 +167,53 @@ func TestD4SignalsAndDesignChurn(t *testing.T) {
 	}
 }
 
+// TestBlockerDetectionIgnoresProse is the regression test for the 1.28.0
+// false-positive: a review consensus that QUOTES "Verdict: BLOCK" in prose must
+// not flag the idea as blocked, while real BLOCK verdicts / ❌ signoffs must.
+func TestBlockerDetectionIgnoresProse(t *testing.T) {
+	root := t.TempDir()
+	// prose-block: review consensus discusses "Verdict: BLOCK"; all real verdicts
+	// are ACCEPT. Must NOT be blocked (the bug).
+	writeIdea(t, root, "prose-block", 1, 1, map[string]string{
+		"review/consensus.md":      "Fix: also match `Verdict: BLOCK` in reviewer files.\n### Signoff: codex\nStatus: ✅ ACCEPT\n",
+		"review/round-01/codex.md": "## Verdict\nACCEPT\n",
+	})
+	// real-block: a genuine BLOCK verdict in a round file. MUST be blocked.
+	writeIdea(t, root, "real-block", 1, 1, map[string]string{
+		"review/round-01/codex.md": "## Findings\n### [CRITICAL] x\n## Verdict\nBLOCK\n",
+	})
+	// request-changes: a fixes-requested verdict using the word "block" as a verb.
+	// MUST NOT be a hard BLOCK (it is captured by fix-up signals instead).
+	writeIdea(t, root, "request-changes", 1, 1, map[string]string{
+		"review/round-01/codex.md": "## Verdict\nREQUEST-CHANGES: block on the missing test, then I expect to ACCEPT.\n",
+	})
+	// sign-block: a ❌ BLOCKER signoff in consensus.md. MUST be blocked.
+	writeIdea(t, root, "sign-block", 1, 1, map[string]string{
+		"consensus.md": "### Signoff: agy\nStatus: ❌ BLOCKER\nNotes: no.\n",
+	})
+
+	signals, err := Scan(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]IdeaSignals{}
+	for _, s := range signals {
+		by[s.Slug] = s
+	}
+	if by["prose-block"].Blocked {
+		t.Fatalf("prose-block must NOT be blocked (prose mention of Verdict: BLOCK): %+v", by["prose-block"])
+	}
+	if !by["real-block"].Blocked {
+		t.Fatalf("real-block MUST be blocked (## Verdict\\nBLOCK): %+v", by["real-block"])
+	}
+	if by["request-changes"].Blocked {
+		t.Fatalf("request-changes must NOT be a hard BLOCK: %+v", by["request-changes"])
+	}
+	if !by["sign-block"].Blocked {
+		t.Fatalf("sign-block MUST be blocked (Status: ❌ signoff): %+v", by["sign-block"])
+	}
+}
+
 func TestDiagnoseEmptyAndGrouped(t *testing.T) {
 	if got := Diagnose(nil); got == "" || !contains(got, "No hard cases") {
 		t.Fatalf("empty diagnose should say no hard cases: %q", got)

@@ -39,9 +39,13 @@ var (
 	reRoundDir   = regexp.MustCompile(`^round-\d+$`)
 	reFixupCycle = regexp.MustCompile(`(?m)^## Fix-up cycle`)
 	reNotFixed   = regexp.MustCompile(`NOT-FIXED`)
-	// Blocker signaled either by a ❌ consensus signoff (Status: ❌ …) or a
-	// reviewer-file BLOCK verdict (Verdict: BLOCK / Verdict: ❌).
-	reBlocker = regexp.MustCompile(`(?:Status|Verdict):\s*(?:❌|BLOCK)`)
+	// Blocker is detected ONLY from structural lines, never from prose that merely
+	// discusses blockers (e.g. a consensus that says "reviewer files use
+	// `Verdict: BLOCK`"). reBlockerSignoff matches a real ❌ signoff line
+	// (Status: ❌ …, line-anchored); a BLOCK *verdict* is detected separately by
+	// hasBlockVerdict (a `## Verdict` heading whose value line is BLOCK/❌).
+	reBlockerSignoff = regexp.MustCompile(`(?m)^Status:.*❌`)
+	reVerdictHeading = regexp.MustCompile(`(?m)^##+\s*Verdict\b`)
 	// status frontmatter value (IMPLEMENTATION.md / 00-prompt.md).
 	reStatus    = regexp.MustCompile(`(?m)^status:\s*(.+)$`)
 	reRunFailed = regexp.MustCompile(`"type"\s*:\s*"(?:agent\.failed|agent\.no_first_output|agent\.stalled|driver\.error)"`)
@@ -96,11 +100,18 @@ func scanIdea(dir, slug string, inboxNotes []string) IdeaSignals {
 	s.FixupCycles = len(reFixupCycle.FindAllString(impl, -1))
 	s.Abandoned = statusIs(impl, "abandoned") || statusIs(readFile(filepath.Join(dir, "00-prompt.md")), "abandoned")
 
-	// NOT-FIXED and BLOCKER scanned across review files + consensus docs.
-	reviewText := impl + "\n" + readFile(filepath.Join(dir, "consensus.md")) + "\n" + concatDir(filepath.Join(dir, "review"))
-	s.NotFixed = len(reNotFixed.FindAllString(reviewText, -1))
-	s.Blocked = reBlocker.MatchString(reviewText)
-	s.Dismissed = countDismissed(reviewText)
+	// Signals are anchored to their structural home so prose that merely discusses
+	// them never false-positives (the round-01 review of this very tool tripped on
+	// a consensus that quoted "Verdict: BLOCK").
+	consensusText := readFile(filepath.Join(dir, "consensus.md")) + "\n" + readFile(filepath.Join(dir, "review", "consensus.md"))
+	roundReviews := concatRoundReviews(filepath.Join(dir, "review"))
+	// NOT-FIXED is a re-review fix-verification marker: count it only in review
+	// round files, not in consensus/IMPLEMENTATION prose.
+	s.NotFixed = len(reNotFixed.FindAllString(roundReviews, -1))
+	// Blocker: a real ❌ signoff line (in consensus/impl/round files) or a BLOCK
+	// verdict in a review round file — never a prose mention.
+	s.Blocked = reBlockerSignoff.MatchString(impl+"\n"+consensusText+"\n"+roundReviews) || hasBlockVerdict(roundReviews)
+	s.Dismissed = countDismissed(consensusText)
 
 	for _, note := range inboxNotes {
 		if strings.Contains(note, slug) {
@@ -231,17 +242,72 @@ func readFile(path string) string {
 	return string(data)
 }
 
-func concatDir(dir string) string {
+// concatRoundReviews concatenates only the review ROUND files
+// (review/round-NN/*.md), excluding review/consensus.md, so prose in the review
+// consensus never feeds the per-finding signals (NOT-FIXED, BLOCK verdicts).
+func concatRoundReviews(reviewDir string) string {
+	rounds, err := os.ReadDir(reviewDir)
+	if err != nil {
+		return ""
+	}
 	var b strings.Builder
-	_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".md") {
-			return nil
+	for _, rd := range rounds {
+		if !rd.IsDir() || !reRoundDir.MatchString(rd.Name()) {
+			continue
 		}
-		b.WriteString(readFile(path))
-		b.WriteString("\n")
-		return nil
-	})
+		files, _ := os.ReadDir(filepath.Join(reviewDir, rd.Name()))
+		for _, f := range files {
+			if !f.IsDir() && strings.HasSuffix(f.Name(), ".md") {
+				b.WriteString(readFile(filepath.Join(reviewDir, rd.Name(), f.Name())))
+				b.WriteString("\n")
+			}
+		}
+	}
 	return b.String()
+}
+
+// hasBlockVerdict reports whether any "## Verdict" heading in text has a BLOCK (or
+// ❌) value — either inline ("## Verdict: BLOCK") or on the next non-blank line
+// ("## Verdict\nBLOCK"). A prose mention like "use `Verdict: BLOCK`" is not a
+// heading and never matches.
+func hasBlockVerdict(text string) bool {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
+		if !reVerdictHeading.MatchString(line) {
+			continue
+		}
+		val := strings.TrimLeft(strings.TrimSpace(reVerdictHeading.ReplaceAllString(line, "")), ": \t")
+		if val == "" {
+			for j := i + 1; j < len(lines); j++ {
+				if strings.TrimSpace(lines[j]) != "" {
+					val = strings.TrimSpace(lines[j])
+					break
+				}
+			}
+		}
+		// Match on the verdict's LEADING token (BLOCK/BLOCKER) or an explicit ❌,
+		// not the substring "block" — so "ACCEPT … no blocking issues" and
+		// "REQUEST-CHANGES: block on X" (a fixes-requested verdict, captured by the
+		// fix-up signals) do not count as a hard BLOCK.
+		switch strings.ToUpper(firstToken(val)) {
+		case "BLOCK", "BLOCKER":
+			return true
+		}
+		if strings.Contains(val, "❌") {
+			return true
+		}
+	}
+	return false
+}
+
+// firstToken returns the leading word of s, up to the first space, tab, colon,
+// period, or comma.
+func firstToken(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexAny(s, " \t:.,"); i >= 0 {
+		return s[:i]
+	}
+	return s
 }
 
 func readInboxToUser(inboxDir string) []string {
