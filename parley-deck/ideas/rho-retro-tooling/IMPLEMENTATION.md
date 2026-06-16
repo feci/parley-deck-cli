@@ -1,6 +1,6 @@
 ---
 idea: rho-retro-tooling
-status: fix-up-cycle-1
+status: complete
 implementer: claude
 started: 2026-06-16
 completed: 2026-06-16

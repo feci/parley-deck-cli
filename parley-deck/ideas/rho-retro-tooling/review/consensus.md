@@ -102,3 +102,14 @@ author, and the test-helper fix — with zero new findings and no regressions.
 Status: ✅ ACCEPT
 Notes: All six fixes verified by all three reviewers, zero remaining; the tooling closes complete and ships with the §13 protocol amendment.
 
+### Signoff: codex — 2026-06-16 (cycle 2)
+Status: ✅ ACCEPT
+Notes: My round-02 review accepted commit 816dde2 after verifying all six fixes and finding no new issues.
+
+### Signoff: hermes — 2026-06-16 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Cycle-2 summary matches my round-02 ACCEPT: all six fixes verified, zero findings, tooling completes.
+
+### Signoff: agy — 2026-06-16 (cycle 2)
+Status: ✅ ACCEPT
+Notes: Verified all six agreed fixes in round-02 with no new findings; accepting the final implementation.
