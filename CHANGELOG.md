@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.28.0 - 2026-06-16
+
+Retrospective optimization (RHO adoption — two reviewed ideas,
+`meta-protocol-change-rho-retrospective-optimization` + `rho-retro-tooling`):
+
+- **Protocol §13 "Retrospective optimization"** added to both COOPERATION.md
+  copies (drift-guard lockstep). A retrospective pass mines the deck's own history
+  to *propose* improvements but **applies nothing**: proposals enter as a normal
+  idea (protocol-text changes via a meta-protocol-change idea + human approval),
+  acceptance is the normal multi-agent gate (consensus + all-participant signoff +
+  no-regression), and RHO-style self-preference is a diagnostic note only. Defines
+  the layered harness (protocol / runtime "Repository Instruction Files" / local
+  "Agent Local Memory" / evidence corpus) and the guardrails (audit,
+  adversarial-trajectory hygiene, reversibility, multi-agent diagnosis).
+- **New `parley retro` command** — read-only mining of the deck's structured
+  artifacts: `scan` (failure-density signals per idea), `select` (type-diverse
+  "hard cases" coreset), `diagnose` (grouped report), and `propose --slug` (which
+  scaffolds **only** a single new `ideas/<slug>/00-prompt.md`, fail-closed). No
+  raw session transcripts and no DPP/embeddings/re-rollout in v1; deterministic.
+  Inspired by RHO (arXiv:2606.05922) but replacing its single-model self-preference
+  with the deck's multi-agent quorum.
+
 ## v1.27.0 - 2026-06-15
 
 - **Auto-drive now works on every transport.** The driver's auto-advance was
