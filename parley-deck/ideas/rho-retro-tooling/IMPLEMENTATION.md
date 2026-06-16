@@ -5,7 +5,7 @@ implementer: claude
 started: 2026-06-16
 completed: 2026-06-16
 branch: parley-deck-cli#feature/rho-protocol-proposal
-head-commit: 6a15dde
+head-commit: 816dde2
 design-pr: https://github.com/feci/parley-deck-cli/pull/52
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/52
 ---
