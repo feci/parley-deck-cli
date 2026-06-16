@@ -1,11 +1,14 @@
 ---
 idea: rho-retro-tooling
-review-cycle: 1
+review-cycle: 2
 drafted-by: claude
 date: 2026-06-16
-reviewed-commit: 984c757
-outstanding_agreed_fixes: 6
+reviewed-commit: 816dde2
+outstanding_agreed_fixes: 0
 ---
+
+<!-- Cycle 1 (reviewed-commit 984c757) follows; cycle 2 is appended after the
+     cycle-1 signoffs. -->
 
 ## Agreed fixes
 
@@ -72,4 +75,30 @@ Notes: Consensus correctly records my ACCEPT with no findings while capturing th
 ### Signoff: agy — 2026-06-16
 Status: ✅ ACCEPT
 Notes: The consensus accurately merges and reflects my findings, including the six agreed fixes.
+
+## Cycle 2 (review/round-02 → complete)
+
+Reviewed commit: 816dde2 (fix-up cycle 1). Verdicts: codex ACCEPT, agy ACCEPT,
+hermes ACCEPT. All three verified all six cycle-1 agreed fixes — propose
+write-boundary hardening (kebab + Lstat + Mkdir + O_EXCL + the three new tests),
+`classify` Rounds>1, blocker `Verdict: BLOCK` detection, D4 signals (abandoned +
+`scanRuns` over structured run event logs → runtime-failure), neutral generated
+author, and the test-helper fix — with zero new findings and no regressions.
+**Zero agreed fixes remain — the tooling completes on cycle-2 signoff.**
+
+### Agreed fixes (cycle 2)
+
+- None.
+
+### Dismissed findings (cycle 2)
+
+- None.
+
+### Signoffs (cycle 2)
+
+<!-- Each participant APPENDS their cycle-2 signoff block below. Do NOT edit others' blocks. -->
+
+### Signoff: claude — 2026-06-16 (cycle 2)
+Status: ✅ ACCEPT
+Notes: All six fixes verified by all three reviewers, zero remaining; the tooling closes complete and ships with the §13 protocol amendment.
 
