@@ -839,3 +839,33 @@ Agents produce and reach consensus on a markdown action plan. The driver may cal
 All pipeline files are optional and live under `parley-deck/pipelines/<slug>/`; `ideas/`, `inbox/`, `meta/`, `runs/` are unchanged. Existing `run.json`/manifests may gain optional `pipeline_slug`/`block_id` fields under a schema bump with zero-value defaulting; older drivers ignore unknown fields and degrade to advisory.
 
 Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-end-to-end-pipeline` (2026-06-02).
+
+## 13. Retrospective optimization
+
+Inspired by Retrospective Harness Optimization (RHO): periodically mine the deck's own history to **propose** improvements to the harness — but never apply them automatically. A retrospective pass is **advisory input only**; every change it proposes enters through the normal lifecycle (Phases 0–8), and any protocol-text change goes through a meta-protocol-change idea (§7) with human approval. RHO's single-model self-preference is replaced here by the deck's multi-agent quorum.
+
+### 13.1 What a retro pass is
+
+A retro pass selects a diverse set of hard past cases (the **coreset**), diagnoses recurring failure modes from existing artifacts, and drafts the proposed improvement directions as an ordinary idea's `00-prompt.md`. It produces no canonical round/consensus/review/final/implementation content and applies no edit. Its output is a hypothesis, not a finding.
+
+### 13.2 Harness layers — what a proposal may change, and how
+
+- **Protocol harness** — `COOPERATION.md` and any in-repo copy kept in lockstep by the drift guard. Changeable only via a meta-protocol-change idea (§7) with human approval; a retro pass must never edit it directly.
+- **Runtime / shared harness — Repository Instruction Files** — tracked, shared files: skills, CLI behavior, helper scripts, docs, and repo-level instruction files. Changeable via an ordinary idea and the full review gate (a meta idea if the change alters protocol semantics).
+- **Local harness — Agent Local Memory** — operator-local, non-canonical state (caches, ignored launch config, per-machine memory). A retro pass may report observations only; it must never canonicalize them or infer protocol rules from one operator's local setup.
+- **Evidence corpus** — structured Parley Deck artifacts (`ideas/*` rounds, `review/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, run event logs) are the primary evidence. Raw session transcripts are secondary, off by default, and quarantined; include them only with recorded provenance.
+
+### 13.3 Acceptance gate
+
+A retro-proposed change is accepted only by the normal gate: multi-agent consensus + all-participant signoff + human approval for protocol or shared-harness changes + no regression (the drift guard green where applicable, the relevant checks/tests green, and a clean multi-agent re-review). A self-preference or self-consistency score may be attached to a proposal as a diagnostic note; it is never an acceptance criterion.
+
+### 13.4 Guardrails
+
+- **Audit** — a retro pass is itself an idea; its coreset, diagnosis, and the provenance of both selected and excluded sources are recorded.
+- **Adversarial-trajectory hygiene** — exclude trajectories that are compromised, contain injected or external content, or are out of project scope; record each exclusion and its reason.
+- **Reversibility** — all proposed edits land on an idea branch with git history; never a silent in-place rewrite.
+- **Multi-agent diagnosis** — when a retro pass opens an idea, its round-01 has each participant diagnose the coreset independently. Independent multi-agent disagreement is the deck's analogue of self-consistency, applied at diagnosis, not only at acceptance.
+
+Tooling that performs retro passes (e.g. a `parley retro` command) is governed by this section but specified separately; such tooling defaults to read-only and may at most scaffold a single new `ideas/<slug>/00-prompt.md`.
+
+Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16).
