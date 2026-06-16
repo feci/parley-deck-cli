@@ -27,7 +27,9 @@ type IdeaSignals struct {
 	NotFixed     int      `json:"not_fixed"`     // NOT-FIXED occurrences in review files
 	Dismissed    int      `json:"dismissed"`     // dismissed findings recorded
 	Escalations  int      `json:"escalations"`   // inbox *to-user* notes for this idea
-	Blocked      bool     `json:"blocked"`       // a ❌ BLOCKER signoff anywhere
+	Blocked      bool     `json:"blocked"`       // a ❌ BLOCKER signoff or BLOCK verdict
+	Abandoned    bool     `json:"abandoned"`     // status: abandoned in IMPLEMENTATION/00-prompt
+	RunFailures  int      `json:"run_failures"`  // agent.failed/watchdog/driver.error in runs/*/events.jsonl
 	Score        float64  `json:"score"`         // weighted failure density
 	FailureType  string   `json:"failure_type"`  // dominant failure-mode bucket (diversity key)
 	Reasons      []string `json:"reasons"`       // human-readable contributors
@@ -37,7 +39,13 @@ var (
 	reRoundDir   = regexp.MustCompile(`^round-\d+$`)
 	reFixupCycle = regexp.MustCompile(`(?m)^## Fix-up cycle`)
 	reNotFixed   = regexp.MustCompile(`NOT-FIXED`)
-	reBlocker    = regexp.MustCompile(`Status:\s*❌`)
+	// Blocker signaled either by a ❌ consensus signoff (Status: ❌ …) or a
+	// reviewer-file BLOCK verdict (Verdict: BLOCK / Verdict: ❌).
+	reBlocker = regexp.MustCompile(`(?:Status|Verdict):\s*(?:❌|BLOCK)`)
+	// status frontmatter value (IMPLEMENTATION.md / 00-prompt.md).
+	reStatus    = regexp.MustCompile(`(?m)^status:\s*(.+)$`)
+	reRunFailed = regexp.MustCompile(`"type"\s*:\s*"(?:agent\.failed|agent\.no_first_output|agent\.stalled|driver\.error)"`)
+	reRunIdea   = regexp.MustCompile(`"idea"\s*:\s*"([^"]+)"`)
 )
 
 // Scan walks parley-deck/ideas/* and builds one IdeaSignals per idea. It is
@@ -52,6 +60,7 @@ func Scan(root string) ([]IdeaSignals, error) {
 		return nil, err
 	}
 	inboxNotes := readInboxToUser(filepath.Join(root, protocol.DeckDir, "inbox"))
+	runFailures := scanRuns(filepath.Join(root, protocol.DeckDir, "runs"))
 
 	var out []IdeaSignals
 	for _, e := range entries {
@@ -59,6 +68,7 @@ func Scan(root string) ([]IdeaSignals, error) {
 			continue
 		}
 		s := scanIdea(filepath.Join(ideasDir, e.Name()), e.Name(), inboxNotes)
+		s.RunFailures = runFailures[e.Name()]
 		score(&s)
 		out = append(out, s)
 	}
@@ -84,6 +94,7 @@ func scanIdea(dir, slug string, inboxNotes []string) IdeaSignals {
 	}
 	impl := readFile(filepath.Join(dir, "IMPLEMENTATION.md"))
 	s.FixupCycles = len(reFixupCycle.FindAllString(impl, -1))
+	s.Abandoned = statusIs(impl, "abandoned") || statusIs(readFile(filepath.Join(dir, "00-prompt.md")), "abandoned")
 
 	// NOT-FIXED and BLOCKER scanned across review files + consensus docs.
 	reviewText := impl + "\n" + readFile(filepath.Join(dir, "consensus.md")) + "\n" + concatDir(filepath.Join(dir, "review"))
@@ -114,6 +125,8 @@ func score(s *IdeaSignals) {
 	add(s.NotFixed > 0, float64(s.NotFixed)*1.5, "NOT-FIXED re-reviews")
 	add(s.Dismissed > 0, float64(s.Dismissed)*0.5, "dismissed findings")
 	add(s.Escalations > 0, float64(s.Escalations)*3.0, "user escalations")
+	add(s.RunFailures > 0, float64(s.RunFailures)*1.5, "run failures (agent.failed/watchdog/driver.error)")
+	add(s.Abandoned, 4.0, "abandoned work")
 	add(s.Blocked, 4.0, "blocker signoff")
 
 	s.FailureType = classify(s)
@@ -123,15 +136,17 @@ func score(s *IdeaSignals) {
 // for coreset selection). Order reflects severity/specificity.
 func classify(s *IdeaSignals) string {
 	switch {
-	case s.Blocked:
-		return "blocked"
+	case s.Blocked || s.Abandoned:
+		return "blocked-or-abandoned"
 	case s.Escalations > 0:
 		return "escalation"
+	case s.RunFailures > 0:
+		return "runtime-failure"
 	case s.FixupCycles >= 2 || s.NotFixed > 0:
 		return "fix-up-heavy"
 	case s.ReviewRounds > 1:
 		return "review-churn"
-	case s.Rounds > 2:
+	case s.Rounds > 1:
 		return "design-churn"
 	default:
 		return "low-friction"
@@ -242,6 +257,45 @@ func readInboxToUser(inboxDir string) []string {
 		notes = append(notes, e.Name()+"\n"+readFile(filepath.Join(inboxDir, e.Name())))
 	}
 	return notes
+}
+
+// statusIs reports whether the document's `status:` frontmatter value equals want
+// (case-insensitive). Used to detect abandoned work (D4).
+func statusIs(text, want string) bool {
+	m := reStatus.FindStringSubmatch(text)
+	if m == nil {
+		return false
+	}
+	return strings.EqualFold(strings.Trim(strings.TrimSpace(m[1]), `"'`), want)
+}
+
+// scanRuns reads structured run event logs (parley-deck/runs/*/events.jsonl —
+// NOT raw session transcripts) and returns, per idea slug, the count of
+// failure-class events (agent.failed / watchdog / driver.error). The idea slug is
+// taken from the run's run.created event (the first "idea" field in the log).
+func scanRuns(runsDir string) map[string]int {
+	out := map[string]int{}
+	entries, err := os.ReadDir(runsDir)
+	if err != nil {
+		return out
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		data := readFile(filepath.Join(runsDir, e.Name(), "events.jsonl"))
+		if data == "" {
+			continue
+		}
+		m := reRunIdea.FindStringSubmatch(data)
+		if m == nil {
+			continue
+		}
+		if n := len(reRunFailed.FindAllString(data, -1)); n > 0 {
+			out[m[1]] += n
+		}
+	}
+	return out
 }
 
 // countDismissed counts entries under a "## Dismissed findings" heading across the

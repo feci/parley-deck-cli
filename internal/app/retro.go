@@ -6,11 +6,17 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/retro"
 )
+
+// reSlug is the strict kebab-case idea-slug rule for `retro propose` (lowercase
+// alphanumerics separated by single hyphens) — rejects path separators, dotfiles,
+// spaces, and shell-sensitive characters.
+var reSlug = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 // runRetro implements `parley retro` (COOPERATION.md §13): read-only mining of the
 // deck's own structured history to PROPOSE improvements. scan/select/diagnose are
@@ -86,28 +92,47 @@ func printSignals(w io.Writer, signals []retro.IdeaSignals) {
 func retroPropose(root, slug string, coreset []retro.IdeaSignals, stdout, stderr io.Writer) int {
 	slug = strings.TrimSpace(slug)
 	if slug == "" {
-		fmt.Fprintln(stderr, "retro propose: --slug is required (an explicit, non-existing idea slug)")
+		fmt.Fprintln(stderr, "retro propose: --slug is required (an explicit, non-existing kebab-case idea slug)")
 		return 2
 	}
-	if slug != filepath.Base(slug) || strings.HasPrefix(slug, ".") {
-		fmt.Fprintf(stderr, "retro propose: invalid slug %q\n", slug)
+	if !reSlug.MatchString(slug) {
+		fmt.Fprintf(stderr, "retro propose: invalid slug %q (use lowercase kebab-case: [a-z0-9] separated by single hyphens)\n", slug)
 		return 2
 	}
 	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", slug)
-	promptPath := filepath.Join(ideaDir, "00-prompt.md")
-	if _, err := os.Stat(promptPath); err == nil {
-		fmt.Fprintf(stderr, "retro propose: %s already exists — refusing to overwrite (fail-closed)\n", promptPath)
+	// Fail closed if ANYTHING already exists at ideas/<slug> — a regular dir
+	// (even without 00-prompt.md) or a symlinked entry. Lstat does not follow
+	// the link, so a symlinked slug cannot redirect the write elsewhere.
+	if _, err := os.Lstat(ideaDir); err == nil {
+		fmt.Fprintf(stderr, "retro propose: %s already exists — refusing (fail-closed; use a fresh slug)\n", ideaDir)
 		return 1
 	} else if !os.IsNotExist(err) {
 		fmt.Fprintf(stderr, "retro propose: %v\n", err)
 		return 1
 	}
-	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(ideaDir), 0o755); err != nil {
 		fmt.Fprintf(stderr, "retro propose: %v\n", err)
 		return 1
 	}
-	if err := os.WriteFile(promptPath, []byte(retroPromptBody(slug, coreset)), 0o644); err != nil {
+	// os.Mkdir (not MkdirAll) creates exactly the new slug dir and fails if it
+	// raced into existence after the Lstat above.
+	if err := os.Mkdir(ideaDir, 0o755); err != nil {
 		fmt.Fprintf(stderr, "retro propose: %v\n", err)
+		return 1
+	}
+	promptPath := filepath.Join(ideaDir, "00-prompt.md")
+	f, err := os.OpenFile(promptPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		fmt.Fprintf(stderr, "retro propose: %v\n", err)
+		return 1
+	}
+	if _, werr := f.WriteString(retroPromptBody(slug, coreset)); werr != nil {
+		f.Close()
+		fmt.Fprintf(stderr, "retro propose: %v\n", werr)
+		return 1
+	}
+	if cerr := f.Close(); cerr != nil {
+		fmt.Fprintf(stderr, "retro propose: %v\n", cerr)
 		return 1
 	}
 	fmt.Fprintf(stdout, "Wrote %s\n", promptPath)
@@ -119,7 +144,7 @@ func retroPromptBody(slug string, coreset []retro.IdeaSignals) string {
 	var b strings.Builder
 	b.WriteString("---\n")
 	b.WriteString("idea: " + slug + "\n")
-	b.WriteString("author: claude\n")
+	b.WriteString("author: <fill: author>\n")
 	b.WriteString("created: <fill: date>\n")
 	b.WriteString("participants: [claude, codex, agy, hermes]\n")
 	b.WriteString("status: round-01\n")

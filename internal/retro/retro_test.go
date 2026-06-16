@@ -1,6 +1,7 @@
 package retro
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,10 +13,10 @@ func writeIdea(t *testing.T, root, slug string, rounds, reviewRounds int, files 
 	t.Helper()
 	dir := filepath.Join(root, "parley-deck", "ideas", slug)
 	for i := 1; i <= rounds; i++ {
-		mustMkdir(t, filepath.Join(dir, "round-0"+itoa(i)))
+		mustMkdir(t, filepath.Join(dir, fmt.Sprintf("round-%02d", i)))
 	}
 	for i := 1; i <= reviewRounds; i++ {
-		mustMkdir(t, filepath.Join(dir, "review", "round-0"+itoa(i)))
+		mustMkdir(t, filepath.Join(dir, "review", fmt.Sprintf("round-%02d", i)))
 	}
 	for rel, content := range files {
 		p := filepath.Join(dir, rel)
@@ -32,8 +33,6 @@ func mustMkdir(t *testing.T, p string) {
 		t.Fatal(err)
 	}
 }
-
-func itoa(i int) string { return string(rune('0' + i)) }
 
 func TestScanScoreAndClassify(t *testing.T) {
 	root := t.TempDir()
@@ -75,7 +74,7 @@ func TestScanScoreAndClassify(t *testing.T) {
 	if got := by["fixup-heavy"]; got.FailureType != "fix-up-heavy" || got.FixupCycles != 2 || got.NotFixed != 1 {
 		t.Fatalf("fixup-heavy classified wrong: %+v", got)
 	}
-	if got := by["blocked-one"]; got.FailureType != "blocked" || !got.Blocked {
+	if got := by["blocked-one"]; got.FailureType != "blocked-or-abandoned" || !got.Blocked {
 		t.Fatalf("blocked-one classified wrong: %+v", got)
 	}
 	if got := by["escalated-one"]; got.FailureType != "escalation" || got.Escalations != 1 {
@@ -109,12 +108,62 @@ func TestSelectIsTypeDiverseAndExcludesLowFriction(t *testing.T) {
 	for _, s := range coreset {
 		pickedTypes[s.FailureType]++
 	}
-	if pickedTypes["blocked"] == 0 {
-		t.Fatalf("coreset missing the 'blocked' type: %+v", coreset)
+	if pickedTypes["blocked-or-abandoned"] == 0 {
+		t.Fatalf("coreset missing the 'blocked-or-abandoned' type: %+v", coreset)
 	}
 	// k cap.
 	if got := Select(signals, 1); len(got) != 1 {
 		t.Fatalf("k=1 must yield 1, got %d", len(got))
+	}
+}
+
+func TestD4SignalsAndDesignChurn(t *testing.T) {
+	root := t.TempDir()
+	// abandoned work (status frontmatter) → blocked-or-abandoned.
+	writeIdea(t, root, "abandoned-one", 1, 0, map[string]string{
+		"IMPLEMENTATION.md": "---\nidea: abandoned-one\nstatus: abandoned\n---\n",
+	})
+	// 2 design rounds only → must be design-churn (not low-friction), so it is
+	// NOT dropped from the coreset (review fix 2).
+	writeIdea(t, root, "design-two", 2, 0, nil)
+	// run failures: a structured run event log with agent.failed attributed to
+	// the idea via run.created (review fix 4).
+	writeIdea(t, root, "runtime-fail", 1, 0, nil)
+	mustMkdir(t, filepath.Join(root, "parley-deck", "runs", "r1"))
+	events := `{"type":"run.created","data":{"idea":"runtime-fail"}}` + "\n" +
+		`{"type":"agent.failed","data":{"agent":"codex"}}` + "\n" +
+		`{"type":"agent.stalled","data":{"agent":"agy"}}` + "\n"
+	if err := os.WriteFile(filepath.Join(root, "parley-deck", "runs", "r1", "events.jsonl"), []byte(events), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	signals, err := Scan(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	by := map[string]IdeaSignals{}
+	for _, s := range signals {
+		by[s.Slug] = s
+	}
+	if got := by["abandoned-one"]; !got.Abandoned || got.FailureType != "blocked-or-abandoned" {
+		t.Fatalf("abandoned-one wrong: %+v", got)
+	}
+	if got := by["design-two"]; got.FailureType != "design-churn" || got.Score <= 0 {
+		t.Fatalf("design-two must be design-churn with score>0 (review fix 2): %+v", got)
+	}
+	if got := by["runtime-fail"]; got.RunFailures != 2 || got.FailureType != "runtime-failure" {
+		t.Fatalf("runtime-fail must count 2 run failures and bucket runtime-failure: %+v", got)
+	}
+	// design-two must survive coreset selection (not excluded as low-friction).
+	coreset := Select(signals, 10)
+	found := false
+	for _, s := range coreset {
+		if s.Slug == "design-two" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("design-two (2 rounds) must be in the coreset, not dropped: %+v", coreset)
 	}
 }
 
