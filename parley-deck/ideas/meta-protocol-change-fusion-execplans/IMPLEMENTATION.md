@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-fusion-execplans
-status: implemented
+status: complete
 implementer: claude
 started: 2026-06-18
 completed: 2026-06-19
 branch: parley-deck-cli#meta/fusion-execplans
-head-commit: <pending first commit>
+head-commit: 8477ea6 (impl) → fix-up cycle 1 (see below)
 design-pr: n/a (single-repo; design + impl in one PR)
 implementation-pr: <pending>
 ---
@@ -69,6 +69,28 @@ None. All seven edits applied as specified; Edit 4 (idempotence) folded into Edi
   enforces the allowlisted zones.
 
 ## Outcomes & Retrospective
-(To complete at Phase 8.) Pending Phase 6–7 review + merge. Lesson already banked:
-agy headless `--print` is unreliable for append tasks — prefer codex/hermes for
-canonical-artifact writes, waive agy with an operator-recorded note when it hangs.
+Shipped all 7 edits as additive, conditional-rigor protocol guidance across both
+COOPERATION.md copies; drift guard + `go test ./...` + build green; Phase 6 review
+(codex clean, hermes 1 MINOR + 2 NITs) resolved in fix-up cycle 1. Gaps: none
+outstanding; the `parley retro` confident-error *mining* tooling stays a deferred
+follow-up. Lessons: (1) agy headless `--print` is unreliable for append tasks —
+prefer codex/hermes for canonical-artifact writes, waive agy with an operator-recorded
+note when it hangs; (2) keeping the two protocol copies' shared zones byte-identical
+makes a fix trivially replayable (same edit strings to both); (3) this idea dogfooded
+its own new IMPLEMENTATION.md living-section format end to end.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-19
+head-commit: <pending fix-up commit>
+
+### Fixes applied
+- [MINOR] Decision Log now carries the deviations cross-reference ("Deviations still
+  go under `## Deviations from FINAL.md` above.") — both copies.
+- [NIT] General rigor trigger harmonized to include "pipeline" in Phase 4 + both
+  Phase 5 spots (matches the ratified preamble's four triggers) — both copies.
+- [NIT] Phase 4 paragraph split: `Idempotence & recovery` moved to its own paragraph
+  for scannability — both copies.
+
+### Deviations from agreed fixes
+None. Drift guard + `go build ./...` re-verified green; diff stayed symmetric (13/13).

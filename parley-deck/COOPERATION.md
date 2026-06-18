@@ -275,7 +275,9 @@ The drafter writes:
 
 `FINAL.md` is the **single source of truth**. If later invalidated, open a new idea (`<slug>-v2`) — do **not** edit the old FINAL. Update `00-prompt.md` `status: final` and optionally move the dir to `ideas/archived/<slug>/` after implementation.
 
-The sections above the References are **written at design time and frozen** with the rest of `FINAL.md` — it is static; the *living* companion is `IMPLEMENTATION.md` (Phase 5). For complex, `auto_implement`, or driver-managed ideas, `FINAL.md` plus `IMPLEMENTATION.md` MUST be self-contained enough that a fresh agent or the auto-drive driver can implement or resume **from them alone**, without session transcripts. **Observable acceptance criteria** state success as behavior a reviewer or the driver can check (e.g. "after X, Y is true"). **Idempotence & recovery** states what state matters, what is safe to rerun, and what needs a human gate; it is required for `auto_implement` / action / pipeline ideas, where the driver treats it as the recovery contract. For trivial or design-only ideas these added sections may be `N/A`.
+The sections above the References are **written at design time and frozen** with the rest of `FINAL.md` — it is static; the *living* companion is `IMPLEMENTATION.md` (Phase 5). For complex, `auto_implement`, driver-managed, or pipeline ideas, `FINAL.md` plus `IMPLEMENTATION.md` MUST be self-contained enough that a fresh agent or the auto-drive driver can implement or resume **from them alone**, without session transcripts. **Observable acceptance criteria** state success as behavior a reviewer or the driver can check (e.g. "after X, Y is true"). For trivial or design-only ideas these added sections may be `N/A`.
+
+**Idempotence & recovery** states what state matters, what is safe to rerun, and what needs a human gate; it is required for `auto_implement` / action / pipeline ideas, where the driver treats it as the recovery contract.
 
 Before publishing `FINAL.md`, the drafter MUST verify that every active non-facilitator participant has created the expected canonical artifacts or that a recorded solo exception explains why multi-agent execution was impossible. A missing non-facilitator artifact is a blocker, not a reason to claim Parley Deck completed as a solo run.
 
@@ -323,11 +325,12 @@ The implementer:
         ## Progress
         (Living checklist, updated at every stopping point; ISO timestamps
         `(YYYY-MM-DD HH:MMZ)`, partial steps as `(completed: X; remaining: Y)`.
-        Required for complex / `auto_implement` / driver-managed ideas; "N/A" for
-        trivial or design-only work.)
+        Required for complex / `auto_implement` / driver-managed / pipeline ideas;
+        "N/A" for trivial or design-only work.)
 
         ## Decision Log
-        (Decisions made *after* FINAL.md — Decision / Rationale / Date·Author.)
+        (Decisions made *after* FINAL.md — Decision / Rationale / Date·Author.
+        Deviations still go under `## Deviations from FINAL.md` above.)
 
         ## Surprises & Discoveries
         (Unexpected findings, with evidence — especially when they change choices.)
@@ -339,7 +342,7 @@ The implementer:
         ## Outcomes & Retrospective
         (At completion: achievements, gaps, lessons — framed to feed §13 `parley retro`.)
 
-`IMPLEMENTATION.md` is the **living** companion to the static `FINAL.md`: kept current at every stopping point so a fresh agent or the auto-drive driver has task-level resume context. §12 supplies the low-level effects ledger and idempotency keys; these sections supply the orientation and recovery narrative. The living sections are required for complex / `auto_implement` / driver-managed ideas and may be `N/A` for trivial or design-only work.
+`IMPLEMENTATION.md` is the **living** companion to the static `FINAL.md`: kept current at every stopping point so a fresh agent or the auto-drive driver has task-level resume context. §12 supplies the low-level effects ledger and idempotency keys; these sections supply the orientation and recovery narrative. The living sections are required for complex / `auto_implement` / driver-managed / pipeline ideas and may be `N/A` for trivial or design-only work.
 
 The implementer publishes `IMPLEMENTATION.md` (commit/PR/MR — see §11) and signals "open for review".
 
