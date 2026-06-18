@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.29.0 - 2026-06-19
+
+Protocol: Fusion + ExecPlans inspiration (idea
+`meta-protocol-change-fusion-execplans`; 4-agent deliberation, signoffs
+claude/codex/hermes, agy waived on a tooling hang). Additive, **conditional-rigor**
+guidance applied byte-identically to both `COOPERATION.md` copies (drift-guard
+lockstep); no Go logic changed; embedded `parley init` default stays genericized.
+
+- **`FINAL.md` gains static, self-contained design-time sections** (Phase 4): Purpose
+  / user-visible outcome, Context & orientation, **Observable acceptance criteria**,
+  **Idempotence & recovery**, Known risks / de-risking. `FINAL.md` stays immutable.
+- **`IMPLEMENTATION.md` becomes a living execution doc** (Phase 5): Progress
+  (timestamped), Decision Log, Surprises & Discoveries, Validation evidence, Outcomes
+  & Retrospective — so a fresh headless agent or the auto-drive driver can resume
+  **from the artifact alone**, and §13 `parley retro` gets richer evidence.
+- **Advisory "Comparison & blind spots" lens** in `consensus.md` and
+  `review/consensus.md` (Phase 3/7) — surfaces what *no* participant addressed. Not a
+  gate; append-only signoffs remain the only gate.
+- **Phase 6** reviewers may check observable acceptance criteria; severities
+  (CRITICAL/MAJOR/MINOR/NIT) unchanged.
+- **§13** gains a **confident-error** retro evidence signal (diagnostic only — never a
+  new severity, blame label, or merge gate).
+- Full living/static sections are required only for complex / `auto_implement` /
+  driver-managed / pipeline ideas; trivial or design-only ideas may use `N/A`.
+- Explicitly **rejected** (inspiration we did *not* adopt): confidence-by-breadth
+  gates, a single-model judge with authority, hiding raw rounds behind a summary, the
+  Fusion panel/recursion/cost/web-search machinery, collapsing the deck into one file,
+  proceed-without-prompting autonomy across gates, and the anti-list prose maximalism.
+
 ## v1.28.1 - 2026-06-16
 
 - **`parley retro` precision fix.** The deterministic scanner matched signal
