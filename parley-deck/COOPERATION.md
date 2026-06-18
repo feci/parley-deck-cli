@@ -114,8 +114,8 @@ When an agent leaves the project, mark its row as inactive (do not delete it) so
     │       ├── round-02/
     │       │   └── ...
     │       ├── consensus.md         ← created once everyone is ready to sign off
-    │       ├── FINAL.md             ← the authoritative artifact (plan / spec / ADR)
-    │       ├── IMPLEMENTATION.md    ← created in Phase 5; tracks branch + fix-up cycles
+    │       ├── FINAL.md             ← static, self-contained authoritative artifact (plan / spec / ADR)
+    │       ├── IMPLEMENTATION.md    ← living execution doc (Progress / Decision Log / Surprises / Outcomes)
     │       └── review/              ← Phase 6–8 code review lifecycle
     │           ├── round-01/
     │           │   ├── <agent-id-1>.md
@@ -222,6 +222,10 @@ When discussion has converged, an agent creates `ideas/<slug>/consensus.md`:
     ## Agreed decisions
     ## Agreed trade-offs
     ## Open items deferred to implementation
+    ## Comparison & blind spots
+    <!-- Advisory (not a gate): contradictions not smoothed into vague trade-offs;
+         partial coverage (what only one participant covered); unique insights worth
+         keeping; and blind spots — what did NO participant address? -->
 
     ## Signoffs
     <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
@@ -239,6 +243,7 @@ Every listed participant then **appends** their own signoff block:
 - Any ❌ → new round; the blocker's counter-proposal is the starting point.
 - 🟡 is acceptable _if_ the reservation is logged as "open items deferred to implementation" and no one upgrades it to ❌.
 - Agent silent past deadline is treated as ✅ — but only if they were pinged via `inbox/` first.
+- The `## Comparison & blind spots` section is an **advisory drafting discipline**, not a gate: append-only signoffs remain the only gate, any participant may block if the comparison is inaccurate, and raw round files are never hidden behind the summary.
 
 _(Transport B/C: signoffs in `consensus.md` are mirrored by a native PR/MR review; see §11. The file remains canonical.)_
 
@@ -259,11 +264,20 @@ The drafter writes:
     ---
 
     ## Final plan / specification
+    ## Purpose / user-visible outcome
+    ## Context & orientation
+    ## Observable acceptance criteria
+    ## Idempotence & recovery
+    ## Known risks / de-risking
     ## References
     - Consensus: ./consensus.md
     - Rounds: ./round-01/, ./round-02/, …
 
 `FINAL.md` is the **single source of truth**. If later invalidated, open a new idea (`<slug>-v2`) — do **not** edit the old FINAL. Update `00-prompt.md` `status: final` and optionally move the dir to `ideas/archived/<slug>/` after implementation.
+
+The sections above the References are **written at design time and frozen** with the rest of `FINAL.md` — it is static; the *living* companion is `IMPLEMENTATION.md` (Phase 5). For complex, `auto_implement`, driver-managed, or pipeline ideas, `FINAL.md` plus `IMPLEMENTATION.md` MUST be self-contained enough that a fresh agent or the auto-drive driver can implement or resume **from them alone**, without session transcripts. **Observable acceptance criteria** state success as behavior a reviewer or the driver can check (e.g. "after X, Y is true"). For trivial or design-only ideas these added sections may be `N/A`.
+
+**Idempotence & recovery** states what state matters, what is safe to rerun, and what needs a human gate; it is required for `auto_implement` / action / pipeline ideas, where the driver treats it as the recovery contract.
 
 Before publishing `FINAL.md`, the drafter MUST verify that every active non-facilitator participant has created the expected canonical artifacts or that a recorded solo exception explains why multi-agent execution was impossible. A missing non-facilitator artifact is a blocker, not a reason to claim Parley Deck completed as a solo run.
 
@@ -308,6 +322,28 @@ The implementer:
         ## Notes for reviewers
         (Areas that need extra attention, known trade-offs, out-of-scope items.)
 
+        ## Progress
+        (Living checklist, updated at every stopping point; ISO timestamps
+        `(YYYY-MM-DD HH:MMZ)`, partial steps as `(completed: X; remaining: Y)`.
+        Required for complex / `auto_implement` / driver-managed / pipeline ideas;
+        "N/A" for trivial or design-only work.)
+
+        ## Decision Log
+        (Decisions made *after* FINAL.md — Decision / Rationale / Date·Author.
+        Deviations still go under `## Deviations from FINAL.md` above.)
+
+        ## Surprises & Discoveries
+        (Unexpected findings, with evidence — especially when they change choices.)
+
+        ## Validation evidence
+        (Which FINAL.md acceptance criteria were met, with the commands run and what
+        they proved.)
+
+        ## Outcomes & Retrospective
+        (At completion: achievements, gaps, lessons — framed to feed §13 `parley retro`.)
+
+`IMPLEMENTATION.md` is the **living** companion to the static `FINAL.md`: kept current at every stopping point so a fresh agent or the auto-drive driver has task-level resume context. §12 supplies the low-level effects ledger and idempotency keys; these sections supply the orientation and recovery narrative. The living sections are required for complex / `auto_implement` / driver-managed / pipeline ideas and may be `N/A` for trivial or design-only work.
+
 The implementer publishes `IMPLEMENTATION.md` (commit/PR/MR — see §11) and signals "open for review".
 
 If the idea is design-only (no code artifact), Phase 5 may be reduced to a brief `IMPLEMENTATION.md` describing where the design output was applied. Phases 6–8 still apply unless the participants agree in `consensus.md` that review is not required.
@@ -333,7 +369,7 @@ Once `IMPLEMENTATION.md` is published, every active participant **except the imp
     ### [NIT] <short title>
     ## Open questions
 
-**Severity tags** are fixed: `CRITICAL` (must fix before merge), `MAJOR` (should fix before merge), `MINOR` (nice to have), `NIT` (stylistic / optional). The implementer does not write a review-round file — they respond in Phase 7.
+**Severity tags** are fixed: `CRITICAL` (must fix before merge), `MAJOR` (should fix before merge), `MINOR` (nice to have), `NIT` (stylistic / optional). The implementer does not write a review-round file — they respond in Phase 7. Where `FINAL.md` states observable acceptance criteria, reviewers should check the implementation against them and may cite a criterion in a finding; this does **not** change the severity vocabulary — it only makes severity assignment less subjective.
 
 If there is no invokable non-implementer reviewer, the implementation MUST NOT be merged or marked complete under Parley Deck. The implementer MUST report the blocker and continue only after either another reviewer is added or the user explicitly authorizes a recorded solo exception.
 
@@ -384,6 +420,10 @@ When review discussion has converged, any participant (typically the implementer
 
     ## Dismissed findings
     (Findings the reviewer withdrew or the group judged not-an-issue, with 1-line rationale.)
+
+    ## Coverage & blind spots
+    (Advisory: findings everyone independently saw vs. only one reviewer saw, and
+    areas no reviewer inspected deeply. Not a gate; signoffs remain the gate.)
 
     ## Signoffs
     <!-- Each active participant (implementer included) APPENDS their signoff block. -->
@@ -862,7 +902,7 @@ A retro pass selects a diverse set of hard past cases (the **coreset**), diagnos
 - **Protocol harness** — `COOPERATION.md` and any in-repo copy kept in lockstep by the drift guard. Changeable only via a meta-protocol-change idea (§7) with human approval; a retro pass must never edit it directly.
 - **Runtime / shared harness — Repository Instruction Files** — tracked, shared files: skills, CLI behavior, helper scripts, docs, and repo-level instruction files. Changeable via an ordinary idea and the full review gate (a meta idea if the change alters protocol semantics).
 - **Local harness — Agent Local Memory** — operator-local, non-canonical state (caches, ignored launch config, per-machine memory). A retro pass may report observations only; it must never canonicalize them or infer protocol rules from one operator's local setup.
-- **Evidence corpus** — structured Parley Deck artifacts (`ideas/*` rounds, `review/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, run event logs) are the primary evidence. Raw session transcripts are secondary, off by default, and quarantined; include them only with recorded provenance.
+- **Evidence corpus** — structured Parley Deck artifacts (`ideas/*` rounds, `review/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, run event logs) are the primary evidence. Raw session transcripts are secondary, off by default, and quarantined; include them only with recorded provenance. Within this corpus, a retro pass SHOULD surface **confident-error** signals — a dismissed `CRITICAL`/`MAJOR` finding, an unsupported assumption that shaped `FINAL.md`, or a missed risk that caused fix-up churn — drawn from the `IMPLEMENTATION.md` Outcomes & Surprises sections and the `consensus.md` blind-spots fields. This is diagnostic evidence only: **never** a new review severity, a blame label, or a merge gate.
 
 ### 13.3 Acceptance gate
 
@@ -877,4 +917,4 @@ A retro-proposed change is accepted only by the normal gate: multi-agent consens
 
 Tooling that performs retro passes (e.g. a `parley retro` command) is governed by this section but specified separately; such tooling defaults to read-only and may at most scaffold a single new `ideas/<slug>/00-prompt.md`.
 
-Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16).
+Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16) and amended by idea `meta-protocol-change-fusion-execplans` (2026-06-18) to add the confident-error evidence signal.
