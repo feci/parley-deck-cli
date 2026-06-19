@@ -389,7 +389,10 @@ approval_policy = "on-failure"
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"run", "--dir", root, "--no-tui", "--no-auto", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
+	// --no-preflight: this test exercises runtime recording with a single fake
+	// agent; the §1 non-solo hard-stop (which a 1-participant set would trip) is
+	// covered separately in preflight_test.go.
+	code := Run([]string{"run", "--dir", root, "--no-tui", "--no-auto", "--no-ping", "--no-preflight", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
@@ -446,7 +449,9 @@ func TestRunDefaultsToAutoMode(t *testing.T) {
 		t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 		var stdout, stderr bytes.Buffer
-		args := append([]string{"run", "--dir", root, "--no-tui", "--yes", "--participants", "codex"}, extraArgs...)
+		// --no-preflight: this test only inspects the recorded run mode with a
+		// single fake agent; the §1 non-solo hard-stop is covered in preflight_test.go.
+		args := append([]string{"run", "--dir", root, "--no-tui", "--no-ping", "--no-preflight", "--yes", "--participants", "codex"}, extraArgs...)
 		Run(append(args, "Task"), &stdout, &stderr)
 
 		entries, err := os.ReadDir(filepath.Join(root, protocol.DeckDir, "runs"))
@@ -466,6 +471,38 @@ func TestRunDefaultsToAutoMode(t *testing.T) {
 	}
 	if got := modeFor(t, "--no-auto"); got != "hitl" {
 		t.Fatalf("--no-auto run mode = %q, want \"hitl\"", got)
+	}
+}
+
+// TestRunParticipantsSubsetHardStopsSolo locks Fix 1: `parley run --participants
+// codex` on a machine with multiple installed agents must hard-stop (exit 1) on
+// the §1 non-solo rule — it must NOT open a 1-participant idea. Preflight now
+// evaluates the EXACT selected set, not every discovered agent.
+func TestRunParticipantsSubsetHardStopsSolo(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("PARLEY_HOME", t.TempDir())
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	// Two installed agents are discoverable, but only codex is selected.
+	bin := t.TempDir()
+	writeFakeRoundAgentCLI(t, bin, "codex", "codex test 1.0")
+	writeFakeRoundAgentCLI(t, bin, "claude", "claude test 1.0")
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	// --no-ping keeps it hermetic (presence == available); preflight is NOT skipped.
+	code := Run([]string{"run", "--dir", root, "--no-tui", "--no-auto", "--no-ping", "--yes", "--participants", "codex", "Solo task"}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("code=%d want 1 (§1 non-solo hard-stop), stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	// No half-open idea: the run must stop before runcontrol.Create.
+	if entries, _ := os.ReadDir(filepath.Join(root, protocol.DeckDir, "runs")); len(entries) != 0 {
+		t.Fatalf("a run was created despite the §1 hard-stop: %v", entries)
+	}
+	ideas, _ := os.ReadDir(filepath.Join(root, protocol.DeckDir, "ideas"))
+	if len(ideas) != 0 {
+		t.Fatalf("a 1-participant idea was opened despite the §1 hard-stop: %v", ideas)
 	}
 }
 

@@ -48,6 +48,10 @@ func InitWorkspace(root string) error {
 		}
 	}
 
+	if err := writeInitVersionMeta(deck); err != nil {
+		return err
+	}
+
 	cooperation := filepath.Join(deck, "COOPERATION.md")
 	if _, err := os.Stat(cooperation); err == nil {
 		return nil
@@ -58,11 +62,37 @@ func InitWorkspace(root string) error {
 	return os.WriteFile(cooperation, []byte(defaultCooperationForInit()), 0o644)
 }
 
+// writeInitVersionMeta writes meta/version.json with protocolRole:"consumer" so a
+// fresh workspace enters the consumer freshness path (preflight §9.0) instead of
+// failing open on absent metadata. It never clobbers an existing version.json.
+func writeInitVersionMeta(deck string) error {
+	path := filepath.Join(deck, "meta", "version.json")
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	meta := fmt.Sprintf(`{
+  "protocolRole": "consumer",
+  "deckVersion": "",
+  "created": "%s"
+}
+`, time.Now().Format("2006-01-02"))
+	return os.WriteFile(path, []byte(meta), 0o644)
+}
+
 func defaultCooperationForInit() string {
 	return strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `local-dir`", 1)
 }
 
 func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
+	return CreateIdeaWithExclusions(root, task, participants, nil)
+}
+
+// CreateIdeaWithExclusions creates the idea like CreateIdea but also records any
+// confirmed participant exclusions in the frontmatter as `excluded:` lines
+// (preflight §9.0: exclusions must be explicit and recorded in the idea).
+func CreateIdeaWithExclusions(root, task string, participants, excluded []string) (IdeaStatus, error) {
 	now := time.Now()
 	slug := uniqueSlug(filepath.Join(root, DeckDir, "ideas"), timestampedSlug(task, now))
 	ideaDir := filepath.Join(root, DeckDir, "ideas", slug)
@@ -70,12 +100,20 @@ func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
 		return IdeaStatus{}, err
 	}
 
+	excludedBlock := ""
+	for _, line := range excluded {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		excludedBlock += "excluded: " + line + "\n"
+	}
+
 	prompt := fmt.Sprintf(`---
 idea: %s
 author: user
 created: %s
 participants: [%s]
-status: round-01
+%sstatus: round-01
 ---
 
 ## Problem / idea
@@ -90,7 +128,7 @@ status: round-01
 ## Non-goals
 
 - Do not make unrelated repository changes.
-`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), task)
+`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), excludedBlock, task)
 	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
 		return IdeaStatus{}, err
 	}

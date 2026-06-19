@@ -70,6 +70,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runStatus(args[1:], stdout, stderr)
 	case "sessions":
 		return runSessions(args[1:], stdout, stderr)
+	case "preflight":
+		return runPreflight(ctx, args[1:], stdout, stderr)
 	case "run":
 		return runTask(ctx, args[1:], stdout, stderr)
 	case "continue":
@@ -120,7 +122,8 @@ Usage:
   %s consult [--dir DIR] [--timeout D] AGENT [QUESTION]
   %s consults list [--dir DIR]
   %s retro <scan|select|diagnose|propose> [--dir DIR] [--k N] [--json] [--slug SLUG]
-  %s run [--no-tui] [--no-auto] [--participants AGENTS] [--yes] TASK
+  %s preflight [--dir DIR] [--json] [--yes] [--ping-timeout D] [--no-ping]
+  %s run [--no-tui] [--no-auto] [--no-preflight] [--no-ping] [--participants AGENTS] [--yes] TASK
   %s continue [--dir DIR] [--json] RUN_OR_IDEA
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
@@ -140,6 +143,13 @@ Commands:
   agents verify
       Check configured agent CLIs. By default this is a cheap version probe.
       Use --full --yes to run behavioral probes that may call hosted backends.
+
+  preflight
+      Readiness check before an idea: protocol freshness (advisory in a source
+      repo; additive consumer auto-sync preserving project zones; breaking bump
+      gated) plus a hosted-PONG roster liveness ping. Exit 0 ready, 3 pending
+      gate (names the gate + confirm command), 1 hard failure (no workspace, or
+      excluding unavailable agents would leave <2 participants), 2 usage.
 
   run
       Create a new idea from TASK and start round-01 with selected agents.
@@ -294,6 +304,7 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
 		appName,
 		appName,
 		appName,
@@ -1664,6 +1675,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	auto := fs.Bool("auto", true, "auto-drive the protocol past round-01 (default; use --no-auto to disable)")
 	noAuto := fs.Bool("no-auto", false, "disable auto-drive: stop after round-01 and advance the protocol manually")
 	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
+	noPreflight := fs.Bool("no-preflight", false, "skip the pre-idea readiness check (CI escape)")
+	noPing := fs.Bool("no-ping", false, "preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
 	yes := fs.Bool("yes", false, "launch selected agents without interactive confirmation")
 	root := fs.String("dir", ".", "workspace directory")
@@ -1706,6 +1719,21 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "no installed agents found; run `parley agents list` to inspect configuration")
 		return 1
 	}
+	// Pre-idea readiness check (preflight §9.0): runs AFTER discovery and BEFORE
+	// runcontrol.Create so a pending gate stops here with no half-open idea. It
+	// evaluates the EXACT selected participant set (so --participants cannot bypass
+	// the §1 non-solo hard-stop). Unattended (--auto, no TTY) hard-stops on a gate
+	// and never reads stdin; attended prints the gate + confirm command and stops.
+	// --no-preflight is the CI escape. Confirmed (--yes) exclusions are recorded in
+	// the created idea.
+	var preflightExcluded []string
+	if !*noPreflight {
+		code, excluded, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, stdout, stderr)
+		if stop {
+			return code
+		}
+		preflightExcluded = excluded
+	}
 	if !*auto && !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
 		fmt.Fprintln(stdout, "No run started. Use `--yes` or `--auto` to launch without an interactive confirmation prompt.")
 		return 0
@@ -1714,6 +1742,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		Root:         *root,
 		Task:         task,
 		Participants: participants,
+		Excluded:     preflightExcluded,
 		Discovered:   discovered,
 		Auto:         *auto,
 	})

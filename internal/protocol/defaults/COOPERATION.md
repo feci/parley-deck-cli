@@ -525,6 +525,11 @@ Escalation is not a veto — the user's answer becomes input to the next round l
 ## 5. Quorum and async participation
 
 - **Quorum = all agents listed in `participants:` of `00-prompt.md`.**
+- **Quorum is set at the §9.0 pre-idea readiness check** and **locks once Phase 0
+  completes.** Agents excluded there (with user confirmation) do not count toward this
+  idea's quorum; a mid-idea unavailability does not silently shrink quorum — it falls to
+  the async rules below and the runtime watchdog. Excluding the last non-facilitator
+  still requires the §1 user-authorized solo exception.
 - A valid Parley Deck idea normally has at least two active participants. A one-participant idea is valid only when a user-authorized solo exception is recorded with the auth/CLI/timeout/tooling blocker that made multi-agent execution impossible.
 - An agent joining after round 1: either catch up (read priors, write late round-1, join from round 2) or decline (❌ NON-PARTICIPANT note in consensus).
 - If an agent is inactive > 2 rounds and the idea has a deadline, others may drop them from quorum — but only after a `inbox/<from>-to-<missing>_<slug>.md` ping.
@@ -547,6 +552,12 @@ Open an idea under `ideas/meta-protocol-change-<topic>/` and run the full lifecy
     Idea: ideas/meta-protocol-change-<topic>/
     Drafted by: <agent-id>
     Summary: <1–2 sentences>
+
+**Carve-out — a version sync is not a protocol change.** Adopting an upstream-ratified
+protocol version via the §9.0 freshness sync — when it is additive/compatible and
+preserves the project-specific zones — is a maintenance sync, **not** a protocol change,
+and does **not** require a meta-protocol-change idea. A breaking sync pauses for user
+confirmation (§9.0); any genuine *new* rule still goes through this section.
 
 ## 8. Inbox (lightweight channel)
 
@@ -574,6 +585,44 @@ evidence, or dispositions. Promoting a consult's conclusion into protocol state
 requires a normal idea/round/consensus artifact authored by a participant.
 
 ## 9. Session-start checklist for every agent
+
+### 9.0 Pre-idea readiness check (facilitator, before opening a new idea)
+
+Before creating `ideas/<slug>/00-prompt.md`, the facilitator runs a readiness check
+(automatable via `parley preflight`) and records the result in the new idea's
+`00-prompt.md`:
+
+- **Protocol freshness.** Compare the live protocol against the installed skill's
+  packaged protocol (e.g. `parley-deck-skill status`; `protocolSha256` vs
+  `packagedProtocolSha256` in `meta/version.json`). Behaviour depends on
+  `meta/version.json` `protocolRole`:
+  - `source` → **advisory only; never auto-writes `COOPERATION.md`** (this project is
+    the protocol's upstream, so a packaged copy is older, not newer).
+  - `consumer` + a newer installed protocol → an **additive** change (a `deckVersion`
+    minor/patch bump) is **auto-synced** into `COOPERATION.md`, **preserving every
+    project-specific zone** (header, §0 transport, §2 roster — the same allowlist the
+    drift guard uses); the sync updates the `Protocol synced:` header line and records
+    `meta/protocol-sync_<ISO-timestamp>.md`. A **breaking** change (major `deckVersion`
+    bump, or one that modifies/removes existing rules) **pauses for user confirmation**.
+  - `protocolRole` missing/unknown → **do not auto-write**; ask the user once and
+    backfill the field.
+  - This sync adopts upstream-ratified text and is governed by the §7 carve-out; it is
+    not itself a meta-protocol-change idea.
+- **Roster liveness ping.** Probe every rostered participant (a bounded liveness
+  round-trip via each agent's real configured invocation; a missing CLI is unavailable
+  without a probe) and build an available/unavailable table.
+  - **Excluding** an unavailable agent from this idea's quorum requires **explicit user
+    confirmation** and is recorded in `00-prompt.md`
+    (`excluded: [<roster-id> — reason — confirmed <date>]`). Exclusion is **per-idea and
+    temporary**: the agent stays in the §2 roster and is re-probed at the next idea.
+  - **Re-including** a previously-excluded, now-available agent into quorum **also**
+    requires explicit user confirmation (no silent quorum expansion).
+  - Excluding the last non-facilitator still requires the §1 user-authorized solo
+    exception; the facilitator stops rather than silently going solo.
+  - The quorum **locks once Phase 0 completes**; a mid-idea unavailability falls to §5
+    and the runtime watchdog, downgrading to the same per-idea, user-confirmed waive.
+
+Then proceed with the per-agent session-start checklist:
 
 1. Read `parley-deck/COOPERATION.md` — note the active `Transport:` and check `meta/protocol-changelog.md` for updates.
 2. Read `parley-deck/inbox/` — filter for files addressed to you or `all`. Escalations addressed `to: user` that are still unanswered are context you should respect: don't cut across an active user-direction request.
