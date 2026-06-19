@@ -621,6 +621,13 @@ Before creating `ideas/<slug>/00-prompt.md`, the facilitator runs a readiness ch
     exception; the facilitator stops rather than silently going solo.
   - The quorum **locks once Phase 0 completes**; a mid-idea unavailability falls to §5
     and the runtime watchdog, downgrading to the same per-idea, user-confirmed waive.
+- **Roster & model confirmation (session start).** At a session's first readiness check
+  the facilitator MUST confirm the active roster and each agent's selected model with the
+  user before the first idea; the user's persistent per-agent model choice is recorded in
+  the local agent config (`meta/headless-agents.local.json`) and reused until changed
+  (later sessions show the saved picks for explicit confirmation). The protocol stays
+  model-agnostic — it mandates the confirmation, not any specific model. (See the skill
+  for the interactive list-roster → confirm → list-models → pick flow.)
 
 Then proceed with the per-agent session-start checklist:
 
