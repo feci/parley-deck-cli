@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "protocolRole": "source",
   "deckVersion": "1.3.1",
   "protocolSchema": 1,
   "projectMetadataSchema": 1,

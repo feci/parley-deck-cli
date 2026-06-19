@@ -389,7 +389,7 @@ approval_policy = "on-failure"
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"run", "--dir", root, "--no-tui", "--no-auto", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
+	code := Run([]string{"run", "--dir", root, "--no-tui", "--no-auto", "--no-ping", "--yes", "--participants", "codex", "Runtime task"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
@@ -446,7 +446,7 @@ func TestRunDefaultsToAutoMode(t *testing.T) {
 		t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 		var stdout, stderr bytes.Buffer
-		args := append([]string{"run", "--dir", root, "--no-tui", "--yes", "--participants", "codex"}, extraArgs...)
+		args := append([]string{"run", "--dir", root, "--no-tui", "--no-ping", "--yes", "--participants", "codex"}, extraArgs...)
 		Run(append(args, "Task"), &stdout, &stderr)
 
 		entries, err := os.ReadDir(filepath.Join(root, protocol.DeckDir, "runs"))

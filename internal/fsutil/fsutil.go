@@ -77,6 +77,42 @@ func isDir(path string) bool {
 	return e == nil && info.IsDir()
 }
 
+// WriteFileAtomic writes data to a sibling temp file and renames it over path, so
+// a reader never sees a partially-written file. The parent directory is created
+// resiliently first. os.Rename is atomic within a filesystem.
+func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
+	if err := MkdirAllResilient(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp.*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tmpName)
+		}
+	}()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(perm); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return err
+	}
+	cleanup = false
+	return nil
+}
+
 // AppendLine appends one line to a ledger file as a single O_APPEND write
 // (mirroring the event store's append discipline). Because O_APPEND atomicity
 // is weak on weakly-coherent mounts (virtio-fs), cross-process writers are
