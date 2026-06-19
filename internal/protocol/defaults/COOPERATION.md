@@ -22,6 +22,8 @@ Once chosen, replace the `Transport:` line in the header with the active value. 
 
 **The choice is sticky for the project.** Switching transports later is possible but requires a meta-protocol-change idea (§7), because in-flight ideas span multiple PRs/branches.
 
+**Deck bootstrap (one-time).** When `parley-deck/` is first created in a project (`parley init`), in addition to the transport the facilitator MUST confirm the **active roster and each agent's model** with the user as a required one-time setup step, and record the persistent per-agent model choice in the local agent config (`meta/headless-agents.local.json`; mirrored in the §2 roster). This fires **only at deck creation** — not per idea, not per later session; an already-bootstrapped deck reuses the saved selection (and the user may re-run the confirmation on request). The protocol stays **model-agnostic** — it mandates the confirmation, not any specific model. See the skill for the interactive list-roster → confirm → list-models → pick flow. (The §9.0 readiness check only pings agent *liveness* per idea; it does not re-select models.)
+
 **Universal invariants** that hold for every transport:
 
 - The `parley-deck/` directory layout (§3) is identical.
@@ -621,13 +623,6 @@ Before creating `ideas/<slug>/00-prompt.md`, the facilitator runs a readiness ch
     exception; the facilitator stops rather than silently going solo.
   - The quorum **locks once Phase 0 completes**; a mid-idea unavailability falls to §5
     and the runtime watchdog, downgrading to the same per-idea, user-confirmed waive.
-- **Roster & model confirmation (session start).** At a session's first readiness check
-  the facilitator MUST confirm the active roster and each agent's selected model with the
-  user before the first idea; the user's persistent per-agent model choice is recorded in
-  the local agent config (`meta/headless-agents.local.json`) and reused until changed
-  (later sessions show the saved picks for explicit confirmation). The protocol stays
-  model-agnostic — it mandates the confirmation, not any specific model. (See the skill
-  for the interactive list-roster → confirm → list-models → pick flow.)
 
 Then proceed with the per-agent session-start checklist:
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.30.3 - 2026-06-19
+
+- **Fix: roster & model confirmation is a deck-BOOTSTRAP gate, not per-idea/per-session.**
+  Corrects 1.30.2, which placed the mandatory roster + per-agent model confirmation in
+  the per-idea §9.0 readiness check. It now lives in **§0 (deck bootstrap)**: the
+  confirmation fires **once, when `parley-deck/` is first created (`parley init`)** —
+  not per idea, not per later session; an already-bootstrapped deck reuses the saved
+  selection. §9.0 keeps only the per-idea agent **liveness** ping (it no longer
+  re-selects models). Both COOPERATION.md copies; drift-guard lockstep; protocol stays
+  model-agnostic. (Skill side: `parley-deck-skill` 1.3.3 moves the interactive flow to
+  "Transport Selection / deck bootstrap".)
+
 ## v1.30.2 - 2026-06-19
 
 - **Mandatory session-start roster & model confirmation.** §9.0 now states that at a
