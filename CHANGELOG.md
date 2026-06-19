@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.30.1 - 2026-06-19
+
+- **Pin the `claude` participant to Opus 4.8 (1M context).** The built-in `claude`
+  agent spec launched with `--model opus` — an **alias** the `claude` CLI resolves to
+  "the latest opus", which on some installs/accounts landed on an older Opus (e.g.
+  4.6). The spec now pins the exact model ID **`claude-opus-4-8[1m]`** (verified the
+  CLI accepts it) so `parley run` always launches Opus 4.8 with the 1M-context window,
+  not whatever the alias happens to resolve to. (Tradeoff: a future Opus bump must be
+  re-pinned; the alias would auto-track but mis-resolved here.) The local
+  `headless-agents.local.json` roster was pinned to match.
+
 ## v1.30.0 - 2026-06-19
 
 Pre-idea readiness check (idea `meta-protocol-change-preflight-readiness`; 4-agent

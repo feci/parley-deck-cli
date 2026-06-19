@@ -113,8 +113,8 @@ func TestDefaultSpecsPreferAntigravityAndStrongVerifiedDefaults(t *testing.T) {
 	}
 
 	claude := findSpecForTest(specs, "claude")
-	if claude.Model != "opus" || claude.Reasoning != "max" {
-		t.Fatalf("claude model/reasoning=%q/%q, want opus/max", claude.Model, claude.Reasoning)
+	if claude.Model != "claude-opus-4-8[1m]" || claude.Reasoning != "max" {
+		t.Fatalf("claude model/reasoning=%q/%q, want claude-opus-4-8[1m]/max", claude.Model, claude.Reasoning)
 	}
 
 	hermes := findSpecForTest(specs, "hermes")
