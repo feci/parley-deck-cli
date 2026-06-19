@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.30.2 - 2026-06-19
+
+- **Mandatory session-start roster & model confirmation.** §9.0 now states that at a
+  session's first readiness check the facilitator MUST confirm the active roster and
+  each agent's selected model with the user before the first idea; the user's
+  persistent per-agent model choice is recorded in `meta/headless-agents.local.json`
+  and reused until changed (later sessions show the saved picks for explicit
+  confirmation). The protocol stays model-agnostic — it mandates the confirmation, not
+  any specific model. (Both COOPERATION.md copies; drift-guard lockstep. The detailed
+  interactive list-roster → confirm → list-models → pick flow lives in the
+  `parley-deck-skill` SKILL.md Startup Flow / Selection Checkpoint.)
+
 ## v1.30.1 - 2026-06-19
 
 - **Pin the `claude` participant to Opus 4.8 (1M context).** The built-in `claude`
