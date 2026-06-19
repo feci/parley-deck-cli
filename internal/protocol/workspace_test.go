@@ -58,6 +58,58 @@ func TestInitWorkspaceAndStatus(t *testing.T) {
 	}
 }
 
+func TestInitWorkspaceWritesConsumerVersionMeta(t *testing.T) {
+	dir := t.TempDir()
+	if err := InitWorkspace(dir); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, DeckDir, "meta", "version.json"))
+	if err != nil {
+		t.Fatalf("init did not write meta/version.json: %v", err)
+	}
+	if !strings.Contains(string(data), `"protocolRole": "consumer"`) {
+		t.Fatalf("version.json missing protocolRole=consumer:\n%s", data)
+	}
+}
+
+func TestCreateIdeaWithExclusionsRecordsExcluded(t *testing.T) {
+	dir := t.TempDir()
+	if err := InitWorkspace(dir); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := CreateIdeaWithExclusions(dir, "task body", []string{"codex", "claude"},
+		[]string{"hermes — unavailable:no-pong — confirmed 2026-06-19"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := os.ReadFile(filepath.Join(idea.Path, "00-prompt.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(prompt)
+	if !strings.Contains(text, "participants: [codex, claude]") {
+		t.Fatalf("00-prompt.md missing participants:\n%s", text)
+	}
+	if !strings.Contains(text, "excluded: hermes — unavailable:no-pong — confirmed 2026-06-19") {
+		t.Fatalf("00-prompt.md did not record the confirmed exclusion:\n%s", text)
+	}
+}
+
+func TestCreateIdeaNoExclusionsOmitsExcludedLine(t *testing.T) {
+	dir := t.TempDir()
+	if err := InitWorkspace(dir); err != nil {
+		t.Fatal(err)
+	}
+	idea, err := CreateIdea(dir, "task body", []string{"codex", "claude"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, _ := os.ReadFile(filepath.Join(idea.Path, "00-prompt.md"))
+	if strings.Contains(string(prompt), "excluded:") {
+		t.Fatalf("00-prompt.md should carry no excluded: line when none confirmed:\n%s", prompt)
+	}
+}
+
 func TestTimestampedSlugShortensLongTask(t *testing.T) {
 	now := time.Date(2026, 5, 17, 21, 39, 35, 0, time.UTC)
 	got := timestampedSlug("podme nastartovat novu ideu, skus vymysliet hru na roblox", now)

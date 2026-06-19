@@ -112,7 +112,9 @@ func TestClassifyBump(t *testing.T) {
 		{"patch is additive", "1.3.1", "1.3.2", bumpPatchMinor},
 		{"same is additive", "1.3.1", "1.3.1", bumpPatchMinor},
 		{"major is breaking", "1.3.1", "2.0.0", bumpMajor},
-		{"unparseable degrades to additive", "garbage", "1.4.0", bumpPatchMinor},
+		{"unparseable project fails closed to breaking", "garbage", "1.4.0", bumpMajor},
+		{"unparseable packaged fails closed to breaking", "1.3.1", "garbage", bumpMajor},
+		{"empty packaged fails closed to breaking", "1.3.1", "", bumpMajor},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -200,10 +202,10 @@ func TestClassifyFreshnessConsumerBreakingGate(t *testing.T) {
 		"packagedProtocolSha256": "bbb", // drift
 		"deckVersion":            "1.3.1",
 	})
-	// No parley-deck-skill on PATH in tests, so packaged deck version is unknown
-	// and classifyBump degrades to additive. To exercise the breaking path
-	// deterministically, classifyBump is unit-tested directly above. Here we
-	// assert the consumer-drift path at least does NOT report in-sync.
+	// No parley-deck-skill on PATH in tests, so the packaged deck version is
+	// unknown; classifyBump now fails CLOSED to breaking (Fix 6) on an unparseable
+	// packaged version. Here we assert the consumer-drift path does NOT report
+	// in-sync (and lands on additive or breaking).
 	fr, _, err := classifyAndSyncFreshness(context.Background(), preflightOptions{Root: root})
 	if err != nil {
 		t.Fatal(err)
@@ -245,8 +247,71 @@ func TestClassifyFreshnessNoVersionJSON(t *testing.T) {
 	if fr.Classification != "no-version-json" {
 		t.Fatalf("classification=%q want no-version-json", fr.Classification)
 	}
+	// Fix 4c: absent metadata fails CLOSED to the one-time role/backfill gate
+	// (was previously advisory/no-gate, which let an unconfigured deck report ready).
+	if len(gates) != 1 || gates[0].Kind != gateUnknownRole {
+		t.Fatalf("absent version.json must produce the unknown-role/backfill gate, got %v", gates)
+	}
+}
+
+// TestClassifyFreshnessNoVersionJSONYesBackfills checks Fix 4c+2: with --yes the
+// absent-metadata gate is confirmed — a consumer version.json is backfilled and
+// the gate clears.
+func TestClassifyFreshnessNoVersionJSONYesBackfills(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, protocol.DeckDir, "meta"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fr, gates, err := classifyAndSyncFreshness(context.Background(), preflightOptions{Root: root, Yes: true})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(gates) != 0 {
-		t.Fatalf("missing version.json must produce no gate, got %v", gates)
+		t.Fatalf("--yes must clear the backfill gate, got %v", gates)
+	}
+	if fr.Role != "consumer" {
+		t.Fatalf("role=%q want consumer after backfill", fr.Role)
+	}
+	meta, err := readVersionMeta(root)
+	if err != nil {
+		t.Fatalf("backfilled version.json unreadable: %v", err)
+	}
+	if meta.ProtocolRole != "consumer" {
+		t.Fatalf("version.json protocolRole=%q want consumer", meta.ProtocolRole)
+	}
+}
+
+// TestClassifyFreshnessUnknownRoleYesBackfills checks Fix 2: --yes confirms the
+// unknown-role gate by backfilling protocolRole=consumer into the existing
+// version.json, preserving other fields.
+func TestClassifyFreshnessUnknownRoleYesBackfills(t *testing.T) {
+	root := t.TempDir()
+	writeVersionJSON(t, root, map[string]any{
+		"protocolSha256":         "aaa",
+		"packagedProtocolSha256": "bbb",
+		"deckVersion":            "1.3.1",
+		// no protocolRole
+	})
+	fr, gates, err := classifyAndSyncFreshness(context.Background(), preflightOptions{Root: root, Yes: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gates) != 0 {
+		t.Fatalf("--yes must clear the unknown-role gate, got %v", gates)
+	}
+	if fr.Role != "consumer" {
+		t.Fatalf("role=%q want consumer after backfill", fr.Role)
+	}
+	meta, err := readVersionMeta(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meta.ProtocolRole != "consumer" {
+		t.Fatalf("protocolRole=%q want consumer", meta.ProtocolRole)
+	}
+	// Pre-existing fields preserved.
+	if meta.DeckVersion != "1.3.1" {
+		t.Fatalf("backfill dropped deckVersion: %q", meta.DeckVersion)
 	}
 }
 
@@ -399,12 +464,139 @@ func TestPreflightNoPingPresenceOnly(t *testing.T) {
 	}
 }
 
-// --- command-level exit codes (usage / ready) ---
+// --- Fix 5: hosted-PONG must be an exact sentinel, not a substring ---
+
+func TestIsExactPONG(t *testing.T) {
+	cases := []struct {
+		name string
+		out  string
+		want bool
+	}{
+		{"exact", "PONG", true},
+		{"exact with surrounding whitespace", "  PONG\n", true},
+		{"single PONG line among blanks", "\n\nPONG\n\n", true},
+		{"echoed prompt false positive", "Reply with exactly the single token: PONG", false},
+		{"commentary false positive", "I cannot return PONG in this context.", false},
+		{"PONG plus extra line", "PONG\nthinking...", false},
+		{"two PONG lines", "PONG\nPONG", false},
+		{"empty", "", false},
+		{"lowercase", "pong", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isExactPONG(tc.out); got != tc.want {
+				t.Fatalf("isExactPONG(%q)=%v want %v", tc.out, got, tc.want)
+			}
+		})
+	}
+}
+
+// --- Fix 4b: a non-workspace directory must hard-fail, never report ready ---
+
+func TestPreflightNonWorkspaceHardFailExit1(t *testing.T) {
+	root := t.TempDir() // no parley-deck/ deck
+	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) (bool, string) {
+		return true, ""
+	})
+	var stderr bytes.Buffer
+	_, code, err := preflight(context.Background(), preflightOptions{Root: root, NoPing: true},
+		[]agents.Discovery{found("a"), found("b")}, &bytes.Buffer{}, &stderr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 1 {
+		t.Fatalf("code=%d want 1 (no workspace)", code)
+	}
+	if !strings.Contains(stderr.String(), "no parley-deck workspace") {
+		t.Fatalf("stderr=%q want a no-workspace message", stderr.String())
+	}
+}
+
+// --- Fix 1: preflight evaluates the EXACT selected set, not every installed agent ---
+
+func TestParticipantDiscoveriesSelectsExactSet(t *testing.T) {
+	discovered := []agents.Discovery{found("codex"), found("claude"), found("hermes")}
+	got := participantDiscoveries(discovered, []string{"codex"})
+	if len(got) != 1 || got[0].ID != "codex" {
+		t.Fatalf("participantDiscoveries selected %v, want exactly [codex]", got)
+	}
+}
+
+func TestPreflightSelectedSoloHardFailExit1(t *testing.T) {
+	root := sourceWorkspace(t)
+	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) (bool, string) {
+		return true, "" // every probed agent is available
+	})
+	// Even though three agents are installed+available, the SELECTED set is a
+	// single participant — the §1 non-solo hard-stop must fire (exit 1), not pass.
+	selected := participantDiscoveries(
+		[]agents.Discovery{found("codex"), found("claude"), found("hermes")},
+		[]string{"codex"},
+	)
+	_, code, err := preflight(context.Background(), preflightOptions{Root: root}, selected, &bytes.Buffer{}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 1 {
+		t.Fatalf("code=%d want 1 (§1 non-solo on the selected set)", code)
+	}
+}
+
+// --- Fix 2: --yes confirms the exclude gate and records the exclusion ---
+
+func TestPreflightYesRecordsExclusion(t *testing.T) {
+	root := sourceWorkspace(t)
+	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) (bool, string) {
+		return a.ID != "c", "unavailable:no-pong"
+	})
+	// a+b available, c unavailable. With --yes the exclusion of c is confirmed
+	// (no gate) and >= 2 remain → exit 0, and c is recorded.
+	report, code, err := preflight(context.Background(), preflightOptions{Root: root, Yes: true},
+		[]agents.Discovery{found("a"), found("b"), found("c")}, &bytes.Buffer{}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 0 {
+		t.Fatalf("code=%d want 0 (--yes confirms the exclusion, >=2 remain)", code)
+	}
+	if len(report.Gates) != 0 {
+		t.Fatalf("--yes must clear the exclude gate, got %v", report.Gates)
+	}
+	if len(report.Excluded) != 1 || !strings.HasPrefix(report.Excluded[0], "c — ") || !strings.Contains(report.Excluded[0], "confirmed ") {
+		t.Fatalf("excluded=%v want one recorded `c — ... — confirmed <date>` entry", report.Excluded)
+	}
+}
+
+// --- command-level exit codes (usage / ready / json) ---
 
 func TestPreflightUsageError(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code := Run([]string{"preflight", "extra-arg"}, &stdout, &stderr)
 	if code != 2 {
 		t.Fatalf("code=%d want 2 (usage)", code)
+	}
+}
+
+// --- Fix 3: --json must NOT mask a pending-gate exit code ---
+
+func TestPreflightJSONPropagatesGateExit3(t *testing.T) {
+	root := sourceWorkspace(t)
+	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) (bool, string) {
+		return a.ID != "b", "unavailable:no-pong"
+	})
+	// Three agents, one unavailable: an exclude gate (exit 3). With --json the
+	// payload is printed but the real exit code (3) must be returned, not 0.
+	report, code, err := preflight(context.Background(), preflightOptions{Root: root, JSON: true},
+		[]agents.Discovery{found("a"), found("b"), found("c")}, &bytes.Buffer{}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != 3 {
+		t.Fatalf("code=%d want 3 (pending gate)", code)
+	}
+	// Sanity: the JSON encoder round-trips the report (so --json print + return code holds).
+	var stdout, stderr bytes.Buffer
+	if enc := printJSON(&stdout, report, &stderr); enc != 0 {
+		t.Fatalf("printJSON returned %d, want 0", enc)
 	}
 }

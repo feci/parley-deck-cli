@@ -1721,13 +1721,18 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	// Pre-idea readiness check (preflight §9.0): runs AFTER discovery and BEFORE
 	// runcontrol.Create so a pending gate stops here with no half-open idea. It
-	// reuses the already-discovered agents. Unattended (--auto, no TTY) hard-stops
-	// on a gate and never reads stdin; attended prints the gate + confirm command
-	// and stops. --no-preflight is the CI escape.
+	// evaluates the EXACT selected participant set (so --participants cannot bypass
+	// the §1 non-solo hard-stop). Unattended (--auto, no TTY) hard-stops on a gate
+	// and never reads stdin; attended prints the gate + confirm command and stops.
+	// --no-preflight is the CI escape. Confirmed (--yes) exclusions are recorded in
+	// the created idea.
+	var preflightExcluded []string
 	if !*noPreflight {
-		if code, stop := runTaskPreflight(ctx, *root, discovered, attendedRun(*auto, *yes), *noPing, stdout, stderr); stop {
+		code, excluded, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, stdout, stderr)
+		if stop {
 			return code
 		}
+		preflightExcluded = excluded
 	}
 	if !*auto && !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
 		fmt.Fprintln(stdout, "No run started. Use `--yes` or `--auto` to launch without an interactive confirmation prompt.")
@@ -1737,6 +1742,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		Root:         *root,
 		Task:         task,
 		Participants: participants,
+		Excluded:     preflightExcluded,
 		Discovered:   discovered,
 		Auto:         *auto,
 	})

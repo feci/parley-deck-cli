@@ -89,6 +89,9 @@ type preflightReport struct {
 	Roster    []rosterEntry `json:"roster"`
 	Pinged    bool          `json:"pinged"`
 	Gates     []gate        `json:"gates"`
+	// Excluded holds confirmed (--yes) participant exclusions, formatted as
+	// `<roster-id> — reason — confirmed <date>` for recording in the idea.
+	Excluded []string `json:"excluded,omitempty"`
 }
 
 // versionMeta is the subset of meta/version.json preflight reads.
@@ -141,7 +144,13 @@ func runPreflight(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		return 1
 	}
 	if opts.JSON {
-		return printJSON(stdout, report, stderr)
+		// Print the JSON payload, then return the real preflight exit code so a
+		// pending gate (3) / hard failure (1) is not masked for JSON callers.
+		// Only a JSON-encode failure is a separate (1) error.
+		if encErr := printJSON(stdout, report, stderr); encErr != 0 {
+			return encErr
+		}
+		return code
 	}
 	printPreflightReport(stdout, report)
 	return code
@@ -173,31 +182,51 @@ func attendedRun(auto, yes bool) bool {
 	return isTerminal(os.Stdin)
 }
 
-// runTaskPreflight is the `parley run` pre-check. It reuses the already-discovered
-// agents and runs the shared readiness check before any idea is created. Per the
-// operator ruling, the default is a full hosted-PONG roster ping every idea
-// (`--no-ping` falls back to a presence-only Tier-0 check for speed/CI; `--no-preflight`
-// skips it entirely). It returns (exitCode, stop): stop=true means abort the run before
-// any idea is created. On a genuine gate it prints the gate + confirm command. Attended
-// and unattended both stop on a gate (we never auto-answer the new gates); the only
-// difference is unattended must never block on stdin, which this path honors because it
-// never reads stdin.
-func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, attended, noPing bool, stdout, stderr io.Writer) (int, bool) {
-	opts := preflightOptions{Root: root, NoPing: noPing}
-	report, code, err := preflight(ctx, opts, selectedParticipants(discovered), stdout, stderr)
+// participantDiscoveries returns the agents.Discovery entries for exactly the
+// given participant IDs, in selection order. This is the set that will be written
+// to 00-prompt.md — preflight must evaluate the §1 non-solo hard-stop against it,
+// NOT against every installed agent.
+func participantDiscoveries(discovered []agents.Discovery, participants []string) []agents.Discovery {
+	byID := make(map[string]agents.Discovery, len(discovered))
+	for _, agent := range discovered {
+		byID[agent.ID] = agent
+	}
+	out := make([]agents.Discovery, 0, len(participants))
+	for _, id := range participants {
+		if agent, ok := byID[id]; ok {
+			out = append(out, agent)
+		}
+	}
+	return out
+}
+
+// runTaskPreflight is the `parley run` pre-check. It runs the shared readiness
+// check against the EXACT selected participant set (the IDs that will be written
+// to 00-prompt.md) before any idea is created. Per the operator ruling, the
+// default is a full hosted-PONG roster ping every idea (`--no-ping` falls back to
+// a presence-only Tier-0 check for speed/CI; `--no-preflight` skips it entirely).
+// It returns (exitCode, excluded, stop): stop=true means abort the run before any
+// idea is created; excluded is the confirmed (--yes) exclusion list to record in
+// the idea. On a genuine gate it prints the gate + confirm command. Attended and
+// unattended both stop on a gate (we never auto-answer the new gates); the only
+// difference is unattended must never block on stdin, which this path honors
+// because it never reads stdin.
+func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, stdout, stderr io.Writer) (int, []string, bool) {
+	opts := preflightOptions{Root: root, NoPing: noPing, Yes: yes}
+	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
-		return 1, true
+		return 1, nil, true
 	}
 	if code == 0 {
 		if report.Freshness.Synced {
 			fmt.Fprintf(stdout, "preflight: %s\n", report.Freshness.Summary)
 		}
-		return 0, false
+		return 0, report.Excluded, false
 	}
 	// A gate or a hard failure: stop before runcontrol.Create. No half-open idea.
 	if code == 1 {
-		fmt.Fprintln(stderr, "preflight: hard stop — excluding unavailable agents would leave fewer than 2 participants (§1 non-solo).")
+		fmt.Fprintln(stderr, "preflight: hard stop — fewer than 2 participants after exclusion (§1 non-solo).")
 	} else {
 		w := stdout
 		if !attended {
@@ -211,7 +240,23 @@ func runTaskPreflight(ctx context.Context, root string, discovered []agents.Disc
 			fmt.Fprintf(w, "    confirm: %s\n", g.Confirm)
 		}
 	}
-	return code, true
+	return code, nil, true
+}
+
+// confirmCommand is the command a gate advertises to clear it: re-run preflight
+// with --yes, which confirms the (non-availability) gates and backfills the role.
+func confirmCommand(root string) string {
+	return fmt.Sprintf("parley preflight --dir %s --yes", root)
+}
+
+// workspaceExists reports whether root holds a real parley-deck/ workspace (the
+// deck directory must exist). An empty / non-workspace dir must never report ready.
+func workspaceExists(root string) bool {
+	if strings.TrimSpace(root) == "" {
+		root = "."
+	}
+	info, err := os.Stat(filepath.Join(root, protocol.DeckDir))
+	return err == nil && info.IsDir()
 }
 
 // preflight is the shared readiness check used by `parley preflight` and
@@ -219,8 +264,23 @@ func runTaskPreflight(ctx context.Context, root string, discovered []agents.Disc
 // safe), pings the roster (unless NoPing), and returns the report plus an exit
 // code: 0 ready · 1 hard failure (<2 participants after exclusion) · 3 pending
 // gate. It never reads stdin and never auto-answers a gate.
+//
+// `discovered` is the EXACT selected participant set that will be written to the
+// idea (NOT a re-expansion of every installed agent), so the §1 non-solo
+// hard-stop is enforced against the set the run will actually use.
+//
+// With opts.Yes the exclude/role gates are treated as CONFIRMED: the role is
+// backfilled and unavailable agents are recorded as confirmed exclusions, so
+// preflight proceeds (exit 0) when >= 2 participants remain after the exclusions.
 func preflight(ctx context.Context, opts preflightOptions, discovered []agents.Discovery, stdout, stderr io.Writer) (preflightReport, int, error) {
 	report := preflightReport{}
+
+	// Validate that a real parley-deck/ workspace exists before reporting ready.
+	// An empty / non-workspace directory is a hard failure (exit 1), never "ready".
+	if !workspaceExists(opts.Root) {
+		fmt.Fprintln(stderr, "preflight: no parley-deck workspace found; run `parley init` first")
+		return report, 1, nil
+	}
 
 	fr, freshGates, err := classifyAndSyncFreshness(ctx, opts)
 	if err != nil {
@@ -233,7 +293,8 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	report.Roster = checkRoster(ctx, opts, discovered)
 
 	// Availability exclusion is a gate: an unavailable agent the user must
-	// confirm excluding. Count would-be participants to honor the §1 non-solo
+	// confirm excluding. With --yes the exclusion is CONFIRMED and recorded
+	// instead of gated. Count would-be participants to honor the §1 non-solo
 	// hard-stop.
 	available := 0
 	for _, entry := range report.Roster {
@@ -241,15 +302,21 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 			available++
 			continue
 		}
+		if opts.Yes {
+			report.Excluded = append(report.Excluded, fmt.Sprintf("%s — %s — confirmed %s",
+				entry.RosterID, entry.Reason, time.Now().Format("2006-01-02")))
+			continue
+		}
 		report.Gates = append(report.Gates, gate{
 			Kind:    gateExcludeAgent,
 			Detail:  fmt.Sprintf("%s unavailable (%s) — confirm excluding it from this idea", entry.RosterID, entry.Reason),
-			Confirm: fmt.Sprintf("parley preflight --dir %s --yes", opts.Root),
+			Confirm: confirmCommand(opts.Root),
 		})
 	}
 
 	// Hard failure: excluding the unavailable agents would leave < 2 participants
-	// (the §1 non-solo hard-stop). This outranks the pending gate.
+	// (the §1 non-solo hard-stop). This outranks the pending gate and is NOT
+	// waivable by --yes.
 	if len(report.Roster) > 0 && available < 2 {
 		return report, 1, nil
 	}
@@ -275,9 +342,27 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 	meta, err := readVersionMeta(root)
 	if err != nil {
 		if os.IsNotExist(err) {
+			// Absent metadata in an existing deck fails CLOSED: the one-time
+			// role/backfill gate (not advisory). The user must confirm the role
+			// and backfill meta/version.json before the deck can be reported ready.
+			// With --yes the backfill is CONFIRMED: write a consumer version.json
+			// and clear the gate.
+			if opts.Yes {
+				if berr := backfillProtocolRole(root, versionMeta{ProtocolRole: "consumer"}); berr != nil {
+					return fr, nil, berr
+				}
+				fr.Role = "consumer"
+				fr.Classification = "role-backfilled"
+				fr.Summary = "meta/version.json was absent; backfilled protocolRole=consumer (--yes confirmed)"
+				return fr, nil, nil
+			}
 			fr.Classification = "no-version-json"
-			fr.Summary = "no meta/version.json — freshness check skipped (advisory)"
-			return fr, nil, nil
+			fr.Summary = "no meta/version.json — confirm protocol role and backfill the file before proceeding"
+			return fr, []gate{{
+				Kind:    gateUnknownRole,
+				Detail:  "meta/version.json is absent; confirm role (source|consumer) and backfill the file",
+				Confirm: confirmCommand(opts.Root),
+			}}, nil
 		}
 		return fr, nil, err
 	}
@@ -294,12 +379,24 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 	case "consumer":
 		// fall through to drift classification below
 	default:
+		// With --yes the role-backfill is CONFIRMED: backfill protocolRole=consumer
+		// into version.json and clear the gate.
+		if opts.Yes {
+			meta.ProtocolRole = "consumer"
+			if berr := backfillProtocolRole(root, meta); berr != nil {
+				return fr, nil, berr
+			}
+			fr.Role = "consumer"
+			fr.Classification = "role-backfilled"
+			fr.Summary = "protocolRole was absent; backfilled protocolRole=consumer (--yes confirmed)"
+			return fr, nil, nil
+		}
 		fr.Classification = "unknown-role"
 		fr.Summary = "protocolRole absent/unknown — will not auto-write; confirm role + backfill"
 		return fr, []gate{{
 			Kind:    gateUnknownRole,
 			Detail:  "meta/version.json has no protocolRole; confirm role (source|consumer) and backfill the field",
-			Confirm: fmt.Sprintf("parley preflight --dir %s --yes", opts.Root),
+			Confirm: confirmCommand(opts.Root),
 		}}, nil
 	}
 
@@ -317,7 +414,7 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 		return fr, []gate{{
 			Kind:    gateBreakingFreshness,
 			Detail:  "packaged protocol is a breaking (major) bump; review and confirm before adopting",
-			Confirm: fmt.Sprintf("parley preflight --dir %s --yes", opts.Root),
+			Confirm: confirmCommand(opts.Root),
 		}}, nil
 	}
 
@@ -335,20 +432,20 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 type bumpKind int
 
 const (
-	bumpUnknown bumpKind = iota
-	bumpPatchMinor
+	bumpPatchMinor bumpKind = iota
 	bumpMajor
 )
 
 // classifyBump compares the project deckVersion against the packaged deckVersion
 // by semver. A bump to a higher major is breaking; minor/patch is additive.
-// Unparseable versions are treated conservatively as additive (the safer
-// auto-sync path is still zone-preserving, recorded, and git-reversible).
+// Unparseable versions fail CLOSED to bumpMajor (gate): when the
+// major-vs-minor classification is uncertain we must NOT auto-write a possibly
+// breaking consumer bump — the breaking gate exists exactly to prevent that.
 func classifyBump(projectVersion, packagedVersion string) bumpKind {
 	pj, ok1 := parseMajor(projectVersion)
 	pk, ok2 := parseMajor(packagedVersion)
 	if !ok1 || !ok2 {
-		return bumpPatchMinor
+		return bumpMajor
 	}
 	if pk > pj {
 		return bumpMajor
@@ -613,11 +710,35 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 		if err != nil {
 			return false, "unavailable:exit-error"
 		}
-		if strings.Contains(out.String(), pongSentinel) {
+		if isExactPONG(out.String()) {
 			return true, ""
 		}
 		return false, "unavailable:no-pong"
 	}
+}
+
+// isExactPONG reports whether stdout is the exact PONG sentinel and nothing else.
+// It accepts only output whose sole non-whitespace content is a single `PONG`
+// token, so an echoed prompt, "cannot return PONG" commentary, or any other
+// surrounding text is rejected (no substring false positives).
+func isExactPONG(out string) bool {
+	trimmed := strings.TrimSpace(out)
+	if trimmed == pongSentinel {
+		return true
+	}
+	lines := strings.Split(trimmed, "\n")
+	seen := false
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if line != pongSentinel || seen {
+			return false
+		}
+		seen = true
+	}
+	return seen
 }
 
 func runtimeCLI(agent agents.Discovery) string {
@@ -638,6 +759,29 @@ func readVersionMeta(root string) (versionMeta, error) {
 		return versionMeta{}, fmt.Errorf("meta/version.json is not valid JSON: %w", err)
 	}
 	return meta, nil
+}
+
+// backfillProtocolRole writes meta/version.json with meta.ProtocolRole set,
+// preserving any pre-existing fields in the file. It is the one-time confirmed
+// (`--yes`) role backfill for the unknown-role / absent-metadata gate.
+func backfillProtocolRole(root string, meta versionMeta) error {
+	dir := filepath.Join(root, protocol.DeckDir, "meta")
+	path := filepath.Join(dir, "version.json")
+
+	payload := map[string]any{}
+	if data, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(data, &payload) // best-effort: preserve existing keys
+	}
+	payload["protocolRole"] = meta.ProtocolRole
+
+	out, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := fsutil.MkdirAllResilient(dir, 0o755); err != nil {
+		return err
+	}
+	return fsutil.WriteFileAtomic(path, append(out, '\n'), 0o644)
 }
 
 // skillStatusVersion extracts the installed skill version from the status payload.

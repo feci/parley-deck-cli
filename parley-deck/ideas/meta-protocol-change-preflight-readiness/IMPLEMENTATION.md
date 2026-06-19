@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-preflight-readiness
-status: implemented
+status: complete
 implementer: claude-1
 started: 2026-06-19
 completed: 2026-06-19
 branch: parley-deck-cli#meta/preflight-readiness
-head-commit: <pending first commit>
+head-commit: c9e872d (impl) → fix-up cycle 1 (see below)
 design-pr: n/a (single-repo; design + impl in one PR)
 implementation-pr: <pending>
 ---
@@ -82,5 +82,32 @@ command (freshness check + hosted-PONG roster ping + gates + exit codes) wired i
   write), roster presence table, exit 0. `--ping-timeout 100s` (real hosted PONG): all
   4 installed agents PONGed green, exit 0.
 
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-19
+
+### Fixes applied (all 6 agreed; verified by claude-1 + re-signed by codex-1/hermes-1)
+- [CRITICAL] §1 hard-stop now evaluated on the selected `--participants` set written to
+  `00-prompt.md` (not the full discovered set) — `runTaskPreflight` rewritten +
+  `participantDiscoveries`; `TestRunParticipantsSubsetHardStopsSolo`.
+- [MAJOR] `--yes` confirms gates + records `excluded:` into `00-prompt.md`
+  (`CreateOptions.Excluded` → `CreateIdeaWithExclusions`) + backfills `protocolRole`.
+- [MAJOR] `--json` returns the real exit code (no longer masked to 0).
+- [MAJOR] `parley init` writes `protocolRole:consumer`; non-workspace → exit 1;
+  absent metadata in an existing deck → role/backfill gate.
+- [MAJOR] hosted-PONG exact sentinel (`isExactPONG`) + echoed-prompt/commentary tests.
+- [MAJOR] `classifyBump` fail-closed to `bumpMajor` on parse failure; dead `bumpUnknown` removed.
+
+### Deviations from agreed fixes
+None. The `excluded:` recording used full `CreateOptions` threading (the cleaner option).
+
 ## Outcomes & Retrospective
-(To complete at Phase 8.) Pending Phase 6-7 review + release.
+Shipped §9.0 readiness check (protocol, both copies) + `parley preflight` (freshness +
+hosted-PONG ping + gates) wired into `parley run`, honoring the operator's hosted-PONG
+ruling. Phase 6 review caught a real CRITICAL (§1 bypass via `--participants`) + 5 MAJORs
+— all fixed in one cycle and re-signed. `go build` + `go test ./...` + drift guard green.
+Two MINORs deferred (roster-ID `-1` reconciliation; preflight perf). Lessons: (1) the §1
+non-solo guard must always evaluate the *exact* set written to `00-prompt.md`, never a
+superset; (2) Feature 2 was validated live — agy PONGed at the ping but hung on the
+heavier signoff append → operator-confirmed per-idea waive, the exact gate this idea
+builds.

@@ -18,6 +18,7 @@ type CreateOptions struct {
 	Root         string
 	Task         string
 	Participants []string
+	Excluded     []string
 	Discovered   []agents.Discovery
 	Auto         bool
 	Now          time.Time
@@ -39,7 +40,7 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	if now.IsZero() {
 		now = time.Now()
 	}
-	idea, err := protocol.CreateIdea(opts.Root, opts.Task, opts.Participants)
+	idea, err := protocol.CreateIdeaWithExclusions(opts.Root, opts.Task, opts.Participants, opts.Excluded)
 	if err != nil {
 		return CreatedRun{}, err
 	}
