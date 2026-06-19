@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.30.0 - 2026-06-19
+
+Pre-idea readiness check (idea `meta-protocol-change-preflight-readiness`; 4-agent
+deliberation, signoffs claude-1/codex-1/hermes-1, agy waived; Phase-6 review caught a
+CRITICAL §1-bypass + 5 MAJORs, all fixed in fix-up cycle 1).
+
+- **Protocol §9.0 "Pre-idea readiness check"** (both COOPERATION.md copies, drift-guard
+  lockstep): at idea start the facilitator (a) checks protocol freshness —
+  `source`=advisory/no-write, `consumer` additive bump=auto-sync (zone-preserving),
+  breaking/unknown-role=confirm — and (b) hosted-PONG-pings the roster, gating per-idea
+  exclude / re-include behind explicit user confirmation. Plus a §5 quorum-locks-at-
+  Phase-0 sentence and a §7 carve-out (an upstream version sync is not a protocol change).
+- **New `parley preflight` command** `[--dir][--json][--yes][--ping-timeout][--no-ping]`:
+  freshness classifier + zone-preserving merge + bounded concurrent hosted-PONG probe
+  (process-group-killed on timeout) + report/JSON + exit codes 0/1/2/3. Shared with the
+  `parley run` pre-check, which runs **before idea creation**, defaults to hosted PONG
+  (`--no-ping`/`--no-preflight` opt out), never auto-answers the new gates, and
+  hard-stops unattended without reading stdin. The §1 non-solo hard-stop is evaluated on
+  the exact `--participants` set; confirmed exclusions are recorded in `00-prompt.md`.
+- `meta/version.json` gains `protocolRole` (`source`/`consumer`, fail-closed); `parley
+  init` now writes `protocolRole: consumer`.
+- Also bundles a 4-participant roster update (§2 tables → `claude-1`/`codex-1`/`hermes-1`/
+  `antigravity-1`; backend map).
+- Known follow-ups (deferred): roster-ID↔runtime-ID `-1` reconciliation in reports;
+  preflight freshness-probe perf for source/`--no-ping`.
+
 ## v1.29.0 - 2026-06-19
 
 Protocol: Fusion + ExecPlans inspiration (idea
