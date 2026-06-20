@@ -34,7 +34,15 @@ type IdeaStatus struct {
 	Path         string
 }
 
+// InitWorkspace creates a fresh deck with the default (local-dir) transport.
 func InitWorkspace(root string) error {
+	return InitWorkspaceWithTransport(root, "")
+}
+
+// InitWorkspaceWithTransport creates a fresh deck, seeding COOPERATION.md with
+// the requested transport. An empty or unknown transport falls back to
+// local-dir; valid values are local-dir, github-pr, and gitlab-mr.
+func InitWorkspaceWithTransport(root, transport string) error {
 	deck := filepath.Join(root, DeckDir)
 	for _, dir := range []string{
 		deck,
@@ -59,7 +67,7 @@ func InitWorkspace(root string) error {
 		return err
 	}
 
-	return os.WriteFile(cooperation, []byte(defaultCooperationForInit()), 0o644)
+	return os.WriteFile(cooperation, []byte(cooperationForInit(transport)), 0o644)
 }
 
 // writeInitVersionMeta writes meta/version.json with protocolRole:"consumer" so a
@@ -82,7 +90,21 @@ func writeInitVersionMeta(deck string) error {
 }
 
 func defaultCooperationForInit() string {
-	return strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `local-dir`", 1)
+	return cooperationForInit("")
+}
+
+// cooperationForInit returns the embedded default protocol with its transport
+// line set to the requested transport. Empty or unknown transports default to
+// local-dir.
+func cooperationForInit(transport string) string {
+	target := "local-dir"
+	switch transport {
+	case "github-pr":
+		target = "github-pr"
+	case "gitlab-mr":
+		target = "gitlab-mr"
+	}
+	return strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `"+target+"`", 1)
 }
 
 func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {

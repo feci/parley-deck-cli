@@ -15,11 +15,28 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 )
+
+// centralPingSkips reports whether the central [defaults].ping_tier opts out of
+// the hosted-PONG round-trip (e.g. ping_tier = "none"). An unreadable config or
+// an unset/hosted-pong tier means "ping" (return false).
+func centralPingSkips(root string) bool {
+	defs, err := config.LoadDefaults(root)
+	if err != nil {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(defs.PingTier)) {
+	case "none", "off", "skip", "presence", "presence-only":
+		return true
+	default:
+		return false
+	}
+}
 
 // defaultPingTimeout bounds each hosted-PONG probe. hermes inits ~40s; 90s gives
 // headroom (consensus §"Roster ping").
@@ -130,7 +147,7 @@ func runPreflight(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		JSON:        *jsonOut,
 		Yes:         *yes,
 		PingTimeout: *pingTimeout,
-		NoPing:      *noPing,
+		NoPing:      *noPing || centralPingSkips(*root),
 	}
 
 	discovered, err := discoverConfigured(ctx, opts.Root)
@@ -212,7 +229,7 @@ func participantDiscoveries(discovered []agents.Discovery, participants []string
 // difference is unattended must never block on stdin, which this path honors
 // because it never reads stdin.
 func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, stdout, stderr io.Writer) (int, []string, bool) {
-	opts := preflightOptions{Root: root, NoPing: noPing, Yes: yes}
+	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes}
 	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
