@@ -15,8 +15,17 @@ import (
 
 const EnvAgentConfig = "PARLEY_HEADLESS_AGENT_CONFIG"
 
+// EnvParleyHome overrides the user-global config dir (default ~/.parley). It
+// lets tests point the central-default layer at a scratch directory.
+const EnvParleyHome = "PARLEY_HOME"
+
 type fileConfig struct {
 	Agents map[string]agentOverride `toml:"agents"`
+}
+
+type configLayer struct {
+	path   string
+	source string
 }
 
 type agentOverride struct {
@@ -59,13 +68,18 @@ func LoadAgentSpecs(root string) ([]agents.Spec, error) {
 	specs := cloneSpecs(agents.DefaultSpecs())
 	deck := filepath.Join(root, protocol.DeckDir)
 
-	for _, item := range []struct {
-		path   string
-		source string
-	}{
-		{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml"},
-		{path: filepath.Join(deck, "agents.local.toml"), source: "parley-deck/agents.local.toml"},
-	} {
+	// Layers apply low-to-high precedence: the user-global central default
+	// (~/.parley/agents.toml) seeds per-agent model/reasoning for every
+	// project, and the project's deck files override it.
+	layers := []configLayer{}
+	if central := CentralAgentsPath(); central != "" {
+		layers = append(layers, configLayer{path: central, source: "~/.parley/agents.toml"})
+	}
+	layers = append(layers,
+		configLayer{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml"},
+		configLayer{path: filepath.Join(deck, "agents.local.toml"), source: "parley-deck/agents.local.toml"},
+	)
+	for _, item := range layers {
 		var err error
 		specs, err = applyFile(root, specs, item.path, item.source, true)
 		if err != nil {
@@ -85,6 +99,78 @@ func LoadAgentSpecs(root string) ([]agents.Spec, error) {
 	}
 
 	return specs, nil
+}
+
+// CentralHome returns the user-global Parley config directory (~/.parley),
+// honoring the PARLEY_HOME override. It returns "" when the home directory
+// cannot be resolved, so the central-default layer is simply skipped.
+func CentralHome() string {
+	if v := strings.TrimSpace(os.Getenv(EnvParleyHome)); v != "" {
+		return v
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || strings.TrimSpace(home) == "" {
+		return ""
+	}
+	return filepath.Join(home, ".parley")
+}
+
+// CentralAgentsPath returns ~/.parley/agents.toml, or "" if home is unresolved.
+func CentralAgentsPath() string {
+	home := CentralHome()
+	if home == "" {
+		return ""
+	}
+	return filepath.Join(home, "agents.toml")
+}
+
+// EnsureCentralDefault writes a starter ~/.parley/agents.toml that lists the
+// built-in agents with their default model and reasoning, if the file does not
+// already exist. It is a no-op when the file is present or home is unresolved.
+// Returns the ensured path ("" when skipped).
+func EnsureCentralDefault() (string, error) {
+	path := CentralAgentsPath()
+	if path == "" {
+		return "", nil
+	}
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(path, []byte(centralDefaultTemplate()), 0o644); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// centralDefaultTemplate renders a starter central config from the built-in
+// specs: one [agents.<id>] block per agent with model + reasoning. Default
+// reasoning should be the strongest level each agent supports; edit to taste.
+func centralDefaultTemplate() string {
+	var b strings.Builder
+	b.WriteString("# ~/.parley/agents.toml — central per-user Parley Deck defaults.\n")
+	b.WriteString("# Lists each agent's default model and reasoning/effort level. Used by\n")
+	b.WriteString("# every project unless a deck overrides it in parley-deck/agents.toml.\n")
+	b.WriteString("# Prefer an exact model id over a vendor \"latest\" alias, and keep the\n")
+	b.WriteString("# strongest (highest) reasoning level each agent supports.\n\n")
+	for _, spec := range agents.DefaultSpecs() {
+		model := spec.Model
+		if strings.TrimSpace(model) == "" {
+			model = agents.CLIDefault
+		}
+		reasoning := spec.Reasoning
+		if strings.TrimSpace(reasoning) == "" {
+			reasoning = agents.CLIDefault
+		}
+		b.WriteString(fmt.Sprintf("[agents.%s]\n", spec.ID))
+		b.WriteString(fmt.Sprintf("model = %q\n", model))
+		b.WriteString(fmt.Sprintf("reasoning = %q\n\n", reasoning))
+	}
+	return b.String()
 }
 
 func ExpandPlaceholders(value, root, tempdir string) string {
