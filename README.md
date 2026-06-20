@@ -1,9 +1,64 @@
 # parley-deck-cli
 
-`parley` is the local CLI for Parley Deck multi-agent cooperation. It creates
-and maintains the `parley-deck/` workspace, discovers local agent CLIs, starts
-or resumes rounds, tracks human-in-the-loop questions, manages consensus
-signoffs, and emits repository context for agents.
+> **Real multi-agent deliberation with a durable, reviewable audit trail** — not
+> three agents in three terminals, and not one model role-playing a committee.
+
+`parley` runs **Parley Deck**: a transport-agnostic protocol for getting several
+AI agents to genuinely cooperate on a hard change — plus the CLI that makes it
+usable instead of just specified. Each agent writes its own analysis, they
+cross-review, reach a recorded consensus, implement, and review the
+implementation — every step a file you can read, diff, and resume.
+
+**Why not just spawn three agents in three terminals?** Ad-hoc multi-agent gives
+you no audit trail, no conflict discipline, no consensus step, and no way to
+resume. Parley Deck ships those as protocol.
+
+**Why not ask one model to play a committee?** That's solo reasoning in a costume —
+there's no second voice to actually disagree, and it reintroduces the single-model
+self-preference that quorum-gated review exists to defeat. Parley Deck is non-solo
+by design.
+
+### What you get
+
+- **An 8-phase idea lifecycle** (§4) — kickoff → independent analysis → cross-review
+  → consensus → `FINAL.md` → `IMPLEMENTATION.md` → code review → fix-up.
+  Append-only, and resumable from the documents alone.
+- **Non-solo by design** (§1) — stable agent IDs (§2), one file per agent per round
+  (§6); no agent overwrites another.
+- **Compare, don't merge** — the consensus "Comparison & blind spots" lens rates
+  confidence by agreement and surfaces contradictions and blind spots instead of
+  averaging them away.
+- **Transport-agnostic** (§0, §11) — `local-dir`, `github-pr`, or `gitlab-mr`: the
+  same protocol whether agents share a filesystem or review each other through a PR.
+- **Vendor/model-agnostic roster** — Claude, Codex, Gemini, GLM, and more by stable
+  ID (subject to the CLIs you have installed and authorized).
+- **Readiness preflight** (§9.0, `parley preflight`) — protocol-freshness plus a
+  live roster ping before an idea starts; any exclusion is user-confirmed.
+- **Advisory retrospectives** (§13, `parley retro`) — a quorum-gated pass over the
+  deck's own history that *proposes* improvements through the normal workflow,
+  never applies them automatically.
+- **Supervised automation** — a live TUI and an auto-drive driver advance protocol
+  *phases*; agent supervision (watchdog, stall guard, validated-artifact-beats-
+  nonzero-exit) catches hung agents; code implementation and side effects stay gated.
+
+### Inspired by — adopted & adapted
+
+Parley Deck didn't invent these ideas; it wired them into one repository-backed,
+quorum-gated protocol:
+
+- **OpenRouter Fusion** → the compare-not-merge consensus lens
+  (confidence-by-agreement, blind-spots), applied to asynchronous multi-round
+  markdown instead of a real-time API ensemble.
+- **OpenAI ExecPlans / PLANS.md** → resume-from-the-doc state, split into a static
+  `FINAL.md` and a living `IMPLEMENTATION.md` governed by review-consensus.
+- **RHO (Retrospective Harness Optimization)** → §13 retro, but advisory-only and
+  quorum-gated instead of single-model self-preference.
+- **kindly** → strict gates, stopping judgment, no-suppression review dispositions,
+  and artifact-wins supervision.
+- **Preflight readiness** → §9.0 protocol-freshness and roster liveness before each idea.
+
+*Reference to these projects is for attribution and lineage only; no endorsement,
+sponsorship, or affiliation is implied.*
 
 ## Install
 
