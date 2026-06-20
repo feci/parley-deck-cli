@@ -251,10 +251,10 @@ func centralDefaultTemplate() string {
 	b.WriteString("preferred_transport = \"local-dir\"          # parley init default transport (local-dir|github-pr|gitlab-mr)\n")
 	b.WriteString("roster_change_policy = \"confirm-breaking\"  # auto-add new agents; user confirms drops/breaking changes\n\n")
 	b.WriteString("[defaults.timeouts]\n")
-	b.WriteString("signoff_ms = 900000\n")
-	b.WriteString("round_ms = 1800000\n")
-	b.WriteString("review_ms = 1800000\n")
-	b.WriteString("deep_reasoning_ms = 1800000\n\n")
+	b.WriteString("signoff_ms = 600000          # 10 min\n")
+	b.WriteString("round_ms = 1200000           # 20 min\n")
+	b.WriteString("review_ms = 1200000          # 20 min\n")
+	b.WriteString("deep_reasoning_ms = 1200000  # 20 min\n\n")
 	for _, spec := range agents.DefaultSpecs() {
 		model := spec.Model
 		if strings.TrimSpace(model) == "" {

@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.30.6 - 2026-06-20
+
+- **Seeded `[defaults]` tuning.** The `~/.parley/agents.toml` template now
+  defaults `preferred_transport = "local-dir"` (local files) and trims the
+  default timeouts to `signoff_ms = 600000` (10 min) and `round_ms` /
+  `review_ms` / `deep_reasoning_ms = 1200000` (20 min). Existing central files
+  are untouched (the template only seeds a fresh `~/.parley/agents.toml`).
+
 ## v1.30.5 - 2026-06-20
 
 - **Central `[defaults]` policy block in `~/.parley/agents.toml`.** Beyond the
