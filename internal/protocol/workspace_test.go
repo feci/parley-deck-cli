@@ -127,3 +127,27 @@ func TestTimestampedSlugFallsBackForEmptyTask(t *testing.T) {
 		t.Fatalf("slug=%q want %q", got, want)
 	}
 }
+
+func TestInitWorkspaceWithTransportSeedsTransport(t *testing.T) {
+	cases := map[string]string{
+		"":          "local-dir",
+		"local-dir": "local-dir",
+		"github-pr": "github-pr",
+		"gitlab-mr": "gitlab-mr",
+		"bogus":     "local-dir", // unknown falls back to local-dir
+	}
+	for in, want := range cases {
+		root := t.TempDir()
+		if err := InitWorkspaceWithTransport(root, in); err != nil {
+			t.Fatalf("init(%q): %v", in, err)
+		}
+		data, err := os.ReadFile(filepath.Join(root, DeckDir, "COOPERATION.md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		wantLine := "**Transport:** `" + want + "`"
+		if !strings.Contains(string(data), wantLine) {
+			t.Fatalf("transport %q -> want %q in COOPERATION.md", in, wantLine)
+		}
+	}
+}

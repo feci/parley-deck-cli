@@ -20,12 +20,45 @@ const EnvAgentConfig = "PARLEY_HEADLESS_AGENT_CONFIG"
 const EnvParleyHome = "PARLEY_HOME"
 
 type fileConfig struct {
-	Agents map[string]agentOverride `toml:"agents"`
+	Defaults *globalDefaults          `toml:"defaults"`
+	Agents   map[string]agentOverride `toml:"agents"`
+}
+
+// globalDefaults is the optional [defaults] block of a layered config file —
+// non-agent policy knobs that apply project-wide.
+type globalDefaults struct {
+	Speed              string         `toml:"speed"`
+	PingTier           string         `toml:"ping_tier"`
+	PreferredTransport string         `toml:"preferred_transport"`
+	RosterChangePolicy string         `toml:"roster_change_policy"`
+	Timeouts           *timeoutsBlock `toml:"timeouts"`
+}
+
+type timeoutsBlock struct {
+	SignoffMS       int `toml:"signoff_ms"`
+	RoundMS         int `toml:"round_ms"`
+	ReviewMS        int `toml:"review_ms"`
+	DeepReasoningMS int `toml:"deep_reasoning_ms"`
+}
+
+// CentralDefaults are the merged [defaults] policy knobs across the layered
+// config files (central ~/.parley/agents.toml first, then the project deck).
+// A zero-value field means "not set" — the consumer supplies its own fallback.
+type CentralDefaults struct {
+	Speed              string
+	PingTier           string
+	PreferredTransport string
+	RosterChangePolicy string
+	SignoffMS          int
+	RoundMS            int
+	ReviewMS           int
+	DeepReasoningMS    int
 }
 
 type configLayer struct {
-	path   string
-	source string
+	path     string
+	source   string
+	optional bool
 }
 
 type agentOverride struct {
@@ -64,41 +97,95 @@ type agentOverride struct {
 	Notes                 string            `toml:"notes"`
 }
 
-func LoadAgentSpecs(root string) ([]agents.Spec, error) {
-	specs := cloneSpecs(agents.DefaultSpecs())
+// configLayers lists the agent/defaults config files in low-to-high precedence:
+// the user-global central default (~/.parley/agents.toml) seeds every project,
+// the project deck files override it, and $PARLEY_HEADLESS_AGENT_CONFIG wins.
+func configLayers(root string) []configLayer {
 	deck := filepath.Join(root, protocol.DeckDir)
-
-	// Layers apply low-to-high precedence: the user-global central default
-	// (~/.parley/agents.toml) seeds per-agent model/reasoning for every
-	// project, and the project's deck files override it.
 	layers := []configLayer{}
 	if central := CentralAgentsPath(); central != "" {
-		layers = append(layers, configLayer{path: central, source: "~/.parley/agents.toml"})
+		layers = append(layers, configLayer{path: central, source: "~/.parley/agents.toml", optional: true})
 	}
 	layers = append(layers,
-		configLayer{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml"},
-		configLayer{path: filepath.Join(deck, "agents.local.toml"), source: "parley-deck/agents.local.toml"},
+		configLayer{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml", optional: true},
+		configLayer{path: filepath.Join(deck, "agents.local.toml"), source: "parley-deck/agents.local.toml", optional: true},
 	)
-	for _, item := range layers {
-		var err error
-		specs, err = applyFile(root, specs, item.path, item.source, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if envPath := strings.TrimSpace(os.Getenv(EnvAgentConfig)); envPath != "" {
 		if !filepath.IsAbs(envPath) {
 			envPath = filepath.Join(root, envPath)
 		}
-		next, err := applyFile(root, specs, envPath, EnvAgentConfig+":"+envPath, false)
+		layers = append(layers, configLayer{path: envPath, source: EnvAgentConfig + ":" + envPath, optional: false})
+	}
+	return layers
+}
+
+func LoadAgentSpecs(root string) ([]agents.Spec, error) {
+	specs := cloneSpecs(agents.DefaultSpecs())
+	for _, item := range configLayers(root) {
+		var err error
+		specs, err = applyFile(root, specs, item.path, item.source, item.optional)
 		if err != nil {
 			return nil, err
 		}
-		specs = next
 	}
-
 	return specs, nil
+}
+
+// LoadDefaults merges the [defaults] policy block across the layered config
+// files (central first, deck overrides). Missing files are skipped; later
+// non-empty values win. Consumers (preflight ping tier, init transport) read
+// the result and fall back to their own default on a zero value.
+func LoadDefaults(root string) (CentralDefaults, error) {
+	var out CentralDefaults
+	for _, item := range configLayers(root) {
+		data, err := os.ReadFile(item.path)
+		if err != nil {
+			if item.optional && errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		var cfg fileConfig
+		if err := toml.Unmarshal(data, &cfg); err != nil {
+			return out, fmt.Errorf("%s: %w", item.path, err)
+		}
+		if cfg.Defaults != nil {
+			mergeDefaults(&out, cfg.Defaults)
+		}
+	}
+	return out, nil
+}
+
+func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
+	if s := strings.TrimSpace(gd.Speed); s != "" {
+		out.Speed = s
+	}
+	if s := strings.TrimSpace(gd.PingTier); s != "" {
+		out.PingTier = s
+	}
+	if s := strings.TrimSpace(gd.PreferredTransport); s != "" {
+		out.PreferredTransport = s
+	}
+	if s := strings.TrimSpace(gd.RosterChangePolicy); s != "" {
+		out.RosterChangePolicy = s
+	}
+	if gd.Timeouts != nil {
+		if gd.Timeouts.SignoffMS > 0 {
+			out.SignoffMS = gd.Timeouts.SignoffMS
+		}
+		if gd.Timeouts.RoundMS > 0 {
+			out.RoundMS = gd.Timeouts.RoundMS
+		}
+		if gd.Timeouts.ReviewMS > 0 {
+			out.ReviewMS = gd.Timeouts.ReviewMS
+		}
+		if gd.Timeouts.DeepReasoningMS > 0 {
+			out.DeepReasoningMS = gd.Timeouts.DeepReasoningMS
+		}
+	}
 }
 
 // CentralHome returns the user-global Parley config directory (~/.parley),
@@ -157,6 +244,17 @@ func centralDefaultTemplate() string {
 	b.WriteString("# every project unless a deck overrides it in parley-deck/agents.toml.\n")
 	b.WriteString("# Prefer an exact model id over a vendor \"latest\" alias, and keep the\n")
 	b.WriteString("# strongest (highest) reasoning level each agent supports.\n\n")
+	b.WriteString("# Project-wide policy defaults; a deck's parley-deck/agents.toml overrides them.\n")
+	b.WriteString("[defaults]\n")
+	b.WriteString("speed = \"deep\"\n")
+	b.WriteString("ping_tier = \"hosted-pong\"                 # §9.0 roster liveness ping before each idea (or \"none\")\n")
+	b.WriteString("preferred_transport = \"local-dir\"          # parley init default transport (local-dir|github-pr|gitlab-mr)\n")
+	b.WriteString("roster_change_policy = \"confirm-breaking\"  # auto-add new agents; user confirms drops/breaking changes\n\n")
+	b.WriteString("[defaults.timeouts]\n")
+	b.WriteString("signoff_ms = 900000\n")
+	b.WriteString("round_ms = 1800000\n")
+	b.WriteString("review_ms = 1800000\n")
+	b.WriteString("deep_reasoning_ms = 1800000\n\n")
 	for _, spec := range agents.DefaultSpecs() {
 		model := spec.Model
 		if strings.TrimSpace(model) == "" {
@@ -198,6 +296,19 @@ func applyFile(root string, specs []agents.Spec, path, source string, optional b
 	if err := toml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+
+	// Global [defaults].speed applies to every spec (overriding the built-in
+	// per-agent default); a per-agent override in this same file still wins below.
+	if cfg.Defaults != nil && strings.TrimSpace(cfg.Defaults.Speed) != "" {
+		for i := range specs {
+			specs[i].Speed = cfg.Defaults.Speed
+			if specs[i].Sources == nil {
+				specs[i].Sources = map[string]string{}
+			}
+			specs[i].Sources["speed"] = source + ":defaults"
+		}
+	}
+
 	if len(cfg.Agents) == 0 {
 		return specs, nil
 	}

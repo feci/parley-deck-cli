@@ -309,6 +309,84 @@ model = "project-model"
 	}
 }
 
+func TestLoadDefaultsMergesLayers(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+	if err := os.WriteFile(filepath.Join(home, "agents.toml"), []byte(`
+[defaults]
+speed = "deep"
+ping_tier = "hosted-pong"
+preferred_transport = "github-pr"
+roster_change_policy = "confirm-breaking"
+[defaults.timeouts]
+signoff_ms = 900000
+round_ms = 1800000
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+
+	defs, err := LoadDefaults(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if defs.Speed != "deep" || defs.PingTier != "hosted-pong" ||
+		defs.PreferredTransport != "github-pr" || defs.RosterChangePolicy != "confirm-breaking" {
+		t.Fatalf("central defaults not loaded: %+v", defs)
+	}
+	if defs.SignoffMS != 900000 || defs.RoundMS != 1800000 {
+		t.Fatalf("timeouts not loaded: %+v", defs)
+	}
+
+	// A deck overrides a subset; unset deck fields fall through to central.
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"), []byte(`
+[defaults]
+ping_tier = "none"
+preferred_transport = "local-dir"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	defs, err = LoadDefaults(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if defs.PingTier != "none" || defs.PreferredTransport != "local-dir" {
+		t.Fatalf("deck override failed: %+v", defs)
+	}
+	if defs.Speed != "deep" || defs.RosterChangePolicy != "confirm-breaking" {
+		t.Fatalf("unset deck fields should fall through to central: %+v", defs)
+	}
+}
+
+func TestGlobalSpeedAppliesToSpecs(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+	if err := os.WriteFile(filepath.Join(home, "agents.toml"), []byte(`
+[defaults]
+speed = "deep"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	specs, err := LoadAgentSpecs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := findSpec(t, specs, "claude")
+	if c.Speed != "deep" {
+		t.Fatalf("claude speed=%q, want deep (global default)", c.Speed)
+	}
+	if got := c.Sources["speed"]; got != "~/.parley/agents.toml:defaults" {
+		t.Fatalf("speed source=%q, want ~/.parley/agents.toml:defaults", got)
+	}
+}
+
 func TestEnsureCentralDefaultSeedsAndPreserves(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(EnvParleyHome, home)

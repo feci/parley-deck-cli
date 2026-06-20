@@ -357,22 +357,31 @@ func runInit(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	if err := protocol.InitWorkspace(*root); err != nil {
+	// Seed the user-global central default (~/.parley/agents.toml) FIRST so its
+	// [defaults].preferred_transport can seed this fresh deck's transport, and so
+	// every project inherits the same roster + model + reasoning unless it
+	// overrides them in parley-deck/agents.toml. Non-fatal.
+	centralPath, centralErr := config.EnsureCentralDefault()
+	if centralErr != nil {
+		fmt.Fprintf(stderr, "warning: could not write central default %s: %v\n", config.CentralAgentsPath(), centralErr)
+	}
+
+	// Honor the central [defaults].preferred_transport for the fresh deck (the
+	// project deck doesn't exist yet, so this comes from ~/.parley/agents.toml).
+	transport := ""
+	if defs, err := config.LoadDefaults(*root); err == nil {
+		transport = defs.PreferredTransport
+	}
+
+	if err := protocol.InitWorkspaceWithTransport(*root, transport); err != nil {
 		fmt.Fprintf(stderr, "init failed: %v\n", err)
 		return 1
 	}
 
 	fmt.Fprintf(stdout, "Initialized Parley Deck workspace at %s\n", filepath.Join(*root, protocol.DeckDir))
-
-	// Seed the user-global central default (~/.parley/agents.toml) so every
-	// project inherits the same roster + model + reasoning unless it overrides
-	// them in parley-deck/agents.toml. Non-fatal: a fresh deck still works
-	// from built-in defaults if the home dir is unwritable.
-	if path, err := config.EnsureCentralDefault(); err != nil {
-		fmt.Fprintf(stderr, "warning: could not write central default %s: %v\n", config.CentralAgentsPath(), err)
-	} else if path != "" {
+	if centralPath != "" {
 		fmt.Fprintf(stdout, "Central agent defaults: %s (override per-project in %s)\n",
-			path, filepath.Join(*root, protocol.DeckDir, "agents.toml"))
+			centralPath, filepath.Join(*root, protocol.DeckDir, "agents.toml"))
 	}
 	return 0
 }

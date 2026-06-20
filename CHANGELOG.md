@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.30.5 - 2026-06-20
+
+- **Central `[defaults]` policy block in `~/.parley/agents.toml`.** Beyond the
+  per-agent catalog, the central config (and a deck's `parley-deck/agents.toml`)
+  now carries a `[defaults]` block, merged with the same low→high precedence:
+  - `speed` — applied as the global default speed for every agent spec
+    (`config.LoadAgentSpecs`); a per-agent override still wins.
+  - `ping_tier` — `none`/`off` opts out of the §9.0 hosted-PONG round-trip in
+    `parley preflight` / `parley run` (explicit `--no-ping` still forces skip).
+  - `preferred_transport` — `parley init` seeds the fresh deck's transport from
+    it (`local-dir`/`github-pr`/`gitlab-mr`; unknown → `local-dir`).
+  - `roster_change_policy`, `timeouts` — exposed via `config.LoadDefaults` and
+    honored by the facilitator/skill.
+  New `config.LoadDefaults`, `protocol.InitWorkspaceWithTransport`. The seeded
+  `~/.parley/agents.toml` template includes a commented `[defaults]` block.
+
 ## v1.30.4 - 2026-06-20
 
 - **Central per-user agent defaults (`~/.parley/agents.toml`).** A new
