@@ -12,6 +12,7 @@ import (
 
 func TestLoadAgentSpecsLayersAndTracksSources(t *testing.T) {
 	root := t.TempDir()
+	t.Setenv(EnvParleyHome, filepath.Join(root, "no-central")) // isolate from real ~/.parley
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
@@ -252,4 +253,101 @@ stall_timeout_ms = 900000
 		return
 	}
 	t.Fatal("codex spec not found")
+}
+
+func TestLoadAgentSpecsCentralDefault(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+	if err := os.WriteFile(filepath.Join(home, "agents.toml"), []byte(`
+[agents.claude]
+model = "central-model"
+reasoning = "central-reasoning"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+
+	// Central default applies when the deck does not override it.
+	specs, err := LoadAgentSpecs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claude := findSpec(t, specs, "claude")
+	if claude.Model != "central-model" {
+		t.Fatalf("claude model=%q, want central-model", claude.Model)
+	}
+	if claude.Reasoning != "central-reasoning" {
+		t.Fatalf("claude reasoning=%q, want central-reasoning", claude.Reasoning)
+	}
+	if got := claude.Sources["model"]; got != "~/.parley/agents.toml" {
+		t.Fatalf("claude model source=%q, want ~/.parley/agents.toml", got)
+	}
+
+	// A deck override beats the central default; fields the deck leaves unset
+	// fall through to the central value.
+	project := filepath.Join(root, protocol.DeckDir, "agents.toml")
+	if err := os.WriteFile(project, []byte(`
+[agents.claude]
+model = "project-model"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	specs, err = LoadAgentSpecs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claude = findSpec(t, specs, "claude")
+	if claude.Model != "project-model" {
+		t.Fatalf("claude model=%q, want project-model (deck overrides central)", claude.Model)
+	}
+	if claude.Reasoning != "central-reasoning" {
+		t.Fatalf("claude reasoning=%q, want central-reasoning to survive partial deck override", claude.Reasoning)
+	}
+}
+
+func TestEnsureCentralDefaultSeedsAndPreserves(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+
+	path, err := EnsureCentralDefault()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(home, "agents.toml"); path != want {
+		t.Fatalf("path=%q, want %q", path, want)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"[agents.claude]", "model =", "reasoning ="} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("template missing %q:\n%s", want, data)
+		}
+	}
+
+	// The generated template must be valid TOML that LoadAgentSpecs accepts.
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadAgentSpecs(root); err != nil {
+		t.Fatalf("central template not loadable: %v", err)
+	}
+
+	// An existing central file is preserved, never overwritten.
+	if err := os.WriteFile(path, []byte("[agents.claude]\nmodel = \"sentinel\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := EnsureCentralDefault(); err != nil {
+		t.Fatal(err)
+	}
+	data, _ = os.ReadFile(path)
+	if !strings.Contains(string(data), "sentinel") {
+		t.Fatalf("EnsureCentralDefault overwrote an existing central file")
+	}
 }

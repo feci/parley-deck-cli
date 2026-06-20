@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.30.4 - 2026-06-20
+
+- **Central per-user agent defaults (`~/.parley/agents.toml`).** A new
+  user-global config lists each agent's command, model, and reasoning/effort
+  level, inherited by every project. Wired into `config.LoadAgentSpecs` as the
+  lowest config-override layer: built-in defaults → `~/.parley/agents.toml`
+  (central) → `parley-deck/agents.toml` / `agents.local.toml` (per-project
+  override) → `$PARLEY_HEADLESS_AGENT_CONFIG`. A deck overrides the central
+  default; fields the deck leaves unset fall through to the central value.
+  `parley init` seeds a starter `~/.parley/agents.toml` (never clobbering an
+  existing one) and prints where to override per-project. `PARLEY_HOME`
+  overrides the central dir (used for hermetic tests).
+- **Reasoning/effort is now part of the deck-bootstrap confirmation.** §0 and
+  the skill's deck-bootstrap step confirm the roster, each agent's model **and
+  each agent's reasoning/effort level**; the default reasoning/effort is the
+  **strongest (highest) level the agent supports**, falling back to
+  `cli-default` only when it cannot be discovered. Protocol stays model- and
+  reasoning-agnostic.
+
 ## v1.30.3 - 2026-06-19
 
 - **Fix: roster & model confirmation is a deck-BOOTSTRAP gate, not per-idea/per-session.**

@@ -363,6 +363,17 @@ func runInit(args []string, stdout, stderr io.Writer) int {
 	}
 
 	fmt.Fprintf(stdout, "Initialized Parley Deck workspace at %s\n", filepath.Join(*root, protocol.DeckDir))
+
+	// Seed the user-global central default (~/.parley/agents.toml) so every
+	// project inherits the same roster + model + reasoning unless it overrides
+	// them in parley-deck/agents.toml. Non-fatal: a fresh deck still works
+	// from built-in defaults if the home dir is unwritable.
+	if path, err := config.EnsureCentralDefault(); err != nil {
+		fmt.Fprintf(stderr, "warning: could not write central default %s: %v\n", config.CentralAgentsPath(), err)
+	} else if path != "" {
+		fmt.Fprintf(stdout, "Central agent defaults: %s (override per-project in %s)\n",
+			path, filepath.Join(*root, protocol.DeckDir, "agents.toml"))
+	}
 	return 0
 }
 
