@@ -996,3 +996,42 @@ A retro-proposed change is accepted only by the normal gate: multi-agent consens
 Tooling that performs retro passes (e.g. a `parley retro` command) is governed by this section but specified separately; such tooling defaults to read-only and may at most scaffold a single new `ideas/<slug>/00-prompt.md`.
 
 Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16) and amended by idea `meta-protocol-change-fusion-execplans` (2026-06-18) to add the confident-error evidence signal.
+
+## 14. Automated outer loop (loop engineering) — the human brake
+
+Parley Deck is a loop-engineering substrate: the human (or a full quorum) owns the
+*decisions*, and automation may own only *discovery*. Any **automated, standing, or
+scheduled loop** — anything not driven by a human in the current session: a cron job, a CI
+hook, an MCP trigger, the `parley loop tick` command — is bound by this brake.
+
+### 14.1 What an automated loop MAY do
+
+- Discover candidate signals (new commits, CI results, issues, a signals file, monitoring
+  breaches) and **draft Phase 0/1 prompts only**.
+- A loop-drafted idea is always a non-active **`status: candidate`**: it carries provenance
+  and a `## Promotion` note, and it does **not** claim a `participants:` quorum (the non-solo
+  Phase-0 invariant — a loop must not staff a quorum it cannot itself convene). This is the
+  same shape the §12.11 monitoring watcher uses.
+
+### 14.2 What an automated loop MUST NOT do without a recorded human or full-quorum gate
+
+- Promote a candidate to quorum (staff `participants:` / flip `status: candidate` →
+  `round-01`), or otherwise start a deliberation or a `parley run`.
+- Implement, write code, or apply fixes.
+- Land, merge, push, or finalize (`FINAL.md` / closing an idea).
+- Modify the active roster (§2).
+- Override, bypass, reopen, or re-draft a consensus or signoff.
+
+### 14.3 Fail-safe
+
+The brake is fail-safe by construction: when an automated loop is uncertain, it does **less**
+— it drafts a candidate and stops, or escalates to the inbox (§8) — never more. A scheduled
+tick that is disabled, mis-configured, or sees no new signals writes nothing and exits
+cleanly. Promotion of any candidate into an active idea is always a human action or an
+explicit manifest action, recorded in the idea and (where it changes phase) mirrored into the
+canonical round/consensus artifacts.
+
+Tooling that runs an automated loop (e.g. a `parley loop tick` command) is governed by this
+section but specified separately; such tooling is **disabled by default** and, even when
+enabled, may at most scaffold `status: candidate` idea prompts. This section was ratified by
+idea `automation-outer-loop` (2026-06-24).

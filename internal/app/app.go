@@ -88,6 +88,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runConsults(args[1:], stdout, stderr)
 	case "retro":
 		return runRetro(args[1:], stdout, stderr)
+	case "loop":
+		return runLoop(args[1:], stdout, stderr)
 	case "tui":
 		return runTUI(ctx, args[1:], stdout, stderr)
 	default:
@@ -128,6 +130,7 @@ Usage:
   %s resume [--dir DIR] [--no-tui] RUN_OR_IDEA
   %s answer [--dir DIR] RUN_ID QUESTION_ID ANSWER...
   %s tui [--dir DIR]
+  %s loop tick [--dir DIR] [--signals PATH] [--enable] [--json]
   %s help
   %s version [--dir DIR] [--all] [--json]
 
@@ -304,6 +307,7 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
 		appName,
 		appName,
 		appName,
