@@ -1114,6 +1114,23 @@ func runContinue(ctx context.Context, args []string, stdout, stderr io.Writer) i
 // continueAuto reconstructs the driver for an existing run and ticks it forward
 // (consensus D9): `parley continue --auto` EXECUTES the next action instead of
 // only printing it. Reuses the same gates/adapters as `parley run --auto`.
+// loopBudget resolves the LE-5 auto-drive loop ceilings: ~/.parley [defaults.loop]
+// seeds them; non-zero CLI overrides win. 0 = unlimited.
+func loopBudget(root string, stepsOverride int, wallOverride time.Duration) (steps int, wall time.Duration, cost float64) {
+	if defs, err := config.LoadDefaults(root); err == nil {
+		steps = defs.MaxDriverSteps
+		wall = time.Duration(defs.MaxWallClockMS) * time.Millisecond
+		cost = defs.MaxCostUSD
+	}
+	if stepsOverride > 0 {
+		steps = stepsOverride
+	}
+	if wallOverride > 0 {
+		wall = wallOverride
+	}
+	return steps, wall, cost
+}
+
 func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noImplement bool, stdout, stderr io.Writer) int {
 	if run.IdeaSlug == "" || run.IdeaSlug == "unknown" {
 		fmt.Fprintln(stderr, "continue --auto failed: run has no idea slug")
@@ -1133,6 +1150,7 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 		Agents: discovered,
 		Store:  store.New(run.RunDir),
 	}
+	lbSteps, lbWall, lbCost := loopBudget(root, 0, 0)
 	d := driver.New(driver.Config{
 		IdeaDir:           ideaDir,
 		IdeaSlug:          run.IdeaSlug,
@@ -1146,6 +1164,9 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 		Impl:              newDriverImplOps(runOpts, root, run.IdeaSlug, ideaDir, run.Participants, stdout),
 		AutoImplement:     driver.ReadAutoImplement(ideaDir) && !noImplement,
 		StrictGate:        driver.ReadStrictGate(ideaDir),
+		MaxDriverSteps:    lbSteps,
+		MaxWallClock:      lbWall,
+		MaxCostUSD:        lbCost,
 		Out:               stdout,
 	}, driver.NewRunnerAdapter(runOpts))
 	if err := d.Run(ctx); err != nil {
@@ -1696,6 +1717,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	auto := fs.Bool("auto", true, "auto-drive the protocol past round-01 (default; use --no-auto to disable)")
 	noAuto := fs.Bool("no-auto", false, "disable auto-drive: stop after round-01 and advance the protocol manually")
 	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
+	maxDriverSteps := fs.Int("max-driver-steps", 0, "auto-drive loop ceiling: max progress steps before escalating (0 = use ~/.parley [defaults.loop])")
+	maxWallClock := fs.Duration("max-wall-clock", 0, "auto-drive loop ceiling: total wall-clock budget before escalating, e.g. 90m (0 = use ~/.parley [defaults.loop])")
 	noPreflight := fs.Bool("no-preflight", false, "skip the pre-idea readiness check (CI escape)")
 	noPing := fs.Bool("no-ping", false, "preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
@@ -1713,6 +1736,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "usage: parley run [--no-tui] [--no-auto] [--participants AGENTS] [--yes] TASK")
 		return 2
 	}
+	// LE-5 loop ceilings: ~/.parley [defaults.loop] seeds them, run flags override.
+	lbSteps, lbWall, lbCost := loopBudget(*root, *maxDriverSteps, *maxWallClock)
 
 	workspaceStatus, err := protocol.ReadWorkspaceStatus(*root)
 	if err != nil {
@@ -1803,6 +1828,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 				Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, stdout),
 				AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
 				StrictGate:        driver.ReadStrictGate(created.Idea.Path),
+				MaxDriverSteps:    lbSteps,
+				MaxWallClock:      lbWall,
+				MaxCostUSD:        lbCost,
 				Out:               stdout,
 			}, driver.NewRunnerAdapter(runOpts))
 			if err := d.Run(runCtx); err != nil {
@@ -1854,6 +1882,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 					Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, io.Discard),
 					AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
 					StrictGate:        driver.ReadStrictGate(created.Idea.Path),
+					MaxDriverSteps:    lbSteps,
+					MaxWallClock:      lbWall,
+					MaxCostUSD:        lbCost,
 					Out:               io.Discard,
 				}, driver.NewRunnerAdapter(runOpts))
 				if err := d.Run(runCtx); err != nil {

@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"parley-deck-cli/internal/store"
 )
 
 // roundDeadline bounds how long a single tick waits for an incomplete round
@@ -29,6 +31,9 @@ func (d *Driver) Run(ctx context.Context) error {
 	defer release()
 
 	deadline := time.Now().Add(roundDeadline)
+	start := time.Now()
+	steps := 0
+	var last Cursor
 	for {
 		select {
 		case <-ctx.Done():
@@ -36,7 +41,14 @@ func (d *Driver) Run(ctx context.Context) error {
 		default:
 		}
 
+		// LE-5: enforce the loop ceilings BEFORE advancing. A breach escalates (durable
+		// inbox note) and halts — it never marks the idea complete.
+		if reason := d.loopBudgetBreach(steps, start); reason != "" {
+			return d.escalateLoopBudget(last, reason)
+		}
+
 		action, c, err := d.Advance(ctx)
+		last = c
 		if err != nil {
 			// A runner failure or a malformed event log halts the driver; capture
 			// it in a durable blocking inbox note (consensus D4/AF3), not just
@@ -45,6 +57,11 @@ func (d *Driver) Run(ctx context.Context) error {
 				fmt.Sprintf("The auto-driver halted with an error while advancing %s:\n\n    %v\n\nInspect the run (events.jsonl / agent logs), fix the cause, then re-run 'parley run --auto'.",
 					roundLabel(c.CurrentRound), err))
 			return err
+		}
+		// LE-5: count progress Advances and record budget burn for the TUI/state.
+		if isProgressAction(action) {
+			steps++
+			d.emitLoopBudget(steps, start)
 		}
 		switch action {
 		case ActionPromoted:
@@ -100,6 +117,86 @@ func (d *Driver) escalateDeadline(c Cursor) error {
 	d.escalate(c, "round-deadline", fmt.Sprintf(
 		"Round %s did not complete within %s. The driver halted rather than spin.\n\nSome participant artifact under %s/%s is missing or did not validate, and no round.completed event was reconstructable.\n\nInspect the round, re-run the missing participant, or adjust the roster, then re-run 'parley run --auto'.",
 		roundLabel(c.CurrentRound), roundDeadline, d.cfg.IdeaSlug, roundLabel(c.CurrentRound)))
+	return nil
+}
+
+// isProgressAction reports whether an action advanced the protocol (so it counts toward
+// the driver-step budget and resets the per-tick deadline), as opposed to awaiting or
+// terminating.
+func isProgressAction(a Action) bool {
+	switch a {
+	case ActionAwait, ActionComplete, ActionConsensus, ActionSurfaceOnly, ActionEscalated:
+		return false
+	}
+	return true
+}
+
+// loopBudgetBreach returns a non-empty reason when a non-zero loop ceiling is exceeded
+// (LE-5). 0 ceilings are unlimited. Cost is summed best-effort from agent.usage events
+// (LE-6) and is only consulted when MaxCostUSD > 0.
+func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
+	if d.cfg.MaxDriverSteps > 0 && steps >= d.cfg.MaxDriverSteps {
+		return fmt.Sprintf("driver-step budget exhausted (%d/%d steps)", steps, d.cfg.MaxDriverSteps)
+	}
+	if d.cfg.MaxWallClock > 0 {
+		if elapsed := time.Since(start); elapsed >= d.cfg.MaxWallClock {
+			return fmt.Sprintf("wall-clock budget exhausted (%s/%s)", elapsed.Round(time.Second), d.cfg.MaxWallClock)
+		}
+	}
+	if d.cfg.MaxCostUSD > 0 {
+		if spent := d.loopCostUSD(); spent >= d.cfg.MaxCostUSD {
+			return fmt.Sprintf("cost budget exhausted ($%.2f/$%.2f)", spent, d.cfg.MaxCostUSD)
+		}
+	}
+	return ""
+}
+
+// emitLoopBudget records budget burn after a progress step so the TUI/state can show it.
+func (d *Driver) emitLoopBudget(steps int, start time.Time) {
+	cost := 0.0
+	if d.cfg.MaxCostUSD > 0 {
+		cost = d.loopCostUSD()
+	}
+	_ = d.cfg.Events.Append(store.Event{
+		Time: time.Now().UTC(),
+		Type: "loop.budget",
+		Data: map[string]any{
+			"idea":              d.cfg.IdeaSlug,
+			"steps":             steps,
+			"max_driver_steps":  d.cfg.MaxDriverSteps,
+			"elapsed_ms":        time.Since(start).Milliseconds(),
+			"max_wall_clock_ms": d.cfg.MaxWallClock.Milliseconds(),
+			"cost_usd":          cost,
+			"max_cost_usd":      d.cfg.MaxCostUSD,
+		},
+	})
+}
+
+// loopCostUSD sums cost_usd across agent.usage events (LE-6). Best-effort: the runners do
+// not yet emit agent.usage, so this is 0 in practice until that telemetry lands.
+func (d *Driver) loopCostUSD() float64 {
+	evs, err := d.cfg.Events.Load()
+	if err != nil {
+		return 0
+	}
+	total := 0.0
+	for _, e := range evs {
+		if e.Type != "agent.usage" {
+			continue
+		}
+		if f, ok := e.Data["cost_usd"].(float64); ok {
+			total += f
+		}
+	}
+	return total
+}
+
+// escalateLoopBudget writes a durable blocking inbox note when a loop ceiling is hit and
+// halts cleanly (LE-5: budget hit = escalate, never complete).
+func (d *Driver) escalateLoopBudget(c Cursor, reason string) error {
+	d.escalate(c, "loop-budget", fmt.Sprintf(
+		"The auto-driver hit a loop budget and halted rather than continue:\n\n    %s\n\nThis is a safety ceiling (loop engineering: a budget hit escalates, it does not mark the idea complete). Raise the relevant ceiling in ~/.parley [defaults.loop] or via the run flag, or split the work into smaller ideas, then re-run 'parley run --auto'.",
+		reason))
 	return nil
 }
 

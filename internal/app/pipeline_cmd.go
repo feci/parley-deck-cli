@@ -973,12 +973,15 @@ func openRemediationIdea(deck, slug string, b pipeline.Breach, fp string, now ti
 	if err := os.MkdirAll(filepath.Join(dir, "round-01"), 0o755); err != nil {
 		return "", err
 	}
+	// LE-10: a watcher-created idea is a non-active CANDIDATE, not an open round-01 idea
+	// with an empty quorum. status: candidate (not round-01) and NO `participants: []`
+	// claim — the monitoring watcher must not stand up a quorum it did not staff (the
+	// non-solo Phase-0 invariant). A human/the manifest promotes it before deliberation.
 	prompt := fmt.Sprintf(`---
 idea: %s
 author: watcher
 created: %s
-participants: []
-status: round-01
+status: candidate
 pipeline_slug: %s
 breach_fingerprint: %s
 derived_from: [pipelines/%s/monitoring.yaml]
@@ -996,9 +999,16 @@ Auto-opened by the §12.11 monitoring watcher for pipeline %q after a predeclare
 
 Remediation work itself remains gated: any production mutation must still go through an action block's non-bypassable production gate.
 
+## Promotion
+
+This is a non-active CANDIDATE (status: candidate), not an open round-01 idea: the
+monitoring watcher does not staff a quorum, so it must not claim one. Before any
+deliberation starts, a human or the pipeline manifest sets %s (at least one
+non-facilitator participant) and flips status to round-01 (the non-solo Phase-0 invariant).
+
 ## Constraints
 ## Non-goals
-`, ideaSlug, now.Format("2006-01-02"), slug, fp, slug, slug, b.Signal, b.Target, b.Threshold, b.Observed, b.Class)
+`, ideaSlug, now.Format("2006-01-02"), slug, fp, slug, slug, b.Signal, b.Target, b.Threshold, b.Observed, b.Class, "`participants:`")
 	if err := os.WriteFile(filepath.Join(dir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
 		return "", err
 	}

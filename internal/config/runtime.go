@@ -32,6 +32,7 @@ type globalDefaults struct {
 	PreferredTransport string         `toml:"preferred_transport"`
 	RosterChangePolicy string         `toml:"roster_change_policy"`
 	Timeouts           *timeoutsBlock `toml:"timeouts"`
+	Loop               *loopBlock     `toml:"loop"`
 }
 
 type timeoutsBlock struct {
@@ -39,6 +40,14 @@ type timeoutsBlock struct {
 	RoundMS         int `toml:"round_ms"`
 	ReviewMS        int `toml:"review_ms"`
 	DeepReasoningMS int `toml:"deep_reasoning_ms"`
+}
+
+// loopBlock is the [defaults.loop] policy: explicit auto-drive loop ceilings (LE-5).
+// A breach escalates and halts; it never marks an idea complete. 0 = unlimited.
+type loopBlock struct {
+	MaxDriverSteps int     `toml:"max_driver_steps"`
+	MaxWallClockMS int     `toml:"max_wall_clock_ms"`
+	MaxCostUSD     float64 `toml:"max_cost_usd"`
 }
 
 // CentralDefaults are the merged [defaults] policy knobs across the layered
@@ -53,6 +62,10 @@ type CentralDefaults struct {
 	RoundMS            int
 	ReviewMS           int
 	DeepReasoningMS    int
+	// Loop ceilings (LE-5); 0 = unlimited.
+	MaxDriverSteps int
+	MaxWallClockMS int
+	MaxCostUSD     float64
 }
 
 type configLayer struct {
@@ -186,6 +199,17 @@ func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
 			out.DeepReasoningMS = gd.Timeouts.DeepReasoningMS
 		}
 	}
+	if gd.Loop != nil {
+		if gd.Loop.MaxDriverSteps > 0 {
+			out.MaxDriverSteps = gd.Loop.MaxDriverSteps
+		}
+		if gd.Loop.MaxWallClockMS > 0 {
+			out.MaxWallClockMS = gd.Loop.MaxWallClockMS
+		}
+		if gd.Loop.MaxCostUSD > 0 {
+			out.MaxCostUSD = gd.Loop.MaxCostUSD
+		}
+	}
 }
 
 // CentralHome returns the user-global Parley config directory (~/.parley),
@@ -255,6 +279,10 @@ func centralDefaultTemplate() string {
 	b.WriteString("round_ms = 1200000           # 20 min\n")
 	b.WriteString("review_ms = 1200000          # 20 min\n")
 	b.WriteString("deep_reasoning_ms = 1200000  # 20 min\n\n")
+	b.WriteString("[defaults.loop]              # auto-drive loop ceilings (LE-5); breach escalates, never completes. 0 = unlimited.\n")
+	b.WriteString("max_driver_steps = 200       # total progress steps before escalation (generous safety net)\n")
+	b.WriteString("max_wall_clock_ms = 7200000  # 2 h total run budget (distinct from the per-tick 30 min round deadline)\n")
+	b.WriteString("max_cost_usd = 0             # 0 = unlimited; best-effort, telemetry-gated (LE-6)\n\n")
 	for _, spec := range agents.DefaultSpecs() {
 		model := spec.Model
 		if strings.TrimSpace(model) == "" {

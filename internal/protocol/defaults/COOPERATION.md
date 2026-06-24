@@ -507,6 +507,15 @@ criteria. Hitting the budget never marks an implementation complete; it requires
 human review of the trajectory and either a new fix-up plan, a recorded operator
 ruling, or a decision to abandon/defer the work.
 
+**Loop budgets (LE-5).** An auto-driven loop carries explicit ceilings — max driver
+steps, max wall-clock, and (best-effort) max cost — alongside `MaxRounds`/
+`MaxFixupCycles`. Hitting any ceiling **escalates** (a durable blocking inbox note) and
+halts; it never marks an idea complete. The ceilings are seeded per user from
+`~/.parley [defaults.loop]` (`parley init` seeds generous safety-net defaults) and
+overridable by `parley run --max-driver-steps` / `--max-wall-clock`; `0` means unlimited
+(the backward-compatible default). Cost enforcement is telemetry-gated — it applies only
+once the runner emits `agent.usage` events.
+
 ### Escalation to user (any phase)
 
 Any agent may escalate a question to the user at any phase when:
@@ -940,7 +949,7 @@ Before consensus, the driver validates both sides: can the active roster satisfy
 Agents produce and reach consensus on a markdown action plan. The driver may call a provider only after: the plan artifact is finalized, the boundary gate is approved, provider-capability checks pass, and a ledger record exists in `planned` or `dry_run_ok`. Execution is never an informal continuation of Phase 1–4.
 
 ### 12.11 Monitoring loop-closure
-`MONITORING.md` defines signal sources, thresholds, destinations, breach fingerprints, and dedupe windows. A breach notifies and opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes and uses the same sticky transport as the pipeline; production remediation remains gated. Breaches are deduplicated by fingerprint so one ongoing breach cannot spawn duplicate ideas.
+`MONITORING.md` defines signal sources, thresholds, destinations, breach fingerprints, and dedupe windows. A breach notifies and opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes and uses the same sticky transport as the pipeline; production remediation remains gated. Breaches are deduplicated by fingerprint so one ongoing breach cannot spawn duplicate ideas. A watcher-auto-opened remediation idea is a non-active **candidate** (`status: candidate`, LE-10): the watcher does not staff a quorum, so it must not claim one (no `participants: []` at `round-01`). A human or the pipeline manifest sets `participants:` (at least one non-facilitator) and flips `status: round-01` before deliberation begins — the non-solo Phase-0 invariant.
 
 ### 12.12 Compatibility
 All pipeline files are optional and live under `parley-deck/pipelines/<slug>/`; `ideas/`, `inbox/`, `meta/`, `runs/` are unchanged. Existing `run.json`/manifests may gain optional `pipeline_slug`/`block_id` fields under a schema bump with zero-value defaulting; older drivers ignore unknown fields and degrade to advisory.
