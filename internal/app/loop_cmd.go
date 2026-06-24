@@ -58,6 +58,16 @@ func runLoopTick(args []string, stdout, stderr io.Writer) int {
 		cfg.Enabled = true
 	}
 
+	// AF3: short-circuit the disabled case BEFORE reading signals, so a disabled
+	// tick is fully inert and cron-safe even when the signals file is malformed.
+	if !cfg.Enabled {
+		if *jsonOut {
+			return printJSON(stdout, loop.TickResult{Enabled: false}, stderr)
+		}
+		fmt.Fprintln(stdout, "loop tick: disabled (set loop/config.json {\"enabled\": true} or pass --enable). Wrote nothing.")
+		return 0
+	}
+
 	sigPath := *signalsPath
 	if sigPath == "" {
 		sigPath = loop.SignalsPath(deck)
@@ -77,16 +87,16 @@ func runLoopTick(args []string, stdout, stderr io.Writer) int {
 	if *jsonOut {
 		return printJSON(stdout, res, stderr)
 	}
-	if !res.Enabled {
-		fmt.Fprintln(stdout, "loop tick: disabled (set loop/config.json {\"enabled\": true} or pass --enable). Wrote nothing.")
-		return 0
-	}
-	fmt.Fprintf(stdout, "loop tick: %d candidate(s) drafted, %d skipped (already present).\n", len(res.Created), len(res.Skipped))
+	fmt.Fprintf(stdout, "loop tick: %d candidate(s) drafted, %d skipped (already present), %d rejected (unknown source).\n",
+		len(res.Created), len(res.Skipped), len(res.Rejected))
 	for _, s := range res.Created {
 		fmt.Fprintf(stdout, "  + %s (status: candidate — promote manually to deliberate)\n", s)
 	}
 	for _, s := range res.Skipped {
 		fmt.Fprintf(stdout, "  = %s (exists)\n", s)
+	}
+	for _, s := range res.Rejected {
+		fmt.Fprintf(stdout, "  ! %s (rejected — source not in commit|ci|issue|manual)\n", s)
 	}
 	return 0
 }

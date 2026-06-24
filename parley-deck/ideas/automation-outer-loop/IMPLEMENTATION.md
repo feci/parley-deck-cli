@@ -1,11 +1,13 @@
 ---
 idea: automation-outer-loop
-status: implemented
+status: fix-up
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
+review-round: 1
+fixup-cycle: 1
 ---
 
 ## Summary of work
@@ -56,3 +58,33 @@ Tier 4 (the outer loop), per `FINAL.md`: LE-8 (human-brake protocol §) + LE-9
   candidate dir is skipped (no overwrite). Check an unexpected `os.Stat` error fails closed.
 - **Prose vs frontmatter.** The candidate prompt mentions `participants:` in its Promotion
   note (prose); the invariant is that there is no frontmatter `participants:` key.
+
+## Fix-up cycle 1 (round-01 review consensus)
+
+All five agreed fixes from `review/consensus.md` applied. `gofmt`, `go build ./...`,
+`go vet`, `go test -count=1 ./...` (incl. drift guard) green. The CRITICAL was reproduced
+before and confirmed closed after, end-to-end.
+
+- **AF1 (CRITICAL — all 3 reviewers)** — `cleanField` flattens CR/LF/tab/control chars to
+  spaces on `Source`/`ID`/`Title`/`Detail` before they reach the candidate prompt, closing
+  the YAML frontmatter injection (no more attacker-injected `participants:`/`status:`/`checks:`
+  keys). `Source` is also validated against `{commit, ci, issue, manual}` (`validSources`);
+  an unknown source is rejected (`TickResult.Rejected`). (`internal/loop/loop.go`.)
+- **AF2 (MAJOR — codex + antigravity)** — identity is now an 8-char sha256 over an
+  unambiguous `strconv.Quote` canonical key (`dedupeDigest`), not a lossy sanitized string.
+  Fixes `a/b`==`a:b`, the colon boundary shift, and emoji→`"x"` collapse together.
+- **AF3 (MINOR — codex)** — `runLoopTick` returns the disabled result before reading signals,
+  so a disabled tick is inert/cron-safe even with a malformed signals file.
+- **AF4 (MINOR — codex + antigravity)** — atomic slug claim (`os.Mkdir` + `O_EXCL`) replaces
+  the `os.Stat`→`MkdirAll`/`WriteFile` TOCTOU; concurrent ticks can't double-create/clobber.
+- **AF5 (MINOR — hermes)** — `## Constraints`/`## Non-goals` carry a `(to be filled on
+  promotion)` placeholder.
+
+New tests: `TestTickRejectsFrontmatterInjection`, `TestTickRejectsUnknownSource`,
+`TestColonBoundaryNoCollision`, extended `TestSlugFingerprint` (all in
+`internal/loop/loop_test.go`).
+
+**Deferred (own follow-ups):** DF1 reconcile `ReadFrontmatter` last-wins vs
+`readFrontmatterField` first-wins (pre-existing parser inconsistency; AF1 makes it
+unreachable via the loop); DF2 live connectors + human-confirmed run; DF3 require an
+initialized deck for `--enable`.
