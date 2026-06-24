@@ -1,11 +1,27 @@
 ---
 idea: verification-honesty
-review-cycle: 1
+review-cycle: 2
 drafted-by: claude-1
 date: 2026-06-24
-outstanding_agreed_fixes: 8
+outstanding_agreed_fixes: 0
 blocked: false
 ---
+
+## Cycle 2 resolution
+
+All 8 cycle-1 agreed fixes (F1-F8) were applied; round-02 re-review followed.
+**round-02:** codex-1 ✅ zero findings, hermes-1 ✅ zero findings (both traced the full
+strict_gate close path for a fail-open and found none); antigravity-1 raised two
+scan-evasion edge cases + hermes-1 a coverage gap, all resolved in fix-up cycle 2:
+- **F9** [MAJOR antigravity-1] — placeholder-title heading with real content below now
+  counts as a finding (`scanHasRealFinding` + `headingHasContent`).
+- **F10** [MINOR antigravity-1] — scan tolerates any heading level (`##`..`######`);
+  bullet/bold/prose shapes documented as out of the backstop's scope by design.
+- **F11** [coverage, hermes-1] — added a test for the per-file ReadFile-error fail-closed
+  veto (dangling symlink).
+
+Trajectory converged: round-01 had 4 cross-reviewer MAJOR-class issues → round-02 had 2
+single-reviewer scan-edge issues, now fixed. Outstanding agreed fixes: 0.
 
 ## Agreed fixes
 

@@ -134,10 +134,13 @@ func TestScanHasRealFinding(t *testing.T) {
 		}
 	}
 	dirty := map[string]string{
-		"concrete title":      "### [MINOR] off-by-one in loop bound\nfix it\n",
-		"lowercase severity":  "### [critical] lowercase severity\n",         // F2
-		"extra spacing":       "###   [MAJOR]   spaced heading text\n",       // F2
-		"empty title on line": "### [CRITICAL]\nfinding text on next line\n", // F3
+		"concrete title":         "### [MINOR] off-by-one in loop bound\nfix it\n",
+		"lowercase severity":     "### [critical] lowercase severity\n",                  // F2
+		"extra spacing":          "###   [MAJOR]   spaced heading text\n",                // F2
+		"empty title on line":    "### [CRITICAL]\nfinding text on next line\n",          // F3
+		"placeholder w/ content": "### [CRITICAL] <title>\nactually the real bug is X\n", // F9
+		"level-2 heading":        "## [MAJOR] real finding at heading level 2\n",         // F10
+		"level-4 heading":        "#### [NIT] real finding at heading level 4\n",         // F10
 	}
 	for name, c := range dirty {
 		if !scanHasRealFinding(c) {
@@ -163,5 +166,21 @@ func TestReviewRoundHasFindingsFailsClosed(t *testing.T) {
 	}
 	if !reviewRoundHasFindings(ideaDir, 5) {
 		t.Fatal("an unreadable round dir must fail closed (veto), not auto-pass")
+	}
+}
+
+// F11: a reviewer file that ReadDir lists but ReadFile cannot read (here: a dangling
+// symlink) must fail closed (veto), not be silently skipped.
+func TestReviewRoundHasFindingsVetoesUnreadableFile(t *testing.T) {
+	ideaDir := t.TempDir()
+	dir := filepath.Join(ideaDir, "review", roundLabel(1))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(ideaDir, "does-not-exist"), filepath.Join(dir, "codex-1.md")); err != nil {
+		t.Skipf("symlink unsupported: %v", err)
+	}
+	if !reviewRoundHasFindings(ideaDir, 1) {
+		t.Fatal("a listed-but-unreadable reviewer file must fail closed (veto)")
 	}
 }

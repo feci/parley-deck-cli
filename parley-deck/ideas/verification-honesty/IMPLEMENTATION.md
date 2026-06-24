@@ -1,6 +1,6 @@
 ---
 idea: verification-honesty
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
@@ -102,3 +102,34 @@ completed: 2026-06-24
 
 `go build ./...`, `go vet`, `go test -count=1 ./...` green; drift guard
 `TestEmbeddedDefaultMatchesLiveDeck` green.
+
+## Fix-up cycle 2
+status: complete
+completed: 2026-06-24
+
+### Fixes applied
+(From review/round-02: codex-1 and hermes-1 reported zero findings; antigravity-1 found
+two scan-evasion edge cases, and hermes-1 flagged a coverage gap.)
+- **F9 [MAJOR antigravity-1]** — a literal `### [CRITICAL] <title>` placeholder heading
+  *with real finding content on the lines below* evaded the scan. `scanHasRealFinding`
+  now counts a placeholder heading as a finding when `headingHasContent` finds a non-blank,
+  non-`<...>`-placeholder line before the next heading. (`internal/driver/impl.go`.)
+- **F10 [MINOR antigravity-1]** — the scan only matched `###`. It now tolerates any
+  markdown heading level (`##`..`######`). Bold/bullet/prose finding shapes are documented
+  as out of the deterministic backstop's scope by design (the prescribed format is a
+  heading; reviewers' severity discipline + the drafter's certification are the primary
+  gate).
+- **F11 [coverage, hermes-1]** — added `TestReviewRoundHasFindingsVetoesUnreadableFile`
+  (a dangling-symlink reviewer file) exercising the per-file ReadFile-error fail-closed
+  veto branch that F1 added.
+
+### Deviations from agreed fixes
+- The bullet/bold/prose evasion part of F10 is **not** chased in the scan (documented
+  accepted limitation) — matching arbitrary off-spec shapes risks false-positive vetoes on
+  prose, and the scan is a backstop, not the primary gate.
+
+### Re-review outcome
+round-02: codex-1 ✅ zero findings, hermes-1 ✅ zero findings (both traced the full
+strict_gate close path for fail-open and found none), antigravity-1's two findings resolved
+by F9/F10. Trajectory converged (round-01 had 4 cross-reviewer MAJOR-class issues → round-02
+had 2 single-reviewer scan-edge issues, now fixed). `go test -count=1 ./...` + drift guard green.

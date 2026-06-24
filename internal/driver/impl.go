@@ -336,16 +336,28 @@ func reviewRoundHasFindings(ideaDir string, round int) bool {
 }
 
 // scanHasRealFinding reports whether the content has a severity-tagged finding heading.
-// It is whitespace-tolerant and case-insensitive on the severity tag (review fix F2), and
-// counts an empty-title heading (finding text on the next line) as a finding (review fix
-// F3); only the literal template placeholder "<title>" is ignored.
+// It is whitespace-tolerant and case-insensitive on the severity tag (review fix F2),
+// tolerates any markdown heading level ##..###### (review fix F10), counts an empty-title
+// heading as a finding (review fix F3), and counts even a literal "<title>" placeholder
+// heading when real finding content follows it (review fix F9). Only a bare placeholder
+// heading with no content below is ignored.
+//
+// Scope note: the scan targets the protocol-prescribed heading format. Findings written in
+// off-spec shapes (bold, bullet lists, prose) are out of this backstop's scope by design —
+// they are caught by the reviewers' severity discipline and the drafter's certification,
+// not by this deterministic veto.
 func scanHasRealFinding(content string) bool {
-	for _, line := range strings.Split(content, "\n") {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
 		t := strings.TrimSpace(line)
-		if !strings.HasPrefix(t, "###") {
+		hashes := 0
+		for hashes < len(t) && t[hashes] == '#' {
+			hashes++
+		}
+		if hashes < 2 { // F10: ##, ###, #### … count; non-headings do not
 			continue
 		}
-		rest := strings.TrimSpace(strings.TrimPrefix(t, "###"))
+		rest := strings.TrimSpace(t[hashes:])
 		if !strings.HasPrefix(rest, "[") {
 			continue
 		}
@@ -359,8 +371,30 @@ func scanHasRealFinding(content string) bool {
 			continue
 		}
 		if strings.TrimSpace(rest[closeIdx+1:]) != "<title>" {
-			return true // empty or concrete title both count; only the placeholder is ignored
+			return true // concrete or empty title (F3) both count
 		}
+		if headingHasContent(lines[i+1:]) { // F9: placeholder title but real content below
+			return true
+		}
+	}
+	return false
+}
+
+// headingHasContent reports whether the lines under a heading (up to the next heading)
+// contain a non-blank line that is not itself an angle-bracket "<...>" template placeholder.
+func headingHasContent(after []string) bool {
+	for _, line := range after {
+		t := strings.TrimSpace(line)
+		if t == "" {
+			continue
+		}
+		if strings.HasPrefix(t, "#") {
+			return false // reached the next heading without finding content
+		}
+		if strings.HasPrefix(t, "<") && strings.HasSuffix(t, ">") {
+			continue // template body placeholder, e.g. "<what is wrong, …>"
+		}
+		return true
 	}
 	return false
 }
