@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.31.0 - 2026-06-24
+
+**Loop engineering (LE-1..11).** A four-tier program — designed by a real multi-agent
+Parley deliberation (`ideas/loop-engineering-research`) and implemented tier-by-tier with
+full refutation review — that turns Parley Deck into a loop-engineering substrate with a
+human-gated consensus brake.
+
+- **Tier 1 — verification honesty (LE-1/2/3/4).** Phase 6 review is refutation-default
+  (reviewers assume the change is wrong until they fail to break it) and gains a
+  `## Refutation attempts` section; `strict_gate` lets the driver block a close on a
+  not-certified-clean round (deterministic finding-scan veto, bounded by `MaxFixupCycles`);
+  optional reviewer model-diversity signal (`require_model_diversity`); a `checks:`
+  frontmatter command the driver runs before an auto-implement close (fail-closed for a
+  code-writing idea with nothing to check).
+- **Tier 2 — loop budgets (LE-5/6/10).** The driver enforces a per-run loop budget
+  (`--max-driver-steps`, `--max-wall-clock`, `MaxCostUSD`; central `[defaults.loop]` in
+  `~/.parley/agents.toml`) and escalates on breach; cost telemetry per tick; the §12.11
+  monitoring watcher opens **`status: candidate`** remediation ideas (no auto-staffed quorum).
+- **Tier 3 — close-decision integrity (LE-7/11).** Under `auto_implement`, an
+  `ACCEPT-WITH-RESERVATIONS` triage or fewer than two independent reviewers escalates instead
+  of auto-completing; a fresh non-implementer **goal-done check** (advisory, fail-open, 2-min
+  bounded) runs before close.
+- **Tier 4 — the outer loop (LE-8/9).** New **COOPERATION.md §14 human brake**: any
+  automated/scheduled loop may discover-and-draft Phase 0/1 candidates only — never promote,
+  run, implement, land/merge, finalize, edit the roster, or override consensus without a
+  recorded human or full-quorum gate. New **`parley loop tick`** command (`internal/loop`):
+  one-shot, scheduler-friendly, disabled-by-default; it drafts `status: candidate` idea
+  prompts from a signals file and dedupes them, and never runs/pushes/merges/finalizes/staffs
+  a quorum. Hardened against frontmatter injection, dedupe-digest collision, poisoned-dir
+  liveness, symlink escape (at any ancestor depth), and line-break separator tricks.
+
 ## v1.30.6 - 2026-06-20
 
 - **Seeded `[defaults]` tuning.** The `~/.parley/agents.toml` template now
