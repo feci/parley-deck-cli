@@ -90,7 +90,37 @@ New regression tests: `TestTickHealsPoisonedEmptyDir` (AF7), `TestTickPreservesM
 ## Verification after fix-up cycle 2
 
 `gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift guard) — green.
-Round-03 re-review requested from all three reviewers.
+
+## Round-03 re-review — new agreed fixes (fix-up cycle 3)
+
+Round-03 re-confirmed the round-01 CRITICAL closed and AF6–AF9 holding. antigravity-1
+returned **no findings**; hermes-1 returned 2 MINOR + 1 NIT (no blocker); codex-1 found a
+**new MAJOR** the other two missed — the payoff of three independent lenses:
+
+| ID | Severity | Raised by | Fix |
+|----|----------|-----------|-----|
+| **AF10** | MAJOR (codex) | A new symlink-escape in the AF7 claim path: `os.MkdirAll(dir)` + `O_EXCL` on `00-prompt.md` **followed a pre-existing symlink** at `ideas/<slug>`. codex reproduced it end-to-end — a planted `ideas/<slug> → /tmp/target` made the loop write `00-prompt.md` outside the deck, breaking the §14 "draft inside `parley-deck/ideas/`" write boundary. Fix: `os.Mkdir` the exact slug dir (does not create through a symlink); on `ErrExist`, `Lstat` (no link-follow) and reject a symlink / non-directory, matching `retro propose`'s precedent. The `O_EXCL` prompt claim (which also refuses a symlinked file) follows. Verified end-to-end: a planted symlink is now refused and nothing is written to the target. |
+| **AF11** | MINOR (codex) | `indentDetail` split only on `\n`, so a U+2028/U+2029/U+0085 inside `Detail` left text un-indented after the separator — a markdown renderer treating it as a line break could see `## heading` / `---` / `status:` at column 0. Fix: normalize those separators (and CR/CRLF) to `\n` before splitting, so every logical line is four-space indented. |
+| **AF12** | MINOR (hermes F1) | `indentDetail` used `TrimRight` only, leaving leading blank indented lines. Fix: `TrimSpace`. (Cosmetic; folded into the AF11 rewrite.) |
+| **AF13** | test (hermes F2) | Added a negative test pinning the AF6/AF11 contract: a hostile `Detail` (`## evil`, `---`, `status:`, U+2028-separated) produces **no** column-0 heading, exactly 2 frontmatter fences, and a clean frontmatter (`status: candidate`, no `participants:`). |
+| F3 | NIT (hermes) | Clarified the `cleanField` doc comment ("C0 control characters (0x00–0x1F)"). |
+
+New tests: `TestTickRejectsSymlinkedSlugDir` (AF10), `TestTickDetailCannotInjectHeadingOrFence`
+(AF11/AF13).
+
+### Dismissed / deferred (round-03)
+
+- **`internal/runner/TestDurableKillEndToEndRealProcess`** (codex OQ) — fails only in codex's
+  sandbox (the known sysctl/process-group limitation); green in the implementer's environment.
+- **DF1 / DF4** carry forward (parser last-wins-vs-first-wins; case-insensitive `Source`).
+- hermes/codex markdown-renderer & 8-char-digest concerns from round-02 are resolved by AF11
+  (every Detail line indented) and AF9 (128-bit) respectively.
+
+## Verification after fix-up cycle 3
+
+`gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift guard) — green.
+AF10 verified end-to-end (a planted symlink is refused; nothing written to the target).
+Round-04 re-review requested from all three reviewers.
 
 ## Signoffs
 

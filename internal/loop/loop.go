@@ -135,8 +135,8 @@ func sanitize(s string) string {
 }
 
 // cleanField neutralizes a signal value before it is written into a candidate
-// prompt's FRONTMATTER (AF1): control characters — newlines above all — are
-// flattened to spaces so an untrusted signal cannot inject extra YAML frontmatter
+// prompt's FRONTMATTER (AF1): C0 control characters (0x00–0x1F) — newlines above all —
+// are flattened to spaces so an untrusted signal cannot inject extra YAML frontmatter
 // keys (e.g. a `participants:` quorum claim or a second `status:`). It also flattens
 // the Unicode line/paragraph/next-line separators U+2028/U+2029/U+0085 (AF8): the
 // repo's current line scanners split only on `\n`, so these are not a live bypass
@@ -208,9 +208,27 @@ func Tick(deck string, cfg Config, signals []Candidate, now time.Time) (TickResu
 // PRESERVED (a multi-line stack trace / log stays readable); the closed frontmatter
 // above it means body newlines cannot inject a frontmatter key.
 func writeCandidate(deck, slug string, c Candidate, now time.Time) (bool, error) {
-	dir := filepath.Join(deck, "ideas", slug)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	ideasDir := filepath.Join(deck, "ideas")
+	if err := os.MkdirAll(ideasDir, 0o755); err != nil {
 		return false, err
+	}
+	dir := filepath.Join(ideasDir, slug)
+	// AF10: never follow a pre-existing symlink for the slug dir — a loop must only
+	// ever write inside parley-deck/ideas/<slug>/, never through a planted symlink to
+	// somewhere else. os.Mkdir does not create through / follow a symlink, so on
+	// ErrExist we Lstat (which does not follow links) and reject a symlink / non-dir.
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		if !errors.Is(err, fs.ErrExist) {
+			return false, err
+		}
+		fi, lerr := os.Lstat(dir)
+		if lerr != nil {
+			return false, lerr
+		}
+		if fi.Mode()&os.ModeSymlink != 0 || !fi.IsDir() {
+			return false, fmt.Errorf("loop: refusing slug %q: %s is a symlink or non-directory", slug, dir)
+		}
+		// a real, existing directory (e.g. an empty dir healed per AF7) → fall through
 	}
 	promptPath := filepath.Join(dir, "00-prompt.md")
 	f, err := os.OpenFile(promptPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
@@ -287,10 +305,14 @@ round-01 (the non-solo Phase-0 invariant).
 // stays readable. Indentation makes the content literal, so it cannot inject a
 // heading or otherwise disturb the prompt's own structure. CR is normalized to LF.
 func indentDetail(s string) string {
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	s = strings.ReplaceAll(s, "\r", "\n")
-	s = strings.TrimRight(s, "\n")
-	if strings.TrimSpace(s) == "" {
+	// AF11: normalize EVERY line break — CR/CRLF and the Unicode/YAML separators
+	// U+2028/U+2029/U+0085 — to "\n" before splitting, so each logical line gets the
+	// four-space prefix. Otherwise a separator a markdown renderer treats as a line
+	// break could push `## heading` / `---` / `status:` to column 0 inside the block.
+	ls, ps, nel := string(rune(0x2028)), string(rune(0x2029)), string(rune(0x0085))
+	s = strings.NewReplacer("\r\n", "\n", "\r", "\n", ls, "\n", ps, "\n", nel, "\n").Replace(s)
+	s = strings.TrimSpace(s) // AF12: drop leading/trailing blank lines, not just trailing
+	if s == "" {
 		return "    (no detail provided)"
 	}
 	lines := strings.Split(s, "\n")

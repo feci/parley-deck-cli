@@ -6,8 +6,8 @@ started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
-review-round: 2
-fixup-cycle: 2
+review-round: 3
+fixup-cycle: 3
 ---
 
 ## Summary of work
@@ -115,3 +115,24 @@ New tests: `TestTickHealsPoisonedEmptyDir`, `TestTickPreservesMultilineDetail`,
 candidates); rejected-source label (cleanField already strips ANSI/`<0x20`); `SlugFor`
 fallback (deliberate totality of the exported helper); DF4 case-insensitive `Source`
 (signals are lowercase per FINAL.md; `EqualFold` is future polish).
+
+## Fix-up cycle 3 (round-03 review consensus)
+
+Round-03: antigravity-1 clean, hermes-1 2 MINOR + 1 NIT (no blocker), codex-1 a NEW MAJOR
+(symlink escape) the others missed. All applied; suite + drift guard green; AF10 verified
+end-to-end (a planted symlink is refused, nothing written to the target).
+
+- **AF10 (MAJOR)** — symlink-safe slug claim: `os.Mkdir` the exact slug dir; on `ErrExist`,
+  `Lstat` and reject a symlink / non-directory (a loop must never write outside
+  `parley-deck/ideas/<slug>/`). (`writeCandidate`.)
+- **AF11 (MINOR)** — `indentDetail` normalizes U+2028/U+2029/U+0085 (and CR/CRLF) to `\n`
+  before splitting, so every logical Detail line is four-space indented (no column-0
+  heading/fence/key even under a markdown renderer).
+- **AF12 (MINOR)** — `indentDetail` uses `TrimSpace` (drops leading blank lines too).
+- **AF13 (test)** — `TestTickDetailCannotInjectHeadingOrFence` pins the no-injection contract.
+- **F3 (NIT)** — clarified the `cleanField` doc comment ("C0 control characters").
+
+New tests: `TestTickRejectsSymlinkedSlugDir`, `TestTickDetailCannotInjectHeadingOrFence`.
+
+**Resolved/deferred:** codex's `internal/runner` durable-kill failure is the codex-sandbox
+limitation (green locally); DF1/DF4 carry forward.
