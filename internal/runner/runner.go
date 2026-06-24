@@ -40,6 +40,10 @@ type Options struct {
 	// Overwrite allows re-running an agent even if its artifact already exists
 	// (used for per-cycle review-consensus re-drafts). Off by default.
 	Overwrite bool
+	// StrictGate, when set, tells the Phase-7 review-consensus prompt to also emit the
+	// machine-readable closing_review_round + strict_gate_clean fields the driver's
+	// strict_gate close path checks (LE-2). Set by driverImplOps.DraftReviewConsensus.
+	StrictGate bool
 	// SegmentID tags agent events with the current run.segment_started segment so
 	// the projection can scope state to the active segment (fixes stale terminal
 	// badges after continue/resume/retry). Set by the round-run entry points via
@@ -886,7 +890,7 @@ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, quest
 		if err != nil {
 			return "", err
 		}
-		return BuildReviewConsensusPrompt(agent, opts.Idea, outputPath, ctx), nil
+		return BuildReviewConsensusPrompt(agent, opts.Idea, outputPath, ctx, opts.StrictGate), nil
 	}
 	if roundNumber(opts) <= 1 {
 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)

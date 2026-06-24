@@ -2,7 +2,9 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +29,11 @@ type ImplOps interface {
 	RequestReviewSignoffs(ctx context.Context, missing []string) error
 	Fixup(ctx context.Context, cycle int) error // Phase 8: re-invoke implementer for agreed fixes
 	Complete(ctx context.Context) error         // driver writes IMPLEMENTATION.md status=complete
+	// GoalCheck (LE-7) runs a fresh non-implementer agent to check FINAL.md observable
+	// acceptance criteria before close. Returns (false, detail) only on a confident FAIL;
+	// a checker error/ambiguous verdict returns (true, advisory) — fail-open, since this
+	// is defense-in-depth on top of an already-passed review consensus, not the sole gate.
+	GoalCheck(ctx context.Context) (bool, string)
 }
 
 // ReviewStatus wraps the review-mode consensus summary plus the machine-readable
@@ -35,6 +42,14 @@ type ReviewStatus struct {
 	Summary                consensus.Summary
 	OutstandingAgreedFixes int
 	Blocked                bool
+	// StrictGateClean + ClosingReviewRound carry the drafter's strict_gate
+	// certification (LE-2): the drafter sets strict_gate_clean true only when the
+	// round it names in closing_review_round had zero findings of any severity.
+	StrictGateClean    bool
+	ClosingReviewRound int
+	// ReviewerCount is the number of independent (non-implementer) reviewers (LE-11):
+	// the auto-driver refuses to auto-complete a code-writing idea with fewer than 2.
+	ReviewerCount int
 }
 
 const (
@@ -184,6 +199,56 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 
 	if rs.OutstandingAgreedFixes == 0 {
+		if d.cfg.StrictGate {
+			// strict_gate (LE-2): completion requires a FRESH full-scope closing review
+			// round with zero findings of any severity — certified by the drafter
+			// (strict_gate_clean + closing_review_round for THIS round) and not
+			// contradicted by a deterministic finding scan. The scan can only veto a
+			// clean claim (fail closed); it never auto-passes one.
+			certifiedClean := rs.StrictGateClean && rs.ClosingReviewRound == round
+			if certifiedClean && reviewRoundHasFindings(d.cfg.IdeaDir, round) {
+				return ActionEscalated, c, fmt.Errorf("strict_gate: drafter certified round %d clean but a review file has a real finding; escalating", round)
+			}
+			if !certifiedClean {
+				// Not a certified-clean closing round yet → run one more fresh review
+				// round. Bounded by MaxFixupCycles so the strict-close loop terminates.
+				if round >= d.cfg.MaxFixupCycles {
+					return ActionEscalated, c, fmt.Errorf("strict_gate: no clean closing review round after %d round(s) (MaxFixupCycles=%d); escalating", round, d.cfg.MaxFixupCycles)
+				}
+				if err := d.archiveReviewConsensus(round); err != nil {
+					return ActionEscalated, c, fmt.Errorf("archive review consensus: %w", err)
+				}
+				if err := d.cfg.Impl.OpenReviewRound(ctx, round+1); err != nil {
+					return ActionEscalated, c, fmt.Errorf("open strict closing review round %d: %w", round+1, err)
+				}
+				c.Phase = PhaseReview
+				c.UpdatedAt = nowRFC3339()
+				if err := d.commitCursor(c, ActionReviewOpened, PhaseReview); err != nil {
+					return ActionEscalated, c, err
+				}
+				return ActionReviewOpened, c, nil
+			}
+		}
+		// LE-11 (HITL-fatigue guardrails): under auto-drive, do not silently auto-complete
+		// on a soft "reservations" triage or with a single checker — both re-create a quiet
+		// false-green a fatigued human waves through. Surface to a human instead. A
+		// design-only (non-auto_implement) idea keeps the lighter close (conditional rigor).
+		if d.cfg.AutoImplement {
+			if rs.Summary.Triage == consensus.TriageReserved {
+				return ActionEscalated, c, fmt.Errorf("review consensus is ACCEPT-WITH-RESERVATIONS; under auto_implement, reservations need human review before completion (LE-11)")
+			}
+			if rs.ReviewerCount < 2 {
+				return ActionEscalated, c, fmt.Errorf("only %d independent reviewer(s); auto-complete requires at least 2 (LE-11) — add a reviewer or sign off manually", rs.ReviewerCount)
+			}
+		}
+		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh
+		// non-implementer agent checks the FINAL.md acceptance criteria. A confident FAIL
+		// escalates; a checker error is advisory (fail-open inside GoalCheck).
+		if d.cfg.AutoImplement || d.cfg.StrictGate {
+			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
+				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))
+			}
+		}
 		// DONE (D5): the driver — not the implementer — writes status=complete.
 		if err := d.cfg.Impl.Complete(ctx); err != nil {
 			return ActionEscalated, c, fmt.Errorf("mark complete: %w", err)
@@ -262,6 +327,101 @@ func implReadyForReview(status string) bool {
 	case status == "implemented", status == "ready-for-review":
 		return true
 	case strings.HasPrefix(status, "fix-up-cycle"):
+		return true
+	}
+	return false
+}
+
+// reviewRoundHasFindings scans a review round's reviewer files for at least one real
+// finding — a "### [CRITICAL|MAJOR|MINOR|NIT] <title>" heading whose title is non-empty
+// and not the literal "<title>" placeholder from the prompt template. It is a
+// deterministic veto on a strict_gate_clean claim (LE-2): it can only fail a clean
+// claim closed, never auto-pass one.
+func reviewRoundHasFindings(ideaDir string, round int) bool {
+	dir := filepath.Join(ideaDir, "review", roundLabel(round))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		// Fail closed (review fix F1): an absent dir means nothing to veto
+		// (ReviewRoundComplete guards presence). But an unreadable dir that should
+		// exist must VETO (return true → escalate), never silently auto-pass — the
+		// scan's stated invariant is "veto-only, never auto-pass."
+		return !errors.Is(err, fs.ErrNotExist)
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".md") || name == "_index.md" || name == "consensus.md" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			return true // F1: a file confirmed present but now unreadable → fail closed (veto)
+		}
+		if scanHasRealFinding(string(data)) {
+			return true
+		}
+	}
+	return false
+}
+
+// scanHasRealFinding reports whether the content has a severity-tagged finding heading.
+// It is whitespace-tolerant and case-insensitive on the severity tag (review fix F2),
+// tolerates any markdown heading level ##..###### (review fix F10), counts an empty-title
+// heading as a finding (review fix F3), and counts even a literal "<title>" placeholder
+// heading when real finding content follows it (review fix F9). Only a bare placeholder
+// heading with no content below is ignored.
+//
+// Scope note: the scan targets the protocol-prescribed heading format. Findings written in
+// off-spec shapes (bold, bullet lists, prose) are out of this backstop's scope by design —
+// they are caught by the reviewers' severity discipline and the drafter's certification,
+// not by this deterministic veto.
+func scanHasRealFinding(content string) bool {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		t := strings.TrimSpace(line)
+		hashes := 0
+		for hashes < len(t) && t[hashes] == '#' {
+			hashes++
+		}
+		if hashes < 2 { // F10: ##, ###, #### … count; non-headings do not
+			continue
+		}
+		rest := strings.TrimSpace(t[hashes:])
+		if !strings.HasPrefix(rest, "[") {
+			continue
+		}
+		closeIdx := strings.Index(rest, "]")
+		if closeIdx < 0 {
+			continue
+		}
+		switch strings.ToUpper(strings.TrimSpace(rest[1:closeIdx])) {
+		case "CRITICAL", "MAJOR", "MINOR", "NIT":
+		default:
+			continue
+		}
+		if strings.TrimSpace(rest[closeIdx+1:]) != "<title>" {
+			return true // concrete or empty title (F3) both count
+		}
+		if headingHasContent(lines[i+1:]) { // F9: placeholder title but real content below
+			return true
+		}
+	}
+	return false
+}
+
+// headingHasContent reports whether the lines under a heading (up to the next heading)
+// contain a non-blank line that is not itself an angle-bracket "<...>" template placeholder.
+func headingHasContent(after []string) bool {
+	for _, line := range after {
+		t := strings.TrimSpace(line)
+		if t == "" {
+			continue
+		}
+		if strings.HasPrefix(t, "#") {
+			return false // reached the next heading without finding content
+		}
+		if strings.HasPrefix(t, "<") && strings.HasSuffix(t, ">") {
+			continue // template body placeholder, e.g. "<what is wrong, …>"
+		}
 		return true
 	}
 	return false

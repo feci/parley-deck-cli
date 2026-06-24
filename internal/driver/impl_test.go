@@ -20,9 +20,18 @@ type fakeImpl struct {
 	roundComplete bool
 	review        ReviewStatus
 	reviewErr     error
+	goalFail      bool
 	onOpenReview  func(round int)
 	onDraft       func()
 	onComplete    func()
+}
+
+func (f *fakeImpl) GoalCheck(ctx context.Context) (bool, string) {
+	f.calls = append(f.calls, "goal-check")
+	if f.goalFail {
+		return false, "criteria unmet"
+	}
+	return true, ""
 }
 
 func (f *fakeImpl) Implement(ctx context.Context) error {
@@ -233,8 +242,8 @@ func TestPhaseReviewDraftsThenCompletes(t *testing.T) {
 		t.Fatalf("action=%s want review-drafted", action)
 	}
 
-	// Now consensus exists, Ready + zero fixes → complete.
-	fi.review = ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 0}
+	// Now consensus exists, Ready + zero fixes + ≥2 reviewers → complete (LE-11).
+	fi.review = ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 0, ReviewerCount: 2}
 	action, c, err := d.Advance(context.Background())
 	if err != nil {
 		t.Fatal(err)

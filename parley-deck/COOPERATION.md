@@ -154,6 +154,11 @@ The agent (or user) who starts the idea creates `ideas/<slug>/00-prompt.md`:
     strict_gate: true|false     # optional; exact case-insensitive "true" opts into
                                 # the strict review gate (Phase 8); absent or any
                                 # other value keeps the default close rule
+    require_model_diversity: true|false  # optional; LE-3 — escalate (not just warn) if
+                                # every reviewer shares the implementer's model
+    checks: <command>           # optional; LE-4 — verification command the driver runs
+                                # (sh -c) as the Phase 5/8 build-test gate; a code-writing
+                                # (auto_implement) idea with no checks and no go.mod fails closed
     status: round-01            # round-N | consensus | final | abandoned
     ---
 
@@ -363,6 +368,7 @@ Once `IMPLEMENTATION.md` is published, every active participant **except the imp
     ---
 
     ## Summary            (1–3 sentences on overall health of the implementation)
+    ## Refutation attempts (per FINAL.md criterion: what you tried to break and the result)
     ## Findings
     ### [CRITICAL] <short title>
     <what is wrong, why it blocks, concrete suggested fix>
@@ -372,6 +378,8 @@ Once `IMPLEMENTATION.md` is published, every active participant **except the imp
     ## Open questions
 
 **Severity tags** are fixed: `CRITICAL` (must fix before merge), `MAJOR` (should fix before merge), `MINOR` (nice to have), `NIT` (stylistic / optional). The implementer does not write a review-round file — they respond in Phase 7. Where `FINAL.md` states observable acceptance criteria, reviewers should check the implementation against them and may cite a criterion in a finding; this does **not** change the severity vocabulary — it only makes severity assignment less subjective.
+
+**Refutation-default (LE-1).** Reviewers assume the implementation is wrong until they fail to break it: for each observable acceptance criterion, attempt a failing case or run the relevant check, and record those attempts under `## Refutation attempts`. A "no findings" review is credible only with refutation attempts recorded — the driver's review-artifact validation requires the section. **Model diversity (LE-3):** a checker sharing the implementer's model is likelier to rubber-stamp; under auto-drive the driver warns when every reviewer shares the implementer's model, and `require_model_diversity: true` makes it a hard gate.
 
 If there is no invokable non-implementer reviewer, the implementation MUST NOT be merged or marked complete under Parley Deck. The implementer MUST report the blocker and continue only after either another reviewer is added or the user explicitly authorizes a recorded solo exception.
 
@@ -480,6 +488,14 @@ removing, or changing it requires either review/design consensus or explicit
 operator direction recorded in the idea. A participant MUST NOT silently relax a
 strict gate during implementation or review.
 
+**Driver enforcement (LE-2).** Under auto-drive this gate is machine-enforced, not
+advisory: the driver reads `strict_gate` from `00-prompt.md`; the Phase 7
+review-consensus drafter sets the machine-readable `closing_review_round` and
+`strict_gate_clean` fields; and the driver completes only when the named closing round
+is certified clean AND a deterministic finding-scan of that round's review files finds
+no concrete finding. The scan can only veto a clean claim (fail closed), never
+auto-pass one, and the strict-close loop is bounded by the fix-up budget.
+
 #### Stopping judgment
 
 Review cycles are judged by trajectory, not by a pass counter. If findings are
@@ -499,6 +515,26 @@ passes, or new CRITICAL/MAJOR findings on previously unchanged code".
 criteria. Hitting the budget never marks an implementation complete; it requires
 human review of the trajectory and either a new fix-up plan, a recorded operator
 ruling, or a decision to abandon/defer the work.
+
+**Loop budgets (LE-5).** An auto-driven loop carries explicit ceilings — max driver
+steps, max wall-clock, and (best-effort) max cost — alongside `MaxRounds`/
+`MaxFixupCycles`. Hitting any ceiling **escalates** (a durable blocking inbox note) and
+halts; it never marks an idea complete. The ceilings are seeded per user from
+`~/.parley [defaults.loop]` (`parley init` seeds generous safety-net defaults) and
+overridable by `parley run --max-driver-steps` / `--max-wall-clock`; `0` means unlimited
+(the backward-compatible default). Cost enforcement is telemetry-gated — it applies only
+once the runner emits `agent.usage` events.
+
+**Close-decision integrity (LE-7/LE-11).** Under `auto_implement`, a clean
+`outstanding_agreed_fixes == 0` is necessary but not sufficient to auto-complete: the
+driver refuses to auto-complete on an `ACCEPT-WITH-RESERVATIONS` triage (reservations need
+a human to read them) or with fewer than two independent reviewers. And under
+`auto_implement` or `strict_gate`, before completing, the driver runs a one-shot
+**goal-done check** — a fresh non-implementer agent verifies the `FINAL.md` observable
+acceptance criteria, and a confident fail escalates. The goal-check is defense-in-depth on
+top of the review consensus and fail-open on its own error (a broken or inconclusive
+checker never blocks a review-clean idea). A design-only idea keeps the lighter close
+(conditional rigor).
 
 ### Escalation to user (any phase)
 
@@ -933,7 +969,7 @@ Before consensus, the driver validates both sides: can the active roster satisfy
 Agents produce and reach consensus on a markdown action plan. The driver may call a provider only after: the plan artifact is finalized, the boundary gate is approved, provider-capability checks pass, and a ledger record exists in `planned` or `dry_run_ok`. Execution is never an informal continuation of Phase 1–4.
 
 ### 12.11 Monitoring loop-closure
-`MONITORING.md` defines signal sources, thresholds, destinations, breach fingerprints, and dedupe windows. A breach notifies and opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes and uses the same sticky transport as the pipeline; production remediation remains gated. Breaches are deduplicated by fingerprint so one ongoing breach cannot spawn duplicate ideas.
+`MONITORING.md` defines signal sources, thresholds, destinations, breach fingerprints, and dedupe windows. A breach notifies and opens a human gate by default. Auto-opening a remediation idea is allowed only for predeclared low-risk breach classes and uses the same sticky transport as the pipeline; production remediation remains gated. Breaches are deduplicated by fingerprint so one ongoing breach cannot spawn duplicate ideas. A watcher-auto-opened remediation idea is a non-active **candidate** (`status: candidate`, LE-10): the watcher does not staff a quorum, so it must not claim one (no `participants: []` at `round-01`). A human or the pipeline manifest sets `participants:` (at least one non-facilitator) and flips `status: round-01` before deliberation begins — the non-solo Phase-0 invariant.
 
 ### 12.12 Compatibility
 All pipeline files are optional and live under `parley-deck/pipelines/<slug>/`; `ideas/`, `inbox/`, `meta/`, `runs/` are unchanged. Existing `run.json`/manifests may gain optional `pipeline_slug`/`block_id` fields under a schema bump with zero-value defaulting; older drivers ignore unknown fields and degrade to advisory.
@@ -969,3 +1005,42 @@ A retro-proposed change is accepted only by the normal gate: multi-agent consens
 Tooling that performs retro passes (e.g. a `parley retro` command) is governed by this section but specified separately; such tooling defaults to read-only and may at most scaffold a single new `ideas/<slug>/00-prompt.md`.
 
 Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16) and amended by idea `meta-protocol-change-fusion-execplans` (2026-06-18) to add the confident-error evidence signal.
+
+## 14. Automated outer loop (loop engineering) — the human brake
+
+Parley Deck is a loop-engineering substrate: the human (or a full quorum) owns the
+*decisions*, and automation may own only *discovery*. Any **automated, standing, or
+scheduled loop** — anything not driven by a human in the current session: a cron job, a CI
+hook, an MCP trigger, the `parley loop tick` command — is bound by this brake.
+
+### 14.1 What an automated loop MAY do
+
+- Discover candidate signals (new commits, CI results, issues, a signals file, monitoring
+  breaches) and **draft Phase 0/1 prompts only**.
+- A loop-drafted idea is always a non-active **`status: candidate`**: it carries provenance
+  and a `## Promotion` note, and it does **not** claim a `participants:` quorum (the non-solo
+  Phase-0 invariant — a loop must not staff a quorum it cannot itself convene). This is the
+  same shape the §12.11 monitoring watcher uses.
+
+### 14.2 What an automated loop MUST NOT do without a recorded human or full-quorum gate
+
+- Promote a candidate to quorum (staff `participants:` / flip `status: candidate` →
+  `round-01`), or otherwise start a deliberation or a `parley run`.
+- Implement, write code, or apply fixes.
+- Land, merge, push, or finalize (`FINAL.md` / closing an idea).
+- Modify the active roster (§2).
+- Override, bypass, reopen, or re-draft a consensus or signoff.
+
+### 14.3 Fail-safe
+
+The brake is fail-safe by construction: when an automated loop is uncertain, it does **less**
+— it drafts a candidate and stops, or escalates to the inbox (§8) — never more. A scheduled
+tick that is disabled, mis-configured, or sees no new signals writes nothing and exits
+cleanly. Promotion of any candidate into an active idea is always a human action or an
+explicit manifest action, recorded in the idea and (where it changes phase) mirrored into the
+canonical round/consensus artifacts.
+
+Tooling that runs an automated loop (e.g. a `parley loop tick` command) is governed by this
+section but specified separately; such tooling is **disabled by default** and, even when
+enabled, may at most scaffold `status: candidate` idea prompts. This section was ratified by
+idea `automation-outer-loop` (2026-06-24).

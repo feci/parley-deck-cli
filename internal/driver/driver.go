@@ -59,7 +59,19 @@ type Config struct {
 	AutoImplement bool
 	// MaxFixupCycles bounds the review→fix-up loop (default 3).
 	MaxFixupCycles int
-	Out            io.Writer // progress output (nil → discard)
+	// StrictGate (LE-2), when set, requires a fresh full-scope closing review round
+	// certified clean (drafter strict_gate_clean + deterministic finding-scan veto)
+	// before Complete(), not merely outstanding_agreed_fixes == 0. Read per idea from
+	// 00-prompt `strict_gate`. The strict-close loop is bounded by MaxFixupCycles.
+	StrictGate bool
+	// Loop ceilings (LE-5): explicit stopping conditions for the auto-drive loop.
+	// Hitting any non-zero ceiling ESCALATES (durable inbox note) and halts — it never
+	// marks the idea complete. 0 = unlimited (the backward-compatible default); seeded
+	// per user from ~/.parley [defaults.loop], overridable by `run` flags.
+	MaxDriverSteps int           // total progress Advances before escalation
+	MaxWallClock   time.Duration // total run wall-clock budget (distinct from the per-tick roundDeadline)
+	MaxCostUSD     float64       // total external-backend cost budget (best-effort, telemetry-gated; LE-6)
+	Out            io.Writer     // progress output (nil → discard)
 }
 
 // Driver advances one idea through the deliberation phases via Advance ticks.

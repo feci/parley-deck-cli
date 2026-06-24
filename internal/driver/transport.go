@@ -49,6 +49,26 @@ func ReadAutoImplement(ideaDir string) bool {
 	return false
 }
 
+// ReadStrictGate reads the idea-level strict_gate opt-in from 00-prompt.md; default
+// false. When true, the review loop completes (LE-2) only after a fresh full-scope
+// closing review round is certified clean, not merely on outstanding_agreed_fixes == 0.
+func ReadStrictGate(ideaDir string) bool {
+	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "strict_gate"); ok {
+		return strings.EqualFold(strings.Trim(strings.TrimSpace(v), `"'`), "true")
+	}
+	return false
+}
+
+// ReadRequireModelDiversity reads require_model_diversity from 00-prompt.md; default
+// false. When true, the driver escalates (instead of warning) if every reviewer shares
+// the implementer's model (LE-3).
+func ReadRequireModelDiversity(ideaDir string) bool {
+	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "require_model_diversity"); ok {
+		return strings.EqualFold(strings.Trim(strings.TrimSpace(v), `"'`), "true")
+	}
+	return false
+}
+
 func normalizeTransport(raw string) string {
 	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), "`'\"* "))
 	switch v {

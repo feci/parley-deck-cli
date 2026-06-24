@@ -7,9 +7,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/protocol"
 )
 
 // Consult (runner-hardening-kindly D10): a lightweight advisory cross-agent
@@ -25,6 +28,10 @@ type ConsultOptions struct {
 	Timeout    time.Duration
 	StdoutPath string
 	StderrPath string
+	// Prompt, when set, is used verbatim instead of BuildConsultPrompt(Question). The
+	// goal-done gate (LE-7) sets it to a verdict-style prompt; ordinary consults leave
+	// it empty and get the advisory framing.
+	Prompt string
 	// Progress receives content-free liveness lines (heartbeats, watchdog
 	// notices) — callers point it at stderr so stdout stays redirectable.
 	Progress io.Writer
@@ -62,11 +69,35 @@ Question:
 `, agent.ID, question)
 }
 
+// BuildGoalCheckPrompt frames the LE-7 goal-done gate: a fresh agent checks the FINAL.md
+// observable acceptance criteria against the implementation and ends with a structured
+// verdict line the driver parses. Unlike the advisory consult, this one DOES ask for a
+// pass/fail verdict — but it is still read-only and runs once, before close.
+func BuildGoalCheckPrompt(agent agents.Discovery, idea protocol.IdeaStatus) string {
+	final := filepath.Join(idea.Path, "FINAL.md")
+	impl := filepath.Join(idea.Path, "IMPLEMENTATION.md")
+	return fmt.Sprintf(`You are %s, the goal-done checker for Parley Deck idea %s (read-only).
+
+Task: decide whether the implementation meets the OBSERVABLE ACCEPTANCE CRITERIA in
+%s, using %s and the actual repository state. Check each criterion concretely (run or
+trace it); do not assume.
+
+Output: a short rationale, then a FINAL line that is EXACTLY one of:
+  GOAL-CHECK: PASS
+  GOAL-CHECK: FAIL — <the criteria that are not met>
+Print to stdout only; do not modify any file. Answer PASS only if every observable
+criterion is met; if any is unmet or unverifiable, answer FAIL and name it.
+`, agent.ID, idea.Slug, final, impl)
+}
+
 // RunConsult invokes the agent once (no retry) with supervision and captures
 // stdout as the answer.
 func RunConsult(ctx context.Context, opts ConsultOptions) ConsultResult {
 	started := time.Now()
 	prompt := BuildConsultPrompt(opts.Agent, opts.Question)
+	if strings.TrimSpace(opts.Prompt) != "" {
+		prompt = opts.Prompt
+	}
 	hardTimeout := timeoutForAgent(opts.Timeout, opts.Agent)
 	result := ConsultResult{EffectiveTimeout: hardTimeout}
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
