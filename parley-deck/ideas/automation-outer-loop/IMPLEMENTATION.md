@@ -1,12 +1,12 @@
 ---
 idea: automation-outer-loop
-status: fix-up
+status: complete
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
-review-round: 4
+review-round: 5
 fixup-cycle: 4
 ---
 
@@ -158,3 +158,22 @@ New tests: `TestTickRejectsSymlinkedIdeasParent`, `TestTickIndentsC0SeparatorsIn
 **Out of scope (follow-up):** DF5 — `retro propose` is vulnerable to the same `ideas/`
 parent-symlink class (hermes); hardening `retro` is a separate idea. The loop's
 `assertInsideDeck` is now stricter than that precedent.
+
+## Round-05 re-review — complete
+
+All three reviewers returned **unanimously clean** (0 CRITICAL / 0 MAJOR / 0 MINOR / 0 NIT):
+codex-1 "No findings", antigravity-1 "converged to signoff", hermes-1 "0/0/0/0 … converged".
+Zero new agreed fixes → automation-outer-loop marked complete. `gofmt`, `go build ./...`,
+`go vet`, `go test -count=1 ./...` (incl. drift guard) green.
+
+**Tier 4 review summary:** 5 review rounds + 4 fix-up cycles. Multi-agent refutation caught a
+CRITICAL frontmatter injection (round-01, all 3, exploited end-to-end), a real 32-bit digest
+birthday collision (round-02, codex), a poisoned-dir liveness hole (round-02), and a
+multi-layer symlink-escape class (round-03 slug leaf → round-04 `ideas/` parent → depth-complete
+`assertInsideDeck`). All closed and re-verified end-to-end — a clean validation of the
+loop-engineering maker/checker thesis on the deck's most security-sensitive change.
+
+**Deferred follow-ups:** DF1 (frontmatter parser last-wins vs first-wins), DF2 (live
+connectors + human-confirmed run), DF3 (require initialized deck for `--enable`), DF4
+(case-insensitive `Source`), DF5 (`retro` parent-symlink hardening), DF6 (`O_NOFOLLOW`
+TOCTOU defense-in-depth).

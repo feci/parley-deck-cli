@@ -150,8 +150,57 @@ New tests: `TestTickRejectsSymlinkedIdeasParent` (AF14), `TestTickIndentsC0Separ
 
 `gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift guard) — green.
 AF14 verified end-to-end (a planted `ideas/` parent symlink is refused; nothing written to
-the target). Round-05 re-review requested from all three reviewers.
+the target).
+
+## Round-05 re-review — CONVERGED (zero agreed fixes)
+
+All three reviewers re-ran refutation against `git show 580600a` and returned **unanimously
+clean** — 0 CRITICAL / 0 MAJOR / 0 MINOR / 0 NIT each:
+
+- **antigravity-1** (`review/round-05/antigravity-1.md`) — "The review has converged to
+  signoff." Verified AF14 (grandparent/deck-root symlinks via `EvalSymlinks` containment),
+  AF15 (full C0/Unicode separator sweep), digest, §14.
+- **codex-1** (`review/round-05/codex-1.md`) — "No findings." Verified ancestor/dangling
+  symlinks, `Rel` edge cases, relative/absolute signal tricks, all separators via broad
+  `splitlines`.
+- **hermes-1** (`review/round-05/hermes-1.md`) — "0 CRITICAL, 0 MAJOR, 0 MINOR, 0 NIT …
+  converged." Exhaustive symlink sweep (grandparent, ancestor-chain, parent-with-existing-
+  subdir, dangling, `Rel` `.`/`..`/sibling-prefix/lexical-dotdot), separator sweep
+  (incl. U+001F → space), round-01 CRITICAL re-confirmed, 128-bit digest, §14.
+
+### DF6 — deferred (non-finding, by unanimous reviewer agreement)
+
+codex and hermes both noted a **non-atomic window** between `assertInsideDeck` and the
+`O_EXCL` `OpenFile`: a concurrent attacker who swaps `ideas/<slug>` for a symlink in that
+window could redirect the write. Both explicitly rate it **not a finding / not blocking** —
+it requires write access to the trusted deck root (the operator's `--dir`), which is outside
+the loop's threat model (an untrusted *signal* cannot win a filesystem race). An
+`O_NOFOLLOW`-style open is a defense-in-depth nicety for a future hardening idea (DF6).
 
 ## Signoffs
 
-(Phase 7 signoffs appended below after the re-review converges to zero agreed fixes.)
+Reviewer verdicts transcribed by the facilitator from each agent's round-05 artifact (the
+canonical per-agent review files are the source of truth; recorded uniformly because codex
+writes to the shared consensus file are sandbox-blocked).
+
+### Signoff: codex-1 — 2026-06-24
+Status: ✅ ACCEPT
+Round-05: "No findings: 0 CRITICAL, 0 MAJOR, 0 MINOR, 0 NIT." AF14/AF15 hold; round-01
+CRITICAL closed; §14 holds. (The `internal/runner` durable-kill failure is the known
+codex-sandbox limitation, unrelated to this idea.)
+
+### Signoff: hermes-1 — 2026-06-24
+Status: ✅ ACCEPT
+Round-05: "0 CRITICAL, 0 MAJOR, 0 MINOR, 0 NIT … This review has now run four re-review
+rounds and is converged." TOCTOU recorded as a non-blocking defense-in-depth note (DF6).
+
+### Signoff: antigravity-1 — 2026-06-24
+Status: ✅ ACCEPT
+Round-05: "No findings (0/0/0/0). The review has converged to signoff."
+
+### Signoff: claude-1 (implementer/facilitator) — 2026-06-24
+Status: ✅ ACCEPT
+Five review rounds + four fix-up cycles. The dogfood caught a CRITICAL frontmatter injection,
+a real 32-bit digest collision, a poisoned-dir liveness hole, and a multi-layer symlink-escape
+class — all closed and re-verified end-to-end. Round-05 is unanimously clean. DF1–DF6 deferred
+to their own ideas. Marking automation-outer-loop complete.
