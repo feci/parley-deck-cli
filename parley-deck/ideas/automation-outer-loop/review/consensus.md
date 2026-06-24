@@ -56,8 +56,42 @@ extended `TestSlugFingerprint` (AF2 `a/b` vs `a:b`). This directly answers herme
 
 `gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (all packages incl. the
 embedded-default drift guard) — green. The CRITICAL was reproduced before and confirmed
-closed after, end-to-end. Round-02 re-review requested from all three reviewers.
+closed after, end-to-end.
+
+## Round-02 re-review — new agreed fixes (fix-up cycle 2)
+
+All three reviewers re-ran refutation against `git show 7ff7985`. **The round-01 CRITICAL
+is confirmed closed** end-to-end against the repo's parsers. They surfaced four new fixes (the
+fixes themselves introduced two of them — the value of a real re-review):
+
+| ID | Severity | Raised by | Fix |
+|----|----------|-----------|-----|
+| **AF6** | MAJOR (antigravity; codex/hermes OQ) | A regression from AF1: `cleanField` was flattening `Detail` (a free-form BODY field — stack traces, logs), destroying multi-line readability for no security benefit (the frontmatter is already closed above it). Fix: `Detail` is no longer `cleanField`'d; it is rendered in a `## Signal detail` section as a markdown **indented block** with newlines preserved (indentation keeps it literal, so it cannot inject a heading). `Source`/`ID`/`Title` (frontmatter + one-line bullet) stay `cleanField`'d. |
+| **AF7** | MAJOR (all three) | A liveness hole in AF4: the atomic claim was on the **directory**, but the durable artifact is `00-prompt.md`. A crash/failed write after `os.Mkdir` left an empty `ideas/<slug>/` that future ticks treated as a dedupe hit, **silently suppressing the signal forever**. Fix: the claim is now the PROMPT FILE (`O_CREATE\|O_EXCL` on `00-prompt.md`, `MkdirAll` the dir first); an empty dir from a prior crash is healed (the absent file is re-created), and a failed write removes the partial file so the next tick retries. |
+| **AF8** | MINOR (codex + hermes) | `cleanField` did not flatten the Unicode line/paragraph/next-line separators U+2028/U+2029/U+0085. Not a live bypass (the repo's scanners split only on `\n`, verified end-to-end), but the fix's contract ("no line break can inject a key") under-delivered and a future real-YAML-parser swap would reopen the CRITICAL. Fix: `cleanField` now flattens them too. |
+| **AF9** | MAJOR (codex) | AF2's digest was only **8 hex / 32 bits**. codex found a CONCRETE collision by birthday search (`probe-55599` and `probe-100565` both → `f3b52266`) and confirmed one candidate suppressed the other — the same dedupe data-loss class, moved to truncated hashing. Fix: the digest is now **32 hex / 128 bits**, making a deliberate second-preimage collision infeasible. |
+
+New regression tests: `TestTickHealsPoisonedEmptyDir` (AF7), `TestTickPreservesMultilineDetail`
+(AF6), `TestTickFlattensUnicodeSeparators` (AF8, real U+2028/U+2029 via `string(rune(...))`).
+
+### Dismissed / deferred (round-02)
+
+- **Old-slug migration** (codex F4 / antigravity F3) — N/A: `parley loop` is a brand-new
+  command; no loop-drafted candidates exist in any deck, so there is nothing to migrate.
+- **Rejected-source summary uses untrusted fields** (hermes NIT F3) — already neutralized:
+  `cleanField` strips all `< 0x20` bytes (incl. the ANSI `ESC` 0x1b) from the printed label.
+- **`SlugFor` `""→"signal"` fallback "dead code"** (antigravity NIT F4) — kept deliberately:
+  `SlugFor` is an exported pure helper; the fallback keeps it total for an unvalidated input
+  rather than depending on `Tick`'s upstream `validSources` check.
+- **Case-insensitive `Source`** (codex + hermes OQ) — deferred: FINAL.md LE-9 specifies the
+  closed set lowercase and signals are machine-generated; `strings.EqualFold` is a friendly
+  future polish, not a fix. (DF4.)
+
+## Verification after fix-up cycle 2
+
+`gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift guard) — green.
+Round-03 re-review requested from all three reviewers.
 
 ## Signoffs
 
-(Phase 7 signoffs appended below after the round-02 re-review.)
+(Phase 7 signoffs appended below after the re-review converges to zero agreed fixes.)

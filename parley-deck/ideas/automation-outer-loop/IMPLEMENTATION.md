@@ -6,8 +6,8 @@ started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
-review-round: 1
-fixup-cycle: 1
+review-round: 2
+fixup-cycle: 2
 ---
 
 ## Summary of work
@@ -88,3 +88,30 @@ New tests: `TestTickRejectsFrontmatterInjection`, `TestTickRejectsUnknownSource`
 `readFrontmatterField` first-wins (pre-existing parser inconsistency; AF1 makes it
 unreachable via the loop); DF2 live connectors + human-confirmed run; DF3 require an
 initialized deck for `--enable`.
+
+## Fix-up cycle 2 (round-02 review consensus)
+
+Round-02 confirmed the round-01 CRITICAL closed and surfaced four new agreed fixes (two of
+them regressions introduced by cycle-1's own fixes — the payoff of a real re-review). All
+applied; `gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift) green.
+
+- **AF6 (MAJOR)** — `Detail` is no longer `cleanField`'d (that flattened legit multi-line
+  logs/traces). It is rendered in a `## Signal detail` section as a markdown indented block
+  with newlines preserved; `Source`/`ID`/`Title` stay `cleanField`'d (frontmatter safety).
+  (`indentDetail` in `internal/loop/loop.go`.)
+- **AF7 (MAJOR)** — the atomic claim moved from the directory to the PROMPT FILE
+  (`O_CREATE|O_EXCL` on `00-prompt.md`); an empty dir left by a crashed prior tick is now
+  healed instead of suppressing the signal forever, and a failed write removes the partial
+  file. (`writeCandidate`.)
+- **AF8 (MINOR)** — `cleanField` now also flattens U+2028/U+2029/U+0085 (YAML line breaks),
+  keeping its "no line break injects a key" contract true under a future YAML parser.
+- **AF9 (MAJOR)** — `dedupeDigest` widened from 8 hex (32 bits, birthday-collidable — codex
+  found a real collision) to 32 hex (128 bits), defeating deliberate dedupe-suppression.
+
+New tests: `TestTickHealsPoisonedEmptyDir`, `TestTickPreservesMultilineDetail`,
+`TestTickFlattensUnicodeSeparators`.
+
+**Dismissed/deferred (round-02):** old-slug migration (N/A — new command, no deployed
+candidates); rejected-source label (cleanField already strips ANSI/`<0x20`); `SlugFor`
+fallback (deliberate totality of the exported helper); DF4 case-insensitive `Source`
+(signals are lowercase per FINAL.md; `EqualFold` is future polish).

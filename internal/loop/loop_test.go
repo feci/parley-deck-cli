@@ -164,6 +164,76 @@ func TestTickRejectsFrontmatterInjection(t *testing.T) {
 	}
 }
 
+// AF7: an empty slug dir left behind by a crashed/failed prior tick must NOT suppress
+// the signal forever — the next tick (re)writes the prompt (heals); a later tick skips.
+func TestTickHealsPoisonedEmptyDir(t *testing.T) {
+	deck := filepath.Join(t.TempDir(), "parley-deck")
+	sig := []Candidate{{Source: "commit", ID: "heal-me"}}
+	slug := SlugFor(sig[0])
+	os.MkdirAll(filepath.Join(deck, "ideas", slug), 0o755) // simulate a crashed prior tick: dir, no prompt
+
+	res, err := Tick(deck, Config{Enabled: true}, sig, fixedNow())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Created) != 1 {
+		t.Fatalf("an empty (poisoned) slug dir must be healed, not skipped forever; got %+v", res)
+	}
+	if _, err := os.Stat(filepath.Join(deck, "ideas", slug, "00-prompt.md")); err != nil {
+		t.Fatalf("00-prompt.md must exist after healing: %v", err)
+	}
+	res2, _ := Tick(deck, Config{Enabled: true}, sig, fixedNow())
+	if len(res2.Created) != 0 || len(res2.Skipped) != 1 {
+		t.Fatalf("once the prompt exists, the next tick must skip; got %+v", res2)
+	}
+}
+
+// AF6: a multi-line Detail keeps its line breaks (rendered as an indented block in the
+// body), instead of being flattened to one run-on line.
+func TestTickPreservesMultilineDetail(t *testing.T) {
+	deck := filepath.Join(t.TempDir(), "parley-deck")
+	sig := []Candidate{{Source: "ci", ID: "log-1", Detail: "panic: boom\n\tat foo()\n\tat bar()"}}
+	res, err := Tick(deck, Config{Enabled: true}, sig, fixedNow())
+	if err != nil || len(res.Created) != 1 {
+		t.Fatalf("expected one candidate; got %+v / %v", res, err)
+	}
+	body := readPrompt(t, deck, res.Created[0])
+	if !strings.Contains(body, "## Signal detail") {
+		t.Fatalf("expected a Signal detail section:\n%s", body)
+	}
+	// The newline must SURVIVE (not be flattened to a space): the first detail line is
+	// indented and followed by a real line break, with the later lines also present.
+	if !strings.Contains(body, "    panic: boom\n") || !strings.Contains(body, "at bar()") {
+		t.Fatalf("multi-line detail must be preserved as an indented block (newlines kept):\n%s", body)
+	}
+}
+
+// AF8: Unicode line/paragraph separators in a frontmatter field are flattened, so they
+// cannot inject a frontmatter key even if a real YAML parser is adopted later.
+func TestTickFlattensUnicodeSeparators(t *testing.T) {
+	deck := filepath.Join(t.TempDir(), "parley-deck")
+	ls, ps := string(rune(0x2028)), string(rune(0x2029)) // U+2028 line sep, U+2029 para sep
+	sig := []Candidate{{Source: "commit", ID: "x" + ls + "status: round-01" + ps + "participants: [evil]"}}
+	res, err := Tick(deck, Config{Enabled: true}, sig, fixedNow())
+	if err != nil || len(res.Created) != 1 {
+		t.Fatalf("expected one candidate; got %+v / %v", res, err)
+	}
+	body := readPrompt(t, deck, res.Created[0])
+	statusLines, partLines := 0, 0
+	for _, line := range strings.Split(body, "\n") {
+		tl := strings.TrimSpace(line)
+		if strings.HasPrefix(tl, "status:") {
+			statusLines++
+		}
+		if strings.HasPrefix(tl, "participants:") {
+			partLines++
+		}
+	}
+	if statusLines != 1 || partLines != 0 {
+		t.Fatalf("U+2028/U+2029 must not inject keys (status=%d participants=%d):\n%s", statusLines, partLines, body)
+	}
+}
+
 // AF1: an unknown source is rejected (fail closed) — no idea is drafted for it.
 func TestTickRejectsUnknownSource(t *testing.T) {
 	deck := filepath.Join(t.TempDir(), "parley-deck")

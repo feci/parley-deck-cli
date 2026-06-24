@@ -91,13 +91,18 @@ func ReadSignals(path string) ([]Candidate, error) {
 	return sigs, nil
 }
 
-// dedupeDigest is the collision-resistant identity of a signal (AF2): an 8-char
-// sha256 over an UNAMBIGUOUS canonical key. strconv.Quote makes the field
-// boundaries unforgeable, so `a/b` vs `a:b` (lossy-sanitize collision) and
+// dedupeDigest is the collision-resistant identity of a signal (AF2): a 32-hex
+// (128-bit) sha256 prefix over an UNAMBIGUOUS canonical key. strconv.Quote makes the
+// field boundaries unforgeable, so `a/b` vs `a:b` (lossy-sanitize collision) and
 // `"ci:"+"build"` vs `"ci"+":build"` (separator-shift collision) produce distinct
 // digests, and a non-ASCII / emoji fingerprint hashes to a stable value instead of
 // collapsing to a shared slug. An explicit fingerprint is the dedupe key when
 // present; otherwise source+id is.
+//
+// 128 bits, not the original 8 hex / 32 bits (AF9): a 32-bit suffix was collidable
+// by ordinary birthday search — a malicious signal could pick a fingerprint that
+// collided with another's slug and silently suppress that distinct candidate. A
+// 128-bit prefix makes a deliberate second-preimage collision infeasible.
 func dedupeDigest(c Candidate) string {
 	var key string
 	if fp := strings.TrimSpace(c.Fingerprint); fp != "" {
@@ -106,7 +111,7 @@ func dedupeDigest(c Candidate) string {
 		key = "si:" + strconv.Quote(c.Source) + strconv.Quote(c.ID)
 	}
 	sum := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(sum[:])[:8]
+	return hex.EncodeToString(sum[:])[:32]
 }
 
 // sanitize lowercases and keeps only [a-z0-9-] so a value is slug-safe. Used only
@@ -130,12 +135,17 @@ func sanitize(s string) string {
 }
 
 // cleanField neutralizes a signal value before it is written into a candidate
-// prompt (AF1): control characters — newlines above all — are flattened to spaces
-// so an untrusted signal cannot inject extra YAML frontmatter keys (e.g. a
-// `participants:` quorum claim or a second `status:`) or break the markdown body.
+// prompt's FRONTMATTER (AF1): control characters — newlines above all — are
+// flattened to spaces so an untrusted signal cannot inject extra YAML frontmatter
+// keys (e.g. a `participants:` quorum claim or a second `status:`). It also flattens
+// the Unicode line/paragraph/next-line separators U+2028/U+2029/U+0085 (AF8): the
+// repo's current line scanners split only on `\n`, so these are not a live bypass
+// today, but they ARE YAML 1.1 line breaks — flattening them keeps the contract
+// ("no line break can inject a key") true even if a real YAML parser is adopted later.
 func cleanField(s string) string {
 	return strings.Map(func(r rune) rune {
-		if r == '\n' || r == '\r' || r == '\t' || r < 0x20 {
+		if r == '\n' || r == '\r' || r == '\t' || r < 0x20 ||
+			r == '\u2028' || r == '\u2029' || r == '\u0085' {
 			return ' '
 		}
 		return r
@@ -184,32 +194,45 @@ func Tick(deck string, cfg Config, signals []Candidate, now time.Time) (TickResu
 
 // writeCandidate writes ideas/<slug>/00-prompt.md as a non-active candidate (§14 /
 // §12.11 shape): status: candidate, NO `participants:` claim, a `## Promotion` note.
-// It returns created=false (no error) when the slug is already claimed. The claim is
-// an atomic os.Mkdir + O_EXCL write (AF4), so two concurrent ticks cannot both create
-// or clobber the same prompt. Every signal-derived value is run through cleanField
-// (AF1) so it can never inject extra YAML frontmatter keys or break the body.
+// It returns created=false (no error) when the candidate already exists.
+//
+// AF7: the atomic claim is the PROMPT FILE, not the directory. An O_CREATE|O_EXCL
+// open of 00-prompt.md serializes concurrent ticks (exactly one create, the rest
+// skip), and — unlike a directory claim — a previously-crashed tick that left an
+// empty ideas/<slug>/ no longer suppresses the signal forever (the absent file is
+// re-created). A failed write removes the partial file so the next tick retries.
+//
+// AF1: the frontmatter scalars (Source, ID) and the one-line Title bullet go through
+// cleanField so an untrusted signal cannot inject extra YAML keys. AF6: Detail is the
+// free-form body field — it is rendered as an indented block with its newlines
+// PRESERVED (a multi-line stack trace / log stays readable); the closed frontmatter
+// above it means body newlines cannot inject a frontmatter key.
 func writeCandidate(deck, slug string, c Candidate, now time.Time) (bool, error) {
-	ideasDir := filepath.Join(deck, "ideas")
-	if err := os.MkdirAll(ideasDir, 0o755); err != nil {
+	dir := filepath.Join(deck, "ideas", slug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return false, err
 	}
-	dir := filepath.Join(ideasDir, slug)
-	if err := os.Mkdir(dir, 0o755); err != nil {
+	promptPath := filepath.Join(dir, "00-prompt.md")
+	f, err := os.OpenFile(promptPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
 		if errors.Is(err, fs.ErrExist) {
-			return false, nil // slug already claimed → skip (dedupe)
+			return false, nil // candidate already drafted → skip (dedupe)
 		}
-		return false, err // fail closed on an unexpected mkdir error
+		return false, err
 	}
+	wrote := false
+	defer func() {
+		f.Close()
+		if !wrote {
+			os.Remove(promptPath) // AF7: never leave a poisoned partial prompt behind
+		}
+	}()
 
 	source := cleanField(c.Source)
 	id := cleanField(c.ID)
 	title := cleanField(c.Title)
 	if title == "" {
 		title = source + " signal " + id
-	}
-	detail := cleanField(c.Detail)
-	if detail == "" {
-		detail = "(no detail provided)"
 	}
 	prompt := fmt.Sprintf(`---
 idea: %s
@@ -229,7 +252,10 @@ from a discovered %s signal.
 - title: %s
 - source: %s
 - source id: %s
-- detail: %s
+
+## Signal detail
+
+%s
 
 ## Promotion
 
@@ -247,18 +273,31 @@ round-01 (the non-solo Phase-0 invariant).
 
 (to be filled on promotion)
 `, slug, now.Format("2006-01-02"), source, id, dedupeDigest(c),
-		source, title, source, id, detail)
+		source, title, source, id, indentDetail(c.Detail))
 
-	// AF4: O_EXCL so a concurrent writer that claimed the dir cannot clobber the prompt.
-	f, err := os.OpenFile(filepath.Join(dir, "00-prompt.md"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
 	if _, err := f.WriteString(prompt); err != nil {
 		return false, err
 	}
+	wrote = true
 	return true, nil
+}
+
+// indentDetail renders the free-form Detail as a markdown indented code block with
+// newlines preserved (AF6), so multi-line provenance (a stack trace, a log excerpt)
+// stays readable. Indentation makes the content literal, so it cannot inject a
+// heading or otherwise disturb the prompt's own structure. CR is normalized to LF.
+func indentDetail(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = strings.TrimRight(s, "\n")
+	if strings.TrimSpace(s) == "" {
+		return "    (no detail provided)"
+	}
+	lines := strings.Split(s, "\n")
+	for i := range lines {
+		lines[i] = "    " + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
 
 // DeckDir is re-exported for callers that resolve the deck path.
