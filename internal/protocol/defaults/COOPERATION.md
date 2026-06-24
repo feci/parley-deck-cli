@@ -516,6 +516,17 @@ overridable by `parley run --max-driver-steps` / `--max-wall-clock`; `0` means u
 (the backward-compatible default). Cost enforcement is telemetry-gated — it applies only
 once the runner emits `agent.usage` events.
 
+**Close-decision integrity (LE-7/LE-11).** Under `auto_implement`, a clean
+`outstanding_agreed_fixes == 0` is necessary but not sufficient to auto-complete: the
+driver refuses to auto-complete on an `ACCEPT-WITH-RESERVATIONS` triage (reservations need
+a human to read them) or with fewer than two independent reviewers. And under
+`auto_implement` or `strict_gate`, before completing, the driver runs a one-shot
+**goal-done check** — a fresh non-implementer agent verifies the `FINAL.md` observable
+acceptance criteria, and a confident fail escalates. The goal-check is defense-in-depth on
+top of the review consensus and fail-open on its own error (a broken or inconclusive
+checker never blocks a review-clean idea). A design-only idea keeps the lighter close
+(conditional rigor).
+
 ### Escalation to user (any phase)
 
 Any agent may escalate a question to the user at any phase when:

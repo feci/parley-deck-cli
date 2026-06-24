@@ -20,7 +20,7 @@ func newStrictDriver(ideaDir, runDir string, parts []string, maxFixup int, fi Im
 }
 
 func reviewReady(fixes int) ReviewStatus {
-	return ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: fixes}
+	return ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: fixes, ReviewerCount: 2}
 }
 
 // LE-2: 0 outstanding fixes but the round is NOT certified clean → strict_gate must

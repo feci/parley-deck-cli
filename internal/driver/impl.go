@@ -29,6 +29,11 @@ type ImplOps interface {
 	RequestReviewSignoffs(ctx context.Context, missing []string) error
 	Fixup(ctx context.Context, cycle int) error // Phase 8: re-invoke implementer for agreed fixes
 	Complete(ctx context.Context) error         // driver writes IMPLEMENTATION.md status=complete
+	// GoalCheck (LE-7) runs a fresh non-implementer agent to check FINAL.md observable
+	// acceptance criteria before close. Returns (false, detail) only on a confident FAIL;
+	// a checker error/ambiguous verdict returns (true, advisory) — fail-open, since this
+	// is defense-in-depth on top of an already-passed review consensus, not the sole gate.
+	GoalCheck(ctx context.Context) (bool, string)
 }
 
 // ReviewStatus wraps the review-mode consensus summary plus the machine-readable
@@ -42,6 +47,9 @@ type ReviewStatus struct {
 	// round it names in closing_review_round had zero findings of any severity.
 	StrictGateClean    bool
 	ClosingReviewRound int
+	// ReviewerCount is the number of independent (non-implementer) reviewers (LE-11):
+	// the auto-driver refuses to auto-complete a code-writing idea with fewer than 2.
+	ReviewerCount int
 }
 
 const (
@@ -219,6 +227,26 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 					return ActionEscalated, c, err
 				}
 				return ActionReviewOpened, c, nil
+			}
+		}
+		// LE-11 (HITL-fatigue guardrails): under auto-drive, do not silently auto-complete
+		// on a soft "reservations" triage or with a single checker — both re-create a quiet
+		// false-green a fatigued human waves through. Surface to a human instead. A
+		// design-only (non-auto_implement) idea keeps the lighter close (conditional rigor).
+		if d.cfg.AutoImplement {
+			if rs.Summary.Triage == consensus.TriageReserved {
+				return ActionEscalated, c, fmt.Errorf("review consensus is ACCEPT-WITH-RESERVATIONS; under auto_implement, reservations need human review before completion (LE-11)")
+			}
+			if rs.ReviewerCount < 2 {
+				return ActionEscalated, c, fmt.Errorf("only %d independent reviewer(s); auto-complete requires at least 2 (LE-11) — add a reviewer or sign off manually", rs.ReviewerCount)
+			}
+		}
+		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh
+		// non-implementer agent checks the FINAL.md acceptance criteria. A confident FAIL
+		// escalates; a checker error is advisory (fail-open inside GoalCheck).
+		if d.cfg.AutoImplement || d.cfg.StrictGate {
+			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
+				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))
 			}
 		}
 		// DONE (D5): the driver — not the implementer — writes status=complete.

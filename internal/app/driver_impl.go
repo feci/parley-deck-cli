@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/protocol"
@@ -314,7 +315,76 @@ func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
 	return driver.ReviewStatus{
 		Summary: summary, OutstandingAgreedFixes: fixes, Blocked: blocked,
 		StrictGateClean: strictClean, ClosingReviewRound: closingRound,
+		ReviewerCount: len(o.reviewers), // LE-11
 	}, nil
+}
+
+// discoveryFor returns the discovered agent for an id.
+func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
+	for _, a := range o.base.Agents {
+		if a.ID == id {
+			return a, true
+		}
+	}
+	return agents.Discovery{}, false
+}
+
+// GoalCheck (LE-7) runs a fresh non-implementer agent (the review drafter) to check the
+// FINAL.md acceptance criteria before close, reusing the consult execution path with a
+// verdict prompt. Fail-open on checker error/ambiguity: only a confident FAIL returns
+// (false, …) so a broken checker never blocks an already-review-clean idea.
+func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
+	checker := o.drafter
+	agent, ok := o.discoveryFor(checker)
+	if !ok {
+		fmt.Fprintf(o.out, "driver: goal-check skipped — checker %q not discovered (advisory)\n", checker)
+		return true, "advisory: goal-check checker unavailable"
+	}
+	fmt.Fprintf(o.out, "driver: goal-done check via %s ...\n", checker)
+	dir := filepath.Join(o.root, protocol.DeckDir, "runs", o.base.RunID, "agents", checker)
+	_ = os.MkdirAll(dir, 0o755)
+	res := runner.RunConsult(ctx, runner.ConsultOptions{
+		Root:       o.root,
+		Agent:      agent,
+		Prompt:     runner.BuildGoalCheckPrompt(agent, o.base.Idea),
+		StdoutPath: filepath.Join(dir, "goal-check.stdout.log"),
+		StderrPath: filepath.Join(dir, "goal-check.stderr.log"),
+		Progress:   o.out,
+	})
+	if res.ExitError != "" {
+		fmt.Fprintf(o.out, "driver: goal-check inconclusive (checker error: %s) — proceeding (advisory)\n", res.ExitError)
+		return true, "advisory: goal-check checker error"
+	}
+	switch parseGoalVerdict(res.Answer) {
+	case "FAIL":
+		return false, res.Answer
+	case "PASS":
+		return true, ""
+	default:
+		fmt.Fprintf(o.out, "driver: goal-check inconclusive (no clear verdict) — proceeding (advisory)\n")
+		return true, "advisory: goal-check inconclusive"
+	}
+}
+
+// parseGoalVerdict extracts the last GOAL-CHECK verdict from a goal-check answer
+// (case-insensitive). Returns "PASS", "FAIL", or "" (ambiguous / none).
+func parseGoalVerdict(answer string) string {
+	verdict := ""
+	for _, line := range strings.Split(answer, "\n") {
+		t := strings.ToUpper(strings.TrimSpace(line))
+		t = strings.TrimLeft(t, "#*-> \t")
+		if !strings.HasPrefix(t, "GOAL-CHECK:") {
+			continue
+		}
+		rest := strings.TrimSpace(strings.TrimPrefix(t, "GOAL-CHECK:"))
+		switch {
+		case strings.HasPrefix(rest, "PASS"):
+			verdict = "PASS"
+		case strings.HasPrefix(rest, "FAIL"):
+			verdict = "FAIL"
+		}
+	}
+	return verdict
 }
 
 func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []string) error {
