@@ -88,7 +88,7 @@ func TestValidateImplementationAndReviewArtifacts(t *testing.T) {
 		t.Fatal("wrong idea slug must fail")
 	}
 	rev := filepath.Join(dir, "rev.md")
-	mustWrite(t, rev, "---\nagent: rev1\nidea: demo\nreview-round: 2\n---\n\n## Findings\nnone\n")
+	mustWrite(t, rev, "---\nagent: rev1\nidea: demo\nreview-round: 2\n---\n\n## Refutation attempts\ntried to break it; held\n\n## Findings\nnone\n")
 	if err := ValidateReviewArtifact(rev, "rev1", "demo", 2); err != nil {
 		t.Fatalf("valid review rejected: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestFakeReviewHelper(t *testing.T) {
 	if len(out) != 2 || len(idea) != 2 || len(round) != 2 {
 		t.Fatalf("review prompt missing path/idea/round:\n%s", string(input))
 	}
-	body := "---\nagent: rev1\nidea: " + idea[1] + "\nreview-round: " + round[1] + "\n---\n\n## Summary\nlgtm\n\n## Findings\n### [NIT] tiny\nnit.\n\n## Open questions\nnone\n"
+	body := "---\nagent: rev1\nidea: " + idea[1] + "\nreview-round: " + round[1] + "\n---\n\n## Summary\nlgtm\n\n## Refutation attempts\ntried to break each criterion; held\n\n## Findings\n### [NIT] tiny\nnit.\n\n## Open questions\nnone\n"
 	if err := os.WriteFile(out[1], []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}

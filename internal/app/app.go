@@ -1145,6 +1145,7 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 		Consensus:         newDriverConsensusOps(root, run.IdeaSlug, ideaDir, run.Participants, discovered, stdout),
 		Impl:              newDriverImplOps(runOpts, root, run.IdeaSlug, ideaDir, run.Participants, stdout),
 		AutoImplement:     driver.ReadAutoImplement(ideaDir) && !noImplement,
+		StrictGate:        driver.ReadStrictGate(ideaDir),
 		Out:               stdout,
 	}, driver.NewRunnerAdapter(runOpts))
 	if err := d.Run(ctx); err != nil {
@@ -1801,6 +1802,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 				Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, stdout),
 				Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, stdout),
 				AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
+				StrictGate:        driver.ReadStrictGate(created.Idea.Path),
 				Out:               stdout,
 			}, driver.NewRunnerAdapter(runOpts))
 			if err := d.Run(runCtx); err != nil {
@@ -1851,6 +1853,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 					Consensus:         newDriverConsensusOps(*root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, discovered, io.Discard),
 					Impl:              newDriverImplOps(runOpts, *root, created.Idea.Slug, created.Idea.Path, created.Idea.Participants, io.Discard),
 					AutoImplement:     driver.ReadAutoImplement(created.Idea.Path) && !*noImplement,
+					StrictGate:        driver.ReadStrictGate(created.Idea.Path),
 					Out:               io.Discard,
 				}, driver.NewRunnerAdapter(runOpts))
 				if err := d.Run(runCtx); err != nil {

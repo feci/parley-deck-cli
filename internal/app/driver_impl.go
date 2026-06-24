@@ -96,6 +96,32 @@ func (o driverImplOps) withParticipants(ids ...string) runner.Options {
 	return opts
 }
 
+// modelOf returns the discovered model id for an agent id, or "" if unknown.
+func (o driverImplOps) modelOf(id string) string {
+	for _, a := range o.base.Agents {
+		if a.ID == id {
+			return a.Model
+		}
+	}
+	return ""
+}
+
+// reviewersShareImplementerModel reports whether every reviewer uses the same model as
+// the implementer (LE-3). Returns (false, "") when the implementer's model is unknown
+// or there are no reviewers — diversity can't be asserted, so it never fires spuriously.
+func (o driverImplOps) reviewersShareImplementerModel() (bool, string) {
+	implModel := o.modelOf(o.implementer)
+	if implModel == "" || len(o.reviewers) == 0 {
+		return false, ""
+	}
+	for _, r := range o.reviewers {
+		if o.modelOf(r) != implModel {
+			return false, ""
+		}
+	}
+	return true, implModel
+}
+
 func (o driverImplOps) Implement(ctx context.Context) error {
 	fmt.Fprintf(o.out, "driver: implementing via %s ...\n", o.implementer)
 	r := runner.RunImplementation(ctx, o.withParticipants(o.implementer))
@@ -113,25 +139,53 @@ func (o driverImplOps) ImplementationStatus() (string, error) {
 	return strings.Trim(strings.TrimSpace(meta["status"]), `"'`), nil
 }
 
-// RunChecks runs `go test ./...` in the workspace when it is a Go module; a
-// non-Go workspace has nothing to check (treated as passing).
+// RunChecks runs the verification gate (LE-4). Resolution order:
+//  1. an explicit `checks:` command from 00-prompt frontmatter → `sh -c <command>`;
+//  2. else `go test ./...` when the workspace is a Go module;
+//  3. else, for a code-writing (auto_implement) idea with no checks → FAIL CLOSED;
+//  4. else (design-only, non-Go) → nothing to check.
+//
+// Because advanceImpl (pre-review) and advanceReview (post-fix-up) both escalate when
+// RunChecks fails, step 3 transitively ties the "artifact-wins" fix-up override to a
+// real check: a fix-up that wrote a valid-shaped artifact but cannot be verified no
+// longer auto-passes (hermes #8).
 func (o driverImplOps) RunChecks(ctx context.Context) (bool, string) {
-	if _, err := os.Stat(filepath.Join(o.root, "go.mod")); err != nil {
-		return true, "no go.mod in workspace; no checks to run"
+	run := func(name string, cmd *exec.Cmd) (bool, string) {
+		fmt.Fprintf(o.out, "driver: running checks (%s) ...\n", name)
+		cmd.Dir = o.root
+		var buf bytes.Buffer
+		cmd.Stdout = &buf
+		cmd.Stderr = &buf
+		err := cmd.Run()
+		return err == nil, buf.String()
 	}
-	fmt.Fprintf(o.out, "driver: running checks (go test ./...) ...\n")
-	cmd := exec.CommandContext(ctx, "go", "test", "./...")
-	cmd.Dir = o.root
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
-	err := cmd.Run()
-	return err == nil, buf.String()
+	checks := ""
+	if meta, err := protocol.ReadFrontmatter(filepath.Join(o.ideaDir, "00-prompt.md")); err == nil {
+		checks = strings.TrimSpace(strings.Trim(strings.TrimSpace(meta["checks"]), `"'`))
+	}
+	if checks != "" {
+		return run(checks, exec.CommandContext(ctx, "sh", "-c", checks))
+	}
+	if _, err := os.Stat(filepath.Join(o.root, "go.mod")); err == nil {
+		return run("go test ./...", exec.CommandContext(ctx, "go", "test", "./..."))
+	}
+	if driver.ReadAutoImplement(o.ideaDir) {
+		return false, "no go.mod and no `checks:` configured for a code-writing (auto_implement) idea; set checks: in 00-prompt.md so a fix-up cannot pass unverified"
+	}
+	return true, "no go.mod and no checks configured; nothing to check"
 }
 
 func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 	if len(o.reviewers) == 0 {
 		return fmt.Errorf("no non-implementer reviewers available")
+	}
+	// LE-3 model-diversity: a checker that shares the implementer's model is more
+	// likely to rubber-stamp. Default = warn; require_model_diversity makes it a gate.
+	if same, model := o.reviewersShareImplementerModel(); same {
+		if driver.ReadRequireModelDiversity(o.ideaDir) {
+			return fmt.Errorf("require_model_diversity: every reviewer shares the implementer's model %q; refusing to open review (LE-3)", model)
+		}
+		fmt.Fprintf(o.out, "driver: WARNING model-diversity — every reviewer shares the implementer's model %q; a same-model checker is more likely to rubber-stamp (LE-3). Set require_model_diversity: true to make this a hard gate.\n", model)
 	}
 	fmt.Fprintf(o.out, "driver: opening review round %d (reviewers: %s) ...\n", round, strings.Join(o.reviewers, ", "))
 	// AF5: drop any reviewer artifact that exists but fails validation, so
@@ -179,6 +233,7 @@ func (o driverImplOps) DraftReviewConsensus(ctx context.Context, round int) erro
 	fmt.Fprintf(o.out, "driver: drafting review consensus via %s ...\n", o.drafter)
 	opts := o.withParticipants(o.drafter)
 	opts.Round = round
+	opts.StrictGate = driver.ReadStrictGate(o.ideaDir) // LE-2: emit the close fields under strict_gate
 	r := runner.RunReviewConsensus(ctx, opts)
 	if !r.Success() {
 		return fmt.Errorf("review-consensus drafter %s: %s", r.AgentID, r.ExitError)
@@ -202,7 +257,18 @@ func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
 		return driver.ReviewStatus{}, fmt.Errorf("review/consensus.md outstanding_agreed_fixes=%q is not a non-negative integer", rawFixes)
 	}
 	blocked := strings.EqualFold(strings.Trim(strings.TrimSpace(meta["blocked"]), `"'`), "true")
-	return driver.ReviewStatus{Summary: summary, OutstandingAgreedFixes: fixes, Blocked: blocked}, nil
+	// LE-2 strict_gate close fields (absent/zero on non-strict ideas → harmless defaults).
+	strictClean := strings.EqualFold(strings.Trim(strings.TrimSpace(meta["strict_gate_clean"]), `"'`), "true")
+	closingRound := 0
+	if v := strings.Trim(strings.TrimSpace(meta["closing_review_round"]), `"'`); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			closingRound = n
+		}
+	}
+	return driver.ReviewStatus{
+		Summary: summary, OutstandingAgreedFixes: fixes, Blocked: blocked,
+		StrictGateClean: strictClean, ClosingReviewRound: closingRound,
+	}, nil
 }
 
 func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []string) error {

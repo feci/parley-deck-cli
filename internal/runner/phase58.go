@@ -235,6 +235,11 @@ head-commit: <sha-or-short-sha>
 func BuildReviewPrompt(agent agents.Discovery, idea protocol.IdeaStatus, round int, outputPath, context string) string {
 	return fmt.Sprintf(`You are %s, a reviewer for Parley Deck idea %s (Phase 6, review round %d).
 
+Refutation-default posture: assume the implementation is WRONG until you fail to break it.
+For each observable acceptance criterion in FINAL.md, actively try to construct a failing
+case or run the relevant check. Report "no findings" only after stating, under
+"## Refutation attempts", what you tried that failed to break it.
+
 Rules:
 - Review the implementation against FINAL.md and IMPLEMENTATION.md (below).
 - Create exactly this review file: %s
@@ -242,6 +247,7 @@ Rules:
 - Do not edit implementation files or other agents' files.
 - Use ONLY these severity tags: CRITICAL, MAJOR, MINOR, NIT.
 - Each finding states what is wrong, why it matters, and the concrete fix.
+- Under "## Refutation attempts", record the criteria/cases you tried to break and the result; an empty "## Findings" is only credible when refutation attempts are recorded.
 - The first line of the file must be exactly "---".
 - Return only a short confirmation with the path written.
 
@@ -254,6 +260,7 @@ date: %s
 ---
 
 ## Summary
+## Refutation attempts
 ## Findings
 ### [CRITICAL] <title>
 ### [MAJOR] <title>
@@ -329,7 +336,15 @@ func RunReviewConsensus(ctx context.Context, opts Options) Result {
 
 // BuildReviewConsensusPrompt is the Phase 7 drafter prompt; it MUST set the
 // machine-readable outstanding_agreed_fixes so the unattended loop can decide.
-func BuildReviewConsensusPrompt(agent agents.Discovery, idea protocol.IdeaStatus, outputPath, context string) string {
+func BuildReviewConsensusPrompt(agent agents.Discovery, idea protocol.IdeaStatus, outputPath, context string, strictGate bool) string {
+	strictRule := ""
+	strictFields := ""
+	if strictGate {
+		// LE-2: under strict_gate the close decision needs a certified-clean closing
+		// round, expressed via two machine-readable fields the driver checks.
+		strictRule = "- strict_gate is ON: also set closing_review_round: <the review round number this consensus certifies> and strict_gate_clean: <true ONLY if EVERY reviewer in that round reported zero findings of any severity>.\n"
+		strictFields = "closing_review_round: 0\nstrict_gate_clean: false\n"
+	}
 	return fmt.Sprintf(`You are %s, drafting the Phase 7 review consensus for Parley Deck idea %s.
 
 Rules:
@@ -337,7 +352,7 @@ Rules:
 - Synthesize the review-round findings below into agreed fixes, deferred follow-ups, and dismissed findings.
 - The frontmatter MUST include outstanding_agreed_fixes: <integer count of fixes still to apply> and blocked: <true|false>.
 - Set outstanding_agreed_fixes to 0 only when nothing remains to fix.
-- The first line of the file must be exactly "---".
+%s- The first line of the file must be exactly "---".
 - Return only a short confirmation with the path written.
 
 Required file shape:
@@ -348,7 +363,7 @@ drafted-by: %s
 date: %s
 outstanding_agreed_fixes: 0
 blocked: false
----
+%s---
 
 ## Agreed fixes
 ## Deferred follow-ups
@@ -357,7 +372,7 @@ blocked: false
 
 Review context (IMPLEMENTATION.md + review rounds):
 %s
-`, agent.ID, idea.Slug, outputPath, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), context)
+`, agent.ID, idea.Slug, outputPath, strictRule, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), strictFields, context)
 }
 
 // ValidateReviewConsensusArtifact requires the machine-readable contract field.
@@ -415,6 +430,11 @@ func ValidateReviewArtifact(path, agentID, ideaSlug string, round int) error {
 	}
 	if !strings.Contains(string(data), "## Findings") {
 		return fmt.Errorf("%s missing '## Findings'", path)
+	}
+	// LE-1 (refutation-default): an empty-findings review must show its work, so the
+	// "## Refutation attempts" section is mandatory.
+	if !strings.Contains(string(data), "## Refutation attempts") {
+		return fmt.Errorf("%s missing '## Refutation attempts' (refutation-default: a review must record what it tried to break)", path)
 	}
 	return nil
 }

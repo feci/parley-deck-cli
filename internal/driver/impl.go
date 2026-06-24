@@ -35,6 +35,11 @@ type ReviewStatus struct {
 	Summary                consensus.Summary
 	OutstandingAgreedFixes int
 	Blocked                bool
+	// StrictGateClean + ClosingReviewRound carry the drafter's strict_gate
+	// certification (LE-2): the drafter sets strict_gate_clean true only when the
+	// round it names in closing_review_round had zero findings of any severity.
+	StrictGateClean    bool
+	ClosingReviewRound int
 }
 
 const (
@@ -184,6 +189,36 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 
 	if rs.OutstandingAgreedFixes == 0 {
+		if d.cfg.StrictGate {
+			// strict_gate (LE-2): completion requires a FRESH full-scope closing review
+			// round with zero findings of any severity — certified by the drafter
+			// (strict_gate_clean + closing_review_round for THIS round) and not
+			// contradicted by a deterministic finding scan. The scan can only veto a
+			// clean claim (fail closed); it never auto-passes one.
+			certifiedClean := rs.StrictGateClean && rs.ClosingReviewRound == round
+			if certifiedClean && reviewRoundHasFindings(d.cfg.IdeaDir, round) {
+				return ActionEscalated, c, fmt.Errorf("strict_gate: drafter certified round %d clean but a review file has a real finding; escalating", round)
+			}
+			if !certifiedClean {
+				// Not a certified-clean closing round yet → run one more fresh review
+				// round. Bounded by MaxFixupCycles so the strict-close loop terminates.
+				if round >= d.cfg.MaxFixupCycles {
+					return ActionEscalated, c, fmt.Errorf("strict_gate: no clean closing review round after %d round(s) (MaxFixupCycles=%d); escalating", round, d.cfg.MaxFixupCycles)
+				}
+				if err := d.archiveReviewConsensus(round); err != nil {
+					return ActionEscalated, c, fmt.Errorf("archive review consensus: %w", err)
+				}
+				if err := d.cfg.Impl.OpenReviewRound(ctx, round+1); err != nil {
+					return ActionEscalated, c, fmt.Errorf("open strict closing review round %d: %w", round+1, err)
+				}
+				c.Phase = PhaseReview
+				c.UpdatedAt = nowRFC3339()
+				if err := d.commitCursor(c, ActionReviewOpened, PhaseReview); err != nil {
+					return ActionEscalated, c, err
+				}
+				return ActionReviewOpened, c, nil
+			}
+		}
 		// DONE (D5): the driver — not the implementer — writes status=complete.
 		if err := d.cfg.Impl.Complete(ctx); err != nil {
 			return ActionEscalated, c, fmt.Errorf("mark complete: %w", err)
@@ -263,6 +298,58 @@ func implReadyForReview(status string) bool {
 		return true
 	case strings.HasPrefix(status, "fix-up-cycle"):
 		return true
+	}
+	return false
+}
+
+// reviewRoundHasFindings scans a review round's reviewer files for at least one real
+// finding — a "### [CRITICAL|MAJOR|MINOR|NIT] <title>" heading whose title is non-empty
+// and not the literal "<title>" placeholder from the prompt template. It is a
+// deterministic veto on a strict_gate_clean claim (LE-2): it can only fail a clean
+// claim closed, never auto-pass one.
+func reviewRoundHasFindings(ideaDir string, round int) bool {
+	dir := filepath.Join(ideaDir, "review", roundLabel(round))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".md") || name == "_index.md" || name == "consensus.md" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			continue
+		}
+		if scanHasRealFinding(string(data)) {
+			return true
+		}
+	}
+	return false
+}
+
+// scanHasRealFinding reports whether the content has a severity-tagged finding heading
+// with a concrete (non-placeholder, non-empty) title.
+func scanHasRealFinding(content string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		t := strings.TrimSpace(line)
+		if !strings.HasPrefix(t, "### [") {
+			continue
+		}
+		close := strings.Index(t, "]")
+		if close < 0 {
+			continue
+		}
+		switch t[len("### ["):close] {
+		case "CRITICAL", "MAJOR", "MINOR", "NIT":
+		default:
+			continue
+		}
+		title := strings.TrimSpace(t[close+1:])
+		if title != "" && title != "<title>" {
+			return true
+		}
 	}
 	return false
 }

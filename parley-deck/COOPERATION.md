@@ -154,6 +154,11 @@ The agent (or user) who starts the idea creates `ideas/<slug>/00-prompt.md`:
     strict_gate: true|false     # optional; exact case-insensitive "true" opts into
                                 # the strict review gate (Phase 8); absent or any
                                 # other value keeps the default close rule
+    require_model_diversity: true|false  # optional; LE-3 — escalate (not just warn) if
+                                # every reviewer shares the implementer's model
+    checks: <command>           # optional; LE-4 — verification command the driver runs
+                                # (sh -c) as the Phase 5/8 build-test gate; a code-writing
+                                # (auto_implement) idea with no checks and no go.mod fails closed
     status: round-01            # round-N | consensus | final | abandoned
     ---
 
@@ -363,6 +368,7 @@ Once `IMPLEMENTATION.md` is published, every active participant **except the imp
     ---
 
     ## Summary            (1–3 sentences on overall health of the implementation)
+    ## Refutation attempts (per FINAL.md criterion: what you tried to break and the result)
     ## Findings
     ### [CRITICAL] <short title>
     <what is wrong, why it blocks, concrete suggested fix>
@@ -372,6 +378,8 @@ Once `IMPLEMENTATION.md` is published, every active participant **except the imp
     ## Open questions
 
 **Severity tags** are fixed: `CRITICAL` (must fix before merge), `MAJOR` (should fix before merge), `MINOR` (nice to have), `NIT` (stylistic / optional). The implementer does not write a review-round file — they respond in Phase 7. Where `FINAL.md` states observable acceptance criteria, reviewers should check the implementation against them and may cite a criterion in a finding; this does **not** change the severity vocabulary — it only makes severity assignment less subjective.
+
+**Refutation-default (LE-1).** Reviewers assume the implementation is wrong until they fail to break it: for each observable acceptance criterion, attempt a failing case or run the relevant check, and record those attempts under `## Refutation attempts`. A "no findings" review is credible only with refutation attempts recorded — the driver's review-artifact validation requires the section. **Model diversity (LE-3):** a checker sharing the implementer's model is likelier to rubber-stamp; under auto-drive the driver warns when every reviewer shares the implementer's model, and `require_model_diversity: true` makes it a hard gate.
 
 If there is no invokable non-implementer reviewer, the implementation MUST NOT be merged or marked complete under Parley Deck. The implementer MUST report the blocker and continue only after either another reviewer is added or the user explicitly authorizes a recorded solo exception.
 
@@ -479,6 +487,14 @@ remain findings and remain blocking.
 removing, or changing it requires either review/design consensus or explicit
 operator direction recorded in the idea. A participant MUST NOT silently relax a
 strict gate during implementation or review.
+
+**Driver enforcement (LE-2).** Under auto-drive this gate is machine-enforced, not
+advisory: the driver reads `strict_gate` from `00-prompt.md`; the Phase 7
+review-consensus drafter sets the machine-readable `closing_review_round` and
+`strict_gate_clean` fields; and the driver completes only when the named closing round
+is certified clean AND a deterministic finding-scan of that round's review files finds
+no concrete finding. The scan can only veto a clean claim (fail closed), never
+auto-pass one, and the strict-close loop is bounded by the fix-up budget.
 
 #### Stopping judgment
 

@@ -59,7 +59,12 @@ type Config struct {
 	AutoImplement bool
 	// MaxFixupCycles bounds the review→fix-up loop (default 3).
 	MaxFixupCycles int
-	Out            io.Writer // progress output (nil → discard)
+	// StrictGate (LE-2), when set, requires a fresh full-scope closing review round
+	// certified clean (drafter strict_gate_clean + deterministic finding-scan veto)
+	// before Complete(), not merely outstanding_agreed_fixes == 0. Read per idea from
+	// 00-prompt `strict_gate`. The strict-close loop is bounded by MaxFixupCycles.
+	StrictGate bool
+	Out        io.Writer // progress output (nil → discard)
 }
 
 // Driver advances one idea through the deliberation phases via Advance ticks.
