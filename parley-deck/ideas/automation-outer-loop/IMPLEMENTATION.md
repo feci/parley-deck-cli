@@ -6,8 +6,8 @@ started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
-review-round: 3
-fixup-cycle: 3
+review-round: 4
+fixup-cycle: 4
 ---
 
 ## Summary of work
@@ -136,3 +136,25 @@ New tests: `TestTickRejectsSymlinkedSlugDir`, `TestTickDetailCannotInjectHeading
 
 **Resolved/deferred:** codex's `internal/runner` durable-kill failure is the codex-sandbox
 limitation (green locally); DF1/DF4 carry forward.
+
+## Fix-up cycle 4 (round-04 review consensus)
+
+Round-04: antigravity-1 clean ("converged"); codex-1 + hermes-1 both found the same MAJOR
+(the symlink class one level up) + codex a MINOR. All applied; suite + drift guard green;
+AF14 verified end-to-end (a planted `ideas/` parent symlink is refused, nothing written to
+the target).
+
+- **AF14 (MAJOR)** — a symlink at `parley-deck/ideas/` (parent of the slug) was still
+  followed via `os.MkdirAll(ideasDir)`. Fix: a `safeMkdir` helper guards BOTH `ideas/` and
+  `ideas/<slug>` (os.Mkdir + Lstat-reject-symlink/non-dir), plus a depth-complete
+  `assertInsideDeck` containment check (`EvalSymlinks` + `Rel`) that rejects a slug dir
+  resolving outside the deck through a symlink at ANY ancestor.
+- **AF15 (MINOR)** — `indentDetail` now normalizes the C0 line separators (`\v`, `\f`,
+  U+001C/1D/1E) in addition to CR/U+0085/U+2028/U+2029, so no Detail token reaches column 0
+  under any line splitter; other C0 controls become spaces.
+
+New tests: `TestTickRejectsSymlinkedIdeasParent`, `TestTickIndentsC0SeparatorsInDetail`.
+
+**Out of scope (follow-up):** DF5 — `retro propose` is vulnerable to the same `ideas/`
+parent-symlink class (hermes); hardening `retro` is a separate idea. The loop's
+`assertInsideDeck` is now stricter than that precedent.

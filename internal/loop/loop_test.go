@@ -296,6 +296,65 @@ func TestTickDetailCannotInjectHeadingOrFence(t *testing.T) {
 	}
 }
 
+// AF14: a symlink at the ideas/ PARENT (one level above the slug) must NOT be followed —
+// the candidate must never be written outside the deck through an ancestor symlink.
+func TestTickRejectsSymlinkedIdeasParent(t *testing.T) {
+	deck := filepath.Join(t.TempDir(), "parley-deck")
+	target := t.TempDir()
+	if err := os.MkdirAll(deck, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(deck, "ideas")); err != nil {
+		t.Skipf("symlink unsupported: %v", err)
+	}
+	_, err := Tick(deck, Config{Enabled: true}, []Candidate{{Source: "commit", ID: "parent-escape"}}, fixedNow())
+	if err == nil {
+		t.Fatal("a symlinked ideas/ parent must be rejected (AF14)")
+	}
+	if entries, _ := os.ReadDir(target); len(entries) != 0 {
+		t.Fatalf("AF14: must not write through the ideas/ symlink; target has %d entries", len(entries))
+	}
+}
+
+// AF15: C0 line separators (vertical tab, form feed, U+001C/1D/1E) inside Detail are
+// normalized to newlines and indented — no token reaches column 0 under any line splitter.
+func TestTickIndentsC0SeparatorsInDetail(t *testing.T) {
+	deck := filepath.Join(t.TempDir(), "parley-deck")
+	fsr, gsr, rsr := string(rune(0x1c)), string(rune(0x1d)), string(rune(0x1e))
+	detail := "ok\v## vt heading\f--- ff fence" + fsr + "status: fs" + gsr + "participants: gs" + rsr + "checks: rs"
+	res, err := Tick(deck, Config{Enabled: true}, []Candidate{{Source: "ci", ID: "c0", Detail: detail}}, fixedNow())
+	if err != nil || len(res.Created) != 1 {
+		t.Fatalf("expected one candidate; got %+v / %v", res, err)
+	}
+	body := readPrompt(t, deck, res.Created[0])
+	structural := map[string]bool{
+		"## Problem / idea": true, "## Signal detail": true, "## Promotion": true,
+		"## Constraints": true, "## Non-goals": true,
+	}
+	fences, statusKeys, partKeys, checkKeys := 0, 0, 0, 0
+	for _, line := range strings.Split(body, "\n") {
+		if line == "---" {
+			fences++
+		}
+		if strings.HasPrefix(line, "## ") && !structural[line] {
+			t.Fatalf("C0-separated Detail injected a column-0 heading %q:\n%s", line, body)
+		}
+		if strings.HasPrefix(line, "status:") {
+			statusKeys++
+		}
+		if strings.HasPrefix(line, "participants:") {
+			partKeys++
+		}
+		if strings.HasPrefix(line, "checks:") {
+			checkKeys++
+		}
+	}
+	if fences != 2 || statusKeys != 1 || partKeys != 0 || checkKeys != 0 {
+		t.Fatalf("C0 separators leaked structure (fences=%d status=%d participants=%d checks=%d):\n%s",
+			fences, statusKeys, partKeys, checkKeys, body)
+	}
+}
+
 // AF1: an unknown source is rejected (fail closed) — no idea is drafted for it.
 func TestTickRejectsUnknownSource(t *testing.T) {
 	deck := filepath.Join(t.TempDir(), "parley-deck")

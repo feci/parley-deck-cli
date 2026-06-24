@@ -192,6 +192,45 @@ func Tick(deck string, cfg Config, signals []Candidate, now time.Time) (TickResu
 	return res, nil
 }
 
+// safeMkdir ensures `dir` exists as a REAL directory without following a symlink at
+// `dir` itself (AF10/AF14). os.Mkdir never creates through a symlink, so on ErrExist we
+// Lstat (which does not follow links) and reject a symlink or non-directory. An existing
+// real directory (e.g. an empty dir healed per AF7) is accepted.
+func safeMkdir(dir string) error {
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		if !errors.Is(err, fs.ErrExist) {
+			return err
+		}
+		fi, lerr := os.Lstat(dir)
+		if lerr != nil {
+			return lerr
+		}
+		if fi.Mode()&os.ModeSymlink != 0 || !fi.IsDir() {
+			return fmt.Errorf("loop: refusing %s: a symlink or non-directory", dir)
+		}
+	}
+	return nil
+}
+
+// assertInsideDeck rejects a slug dir that resolves — through any symlink at any path
+// component — to a location outside the deck (AF14). It is the depth-complete companion
+// to safeMkdir's per-level leaf guards.
+func assertInsideDeck(deck, dir string) error {
+	realDeck, err := filepath.EvalSymlinks(deck)
+	if err != nil {
+		return err
+	}
+	realDir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return err
+	}
+	rel, err := filepath.Rel(realDeck, realDir)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("loop: refusing %s: resolves outside the deck %s", realDir, realDeck)
+	}
+	return nil
+}
+
 // writeCandidate writes ideas/<slug>/00-prompt.md as a non-active candidate (§14 /
 // §12.11 shape): status: candidate, NO `participants:` claim, a `## Promotion` note.
 // It returns created=false (no error) when the candidate already exists.
@@ -208,27 +247,27 @@ func Tick(deck string, cfg Config, signals []Candidate, now time.Time) (TickResu
 // PRESERVED (a multi-line stack trace / log stays readable); the closed frontmatter
 // above it means body newlines cannot inject a frontmatter key.
 func writeCandidate(deck, slug string, c Candidate, now time.Time) (bool, error) {
+	// The deck root is the user's trusted workspace; create it permissively.
+	if err := os.MkdirAll(deck, 0o755); err != nil {
+		return false, err
+	}
+	// AF10/AF14: a loop must only ever write inside parley-deck/ideas/<slug>/. Guard
+	// BOTH the `ideas/` parent and the `ideas/<slug>` leaf against a planted symlink —
+	// a symlink at EITHER would otherwise let the prompt land outside the deck.
 	ideasDir := filepath.Join(deck, "ideas")
-	if err := os.MkdirAll(ideasDir, 0o755); err != nil {
+	if err := safeMkdir(ideasDir); err != nil {
 		return false, err
 	}
 	dir := filepath.Join(ideasDir, slug)
-	// AF10: never follow a pre-existing symlink for the slug dir — a loop must only
-	// ever write inside parley-deck/ideas/<slug>/, never through a planted symlink to
-	// somewhere else. os.Mkdir does not create through / follow a symlink, so on
-	// ErrExist we Lstat (which does not follow links) and reject a symlink / non-dir.
-	if err := os.Mkdir(dir, 0o755); err != nil {
-		if !errors.Is(err, fs.ErrExist) {
-			return false, err
-		}
-		fi, lerr := os.Lstat(dir)
-		if lerr != nil {
-			return false, lerr
-		}
-		if fi.Mode()&os.ModeSymlink != 0 || !fi.IsDir() {
-			return false, fmt.Errorf("loop: refusing slug %q: %s is a symlink or non-directory", slug, dir)
-		}
-		// a real, existing directory (e.g. an empty dir healed per AF7) → fall through
+	if err := safeMkdir(dir); err != nil {
+		return false, err
+	}
+	// AF14: belt-and-suspenders containment — the slug dir, resolved through every
+	// symlink, must stay inside the resolved deck. The per-level safeMkdir guards above
+	// catch a symlink at ideas/ or ideas/<slug>; this one closes the whole class at ANY
+	// ancestor depth in a single place (e.g. a future symlink higher up the path).
+	if err := assertInsideDeck(deck, dir); err != nil {
+		return false, err
 	}
 	promptPath := filepath.Join(dir, "00-prompt.md")
 	f, err := os.OpenFile(promptPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
@@ -302,20 +341,35 @@ round-01 (the non-solo Phase-0 invariant).
 
 // indentDetail renders the free-form Detail as a markdown indented code block with
 // newlines preserved (AF6), so multi-line provenance (a stack trace, a log excerpt)
-// stays readable. Indentation makes the content literal, so it cannot inject a
-// heading or otherwise disturb the prompt's own structure. CR is normalized to LF.
+// stays readable. Every line carries a four-space prefix, so no Detail content can
+// reach column 0 to masquerade as a heading, a `---` fence, or a frontmatter key.
 func indentDetail(s string) string {
-	// AF11: normalize EVERY line break — CR/CRLF and the Unicode/YAML separators
-	// U+2028/U+2029/U+0085 — to "\n" before splitting, so each logical line gets the
-	// four-space prefix. Otherwise a separator a markdown renderer treats as a line
-	// break could push `## heading` / `---` / `status:` to column 0 inside the block.
-	ls, ps, nel := string(rune(0x2028)), string(rune(0x2029)), string(rune(0x0085))
-	s = strings.NewReplacer("\r\n", "\n", "\r", "\n", ls, "\n", ps, "\n", nel, "\n").Replace(s)
-	s = strings.TrimSpace(s) // AF12: drop leading/trailing blank lines, not just trailing
-	if s == "" {
+	// AF11/AF15: normalize EVERY line-break-like separator to "\n" before splitting, so
+	// each logical line gets the four-space prefix under ANY line splitter (LF scanners,
+	// CommonMark, Python splitlines): CR/CRLF, vertical tab, form feed, the C0 info
+	// separators U+001C/U+001D/U+001E, and the Unicode/YAML breaks U+0085/U+2028/U+2029.
+	// Other C0 controls become spaces (they carry no line/structure semantics). \t is kept.
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '\n' || r == '\r' || r == '\v' || r == '\f' ||
+			r == 0x1c || r == 0x1d || r == 0x1e ||
+			r == 0x85 || r == 0x2028 || r == 0x2029:
+			b.WriteByte('\n')
+		case r == '\t':
+			b.WriteByte('\t')
+		case r < 0x20:
+			b.WriteByte(' ')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	out := strings.TrimSpace(b.String()) // AF12: drop leading/trailing blank lines
+	if out == "" {
 		return "    (no detail provided)"
 	}
-	lines := strings.Split(s, "\n")
+	lines := strings.Split(out, "\n")
 	for i := range lines {
 		lines[i] = "    " + lines[i]
 	}

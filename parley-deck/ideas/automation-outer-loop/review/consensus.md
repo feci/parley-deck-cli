@@ -120,7 +120,37 @@ New tests: `TestTickRejectsSymlinkedSlugDir` (AF10), `TestTickDetailCannotInject
 
 `gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift guard) — green.
 AF10 verified end-to-end (a planted symlink is refused; nothing written to the target).
-Round-04 re-review requested from all three reviewers.
+
+## Round-04 re-review — new agreed fixes (fix-up cycle 4)
+
+Round-04: antigravity-1 **no findings** ("the review has converged"); codex-1 and hermes-1
+**both independently** found the same MAJOR — AF10 guarded only the slug leaf, not the
+`ideas/` parent, so a symlink one level up still escaped. (codex additionally found a MINOR
+gap in `indentDetail`.) Both reviewers recommended a depth-complete containment check.
+
+| ID | Severity | Raised by | Fix |
+|----|----------|-----------|-----|
+| **AF14** | MAJOR (codex + hermes) | A symlink at `parley-deck/ideas/` (the parent of the slug dir) was still followed: `os.MkdirAll(ideasDir)` is idempotent on a symlink-to-dir, so the slug dir + prompt were created through it, outside the deck. Both reproduced it end-to-end. Fix: (1) `safeMkdir` now guards BOTH `ideas/` and `ideas/<slug>` (os.Mkdir + Lstat-reject-symlink/non-dir, no MkdirAll on `ideas/`); (2) a depth-complete `assertInsideDeck` containment check — the slug dir, resolved via `filepath.EvalSymlinks`, must stay inside the resolved deck (`filepath.Rel` not `..`) — catches a symlink at ANY ancestor depth in one place. Verified end-to-end: a planted `ideas/` symlink is refused, nothing written to the target. |
+| **AF15** | MINOR (codex) | `indentDetail` normalized CR/U+2028/U+2029/U+0085 but not the C0 separators (vertical tab `\v`, form feed `\f`, U+001C/U+001D/U+001E) — a broad line splitter (e.g. Python `splitlines`) would treat them as line breaks and leave `## heading` / `---` / `status:` at column 0. Fix: `indentDetail` normalizes every line-break-like separator (CR/CRLF, `\v`, `\f`, U+001C/1D/1E, U+0085/U+2028/U+2029) to `\n` before indenting; other C0 controls become spaces; `\t` is kept. |
+
+New tests: `TestTickRejectsSymlinkedIdeasParent` (AF14), `TestTickIndentsC0SeparatorsInDetail`
+(AF15).
+
+### Calibration (round-04)
+
+- antigravity-1 returned a fully clean pass (0/0/0/0). The MAJOR was found only by the two
+  reviewers who escalated the symlink class one directory level up — the value of keeping
+  three independent lenses through a converging review.
+- hermes noted `retro propose` is itself vulnerable to the same `ideas/` parent-symlink
+  class (so the round-03 "matches retro propose's precedent" framing slightly overstated the
+  precedent). Hardening `retro` is **out of scope** for this idea; flagged as a follow-up
+  (DF5) — the loop's own `assertInsideDeck` is now stricter than the precedent.
+
+## Verification after fix-up cycle 4
+
+`gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (incl. drift guard) — green.
+AF14 verified end-to-end (a planted `ideas/` parent symlink is refused; nothing written to
+the target). Round-05 re-review requested from all three reviewers.
 
 ## Signoffs
 
