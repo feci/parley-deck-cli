@@ -1,11 +1,18 @@
 ---
 idea: loop-budgets
-review-cycle: 1
+review-cycle: 2
 drafted-by: claude-1
 date: 2026-06-24
-outstanding_agreed_fixes: 3
+outstanding_agreed_fixes: 0
 blocked: false
 ---
+
+## Cycle 2 resolution
+
+All 3 cycle-1 agreed fixes (F-T2-1/2/3) applied; round-02 re-review was **3/3 zero
+findings** (codex-1, hermes-1, antigravity-1) — codex's MAJOR `0`-override and both MINORs
+confirmed resolved, no fail-open or safety regression introduced. Outstanding agreed
+fixes: 0.
 
 ## Agreed fixes
 
@@ -45,4 +52,31 @@ no fail-open path. The `0`-override gap was a single-reviewer catch but a real
 acceptance-criterion miss — fixed with presence-aware config + flag.Visit.
 
 ## Signoffs
-_Appended after the fix-up + re-review (round-02)._
+
+**Outcome: 3/3 ACCEPT (unanimous, no BLOCK) → Phase 8 complete.**
+
+### Signoff: codex-1 — 2026-06-24
+Status: ACCEPT
+The round-01 MAJOR (`0`-override) is fixed and my round-02 reported zero findings: deck
+config can now override the central seed to unlimited and `parley run --max-driver-steps=0`
+/ `--max-wall-clock=0` override inherited defaults; the two MINORs (cost observability,
+Run-level breach test) also hold.
+_(Facilitator note: codex-1 authored this signoff but its filesystem sandbox blocked the
+write — the target path `../signoff-codex-1.md` resolved outside its writable root.
+Transcribed verbatim from its run output per the protocol's tooling-failure exception;
+source at `tasks/b7r6ehq3q.output`.)_
+
+### Signoff: hermes-1 — 2026-06-24
+Status: ACCEPT
+I reported zero findings in both round-01 and round-02; the three agreed fixes (F-T2-1
+presence-aware `0`-override, F-T2-2 unconditional cost observability, F-T2-3 Run-level
+breach test) are correctly implemented with no fail-open path, and all three reviewers
+independently converged on zero findings in round-02 with touched-package tests green. The
+deferred follow-ups (agent.usage emission, loopCostUSD O(steps × events) re-reads) remain
+explicitly out of scope and tracked.
+
+### Signoff: antigravity-1 — 2026-06-24
+Status: ACCEPT
+The fix-up implementation successfully addresses the unlimited budget escape hatch. The
+presence-aware merges and CLI override logic have been thoroughly verified and introduce no
+safety regressions.

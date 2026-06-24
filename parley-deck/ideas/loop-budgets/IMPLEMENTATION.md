@@ -1,6 +1,6 @@
 ---
 idea: loop-budgets
-status: fix-up-cycle-1
+status: complete
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
