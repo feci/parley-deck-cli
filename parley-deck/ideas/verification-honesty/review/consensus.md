@@ -90,4 +90,30 @@ concern was seen by antigravity-1 and explicitly dismissed by hermes-1 → defer
 ignored.
 
 ## Signoffs
-_Appended after the fix-up + re-review (round-02)._
+
+**Outcome: 3/3 ACCEPT (unanimous, no BLOCK) → Phase 8 complete.**
+
+### Signoff: codex-1 — 2026-06-24
+Status: ACCEPT
+I accept the cycle-2 review consensus: it records zero outstanding agreed fixes after
+F9/F10/F11, and my spot-check of `2dd5782..HEAD` shows the scanner now catches
+placeholder-with-content and heading-level variants while unreadable review files fail
+closed. The narrow verification command `go test ./internal/driver` passes.
+
+### Signoff: hermes-1 — 2026-06-24
+Status: ACCEPT
+My round-02 re-review reported zero findings: the fail-closed scan (my round-01 MAJOR, F1)
+holds, the strict_gate close logic has no remaining fail-open path, and all agreed fixes
+F1-F8 are correctly implemented with passing tests. Fix-up cycle 2 closed my sole round-02
+open question (per-file ReadFile-error coverage) with F11's dangling-symlink veto test;
+`go build ./...` and `go test ./internal/driver/...` are green. With outstanding_agreed_fixes
+at 0 and the scan-evasion edge cases (F9/F10) resolved, the verification-honesty
+implementation is sound.
+
+### Signoff: antigravity-1 — 2026-06-24
+Status: ACCEPT
+Both round-02 findings (F9 and F10) have been successfully resolved, and all tests pass
+cleanly. The scan-evasion fix (F9) and the tolerance for heading levels ## to ###### (F10)
+are correctly implemented in `internal/driver/impl.go`. The documented out-of-scope
+decision for bullet, bold, and prose shapes is acceptable as these off-spec formats fall
+outside the deterministic backstop's parsing rules.
