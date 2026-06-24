@@ -44,10 +44,13 @@ type timeoutsBlock struct {
 
 // loopBlock is the [defaults.loop] policy: explicit auto-drive loop ceilings (LE-5).
 // A breach escalates and halts; it never marks an idea complete. 0 = unlimited.
+// Fields are pointers so a deliberate `= 0` at a higher layer overrides a lower
+// layer's seeded value (presence-aware merge); absence (nil) falls through (review
+// fix F-T2-1).
 type loopBlock struct {
-	MaxDriverSteps int     `toml:"max_driver_steps"`
-	MaxWallClockMS int     `toml:"max_wall_clock_ms"`
-	MaxCostUSD     float64 `toml:"max_cost_usd"`
+	MaxDriverSteps *int     `toml:"max_driver_steps"`
+	MaxWallClockMS *int     `toml:"max_wall_clock_ms"`
+	MaxCostUSD     *float64 `toml:"max_cost_usd"`
 }
 
 // CentralDefaults are the merged [defaults] policy knobs across the layered
@@ -200,14 +203,16 @@ func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
 		}
 	}
 	if gd.Loop != nil {
-		if gd.Loop.MaxDriverSteps > 0 {
-			out.MaxDriverSteps = gd.Loop.MaxDriverSteps
+		// Presence-aware (F-T2-1): a deliberate `= 0` overrides a lower layer's seed
+		// to unlimited; absence (nil) falls through.
+		if gd.Loop.MaxDriverSteps != nil {
+			out.MaxDriverSteps = *gd.Loop.MaxDriverSteps
 		}
-		if gd.Loop.MaxWallClockMS > 0 {
-			out.MaxWallClockMS = gd.Loop.MaxWallClockMS
+		if gd.Loop.MaxWallClockMS != nil {
+			out.MaxWallClockMS = *gd.Loop.MaxWallClockMS
 		}
-		if gd.Loop.MaxCostUSD > 0 {
-			out.MaxCostUSD = gd.Loop.MaxCostUSD
+		if gd.Loop.MaxCostUSD != nil {
+			out.MaxCostUSD = *gd.Loop.MaxCostUSD
 		}
 	}
 }

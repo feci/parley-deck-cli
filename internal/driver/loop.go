@@ -152,11 +152,10 @@ func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 }
 
 // emitLoopBudget records budget burn after a progress step so the TUI/state can show it.
+// Cost is always reported for observability (F-T2-2); only enforcement is gated by
+// MaxCostUSD > 0 (in loopBudgetBreach).
 func (d *Driver) emitLoopBudget(steps int, start time.Time) {
-	cost := 0.0
-	if d.cfg.MaxCostUSD > 0 {
-		cost = d.loopCostUSD()
-	}
+	cost := d.loopCostUSD()
 	_ = d.cfg.Events.Append(store.Event{
 		Time: time.Now().UTC(),
 		Type: "loop.budget",

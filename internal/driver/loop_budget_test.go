@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -94,5 +95,48 @@ func TestEscalateLoopBudgetWritesInbox(t *testing.T) {
 	note := filepath.Join(deck, "inbox", "claude-to-user_demo_loop-budget.md")
 	if _, err := os.Stat(note); err != nil {
 		t.Fatalf("expected a loop-budget inbox note at %s: %v", note, err)
+	}
+}
+
+// F-T2-2: the loop.budget event reports observed cost even when cost is unlimited
+// (MaxCostUSD == 0) — unlimited disables enforcement, not observability.
+func TestEmitLoopBudgetReportsCostWhenUnlimited(t *testing.T) {
+	runDir := t.TempDir()
+	st := store.New(runDir)
+	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"cost_usd": 4.0}})
+	d := New(Config{IdeaSlug: "demo", RunDir: runDir, Events: st, MaxCostUSD: 0}, &fakeRunner{})
+	d.emitLoopBudget(1, time.Now())
+	evs, err := store.New(runDir).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range evs {
+		if e.Type != "loop.budget" {
+			continue
+		}
+		c, ok := e.Data["cost_usd"].(float64)
+		if !ok || c < 3.9 || c > 4.1 {
+			t.Fatalf("loop.budget cost_usd = %v, want ~4.0 even when MaxCostUSD=0", e.Data["cost_usd"])
+		}
+		return
+	}
+	t.Fatal("expected a loop.budget event")
+}
+
+// F-T2-3: a Run with an already-elapsed wall-clock budget escalates via the inbox note
+// on the first pre-Advance check and never reaches Complete.
+func TestRunEscalatesOnLoopBudget(t *testing.T) {
+	deck := t.TempDir()
+	runDir := filepath.Join(deck, "runs", "r1")
+	if err := os.MkdirAll(runDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	d := New(Config{IdeaSlug: "demo", RunDir: runDir, Events: store.New(runDir), MaxWallClock: time.Nanosecond}, &fakeRunner{})
+	if err := d.Run(context.Background()); err != nil {
+		t.Fatalf("Run should halt cleanly on a budget breach, got err=%v", err)
+	}
+	note := filepath.Join(deck, "inbox", "claude-to-user_demo_loop-budget.md")
+	if _, err := os.Stat(note); err != nil {
+		t.Fatalf("Run must write the loop-budget inbox note on breach: %v", err)
 	}
 }

@@ -1,6 +1,6 @@
 ---
 idea: loop-budgets
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
@@ -64,3 +64,28 @@ driver (LE-5/6) + the non-solo fix for the pipeline watcher (LE-10), per `FINAL.
   and that no `Complete` path is reachable after a breach.
 - Try to break: a step/wall-clock ceiling of 1; a `[defaults.loop]` deck override vs the
   central seed; an `agent.usage` event with a non-float `cost_usd`.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-24
+
+### Fixes applied
+(From review/round-01: antigravity-1 + hermes-1 zero findings; codex-1 1 MAJOR + 2 MINOR.)
+- **F-T2-1 [MAJOR]** — `0` now overrides a seeded budget. `loopBlock` fields are
+  `*int`/`*float64` (presence-aware `mergeDefaults` — explicit `= 0` overrides a lower
+  layer); `run` flags use `flag.Visit` so an explicit `--max-driver-steps=0` /
+  `--max-wall-clock=0` means unlimited while omission uses defaults; flag help corrected to
+  "explicit 0 = unlimited; omit to use ~/.parley". (`internal/config/runtime.go`,
+  `internal/app/app.go`.)
+- **F-T2-2 [MINOR]** — `emitLoopBudget` now computes `loopCostUSD()` unconditionally so the
+  `loop.budget` event reports observed spend even when cost is unlimited; only enforcement
+  stays gated by `MaxCostUSD > 0`. (`internal/driver/loop.go`.)
+- **F-T2-3 [MINOR]** — added `TestRunEscalatesOnLoopBudget` (Run-level breach → inbox note,
+  never Complete), `TestEmitLoopBudgetReportsCostWhenUnlimited`, and
+  `TestLoopDefaultsDeckZeroOverridesCentralSeed`.
+
+### Deviations from agreed fixes
+- codex-1's open question (separate `--no-loop-budget` flag) was resolved per FINAL.md:
+  explicit `=0` is the unlimited override; no extra flag added.
+
+`go build`, `go vet`, `go test -count=1 ./...`, and the drift guard are green.

@@ -1114,19 +1114,15 @@ func runContinue(ctx context.Context, args []string, stdout, stderr io.Writer) i
 // continueAuto reconstructs the driver for an existing run and ticks it forward
 // (consensus D9): `parley continue --auto` EXECUTES the next action instead of
 // only printing it. Reuses the same gates/adapters as `parley run --auto`.
-// loopBudget resolves the LE-5 auto-drive loop ceilings: ~/.parley [defaults.loop]
-// seeds them; non-zero CLI overrides win. 0 = unlimited.
-func loopBudget(root string, stepsOverride int, wallOverride time.Duration) (steps int, wall time.Duration, cost float64) {
+// loopBudget resolves the LE-5 auto-drive loop ceilings from the layered config
+// (~/.parley [defaults.loop] seeds them, the deck overrides). 0 = unlimited. Run-flag
+// overrides (including an explicit 0 = unlimited) are applied by the caller via
+// flag.Visit so absence stays distinct from a deliberate 0 (review fix F-T2-1).
+func loopBudget(root string) (steps int, wall time.Duration, cost float64) {
 	if defs, err := config.LoadDefaults(root); err == nil {
 		steps = defs.MaxDriverSteps
 		wall = time.Duration(defs.MaxWallClockMS) * time.Millisecond
 		cost = defs.MaxCostUSD
-	}
-	if stepsOverride > 0 {
-		steps = stepsOverride
-	}
-	if wallOverride > 0 {
-		wall = wallOverride
 	}
 	return steps, wall, cost
 }
@@ -1150,7 +1146,7 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 		Agents: discovered,
 		Store:  store.New(run.RunDir),
 	}
-	lbSteps, lbWall, lbCost := loopBudget(root, 0, 0)
+	lbSteps, lbWall, lbCost := loopBudget(root)
 	d := driver.New(driver.Config{
 		IdeaDir:           ideaDir,
 		IdeaSlug:          run.IdeaSlug,
@@ -1717,8 +1713,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	auto := fs.Bool("auto", true, "auto-drive the protocol past round-01 (default; use --no-auto to disable)")
 	noAuto := fs.Bool("no-auto", false, "disable auto-drive: stop after round-01 and advance the protocol manually")
 	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
-	maxDriverSteps := fs.Int("max-driver-steps", 0, "auto-drive loop ceiling: max progress steps before escalating (0 = use ~/.parley [defaults.loop])")
-	maxWallClock := fs.Duration("max-wall-clock", 0, "auto-drive loop ceiling: total wall-clock budget before escalating, e.g. 90m (0 = use ~/.parley [defaults.loop])")
+	maxDriverSteps := fs.Int("max-driver-steps", 0, "auto-drive loop ceiling: max progress steps before escalating (explicit 0 = unlimited; omit to use ~/.parley [defaults.loop])")
+	maxWallClock := fs.Duration("max-wall-clock", 0, "auto-drive loop ceiling: total wall-clock budget before escalating, e.g. 90m (explicit 0 = unlimited; omit to use ~/.parley [defaults.loop])")
 	noPreflight := fs.Bool("no-preflight", false, "skip the pre-idea readiness check (CI escape)")
 	noPing := fs.Bool("no-ping", false, "preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
@@ -1736,8 +1732,17 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "usage: parley run [--no-tui] [--no-auto] [--participants AGENTS] [--yes] TASK")
 		return 2
 	}
-	// LE-5 loop ceilings: ~/.parley [defaults.loop] seeds them, run flags override.
-	lbSteps, lbWall, lbCost := loopBudget(*root, *maxDriverSteps, *maxWallClock)
+	// LE-5 loop ceilings: ~/.parley [defaults.loop] seeds them; an explicitly-passed
+	// run flag (even =0 for unlimited) overrides via flag.Visit (review fix F-T2-1).
+	lbSteps, lbWall, lbCost := loopBudget(*root)
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "max-driver-steps":
+			lbSteps = *maxDriverSteps
+		case "max-wall-clock":
+			lbWall = *maxWallClock
+		}
+	})
 
 	workspaceStatus, err := protocol.ReadWorkspaceStatus(*root)
 	if err != nil {
