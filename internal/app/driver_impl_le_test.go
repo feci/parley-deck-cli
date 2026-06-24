@@ -78,6 +78,41 @@ func TestRunChecksDesignOnlyPasses(t *testing.T) {
 	}
 }
 
+// CF1: newDriverImplOps dedupes to distinct non-implementer reviewer IDs, so duplicate
+// participant entries (e.g. [impl, rev, rev]) cannot inflate ReviewerCount past the LE-11
+// `< 2` guard nor launch duplicate review goroutines onto the same artifact files.
+func TestNewDriverImplOpsDedupesReviewers(t *testing.T) {
+	root := t.TempDir()
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "demo")
+	writePrompt(t, ideaDir, "") // no role metadata → implementer = participants[0]
+	ops := newDriverImplOps(runner.Options{}, root, "demo", ideaDir, []string{"claude", "codex", "codex"}, io.Discard)
+	o, ok := ops.(driverImplOps)
+	if !ok {
+		t.Fatalf("expected driverImplOps, got %T", ops)
+	}
+	if len(o.reviewers) != 1 || o.reviewers[0] != "codex" {
+		t.Fatalf("duplicate reviewer IDs must collapse to one; got %v", o.reviewers)
+	}
+	// Two distinct reviewers + a duplicate → two reviewers, order preserved.
+	ops2 := newDriverImplOps(runner.Options{}, root, "demo", ideaDir, []string{"claude", "codex", "agy", "codex"}, io.Discard)
+	o2 := ops2.(driverImplOps)
+	if got := strings.Join(o2.reviewers, ","); got != "codex,agy" {
+		t.Fatalf("expected distinct reviewers [codex,agy], got %v", o2.reviewers)
+	}
+}
+
+// CF6: GoalCheck fails open (advisory) without running any agent when the only available
+// checker is the implementer itself (drafter == implementer) — it never runs the
+// implementer as its own goal checker.
+func TestGoalCheckNoIndependentChecker(t *testing.T) {
+	o := newOpsFor(t.TempDir(), t.TempDir(), nil, "claude", nil)
+	o.drafter = "claude" // == implementer
+	ok, detail := o.GoalCheck(context.Background())
+	if !ok {
+		t.Fatalf("goal-check with no independent checker must fail open; got (%v, %q)", ok, detail)
+	}
+}
+
 // LE-3: model-diversity detection — all reviewers same model as implementer vs differing.
 func TestReviewersShareImplementerModel(t *testing.T) {
 	same := []agents.Discovery{

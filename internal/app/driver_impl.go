@@ -37,9 +37,16 @@ type driverImplOps struct {
 
 func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, participants []string, out io.Writer) driver.ImplOps {
 	implementer := resolveImplementer(ideaDir, participants)
+	// Dedupe to distinct non-implementer IDs (review CF1). Duplicate participant
+	// IDs (e.g. [impl, rev, rev]) would otherwise (a) inflate ReviewerCount so the
+	// LE-11 `< 2` guard passes with a single real reviewer, and (b) make
+	// RunReviewRound launch one goroutine per duplicate, all writing the same
+	// agents/<id>/stdout.log and review/round-NN/<id>.md concurrently (a write race).
 	var reviewers []string
+	seen := make(map[string]bool)
 	for _, p := range participants {
-		if p != implementer {
+		if p != implementer && !seen[p] {
+			seen[p] = true
 			reviewers = append(reviewers, p)
 		}
 	}
@@ -335,6 +342,14 @@ func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
 // (false, …) so a broken checker never blocks an already-review-clean idea.
 func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	checker := o.drafter
+	// CF6: GoalCheck must use a non-implementer checker. The upstream guards
+	// (ReviewerCount < 2 under auto; OpenReviewRound under strict) already prevent
+	// the drafter==implementer fallback from reaching here, but enforce the contract
+	// locally too — never run the implementer as its own goal checker; fail open.
+	if checker == o.implementer {
+		fmt.Fprintf(o.out, "driver: goal-check skipped — no independent checker (drafter is the implementer) (advisory)\n")
+		return true, "advisory: goal-check has no independent checker"
+	}
 	agent, ok := o.discoveryFor(checker)
 	if !ok {
 		fmt.Fprintf(o.out, "driver: goal-check skipped — checker %q not discovered (advisory)\n", checker)
@@ -344,8 +359,13 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	dir := filepath.Join(o.root, protocol.DeckDir, "runs", o.base.RunID, "agents", checker)
 	_ = os.MkdirAll(dir, 0o755)
 	res := runner.RunConsult(ctx, runner.ConsultOptions{
-		Root:       o.root,
-		Agent:      agent,
+		Root:  o.root,
+		Agent: agent,
+		// CF3: the goal-check is an advisory fail-open gate, so bound it tightly.
+		// Without an explicit timeout it inherits the agent's full timeout (15-30m);
+		// a hung checker would then block the driver tick for that long instead of
+		// failing open quickly. 2 minutes is ample for a single verdict.
+		Timeout:    2 * time.Minute,
 		Prompt:     runner.BuildGoalCheckPrompt(agent, o.base.Idea),
 		StdoutPath: filepath.Join(dir, "goal-check.stdout.log"),
 		StderrPath: filepath.Join(dir, "goal-check.stderr.log"),
@@ -372,11 +392,21 @@ func parseGoalVerdict(answer string) string {
 	verdict := ""
 	for _, line := range strings.Split(answer, "\n") {
 		t := strings.ToUpper(strings.TrimSpace(line))
-		t = strings.TrimLeft(t, "#*-> \t")
+		// CF2: strip leading markdown / quote wrappers (heading, bold, blockquote,
+		// underscore, backtick, single/double quote) so a wrapped marker like
+		// `GOAL-CHECK: FAIL` or **GOAL-CHECK:** still matches the prefix.
+		t = strings.TrimLeft(t, "#*->_ \t`\"'")
 		if !strings.HasPrefix(t, "GOAL-CHECK:") {
 			continue
 		}
+		// CF4: reset on every matched verdict line so the LAST verdict wins — a
+		// trailing ambiguous line (e.g. "GOAL-CHECK: RE-EVALUATING") must clear a
+		// prior PASS/FAIL back to ambiguous rather than leaving it stuck.
+		verdict = ""
 		rest := strings.TrimSpace(strings.TrimPrefix(t, "GOAL-CHECK:"))
+		// CF2: a bolded/quoted marker ("**GOAL-CHECK:** FAIL") leaves "** FAIL" in
+		// rest — strip the leading wrapper run before the PASS/FAIL prefix check.
+		rest = strings.TrimLeft(rest, "*`\"'_ ")
 		switch {
 		case strings.HasPrefix(rest, "PASS"):
 			verdict = "PASS"

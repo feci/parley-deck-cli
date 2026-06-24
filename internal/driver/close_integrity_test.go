@@ -79,6 +79,50 @@ func TestCompletesWhenGatesPassUnderAuto(t *testing.T) {
 	}
 }
 
+// CF5 (hermes MINOR #2): a strict_gate design-only idea (StrictGate, AutoImplement=false)
+// with a Reserved triage and a single reviewer still COMPLETES — LE-11 is auto-only — but
+// the LE-7 goal-check DOES run (gated on AutoImplement || StrictGate). Documents the
+// conditional-rigor boundary so a regression that wrongly gates LE-7 on auto, or fires
+// LE-11 for design ideas, is caught.
+func TestStrictDesignOnlyCompletesAndRunsGoalCheck(t *testing.T) {
+	ideaDir, runDir, parts := setupReviewPhase(t, "strict_gate: true\n")
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	rs := closeReady(consensus.TriageReserved, 0, 1)
+	rs.StrictGateClean = true
+	rs.ClosingReviewRound = 1
+	fi := &fakeImpl{roundComplete: true, review: rs}
+	d := newStrictDesignDriver(ideaDir, runDir, parts, 3, fi)
+	action, c, err := d.Advance(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if action != ActionComplete || c.Phase != PhaseDone {
+		t.Fatalf("action=%s phase=%s want complete/done (conditional-rigor boundary)", action, c.Phase)
+	}
+	if !contains(fi.calls, "goal-check") {
+		t.Fatalf("LE-7 goal-check must run for a strict design idea even without auto, calls=%v", fi.calls)
+	}
+}
+
+// CF5: the same strict design-only path with a confident goal-check FAIL still escalates —
+// LE-7 fires on StrictGate independent of AutoImplement.
+func TestStrictDesignOnlyGoalCheckFailEscalates(t *testing.T) {
+	ideaDir, runDir, parts := setupReviewPhase(t, "strict_gate: true\n")
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	rs := closeReady(consensus.TriageReserved, 0, 1)
+	rs.StrictGateClean = true
+	rs.ClosingReviewRound = 1
+	fi := &fakeImpl{roundComplete: true, review: rs, goalFail: true}
+	d := newStrictDesignDriver(ideaDir, runDir, parts, 3, fi)
+	action, _, err := d.Advance(context.Background())
+	if err == nil || action != ActionEscalated {
+		t.Fatalf("strict design goal-check FAIL must escalate; action=%s err=%v", action, err)
+	}
+	if contains(fi.calls, "complete") {
+		t.Fatal("must not complete when the strict-design goal-check fails")
+	}
+}
+
 // Conditional rigor: a non-auto (design-only) idea with a single reviewer still completes
 // and does NOT run the goal-check (the LE-7/LE-11 gates are auto-only).
 func TestNonAutoCompletesWithSingleReviewer(t *testing.T) {

@@ -19,6 +19,17 @@ func newStrictDriver(ideaDir, runDir string, parts []string, maxFixup int, fi Im
 	}, &fakeRunner{})
 }
 
+// newStrictDesignDriver builds a strict_gate driver that is NOT auto_implement (a
+// design-only strict idea): LE-11 (Reserved / <2-reviewers) is skipped, but the LE-7
+// goal-check still runs because it is gated on AutoImplement || StrictGate (CF5).
+func newStrictDesignDriver(ideaDir, runDir string, parts []string, maxFixup int, fi ImplOps) *Driver {
+	return New(Config{
+		IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+		Root: filepath.Dir(filepath.Dir(filepath.Dir(ideaDir))), Events: store.New(runDir),
+		Auto: true, AutoImplement: false, StrictGate: true, MaxFixupCycles: maxFixup, Impl: fi,
+	}, &fakeRunner{})
+}
+
 func reviewReady(fixes int) ReviewStatus {
 	return ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: fixes, ReviewerCount: 2}
 }

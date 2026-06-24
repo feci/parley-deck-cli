@@ -1,11 +1,13 @@
 ---
 idea: close-integrity
-status: implemented
+status: fix-up
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
+review-round: 1
+fixup-cycle: 1
 ---
 
 ## Summary of work
@@ -58,3 +60,36 @@ green.
 - Try to break: a goal-check answer with no verdict line (must fail-open, not block); a
   Reserved triage under `auto_implement` (must escalate); exactly 2 reviewers + Ready +
   PASS (must complete).
+
+## Fix-up cycle 1 (round-01 review consensus)
+
+All six agreed fixes from `review/consensus.md` applied. `gofmt`, `go build ./...`,
+`go vet`, `go test -count=1 ./...` (incl. drift guard) green.
+
+- **CF1 (CRITICAL/MAJOR)** — `newDriverImplOps` now dedupes to distinct non-implementer
+  IDs via a `seen` map. Closes both the `ReviewerCount` count-bypass of the LE-11 `< 2`
+  guard (codex) and the duplicate-goroutine concurrent-write race on the same log/artifact
+  files (antigravity). (`internal/app/driver_impl.go`.)
+- **CF2 (MAJOR)** — `parseGoalVerdict` strips leading markdown/quote wrappers
+  (`` ` "' _ * # > ``) from the line AND a leading wrapper run from `rest`, so
+  `` `GOAL-CHECK: FAIL` ``, `"GOAL-CHECK: PASS"`, and `**GOAL-CHECK:** FAIL` all parse
+  instead of fail-opening. (`internal/app/driver_impl.go`.)
+- **CF3 (MAJOR)** — the goal-check `RunConsult` now passes `Timeout: 2 * time.Minute` so
+  the advisory gate fails open fast rather than blocking the driver for the agent's full
+  15–30 min timeout on a hang. (`internal/app/driver_impl.go`.)
+- **CF4 (MINOR)** — `parseGoalVerdict` resets `verdict` on each matched verdict line so a
+  trailing ambiguous line correctly returns "" (true last-verdict-wins).
+- **CF5 (MINOR)** — added strict-design-only (`StrictGate: true, AutoImplement: false`)
+  close-path tests + `newStrictDesignDriver` helper. (`internal/driver/close_integrity_test.go`,
+  `internal/driver/strict_gate_test.go`.)
+- **CF6 (NIT)** — `GoalCheck` fails open without running an agent when `o.drafter ==
+  o.implementer` (never run the implementer as its own checker). (`internal/app/driver_impl.go`.)
+
+New tests: `goal_check_test.go` (wrapper + reset cases), `driver_impl_le_test.go`
+(`TestNewDriverImplOpsDedupesReviewers`, `TestGoalCheckNoIndependentChecker`),
+`close_integrity_test.go` (`TestStrictDesignOnly*`).
+
+**Deferred (own follow-up ideas, documented in `review/consensus.md`):** DF1 reject
+duplicate participant IDs at the load boundary; DF2 extend LE-7/LE-11 to the `pipeline
+auto` block-completion path (a separate §12 subsystem). **Resolved:** the codex
+durable-kill test failure is a codex-sandbox limitation (passes in the implementer's env).
