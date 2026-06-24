@@ -57,9 +57,57 @@ New regression tests: `goal_check_test.go` (CF2/CF4 wrapper + reset cases),
 ## Verification after fix-up cycle 1
 
 `gofmt`, `go build ./...`, `go vet`, `go test -count=1 ./...` (all packages incl. the
-embedded-default drift guard) — green. Round-02 re-review requested from all three
-reviewers to confirm the fixes.
+embedded-default drift guard) — green.
+
+## Round-02 re-review outcome
+
+All three reviewers re-ran Phase 6 in refutation mode against the fix-up (`git show
+9267034`) and the current functions. Round-02 is clean — **zero new agreed fixes**:
+
+- **codex-1** (`review/round-02/codex-1.md`) — No findings. Verified CF1 collapse before
+  `ReviewerCount`/`RunReviewRound`, CF2 (incl. the `GOAL-CHECK: ***` over-trim → stays
+  ambiguous), CF3 override precedence, CF4 last-wins + reset, CF6 fail-open. (Re-noted the
+  codex-sandbox durable-kill failure — already resolved.)
+- **hermes-1** (`review/round-02/hermes-1.md`) — 0 CRITICAL/MAJOR/MINOR; 1 NIT (DF3 below).
+  Traced the CF3 timeout plumbing through `timeoutForAgent` to confirm the 2m override is
+  honored, not a no-op. Confirmed CF2's rest-trim cut set contains no letter, so it can
+  never consume the P/F of a real verdict.
+- **antigravity-1** (`review/round-02/antigravity-1.md`) — No findings, no regressions; all
+  six fixes survive refutation.
+
+### DF3 — deferred NIT (dismissed for this idea, by reviewer agreement)
+
+hermes-1 flagged that `parseGoalVerdict` uses `HasPrefix(rest, "PASS"/"FAIL")`, so
+off-spec `PASSED`→PASS / `FAILURE`→FAIL. This is **pre-existing** (the round-01 parser did
+the same) — CF2 did not introduce it, only widened the input shapes marginally. The error
+direction is asymmetric-safe (`FAILURE`→FAIL escalates to a human; `PASSED`→PASS requires a
+non-spec word past an already-passed review consensus). Both hermes-1 ("not worth a code
+change for this idea, out of scope") and the drafter agree: dismiss for close-integrity;
+the exact-token verdict match belongs to a future parser-hardening idea.
 
 ## Signoffs
 
-(Phase 7 signoffs appended below by each participant after the round-02 re-review.)
+Reviewer verdicts transcribed by the facilitator from each agent's round-02 artifact
+(the canonical per-agent review files cited above are the source of truth; codex writes to
+the shared consensus file are sandbox-blocked, so all three are recorded uniformly here).
+
+### Signoff: codex-1 — 2026-06-24
+Status: ✅ ACCEPT
+Round-02: "No findings." All six agreed fixes verified; only residual is the known
+codex-sandbox durable-kill test limitation (out of fix-up surface).
+
+### Signoff: hermes-1 — 2026-06-24
+Status: ✅ ACCEPT
+Round-02: "No CRITICAL, MAJOR, or MINOR findings. The six agreed fixes are correctly
+implemented and survive refutation." One pre-existing NIT (DF3) recorded as out-of-scope.
+
+### Signoff: antigravity-1 — 2026-06-24
+Status: ✅ ACCEPT
+Round-02: "No findings… The fix-up completely resolves all agreed points from round-01,
+is robust against refutation, and introduces no regressions or new bugs."
+
+### Signoff: claude-1 (implementer/facilitator) — 2026-06-24
+Status: ✅ ACCEPT
+All six round-01 agreed fixes applied and re-review-clean (0 new agreed fixes). DF1/DF2/DF3
+deferred to their own ideas; the codex durable-kill failure is a documented sandbox
+limitation (green locally). Marking close-integrity complete.

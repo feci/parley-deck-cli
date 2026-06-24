@@ -1,12 +1,12 @@
 ---
 idea: close-integrity
-status: fix-up
+status: complete
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
 branch: parley-deck-cli#loop-engineering-impl
 head-commit: (this commit)
-review-round: 1
+review-round: 2
 fixup-cycle: 1
 ---
 
@@ -91,5 +91,15 @@ New tests: `goal_check_test.go` (wrapper + reset cases), `driver_impl_le_test.go
 
 **Deferred (own follow-up ideas, documented in `review/consensus.md`):** DF1 reject
 duplicate participant IDs at the load boundary; DF2 extend LE-7/LE-11 to the `pipeline
-auto` block-completion path (a separate §12 subsystem). **Resolved:** the codex
-durable-kill test failure is a codex-sandbox limitation (passes in the implementer's env).
+auto` block-completion path (a separate §12 subsystem); DF3 exact-token verdict match in
+`parseGoalVerdict` (pre-existing `PASSED`/`FAILURE` prefix coarseness — a future parser
+hardening idea). **Resolved:** the codex durable-kill test failure is a codex-sandbox
+limitation (passes in the implementer's env).
+
+## Round-02 re-review — complete
+
+All three reviewers re-reviewed the fix-up in refutation mode and returned clean:
+codex-1 "No findings", antigravity-1 "No findings / no regressions", hermes-1 "No
+CRITICAL/MAJOR/MINOR" (one pre-existing NIT → DF3, dismissed for this idea). Zero new
+agreed fixes → close-integrity marked complete. `gofmt`, `go build ./...`, `go vet`,
+`go test -count=1 ./...` (incl. drift guard) green.
