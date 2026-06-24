@@ -120,14 +120,48 @@ func TestStrictGateBoundedByMaxFixupCycles(t *testing.T) {
 	}
 }
 
-// scanHasRealFinding ignores the template placeholder but catches a concrete finding.
+// scanHasRealFinding ignores the template placeholder but catches a concrete finding,
+// case-insensitively, whitespace-tolerantly, and including empty-title headings (F2/F3).
 func TestScanHasRealFinding(t *testing.T) {
-	placeholder := "## Findings\n### [CRITICAL] <title>\n### [NIT] <title>\n"
-	if scanHasRealFinding(placeholder) {
-		t.Fatal("template placeholders must not count as findings")
+	clean := map[string]string{
+		"placeholders":  "## Findings\n### [CRITICAL] <title>\n### [NIT] <title>\n",
+		"no findings":   "## Findings\nnone\n",
+		"prose mention": "the word [CRITICAL] appears inline but there is no heading\n",
 	}
-	real := "## Findings\n### [MINOR] off-by-one in loop bound\nfix it\n"
-	if !scanHasRealFinding(real) {
-		t.Fatal("a concrete finding heading must count")
+	for name, c := range clean {
+		if scanHasRealFinding(c) {
+			t.Fatalf("%s: expected clean, got a finding", name)
+		}
+	}
+	dirty := map[string]string{
+		"concrete title":      "### [MINOR] off-by-one in loop bound\nfix it\n",
+		"lowercase severity":  "### [critical] lowercase severity\n",         // F2
+		"extra spacing":       "###   [MAJOR]   spaced heading text\n",       // F2
+		"empty title on line": "### [CRITICAL]\nfinding text on next line\n", // F3
+	}
+	for name, c := range dirty {
+		if !scanHasRealFinding(c) {
+			t.Fatalf("%s: expected a finding, got clean", name)
+		}
+	}
+}
+
+// F1: the finding scan fails CLOSED — an unreadable round dir vetoes; an absent one does not.
+func TestReviewRoundHasFindingsFailsClosed(t *testing.T) {
+	ideaDir := t.TempDir()
+	if reviewRoundHasFindings(ideaDir, 9) {
+		t.Fatal("absent round dir must not veto (nothing to scan)")
+	}
+	// A round path that is a FILE, not a dir → os.ReadDir errors with a non-NotExist
+	// error → must fail closed (veto).
+	bad := filepath.Join(ideaDir, "review", roundLabel(5))
+	if err := os.MkdirAll(filepath.Dir(bad), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bad, []byte("not a directory"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !reviewRoundHasFindings(ideaDir, 5) {
+		t.Fatal("an unreadable round dir must fail closed (veto), not auto-pass")
 	}
 }

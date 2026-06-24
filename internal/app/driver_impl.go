@@ -10,11 +10,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
 )
 
 // driverImplOps is the production driver.ImplOps adapter (driver-impl-phase). It
@@ -115,11 +117,43 @@ func (o driverImplOps) reviewersShareImplementerModel() (bool, string) {
 		return false, ""
 	}
 	for _, r := range o.reviewers {
-		if o.modelOf(r) != implModel {
+		if !strings.EqualFold(o.modelOf(r), implModel) { // review fix F6: case-insensitive
 			return false, ""
 		}
 	}
 	return true, implModel
+}
+
+// checkModelDiversity (LE-3) emits the agent.model_diversity event and either warns
+// (default) or, with require_model_diversity, returns an escalation error. Extracted so
+// OpenReviewRound stays thin and the event/warn/escalate logic is unit-testable without
+// launching reviewers (review fixes F4 + F8).
+func (o driverImplOps) checkModelDiversity() error {
+	same, model := o.reviewersShareImplementerModel()
+	if !same {
+		return nil
+	}
+	required := driver.ReadRequireModelDiversity(o.ideaDir)
+	action := "warn"
+	if required {
+		action = "escalate"
+	}
+	if o.base.Store != (store.Store{}) { // F4: best-effort durable event for TUI/state consumers
+		_ = o.base.Store.Append(store.Event{
+			Time: time.Now().UTC(),
+			Type: "agent.model_diversity",
+			Data: map[string]any{
+				"idea": o.ideaSlug, "implementer": o.implementer,
+				"reviewers": append([]string(nil), o.reviewers...),
+				"model":     model, "required": required, "action": action,
+			},
+		})
+	}
+	if required {
+		return fmt.Errorf("require_model_diversity: every reviewer shares the implementer's model %q; refusing to open review (LE-3)", model)
+	}
+	fmt.Fprintf(o.out, "driver: WARNING model-diversity — every reviewer shares the implementer's model %q; a same-model checker is more likely to rubber-stamp (LE-3). Set require_model_diversity: true to make this a hard gate.\n", model)
+	return nil
 }
 
 func (o driverImplOps) Implement(ctx context.Context) error {
@@ -180,12 +214,9 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 		return fmt.Errorf("no non-implementer reviewers available")
 	}
 	// LE-3 model-diversity: a checker that shares the implementer's model is more
-	// likely to rubber-stamp. Default = warn; require_model_diversity makes it a gate.
-	if same, model := o.reviewersShareImplementerModel(); same {
-		if driver.ReadRequireModelDiversity(o.ideaDir) {
-			return fmt.Errorf("require_model_diversity: every reviewer shares the implementer's model %q; refusing to open review (LE-3)", model)
-		}
-		fmt.Fprintf(o.out, "driver: WARNING model-diversity — every reviewer shares the implementer's model %q; a same-model checker is more likely to rubber-stamp (LE-3). Set require_model_diversity: true to make this a hard gate.\n", model)
+	// likely to rubber-stamp. Default = warn (+event); require_model_diversity escalates.
+	if err := o.checkModelDiversity(); err != nil {
+		return err
 	}
 	fmt.Fprintf(o.out, "driver: opening review round %d (reviewers: %s) ...\n", round, strings.Join(o.reviewers, ", "))
 	// AF5: drop any reviewer artifact that exists but fails validation, so
@@ -231,15 +262,30 @@ func (o driverImplOps) ReviewRoundComplete(round int) (bool, error) {
 
 func (o driverImplOps) DraftReviewConsensus(ctx context.Context, round int) error {
 	fmt.Fprintf(o.out, "driver: drafting review consensus via %s ...\n", o.drafter)
+	strict := driver.ReadStrictGate(o.ideaDir)
 	opts := o.withParticipants(o.drafter)
 	opts.Round = round
-	opts.StrictGate = driver.ReadStrictGate(o.ideaDir) // LE-2: emit the close fields under strict_gate
+	opts.StrictGate = strict // LE-2: emit the close fields under strict_gate
 	r := runner.RunReviewConsensus(ctx, opts)
 	if !r.Success() {
 		return fmt.Errorf("review-consensus drafter %s: %s", r.AgentID, r.ExitError)
 	}
 	path := filepath.Join(o.ideaDir, "review", "consensus.md")
-	return runner.ValidateReviewConsensusArtifact(path)
+	if err := runner.ValidateReviewConsensusArtifact(path); err != nil {
+		return err
+	}
+	// Review fix F7: under strict_gate, the drafter MUST emit the close fields. If they
+	// are absent, fail fast here rather than spinning fresh rounds to MaxFixupCycles.
+	if strict {
+		meta, err := protocol.ReadFrontmatter(path)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(meta["strict_gate_clean"]) == "" || strings.TrimSpace(meta["closing_review_round"]) == "" {
+			return fmt.Errorf("strict_gate: review/consensus.md must set strict_gate_clean and closing_review_round")
+		}
+	}
+	return nil
 }
 
 func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {

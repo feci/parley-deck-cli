@@ -1,15 +1,27 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
 )
+
+func hasEventType(evs []store.Event, typ string) bool {
+	for _, e := range evs {
+		if e.Type == typ {
+			return true
+		}
+	}
+	return false
+}
 
 func writePrompt(t *testing.T, ideaDir, frontmatter string) {
 	t.Helper()
@@ -91,5 +103,83 @@ func TestReviewersShareImplementerModel(t *testing.T) {
 	o3 := newOpsFor(t.TempDir(), t.TempDir(), nil, "claude", []string{"codex"})
 	if shared, _ := o3.reviewersShareImplementerModel(); shared {
 		t.Fatal("unknown implementer model must not fire the guard")
+	}
+
+	// F6: case-insensitive — "m1" vs "M1" are the same model.
+	casing := []agents.Discovery{
+		{Spec: agents.Spec{ID: "claude", Model: "m1"}},
+		{Spec: agents.Spec{ID: "codex", Model: "M1"}},
+	}
+	o4 := newOpsFor(t.TempDir(), t.TempDir(), casing, "claude", []string{"codex"})
+	if shared, _ := o4.reviewersShareImplementerModel(); !shared {
+		t.Fatal("case-only model differences must still count as shared (F6)")
+	}
+}
+
+func newOpsWithStore(root, ideaDir, runDir string, agentsList []agents.Discovery, out io.Writer) driverImplOps {
+	return driverImplOps{
+		base: runner.Options{Agents: agentsList, Store: store.New(runDir)}, root: root,
+		ideaSlug: "demo", ideaDir: ideaDir, implementer: "claude", reviewers: []string{"codex"}, out: out,
+	}
+}
+
+// F4/F8: the warn path emits a stdout warning AND an agent.model_diversity event.
+func TestCheckModelDiversityWarnsAndEmitsEvent(t *testing.T) {
+	root := t.TempDir()
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "demo")
+	writePrompt(t, ideaDir, "") // no require_model_diversity → warn
+	runDir := t.TempDir()
+	var out bytes.Buffer
+	same := []agents.Discovery{
+		{Spec: agents.Spec{ID: "claude", Model: "m1"}},
+		{Spec: agents.Spec{ID: "codex", Model: "m1"}},
+	}
+	o := newOpsWithStore(root, ideaDir, runDir, same, &out)
+	if err := o.checkModelDiversity(); err != nil {
+		t.Fatalf("warn path must not error: %v", err)
+	}
+	if !strings.Contains(out.String(), "WARNING model-diversity") {
+		t.Fatalf("expected a warning, got: %q", out.String())
+	}
+	evs, err := store.New(runDir).Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasEventType(evs, "agent.model_diversity") {
+		t.Fatal("expected an agent.model_diversity event in the store")
+	}
+}
+
+// F8: require_model_diversity escalates (returns an error) on a same-model roster.
+func TestCheckModelDiversityEscalatesWhenRequired(t *testing.T) {
+	root := t.TempDir()
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "demo")
+	writePrompt(t, ideaDir, "require_model_diversity: true\n")
+	same := []agents.Discovery{
+		{Spec: agents.Spec{ID: "claude", Model: "m1"}},
+		{Spec: agents.Spec{ID: "codex", Model: "m1"}},
+	}
+	o := newOpsWithStore(root, ideaDir, t.TempDir(), same, io.Discard)
+	if err := o.checkModelDiversity(); err == nil {
+		t.Fatal("require_model_diversity: true must escalate on a same-model roster")
+	}
+}
+
+// F8: a diverse roster is silent — no warning, no error.
+func TestCheckModelDiversitySilentWhenDiverse(t *testing.T) {
+	root := t.TempDir()
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "demo")
+	writePrompt(t, ideaDir, "")
+	var out bytes.Buffer
+	diff := []agents.Discovery{
+		{Spec: agents.Spec{ID: "claude", Model: "m1"}},
+		{Spec: agents.Spec{ID: "codex", Model: "m2"}},
+	}
+	o := newOpsWithStore(root, ideaDir, t.TempDir(), diff, &out)
+	if err := o.checkModelDiversity(); err != nil {
+		t.Fatal(err)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("a diverse roster must be silent, got: %q", out.String())
 	}
 }

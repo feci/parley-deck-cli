@@ -32,12 +32,26 @@ func TestValidateReviewArtifactRequiresRefutation(t *testing.T) {
 	if err := ValidateReviewArtifact(p, "rev", "demo", 1); err == nil {
 		t.Fatal("a review without '## Refutation attempts' must be rejected")
 	}
-	// With the section it validates.
-	if err := os.WriteFile(p, []byte("---\nagent: rev\nidea: demo\nreview-round: 1\n---\n\n## Refutation attempts\ntried\n\n## Findings\nnone\n"), 0o644); err != nil {
+	// F5: a substring mention in prose (not a real heading) must be rejected.
+	if err := os.WriteFile(p, []byte("---\nagent: rev\nidea: demo\nreview-round: 1\n---\n\nI did some ## Refutation attempts inline.\n## Findings\nnone\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateReviewArtifact(p, "rev", "demo", 1); err == nil {
+		t.Fatal("a '## Refutation attempts' substring in prose must be rejected (F5)")
+	}
+	// F5: a real heading but an EMPTY section must be rejected.
+	if err := os.WriteFile(p, []byte("---\nagent: rev\nidea: demo\nreview-round: 1\n---\n\n## Refutation attempts\n\n## Findings\nnone\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateReviewArtifact(p, "rev", "demo", 1); err == nil {
+		t.Fatal("an empty '## Refutation attempts' section must be rejected (F5)")
+	}
+	// A real heading with content validates.
+	if err := os.WriteFile(p, []byte("---\nagent: rev\nidea: demo\nreview-round: 1\n---\n\n## Refutation attempts\ntried X; held\n\n## Findings\nnone\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := ValidateReviewArtifact(p, "rev", "demo", 1); err != nil {
-		t.Fatalf("a review with '## Refutation attempts' must validate: %v", err)
+		t.Fatalf("a non-empty '## Refutation attempts' section must validate: %v", err)
 	}
 }
 

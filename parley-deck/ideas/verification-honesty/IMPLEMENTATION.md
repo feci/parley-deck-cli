@@ -1,6 +1,6 @@
 ---
 idea: verification-honesty
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-06-24
 completed: 2026-06-24
@@ -66,3 +66,39 @@ are green; the drift guard `TestEmbeddedDefaultMatchesLiveDeck` passes.
   unchanged in behavior.
 - Try to break: a `checks:` command with shell metacharacters; a same-model 2-agent
   roster; a drafter that lies `strict_gate_clean: true` with a real finding on disk.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-06-24
+
+### Fixes applied
+(All agreed fixes from `review/consensus.md`, found by the round-01 refutation review.)
+- **F1** — `reviewRoundHasFindings` now fails CLOSED: a non-`fs.ErrNotExist` ReadDir
+  error or a per-file ReadFile error vetoes (escalates) instead of auto-passing.
+  (`internal/driver/impl.go`; +`errors`,`io/fs` imports.)
+- **F2** — `scanHasRealFinding` is now case-insensitive (`strings.ToUpper` on the
+  severity tag) and whitespace-tolerant (`### ` with any spacing before `[`).
+- **F3** — an empty-title `### [SEV]` heading now counts as a finding; only the literal
+  `<title>` placeholder is ignored.
+- **F4** — `OpenReviewRound` now emits an `agent.model_diversity` event (via the new
+  `checkModelDiversity`) in addition to the stdout warning. (`internal/app/driver_impl.go`.)
+- **F5** — `ValidateReviewArtifact` now requires a real `## Findings` heading line and a
+  non-empty `## Refutation attempts` section (new `hasHeadingLine`/`hasNonEmptySection`
+  helpers), not a substring match. (`internal/runner/phase58.go`.)
+- **F6** — model comparison uses `strings.EqualFold` (case-insensitive).
+- **F7** — `DraftReviewConsensus` escalates immediately when, under `strict_gate`, the
+  drafted consensus omits `strict_gate_clean`/`closing_review_round`.
+- **F8** — tests added: scan case/empty-title/fail-closed (`strict_gate_test.go`);
+  `checkModelDiversity` warn/escalate/silent + event (`driver_impl_le_test.go`);
+  substring/empty-section validation (`phase58_le_test.go`).
+
+### Deviations from agreed fixes
+- **F6 unknown-model handling:** kept the conservative "don't fire on an unknown
+  implementer model" behavior (a warn cannot assert sameness it can't see) rather than
+  warning on unresolved models — documented, not a regression.
+- The `sh -c` execution concern was **deferred** (not applied) per `review/consensus.md`:
+  `checks:` is author-controlled kickoff input today; it becomes untrusted only with
+  automated triggers, so the guard belongs to the automation-trust tier (LE-8/9).
+
+`go build ./...`, `go vet`, `go test -count=1 ./...` green; drift guard
+`TestEmbeddedDefaultMatchesLiveDeck` green.

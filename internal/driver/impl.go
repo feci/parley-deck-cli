@@ -2,7 +2,9 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -311,7 +313,11 @@ func reviewRoundHasFindings(ideaDir string, round int) bool {
 	dir := filepath.Join(ideaDir, "review", roundLabel(round))
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return false
+		// Fail closed (review fix F1): an absent dir means nothing to veto
+		// (ReviewRoundComplete guards presence). But an unreadable dir that should
+		// exist must VETO (return true → escalate), never silently auto-pass — the
+		// scan's stated invariant is "veto-only, never auto-pass."
+		return !errors.Is(err, fs.ErrNotExist)
 	}
 	for _, e := range entries {
 		name := e.Name()
@@ -320,7 +326,7 @@ func reviewRoundHasFindings(ideaDir string, round int) bool {
 		}
 		data, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
-			continue
+			return true // F1: a file confirmed present but now unreadable → fail closed (veto)
 		}
 		if scanHasRealFinding(string(data)) {
 			return true
@@ -329,26 +335,31 @@ func reviewRoundHasFindings(ideaDir string, round int) bool {
 	return false
 }
 
-// scanHasRealFinding reports whether the content has a severity-tagged finding heading
-// with a concrete (non-placeholder, non-empty) title.
+// scanHasRealFinding reports whether the content has a severity-tagged finding heading.
+// It is whitespace-tolerant and case-insensitive on the severity tag (review fix F2), and
+// counts an empty-title heading (finding text on the next line) as a finding (review fix
+// F3); only the literal template placeholder "<title>" is ignored.
 func scanHasRealFinding(content string) bool {
 	for _, line := range strings.Split(content, "\n") {
 		t := strings.TrimSpace(line)
-		if !strings.HasPrefix(t, "### [") {
+		if !strings.HasPrefix(t, "###") {
 			continue
 		}
-		close := strings.Index(t, "]")
-		if close < 0 {
+		rest := strings.TrimSpace(strings.TrimPrefix(t, "###"))
+		if !strings.HasPrefix(rest, "[") {
 			continue
 		}
-		switch t[len("### ["):close] {
+		closeIdx := strings.Index(rest, "]")
+		if closeIdx < 0 {
+			continue
+		}
+		switch strings.ToUpper(strings.TrimSpace(rest[1:closeIdx])) {
 		case "CRITICAL", "MAJOR", "MINOR", "NIT":
 		default:
 			continue
 		}
-		title := strings.TrimSpace(t[close+1:])
-		if title != "" && title != "<title>" {
-			return true
+		if strings.TrimSpace(rest[closeIdx+1:]) != "<title>" {
+			return true // empty or concrete title both count; only the placeholder is ignored
 		}
 	}
 	return false

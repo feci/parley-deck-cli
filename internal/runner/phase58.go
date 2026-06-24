@@ -428,13 +428,47 @@ func ValidateReviewArtifact(path, agentID, ideaSlug string, round int) error {
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(string(data), "## Findings") {
-		return fmt.Errorf("%s missing '## Findings'", path)
+	content := string(data)
+	if !hasHeadingLine(content, "## Findings") {
+		return fmt.Errorf("%s missing '## Findings' heading", path)
 	}
-	// LE-1 (refutation-default): an empty-findings review must show its work, so the
-	// "## Refutation attempts" section is mandatory.
-	if !strings.Contains(string(data), "## Refutation attempts") {
-		return fmt.Errorf("%s missing '## Refutation attempts' (refutation-default: a review must record what it tried to break)", path)
+	// LE-1 (refutation-default, review fix F5): require a real heading AND non-empty
+	// content — a substring mention or an empty section is a rubber-stamp, not work shown.
+	if !hasNonEmptySection(content, "## Refutation attempts") {
+		return fmt.Errorf("%s missing a non-empty '## Refutation attempts' section (refutation-default: a review must record what it tried to break)", path)
 	}
 	return nil
+}
+
+// hasHeadingLine reports whether content has a line that is exactly the given heading.
+func hasHeadingLine(content, heading string) bool {
+	for _, line := range strings.Split(content, "\n") {
+		if strings.TrimSpace(line) == heading {
+			return true
+		}
+	}
+	return false
+}
+
+// hasNonEmptySection reports whether content has the given level-2 heading followed by at
+// least one non-blank line before the next level-2 heading.
+func hasNonEmptySection(content, heading string) bool {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) != heading {
+			continue
+		}
+		for _, next := range lines[i+1:] {
+			n := strings.TrimSpace(next)
+			if n == "" {
+				continue
+			}
+			if strings.HasPrefix(n, "## ") {
+				break
+			}
+			return true
+		}
+		return false
+	}
+	return false
 }
