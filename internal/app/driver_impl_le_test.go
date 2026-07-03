@@ -200,6 +200,22 @@ func TestCheckModelDiversityEscalatesWhenRequired(t *testing.T) {
 	}
 }
 
+// review-01 F4: track: fast makes model diversity a HARD gate even without
+// require_model_diversity — a same-model single reviewer on fast must escalate.
+func TestCheckModelDiversityHardGateOnFastTrack(t *testing.T) {
+	root := t.TempDir()
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "demo")
+	writePrompt(t, ideaDir, "track: fast\n") // no require_model_diversity, but fast forces it
+	same := []agents.Discovery{
+		{Spec: agents.Spec{ID: "claude", Model: "m1"}},
+		{Spec: agents.Spec{ID: "codex", Model: "m1"}},
+	}
+	o := newOpsWithStore(root, ideaDir, t.TempDir(), same, io.Discard)
+	if err := o.checkModelDiversity(); err == nil {
+		t.Fatal("track: fast must escalate on a same-model roster (hard gate) even without require_model_diversity")
+	}
+}
+
 // F8: a diverse roster is silent — no warning, no error.
 func TestCheckModelDiversitySilentWhenDiverse(t *testing.T) {
 	root := t.TempDir()

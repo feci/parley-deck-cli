@@ -1,0 +1,21 @@
+Done. The re-review is written to the exact required path with correct frontmatter and sections.
+
+Summary of what I verified and concluded:
+
+All 5 round-01 findings targeted by fix-up cycle 1 are RESOLVED:
+
+1. Explicit `track: deliberation` non-solo hard-reject — RESOLVED. `PolicyFor` moved the `availableReviewers < 1` check above the switch (track.go:138-140), so every explicit track hits it. Absent-track early-return preserves the legacy exemption. Tests confirm both paths.
+
+2. Classifier unknown/negative size no longer fast — RESOLVED. `FilesKnown`/`LOCKnown` fields added; `Classify` requires positive-known + non-negative size for fast (track.go:99-101). `parley classify` sets known via `fs.Visit` and rejects negatives with exit 2. Smoke tests confirmed: `--reversible --mechanically-verifiable` → standard (exit 0); `--files 1 --loc -1` → exit 2; `--files 2 --loc 20` → fast (exit 0).
+
+3. fast + auto_implement + --no-implement escalates — RESOLVED. `New` now reads idea-level `ReadAutoImplement(cfg.IdeaDir)` for the contradiction check (driver.go:121), not the runtime-masked `cfg.AutoImplement`. Structurally closes the masking path.
+
+4. fast forces model-diverse reviewer — RESOLVED. `checkModelDiversity` sets `required = true` when `track: fast` regardless of frontmatter flag (driver_impl.go:158-160), making it a hard escalation gate.
+
+5. standard caps cross-review at 2 — RESOLVED. `CapCrossReviewRounds` field added; standard sets it to 2 (track.go:159); `New` clamps `cfg.CrossReviewRounds` to the cap (driver.go:131-133). Test confirms `CrossReviewRounds: 5` → clamped to 2.
+
+Full suite: `go test ./...` exit 0, zero FAILs. `TestDurableKillEndToEndRealProcess` passes in this environment (the codex-sandbox limitation is environmental). `go vet` clean.
+
+One new MINOR finding: the fast-track model-diversity hard gate (the MAJOR-1 fix) has no dedicated test — the existing `checkModelDiversity` tests use absent-track or explicit `require_model_diversity: true`, none sets `track: fast`. This is a test-coverage gap on a correct fix, not a safety defect.
+
+Signoff: ✅ ACCEPT

@@ -1,6 +1,6 @@
 ---
 idea: track-aware-driver
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: claude-1
 track: deliberation
 started: 2026-07-03
@@ -88,6 +88,25 @@ completed: 2026-07-03
 
 Re-verified: `go build ./...`, `go vet ./internal/{track,driver,app}/...`, `go test ./...` all
 green in the implementer env.
+
+## Fix-up cycle 2 (from review/round-02)
+status: complete
+completed: 2026-07-03
+
+- **[MAJOR codex-1 — ❌ BLOCK, NEW] driver lock race (`TestAcquireLockIsExclusive` fails under
+  `-count`).** codex found a real PRE-EXISTING TOCTOU in `internal/driver/loop.go` `acquireLock`
+  (unrelated to the track change, but surfaced during this review and reproduced locally under
+  `-count=20`): O_EXCL creates the lock file, then writes the PID token; a racing acquirer that
+  reads the still-EMPTY file fails to parse a PID, treats it as "stale", removes it, and acquires
+  its own lock → two concurrent holders. Fixed per codex's counter-proposal: **empty/unparseable
+  lock content is treated as HELD (refuse), never reclaimed as stale.** Verified green under
+  `-count=50`. (Adjacent safety fix pulled into this idea because the review surfaced it and the
+  remedy is small and self-contained.)
+- **[MINOR hermes-1, NEW] no test for the fast-track model-diversity hard gate** → added
+  `TestCheckModelDiversityHardGateOnFastTrack` (track: fast + same-model roster → escalates).
+
+Re-verified: `go test ./...` green (full suite, no failures); `TestAcquireLockIsExclusive`
+green under `-count=50`; `go vet` clean.
 
 ## Observable acceptance criteria status
 1. classify §4.0 verbatim + fail-safe (incl. unknown/negative size → not fast) — **met** (track tests + smoke).

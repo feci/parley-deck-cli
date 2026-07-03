@@ -250,12 +250,18 @@ func acquireLock(path string) (func(), error) {
 		if rerr != nil {
 			return nil, fmt.Errorf("driver.lock present but unreadable: %w", rerr)
 		}
+		// Empty or unparseable content means a racing acquirer just created the file
+		// with O_EXCL but has not yet written its PID token (the create precedes the
+		// token write). Treat it as HELD and refuse — never reclaim it as "stale", or
+		// two racers could both remove-and-recreate and both win (review-01 lock race).
+		pid, perr := strconv.Atoi(strings.TrimSpace(string(data)))
+		if perr != nil {
+			return nil, fmt.Errorf("driver.lock present but not yet owned (racing acquirer or corrupt lock); refusing")
+		}
 		// Held by us (this PID already owns it) or by another live process → refuse.
 		// Only a DIFFERENT, dead PID is a stale lock we may reclaim.
-		if pid, perr := strconv.Atoi(strings.TrimSpace(string(data))); perr == nil {
-			if pid == os.Getpid() || processAlive(pid) {
-				return nil, fmt.Errorf("driver.lock held by pid %d", pid)
-			}
+		if pid == os.Getpid() || processAlive(pid) {
+			return nil, fmt.Errorf("driver.lock held by pid %d", pid)
 		}
 		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 			return nil, err
