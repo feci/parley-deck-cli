@@ -1,0 +1,17 @@
+Done. I wrote my independent round-01 analysis to:
+
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/track-aware-driver/round-01/hermes-1.md
+
+Summary of what it covers:
+
+(1) Classifier input model — recommends hybrid (c) primary + (a) later: author declares `track:`, CLI hard-rejects contradictions (fast + auto_implement, fast + strict_gate), full `parley classify` flags command deferred to slice 2. Fails safe — only escalates, never downgrades.
+
+(2) Track→Config mapping — complete table mapping all 8 §4.0 aspects to existing Config fields. Four aspects have NO current Config field (ping skip, collapsed FINAL, reviewer count, timeout). Proposes 3 new Config fields (Track, MaxReviewers, MinReviewers) and a single `applyTrack()` function called from all 3 Config construction sites in app.go (lines 1154, 1827, 1881) to prevent drift. Timeout threads through `runner.Options.Timeout`.
+
+(3) Invariant enforcement — two layers: `applyTrack` pre-construction validation (non-solo: availableReviewers < 1 → hard reject; contradiction reject) and `advanceReview` runtime guard (impl.go:240 generalized from hardcoded `< 2` to `< d.cfg.MinReviewers`).
+
+(4) MVP slicing — 5 slices ordered by (safety+value)/risk: slice 1 = ReadTrack + applyTrack + invariant gate; slice 2 = `parley classify`; slice 3 = ping skip; slice 4 = collapsed FINAL; slice 5 = mid-idea upgrade signal.
+
+(5) Backward-compat — the critical insight: §4.0 standard ≠ today's defaults (standard caps cross-review at 2, fix-up at 2, reviewers at 2, timeout at 15min; today's are 1/3/∞/30min). Resolves via `present` bool from `readFrontmatterField`: absent track → today's defaults (byte-for-byte), explicit `track: standard` → §4.0 caps. 8 new test cases specified across transport, track_config, impl, and driver_impl test files.
+
+(6) Risks — 8 risks identified, the most critical being R1 (absent-vs-explicit-standard parsing edge cases) and R4 (three-site drift if applyTrack isn't called everywhere).

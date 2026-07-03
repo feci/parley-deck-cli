@@ -12,6 +12,7 @@ import (
 
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/track"
 )
 
 // RoundRunner launches cross-review round N, writing round-NN/<agent>.md for each
@@ -72,12 +73,22 @@ type Config struct {
 	MaxWallClock   time.Duration // total run wall-clock budget (distinct from the per-tick roundDeadline)
 	MaxCostUSD     float64       // total external-backend cost budget (best-effort, telemetry-gated; LE-6)
 	Out            io.Writer     // progress output (nil → discard)
+	// Track-aware config (idea track-aware-driver): the §4.0 rigor track derived
+	// from 00-prompt `track:` and the reviewer bounds it implies. Track is the
+	// recorded track name (may be set even when overrides are not applied, e.g.
+	// deliberation/absent). MaxReviewers caps the reviewer set (0 = all
+	// non-implementers, today's behaviour). MinReviewers is the LE-11 auto-complete
+	// minimum (0 → New defaults it to 2, preserving today's `< 2` guard).
+	Track        string
+	MaxReviewers int
+	MinReviewers int
 }
 
 // Driver advances one idea through the deliberation phases via Advance ticks.
 type Driver struct {
-	cfg    Config
-	runner RoundRunner
+	cfg      Config
+	runner   RoundRunner
+	trackErr error // §4.0 contradiction / non-solo violation, escalated on Advance
 }
 
 // New constructs a Driver, applying defaults.
@@ -94,7 +105,54 @@ func New(cfg Config, r RoundRunner) *Driver {
 	if cfg.Out == nil {
 		cfg.Out = io.Discard
 	}
-	return &Driver{cfg: cfg, runner: r}
+	// Track-aware derivation (idea track-aware-driver): an EXPLICIT 00-prompt
+	// `track:` opts into §4.0 reduced ceremony; absent/deliberation preserve
+	// today's behaviour byte-for-byte. A §4.0 contradiction (fast + auto_implement
+	// / strict_gate) or a non-solo violation is recorded and escalated on the first
+	// Advance rather than silently applied.
+	var trackErr error
+	if cfg.IdeaDir != "" {
+		t, present := ReadTrack(cfg.IdeaDir)
+		avail := distinctNonImplementers(cfg.Participants)
+		pol, err := track.PolicyFor(t, present, avail, cfg.AutoImplement, cfg.StrictGate)
+		if err != nil {
+			trackErr = err
+			cfg.Track = string(t)
+		} else {
+			cfg.Track = string(pol.Track)
+			if pol.ApplyOverrides {
+				if pol.CrossReviewRounds >= 0 {
+					cfg.CrossReviewRounds = pol.CrossReviewRounds
+				}
+				if pol.MaxFixupCycles > 0 {
+					cfg.MaxFixupCycles = pol.MaxFixupCycles
+				}
+				cfg.MaxReviewers = pol.MaxReviewers
+				if pol.MinReviewers > 0 {
+					cfg.MinReviewers = pol.MinReviewers
+				}
+			}
+		}
+	}
+	if cfg.MinReviewers <= 0 {
+		cfg.MinReviewers = 2 // preserve today's LE-11 `< 2` guard for absent/deliberation
+	}
+	return &Driver{cfg: cfg, runner: r, trackErr: trackErr}
+}
+
+// distinctNonImplementers estimates the number of available independent reviewers
+// from the participant set (one participant is the implementer): distinct − 1.
+func distinctNonImplementers(participants []string) int {
+	seen := make(map[string]bool)
+	for _, p := range participants {
+		if p != "" {
+			seen[p] = true
+		}
+	}
+	if n := len(seen) - 1; n > 0 {
+		return n
+	}
+	return 0
 }
 
 func (d *Driver) cursorPath() string { return filepath.Join(d.cfg.RunDir, "driver.json") }
@@ -149,6 +207,13 @@ func (d *Driver) autoDriveEnabled() bool {
 // cannot double-produce.
 func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	c := Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds)
+
+	// Track-aware hard gate (idea track-aware-driver): a §4.0 contradiction
+	// (fast + auto_implement / strict_gate) or a non-solo violation escalates
+	// rather than proceeding under reduced ceremony.
+	if d.trackErr != nil {
+		return ActionEscalated, c, d.trackErr
+	}
 
 	// Auto gate (1.27.0): auto-drive is transport-independent; only --auto/--no-auto
 	// decides. See autoDriveEnabled.

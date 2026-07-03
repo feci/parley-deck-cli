@@ -1,0 +1,3 @@
+### Signoff: codex-1 — 2026-07-03
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: Consensus is safe to implement as the MVP and captures my safety-critical positions: declared track as source of truth, pure classifier, absent-track equals today's behavior, non-solo/refutation gates, and deferred lifecycle slices documented. Reservation: my round-01 originally kept absent and explicit `track: standard` byte-for-byte compatible until the compatibility question was resolved; consensus instead applies §4.0 to explicit `track: standard`. I accept that as a deliberate opt-in resolution, provided tests lock absent-track compatibility and explicit-standard behavior separately.

@@ -90,6 +90,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runRetro(args[1:], stdout, stderr)
 	case "loop":
 		return runLoop(args[1:], stdout, stderr)
+	case "classify":
+		return runClassify(args[1:], stdout, stderr)
 	case "tui":
 		return runTUI(ctx, args[1:], stdout, stderr)
 	default:
