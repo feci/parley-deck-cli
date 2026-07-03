@@ -60,4 +60,19 @@ text). `protocolSha256` in `meta/version.json` is refreshed at release (source d
   falsified by moving §9. Re-confirm in review.
 
 ## Signoffs
-<!-- Each participant appends its own signoff (collected via signoffs/<agent>.md). -->
+<!-- Authored by each participant in signoffs/<agent>.md; assembled verbatim. -->
+
+### Signoff: codex-1 — 2026-07-03
+Status: ✅ ACCEPT
+
+### Signoff: hermes-1 — 2026-07-03
+Status: ✅ ACCEPT
+Notes: Consensus faithfully captures my round-01 on all five points (keep-numbers-relocate;
+minimal §9-past-§10 move; no banner; the four verification gates; §4-505-lines scope boundary).
+A provably-content-preserving pure block reorder — safe to implement.
+
+### Signoff: antigravity-1 — 2026-07-03
+Status: ✅ ACCEPT
+
+### Signoff: claude-1 (facilitator/implementer) — 2026-07-03
+Status: ✅ ACCEPT — unanimous ✅ ×4. Proceeding to Phase 6 review of the reorder.

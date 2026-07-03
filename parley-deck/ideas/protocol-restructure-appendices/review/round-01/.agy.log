@@ -1,0 +1,16 @@
+I have completed the review of the `protocol-restructure-appendices` idea in REFUTATION mode.
+
+### Summary of Verification
+- **PURE MOVE**: Verified that the sorted line diff for both `parley-deck/COOPERATION.md` and `internal/protocol/defaults/COOPERATION.md` is empty, confirming zero content changes outside of reordering.
+- **NEW ORDER**: Confirmed that §9 now correctly follows §10, and §11–§14 + Appendix A remain after §10.
+- **BYTE IDENTITY**: The drift guard tests (`go test ./internal/protocol/...`) are green, and the skill fallback remains body-identical to the embedded protocol.
+- **CROSS-REFS**: All `§N` and `Appendix` references in the document resolve to existing headers; no dangling references were found.
+- **POSITIONAL PROSE**: A thorough audit for relative pointers ("above", "below", etc.) confirmed that no references were invalidated by the relocation of §9.
+- **FULL SUITE**: The complete test suite (`go test ./...`) passed.
+
+### Finding
+- **[NIT] Core range description**: The Quickstart section at [COOPERATION.md:L37](file:///Volumes/My%20Shared%20Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/COOPERATION.md#L37) still defines the core as `§0–§8`, missing `§10` which is now physically and logically part of the core. This was left unchanged to preserve the "pure move" status.
+
+The full review has been written to [antigravity-1.md](file:///Volumes/My%20Shared%20Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/protocol-restructure-appendices/review/round-01/antigravity-1.md).
+
+**Status: ✅ ACCEPT**

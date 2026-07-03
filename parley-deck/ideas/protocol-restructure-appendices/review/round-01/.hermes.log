@@ -1,0 +1,14 @@
+Review written to:
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/protocol-restructure-appendices/review/round-01/hermes-1.md
+
+Verdict: ✅ ACCEPT. The pure-move claim survived every refutation attempt:
+- Sorted-line diff EMPTY on both COOPERATION.md copies (zero content change)
+- New order matches FINAL.md exactly (§9 after §10; §11–§14 + Appendix A after §10)
+- Drift guard green (fresh -count=1 run)
+- Full suite green (go test ./... EXIT=0)
+- Zero dangling §N / Appendix cross-references
+- Zero broken positional prose (§9 and §10 both contain no above/below refs to other sections)
+
+Two non-blocking minor findings:
+- [MINOR] The skill-fallback re-sync claim is unverifiable — parley-deck-skill/references/COOPERATION.md doesn't exist in this repo, and bfaea9b didn't commit any such file.
+- [NIT] protocolSha256 is stale (by design — deferred to release per FINAL.md criterion 5; advisory-only for protocolRole: "source").
