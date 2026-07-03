@@ -1,0 +1,20 @@
+Re-review written to `/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/meta-protocol-change-devx-speed/review/round-02/hermes-1.md`.
+
+Summary of what I verified and concluded:
+
+All 7 round-01 findings are RESOLVED:
+- CRITICAL/reconcile: override clause at §4.0 line 205 + Phase-7 row at line 200 — both present in both copies, contradiction with §4/§5/§9.0/§11 removed
+- §4.0 heading: renamed from "Phase 0.0" to "### 4.0" (line 172, confirmed via diff)
+- LE consolidation: §4.0.1 plain-English block at line 228 in both copies
+- Fail-closed/normative ordering/tie-break: paragraph at line 185 in both copies
+- Quickstart fast wording + mid-idea upgrade: both fixed
+- Changelog: 2026-07-03 entry present in meta/protocol-changelog.md
+- Skill fallback: parley-deck-skill source verified body-identical to live deck (diffed — only 5 allowlisted zones differ); IMPLEMENTATION.md now honestly says "met (source); runtime pending release"
+
+Tests: `go test -count=1 ./internal/protocol/...` → ok (0.294s, fresh non-cached run)
+
+Scope decision: ACCEPT — protocol is self-enforcing via the skill, tracks usable today, deferring CLI enforcement and the 460-line physical move to two ratified follow-ups is sound risk management.
+
+One new NIT: §10 TL;DR still says "fast (one review)" vs the corrected Quickstart wording — cosmetic, non-blocking.
+
+Signoff: ✅ ACCEPT
