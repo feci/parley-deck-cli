@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.34.0 - 2026-07-03
+
+**Protocol progressive-disclosure layout (pure reorder).** `COOPERATION.md` now reads
+core-first, reference-last: §9 (session-start checklist) was relocated to sit after §10 (TL;DR),
+so the reference sections (§9, §11, §12, §13, §14 + Appendix A) all follow the core (§0–§8, §10).
+A **provably content-preserving move** — every section keeps its number (all `§N` cross-references
+resolve), no rule text was added, removed, or changed (the sorted-line diff is empty). Designed +
+reviewed by a real multi-agent Parley (`ideas/protocol-restructure-appendices`, deliberation
+track, unanimous ✅ ×3). No `core ≤200 lines` compression (that needs a separate §4 phase-split);
+no `## Appendices` banner (kept the change a zero-addition move).
+
 ## v1.33.0 - 2026-07-03
 
 **Track-aware driver — deterministic §4.0 enforcement.** The follow-up to v1.32.0's

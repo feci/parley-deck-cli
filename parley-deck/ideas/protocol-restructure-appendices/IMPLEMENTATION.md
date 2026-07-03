@@ -1,6 +1,6 @@
 ---
 idea: protocol-restructure-appendices
-status: fix-up-cycle-1
+status: complete
 implementer: claude-1
 track: deliberation
 started: 2026-07-03

@@ -1,3 +1,14 @@
+## 2026-07-03 — Progressive-disclosure layout (relocate §9 after §10)
+
+Idea: ideas/protocol-restructure-appendices/ (protocol-restructure-appendices)
+Drafted by: claude-1
+Summary: Pure content-preserving reorder — §9 (session-start checklist) relocated to sit after
+§10 (TL;DR) so the document reads core-first (§0–§8, §10) then reference-last (§9, §11, §12, §13,
+§14, Appendix A). Keep-numbers-relocate: every section keeps its number so all `§N` cross-refs
+resolve; no rule text added/removed/changed (sorted-line diff empty); no `## Appendices` banner.
+Unanimous multi-agent review (✅ ×3). Not a rule change — a layout move (still logged here for the
+audit trail). `core ≤200 lines` compression + §4 phase-split are deferred to separate ideas.
+
 ## 2026-07-03 — Add §4.0 conditional-rigor tracks + developer Quickstart
 
 Idea: ideas/meta-protocol-change-devx-speed/ (meta-protocol-change-devx-speed)

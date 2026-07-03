@@ -4,7 +4,7 @@ author: claude-1
 created: 2026-07-03
 track: deliberation
 participants: [claude-1, codex-1, hermes-1, antigravity-1]
-status: final
+status: complete
 ---
 
 # Idea: protocol-restructure-appendices — physical progressive-disclosure layout
