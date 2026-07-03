@@ -90,15 +90,16 @@ re-synced again (body-identical).
 
 ### Deviations from agreed fixes
 - **CLI/driver enforcement (criteria 1–3 tooling half) and physical appendix relocation
-  (criterion 4 layout half)** remain **deferred to ratified follow-ups** (`track-aware-driver`,
-  `protocol-restructure-appendices`) rather than implemented here — see review/consensus.md,
-  where this scope narrowing is recorded and signed off. The protocol text is self-enforcing via
-  the skill, so the tracks are usable today.
+  (criterion 4 layout half)** remain **deferred to follow-up ideas** — stubs now exist at
+  `ideas/track-aware-driver/00-prompt.md` and `ideas/protocol-restructure-appendices/00-prompt.md`.
+  This scope narrowing is **proposed here and put to the Phase-7 review consensus (this round)
+  for ratification** (not pre-ratified). The protocol text is self-enforcing via the skill, so
+  the tracks are usable today.
 
 ## Observable acceptance criteria status (corrected)
 1. `track:` field, default standard, deliberation force-triggers, fail-safe classifier — **met** (protocol text). Deterministic CLI classifier/defaulting — **deferred → `track-aware-driver`**.
 2. Per-track reduced-ceremony behavior specified, authoritative-override clause added, usable by facilitator/agents — **met** (protocol text). CLI auto-enforcement — **deferred → `track-aware-driver`**.
 3. All-track invariants (non-solo + refutation) stated as never-dropped + single authoritative gate — **met** (text). Driver rejection of dropped invariants — **deferred → `track-aware-driver`**.
-4. Off-ramp + role table + reading guide + **LE consolidation now done** — **met**. Physical appendix move / ≤200-line core — **deferred → `protocol-restructure-appendices`** (reading-guide substitute in place; ratified in review consensus).
+4. Off-ramp + role table + reading guide + **LE consolidation now done** — **met**. Physical appendix move / ≤200-line core — **deferred → `protocol-restructure-appendices`** (reading-guide substitute in place; scope narrowing proposed for ratification in this Phase-7 review consensus).
 5. Both copies byte-identical (drift guard green) + skill-fallback source re-synced in `parley-deck-skill/references/COOPERATION.md` (verified body-identical). Installed runtime skill copies refresh at the **skill release step** (they are a sibling repo, not this commit) — **met (source); runtime pending release**.
 6. `meta/protocol-changelog.md` entry — **met**. `protocolSha256` bump in `meta/version.json` — **done at release step below**.
