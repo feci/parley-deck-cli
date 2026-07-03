@@ -1,0 +1,13 @@
+I have completed the Round-01 design for the `track-aware-driver` idea. 
+
+I've analyzed the §4.0 track specification and the current driver implementation in `internal/driver/` and `internal/app/`. My design proposes a deterministic mapping of tracks to `driver.Config` fields, adds a new `RequiredReviewerCount` field to enforce quorum invariants, and recommends a hybrid classifier model for the MVP.
+
+You can find my full analysis and proposal in [antigravity-1.md](file:///Volumes/My%20Shared%20Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/track-aware-driver/round-01/antigravity-1.md).
+
+### Summary of Work:
+1.  **Classifier Model**: Recommended a `parley classify` CLI command with explicit flags and `git diff` inference to ensure deterministic track selection.
+2.  **Track → Config Mapping**: Defined the exact mapping for `CrossReviewRounds`, `MaxFixupCycles`, and `RequiredReviewerCount` across all three tracks, citing the relevant threading points in `driver.go` and `impl.go`.
+3.  **Invariant Enforcement**: Proposed hard-stops in `driver.New` and `Config.Validate` to prevent solo completion and ensure refutation discipline is maintained on all tracks.
+4.  **MVP Slicing**: Sliced the implementation into three stages: Core Routing (high safety), Classifier CLI, and UI/UX refinements (like collapsed `FINAL.md`).
+5.  **Backward Compatibility**: Guaranteed that absent tracks default to `standard`, preserving existing behavior while introducing new safety gates.
+6.  **Risk Assessment**: Identified potential friction between `auto_implement` and the `fast` track, and the increased risk of same-model rubber-stamping on the `fast` track.

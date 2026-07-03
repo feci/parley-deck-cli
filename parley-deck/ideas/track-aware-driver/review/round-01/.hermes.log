@@ -1,0 +1,16 @@
+Review written to:
+`/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/track-aware-driver/review/round-01/hermes-1.md`
+
+Summary of verdict:
+
+No CRITICAL issues. The hard-rejects fire and halt (trackErr is checked first in Advance, no bypass path exists), the classifier is fail-safe and correct for all boundary values I tested, backward-compat holds (absent-track = today), and the refutation validator is not track-gated. Tests green, vet clean.
+
+Findings:
+- [MAJOR-1] §4.0 says fast's single reviewer should be "model-diverse" but the implementation doesn't auto-set RequireModelDiversity=true for fast — a same-model single reviewer gets only a warning, not a hard reject.
+- [MINOR-1] Boundary at files=15/loc=1000 goes to standard, not deliberation — the fail-safe principle argues for >= instead of >.
+- [MINOR-2] Standard doesn't cap CrossReviewRounds at 2 per §4.0 table (leaves frontmatter value).
+- [MINOR-3] TestFastNonSoloEscalates doesn't call Advance to verify escalation.
+- [MINOR-4] No driver-level tests for fast+strict_gate or standard+non-solo escalation.
+- [MINOR-5] Double PolicyFor derivation (New + newDriverImplOps) creates an auto_implement inconsistency under --no-implement (fail-safe direction, but inconsistent).
+- [NIT-1] MinReviewers=1 for fast is dead at runtime (LE-11 guard gated on AutoImplement which is always false for fast).
+- [NIT-2] classify --json "declared" field shows raw string not normalized track.

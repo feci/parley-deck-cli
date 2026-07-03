@@ -18,6 +18,7 @@ import (
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/track"
 )
 
 // driverImplOps is the production driver.ImplOps adapter (driver-impl-phase). It
@@ -48,6 +49,15 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 		if p != implementer && !seen[p] {
 			seen[p] = true
 			reviewers = append(reviewers, p)
+		}
+	}
+	// Track-aware reviewer cap (idea track-aware-driver): an EXPLICIT fast/standard
+	// track reduces the reviewer set per §4.0 (fast=1, standard=2); absent and
+	// deliberation keep all non-implementers. The truncation is deterministic
+	// (participant order) and never drops below the non-solo floor of 1.
+	if t, present := driver.ReadTrack(ideaDir); present {
+		if pol, err := track.PolicyFor(t, present, len(reviewers), driver.ReadAutoImplement(ideaDir), driver.ReadStrictGate(ideaDir)); err == nil && pol.MaxReviewers > 0 && len(reviewers) > pol.MaxReviewers {
+			reviewers = reviewers[:pol.MaxReviewers]
 		}
 	}
 	// The review-consensus drafter MUST be a non-implementer so the implementer
@@ -142,6 +152,12 @@ func (o driverImplOps) checkModelDiversity() error {
 		return nil
 	}
 	required := driver.ReadRequireModelDiversity(o.ideaDir)
+	// §4.0: the fast track's single reviewer MUST be model-diverse — a same-model
+	// solo checker is the highest rubber-stamp risk (review-01 F4). Make it a hard
+	// gate on fast regardless of the frontmatter flag.
+	if t, present := driver.ReadTrack(o.ideaDir); present && t == track.Fast {
+		required = true
+	}
 	action := "warn"
 	if required {
 		action = "escalate"

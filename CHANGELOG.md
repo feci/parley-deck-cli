@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.33.0 - 2026-07-03
+
+**Track-aware driver — deterministic §4.0 enforcement.** The follow-up to v1.32.0's
+conditional-rigor protocol text: the CLI/driver now actually routes and gates by the declared
+`track:`. Designed + reviewed by a real multi-agent Parley (`ideas/track-aware-driver`,
+deliberation track, unanimous ✅ ×3 review over three rounds).
+
+- **`parley classify [--files N --loc N --security …] [--declared T] [--json]`** — a pure,
+  script-checkable §4.0 classifier (deliberation-first, fail-safe: unknown/negative size is never
+  `fast`); `--declared` exits 4 on an under-tier so CI can gate.
+- **`track:` enforcement in the driver** (new `internal/track` package + `driver.ReadTrack`):
+  `fast` runs with 1 model-diverse-required reviewer, no cross-review rounds, and a 1-cycle
+  fix-up cap; explicit `standard` caps reviewers at 2, cross-review at 2, and fix-up at 2;
+  `deliberation` and an absent `track:` behave **exactly as before** (backward-compatible).
+- **Hard-rejects (escalate, never silently proceed):** `fast` + `auto_implement`, `fast` +
+  `strict_gate`, and any non-solo config (0 independent reviewers) on an explicit track — the
+  contradiction check reads idea-level intent, not the `--no-implement`-masked runtime flag.
+- Refutation-default review stays structural and non-optional on every track.
+- Also fixes a pre-existing driver-lock TOCTOU in `acquireLock` (surfaced during review): an
+  empty/just-created lock file is now treated as held, closing a two-concurrent-holders race.
+- Deferred to follow-ups: per-track timeouts, fast §9.0 ping-skip, collapsed fast consensus/FINAL,
+  per-phase human gates, mid-idea upgrade.
+
 ## v1.32.0 - 2026-07-03
 
 **Conditional-rigor tracks + developer Quickstart (DevX & speed).** Designed and reviewed by a

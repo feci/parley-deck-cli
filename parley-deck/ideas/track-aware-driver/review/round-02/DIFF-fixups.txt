@@ -1,0 +1,266 @@
+diff --git a/internal/app/classify.go b/internal/app/classify.go
+index 9020cd8..fa599b1 100644
+--- a/internal/app/classify.go
++++ b/internal/app/classify.go
+@@ -37,6 +37,10 @@ func runClassify(args []string, stdout, stderr io.Writer) int {
+ 	if err := fs.Parse(args); err != nil {
+ 		return 2
+ 	}
++	if *files < 0 || *loc < 0 {
++		fmt.Fprintln(stderr, "--files and --loc must be non-negative")
++		return 2
++	}
+ 
+ 	in := track.Inputs{
+ 		Files: *files, LOC: *loc, Reversible: *reversible, MechVerifiable: *mechVerifiable,
+@@ -44,6 +48,16 @@ func runClassify(args []string, stdout, stderr io.Writer) int {
+ 		DataMigration: *dataMigration, StrictGate: *strictGate, AutoImplement: *autoImplement,
+ 		Pipeline: *pipeline, APIBreak: *apiBreak, SchemaBreak: *schemaBreak,
+ 	}
++	// Fast requires the size to be POSITIVELY known: only count --files/--loc as
++	// known when they were actually supplied (review-01 F2, fail-safe).
++	fs.Visit(func(f *flag.Flag) {
++		switch f.Name {
++		case "files":
++			in.FilesKnown = true
++		case "loc":
++			in.LOCKnown = true
++		}
++	})
+ 	computed, reason := track.Classify(in)
+ 
+ 	valid := true
+diff --git a/internal/app/driver_impl.go b/internal/app/driver_impl.go
+index 7bbe3b4..eb614f0 100644
+--- a/internal/app/driver_impl.go
++++ b/internal/app/driver_impl.go
+@@ -152,6 +152,12 @@ func (o driverImplOps) checkModelDiversity() error {
+ 		return nil
+ 	}
+ 	required := driver.ReadRequireModelDiversity(o.ideaDir)
++	// §4.0: the fast track's single reviewer MUST be model-diverse — a same-model
++	// solo checker is the highest rubber-stamp risk (review-01 F4). Make it a hard
++	// gate on fast regardless of the frontmatter flag.
++	if t, present := driver.ReadTrack(o.ideaDir); present && t == track.Fast {
++		required = true
++	}
+ 	action := "warn"
+ 	if required {
+ 		action = "escalate"
+diff --git a/internal/driver/driver.go b/internal/driver/driver.go
+index 3a6eebb..43b5a95 100644
+--- a/internal/driver/driver.go
++++ b/internal/driver/driver.go
+@@ -114,7 +114,11 @@ func New(cfg Config, r RoundRunner) *Driver {
+ 	if cfg.IdeaDir != "" {
+ 		t, present := ReadTrack(cfg.IdeaDir)
+ 		avail := distinctNonImplementers(cfg.Participants)
+-		pol, err := track.PolicyFor(t, present, avail, cfg.AutoImplement, cfg.StrictGate)
++		// The §4.0 contradiction check uses the IDEA-LEVEL auto_implement / strict_gate
++		// (review-01 fix), not cfg.AutoImplement — the latter is masked to false by the
++		// runtime --no-implement brake, which would otherwise let fast + auto_implement
++		// slip past the contradiction gate.
++		pol, err := track.PolicyFor(t, present, avail, ReadAutoImplement(cfg.IdeaDir), ReadStrictGate(cfg.IdeaDir))
+ 		if err != nil {
+ 			trackErr = err
+ 			cfg.Track = string(t)
+@@ -124,6 +128,9 @@ func New(cfg Config, r RoundRunner) *Driver {
+ 				if pol.CrossReviewRounds >= 0 {
+ 					cfg.CrossReviewRounds = pol.CrossReviewRounds
+ 				}
++				if pol.CapCrossReviewRounds > 0 && cfg.CrossReviewRounds > pol.CapCrossReviewRounds {
++					cfg.CrossReviewRounds = pol.CapCrossReviewRounds
++				}
+ 				if pol.MaxFixupCycles > 0 {
+ 					cfg.MaxFixupCycles = pol.MaxFixupCycles
+ 				}
+diff --git a/internal/driver/track_test.go b/internal/driver/track_test.go
+index a8ff125..5b3feaa 100644
+--- a/internal/driver/track_test.go
++++ b/internal/driver/track_test.go
+@@ -83,3 +83,34 @@ func TestFastNonSoloEscalates(t *testing.T) {
+ 		t.Fatal("expected trackErr for fast with no independent reviewer (non-solo)")
+ 	}
+ }
++
++func TestExplicitDeliberationNonSoloEscalates(t *testing.T) {
++	// review-01 F1: explicit deliberation is subject to the non-solo floor too.
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: deliberation\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"solo"}, Auto: true}, nil)
++	if d.trackErr == nil {
++		t.Fatal("explicit deliberation with a single participant must set trackErr (non-solo)")
++	}
++}
++
++func TestAbsentTrackSoloDoesNotTrackError(t *testing.T) {
++	// Absent track keeps today's driver behaviour; the non-solo floor is enforced
++	// at the app/preflight layer, not this driver gate.
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"solo"}, Auto: true}, nil)
++	if d.trackErr != nil {
++		t.Errorf("absent track must not set trackErr for a solo roster: %v", d.trackErr)
++	}
++}
++
++func TestExplicitStandardCapsCrossReview(t *testing.T) {
++	// review-01 F5: explicit standard caps cross-review rounds at 2.
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: standard\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b", "c"}, CrossReviewRounds: 5}, nil)
++	if d.cfg.CrossReviewRounds != 2 {
++		t.Errorf("standard cross-review not capped to 2, got %d", d.cfg.CrossReviewRounds)
++	}
++}
+diff --git a/internal/track/track.go b/internal/track/track.go
+index 1482eb7..45a7f9b 100644
+--- a/internal/track/track.go
++++ b/internal/track/track.go
+@@ -53,6 +53,8 @@ func Normalize(raw string) (Track, bool) {
+ type Inputs struct {
+ 	Files          int
+ 	LOC            int
++	FilesKnown     bool // the file count was actually supplied (unknown size is never fast)
++	LOCKnown       bool // the LOC count was actually supplied
+ 	Reversible     bool // the change is known to be fully reversible
+ 	MechVerifiable bool // the change is mechanically verifiable (lint/type/test)
+ 
+@@ -92,7 +94,11 @@ func Classify(in Inputs) (Track, string) {
+ 			return Deliberation, d.why
+ 		}
+ 	}
+-	if in.Reversible && in.MechVerifiable && in.Files >= 0 && in.Files <= 5 && in.LOC <= 300 {
++	// Fast requires ALL fast conditions to be POSITIVELY known. Unknown or invalid
++	// (negative) size is not proof of "small" — it fails safe to standard (§4.0).
++	if in.Reversible && in.MechVerifiable &&
++		in.FilesKnown && in.Files >= 0 && in.Files <= 5 &&
++		in.LOCKnown && in.LOC >= 0 && in.LOC <= 300 {
+ 		return Fast, "all fast conditions met (reversible, mechanically verifiable, small)"
+ 	}
+ 	return Standard, "default (neither forced to deliberation nor fully fast)"
+@@ -105,12 +111,13 @@ func Classify(in Inputs) (Track, string) {
+ //   - CrossReviewRounds -1  → leave as configured
+ //   - MaxFixupCycles 0      → leave the driver default
+ type Policy struct {
+-	Track             Track
+-	ApplyOverrides    bool // false = reproduce today's behaviour (absent/deliberation)
+-	MaxReviewers      int
+-	MinReviewers      int
+-	CrossReviewRounds int
+-	MaxFixupCycles    int
++	Track                Track
++	ApplyOverrides       bool // false = reproduce today's behaviour (absent/deliberation)
++	MaxReviewers         int
++	MinReviewers         int
++	CrossReviewRounds    int // exact value to set; -1 = leave as configured
++	CapCrossReviewRounds int // upper bound to clamp the configured value to; 0 = no cap
++	MaxFixupCycles       int
+ }
+ 
+ // PolicyFor derives the per-track policy. `present` distinguishes an explicit
+@@ -120,10 +127,17 @@ type Policy struct {
+ // It returns an error for the §4.0 contradictions (fast + auto_implement, fast +
+ // strict_gate) and for a non-solo violation, so the caller can escalate.
+ func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, strictGate bool) (Policy, error) {
+-	// Absent track → legacy behaviour, nothing overridden.
++	// Absent track → legacy behaviour, nothing overridden. (The non-solo floor for
++	// legacy ideas is enforced at the app/preflight layer; this path preserves
++	// today's driver behaviour byte-for-byte.)
+ 	if !present {
+ 		return Policy{Track: Standard, ApplyOverrides: false, CrossReviewRounds: -1}, nil
+ 	}
++	// Non-solo (§1) is an all-track invariant: every EXPLICIT track requires at
++	// least one independent reviewer — including deliberation (review-01 fix).
++	if availableReviewers < 1 {
++		return Policy{}, fmt.Errorf("track: %s requires at least 1 independent reviewer (non-solo, §1); none available", t)
++	}
+ 	switch t {
+ 	case Fast:
+ 		if autoImplement {
+@@ -132,21 +146,16 @@ func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, str
+ 		if strictGate {
+ 			return Policy{}, fmt.Errorf("track: fast is invalid with strict_gate — strict_gate is a §4.0 deliberation trigger; use track: deliberation or remove strict_gate")
+ 		}
+-		if availableReviewers < 1 {
+-			return Policy{}, fmt.Errorf("track: fast requires at least 1 independent reviewer (non-solo, §1); none available")
+-		}
+ 		return Policy{Track: Fast, ApplyOverrides: true, MaxReviewers: 1, MinReviewers: 1, CrossReviewRounds: 0, MaxFixupCycles: 1}, nil
+ 	case Deliberation:
+-		// Deliberation == today's full lifecycle (backward-compat constraint).
++		// Deliberation == today's full lifecycle (backward-compat constraint), but
++		// still subject to the non-solo floor checked above.
+ 		return Policy{Track: Deliberation, ApplyOverrides: false, CrossReviewRounds: -1}, nil
+ 	default: // explicit Standard
+-		if availableReviewers < 1 {
+-			return Policy{}, fmt.Errorf("track: standard requires at least 1 independent reviewer (non-solo, §1); none available")
+-		}
+ 		min := 2
+ 		if availableReviewers <= 1 { // §4.0 two-participant degradation
+ 			min = 1
+ 		}
+-		return Policy{Track: Standard, ApplyOverrides: true, MaxReviewers: 2, MinReviewers: min, CrossReviewRounds: -1, MaxFixupCycles: 2}, nil
++		return Policy{Track: Standard, ApplyOverrides: true, MaxReviewers: 2, MinReviewers: min, CrossReviewRounds: -1, CapCrossReviewRounds: 2, MaxFixupCycles: 2}, nil
+ 	}
+ }
+diff --git a/internal/track/track_test.go b/internal/track/track_test.go
+index 2a33ffa..f59e9b9 100644
+--- a/internal/track/track_test.go
++++ b/internal/track/track_test.go
+@@ -56,22 +56,52 @@ func TestClassifyDeliberationFirst(t *testing.T) {
+ }
+ 
+ func TestClassifyFastAndStandard(t *testing.T) {
+-	if got, _ := Classify(Inputs{Files: 5, LOC: 300, Reversible: true, MechVerifiable: true}); got != Fast {
++	fastable := Inputs{Files: 5, LOC: 300, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: true}
++	if got, _ := Classify(fastable); got != Fast {
+ 		t.Errorf("boundary fast inputs: got %q, want fast", got)
+ 	}
+ 	// Fail-safe: unknown reversibility / verifiability keeps it out of fast.
+-	if got, _ := Classify(Inputs{Files: 2, LOC: 20, Reversible: false, MechVerifiable: true}); got != Standard {
++	if got, _ := Classify(Inputs{Files: 2, LOC: 20, FilesKnown: true, LOCKnown: true, Reversible: false, MechVerifiable: true}); got != Standard {
+ 		t.Errorf("not-known-reversible: got %q, want standard", got)
+ 	}
+-	if got, _ := Classify(Inputs{Files: 2, LOC: 20, Reversible: true, MechVerifiable: false}); got != Standard {
++	if got, _ := Classify(Inputs{Files: 2, LOC: 20, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: false}); got != Standard {
+ 		t.Errorf("not-mech-verifiable: got %q, want standard", got)
+ 	}
++	// Fail-safe: UNKNOWN size is never fast (review-01 F2).
++	if got, _ := Classify(Inputs{Reversible: true, MechVerifiable: true}); got != Standard {
++		t.Errorf("unknown size: got %q, want standard", got)
++	}
++	if got, _ := Classify(Inputs{Files: 1, LOC: 10, FilesKnown: true, Reversible: true, MechVerifiable: true}); got != Standard {
++		t.Errorf("LOC unknown: got %q, want standard", got)
++	}
++	// Fail-safe: negative counts are never fast.
++	if got, _ := Classify(Inputs{Files: 1, LOC: -1, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: true}); got != Standard {
++		t.Errorf("negative LOC: got %q, want standard", got)
++	}
+ 	// Boundary bands fall to standard.
+-	if got, _ := Classify(Inputs{Files: 10, LOC: 500, Reversible: true, MechVerifiable: true}); got != Standard {
++	if got, _ := Classify(Inputs{Files: 10, LOC: 500, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: true}); got != Standard {
+ 		t.Errorf("6-15 file band: got %q, want standard", got)
+ 	}
+ }
+ 
++func TestPolicyForDeliberationNonSolo(t *testing.T) {
++	// review-01 F1: explicit deliberation with no independent reviewer must error.
++	if _, err := PolicyFor(Deliberation, true, 0, false, false); err == nil {
++		t.Error("explicit deliberation with 0 reviewers must error (non-solo)")
++	}
++	// But absent-track (legacy) must NOT error (preflight enforces non-solo there).
++	if _, err := PolicyFor(Standard, false, 0, false, false); err != nil {
++		t.Errorf("absent track must not non-solo-error (legacy path): %v", err)
++	}
++}
++
++func TestPolicyForStandardCapsCrossReview(t *testing.T) {
++	p, _ := PolicyFor(Standard, true, 3, false, false)
++	if p.CapCrossReviewRounds != 2 {
++		t.Errorf("standard CapCrossReviewRounds = %d, want 2", p.CapCrossReviewRounds)
++	}
++}
++
+ func TestPolicyForAbsentIsLegacy(t *testing.T) {
+ 	p, err := PolicyFor(Standard, false, 3, false, false)
+ 	if err != nil {

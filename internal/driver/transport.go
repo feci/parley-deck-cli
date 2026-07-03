@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/track"
 )
 
 // EffectiveTransport returns the transport governing this idea: the idea-level
@@ -67,6 +68,18 @@ func ReadRequireModelDiversity(ideaDir string) bool {
 		return strings.EqualFold(strings.Trim(strings.TrimSpace(v), `"'`), "true")
 	}
 	return false
+}
+
+// ReadTrack reads the idea-level §4.0 rigor track from 00-prompt.md. It returns
+// the normalized track and whether it was EXPLICITLY declared: an absent, empty,
+// or unrecognized value yields (track.Standard, false) so the caller reproduces
+// today's behaviour, while an explicit fast|standard|deliberation yields (…, true)
+// and opts into the §4.0 per-track ceremony (idea track-aware-driver).
+func ReadTrack(ideaDir string) (track.Track, bool) {
+	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "track"); ok {
+		return track.Normalize(v)
+	}
+	return track.Standard, false
 }
 
 func normalizeTransport(raw string) string {
