@@ -1,6 +1,6 @@
 ---
 idea: track-aware-driver
-status: fix-up-cycle-2
+status: complete
 implementer: claude-1
 track: deliberation
 started: 2026-07-03

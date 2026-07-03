@@ -1,0 +1,13 @@
+Round-03 re-review complete. Written to:
+
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/track-aware-driver/review/round-03/hermes-1.md
+
+Summary of what I verified:
+
+Lock TOCTOU fix (codex-1 BLOCK) — RESOLVED. The new control flow returns an error on empty/unparseable lock content instead of falling through to os.Remove. I traced all 4 interleavings of two racers (live-PID, empty-not-yet-written, partial/garbage, stale-dead-PID); none grants two holders. The reclaim path is now only reachable via a successful parse + dead + foreign PID. `go test ./internal/driver -run TestAcquireLockIsExclusive -count=50` passes (8 racers × 50 iterations, zero multi-holder grants).
+
+Fast model-diversity hard gate test (my round-02 MINOR) — RESOLVED. `TestCheckModelDiversityHardGateOnFastTrack` writes `track: fast` with no `require_model_diversity` flag, same-model roster, asserts error — directly exercises the previously-untested `t == track.Fast` branch.
+
+Full suite — GREEN. `go test ./...` exit 0, no FAIL. The runner sandbox exception doesn't reproduce here (cached green).
+
+Signoff: ✅ ACCEPT. No new findings.
