@@ -775,7 +775,7 @@ Then proceed with the per-agent session-start checklist:
 
 ## 10. TL;DR
 
-0. **Pick a track first (§4.0):** `fast` (one review), `standard` (default), or `deliberation` (risky / protocol work). Trivial reversible work needs no Parley at all.
+0. **Pick a track first (§4.0):** `fast` (1 reviewer, collapsed FINAL), `standard` (default), or `deliberation` (risky / protocol work). Trivial reversible work needs no Parley at all.
 1. Parley Deck is non-solo: if another agent can be invoked, at least one non-facilitator participant MUST write its own canonical artifact.
 2. One file per agent per round — no cross-editing.
 3. Round 1 = independent analysis; later rounds = cross-review.

@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-devx-speed
-status: fix-up-cycle-1
+status: complete
 implementer: claude-1
 track: deliberation
 started: 2026-07-03
@@ -103,3 +103,9 @@ re-synced again (body-identical).
 4. Off-ramp + role table + reading guide + **LE consolidation now done** — **met**. Physical appendix move / ≤200-line core — **deferred → `protocol-restructure-appendices`** (reading-guide substitute in place; scope narrowing proposed for ratification in this Phase-7 review consensus).
 5. Both copies byte-identical (drift guard green) + skill-fallback source re-synced in `parley-deck-skill/references/COOPERATION.md` (verified body-identical). Installed runtime skill copies refresh at the **skill release step** (they are a sibling repo, not this commit) — **met (source); runtime pending release**.
 6. `meta/protocol-changelog.md` entry — **met**. `protocolSha256` bump in `meta/version.json` — **done at release step below**.
+
+## Fix-up cycle 2 (NIT)
+status: complete
+completed: 2026-07-03
+
+- [NIT hermes-1 round-02] §10 TL;DR "fast (one review)" → "fast (1 reviewer, collapsed FINAL)". Applied to both copies; drift guard green; skill fallback re-synced. Phase-7 review consensus records ✅ ×3 + implementer, zero Agreed fixes remaining.
