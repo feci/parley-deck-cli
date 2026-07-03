@@ -56,19 +56,49 @@ func TestClassifyDeliberationFirst(t *testing.T) {
 }
 
 func TestClassifyFastAndStandard(t *testing.T) {
-	if got, _ := Classify(Inputs{Files: 5, LOC: 300, Reversible: true, MechVerifiable: true}); got != Fast {
+	fastable := Inputs{Files: 5, LOC: 300, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: true}
+	if got, _ := Classify(fastable); got != Fast {
 		t.Errorf("boundary fast inputs: got %q, want fast", got)
 	}
 	// Fail-safe: unknown reversibility / verifiability keeps it out of fast.
-	if got, _ := Classify(Inputs{Files: 2, LOC: 20, Reversible: false, MechVerifiable: true}); got != Standard {
+	if got, _ := Classify(Inputs{Files: 2, LOC: 20, FilesKnown: true, LOCKnown: true, Reversible: false, MechVerifiable: true}); got != Standard {
 		t.Errorf("not-known-reversible: got %q, want standard", got)
 	}
-	if got, _ := Classify(Inputs{Files: 2, LOC: 20, Reversible: true, MechVerifiable: false}); got != Standard {
+	if got, _ := Classify(Inputs{Files: 2, LOC: 20, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: false}); got != Standard {
 		t.Errorf("not-mech-verifiable: got %q, want standard", got)
 	}
+	// Fail-safe: UNKNOWN size is never fast (review-01 F2).
+	if got, _ := Classify(Inputs{Reversible: true, MechVerifiable: true}); got != Standard {
+		t.Errorf("unknown size: got %q, want standard", got)
+	}
+	if got, _ := Classify(Inputs{Files: 1, LOC: 10, FilesKnown: true, Reversible: true, MechVerifiable: true}); got != Standard {
+		t.Errorf("LOC unknown: got %q, want standard", got)
+	}
+	// Fail-safe: negative counts are never fast.
+	if got, _ := Classify(Inputs{Files: 1, LOC: -1, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: true}); got != Standard {
+		t.Errorf("negative LOC: got %q, want standard", got)
+	}
 	// Boundary bands fall to standard.
-	if got, _ := Classify(Inputs{Files: 10, LOC: 500, Reversible: true, MechVerifiable: true}); got != Standard {
+	if got, _ := Classify(Inputs{Files: 10, LOC: 500, FilesKnown: true, LOCKnown: true, Reversible: true, MechVerifiable: true}); got != Standard {
 		t.Errorf("6-15 file band: got %q, want standard", got)
+	}
+}
+
+func TestPolicyForDeliberationNonSolo(t *testing.T) {
+	// review-01 F1: explicit deliberation with no independent reviewer must error.
+	if _, err := PolicyFor(Deliberation, true, 0, false, false); err == nil {
+		t.Error("explicit deliberation with 0 reviewers must error (non-solo)")
+	}
+	// But absent-track (legacy) must NOT error (preflight enforces non-solo there).
+	if _, err := PolicyFor(Standard, false, 0, false, false); err != nil {
+		t.Errorf("absent track must not non-solo-error (legacy path): %v", err)
+	}
+}
+
+func TestPolicyForStandardCapsCrossReview(t *testing.T) {
+	p, _ := PolicyFor(Standard, true, 3, false, false)
+	if p.CapCrossReviewRounds != 2 {
+		t.Errorf("standard CapCrossReviewRounds = %d, want 2", p.CapCrossReviewRounds)
 	}
 }
 

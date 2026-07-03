@@ -114,7 +114,11 @@ func New(cfg Config, r RoundRunner) *Driver {
 	if cfg.IdeaDir != "" {
 		t, present := ReadTrack(cfg.IdeaDir)
 		avail := distinctNonImplementers(cfg.Participants)
-		pol, err := track.PolicyFor(t, present, avail, cfg.AutoImplement, cfg.StrictGate)
+		// The §4.0 contradiction check uses the IDEA-LEVEL auto_implement / strict_gate
+		// (review-01 fix), not cfg.AutoImplement — the latter is masked to false by the
+		// runtime --no-implement brake, which would otherwise let fast + auto_implement
+		// slip past the contradiction gate.
+		pol, err := track.PolicyFor(t, present, avail, ReadAutoImplement(cfg.IdeaDir), ReadStrictGate(cfg.IdeaDir))
 		if err != nil {
 			trackErr = err
 			cfg.Track = string(t)
@@ -123,6 +127,9 @@ func New(cfg Config, r RoundRunner) *Driver {
 			if pol.ApplyOverrides {
 				if pol.CrossReviewRounds >= 0 {
 					cfg.CrossReviewRounds = pol.CrossReviewRounds
+				}
+				if pol.CapCrossReviewRounds > 0 && cfg.CrossReviewRounds > pol.CapCrossReviewRounds {
+					cfg.CrossReviewRounds = pol.CapCrossReviewRounds
 				}
 				if pol.MaxFixupCycles > 0 {
 					cfg.MaxFixupCycles = pol.MaxFixupCycles

@@ -37,6 +37,10 @@ func runClassify(args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
+	if *files < 0 || *loc < 0 {
+		fmt.Fprintln(stderr, "--files and --loc must be non-negative")
+		return 2
+	}
 
 	in := track.Inputs{
 		Files: *files, LOC: *loc, Reversible: *reversible, MechVerifiable: *mechVerifiable,
@@ -44,6 +48,16 @@ func runClassify(args []string, stdout, stderr io.Writer) int {
 		DataMigration: *dataMigration, StrictGate: *strictGate, AutoImplement: *autoImplement,
 		Pipeline: *pipeline, APIBreak: *apiBreak, SchemaBreak: *schemaBreak,
 	}
+	// Fast requires the size to be POSITIVELY known: only count --files/--loc as
+	// known when they were actually supplied (review-01 F2, fail-safe).
+	fs.Visit(func(f *flag.Flag) {
+		switch f.Name {
+		case "files":
+			in.FilesKnown = true
+		case "loc":
+			in.LOCKnown = true
+		}
+	})
 	computed, reason := track.Classify(in)
 
 	valid := true

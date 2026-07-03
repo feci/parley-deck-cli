@@ -1,6 +1,6 @@
 ---
 idea: track-aware-driver
-status: ready-for-review
+status: fix-up-cycle-1
 implementer: claude-1
 track: deliberation
 started: 2026-07-03
@@ -57,8 +57,40 @@ timeouts + `roundDeadline`; mid-idea upgrade via diff scan.
   `+ --security` → `deliberation`; `--declared fast --files 30` → exit 4.
 - `go vet ./internal/{track,driver,app}/...` clean.
 
+## Fix-up cycle 1 (from review/round-01: codex-1, hermes-1, antigravity-1)
+status: complete
+completed: 2026-07-03
+
+- **[MAJOR codex-1 + antigravity-1] explicit `track: deliberation` bypassed non-solo** → `PolicyFor`
+  now enforces the non-solo floor for EVERY explicit track (moved above the switch); absent-track
+  legacy path still exempt (preflight covers it). Tests: `TestPolicyForDeliberationNonSolo`,
+  `TestExplicitDeliberationNonSoloEscalates`, `TestAbsentTrackSoloDoesNotTrackError`.
+- **[MAJOR codex-1] classifier treated unknown/negative size as fast** → added
+  `Inputs.FilesKnown/LOCKnown`; `Classify` requires size positively known AND non-negative for
+  fast; `parley classify` sets known via `fs.Visit` and rejects negative counts (exit 2). Tests
+  added; smoke: `classify --reversible --mechanically-verifiable` → `standard`.
+- **[MAJOR codex-1] fast + idea-level auto_implement bypassed via --no-implement** → the §4.0
+  contradiction check in `driver.New` now reads the IDEA-LEVEL `ReadAutoImplement(cfg.IdeaDir)` /
+  `ReadStrictGate(cfg.IdeaDir)`, not the runtime-masked `cfg.AutoImplement`.
+- **[MAJOR hermes-1] fast did not force a model-diverse reviewer** → `checkModelDiversity` makes
+  model diversity a HARD gate on `track: fast` (regardless of the frontmatter flag).
+- **[MINOR hermes-1/antigravity-1] standard did not cap cross-review at 2** → added
+  `Policy.CapCrossReviewRounds`; explicit standard clamps CrossReviewRounds to 2
+  (`TestExplicitStandardCapsCrossReview`, `TestPolicyForStandardCapsCrossReview`).
+- **[MAJOR codex-1] full `go test ./...` red** → the only failure is
+  `internal/runner/TestDurableKillEndToEndRealProcess` ("no recorded boot id"), the **known
+  codex-sandbox limitation** (documented in prior ideas). It is GREEN in the implementer's
+  environment and both hermes-1 and antigravity-1 re-ran `go test ./...` green. Recorded as the
+  standing sandbox exception, not a code fix.
+- Deferred (noted, own follow-ups): round-01 participant truncation for fast (antigravity MINOR —
+  round-1 independent analysis intentionally keeps all participants); model-diversity-preserving
+  reviewer truncation order; app-level 3-site regression test.
+
+Re-verified: `go build ./...`, `go vet ./internal/{track,driver,app}/...`, `go test ./...` all
+green in the implementer env.
+
 ## Observable acceptance criteria status
-1. classify §4.0 verbatim + fail-safe — **met** (track tests + smoke).
+1. classify §4.0 verbatim + fail-safe (incl. unknown/negative size → not fast) — **met** (track tests + smoke).
 2. per-track Config values (fast/standard/deliberation/absent) — **met** (driver track tests).
 3. hard-reject contradiction + non-solo — **met** (driver track tests).
 4. refutation structural/non-optional every track — **met** (unchanged validators; no bypass added).

@@ -1,0 +1,17 @@
+I have completed the review of the `track-aware-driver` implementation as `antigravity-1`.
+
+### Summary of Work
+1.  **Code Analysis**: Reviewed the new `internal/track` package and the modifications to `internal/driver` and `internal/app/classify.go`.
+2.  **Verification**: Ran the full test suite (`go test ./...`) and `go vet`, both of which are green.
+3.  **Refutation-Default Review**: Systematically attacked each acceptance criterion.
+    *   **Classify**: Confirmed §4.0 logic is verbatim with correct boundary values and fail-safes.
+    *   **Backward Compatibility**: Verified that absent tracks and `track: deliberation` preserve today's behavior.
+    *   **Hard-Rejects**: Found that `track: fast` and `track: standard` correctly reject solo configurations, but **explicit `track: deliberation` bypasses this check**, which violates the "non-solo invariant" mentioned in the code.
+    *   **Round-01**: Identified that `round-01` is not track-aware and will launch all specified participants regardless of the track.
+
+### Key Findings
+*   **[MAJOR]** Explicit `track: deliberation` allows solo runs, bypassing the hard-reject intended for all §4.0 tracks.
+*   **[MINOR]** `round-01` does not honor the reviewer cap, leading to potential waste of resources before the driver takes over.
+*   **[NIT]** The classifier allows negative `LOC` values.
+
+The detailed review has been written to [/parley-deck/ideas/track-aware-driver/review/round-01/antigravity-1.md](file:///Volumes/My%20Shared%20Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/track-aware-driver/review/round-01/antigravity-1.md).

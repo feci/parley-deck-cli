@@ -1,0 +1,696 @@
+diff --git a/internal/app/app.go b/internal/app/app.go
+index 6d9d157..252ea53 100644
+--- a/internal/app/app.go
++++ b/internal/app/app.go
+@@ -90,6 +90,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
+ 		return runRetro(args[1:], stdout, stderr)
+ 	case "loop":
+ 		return runLoop(args[1:], stdout, stderr)
++	case "classify":
++		return runClassify(args[1:], stdout, stderr)
+ 	case "tui":
+ 		return runTUI(ctx, args[1:], stdout, stderr)
+ 	default:
+diff --git a/internal/app/classify.go b/internal/app/classify.go
+new file mode 100644
+index 0000000..9020cd8
+--- /dev/null
++++ b/internal/app/classify.go
+@@ -0,0 +1,96 @@
++package app
++
++import (
++	"encoding/json"
++	"flag"
++	"fmt"
++	"io"
++
++	"parley-deck-cli/internal/track"
++)
++
++// runClassify implements `parley classify` — a pure, script-checkable §4.0 track
++// classifier (idea track-aware-driver, Slice 2). It maps objective inputs to a
++// track and, with --declared, validates a declared track against the computed
++// floor (exit 4 on an under-tier so CI can gate). Plain output prints only the
++// track so scripts can do `t=$(parley classify ...)`.
++func runClassify(args []string, stdout, stderr io.Writer) int {
++	fs := flag.NewFlagSet("classify", flag.ContinueOnError)
++	fs.SetOutput(stderr)
++	var (
++		files          = fs.Int("files", 0, "number of files touched")
++		loc            = fs.Int("loc", 0, "lines of code changed")
++		reversible     = fs.Bool("reversible", false, "the change is fully reversible")
++		mechVerifiable = fs.Bool("mechanically-verifiable", false, "mechanically verifiable (lint/type/test)")
++		security       = fs.Bool("security", false, "security/auth/secrets/payments/privacy/production-infra surface")
++		irreversible   = fs.Bool("irreversible", false, "irreversible/destructive op")
++		dataMigration  = fs.Bool("data-migration", false, "data migration")
++		protocolChange = fs.Bool("protocol-change", false, "protocol change (see COOPERATION.md §7)")
++		autoImplement  = fs.Bool("auto-implement", false, "auto_implement idea")
++		strictGate     = fs.Bool("strict-gate", false, "strict_gate idea")
++		pipeline       = fs.Bool("pipeline", false, "pipeline or action block")
++		apiBreak       = fs.Bool("api-break", false, "public-API break")
++		schemaBreak    = fs.Bool("schema-break", false, "persisted-schema break")
++		declared       = fs.String("declared", "", "optional declared track to validate (fast|standard|deliberation)")
++		jsonOut        = fs.Bool("json", false, "print JSON output")
++	)
++	if err := fs.Parse(args); err != nil {
++		return 2
++	}
++
++	in := track.Inputs{
++		Files: *files, LOC: *loc, Reversible: *reversible, MechVerifiable: *mechVerifiable,
++		ProtocolChange: *protocolChange, Security: *security, Irreversible: *irreversible,
++		DataMigration: *dataMigration, StrictGate: *strictGate, AutoImplement: *autoImplement,
++		Pipeline: *pipeline, APIBreak: *apiBreak, SchemaBreak: *schemaBreak,
++	}
++	computed, reason := track.Classify(in)
++
++	valid := true
++	var msg string
++	if *declared != "" {
++		dt, ok := track.Normalize(*declared)
++		if !ok {
++			fmt.Fprintf(stderr, "unknown --declared track %q (use fast|standard|deliberation)\n", *declared)
++			return 2
++		}
++		if trackRigor(dt) < trackRigor(computed) {
++			valid = false
++			msg = fmt.Sprintf("declared track %q is under-tiered; the classifier floor is %q (%s)", dt, computed, reason)
++		}
++	}
++
++	if *jsonOut {
++		out := map[string]any{"track": string(computed), "reason": reason}
++		if *declared != "" {
++			out["declared"] = *declared
++			out["valid"] = valid
++			if !valid {
++				out["message"] = msg
++			}
++		}
++		b, _ := json.MarshalIndent(out, "", "  ")
++		fmt.Fprintln(stdout, string(b))
++	} else {
++		fmt.Fprintln(stdout, string(computed))
++		if !valid {
++			fmt.Fprintln(stderr, msg)
++		}
++	}
++	if !valid {
++		return 4
++	}
++	return 0
++}
++
++// trackRigor orders the tracks by strictness for under-tier validation.
++func trackRigor(t track.Track) int {
++	switch t {
++	case track.Fast:
++		return 0
++	case track.Deliberation:
++		return 2
++	default:
++		return 1
++	}
++}
+diff --git a/internal/app/driver_impl.go b/internal/app/driver_impl.go
+index e4a68ee..7bbe3b4 100644
+--- a/internal/app/driver_impl.go
++++ b/internal/app/driver_impl.go
+@@ -18,6 +18,7 @@ import (
+ 	"parley-deck-cli/internal/protocol"
+ 	"parley-deck-cli/internal/runner"
+ 	"parley-deck-cli/internal/store"
++	"parley-deck-cli/internal/track"
+ )
+ 
+ // driverImplOps is the production driver.ImplOps adapter (driver-impl-phase). It
+@@ -50,6 +51,15 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
+ 			reviewers = append(reviewers, p)
+ 		}
+ 	}
++	// Track-aware reviewer cap (idea track-aware-driver): an EXPLICIT fast/standard
++	// track reduces the reviewer set per §4.0 (fast=1, standard=2); absent and
++	// deliberation keep all non-implementers. The truncation is deterministic
++	// (participant order) and never drops below the non-solo floor of 1.
++	if t, present := driver.ReadTrack(ideaDir); present {
++		if pol, err := track.PolicyFor(t, present, len(reviewers), driver.ReadAutoImplement(ideaDir), driver.ReadStrictGate(ideaDir)); err == nil && pol.MaxReviewers > 0 && len(reviewers) > pol.MaxReviewers {
++			reviewers = reviewers[:pol.MaxReviewers]
++		}
++	}
+ 	// The review-consensus drafter MUST be a non-implementer so the implementer
+ 	// cannot filter reviewer findings out of the consensus (AF3). Fall back to the
+ 	// implementer only if there are somehow no reviewers.
+diff --git a/internal/driver/driver.go b/internal/driver/driver.go
+index f997db8..3a6eebb 100644
+--- a/internal/driver/driver.go
++++ b/internal/driver/driver.go
+@@ -12,6 +12,7 @@ import (
+ 
+ 	"parley-deck-cli/internal/runner"
+ 	"parley-deck-cli/internal/store"
++	"parley-deck-cli/internal/track"
+ )
+ 
+ // RoundRunner launches cross-review round N, writing round-NN/<agent>.md for each
+@@ -72,12 +73,22 @@ type Config struct {
+ 	MaxWallClock   time.Duration // total run wall-clock budget (distinct from the per-tick roundDeadline)
+ 	MaxCostUSD     float64       // total external-backend cost budget (best-effort, telemetry-gated; LE-6)
+ 	Out            io.Writer     // progress output (nil → discard)
++	// Track-aware config (idea track-aware-driver): the §4.0 rigor track derived
++	// from 00-prompt `track:` and the reviewer bounds it implies. Track is the
++	// recorded track name (may be set even when overrides are not applied, e.g.
++	// deliberation/absent). MaxReviewers caps the reviewer set (0 = all
++	// non-implementers, today's behaviour). MinReviewers is the LE-11 auto-complete
++	// minimum (0 → New defaults it to 2, preserving today's `< 2` guard).
++	Track        string
++	MaxReviewers int
++	MinReviewers int
+ }
+ 
+ // Driver advances one idea through the deliberation phases via Advance ticks.
+ type Driver struct {
+-	cfg    Config
+-	runner RoundRunner
++	cfg      Config
++	runner   RoundRunner
++	trackErr error // §4.0 contradiction / non-solo violation, escalated on Advance
+ }
+ 
+ // New constructs a Driver, applying defaults.
+@@ -94,7 +105,54 @@ func New(cfg Config, r RoundRunner) *Driver {
+ 	if cfg.Out == nil {
+ 		cfg.Out = io.Discard
+ 	}
+-	return &Driver{cfg: cfg, runner: r}
++	// Track-aware derivation (idea track-aware-driver): an EXPLICIT 00-prompt
++	// `track:` opts into §4.0 reduced ceremony; absent/deliberation preserve
++	// today's behaviour byte-for-byte. A §4.0 contradiction (fast + auto_implement
++	// / strict_gate) or a non-solo violation is recorded and escalated on the first
++	// Advance rather than silently applied.
++	var trackErr error
++	if cfg.IdeaDir != "" {
++		t, present := ReadTrack(cfg.IdeaDir)
++		avail := distinctNonImplementers(cfg.Participants)
++		pol, err := track.PolicyFor(t, present, avail, cfg.AutoImplement, cfg.StrictGate)
++		if err != nil {
++			trackErr = err
++			cfg.Track = string(t)
++		} else {
++			cfg.Track = string(pol.Track)
++			if pol.ApplyOverrides {
++				if pol.CrossReviewRounds >= 0 {
++					cfg.CrossReviewRounds = pol.CrossReviewRounds
++				}
++				if pol.MaxFixupCycles > 0 {
++					cfg.MaxFixupCycles = pol.MaxFixupCycles
++				}
++				cfg.MaxReviewers = pol.MaxReviewers
++				if pol.MinReviewers > 0 {
++					cfg.MinReviewers = pol.MinReviewers
++				}
++			}
++		}
++	}
++	if cfg.MinReviewers <= 0 {
++		cfg.MinReviewers = 2 // preserve today's LE-11 `< 2` guard for absent/deliberation
++	}
++	return &Driver{cfg: cfg, runner: r, trackErr: trackErr}
++}
++
++// distinctNonImplementers estimates the number of available independent reviewers
++// from the participant set (one participant is the implementer): distinct − 1.
++func distinctNonImplementers(participants []string) int {
++	seen := make(map[string]bool)
++	for _, p := range participants {
++		if p != "" {
++			seen[p] = true
++		}
++	}
++	if n := len(seen) - 1; n > 0 {
++		return n
++	}
++	return 0
+ }
+ 
+ func (d *Driver) cursorPath() string { return filepath.Join(d.cfg.RunDir, "driver.json") }
+@@ -150,6 +208,13 @@ func (d *Driver) autoDriveEnabled() bool {
+ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
+ 	c := Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds)
+ 
++	// Track-aware hard gate (idea track-aware-driver): a §4.0 contradiction
++	// (fast + auto_implement / strict_gate) or a non-solo violation escalates
++	// rather than proceeding under reduced ceremony.
++	if d.trackErr != nil {
++		return ActionEscalated, c, d.trackErr
++	}
++
+ 	// Auto gate (1.27.0): auto-drive is transport-independent; only --auto/--no-auto
+ 	// decides. See autoDriveEnabled.
+ 	if !d.autoDriveEnabled() {
+diff --git a/internal/driver/impl.go b/internal/driver/impl.go
+index 1cda26e..fed8855 100644
+--- a/internal/driver/impl.go
++++ b/internal/driver/impl.go
+@@ -237,8 +237,8 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
+ 			if rs.Summary.Triage == consensus.TriageReserved {
+ 				return ActionEscalated, c, fmt.Errorf("review consensus is ACCEPT-WITH-RESERVATIONS; under auto_implement, reservations need human review before completion (LE-11)")
+ 			}
+-			if rs.ReviewerCount < 2 {
+-				return ActionEscalated, c, fmt.Errorf("only %d independent reviewer(s); auto-complete requires at least 2 (LE-11) — add a reviewer or sign off manually", rs.ReviewerCount)
++			if rs.ReviewerCount < d.cfg.MinReviewers {
++				return ActionEscalated, c, fmt.Errorf("only %d independent reviewer(s); track %q auto-complete requires at least %d (LE-11) — add a reviewer or sign off manually", rs.ReviewerCount, d.cfg.Track, d.cfg.MinReviewers)
+ 			}
+ 		}
+ 		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh
+diff --git a/internal/driver/track_test.go b/internal/driver/track_test.go
+new file mode 100644
+index 0000000..a8ff125
+--- /dev/null
++++ b/internal/driver/track_test.go
+@@ -0,0 +1,85 @@
++package driver
++
++import (
++	"context"
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func writeTrackPrompt(t *testing.T, dir, body string) {
++	t.Helper()
++	if err := os.WriteFile(filepath.Join(dir, "00-prompt.md"), []byte(body), 0o644); err != nil {
++		t.Fatal(err)
++	}
++}
++
++func TestNewAppliesFastTrack(t *testing.T) {
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: fast\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b", "c"}}, nil)
++	if d.cfg.Track != "fast" {
++		t.Errorf("Track = %q, want fast", d.cfg.Track)
++	}
++	if d.cfg.MaxReviewers != 1 || d.cfg.MinReviewers != 1 {
++		t.Errorf("fast reviewers: Max=%d Min=%d, want 1/1", d.cfg.MaxReviewers, d.cfg.MinReviewers)
++	}
++	if d.cfg.CrossReviewRounds != 0 || d.cfg.MaxFixupCycles != 1 {
++		t.Errorf("fast loop: CrossReview=%d Fixup=%d, want 0/1", d.cfg.CrossReviewRounds, d.cfg.MaxFixupCycles)
++	}
++	if d.trackErr != nil {
++		t.Errorf("unexpected trackErr: %v", d.trackErr)
++	}
++}
++
++func TestNewExplicitStandardAppliesCaps(t *testing.T) {
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: standard\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b", "c", "d"}}, nil)
++	if d.cfg.MaxReviewers != 2 || d.cfg.MinReviewers != 2 || d.cfg.MaxFixupCycles != 2 {
++		t.Errorf("explicit standard: Max=%d Min=%d Fixup=%d, want 2/2/2", d.cfg.MaxReviewers, d.cfg.MinReviewers, d.cfg.MaxFixupCycles)
++	}
++}
++
++func TestNewDeliberationIsLegacy(t *testing.T) {
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: deliberation\n---\n")
++	// CrossReviewRounds:-1 exercises New's default (→1); deliberation must PRESERVE it.
++	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b"}, CrossReviewRounds: -1}, nil)
++	// deliberation == today's full lifecycle: no reviewer cap, LE-11 min 2, fixup 3, cross-review 1.
++	if d.cfg.MaxReviewers != 0 || d.cfg.MinReviewers != 2 || d.cfg.MaxFixupCycles != 3 || d.cfg.CrossReviewRounds != 1 {
++		t.Errorf("deliberation not legacy: Max=%d Min=%d Fixup=%d Cross=%d", d.cfg.MaxReviewers, d.cfg.MinReviewers, d.cfg.MaxFixupCycles, d.cfg.CrossReviewRounds)
++	}
++}
++
++func TestNewAbsentTrackIsLegacy(t *testing.T) {
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b"}}, nil)
++	if d.cfg.MaxReviewers != 0 || d.cfg.MinReviewers != 2 || d.cfg.MaxFixupCycles != 3 {
++		t.Errorf("absent track not legacy: Max=%d Min=%d Fixup=%d", d.cfg.MaxReviewers, d.cfg.MinReviewers, d.cfg.MaxFixupCycles)
++	}
++}
++
++func TestFastContradictionEscalates(t *testing.T) {
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: fast\nauto_implement: true\n---\n")
++	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b"}, AutoImplement: true, Auto: true}, nil)
++	if d.trackErr == nil {
++		t.Fatal("expected trackErr for fast + auto_implement contradiction")
++	}
++	act, _, err := d.Advance(context.Background())
++	if act != ActionEscalated || err == nil {
++		t.Errorf("Advance = (%v, %v); want ActionEscalated + error", act, err)
++	}
++}
++
++func TestFastNonSoloEscalates(t *testing.T) {
++	dir := t.TempDir()
++	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: fast\n---\n")
++	// Only one participant → 0 available reviewers → non-solo violation.
++	d := New(Config{IdeaDir: dir, Participants: []string{"solo"}, Auto: true}, nil)
++	if d.trackErr == nil {
++		t.Fatal("expected trackErr for fast with no independent reviewer (non-solo)")
++	}
++}
+diff --git a/internal/driver/transport.go b/internal/driver/transport.go
+index 1408e27..ede62e0 100644
+--- a/internal/driver/transport.go
++++ b/internal/driver/transport.go
+@@ -6,6 +6,7 @@ import (
+ 	"strings"
+ 
+ 	"parley-deck-cli/internal/protocol"
++	"parley-deck-cli/internal/track"
+ )
+ 
+ // EffectiveTransport returns the transport governing this idea: the idea-level
+@@ -69,6 +70,18 @@ func ReadRequireModelDiversity(ideaDir string) bool {
+ 	return false
+ }
+ 
++// ReadTrack reads the idea-level §4.0 rigor track from 00-prompt.md. It returns
++// the normalized track and whether it was EXPLICITLY declared: an absent, empty,
++// or unrecognized value yields (track.Standard, false) so the caller reproduces
++// today's behaviour, while an explicit fast|standard|deliberation yields (…, true)
++// and opts into the §4.0 per-track ceremony (idea track-aware-driver).
++func ReadTrack(ideaDir string) (track.Track, bool) {
++	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "track"); ok {
++		return track.Normalize(v)
++	}
++	return track.Standard, false
++}
++
+ func normalizeTransport(raw string) string {
+ 	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), "`'\"* "))
+ 	switch v {
+diff --git a/internal/track/track.go b/internal/track/track.go
+new file mode 100644
+index 0000000..1482eb7
+--- /dev/null
++++ b/internal/track/track.go
+@@ -0,0 +1,152 @@
++// Package track implements the §4.0 conditional-rigor track model: a pure,
++// deterministic classifier (objective inputs → track) and the per-track policy
++// (reviewer caps, fix-up caps, cross-review) the driver enforces. It has no
++// dependencies so it is trivially unit-testable and importable by both the
++// driver and the CLI (`parley classify`).
++//
++// Design invariants (idea track-aware-driver, shipped after
++// meta-protocol-change-devx-speed):
++//   - Classification is deliberation-first, then fast, else standard, and fails
++//     safe to the stricter track on doubt (§4.0).
++//   - An ABSENT track reproduces today's behaviour byte-for-byte (ApplyOverrides
++//     false); only an EXPLICIT track applies §4.0's reduced ceremony.
++//   - No track may drop the non-solo (≥1 independent reviewer) invariant; fast is
++//     rejected when combined with the deliberation triggers auto_implement /
++//     strict_gate.
++package track
++
++import (
++	"fmt"
++	"strings"
++)
++
++// Track is one of the three §4.0 rigor tracks.
++type Track string
++
++const (
++	Fast         Track = "fast"
++	Standard     Track = "standard"
++	Deliberation Track = "deliberation"
++)
++
++// Normalize maps a raw frontmatter value to a Track. It returns (track, true)
++// for a recognized value and (Standard, false) for absent/empty/unknown — so an
++// unrecognized or missing track fails safe to standard AND is reported as
++// "not explicitly declared" (the caller uses that to preserve legacy behaviour).
++func Normalize(raw string) (Track, bool) {
++	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), "`'\"* "))
++	switch v {
++	case string(Fast):
++		return Fast, true
++	case string(Standard):
++		return Standard, true
++	case string(Deliberation):
++		return Deliberation, true
++	default:
++		return Standard, false
++	}
++}
++
++// Inputs are the objective signals the §4.0 classifier reads. Booleans that are
++// not known should be left false (fail-safe: unknown reversibility/verifiability
++// simply keeps a task out of fast).
++type Inputs struct {
++	Files          int
++	LOC            int
++	Reversible     bool // the change is known to be fully reversible
++	MechVerifiable bool // the change is mechanically verifiable (lint/type/test)
++
++	// Deliberation triggers (any one forces deliberation).
++	ProtocolChange bool
++	Security       bool // security/auth/secrets/payments/privacy/production-infra
++	Irreversible   bool // irreversible/destructive op
++	DataMigration  bool
++	StrictGate     bool
++	AutoImplement  bool
++	Pipeline       bool // pipeline or action block
++	APIBreak       bool // public-API break
++	SchemaBreak    bool // persisted-schema break
++}
++
++// Classify implements §4.0: evaluate deliberation triggers first (first match
++// wins); else fast only when ALL fast conditions hold; else standard. It returns
++// the track and a short reason (the trigger that fired), suitable for `--json`.
++func Classify(in Inputs) (Track, string) {
++	for _, d := range []struct {
++		on  bool
++		why string
++	}{
++		{in.ProtocolChange, "protocol-change"},
++		{in.Security, "security/secrets/production surface"},
++		{in.Irreversible, "irreversible/destructive"},
++		{in.DataMigration, "data-migration"},
++		{in.StrictGate, "strict_gate"},
++		{in.AutoImplement, "auto_implement"},
++		{in.Pipeline, "pipeline/action block"},
++		{in.APIBreak, "public-api-break"},
++		{in.SchemaBreak, "persisted-schema-break"},
++		{in.Files > 15, "more than 15 files"},
++		{in.LOC > 1000, "more than 1000 LOC"},
++	} {
++		if d.on {
++			return Deliberation, d.why
++		}
++	}
++	if in.Reversible && in.MechVerifiable && in.Files >= 0 && in.Files <= 5 && in.LOC <= 300 {
++		return Fast, "all fast conditions met (reversible, mechanically verifiable, small)"
++	}
++	return Standard, "default (neither forced to deliberation nor fully fast)"
++}
++
++// Policy is the per-track driver configuration derived from a declared track.
++// A zero/"leave" value means "do not change the driver default":
++//   - MaxReviewers 0        → unlimited (all non-implementers review)
++//   - MinReviewers 0        → use the driver's default (2)
++//   - CrossReviewRounds -1  → leave as configured
++//   - MaxFixupCycles 0      → leave the driver default
++type Policy struct {
++	Track             Track
++	ApplyOverrides    bool // false = reproduce today's behaviour (absent/deliberation)
++	MaxReviewers      int
++	MinReviewers      int
++	CrossReviewRounds int
++	MaxFixupCycles    int
++}
++
++// PolicyFor derives the per-track policy. `present` distinguishes an explicit
++// track (apply §4.0) from an absent one (preserve legacy behaviour).
++// availableReviewers is the number of distinct non-implementer participants; it
++// drives the non-solo hard-reject and the §4.0 two-participant degradation.
++// It returns an error for the §4.0 contradictions (fast + auto_implement, fast +
++// strict_gate) and for a non-solo violation, so the caller can escalate.
++func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, strictGate bool) (Policy, error) {
++	// Absent track → legacy behaviour, nothing overridden.
++	if !present {
++		return Policy{Track: Standard, ApplyOverrides: false, CrossReviewRounds: -1}, nil
++	}
++	switch t {
++	case Fast:
++		if autoImplement {
++			return Policy{}, fmt.Errorf("track: fast is invalid with auto_implement — auto_implement is a §4.0 deliberation trigger; use track: deliberation or remove auto_implement")
++		}
++		if strictGate {
++			return Policy{}, fmt.Errorf("track: fast is invalid with strict_gate — strict_gate is a §4.0 deliberation trigger; use track: deliberation or remove strict_gate")
++		}
++		if availableReviewers < 1 {
++			return Policy{}, fmt.Errorf("track: fast requires at least 1 independent reviewer (non-solo, §1); none available")
++		}
++		return Policy{Track: Fast, ApplyOverrides: true, MaxReviewers: 1, MinReviewers: 1, CrossReviewRounds: 0, MaxFixupCycles: 1}, nil
++	case Deliberation:
++		// Deliberation == today's full lifecycle (backward-compat constraint).
++		return Policy{Track: Deliberation, ApplyOverrides: false, CrossReviewRounds: -1}, nil
++	default: // explicit Standard
++		if availableReviewers < 1 {
++			return Policy{}, fmt.Errorf("track: standard requires at least 1 independent reviewer (non-solo, §1); none available")
++		}
++		min := 2
++		if availableReviewers <= 1 { // §4.0 two-participant degradation
++			min = 1
++		}
++		return Policy{Track: Standard, ApplyOverrides: true, MaxReviewers: 2, MinReviewers: min, CrossReviewRounds: -1, MaxFixupCycles: 2}, nil
++	}
++}
+diff --git a/internal/track/track_test.go b/internal/track/track_test.go
+new file mode 100644
+index 0000000..2a33ffa
+--- /dev/null
++++ b/internal/track/track_test.go
+@@ -0,0 +1,145 @@
++package track
++
++import "testing"
++
++func TestNormalize(t *testing.T) {
++	cases := []struct {
++		raw     string
++		want    Track
++		present bool
++	}{
++		{"fast", Fast, true},
++		{"standard", Standard, true},
++		{"deliberation", Deliberation, true},
++		{"FAST", Fast, true},
++		{"  `standard` ", Standard, true},
++		{`"deliberation"`, Deliberation, true},
++		{"", Standard, false},
++		{"speedy", Standard, false},
++		{"fast | standard | deliberation", Standard, false}, // the literal template placeholder
++	}
++	for _, c := range cases {
++		got, present := Normalize(c.raw)
++		if got != c.want || present != c.present {
++			t.Errorf("Normalize(%q) = (%q,%v), want (%q,%v)", c.raw, got, present, c.want, c.present)
++		}
++	}
++}
++
++func TestClassifyDeliberationFirst(t *testing.T) {
++	// Every deliberation trigger must win even when the size looks fast.
++	small := Inputs{Files: 1, LOC: 10, Reversible: true, MechVerifiable: true}
++	triggers := []func(*Inputs){
++		func(i *Inputs) { i.ProtocolChange = true },
++		func(i *Inputs) { i.Security = true },
++		func(i *Inputs) { i.Irreversible = true },
++		func(i *Inputs) { i.DataMigration = true },
++		func(i *Inputs) { i.StrictGate = true },
++		func(i *Inputs) { i.AutoImplement = true },
++		func(i *Inputs) { i.Pipeline = true },
++		func(i *Inputs) { i.APIBreak = true },
++		func(i *Inputs) { i.SchemaBreak = true },
++	}
++	for idx, apply := range triggers {
++		in := small
++		apply(&in)
++		if got, _ := Classify(in); got != Deliberation {
++			t.Errorf("trigger %d: Classify = %q, want deliberation", idx, got)
++		}
++	}
++	if got, _ := Classify(Inputs{Files: 16, Reversible: true, MechVerifiable: true}); got != Deliberation {
++		t.Errorf(">15 files: got %q, want deliberation", got)
++	}
++	if got, _ := Classify(Inputs{LOC: 1001, Reversible: true, MechVerifiable: true}); got != Deliberation {
++		t.Errorf(">1000 LOC: got %q, want deliberation", got)
++	}
++}
++
++func TestClassifyFastAndStandard(t *testing.T) {
++	if got, _ := Classify(Inputs{Files: 5, LOC: 300, Reversible: true, MechVerifiable: true}); got != Fast {
++		t.Errorf("boundary fast inputs: got %q, want fast", got)
++	}
++	// Fail-safe: unknown reversibility / verifiability keeps it out of fast.
++	if got, _ := Classify(Inputs{Files: 2, LOC: 20, Reversible: false, MechVerifiable: true}); got != Standard {
++		t.Errorf("not-known-reversible: got %q, want standard", got)
++	}
++	if got, _ := Classify(Inputs{Files: 2, LOC: 20, Reversible: true, MechVerifiable: false}); got != Standard {
++		t.Errorf("not-mech-verifiable: got %q, want standard", got)
++	}
++	// Boundary bands fall to standard.
++	if got, _ := Classify(Inputs{Files: 10, LOC: 500, Reversible: true, MechVerifiable: true}); got != Standard {
++		t.Errorf("6-15 file band: got %q, want standard", got)
++	}
++}
++
++func TestPolicyForAbsentIsLegacy(t *testing.T) {
++	p, err := PolicyFor(Standard, false, 3, false, false)
++	if err != nil {
++		t.Fatalf("absent track error: %v", err)
++	}
++	if p.ApplyOverrides {
++		t.Error("absent track must NOT apply overrides (legacy behaviour)")
++	}
++	if p.CrossReviewRounds != -1 || p.MaxReviewers != 0 || p.MinReviewers != 0 || p.MaxFixupCycles != 0 {
++		t.Errorf("absent track must leave all knobs untouched, got %+v", p)
++	}
++}
++
++func TestPolicyForFast(t *testing.T) {
++	p, err := PolicyFor(Fast, true, 3, false, false)
++	if err != nil {
++		t.Fatalf("fast policy error: %v", err)
++	}
++	if !p.ApplyOverrides || p.MaxReviewers != 1 || p.MinReviewers != 1 || p.CrossReviewRounds != 0 || p.MaxFixupCycles != 1 {
++		t.Errorf("fast policy = %+v, want overrides 1/1/0/1", p)
++	}
++	// Contradictions: fast + auto_implement / strict_gate must error.
++	if _, err := PolicyFor(Fast, true, 3, true, false); err == nil {
++		t.Error("fast + auto_implement must error")
++	}
++	if _, err := PolicyFor(Fast, true, 3, false, true); err == nil {
++		t.Error("fast + strict_gate must error")
++	}
++	// Non-solo: fast with 0 available reviewers must error.
++	if _, err := PolicyFor(Fast, true, 0, false, false); err == nil {
++		t.Error("fast with 0 reviewers must error (non-solo)")
++	}
++}
++
++func TestPolicyForStandard(t *testing.T) {
++	p, err := PolicyFor(Standard, true, 3, false, false)
++	if err != nil {
++		t.Fatalf("standard policy error: %v", err)
++	}
++	if !p.ApplyOverrides || p.MaxReviewers != 2 || p.MinReviewers != 2 || p.MaxFixupCycles != 2 {
++		t.Errorf("standard policy = %+v, want overrides 2/2/-/2", p)
++	}
++	if p.CrossReviewRounds != -1 {
++		t.Errorf("standard must leave CrossReviewRounds (-1), got %d", p.CrossReviewRounds)
++	}
++	// Two-participant degradation: 1 available reviewer → MinReviewers 1.
++	deg, err := PolicyFor(Standard, true, 1, false, false)
++	if err != nil {
++		t.Fatalf("standard degradation error: %v", err)
++	}
++	if deg.MinReviewers != 1 {
++		t.Errorf("standard with 1 reviewer must degrade MinReviewers to 1, got %d", deg.MinReviewers)
++	}
++	// Non-solo.
++	if _, err := PolicyFor(Standard, true, 0, false, false); err == nil {
++		t.Error("standard with 0 reviewers must error (non-solo)")
++	}
++}
++
++func TestPolicyForDeliberationIsLegacy(t *testing.T) {
++	p, err := PolicyFor(Deliberation, true, 3, true, true)
++	if err != nil {
++		t.Fatalf("deliberation policy error: %v", err)
++	}
++	if p.ApplyOverrides {
++		t.Error("deliberation must NOT override (it equals today's full lifecycle)")
++	}
++	if p.Track != Deliberation {
++		t.Errorf("deliberation track = %q", p.Track)
++	}
++}

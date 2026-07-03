@@ -83,3 +83,34 @@ func TestFastNonSoloEscalates(t *testing.T) {
 		t.Fatal("expected trackErr for fast with no independent reviewer (non-solo)")
 	}
 }
+
+func TestExplicitDeliberationNonSoloEscalates(t *testing.T) {
+	// review-01 F1: explicit deliberation is subject to the non-solo floor too.
+	dir := t.TempDir()
+	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: deliberation\n---\n")
+	d := New(Config{IdeaDir: dir, Participants: []string{"solo"}, Auto: true}, nil)
+	if d.trackErr == nil {
+		t.Fatal("explicit deliberation with a single participant must set trackErr (non-solo)")
+	}
+}
+
+func TestAbsentTrackSoloDoesNotTrackError(t *testing.T) {
+	// Absent track keeps today's driver behaviour; the non-solo floor is enforced
+	// at the app/preflight layer, not this driver gate.
+	dir := t.TempDir()
+	writeTrackPrompt(t, dir, "---\nidea: x\n---\n")
+	d := New(Config{IdeaDir: dir, Participants: []string{"solo"}, Auto: true}, nil)
+	if d.trackErr != nil {
+		t.Errorf("absent track must not set trackErr for a solo roster: %v", d.trackErr)
+	}
+}
+
+func TestExplicitStandardCapsCrossReview(t *testing.T) {
+	// review-01 F5: explicit standard caps cross-review rounds at 2.
+	dir := t.TempDir()
+	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: standard\n---\n")
+	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b", "c"}, CrossReviewRounds: 5}, nil)
+	if d.cfg.CrossReviewRounds != 2 {
+		t.Errorf("standard cross-review not capped to 2, got %d", d.cfg.CrossReviewRounds)
+	}
+}

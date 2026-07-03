@@ -53,6 +53,8 @@ func Normalize(raw string) (Track, bool) {
 type Inputs struct {
 	Files          int
 	LOC            int
+	FilesKnown     bool // the file count was actually supplied (unknown size is never fast)
+	LOCKnown       bool // the LOC count was actually supplied
 	Reversible     bool // the change is known to be fully reversible
 	MechVerifiable bool // the change is mechanically verifiable (lint/type/test)
 
@@ -92,7 +94,11 @@ func Classify(in Inputs) (Track, string) {
 			return Deliberation, d.why
 		}
 	}
-	if in.Reversible && in.MechVerifiable && in.Files >= 0 && in.Files <= 5 && in.LOC <= 300 {
+	// Fast requires ALL fast conditions to be POSITIVELY known. Unknown or invalid
+	// (negative) size is not proof of "small" — it fails safe to standard (§4.0).
+	if in.Reversible && in.MechVerifiable &&
+		in.FilesKnown && in.Files >= 0 && in.Files <= 5 &&
+		in.LOCKnown && in.LOC >= 0 && in.LOC <= 300 {
 		return Fast, "all fast conditions met (reversible, mechanically verifiable, small)"
 	}
 	return Standard, "default (neither forced to deliberation nor fully fast)"
@@ -105,12 +111,13 @@ func Classify(in Inputs) (Track, string) {
 //   - CrossReviewRounds -1  → leave as configured
 //   - MaxFixupCycles 0      → leave the driver default
 type Policy struct {
-	Track             Track
-	ApplyOverrides    bool // false = reproduce today's behaviour (absent/deliberation)
-	MaxReviewers      int
-	MinReviewers      int
-	CrossReviewRounds int
-	MaxFixupCycles    int
+	Track                Track
+	ApplyOverrides       bool // false = reproduce today's behaviour (absent/deliberation)
+	MaxReviewers         int
+	MinReviewers         int
+	CrossReviewRounds    int // exact value to set; -1 = leave as configured
+	CapCrossReviewRounds int // upper bound to clamp the configured value to; 0 = no cap
+	MaxFixupCycles       int
 }
 
 // PolicyFor derives the per-track policy. `present` distinguishes an explicit
@@ -120,9 +127,16 @@ type Policy struct {
 // It returns an error for the §4.0 contradictions (fast + auto_implement, fast +
 // strict_gate) and for a non-solo violation, so the caller can escalate.
 func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, strictGate bool) (Policy, error) {
-	// Absent track → legacy behaviour, nothing overridden.
+	// Absent track → legacy behaviour, nothing overridden. (The non-solo floor for
+	// legacy ideas is enforced at the app/preflight layer; this path preserves
+	// today's driver behaviour byte-for-byte.)
 	if !present {
 		return Policy{Track: Standard, ApplyOverrides: false, CrossReviewRounds: -1}, nil
+	}
+	// Non-solo (§1) is an all-track invariant: every EXPLICIT track requires at
+	// least one independent reviewer — including deliberation (review-01 fix).
+	if availableReviewers < 1 {
+		return Policy{}, fmt.Errorf("track: %s requires at least 1 independent reviewer (non-solo, §1); none available", t)
 	}
 	switch t {
 	case Fast:
@@ -132,21 +146,16 @@ func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, str
 		if strictGate {
 			return Policy{}, fmt.Errorf("track: fast is invalid with strict_gate — strict_gate is a §4.0 deliberation trigger; use track: deliberation or remove strict_gate")
 		}
-		if availableReviewers < 1 {
-			return Policy{}, fmt.Errorf("track: fast requires at least 1 independent reviewer (non-solo, §1); none available")
-		}
 		return Policy{Track: Fast, ApplyOverrides: true, MaxReviewers: 1, MinReviewers: 1, CrossReviewRounds: 0, MaxFixupCycles: 1}, nil
 	case Deliberation:
-		// Deliberation == today's full lifecycle (backward-compat constraint).
+		// Deliberation == today's full lifecycle (backward-compat constraint), but
+		// still subject to the non-solo floor checked above.
 		return Policy{Track: Deliberation, ApplyOverrides: false, CrossReviewRounds: -1}, nil
 	default: // explicit Standard
-		if availableReviewers < 1 {
-			return Policy{}, fmt.Errorf("track: standard requires at least 1 independent reviewer (non-solo, §1); none available")
-		}
 		min := 2
 		if availableReviewers <= 1 { // §4.0 two-participant degradation
 			min = 1
 		}
-		return Policy{Track: Standard, ApplyOverrides: true, MaxReviewers: 2, MinReviewers: min, CrossReviewRounds: -1, MaxFixupCycles: 2}, nil
+		return Policy{Track: Standard, ApplyOverrides: true, MaxReviewers: 2, MinReviewers: min, CrossReviewRounds: -1, CapCrossReviewRounds: 2, MaxFixupCycles: 2}, nil
 	}
 }

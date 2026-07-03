@@ -152,6 +152,12 @@ func (o driverImplOps) checkModelDiversity() error {
 		return nil
 	}
 	required := driver.ReadRequireModelDiversity(o.ideaDir)
+	// §4.0: the fast track's single reviewer MUST be model-diverse — a same-model
+	// solo checker is the highest rubber-stamp risk (review-01 F4). Make it a hard
+	// gate on fast regardless of the frontmatter flag.
+	if t, present := driver.ReadTrack(o.ideaDir); present && t == track.Fast {
+		required = true
+	}
 	action := "warn"
 	if required {
 		action = "escalate"
