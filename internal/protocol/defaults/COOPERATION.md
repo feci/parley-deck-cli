@@ -17,7 +17,7 @@ selection), and §4 (the phases). Everything else is reference you open only whe
 
 1. Create `ideas/<slug>/00-prompt.md`; set `track:` (see §4.0 — default `standard`).
 2. Each participant writes `round-01/<agent-id>.md` **independently** — write yours before reading the others'.
-3. Follow your track (§4.0): `fast` = one review, then done; `standard` = the normal flow with 2 reviewers; `deliberation` = the full lifecycle for risky or protocol work.
+3. Follow your track (§4.0): `fast` = round-1 + a collapsed `FINAL.md` signoff + one refutation-default reviewer (≤1 fix-up cycle); `standard` = the normal flow with 2 reviewers; `deliberation` = the full lifecycle for risky or protocol work.
 
 **Trivial, reversible work — a typo, a doc line, a one-file rename, a dependency bump with
 green tests — does NOT need Parley at all.** Just do it; don't open an idea and don't claim
@@ -160,7 +160,7 @@ When an agent leaves the project, mark its row as inactive (do not delete it) so
 
 This section describes the **conceptual** flow and the **artifacts** produced. The transport-specific _mechanics_ (commits vs PRs, comments vs files, merging vs status flags) are in §11.
 
-### Phase 0.0 — Track selection (conditional rigor)
+### 4.0 — Track selection (conditional rigor)
 
 Not every change needs the full lifecycle. Each idea runs on one of three **tracks**, set as
 `track: fast | standard | deliberation` in `00-prompt.md` (default `standard`). The track is a
@@ -173,6 +173,13 @@ content (analysis, review, refutation) is always model-driven; only the routing 
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | protocol change (§7); security / auth / secrets / payments / privacy / production infra; data migration / irreversible / destructive op; `strict_gate: true`; `auto_implement`; pipeline or action block (§12); public-API or persisted-schema break; > ~15 files / ~1000 LOC | fully reversible; ≤ ~3–5 files / ~300 LOC; no security or data surface; mechanically verifiable (lint / type / test) | everything that is neither forced to `deliberation` nor fully `fast` |
 
+**Classifier ordering is normative and fail-safe:** evaluate all `deliberation` triggers
+first; if none fire, evaluate the `fast` conditions; otherwise `standard`. On any doubt or
+boundary case — the 6–14-file band, the `~300`–`~1000` LOC gap, or an unconfirmed-but-plausible
+security / privacy / production / data-migration / pipeline / API-break / schema-break
+trigger — **fail closed to the stricter track**: `standard` over `fast`, and `deliberation`
+over `standard`, until the risk is disproven.
+
 **Per-track behavior** (the invariants below hold on every track):
 
 | Aspect                        | `fast`                                     | `standard` (default)                        | `deliberation`                          |
@@ -181,9 +188,16 @@ content (analysis, review, refutation) is always model-driven; only the routing 
 | Cross-review rounds (Phase 2) | skipped                                     | capped at 2, then escalate/upgrade          | unbounded                               |
 | Consensus + FINAL (Phase 3–4) | collapsed: one `FINAL.md` with embedded signoffs | separate, drafted simultaneously        | separate                                |
 | Reviewers (Phase 6)           | 1 (model-diverse)                           | 2                                           | all non-implementers                    |
+| Review consensus (Phase 7)    | the one reviewer's ✅ = consensus            | reviewers who reviewed sign off             | all participants sign off               |
 | Fix-up (Phase 8)              | cap 1 cycle; fix-only verification ok       | cap 2 cycles; fix-only verify for narrow fixes | unbounded; `strict_gate` available   |
 | Timeout per agent             | ~5 min                                      | ~15 min                                     | ~30 min                                 |
 | Auto-advance                  | full (pause only for the one signoff)       | auto-advance; human gate at FINAL→implementation | human gate at each transition      |
+
+**This table is the single authoritative per-track gate. It OVERRIDES the full-lifecycle
+defaults stated in the rest of §4 and in §5 (quorum), §9.0 (readiness), and §11 (transport).**
+Where a later phase says "every participant," "all reviewers," or "consensus is reached when
+every active participant signs off," read it through this table for `fast`/`standard`;
+`deliberation` uses the rule exactly as written elsewhere.
 
 **Invariants on every track (never dropped for speed):** at least one independent
 non-facilitator artifact (non-solo, §1); refutation-default review — the reviewer *count*
@@ -197,8 +211,23 @@ participant may **force-upgrade** to a stricter track — an `inbox/` note befor
 or a reviewer filing a MAJOR/CRITICAL finding that cites a trigger. Down-tiering below the
 classifier floor requires a recorded user OK. If implementation later reveals a higher-risk
 surface (e.g. it now touches auth), any participant force-upgrades and the idea **re-runs the
-current phase** under the stricter track's rules. With only two participants, `standard`'s
-"2 reviewers" degrades to 1 (the trigger accounts for roster size, not just risk).
+current phase** under the stricter track's rules. Upgrading from `fast` also reinstates any
+phase `fast` skipped (cross-review, a separate consensus/FINAL step) for the remainder of the
+idea. With only two participants, `standard`'s "2 reviewers" degrades to 1 (the trigger
+accounts for roster size, not just risk).
+
+### 4.0.1 — Loop-engineering rules (LE-N), in plain English
+
+The `LE-N` tags cited inline in the phases below are shorthand for these rules (from the
+loop-engineering work). The tag is only a reference id; the rule text is what binds.
+
+- **LE-1 — Refutation-default review.** A reviewer assumes the implementation is wrong and records concrete attempts to break each acceptance criterion; a "no findings" review counts only with refutation attempts shown.
+- **LE-2 — Driver auto-advance.** A deterministic driver may advance mechanical phase transitions; it never authors participant content or decides contested issues.
+- **LE-3 — Model diversity.** A reviewer sharing the implementer's model is likelier to rubber-stamp; `require_model_diversity: true` turns an all-shared-model reviewer set into a hard gate.
+- **LE-4 — Verification command.** `checks:` in `00-prompt.md` is the build/test gate the driver runs (as `sh -c`) at Phase 5/8.
+- **LE-5 — Loop budgets.** Driver runs are bounded by max steps / wall-clock / cost.
+- **LE-7 / LE-11 — Close-decision integrity.** Before an auto-driven close, a goal-done check verifies FINAL's observable acceptance criteria; reservations or too-few reviewers escalate rather than close.
+- **LE-10 — Candidate remediation.** Remediation ideas may start as `status: candidate`.
 
 ### Phase 0 — Kickoff
 

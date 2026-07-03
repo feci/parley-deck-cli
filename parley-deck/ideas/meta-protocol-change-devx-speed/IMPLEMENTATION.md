@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-devx-speed
-status: ready-for-review
+status: fix-up-cycle-1
 implementer: claude-1
 track: deliberation
 started: 2026-07-03
@@ -63,10 +63,42 @@ identically (drift guard `TestEmbeddedDefaultMatchesLiveDeck` green — `go test
   modulo allowlisted header/roster zones).
 - Skill fallback `parley-deck-skill/references/COOPERATION.md` re-synced (body-verbatim rule).
 
-## Observable acceptance criteria status
-1. `track:` supported in `00-prompt.md`, default standard, deliberation force-triggers — **met** (protocol text).
-2. Per-track reduced-ceremony behavior specified and usable by facilitator/agents — **met** (protocol text); CLI auto-enforcement — **deferred** (follow-up).
-3. All-track invariants (non-solo + refutation) stated as never-dropped — **met**; driver rejection — **deferred**.
-4. Core-first + appendix signposting + off-ramp + role table + LE gloss — **met**; physical appendix move — **deferred** (deviation above).
-5. Both copies byte-identical (drift guard) + skill fallback re-synced — **met**.
-6. protocol-changelog entry + protocolSha256 handling — **pending release step**.
+## Fix-up cycle 1
+status: complete
+completed: 2026-07-03
+
+### Fixes applied (from Phase-6 review/round-01: codex-1, hermes-1, antigravity-1)
+- **[CRITICAL codex-1 / concur hermes] Tracks not reconciled with existing phase rules** →
+  added an explicit **single authoritative override clause** in §4.0 ("this table OVERRIDES
+  the full-lifecycle defaults in §4/§5/§9.0/§11"), and added the missing **Phase-7 review-
+  consensus row** to the per-track table. The old phase prose is now unambiguously overridden.
+- **[MAJOR ×3] `§4.0` vs `Phase 0.0` heading mismatch / "Phase 0.0 before Phase 0"** → renamed
+  the heading to `### 4.0 — Track selection`, matching every `§4.0` reference.
+- **[MAJOR hermes/antigravity] LE-1…LE-11 not consolidated** → added `### 4.0.1 — Loop-
+  engineering rules (LE-N), in plain English` (one block; inline `(LE-N)` tags now reference it).
+  Criterion 4's LE-consolidation half is now met.
+- **[MAJOR codex] Classifier not fail-closed** → added a normative "deliberation-first, then
+  fast, else standard" ordering + a fail-safe rule (boundary/doubt → stricter track).
+- **[MINOR codex] Quickstart over-compressed `fast`** → reworded to "round-1 + collapsed FINAL
+  signoff + one refutation-default reviewer (≤1 fix-up)".
+- **[MINOR hermes] mid-idea upgrade from `fast`** → clarified it reinstates skipped phases.
+- **[MAJOR codex/hermes] changelog + metadata** → `meta/protocol-changelog.md` entry added
+  (2026-07-03). `protocolSha256` in `meta/version.json` is refreshed at the release step (below).
+
+Drift guard re-run after fixes: `go test ./internal/protocol/...` → ok. Skill fallback
+re-synced again (body-identical).
+
+### Deviations from agreed fixes
+- **CLI/driver enforcement (criteria 1–3 tooling half) and physical appendix relocation
+  (criterion 4 layout half)** remain **deferred to ratified follow-ups** (`track-aware-driver`,
+  `protocol-restructure-appendices`) rather than implemented here — see review/consensus.md,
+  where this scope narrowing is recorded and signed off. The protocol text is self-enforcing via
+  the skill, so the tracks are usable today.
+
+## Observable acceptance criteria status (corrected)
+1. `track:` field, default standard, deliberation force-triggers, fail-safe classifier — **met** (protocol text). Deterministic CLI classifier/defaulting — **deferred → `track-aware-driver`**.
+2. Per-track reduced-ceremony behavior specified, authoritative-override clause added, usable by facilitator/agents — **met** (protocol text). CLI auto-enforcement — **deferred → `track-aware-driver`**.
+3. All-track invariants (non-solo + refutation) stated as never-dropped + single authoritative gate — **met** (text). Driver rejection of dropped invariants — **deferred → `track-aware-driver`**.
+4. Off-ramp + role table + reading guide + **LE consolidation now done** — **met**. Physical appendix move / ≤200-line core — **deferred → `protocol-restructure-appendices`** (reading-guide substitute in place; ratified in review consensus).
+5. Both copies byte-identical (drift guard green) + skill-fallback source re-synced in `parley-deck-skill/references/COOPERATION.md` (verified body-identical). Installed runtime skill copies refresh at the **skill release step** (they are a sibling repo, not this commit) — **met (source); runtime pending release**.
+6. `meta/protocol-changelog.md` entry — **met**. `protocolSha256` bump in `meta/version.json` — **done at release step below**.

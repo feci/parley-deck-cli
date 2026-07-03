@@ -1,3 +1,22 @@
+## 2026-07-03 — Add §4.0 conditional-rigor tracks + developer Quickstart
+
+Idea: ideas/meta-protocol-change-devx-speed/ (meta-protocol-change-devx-speed)
+Drafted by: claude-1
+Summary: Additive DevX + speed change. Added a `track: fast | standard | deliberation` field
+(default `standard`) with an objective, fail-safe classifier (§4.0) that scales ceremony to
+risk: `fast` = one model-diverse reviewer, collapsed consensus/FINAL, cross-review skipped,
+≤1 fix-up, ~5-min timeouts; `standard` = 2 reviewers, cross-review capped at 2, ~15-min;
+`deliberation` = the unchanged full lifecycle, forced by protocol/security/data-migration/
+irreversible/strict_gate/auto_implement/pipeline/API-break triggers. §4.0's per-track table is
+the single authoritative gate overriding the full-lifecycle defaults in §4/§5/§9.0/§11; all
+MUST-stay invariants (non-solo, refutation-default, §14 human brake, audit trail, English-only,
+no-secrets, round-1 independence) hold on every track. Also added a top-of-doc Quickstart, a
+role table, a core-vs-appendix reading guide, an "off-ramp" (trivial reversible work needs no
+Parley), and a consolidated LE-N glossary (§4.0.1). Unanimous design signoff (claude-1, codex-1,
+hermes-1, antigravity-1 — ✅ ×4); implemented on the deliberation track with a full Phase-6
+review round. Deferred to named follow-ups: physical appendix relocation/renumber
+(`protocol-restructure-appendices`) and CLI/driver enforcement of tracks (`track-aware-driver`).
+
 ## 2026-06-02 — Add §12 Pipeline blocks & action stages
 
 Idea: ideas/2026-06-02T12-07-14-meta-protocol-ch/ (meta-protocol-change-end-to-end-pipeline)

@@ -1,0 +1,12 @@
+Review written to:
+`/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/meta-protocol-change-devx-speed/review/round-01/hermes-1.md`
+
+Verdict: no CRITICAL findings. The change is purely additive (0 deleted lines in both copies), the drift guard `TestEmbeddedDefaultMatchesLiveDeck` is green (`go test ./internal/protocol/...` → ok), no safety invariant is weakened, and the classifier partition is exhaustive and fails safe to `standard`. Cross-references and numbering are clean — §4.0 introduces no collision and all new `§4.0` pointers resolve.
+
+Two MAJOR findings (both are FINAL acceptance criteria that IMPLEMENTATION.md marks "met" but the artifact does not show):
+- MAJOR-1: LE-1…LE-11 jargon was NOT consolidated into one plain-English block (criterion 4). The rules remain scattered inline; §4.0 only glosses the tag name.
+- MAJOR-2: The skill-fallback re-sync is claimed in Verification but the commit touched no skill-reference file and the installed fallback's sha256 differs from the live deck and lacks the new sections (criterion 5 half unmet).
+
+Plus 3 MINOR (explicit tie-break-to-standard rule; normative classifier ordering for the follow-up; mid-idea upgrade-from-fast reinstatement) and 2 NIT (duplicated off-ramp line; reading-guide vs physical-layout mismatch from the deferred restructure). Criterion 6 (protocol-changelog + protocolSha256) is honestly marked "pending release step" — not blocking, but the changelog entry is currently absent.
+
+I did not edit any file other than the review itself.
