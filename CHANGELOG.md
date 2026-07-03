@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.32.0 - 2026-07-03
+
+**Conditional-rigor tracks + developer Quickstart (DevX & speed).** Designed and reviewed by a
+real multi-agent Parley deliberation (`ideas/meta-protocol-change-devx-speed`, deliberation
+track, unanimous ✅ ×4 design + ✅ ×3 review) to make the protocol usable without reading 1000
+lines and much faster for ordinary work — without touching the safety core.
+
+- **`track: fast | standard | deliberation`** in `00-prompt.md` (default `standard`), chosen by
+  an objective, **fail-safe** classifier (§4.0): deliberation-first, then fast, else standard;
+  on any doubt/boundary → the stricter track. `deliberation` is forced by protocol change,
+  security/secrets/production, data migration/irreversible, `strict_gate`, `auto_implement`,
+  pipeline/action, or public-API/schema break.
+- **Per-track ceremony** (§4.0 table = the single authoritative gate, overriding the
+  full-lifecycle defaults in §4/§5/§9.0/§11): `fast` = cross-review skipped, collapsed
+  consensus/FINAL, 1 model-diverse reviewer, ≤1 fix-up, ~5-min timeouts; `standard` = 2
+  reviewers, cross-review capped at 2, ~15-min; `deliberation` = today's full lifecycle, unchanged.
+- **Invariants preserved on every track:** non-solo, refutation-default review, round-1
+  independence, append-only signoffs, audit trail, §14 human brake, English-only, no-secrets.
+- **DevX:** a top-of-doc Quickstart (5-minute start), a "Who are you?" role table, a
+  core-vs-appendix reading guide, an off-ramp ("trivial reversible work needs no Parley"), and a
+  consolidated plain-English `LE-N` glossary (§4.0.1).
+- Additive change; both protocol copies stay byte-identical (drift guard green) and the skill
+  fallback is re-synced. Deferred to ratified follow-ups: deterministic CLI/driver enforcement
+  (`track-aware-driver`) and the physical appendix relocation (`protocol-restructure-appendices`).
+
 ## v1.31.0 - 2026-06-24
 
 **Loop engineering (LE-1..11).** A four-tier program — designed by a real multi-agent
