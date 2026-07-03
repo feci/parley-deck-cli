@@ -1,0 +1,22 @@
+My round-01 is written to:
+
+`/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/parley-deck/ideas/protocol-restructure-appendices/round-01/hermes-1.md`
+
+Summary of my independent analysis (grounded in actual code, not assumptions):
+
+**Q1 — keep-numbers-relocate.** Renumbering alters the `§N` reference strings themselves (~80+ refs: 12×§11, 8×§11.B, 7×§9.0, etc.), which violates the "no rule text changed" hard constraint. Keep-numbers makes every ref resolve by construction.
+
+**Q2 — single block transposition.** Only §9 moves, jumping past §10 to sit between §10 and §11. Final order: Quickstart→§0–§8→§10→§9→§11→Appendix A→§12→§13→§14. §10 TL;DR caps the core; the existing `---` separator trailing §10 becomes the core/appendix divider. No `## Appendices` banner (it would add a content line and break the sorted-diff-empty guarantee).
+
+**Q3 — deterministic block-split/rejoin script applied identically to both copies.** Four checks: (1) `diff <(sort old) <(sort new)` empty; (2) `TestEmbeddedDefaultMatchesLiveDeck` + `TestDefaultCooperationForInit` green; (3) cross-ref audit; (4) recompute `protocolSha256`.
+
+**Q4 — grep-based audit.** Extract all `§N`/`Appendix` refs, confirm each referenced number has a matching `## N.` header, diff the before/after reference sets (must be identical).
+
+**Q5 — risks, all verified against code:**
+- Drift guard anchors are count-based (`assertExactLineOnce`), not position-based — §2 doesn't move, so the move is invisible to them. SAFE.
+- `mergePreservingZones` (preflight.go:529) splits consumer sync at `## 3.`; the reorder is entirely in the §3-onward zone, affecting both copies identically. SAFE.
+- `protocolSha256` is a derived runtime value (computed by `sha256Hex`), not hardcoded — maintenance step, not a risk.
+- `TestDefaultCooperationForInit` does substring checks, unaffected by block order. SAFE.
+- The `---` at line 799 travels with §10's block and fortuitously lands between §10 and §9 as the visual divider.
+
+I did not read claude-1.md or any other agent's round-01 (independence preserved).
