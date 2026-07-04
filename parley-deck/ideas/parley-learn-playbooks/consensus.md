@@ -60,3 +60,15 @@ evidence, never overriding protocol text.
 Status: ✅ ACCEPT
 Drafter. `parley learn` = advisory sibling to `parley retro`; playbooks in the advisory
 tier beside consults; one §13 paragraph + playbooks/ directory. v1 = one closed idea.
+
+### Signoff: codex-1 — 2026-07-04
+Status: ✅ ACCEPT
+I accept the parley-learn-as-retro-sibling shape: a small advisory distillation command, not a phase, gate, or quorum artifact. The advisory-tier model is right: playbooks may inform future Phase 0 context, but protocol text and consensus artifacts remain authoritative.
+
+### Signoff: hermes-1 — 2026-07-04
+Status: ✅ ACCEPT
+Agreed — the one-paragraph §13 minimalism is the right call: playbooks land beside consults in the advisory tier via a single paragraph plus the `playbooks/` directory convention, with no new phase, gate, or quorum class. `parley learn` as a narrow tooling command (not a Parley round, not solo-Parley) keeps distillation cheap and quality-gated by normal commit review.
+
+### Signoff: antigravity-1 — 2026-07-04
+Status: ✅ ACCEPT
+I confirm the advisory playbook design as a lightweight distillation tool that ensures transferable insights are actionable while maintaining protocol authority, particularly through discovery integration that prevents stale advisory clutter from interfering with active consensus workflows.

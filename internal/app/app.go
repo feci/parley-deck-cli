@@ -88,6 +88,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runConsults(args[1:], stdout, stderr)
 	case "retro":
 		return runRetro(args[1:], stdout, stderr)
+	case "learn":
+		return runLearn(args[1:], stdout, stderr)
 	case "loop":
 		return runLoop(args[1:], stdout, stderr)
 	case "classify":
