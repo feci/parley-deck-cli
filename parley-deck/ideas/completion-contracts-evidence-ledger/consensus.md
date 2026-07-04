@@ -79,3 +79,7 @@ My round-02 implementation plan stands: add `ReadChecksContract` with `yaml.v3`,
 ### Signoff: hermes-1 — 2026-07-04
 Status: ✅ ACCEPT
 The adopted design is my minimalist position: extend the existing `checks:` primitive to a list, keep the ledger inside `IMPLEMENTATION.md` `## Validation evidence`, and add only one fail-closed Phase-8 veto — no new frontmatter key, no new artifact, exit-0 only in v1.
+
+### Signoff: antigravity-1 — 2026-07-04
+Status: ✅ ACCEPT
+I accept the minimalist list-form `checks:` design and validation ledger, which ensures robust safety through secret scrubbing and explicit escalation for flaky failures.
