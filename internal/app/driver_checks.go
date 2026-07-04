@@ -23,8 +23,23 @@ const (
 	evidenceMaxBytes = 4096
 )
 
-// secretPattern redacts obvious credential-shaped tokens from recorded output.
-var secretPattern = regexp.MustCompile(`(?i)(token|secret|password|api[_-]?key|bearer|authorization)[=:\s]+\S+`)
+// secretPatterns redact credential-shaped tokens from recorded output before it is
+// written into the (committable) evidence section. Layered: labeled key/value pairs
+// AND standalone provider token shapes, so an unlabeled `sk-…`/`ghp_…`/bearer value is
+// caught even when its label was on a different line (review hardening).
+var secretPatterns = []*regexp.Regexp{
+	// Authorization / Bearer headers: redact the token that follows.
+	regexp.MustCompile(`(?i)(authorization\s*[:=]\s*)(bearer\s+)?\S+`),
+	regexp.MustCompile(`(?i)\bbearer\s+[A-Za-z0-9._\-]+`),
+	// Labeled secrets: token/secret/password/api_key = value.
+	regexp.MustCompile(`(?i)(token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key)(\s*[:=]\s*)\S+`),
+	// Standalone provider token shapes.
+	regexp.MustCompile(`\bsk-[A-Za-z0-9_\-]{16,}`),
+	regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{20,}`),
+	regexp.MustCompile(`\bxox[baprs]-[A-Za-z0-9\-]{10,}`),
+	regexp.MustCompile(`\bAKIA[0-9A-Z]{16}\b`),
+	regexp.MustCompile(`\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{5,}`), // JWT
+}
 
 type criterionResult struct {
 	name     string
@@ -62,6 +77,11 @@ func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.
 	}
 	if err := o.writeValidationEvidence(results); err != nil {
 		fmt.Fprintf(o.out, "driver: warning — could not write validation evidence: %v\n", err)
+	} else {
+		// Commit the driver-authored evidence immediately so it does not leave the tree
+		// dirty and trip the next fix-up cycle's gitTreeClean guard (review fix): mirrors
+		// the driver committing other artifacts. Best-effort: a commit failure only warns.
+		o.commitEvidence()
 	}
 	if allPass {
 		return true, fmt.Sprintf("contract: %d/%d criteria passed", len(results), len(results))
@@ -89,7 +109,16 @@ func exitCodeOf(err error) int {
 // scrubAndTruncate redacts credential-shaped tokens and caps the output to a bounded
 // tail (last evidenceMaxLines lines, then evidenceMaxBytes bytes).
 func scrubAndTruncate(s string) string {
-	s = secretPattern.ReplaceAllString(s, "$1=«redacted»")
+	// Labeled patterns keep their key (group 1/2) and redact the value; standalone
+	// token shapes are replaced whole.
+	s = secretPatterns[0].ReplaceAllString(s, "$1«redacted»")
+	s = secretPatterns[2].ReplaceAllString(s, "$1$2«redacted»")
+	for i, re := range secretPatterns {
+		if i == 0 || i == 2 {
+			continue
+		}
+		s = re.ReplaceAllString(s, "«redacted»")
+	}
 	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
 	if len(lines) > evidenceMaxLines {
 		lines = lines[len(lines)-evidenceMaxLines:]
@@ -99,6 +128,32 @@ func scrubAndTruncate(s string) string {
 		out = "…" + out[len(out)-evidenceMaxBytes:]
 	}
 	return out
+}
+
+// commitEvidence commits the driver-authored IMPLEMENTATION.md evidence write so the
+// tree stays clean between fix-up cycles. Best-effort and non-fatal: a non-git tree or
+// a no-op commit is silently fine.
+func (o driverImplOps) commitEvidence() {
+	rel := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
+	git := func(args ...string) error {
+		cmd := exec.Command("git", append([]string{"-C", o.root}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+		return cmd.Run()
+	}
+	if git("rev-parse", "--is-inside-work-tree") != nil {
+		return // not a git tree → nothing to commit
+	}
+	if err := git("add", rel); err != nil {
+		fmt.Fprintf(o.out, "driver: warning — could not stage validation evidence: %v\n", err)
+		return
+	}
+	// `git commit` is a no-op error when nothing changed; ignore that case.
+	if err := git("commit", "-m", "[driver] "+o.ideaSlug+": validation evidence", "--", rel); err != nil {
+		// Only warn if the file actually has staged changes (a real failure).
+		if diff := exec.Command("git", "-C", o.root, "diff", "--cached", "--quiet", "--", rel).Run(); diff != nil {
+			fmt.Fprintf(o.out, "driver: warning — could not commit validation evidence: %v\n", err)
+		}
+	}
 }
 
 // writeValidationEvidence overwrites the `## Validation evidence` section of

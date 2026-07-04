@@ -1,11 +1,11 @@
 ---
 idea: completion-contracts-evidence-ledger
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-07-04
 completed: 2026-07-04
 branch: parley-deck-cli#completion-contracts-design
-head-commit: f0878b6
+head-commit: b443481
 design-pr: https://github.com/feci/parley-deck-cli/pull/67
 implementation-pr: same
 ---
@@ -60,3 +60,27 @@ exit (delivering the Phase-8 veto through the existing RunChecks gate). No new
   ledger.
 - `replaceSection` overwrites `## Validation evidence` up to the next `## `; confirm it
   preserves following sections (`TestReplaceSection`).
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-07-04
+
+### Fixes applied (review round-01)
+- [CRITICAL, codex-1] The zero-agreed-fixes completion path was un-gated. Added a
+  completion-contract gate in `impl.go` (before GoalCheck/Complete): with list-form
+  `checks:`, completion runs a fresh RunChecks and vetoes (ActionEscalated) on failure;
+  scalar/absent is unchanged. Test `TestPhaseReviewListChecksVetoCompletion`.
+- [MAJOR, hermes-1] Evidence write dirtied the tree and tripped the next cycle's
+  `gitTreeClean` guard. The driver now COMMITS the IMPLEMENTATION.md evidence write
+  immediately (`commitEvidence`, mirroring driver-artifact commits) — best-effort,
+  no-op-safe, non-git-safe.
+- [MAJOR, codex-1] Hardened the secret scrubber: full `Authorization: Bearer <token>`,
+  standalone `bearer <token>`, labeled key/value, and standalone provider shapes
+  (`sk-`, `gh[pousr]_`, `xox[baprs]-`, `AKIA…`, JWT). Vacuous test replaced with a
+  multi-shape leak assertion (also fixes hermes-1 MAJOR-2).
+- [MAJOR, codex-1] A YAML syntax error in list-form `checks:` now FAILS CLOSED
+  (`looksLikeChecksList` detects block form) instead of silently falling back to the
+  legacy scalar/go-test path. Test `TestReadChecksContractSyntaxErrorListFailsClosed`.
+
+### Deviations from agreed fixes
+None.

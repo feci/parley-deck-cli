@@ -229,6 +229,18 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 				return ActionReviewOpened, c, nil
 			}
 		}
+		// Completion contract (completion-contracts-evidence-ledger): with list-form
+		// `checks:`, completion requires a FRESH all-pass run at the current HEAD — the
+		// pre-review/post-fixup runs do not prove HEAD when review closes with zero agreed
+		// fixes. Scoped to the list shape so scalar/absent `checks:` is unchanged. Fails
+		// closed (can only veto a close, never auto-pass), independent of strict_gate.
+		if _, isList, cerr := ReadChecksContract(d.cfg.IdeaDir); cerr != nil {
+			return ActionEscalated, c, fmt.Errorf("completion contract invalid: %w", cerr)
+		} else if isList {
+			if ok, detail := d.cfg.Impl.RunChecks(ctx); !ok {
+				return ActionEscalated, c, fmt.Errorf("completion contract not satisfied at HEAD (checks: list):\n%s", strings.TrimSpace(detail))
+			}
+		}
 		// LE-11 (HITL-fatigue guardrails): under auto-drive, do not silently auto-complete
 		// on a soft "reservations" triage or with a single checker — both re-create a quiet
 		// false-green a fatigued human waves through. Surface to a human instead. A

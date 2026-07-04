@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -39,7 +40,14 @@ func ReadChecksContract(ideaDir string) ([]CheckCriterion, bool, error) {
 		Checks yaml.Node `yaml:"checks"`
 	}
 	if err := yaml.Unmarshal([]byte(fm), &probe); err != nil {
-		return nil, false, nil // unparseable frontmatter → treat as legacy (scalar path handles it)
+		// A YAML parse error must NOT silently fall back to legacy when `checks:` is
+		// written in block/list form (review fix): that would fail open. Detect the
+		// list shape syntactically and fail closed; only a scalar/absent checks: falls
+		// through to the legacy scalar path.
+		if looksLikeChecksList(fm) {
+			return nil, true, fmt.Errorf("checks: list is not valid YAML: %w", err)
+		}
+		return nil, false, nil
 	}
 	if probe.Checks.Kind == 0 || probe.Checks.Kind == yaml.ScalarNode {
 		return nil, false, nil // absent or scalar → legacy
@@ -71,6 +79,16 @@ func ReadChecksContract(ideaDir string) ([]CheckCriterion, bool, error) {
 		return nil, true, fmt.Errorf("checks: list is empty")
 	}
 	return criteria, true, nil
+}
+
+// checksListRe matches a `checks:` key that starts a block/list (nothing but an
+// optional comment after it on the same line, then an indented `-` item).
+var checksListRe = regexp.MustCompile(`(?m)^checks:[ \t]*(#.*)?\n[ \t]*-`)
+
+// looksLikeChecksList reports whether the frontmatter writes `checks:` in block/list
+// form (as opposed to an inline scalar), used to fail closed on a malformed list.
+func looksLikeChecksList(fm string) bool {
+	return checksListRe.MatchString(fm)
 }
 
 // extractFrontmatter returns the text between the leading `---` fences, or "".

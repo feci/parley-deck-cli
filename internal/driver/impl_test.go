@@ -403,3 +403,27 @@ func contains(s []string, want string) bool {
 	}
 	return false
 }
+
+// TestPhaseReviewListChecksVetoCompletion: with list-form checks:, a review consensus
+// that is Ready with zero agreed fixes must NOT complete when the completion contract
+// fails at HEAD (review fix for the CRITICAL: the zero-fixes path was un-gated).
+func TestPhaseReviewListChecksVetoCompletion(t *testing.T) {
+	ideaDir, runDir, parts := setupReviewPhase(t, "auto_implement: true\nchecks:\n  - name: unit\n    command: \"true\"\n")
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	fi := &fakeImpl{
+		roundComplete: true,
+		checksOK:      false, // contract fails at HEAD
+		review:        ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 0, ReviewerCount: 2},
+	}
+	d := newImplDriver(ideaDir, runDir, parts, true, fi)
+	action, _, err := d.Advance(context.Background())
+	if err == nil {
+		t.Fatalf("expected completion-contract veto to escalate, got action=%s", action)
+	}
+	if action != ActionEscalated {
+		t.Fatalf("action=%s want escalated", action)
+	}
+	if contains(fi.calls, "complete") {
+		t.Fatalf("Complete must NOT be called when the contract fails; calls=%v", fi.calls)
+	}
+}

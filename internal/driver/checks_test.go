@@ -60,3 +60,13 @@ func TestReadChecksContractMalformedFailsClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestReadChecksContractSyntaxErrorListFailsClosed(t *testing.T) {
+	// A checks: written in list form but with broken YAML must fail closed, not fall
+	// back to the legacy scalar/go-test path.
+	dir := writeIdea(t, "---\nidea: x\nchecks:\n  - name: a\n     command: broken indent\n  -bad\n---\n")
+	_, isList, err := ReadChecksContract(dir)
+	if !isList || err == nil {
+		t.Fatalf("broken list-form checks should fail closed: isList=%v err=%v", isList, err)
+	}
+}

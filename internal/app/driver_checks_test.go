@@ -12,12 +12,27 @@ import (
 )
 
 func TestScrubAndTruncate(t *testing.T) {
-	if got := scrubAndTruncate("api_key=sk-supersecret123\nok"); strings.Contains(got, "supersecret") {
-		t.Fatalf("secret not scrubbed: %q", got)
+	// Every leaked shape MUST be gone from the scrubbed output.
+	cases := map[string]string{
+		"labeled api_key":      "api_key=sk-supersecretvalue1234567890",
+		"authorization bearer": "Authorization: Bearer abcREALtoken1234567890",
+		"standalone bearer":    "bearer abcREALtoken1234567890",
+		"openai sk":            "using sk-abcdefghijklmnop1234 now",
+		"github pat":           "token ghp_abcdefghijklmnopqrstuvwxyz0123",
+		"aws access key":       "AKIAIOSFODNN7EXAMPLE",
+		"password":             "password: hunter2secretvalue",
+	}
+	leaks := []string{"supersecretvalue", "REALtoken", "abcdefghijklmnop", "ghp_abcdefghij", "AKIAIOSFODNN7EXAMPLE", "hunter2secretvalue"}
+	for name, in := range cases {
+		got := scrubAndTruncate(in)
+		for _, leak := range leaks {
+			if strings.Contains(got, leak) {
+				t.Errorf("%s: leaked %q in %q", name, leak, got)
+			}
+		}
 	}
 	long := strings.Repeat("line\n", 300)
-	got := scrubAndTruncate(long)
-	if n := strings.Count(got, "line"); n > evidenceMaxLines {
+	if n := strings.Count(scrubAndTruncate(long), "line"); n > evidenceMaxLines {
 		t.Fatalf("not truncated to %d lines: %d", evidenceMaxLines, n)
 	}
 }
