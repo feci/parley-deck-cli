@@ -5,7 +5,7 @@ implementer: claude-1
 started: 2026-07-04
 completed: 2026-07-04
 branch: parley-deck-cli#editor-composer-design
-head-commit: 219b949
+head-commit: d45ce37 (implementation commit; branch HEAD advances by 1 for this metadata line)
 design-pr: https://github.com/feci/parley-deck-cli/pull/69
 implementation-pr: same
 ---
