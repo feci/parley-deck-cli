@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -254,7 +255,15 @@ func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, er
 	if !done {
 		return ActionAwait, c, nil
 	}
-	// Round complete. Cross-review policy: rounds 1..(1+CrossReviewRounds).
+	// Round complete. Emit a consolidated digest for the Home tab (tui-round-summary),
+	// idempotently, before deciding the next action. A digest failure never blocks
+	// advancement — it is a display feature.
+	nextAction := "opening " + roundLabel(c.CurrentRound+1)
+	if c.CurrentRound >= 1+d.cfg.CrossReviewRounds {
+		nextAction = "drafting consensus"
+	}
+	d.emitRoundDigest(c.CurrentRound, nextAction)
+	// Cross-review policy: rounds 1..(1+CrossReviewRounds).
 	if c.CurrentRound >= 1+d.cfg.CrossReviewRounds {
 		if d.cfg.Consensus == nil {
 			return ActionConsensus, c, nil // gate not wired (slice-1 stop)
@@ -382,6 +391,41 @@ func (d *Driver) terminalRoundEvent(label string) (string, error) {
 		terminal = e.Type
 	}
 	return terminal, nil
+}
+
+// emitRoundDigest builds and appends a `round.digest` event for the Home tab
+// (tui-round-summary), idempotently: if a digest for this (idea, round) already exists
+// it is a no-op. A build/serialize/append failure is swallowed — a display feature must
+// never block protocol advancement.
+func (d *Driver) emitRoundDigest(round int, next string) {
+	label := roundLabel(round)
+	if events, err := d.cfg.Events.Load(); err == nil {
+		for _, e := range events {
+			if e.Type != "round.digest" {
+				continue
+			}
+			if r, _ := e.Data["round"].(string); r != label {
+				continue
+			}
+			if idea, _ := e.Data["idea"].(string); idea == "" || idea == d.cfg.IdeaSlug {
+				return // already emitted for this round
+			}
+		}
+	}
+	digest := BuildRoundDigest(d.cfg.IdeaDir, d.cfg.IdeaSlug, round, d.cfg.Participants, next)
+	blob, err := json.Marshal(digest)
+	if err != nil {
+		return
+	}
+	_ = d.cfg.Events.Append(store.Event{
+		Time: time.Now().UTC(),
+		Type: "round.digest",
+		Data: map[string]any{
+			"idea":   d.cfg.IdeaSlug,
+			"round":  label,
+			"digest": string(blob),
+		},
+	})
 }
 
 func hasRespondingTo(path string) bool {
