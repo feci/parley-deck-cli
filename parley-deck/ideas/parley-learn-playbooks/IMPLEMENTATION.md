@@ -1,6 +1,6 @@
 ---
 idea: parley-learn-playbooks
-status: fix-up-cycle-1
+status: complete
 implementer: claude-1
 started: 2026-07-04
 completed: 2026-07-04
