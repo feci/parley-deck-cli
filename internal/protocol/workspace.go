@@ -115,6 +115,14 @@ func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
 // confirmed participant exclusions in the frontmatter as `excluded:` lines
 // (preflight §9.0: exclusions must be explicit and recorded in the idea).
 func CreateIdeaWithExclusions(root, task string, participants, excluded []string) (IdeaStatus, error) {
+	return CreateIdeaFull(root, task, participants, excluded, "", "")
+}
+
+// CreateIdeaFull is CreateIdeaWithExclusions plus an optional `track:` frontmatter
+// line (track-aware-driver) and a roster-preset provenance HTML comment written under
+// the participants line (named-roster-presets). Both are advisory: `participants:`
+// stays the canonical quorum. Empty track/provenance reproduce the base behavior.
+func CreateIdeaFull(root, task string, participants, excluded []string, track, provenance string) (IdeaStatus, error) {
 	now := time.Now()
 	slug := uniqueSlug(filepath.Join(root, DeckDir, "ideas"), timestampedSlug(task, now))
 	ideaDir := filepath.Join(root, DeckDir, "ideas", slug)
@@ -129,13 +137,21 @@ func CreateIdeaWithExclusions(root, task string, participants, excluded []string
 		}
 		excludedBlock += "excluded: " + line + "\n"
 	}
+	trackLine := ""
+	if t := strings.TrimSpace(track); t != "" {
+		trackLine = "track: " + t + "\n"
+	}
+	provenanceLine := ""
+	if p := strings.TrimSpace(provenance); p != "" {
+		provenanceLine = p + "\n"
+	}
 
 	prompt := fmt.Sprintf(`---
 idea: %s
 author: user
 created: %s
 participants: [%s]
-%sstatus: round-01
+%s%s%sstatus: round-01
 ---
 
 ## Problem / idea
@@ -150,7 +166,7 @@ participants: [%s]
 ## Non-goals
 
 - Do not make unrelated repository changes.
-`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), excludedBlock, task)
+`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), trackLine, provenanceLine, excludedBlock, task)
 	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
 		return IdeaStatus{}, err
 	}

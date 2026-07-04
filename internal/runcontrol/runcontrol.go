@@ -22,6 +22,8 @@ type CreateOptions struct {
 	Discovered   []agents.Discovery
 	Auto         bool
 	Now          time.Time
+	Track        string // optional `track:` frontmatter (track-aware-driver)
+	Provenance   string // optional roster-preset provenance comment (named-roster-presets)
 }
 
 type CreatedRun struct {
@@ -40,7 +42,7 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	if now.IsZero() {
 		now = time.Now()
 	}
-	idea, err := protocol.CreateIdeaWithExclusions(opts.Root, opts.Task, opts.Participants, opts.Excluded)
+	idea, err := protocol.CreateIdeaFull(opts.Root, opts.Task, opts.Participants, opts.Excluded, opts.Track, opts.Provenance)
 	if err != nil {
 		return CreatedRun{}, err
 	}

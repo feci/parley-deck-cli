@@ -92,6 +92,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runLoop(args[1:], stdout, stderr)
 	case "classify":
 		return runClassify(args[1:], stdout, stderr)
+	case "preset":
+		return runPreset(args[1:], stdout, stderr)
 	case "tui":
 		return runTUI(ctx, args[1:], stdout, stderr)
 	default:
@@ -1724,6 +1726,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	noPreflight := fs.Bool("no-preflight", false, "skip the pre-idea readiness check (CI escape)")
 	noPing := fs.Bool("no-ping", false, "preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
+	presetFlag := fs.String("preset", "", "named roster preset to expand into participants (see `parley preset list`)")
+	trackFlag := fs.String("track", "", "conditional-rigor track: fast|standard|deliberation (also drives track-linked roster defaults)")
 	yes := fs.Bool("yes", false, "launch selected agents without interactive confirmation")
 	root := fs.String("dir", ".", "workspace directory")
 	if err := fs.Parse(args); err != nil {
@@ -1767,6 +1771,36 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintln(stdout, "Resolved agent runtime:")
 	agents.PrintRuntimeMatrix(stdout, discovered)
+
+	// Named roster presets (named-roster-presets): --preset (or a track-linked default)
+	// expands into the participant list before selection/preflight. --preset and
+	// --participants together are ambiguous. Expansion is validated against the §2
+	// roster and fails closed; the expanded list stays the canonical quorum.
+	presetProvenance := ""
+	if strings.TrimSpace(*presetFlag) != "" && strings.TrimSpace(*participantsFlag) != "" {
+		fmt.Fprintln(stderr, "cannot combine --preset and --participants; pick one")
+		return 1
+	}
+	if rc, rerr := config.LoadRosterPresets(*root); rerr != nil {
+		fmt.Fprintf(stderr, "roster presets failed: %v\n", rerr)
+		return 1
+	} else if strings.TrimSpace(*presetFlag) != "" || (strings.TrimSpace(*participantsFlag) == "" && strings.TrimSpace(*trackFlag) != "") {
+		rosterIDs, inactive, ok := protocol.ReadRosterIDs(*root)
+		if !ok {
+			rosterIDs, inactive = nil, map[string]bool{} // §2 unparseable: still block on empty/dup, skip membership
+		}
+		res, rerr := config.ResolveRoster(rc, *presetFlag, *trackFlag, rosterIDs, inactive)
+		if rerr != nil {
+			fmt.Fprintf(stderr, "roster preset: %v\n", rerr)
+			return 1
+		}
+		if len(res.Participants) > 0 {
+			*participantsFlag = strings.Join(res.Participants, ",")
+			presetProvenance = res.Provenance
+			fmt.Fprintf(stdout, "Roster preset %q (source: %s) → %s\n", res.Preset, res.Source, strings.Join(res.Participants, ", "))
+		}
+	}
+
 	participants, err := selectedParticipantIDs(discovered, *participantsFlag)
 	if err != nil {
 		fmt.Fprintf(stderr, "participant selection failed: %v\n", err)
@@ -1802,6 +1836,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		Excluded:     preflightExcluded,
 		Discovered:   discovered,
 		Auto:         *auto,
+		Track:        strings.TrimSpace(*trackFlag),
+		Provenance:   presetProvenance,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "run create failed: %v\n", err)
