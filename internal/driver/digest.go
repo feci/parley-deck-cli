@@ -102,8 +102,9 @@ func firstSentence(s string) string {
 	if m := sentenceEndRe.FindStringIndex(para); m != nil && m[0] < digestPositionCap {
 		return strings.TrimSpace(para[:m[0]+1])
 	}
-	if len(para) > digestPositionCap {
-		return strings.TrimSpace(para[:digestPositionCap]) + "…"
+	// Rune-safe cap (byte slicing could split a multi-byte UTF-8 rune — review fix).
+	if r := []rune(para); len(r) > digestPositionCap {
+		return strings.TrimSpace(string(r[:digestPositionCap])) + "…"
 	}
 	return para
 }

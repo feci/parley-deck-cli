@@ -1091,18 +1091,28 @@ func (m liveModel) renderHome(width, rows int) string {
 			b.WriteString("\n")
 		}
 	}
-	// Consolidated round digest (tui-round-summary): render the latest completed
-	// round as a bounded block so a returning user catches up without tab-flipping.
-	// Capped to a fraction of the viewport so it never pushes the runs list off-screen.
+	// Consolidated round digest (tui-round-summary): render the latest completed round
+	// as a bounded block so a returning user catches up without tab-flipping. The budget
+	// RESERVES the space the sections below (Recent runs + hint) need so the digest can
+	// never push them off-screen (review fix): count what is already used + what still
+	// has to be drawn, and only give the digest the genuine leftover.
 	if dv, ok := m.latestRoundDigest(); ok {
-		digestRows := rows / 3
+		usedAbove := strings.Count(b.String(), "\n") + 1
+		runsRows := len(m.homeRuns)
+		if runsRows == 0 {
+			runsRows = 1
+		}
+		reserveBelow := 2 + runsRows + 2 // "Recent runs" header+blank, runs, hint+margin
+		digestRows := rows - usedAbove - reserveBelow
 		if digestRows > 10 {
 			digestRows = 10
 		}
-		if block := renderRoundDigest(dv, width, digestRows); block != "" {
-			b.WriteString("\n")
-			b.WriteString(block)
-			b.WriteString("\n")
+		if digestRows >= 3 {
+			if block := renderRoundDigest(dv, width, digestRows); block != "" {
+				b.WriteString("\n")
+				b.WriteString(block)
+				b.WriteString("\n")
+			}
 		}
 	}
 	b.WriteString("\n")

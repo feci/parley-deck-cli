@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runstate"
 	"parley-deck-cli/internal/store"
 )
 
@@ -56,5 +58,25 @@ func TestRenderRoundDigestBoundedAndLabelsHints(t *testing.T) {
 func TestRenderRoundDigestZeroRows(t *testing.T) {
 	if renderRoundDigest(digestView{Round: 1}, 80, 2) != "" {
 		t.Fatal("maxRows<3 should render nothing")
+	}
+}
+
+func TestRenderHomeReservesRunsBelowDigest(t *testing.T) {
+	// A digest must never push "Recent runs" off-screen on a short terminal.
+	m := liveModel{
+		opts: LiveOptions{Status: protocol.WorkspaceStatus{Ideas: []protocol.IdeaStatus{
+			{Slug: "idea-a", Status: "round-01"},
+			{Slug: "idea-b", Status: "round-02"},
+			{Slug: "idea-c", Status: "consensus"},
+		}}},
+		homeRuns: []runstate.RunSummary{{IdeaSlug: "idea-a", RunID: "r1"}},
+		events: []store.Event{{Type: "round.digest", Data: map[string]any{
+			"round":  "round-01",
+			"digest": `{"round":1,"total":3,"completed":3,"lines":[{"agent":"claude-1","position":"p","present":true},{"agent":"codex-1","position":"p","present":true},{"agent":"hermes-1","position":"p","present":true}],"next":"drafting consensus"}`,
+		}}},
+	}
+	out := m.renderHome(80, 12) // short terminal
+	if !strings.Contains(out, "Recent runs") {
+		t.Fatalf("digest pushed Recent runs off-screen:\n%s", out)
 	}
 }

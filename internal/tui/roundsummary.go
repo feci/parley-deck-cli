@@ -83,7 +83,9 @@ func renderRoundDigest(dv digestView, width, maxRows int) string {
 		case !ln.Present:
 			agentRows = append(agentRows, warnStyle.Render(fmt.Sprintf("  @%-13s [no artifact]", ln.Agent)))
 		case ln.Fell:
-			agentRows = append(agentRows, fmt.Sprintf("  @%-13s %s", ln.Agent, truncateText(ln.Position+"  [no Summary — fell back]", width-18)))
+			// Degraded-extraction marker is a PREFIX so truncation can never erase the
+			// honesty signal (review fix): "~" flags a fallback one-liner.
+			agentRows = append(agentRows, fmt.Sprintf("  @%-13s %s %s", ln.Agent, warnStyle.Render("~"), truncateText(ln.Position, width-20)))
 		default:
 			agentRows = append(agentRows, fmt.Sprintf("  @%-13s %s", ln.Agent, truncateText(ln.Position, width-18)))
 		}

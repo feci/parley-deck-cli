@@ -1,11 +1,11 @@
 ---
 idea: tui-round-summary
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-07-04
 completed: 2026-07-04
 branch: parley-deck-cli#round-summary-design
-head-commit: 5001d5e
+head-commit: f87bf93
 design-pr: https://github.com/feci/parley-deck-cli/pull/71
 implementation-pr: same
 ---
@@ -61,3 +61,26 @@ pure renderer. Deterministic, LLM-free; stance shown as keyword mentions, never 
   `TestStanceFlagsNoDoubleCountBlocker`.
 - The render is hard-capped to maxRows (header + agent rows + trailer), verified by
   `TestRenderRoundDigestBoundedAndLabelsHints` with a tiny budget.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-07-04
+
+### Fixes applied (review round-01)
+- [MAJOR, codex-1] renderHome now RESERVES the rows the sections below the digest need
+  (Recent runs header + runs + hint) and gives the digest only the genuine leftover, so
+  it can never push Recent runs off-screen. Regression test
+  `TestRenderHomeReservesRunsBelowDigest` (short terminal + 3 ideas asserts "Recent runs"
+  still present).
+- [MINOR, codex-1] `extractPosition` cap is now rune-safe (`[]rune`) — no UTF-8 rune
+  splitting.
+- [MINOR-1, hermes-1] the degraded-extraction marker is now a leading `~` PREFIX (before
+  the position) so truncation can never erase the honesty signal.
+- [MINOR-2, hermes-1] the digest `next:` line now says "consensus-ready (manual draft)"
+  when the consensus gate is unwired (driver halts, does not draft), instead of the
+  misleading "drafting consensus".
+- [NIT-1, hermes-1] aggregate `mentions:` line without per-agent attribution is the
+  ratified design — no change.
+
+### Deviations from agreed fixes
+None.

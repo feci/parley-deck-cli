@@ -260,7 +260,11 @@ func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, er
 	// advancement — it is a display feature.
 	nextAction := "opening " + roundLabel(c.CurrentRound+1)
 	if c.CurrentRound >= 1+d.cfg.CrossReviewRounds {
-		nextAction = "drafting consensus"
+		if d.cfg.Consensus == nil {
+			nextAction = "consensus-ready (manual draft)" // gate unwired: driver halts, does not draft
+		} else {
+			nextAction = "drafting consensus"
+		}
 	}
 	d.emitRoundDigest(c.CurrentRound, nextAction)
 	// Cross-review policy: rounds 1..(1+CrossReviewRounds).
