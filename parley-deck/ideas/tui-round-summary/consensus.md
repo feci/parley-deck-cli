@@ -70,3 +70,11 @@ truth); (b) render stance as keyword *flags/hints*, not ACCEPT/counter/block *ve
 Status: ✅ ACCEPT
 Drafter. Adopts driver-layer digest + round.digest event + flags-not-verdicts +
 viewport-bounded history. Read-only, no protocol change.
+
+### Signoff: codex-1 — 2026-07-04
+Status: ✅ ACCEPT
+This matches my round-01 position: the digest belongs in the driver/event-state layer, keyed to the canonical completion gate, with Home rendering cached snapshot state only. I also accept the idempotent `round.digest` event keyed by `(idea, round)` so reruns do not duplicate history.
+
+### Signoff: hermes-1 — 2026-07-04
+Status: ✅ ACCEPT
+Matches my round-01: stance as keyword flags/hints (not verdicts) avoids unreliable free-text classification, and viewport-bounded history (scrollable sub-region, not a fixed count) keeps chips/roster/runs list visible. Read-only, no protocol change.
