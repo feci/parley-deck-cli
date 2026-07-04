@@ -532,6 +532,20 @@ func (m liveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.growth[id] = next
 		}
 		return m, nil
+	case editorFinishedMsg:
+		switch {
+		case msg.err != nil && !msg.canceled:
+			m.inputErr = "editor: " + msg.err.Error()
+		case msg.canceled:
+			m.statusMsg = "editor cancelled — composer unchanged"
+		default:
+			// Success: drop the edited text into the composer; the existing Enter
+			// path still decides steer vs answer vs launch. Nothing is sent here.
+			m.inputText = msg.content
+			m.inputErr = ""
+			m.suggest, m.suggestItems, m.suggestIndex = false, nil, 0
+		}
+		return m, nil
 	}
 	return m, nil
 }
@@ -1022,16 +1036,19 @@ func (m liveModel) renderInputRow(width int) string {
 			label = "deck › "
 		}
 	}
+	// Flatten any multi-line draft (from /editor) to a single-line preview so it
+	// never breaks the input row; m.inputText keeps the raw value for submission.
+	shown := editorPreview(m.inputText)
 	var row string
 	switch {
 	case answer:
 		// Colour-flip the whole row in answer mode so an answer is never accidental.
-		row = warnStyle.Render(truncateText(label+m.inputText, width))
+		row = warnStyle.Render(truncateText(label+shown, width))
 	case steerRow:
 		// Cyan prefix marks "this goes to the agent" so a steer is never accidental.
-		row = steerStyle.Render(label) + truncateText(m.inputText, width-len(label))
+		row = steerStyle.Render(label) + truncateText(shown, width-len(label))
 	default:
-		row = okStyle.Render(label) + truncateText(m.inputText, width-len(label))
+		row = okStyle.Render(label) + truncateText(shown, width-len(label))
 	}
 	if m.inputErr != "" {
 		row += "  " + warnStyle.Render(m.inputErr)
@@ -1050,7 +1067,7 @@ func (m liveModel) renderInputRow(width int) string {
 	case m.composing:
 		hint = "type a task · Enter launch · esc cancel"
 	case strings.HasPrefix(m.inputText, "/"):
-		hint = "Tab to complete · commands: /help /protocol /refresh /narrate /follow /deck /answer /open /home /quit"
+		hint = "Tab to complete · commands: /help /protocol /refresh /narrate /follow /deck /editor /answer /open /home /quit"
 	case steerRow:
 		hint = "Enter sends to " + steerAgent + " · ctrl+k kill · ↑/↓ tabs · /help"
 	case active == homeTabID && !m.done:
@@ -1133,6 +1150,7 @@ var commandSpecs = []commandSpec{
 	{Name: "/artifact"},
 	{Name: "/run", Usage: "/run — advance the protocol now (auto-drive)"},
 	{Name: "/deck", Usage: "/deck <text>", TakesArg: true},
+	{Name: "/editor", Usage: "/editor — compose in $EDITOR"},
 	{Name: "/open", Usage: "/open [slug|run]", OpensPicker: true, TakesArg: true},
 	{Name: "/answer", Usage: "/answer [qid text]", OpensPicker: true, TakesArg: true},
 	{Name: "/quit"},
@@ -1316,6 +1334,13 @@ func (m liveModel) updateMain(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.updatePicker(msg)
 	}
 	key := msg.String()
+	// ctrl+e opens $EDITOR seeded with the current composer text (tui-editor-composer).
+	// Placed after the picker/confirm interceptors so those keep owning keys, but
+	// before the suggestion menu and ordinary editing so it works in any compose state.
+	if key == "ctrl+e" {
+		m.suggest = false
+		return m, openEditorCmd(m.inputText)
+	}
 	slash := strings.HasPrefix(m.inputText, "/")
 	// Slash-command autocomplete: while the suggestion menu is visible it owns
 	// Tab/↑/↓/Enter/Esc; printable keys still edit the input below and re-filter.
@@ -1767,6 +1792,12 @@ func (m liveModel) segmentFor(agentID string) string {
 func (m liveModel) submitInput() (tea.Model, tea.Cmd) {
 	text := strings.TrimSpace(m.inputText)
 	if m.composing {
+		// The composing branch returns before slash dispatch, so a typed "/editor"
+		// would be submitted as the literal answer/task. Intercept it here so the
+		// editor works while answering a picker-selected question or composing an idea.
+		if text == "/editor" {
+			return m, openEditorCmd("")
+		}
 		if text == "" {
 			if m.answerQID != "" {
 				m.inputErr = "type an answer first"
@@ -1863,7 +1894,9 @@ func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.M
 			// Weave the steer into the agent's scrollable transcript: a "❯ you:"
 			// line, then tail the reply stdout as a steer stream (streams in place).
 			b := m.ensureBuffer(agentID)
-			b.lines = append(b.lines, transcriptLine{Text: "❯ you: " + text, Stream: transcriptSteer})
+			// Flatten a multi-line (editor-composed) steer for the echo only; the raw
+			// text was already submitted above so the agent still gets every line.
+			b.lines = append(b.lines, transcriptLine{Text: "❯ you: " + editorPreview(text), Stream: transcriptSteer})
 			b.steer = tailCursor{path: res.StdoutPath}
 			b.partial[transcriptSteer] = ""
 			b.follow = true
@@ -1920,6 +1953,11 @@ func (m liveModel) runCommand(text string) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "/quit":
 		return m, tea.Quit
+	case "/editor":
+		// Clear the "/editor" token so a cancel doesn't leave it in the composer;
+		// seed the editor empty (ctrl+e is the "edit current text" entry point).
+		m.inputText, m.inputErr = "", ""
+		return m, openEditorCmd("")
 	case "/status", "/protocol":
 		m.activeTab = statusTabID
 		m.inputText, m.inputErr = "", ""
@@ -2356,6 +2394,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"Input (always typeable)",
 		"  type + Enter       on an agent tab: send a steer — the agent replies in",
 		"                     this tab; answers its open question if one is pending",
+		"  ctrl+e             compose the input in $EDITOR (also /editor); multi-line ok",
 		"  ctrl+k             kill the focused agent (confirm y/N); the run continues",
 		"  esc                close a reply/menu, clear the input, or detach when empty",
 		"  ctrl+c             cancel the attached run, else quit",
@@ -2364,6 +2403,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  /help              this overlay        /status   jump to Status tab",
 		"  /follow            re-pin to the bottom (tail)",
 		"  /deck <text>       record a deck-level steer",
+		"  /editor            compose the input in $EDITOR (same as ctrl+e)",
 		"  /open              pick an idea/run to open (↑/↓ + Enter); /open <slug|run> direct",
 		"  /answer            pick an open question, then type the answer; /answer <qid> <t> direct",
 		"  /quit              detach the TUI",
