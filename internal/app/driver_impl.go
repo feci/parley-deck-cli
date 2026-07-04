@@ -217,6 +217,14 @@ func (o driverImplOps) RunChecks(ctx context.Context) (bool, string) {
 		err := cmd.Run()
 		return err == nil, buf.String()
 	}
+	// List-form `checks:` = the completion contract (completion-contracts-evidence-ledger):
+	// run each criterion, write the evidence table into IMPLEMENTATION.md, fail closed on
+	// any non-zero exit. A malformed list is a hard fail (present but invalid).
+	if criteria, isList, err := driver.ReadChecksContract(o.ideaDir); err != nil {
+		return false, "checks: contract invalid — " + err.Error()
+	} else if isList {
+		return o.runChecksContract(ctx, criteria)
+	}
 	checks := ""
 	if meta, err := protocol.ReadFrontmatter(filepath.Join(o.ideaDir, "00-prompt.md")); err == nil {
 		checks = strings.TrimSpace(strings.Trim(strings.TrimSpace(meta["checks"]), `"'`))

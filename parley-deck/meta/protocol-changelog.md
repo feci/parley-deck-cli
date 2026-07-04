@@ -1,3 +1,20 @@
+## 2026-07-04 — Completion contract: list-form `checks:` + driver-written evidence
+
+Idea: ideas/completion-contracts-evidence-ledger/ (completion-contracts-evidence-ledger)
+Drafted by: claude-1
+Summary: Additive, backward-compatible. `checks:` in 00-prompt.md now accepts either a
+scalar command (unchanged) or an optional named list of {name, command} criteria; the
+list form activates a completion contract. The driver runs each criterion, writes a
+per-criterion result table (exit, duration, secret-scrubbed truncated output) into the
+existing `## Validation evidence` section of IMPLEMENTATION.md each cycle (overwrite;
+git history preserves prior cycles), and vetoes `status: complete` while any criterion
+fails at the current HEAD — the same fail-closed shape as strict_gate, independent of it.
+No new `done_when:` key and no separate evidence artifact (rejected in round-02). Scalar
+or absent `checks:` is byte-for-byte today's behavior. Unanimous deliberation-track
+consensus (claude-1, codex-1, hermes-1, antigravity-1 — ✅ ×4). Protocol text: LE-4 +
+Phase-5 template + Phase-8, scoped to the list shape; mirrored into the embedded default
+and the skill fallback snapshot.
+
 ## 2026-07-03 — Progressive-disclosure layout (relocate §9 after §10)
 
 Idea: ideas/protocol-restructure-appendices/ (protocol-restructure-appendices)
