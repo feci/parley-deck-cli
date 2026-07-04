@@ -1,3 +1,17 @@
+## 2026-07-04 - Add §13.5 Playbooks (parley learn distillation)
+
+Idea: ideas/parley-learn-playbooks/ (parley-learn-playbooks)
+Drafted by: claude-1
+Summary: Additive. Extends §13 with §13.5 Playbooks - an advisory, non-canonical retro
+output. `parley learn <closed-idea-slug>` distills a COMPLETED idea into a reusable
+parley-deck/playbooks/<topic>.md (proven shape: track, roster, checklist, gotchas,
+verification), idea-specific specifics stripped. Playbooks sit beside consults in the
+advisory tier - never quorum, never overriding protocol; referencing one in Phase 0 is
+optional context. `parley learn` is a read-only tooling command that writes exactly one
+new fail-closed playbook file (Lstat symlink guard), NOT a Parley round. Unanimous
+deliberation-track consensus (claude-1, codex-1, hermes-1, antigravity-1 - accept x4).
+Mirrored into the embedded default + skill fallback.
+
 ## 2026-07-04 — Completion contract: list-form `checks:` + driver-written evidence
 
 Idea: ideas/completion-contracts-evidence-ledger/ (completion-contracts-evidence-ledger)

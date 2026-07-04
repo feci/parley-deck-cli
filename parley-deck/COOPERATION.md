@@ -1108,9 +1108,13 @@ A retro-proposed change is accepted only by the normal gate: multi-agent consens
 - **Reversibility** — all proposed edits land on an idea branch with git history; never a silent in-place rewrite.
 - **Multi-agent diagnosis** — when a retro pass opens an idea, its round-01 has each participant diagnose the coreset independently. Independent multi-agent disagreement is the deck's analogue of self-consistency, applied at diagnosis, not only at acceptance.
 
+### 13.5 Playbooks (distilled retro output)
+
+A **playbook** is a second, advisory output of retrospection: `parley learn <closed-idea-slug>` scaffolds a reusable `parley-deck/playbooks/<topic>.md` from a COMPLETED idea — a deterministic skeleton (track, roster, phase checklist, plus prompts for gotchas + fixes and the verification pattern) that the author refines into transferable, idea-agnostic prose before committing. Playbooks are **advisory and non-canonical** — like consults (§8) they are never quorum evidence and never override protocol text; referencing one in Phase 0 is optional context. Substantive revision of a playbook's recommended process goes through a normal idea. `parley learn` is a tooling command (read-only over the idea; writes exactly one new playbook file, fail-closed if it exists), NOT a Parley round — the advisory playbook does not need quorum, and normal commit review is its quality gate.
+
 Tooling that performs retro passes (e.g. a `parley retro` command) is governed by this section but specified separately; such tooling defaults to read-only and may at most scaffold a single new `ideas/<slug>/00-prompt.md`.
 
-Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16) and amended by idea `meta-protocol-change-fusion-execplans` (2026-06-18) to add the confident-error evidence signal.
+Changing this section follows §7 (a meta-protocol-change idea). This section was ratified by idea `meta-protocol-change-rho-retrospective-optimization` (2026-06-16), amended by idea `meta-protocol-change-fusion-execplans` (2026-06-18) to add the confident-error evidence signal, and extended by idea `parley-learn-playbooks` (2026-07-04) to add §13.5 playbooks.
 
 ## 14. Automated outer loop (loop engineering) — the human brake
 
