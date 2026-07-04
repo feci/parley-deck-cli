@@ -69,23 +69,43 @@ func runLearn(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "learn: invalid --topic %q (lowercase kebab-case)\n", name)
 		return 2
 	}
-	playbook := filepath.Join(root, protocol.DeckDir, "playbooks", name+".md")
-	// Fail closed if anything already exists at the target (Lstat: a symlink cannot
-	// redirect the write). --refresh is a deferred follow-up.
-	if _, err := os.Lstat(playbook); err == nil {
-		fmt.Fprintf(stderr, "learn: %s already exists — refusing (fail-closed; use --topic or remove it first)\n", playbook)
-		return 1
-	} else if !os.IsNotExist(err) {
+	playbooksDir := filepath.Join(root, protocol.DeckDir, "playbooks")
+	// A symlinked `playbooks/` parent could redirect the write outside the workspace
+	// even though the final target Lstat sees it as absent (review fix): Lstat the
+	// parent and refuse a symlink; create the dir only when genuinely absent.
+	if fi, err := os.Lstat(playbooksDir); err == nil {
+		if fi.Mode()&os.ModeSymlink != 0 {
+			fmt.Fprintf(stderr, "learn: %s is a symlink — refusing (fail-closed write boundary)\n", playbooksDir)
+			return 1
+		}
+	} else if os.IsNotExist(err) {
+		if err := os.MkdirAll(playbooksDir, 0o755); err != nil {
+			fmt.Fprintf(stderr, "learn: %v\n", err)
+			return 1
+		}
+	} else {
 		fmt.Fprintf(stderr, "learn: %v\n", err)
 		return 1
 	}
-	if err := os.MkdirAll(filepath.Dir(playbook), 0o755); err != nil {
-		fmt.Fprintf(stderr, "learn: %v\n", err)
+	playbook := filepath.Join(playbooksDir, name+".md")
+	// Exclusive create closes the fail-closed check-then-write TOCTOU and refuses an
+	// existing target (regular file or symlink) atomically.
+	f, err := os.OpenFile(playbook, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		if os.IsExist(err) {
+			fmt.Fprintf(stderr, "learn: %s already exists — refusing (fail-closed; use --topic or remove it first)\n", playbook)
+		} else {
+			fmt.Fprintf(stderr, "learn: %v\n", err)
+		}
 		return 1
 	}
-
 	content := distillPlaybook(name, slug, ideaDir)
-	if err := os.WriteFile(playbook, []byte(content), 0o644); err != nil {
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
+		fmt.Fprintf(stderr, "learn: %v\n", err)
+		return 1
+	}
+	if err := f.Close(); err != nil {
 		fmt.Fprintf(stderr, "learn: %v\n", err)
 		return 1
 	}

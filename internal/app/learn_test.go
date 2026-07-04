@@ -74,3 +74,23 @@ func TestLearnFlagAfterSlug(t *testing.T) {
 		t.Fatalf("--topic target not written: %v", err)
 	}
 }
+
+func TestLearnRejectsSymlinkedPlaybooksDir(t *testing.T) {
+	root := setupClosedIdea(t, "complete")
+	outside := t.TempDir()
+	deck := filepath.Join(root, "parley-deck")
+	// Symlink parley-deck/playbooks → outside dir.
+	if err := os.Symlink(outside, filepath.Join(deck, "playbooks")); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	if code := runLearn([]string{"demo-idea", "--dir", root}, &out, &errb); code == 0 {
+		t.Fatal("symlinked playbooks/ must fail closed")
+	}
+	if _, err := os.Stat(filepath.Join(outside, "demo-idea.md")); err == nil {
+		t.Fatal("must NOT write into the symlink target")
+	}
+	if !strings.Contains(errb.String(), "symlink") {
+		t.Fatalf("stderr = %q", errb.String())
+	}
+}
