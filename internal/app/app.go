@@ -1787,7 +1787,10 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	} else if strings.TrimSpace(*presetFlag) != "" || (strings.TrimSpace(*participantsFlag) == "" && strings.TrimSpace(*trackFlag) != "") {
 		rosterIDs, inactive, ok := protocol.ReadRosterIDs(*root)
 		if !ok {
-			rosterIDs, inactive = nil, map[string]bool{} // §2 unparseable: still block on empty/dup, skip membership
+			// Fail closed (FINAL §Validation): without a parseable §2 roster we cannot
+			// validate preset membership, so refuse rather than silently expand.
+			fmt.Fprintln(stderr, "roster preset: cannot validate against the §2 roster (COOPERATION.md table unreadable); fix the roster table or pass --participants")
+			return 1
 		}
 		res, rerr := config.ResolveRoster(rc, *presetFlag, *trackFlag, rosterIDs, inactive)
 		if rerr != nil {

@@ -1,11 +1,11 @@
 ---
 idea: named-roster-presets
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-07-04
 completed: 2026-07-04
 branch: parley-deck-cli#roster-presets-design
-head-commit: 2474c6f
+head-commit: 44a716c
 design-pr: https://github.com/feci/parley-deck-cli/pull/68
 implementation-pr: same
 ---
@@ -72,3 +72,26 @@ Roster presets:
   this matches the consensus "fail closed" intent or should hard-stop instead.
 - `parley preset list` strips a leading `list` token before flag parsing so
   `--dir` after `list` works (Go flag stops at the first positional).
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-07-04
+
+### Fixes applied (review round-01)
+- [CRITICAL, hermes-1] Provenance HTML comment moved OUTSIDE the frontmatter fence (to
+  the first body line). Inside the fence it was ingested by ReadFrontmatter's
+  `key: value` split as a junk key `<!-- roster-preset`. Now the frontmatter has only
+  canonical keys; `track:` remains a real frontmatter key. Covered by
+  `TestCreateIdeaFullProvenanceOutsideFence`.
+- [MAJOR, codex-1] Preset expansion now FAILS CLOSED when the §2 roster is unparseable:
+  `runTask` returns nonzero without creating an idea instead of skipping membership
+  validation (was a §2-quorum bypass).
+- [MAJOR, hermes-1] `parley preset list` now prints "⚠ could not read the §2 roster …
+  stale-member validation skipped" when ReadRosterIDs fails, instead of silently showing
+  clean presets.
+- [MINOR, codex-1] CLI acceptance: the fail-closed branch is a thin guard over the
+  unit-tested `ReadRosterIDs` (ok=false) + `ResolveRoster`; a full `runTask` integration
+  test is deferred as a follow-up (the components are unit-covered).
+
+### Deviations from agreed fixes
+None.

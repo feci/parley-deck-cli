@@ -141,9 +141,11 @@ func CreateIdeaFull(root, task string, participants, excluded []string, track, p
 	if t := strings.TrimSpace(track); t != "" {
 		trackLine = "track: " + t + "\n"
 	}
-	provenanceLine := ""
+	// Provenance is an HTML comment BELOW the frontmatter fence (review fix: inside the
+	// fence, ReadFrontmatter's `key: value` split would ingest it as a junk key).
+	provenanceBlock := ""
 	if p := strings.TrimSpace(provenance); p != "" {
-		provenanceLine = p + "\n"
+		provenanceBlock = p + "\n\n"
 	}
 
 	prompt := fmt.Sprintf(`---
@@ -151,10 +153,10 @@ idea: %s
 author: user
 created: %s
 participants: [%s]
-%s%s%sstatus: round-01
+%s%sstatus: round-01
 ---
 
-## Problem / idea
+%s## Problem / idea
 
 %s
 
@@ -166,7 +168,7 @@ participants: [%s]
 ## Non-goals
 
 - Do not make unrelated repository changes.
-`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), trackLine, provenanceLine, excludedBlock, task)
+`, slug, now.Format("2006-01-02"), strings.Join(participants, ", "), trackLine, excludedBlock, provenanceBlock, task)
 	if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(prompt), 0o644); err != nil {
 		return IdeaStatus{}, err
 	}

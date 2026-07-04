@@ -48,6 +48,9 @@ func runPreset(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	rosterIDs, inactive, ok := protocol.ReadRosterIDs(*root)
+	if !ok {
+		fmt.Fprintln(stdout, "⚠ could not read the §2 roster (COOPERATION.md) — stale-member validation skipped.")
+	}
 
 	// Reverse the track-default map for a "fits track" hint.
 	fits := map[string][]string{}

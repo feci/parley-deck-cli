@@ -53,3 +53,41 @@ func TestReadRosterIDsMissing(t *testing.T) {
 		t.Fatal("missing COOPERATION.md should return ok=false")
 	}
 }
+
+func TestCreateIdeaFullProvenanceOutsideFence(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, DeckDir, "ideas"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	os.WriteFile(filepath.Join(root, DeckDir, "COOPERATION.md"), []byte("**Transport:** `local-dir`\n"), 0o644)
+	idea, err := CreateIdeaFull(root, "demo task", []string{"claude-1", "codex-1"}, nil, "fast", "<!-- roster-preset: pair (source: deck) -->")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := ReadFrontmatter(filepath.Join(idea.Path, "00-prompt.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The provenance comment must NOT leak into the frontmatter as a junk key.
+	for k := range m {
+		if len(k) >= 3 && (k[:3] == "<!-" || contains(k, "roster-preset")) {
+			t.Fatalf("provenance leaked into frontmatter as key %q", k)
+		}
+	}
+	if m["track"] != "fast" {
+		t.Fatalf("track frontmatter key = %q, want fast", m["track"])
+	}
+	body, _ := os.ReadFile(filepath.Join(idea.Path, "00-prompt.md"))
+	if !contains(string(body), "roster-preset") {
+		t.Fatal("provenance comment missing from body")
+	}
+}
+
+func contains(s, sub string) bool {
+	for i := 0; i+len(sub) <= len(s); i++ {
+		if s[i:i+len(sub)] == sub {
+			return true
+		}
+	}
+	return false
+}
