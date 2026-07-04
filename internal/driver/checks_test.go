@@ -48,9 +48,9 @@ func TestReadChecksContractList(t *testing.T) {
 func TestReadChecksContractMalformedFailsClosed(t *testing.T) {
 	cases := []string{
 		"---\nchecks:\n  - name: a\n    command: x\n  - name: a\n    command: y\n---\n", // dup name
-		"---\nchecks:\n  - name: \"\"\n    command: x\n---\n",                              // empty name
-		"---\nchecks:\n  - name: a\n    command: \"\"\n---\n",                              // empty command
-		"---\nchecks: []\n---\n",                                                          // empty list
+		"---\nchecks:\n  - name: \"\"\n    command: x\n---\n",                           // empty name
+		"---\nchecks:\n  - name: a\n    command: \"\"\n---\n",                           // empty command
+		"---\nchecks: []\n---\n", // empty list
 	}
 	for i, fm := range cases {
 		dir := writeIdea(t, fm)
