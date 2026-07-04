@@ -20,8 +20,15 @@ const EnvAgentConfig = "PARLEY_HEADLESS_AGENT_CONFIG"
 const EnvParleyHome = "PARLEY_HOME"
 
 type fileConfig struct {
-	Defaults *globalDefaults          `toml:"defaults"`
-	Agents   map[string]agentOverride `toml:"agents"`
+	Defaults *globalDefaults           `toml:"defaults"`
+	Agents   map[string]agentOverride  `toml:"agents"`
+	Rosters  map[string]rosterOverride `toml:"rosters"`
+}
+
+// rosterOverride is one [rosters.<slug>] block — a named participant preset
+// (named-roster-presets). Members are §2 canonical roster IDs (e.g. "claude-1").
+type rosterOverride struct {
+	Participants []string `toml:"participants"`
 }
 
 // globalDefaults is the optional [defaults] block of a layered config file —
@@ -30,9 +37,10 @@ type globalDefaults struct {
 	Speed              string         `toml:"speed"`
 	PingTier           string         `toml:"ping_tier"`
 	PreferredTransport string         `toml:"preferred_transport"`
-	RosterChangePolicy string         `toml:"roster_change_policy"`
-	Timeouts           *timeoutsBlock `toml:"timeouts"`
-	Loop               *loopBlock     `toml:"loop"`
+	RosterChangePolicy string            `toml:"roster_change_policy"`
+	Timeouts           *timeoutsBlock    `toml:"timeouts"`
+	Loop               *loopBlock        `toml:"loop"`
+	TrackRosters       map[string]string `toml:"track_rosters"`
 }
 
 type timeoutsBlock struct {
