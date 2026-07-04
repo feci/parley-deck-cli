@@ -1894,7 +1894,9 @@ func (m liveModel) submitSteer(target steer.Target, agentID, text string) (tea.M
 			// Weave the steer into the agent's scrollable transcript: a "❯ you:"
 			// line, then tail the reply stdout as a steer stream (streams in place).
 			b := m.ensureBuffer(agentID)
-			b.lines = append(b.lines, transcriptLine{Text: "❯ you: " + text, Stream: transcriptSteer})
+			// Flatten a multi-line (editor-composed) steer for the echo only; the raw
+			// text was already submitted above so the agent still gets every line.
+			b.lines = append(b.lines, transcriptLine{Text: "❯ you: " + editorPreview(text), Stream: transcriptSteer})
 			b.steer = tailCursor{path: res.StdoutPath}
 			b.partial[transcriptSteer] = ""
 			b.follow = true
@@ -2392,6 +2394,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"Input (always typeable)",
 		"  type + Enter       on an agent tab: send a steer — the agent replies in",
 		"                     this tab; answers its open question if one is pending",
+		"  ctrl+e             compose the input in $EDITOR (also /editor); multi-line ok",
 		"  ctrl+k             kill the focused agent (confirm y/N); the run continues",
 		"  esc                close a reply/menu, clear the input, or detach when empty",
 		"  ctrl+c             cancel the attached run, else quit",
@@ -2400,6 +2403,7 @@ func (m liveModel) renderHelp(width, height int) string {
 		"  /help              this overlay        /status   jump to Status tab",
 		"  /follow            re-pin to the bottom (tail)",
 		"  /deck <text>       record a deck-level steer",
+		"  /editor            compose the input in $EDITOR (same as ctrl+e)",
 		"  /open              pick an idea/run to open (↑/↓ + Enter); /open <slug|run> direct",
 		"  /answer            pick an open question, then type the answer; /answer <qid> <t> direct",
 		"  /quit              detach the TUI",

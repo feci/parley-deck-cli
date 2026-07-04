@@ -1,11 +1,11 @@
 ---
 idea: tui-editor-composer
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-07-04
 completed: 2026-07-04
 branch: parley-deck-cli#editor-composer-design
-head-commit: d45ce37 (implementation commit; branch HEAD advances by 1 for this metadata line)
+head-commit: 08eb0ac
 design-pr: https://github.com/feci/parley-deck-cli/pull/69
 implementation-pr: same
 ---
@@ -53,3 +53,21 @@ remains out of scope; multi-line content is submitted raw and only previewed fla
   a host SIGKILL while the editor is open cannot be covered — documented in FINAL §6.
 - `$EDITOR`/`$VISUAL` are split on fields (`code --wait` works). Exotic shell quoting
   in those vars is out of scope (documented).
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-07-04
+
+### Fixes applied (codex-1 review round-01)
+- [MAJOR] Multi-line `you:` steer echo now flattens via `editorPreview(text)` at
+  `submitSteer` (raw text still submitted to the agent). Seam covered by
+  `TestEditorPreviewFlattensForEcho`.
+- [MINOR] Help overlay now lists `ctrl+e` (Input section) and `/editor` (Slash
+  commands); slash-command hint line already included `/editor`.
+- [MINOR] Added lifecycle tests: `prepEditorTemp` 0600 perms + seed content + removal
+  after readback; cancel (non-zero exit) removes temp; success preserves
+  `composing`+`answerQID`. Refactored `openEditorCmd` into `prepEditorTemp` +
+  `readbackEditorTemp` to make these paths testable without launching an editor.
+
+### Deviations from agreed fixes
+None.

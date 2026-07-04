@@ -57,11 +57,78 @@ func TestEditorPreviewMultiLine(t *testing.T) {
 }
 
 func TestOpenEditorCmdNonNil(t *testing.T) {
-	// The returned command is opaque (tea.ExecProcess), so we only assert it is
-	// produced without error for a normal seed; the readback/cancel branches are
-	// covered via TestEditorFinishedMsgHandling.
 	if cmd := openEditorCmd("seed"); cmd == nil {
 		t.Fatal("openEditorCmd returned nil for a valid seed")
+	}
+}
+
+func TestPrepEditorTempPermsContentAndReadback(t *testing.T) {
+	path, err := prepEditorTemp("seed body")
+	if err != nil {
+		t.Fatalf("prepEditorTemp: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Fatalf("temp perms = %o, want 600", perm)
+	}
+	b, _ := os.ReadFile(path)
+	if string(b) != "seed body" {
+		t.Fatalf("temp content = %q, want seed", string(b))
+	}
+
+	// Success readback returns trimmed content AND removes the file.
+	if err := os.WriteFile(path, []byte("edited\n\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	msg := readbackEditorTemp(path, nil)
+	if msg.content != "edited" {
+		t.Fatalf("readback content = %q, want trimmed 'edited'", msg.content)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("temp file should be removed after readback, stat err=%v", err)
+	}
+}
+
+func TestReadbackEditorTempCancel(t *testing.T) {
+	path, err := prepEditorTemp("x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := readbackEditorTemp(path, os.ErrClosed) // non-zero editor exit
+	if !msg.canceled {
+		t.Fatal("non-zero editor exit should set canceled")
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("temp file should be removed on cancel")
+	}
+}
+
+func TestEditorSuccessPreservesAnswerComposition(t *testing.T) {
+	// Success must fill inputText but leave composing + answerQID untouched.
+	base := liveModel{composing: true, answerQID: "q7", inputText: "/editor"}
+	m, _ := base.Update(editorFinishedMsg{content: "my long answer"})
+	lm := m.(liveModel)
+	if lm.inputText != "my long answer" {
+		t.Fatalf("inputText = %q", lm.inputText)
+	}
+	if !lm.composing || lm.answerQID != "q7" {
+		t.Fatalf("composition state lost: composing=%v answerQID=%q", lm.composing, lm.answerQID)
+	}
+}
+
+func TestEditorPreviewFlattensForEcho(t *testing.T) {
+	// The steer echo and input row both flatten via editorPreview; the raw text is
+	// what gets submitted. Assert the preview a multi-line steer would show.
+	raw := "line one\nline two"
+	got := editorPreview(raw)
+	if strings.Contains(got, "\n") {
+		t.Fatalf("preview must be single-line, got %q", got)
+	}
+	if !strings.Contains(got, "[2 lines]") {
+		t.Fatalf("preview should show line count, got %q", got)
 	}
 }
 
