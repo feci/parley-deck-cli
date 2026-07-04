@@ -18,7 +18,7 @@ All applied in fix-up cycle 1, confirmed resolved in review round-02 (codex-1 + 
 
 ## Deferred follow-ups
 
--  pre-flight command; richer expectation matchers (stdout/regex/path_exists).
+- `parley check-contract` pre-flight command; richer expectation matchers (stdout/regex/path_exists).
 
 ## Dismissed findings
 
