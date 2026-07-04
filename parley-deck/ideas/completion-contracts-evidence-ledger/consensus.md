@@ -70,3 +70,12 @@ antigravity-1 all accept). The proposal is NOT a new `done_when:` key + a separa
 Status: ✅ ACCEPT
 Drafter. Round-02 converged unanimously on the minimalist design (extend checks: to a
 list, ledger = ## Validation evidence, one Phase-8 veto, v1 exit-0, strict_gate independent).
+
+### Signoff: codex-1 — 2026-07-04
+Status: ✅ ACCEPT
+I accept the minimalist list-form `checks:` design: extend existing `checks:`, keep the ledger in `IMPLEMENTATION.md` `## Validation evidence`, use exit-0 criteria only, and keep `strict_gate` independent.
+My round-02 implementation plan stands: add `ReadChecksContract` with `yaml.v3`, run list criteria through the driver with scrubbed/truncated evidence, add the Phase-8 all-pass close veto, update both protocol copies, and test legacy scalar behavior plus list pass/fail and `strict_gate` independence.
+
+### Signoff: hermes-1 — 2026-07-04
+Status: ✅ ACCEPT
+The adopted design is my minimalist position: extend the existing `checks:` primitive to a list, keep the ledger inside `IMPLEMENTATION.md` `## Validation evidence`, and add only one fail-closed Phase-8 veto — no new frontmatter key, no new artifact, exit-0 only in v1.
