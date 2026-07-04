@@ -224,7 +224,7 @@ loop-engineering work). The tag is only a reference id; the rule text is what bi
 - **LE-1 — Refutation-default review.** A reviewer assumes the implementation is wrong and records concrete attempts to break each acceptance criterion; a "no findings" review counts only with refutation attempts shown.
 - **LE-2 — Driver auto-advance.** A deterministic driver may advance mechanical phase transitions; it never authors participant content or decides contested issues.
 - **LE-3 — Model diversity.** A reviewer sharing the implementer's model is likelier to rubber-stamp; `require_model_diversity: true` turns an all-shared-model reviewer set into a hard gate.
-- **LE-4 — Verification command.** `checks:` in `00-prompt.md` is the build/test gate the driver runs (as `sh -c`) at Phase 5/8.
+- **LE-4 — Verification command.** `checks:` in `00-prompt.md` is the build/test gate the driver runs (as `sh -c`) at Phase 5/8. `checks:` accepts either a scalar command (today's behavior) or an optional named list of `{name, command}` criteria (each expects exit 0); the list form activates the **completion contract** — the driver runs every criterion and writes the per-criterion result table into the `## Validation evidence` section of `IMPLEMENTATION.md` each cycle (overwriting the prior entry; git history preserves earlier cycles), with output secret-scrubbed and truncated.
 - **LE-5 — Loop budgets.** Driver runs are bounded by max steps / wall-clock / cost.
 - **LE-7 / LE-11 — Close-decision integrity.** Before an auto-driven close, a goal-done check verifies FINAL's observable acceptance criteria; reservations or too-few reviewers escalate rather than close.
 - **LE-10 — Candidate remediation.** Remediation ideas may start as `status: candidate`.
@@ -436,7 +436,9 @@ The implementer:
 
         ## Validation evidence
         (Which FINAL.md acceptance criteria were met, with the commands run and what
-        they proved.)
+        they proved. When `checks:` is a list (LE-4 completion contract), the driver
+        populates this section automatically each cycle; the implementer does not
+        hand-write it.)
 
         ## Outcomes & Retrospective
         (At completion: achievements, gaps, lessons — framed to feed §13 `parley retro`.)
@@ -535,6 +537,8 @@ Signoff blocks use the same `✅ ACCEPT / 🟡 ACCEPT-WITH-RESERVATIONS / ❌ BL
 ### Phase 8 — Fix-up
 
 The implementer applies the **Agreed fixes** from `review/consensus.md` on the same branch. On completion, they append a new section to `IMPLEMENTATION.md`:
+
+When `checks:` is a list (LE-4 completion contract), closing additionally requires the latest driver run to be all-pass at the current HEAD: the driver vetoes `status: complete` while any criterion fails (it can only fail a close claim, never auto-pass one — the same shape as `strict_gate`, and independent of it). A failing criterion is recorded in `## Validation evidence` and escalates via stopping judgment rather than auto-retrying.
 
     ## Fix-up cycle N
     status: complete
