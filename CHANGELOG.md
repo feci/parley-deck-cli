@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.35.0 - 2026-07-04
+
+Five features inspired by Hermes Agent v0.18.0, each designed + implemented + reviewed via a real multi-agent Parley Deck run (claude/codex/hermes/antigravity):
+
+- **completion-contracts-evidence-ledger** (protocol): `checks:` in 00-prompt.md now accepts an optional named list of `{name, command}` criteria (a completion contract). The driver runs each criterion, writes a secret-scrubbed/truncated per-criterion table into IMPLEMENTATION.md's `## Validation evidence` section (committed each cycle), and vetoes `status: complete` while any criterion fails at HEAD (fail-closed, independent of strict_gate). Scalar/absent `checks:` unchanged. Protocol: LE-4 + Phase-5 + Phase-8.
+- **named-roster-presets**: `[rosters.<name>]` + `[defaults.track_rosters]` in agents.toml; `parley run --preset NAME --track T` expands a preset into the canonical participants (validated against the §2 roster, fail-closed); `parley preset list` shows presets, source layer, and stale-member warnings.
+- **tui-round-summary**: the driver emits an idempotent `round.digest` event when a round completes; the TUI Home tab renders a bounded position-map digest (per-agent one-liners, keyword mention-flags, next action) that never pushes Recent runs off-screen.
+- **tui-editor-composer**: `/editor` + ctrl+e open $VISUAL/$EDITOR/vi on a 0600 temp file and drop the (multi-line) result into the composer; the existing Enter path keeps steer/answer semantics.
+- **parley-learn-playbooks** (protocol): `parley learn <closed-idea-slug>` distills a COMPLETED idea into an advisory playbook under `parley-deck/playbooks/` (fail-closed write boundary: parent-symlink refusal + O_EXCL). Protocol: §13.5 (advisory, beside consults).
+
+Protocol changed (contracts + §13.5) — both COOPERATION.md copies + the skill fallback are in sync (drift guard green).
+
 ## v1.34.0 - 2026-07-03
 
 **Protocol progressive-disclosure layout (pure reorder).** `COOPERATION.md` now reads
