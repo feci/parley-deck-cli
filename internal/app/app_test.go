@@ -84,7 +84,7 @@ func TestDefaultParticipantSelectionSkipsLegacyGemini(t *testing.T) {
 		},
 	}
 
-	got, err := selectedParticipantIDs(discovered, "")
+	got, err := selectedParticipantIDs(discovered, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestDefaultParticipantSelectionSkipsLegacyGemini(t *testing.T) {
 		t.Fatalf("default participants=%v, want [agy manual]", got)
 	}
 
-	got, err = selectedParticipantIDs(discovered, "gemini")
+	got, err = selectedParticipantIDs(discovered, "gemini", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

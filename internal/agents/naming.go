@@ -167,6 +167,14 @@ func Parse(name string) (ParsedName, error) {
 	if !ok {
 		return zero, fmt.Errorf("naming: effort %q is not in the vocabulary", effortSec)
 	}
+	// Fail-closed canonical check (review MINOR): re-compose and require byte
+	// equality, so non-canonical spellings that normalize to the same value
+	// (`x-high` -> xhigh, instance `02` -> 2, lowercase `xhigh` vs `xHigh`) are
+	// rejected rather than silently accepted with a lossy round-trip.
+	canonical, cerr := Compose(family, model, tok, instance)
+	if cerr != nil || canonical != name {
+		return zero, fmt.Errorf("naming: %q is not in canonical form (want %q)", name, canonical)
+	}
 	return ParsedName{Family: family, Model: model, Effort: tok, Instance: instance}, nil
 }
 

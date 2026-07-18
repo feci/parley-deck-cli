@@ -26,7 +26,7 @@ func RunImplementation(ctx context.Context, opts Options) Result {
 	if opts.RoundLabel == "" {
 		opts.RoundLabel = "implementation"
 	}
-	selected := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
+	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
 	}
@@ -51,7 +51,7 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 // an ordinary nonzero exit with a valid artifact succeeds with agent_exit
 // (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
-	selected := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
+	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
 	}
@@ -326,7 +326,7 @@ func RunReviewConsensus(ctx context.Context, opts Options) Result {
 	opts.Phase = "review-consensus"
 	opts.ArtifactName = filepath.Join("review", "consensus.md")
 	opts.Overwrite = true
-	selected := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
+	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {
 		return Result{AgentID: "drafter", ExitError: "no drafter available in participants"}
 	}

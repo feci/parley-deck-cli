@@ -1808,7 +1808,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	participants, err := selectedParticipantIDs(discovered, *participantsFlag)
+	participants, err := selectedParticipantIDs(discovered, *participantsFlag, rosterMappingFor(*root))
 	if err != nil {
 		fmt.Fprintf(stderr, "participant selection failed: %v\n", err)
 		return 1
@@ -2388,16 +2388,9 @@ func installedAgentIDs(discovered []agents.Discovery) []string {
 	return ids
 }
 
-func selectedParticipantIDs(discovered []agents.Discovery, raw string) ([]string, error) {
+func selectedParticipantIDs(discovered []agents.Discovery, raw string, mapping map[string]string) ([]string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return installedAgentIDs(discovered), nil
-	}
-
-	installed := map[string]bool{}
-	for _, result := range discovered {
-		if result.Found {
-			installed[result.ID] = true
-		}
 	}
 
 	var selected []string
@@ -2407,8 +2400,11 @@ func selectedParticipantIDs(discovered []agents.Discovery, raw string) ([]string
 		if id == "" || seen[id] {
 			continue
 		}
-		if !installed[id] {
-			return nil, fmt.Errorf("%s is not an installed agent", id)
+		// Accept either an installed family id (legacy) or a roster id that resolves
+		// via the [roster.*] mapping — fail-closed (composite-agent-naming: without
+		// this, `parley run --participants claude-1` wrongly rejected the roster id).
+		if _, err := agents.ResolveParticipant(id, discovered, mapping); err != nil {
+			return nil, fmt.Errorf("%s is not an installed agent or a mapped roster id: %w", id, err)
 		}
 		selected = append(selected, id)
 		seen[id] = true

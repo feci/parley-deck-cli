@@ -54,6 +54,27 @@ func TestResolveFailsClosed(t *testing.T) {
 	}
 }
 
+func TestResolveRejectsTraversal(t *testing.T) {
+	discovered := []Discovery{disco("claude", true)}
+	for _, bad := range []string{"../../tmp/x", "claude/1", "claude.1", "..", "Claude-1", "-claude"} {
+		if _, err := ResolveParticipant(bad, discovered, map[string]string{bad: "claude"}); err == nil {
+			t.Errorf("ResolveParticipant(%q) must reject a non-roster-id (path-safety)", bad)
+		}
+	}
+}
+
+func TestResolvePreservesExplicitAdapter(t *testing.T) {
+	// An exact match on a spec that already carries a distinct adapter must keep it.
+	d := Discovery{Spec: Spec{ID: "claude-1", AdapterID: "claude"}, Found: true}
+	got, err := ResolveParticipant("claude-1", []Discovery{d}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Adapter() != "claude" {
+		t.Fatalf("adapter=%q, want claude (explicit adapter destroyed)", got.Adapter())
+	}
+}
+
 func TestResolveDoesNotMutateInput(t *testing.T) {
 	discovered := []Discovery{disco("claude", true)}
 	if _, err := ResolveParticipant("claude-1", discovered, map[string]string{"claude-1": "claude"}); err != nil {

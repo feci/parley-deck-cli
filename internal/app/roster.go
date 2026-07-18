@@ -13,6 +13,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/config"
+	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 )
@@ -25,6 +26,13 @@ func init() {
 		m, _ := config.LoadRosterAdapters(root)
 		return m
 	}
+}
+
+// rosterMappingFor loads the roster-ID -> family map for participant resolution at
+// the app layer (run selection); errors degrade to nil (exact-ID matching only).
+func rosterMappingFor(root string) map[string]string {
+	m, _ := config.LoadRosterAdapters(root)
+	return m
 }
 
 // familyAliases maps a roster-ID stem that is NOT a family prefix to its family.
@@ -114,10 +122,18 @@ func resolveRoster(root string) ([]rosterRow, error) {
 			if family != "" {
 				row.Note = "unmapped — run `parley roster init`"
 			}
+		} else if _, ok := byFamily[family]; !ok {
+			// Mapped to a family that is not configured/discovered: treat as
+			// unresolved so init exits nonzero instead of "already initialized"
+			// (review MAJOR — a typoed adapter would later fail the resolver).
+			row.Note = fmt.Sprintf("mapped to unknown family %q — fix `[roster.%s] adapter`", family, id)
+			family = ""
 		}
 		row.Family = family
 		if family == "" {
-			row.Note = "unresolved — add `[roster." + id + "] adapter = \"<family>\"`"
+			if row.Note == "" {
+				row.Note = "unresolved — add `[roster." + id + "] adapter = \"<family>\"`"
+			}
 			rows = append(rows, row)
 			continue
 		}
@@ -181,16 +197,27 @@ func rosterShow(root string, jsonOut bool, stdout, stderr io.Writer) int {
 	return 0
 }
 
+type rosterMapEntry struct{ id, family string }
+
 func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io.Writer) int {
+	if scope != "session" && scope != "machine" {
+		fmt.Fprintf(stderr, "roster init: invalid --scope %q (want session|machine)\n", scope)
+		return 2
+	}
 	rows, err := resolveRoster(root)
 	if err != nil {
 		fmt.Fprintf(stderr, "roster init: %v\n", err)
 		return 1
 	}
-	existing, _ := config.LoadRosterAdapters(root)
-	// Propose the mapping entries that are missing; fail closed on any unresolved id.
-	type entry struct{ id, family string }
-	var toWrite []entry
+	target, targetLabel := rosterTargetPath(root, scope)
+	// Idempotency is judged against the TARGET file, not the layered stack — an
+	// inherited mapping must not suppress a write to the requested scope (review MAJOR).
+	existing, err := config.RosterAdaptersInFile(target)
+	if err != nil {
+		fmt.Fprintf(stderr, "roster init: %v\n", err)
+		return 1
+	}
+	var toWrite []rosterMapEntry
 	var unresolved []string
 	for _, r := range rows {
 		if r.Family == "" {
@@ -198,51 +225,103 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 			continue
 		}
 		if _, ok := existing[r.RosterID]; ok {
-			continue // already mapped — idempotent
+			continue // already in the target file — idempotent
 		}
-		toWrite = append(toWrite, entry{r.RosterID, r.Family})
+		toWrite = append(toWrite, rosterMapEntry{r.RosterID, r.Family})
 	}
 	if len(unresolved) > 0 {
 		fmt.Fprintf(stderr, "roster init: cannot resolve a family for: %s\n  add `[roster.<id>] adapter = \"<family>\"` for each, then re-run.\n", strings.Join(unresolved, ", "))
 		return 1
 	}
-	target, targetLabel := rosterTargetPath(root, scope)
+
+	// Determine the outcome and perform any write BEFORE rendering, so --json
+	// reports what actually happened rather than a proposal (review MAJOR).
+	outcome := "unchanged"
+	if len(toWrite) > 0 {
+		switch {
+		case dryRun:
+			outcome = "dry-run"
+		case !yes:
+			outcome = "needs-confirmation"
+		default:
+			n, werr := writeRosterMappings(target, toWrite)
+			if werr != nil {
+				fmt.Fprintf(stderr, "roster init: %v\n", werr)
+				return 1
+			}
+			if n == 0 {
+				outcome = "unchanged"
+			} else {
+				outcome = "written"
+			}
+		}
+	}
 
 	if jsonOut {
-		changes := make([]map[string]string, 0, len(toWrite))
+		adds := make([]map[string]string, 0, len(toWrite))
 		for _, e := range toWrite {
-			changes = append(changes, map[string]string{"roster_id": e.id, "adapter": e.family})
+			adds = append(adds, map[string]string{"roster_id": e.id, "adapter": e.family})
 		}
-		return writeJSON(stdout, stderr, map[string]any{"scope": scope, "target": target, "dry_run": dryRun, "adds": changes})
+		code := 0
+		if outcome == "needs-confirmation" {
+			code = 1
+		}
+		_ = writeJSON(stdout, stderr, map[string]any{"scope": scope, "target": target, "outcome": outcome, "adds": adds})
+		return code
 	}
 
-	if len(toWrite) == 0 {
+	switch outcome {
+	case "unchanged":
 		fmt.Fprintf(stdout, "Roster already initialized (%s): every §2 roster id already maps to a family.\n", targetLabel)
 		return 0
-	}
-	fmt.Fprintf(stdout, "roster init (%s) will add to %s:\n", scope, targetLabel)
-	for _, e := range toWrite {
-		fmt.Fprintf(stdout, "  [roster.%s] adapter = %q\n", e.id, e.family)
-	}
-	if dryRun {
+	case "dry-run":
+		fmt.Fprintf(stdout, "roster init (%s) would add to %s:\n", scope, targetLabel)
+		for _, e := range toWrite {
+			fmt.Fprintf(stdout, "  [roster.%s] adapter = %q\n", e.id, e.family)
+		}
 		fmt.Fprintln(stdout, "(dry-run: nothing written)")
 		return 0
-	}
-	if !yes {
+	case "needs-confirmation":
+		fmt.Fprintf(stdout, "roster init (%s) will add %d mapping(s) to %s.\n", scope, len(toWrite), targetLabel)
 		fmt.Fprintln(stderr, "refusing to write without --yes (or use --dry-run to preview)")
 		return 1
+	default: // written
+		fmt.Fprintf(stdout, "Wrote %d mapping(s) to %s. The driver can now run this roster.\n", len(toWrite), targetLabel)
+		return 0
 	}
+}
+
+// writeRosterMappings appends the missing [roster.<id>] blocks to target via an
+// atomic temp+rename write (fsutil.WriteFileAtomic), re-reading first and skipping
+// any block already present textually so a concurrent/repeat run cannot duplicate a
+// table or leave a partial file (review MAJOR). Returns the number written.
+func writeRosterMappings(target string, toWrite []rosterMapEntry) (int, error) {
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		return 0, err
+	}
+	prior, err := os.ReadFile(target)
+	if err != nil && !os.IsNotExist(err) {
+		return 0, err
+	}
+	content := string(prior)
 	var b strings.Builder
+	b.WriteString(content)
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		b.WriteString("\n")
+	}
 	b.WriteString("\n# roster-ID -> family adapter map (parley roster init; composite-agent-naming-and-roster-reinit).\n")
+	wrote := 0
 	for _, e := range toWrite {
+		if strings.Contains(content, "[roster."+e.id+"]") {
+			continue // already present (concurrent/repeat guard)
+		}
 		b.WriteString(fmt.Sprintf("[roster.%s]\nadapter = %q\n", e.id, e.family))
+		wrote++
 	}
-	if err := appendToFile(target, b.String()); err != nil {
-		fmt.Fprintf(stderr, "roster init: %v\n", err)
-		return 1
+	if wrote == 0 {
+		return 0, nil
 	}
-	fmt.Fprintf(stdout, "Wrote %d mapping(s) to %s. The driver can now run this roster.\n", len(toWrite), targetLabel)
-	return 0
+	return wrote, fsutil.WriteFileAtomic(target, []byte(b.String()), 0o644)
 }
 
 func rosterTargetPath(root, scope string) (path, label string) {
@@ -261,18 +340,4 @@ func writeJSON(stdout, stderr io.Writer, v any) int {
 	}
 	fmt.Fprintln(stdout, string(b))
 	return 0
-}
-
-// appendToFile creates or appends to a config file (0644), creating the parent dir.
-func appendToFile(path, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString(content)
-	return err
 }

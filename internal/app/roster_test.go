@@ -28,7 +28,8 @@ func TestProposeFamily(t *testing.T) {
 	}
 }
 
-func TestRosterShowAndInit(t *testing.T) {
+func setupRosterDeck(t *testing.T) string {
+	t.Helper()
 	root := t.TempDir()
 	t.Setenv(config.EnvParleyHome, filepath.Join(root, "no-central"))
 	if err := protocol.InitWorkspace(root); err != nil {
@@ -49,6 +50,45 @@ func TestRosterShowAndInit(t *testing.T) {
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	return root
+}
+
+func TestRosterInitJSONAndScope(t *testing.T) {
+	root := setupRosterDeck(t)
+	// Invalid scope fails with exit 2 and writes nothing (review MAJOR).
+	var out, errb bytes.Buffer
+	if code := runRoster([]string{"init", "--dir", root, "--scope", "machien"}, &out, &errb); code != 2 {
+		t.Fatalf("bad --scope should exit 2, got %d", code)
+	}
+	// --json --yes must ACTUALLY write and report the real outcome (review MAJOR: no-op bug).
+	out.Reset()
+	errb.Reset()
+	if code := runRoster([]string{"init", "--dir", root, "--yes", "--json"}, &out, &errb); code != 0 {
+		t.Fatalf("json init exit=%d stderr=%s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), `"outcome": "written"`) {
+		t.Fatalf("json outcome not 'written':\n%s", out.String())
+	}
+	if m, _ := config.LoadRosterAdapters(root); len(m) == 0 {
+		t.Fatal("--json --yes did not persist the mapping")
+	}
+}
+
+func TestRosterInitRejectsInvalidMapping(t *testing.T) {
+	root := setupRosterDeck(t)
+	// A mapping to a non-existent family must NOT read as initialized (review MAJOR).
+	deckCfg := filepath.Join(root, protocol.DeckDir, "agents.toml")
+	if err := os.WriteFile(deckCfg, []byte("[roster.claude-1]\nadapter = \"claud\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	if code := runRoster([]string{"init", "--dir", root, "--yes"}, &out, &errb); code == 0 {
+		t.Fatalf("init with a typoed adapter should fail, got exit 0:\n%s / %s", out.String(), errb.String())
+	}
+}
+
+func TestRosterShowAndInit(t *testing.T) {
+	root := setupRosterDeck(t)
 
 	// show must run and render every §2 roster id with a family_model_effort name.
 	var out, errb bytes.Buffer

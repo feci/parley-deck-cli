@@ -201,7 +201,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 		opts.RoundLabel = "round-01"
 	}
 
-	selected := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
+	selected, unresolved := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	opts.SegmentID = appendSegmentStarted(opts, segmentReason(opts), agentIDs(selected))
 	results := make([]Result, len(selected))
 	var wg sync.WaitGroup
@@ -214,6 +214,17 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 		}()
 	}
 	wg.Wait()
+	// Fail closed on any participant that did not resolve: emit a failed result so
+	// the round is round.incomplete rather than silently completing with a partial
+	// (or empty) quorum (review CRITICAL, codex-1).
+	for _, p := range unresolved {
+		results = append(results, Result{
+			AgentID:      p,
+			CompletedAt:  time.Now().UTC(),
+			ExitError:    "unresolved participant: no matching agent id and no [roster.*] mapping (run `parley roster init`)",
+			FailureClass: "roster-unresolved",
+		})
+	}
 
 	eventType := "round.completed"
 	okCount := 0
@@ -349,14 +360,15 @@ func resolveMapping(opts Options) map[string]string {
 // carrying the participant string as the agent identity and the family as its
 // adapter. Unresolvable participants are skipped (matching the pre-split behavior
 // of an absent participant); `parley roster init` + preflight surface the gap.
-func selectedAgents(participants []string, discovered []agents.Discovery, mapping map[string]string) []agents.Discovery {
-	var selected []agents.Discovery
+func selectedAgents(participants []string, discovered []agents.Discovery, mapping map[string]string) (selected []agents.Discovery, unresolved []string) {
 	for _, participant := range participants {
 		if resolved, err := agents.ResolveParticipant(participant, discovered, mapping); err == nil {
 			selected = append(selected, resolved)
+		} else {
+			unresolved = append(unresolved, participant)
 		}
 	}
-	return selected
+	return selected, unresolved
 }
 
 func runAgent(parent context.Context, opts Options, agent agents.Discovery) Result {

@@ -1,6 +1,16 @@
 package agents
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
+
+// rosterIDRe is the canonical roster/participant id grammar. Validating the
+// participant before it reaches filepath.Join (artifact paths, run-log dirs)
+// closes a path-traversal hole: a malicious deck could otherwise put
+// `[roster."../../x"]` / a `..`-bearing participant into the idea and make a CLI
+// write outside the deck (review CRITICAL, codex-1).
+var rosterIDRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
 // ResolveParticipant maps a participant / roster ID (e.g. "claude-1") to a
 // discovered agent, fail-closed. This closes the two-namespace schism: the driver
@@ -18,10 +28,13 @@ import "fmt"
 // signoffs use the roster ID while launch/vendor dispatch uses the family via
 // Spec.Adapter().
 func ResolveParticipant(participant string, discovered []Discovery, mapping map[string]string) (Discovery, error) {
-	// (1) exact spec-ID match.
+	if !rosterIDRe.MatchString(participant) {
+		return Discovery{}, fmt.Errorf("agents: invalid participant id %q (want lowercase [a-z0-9-]; no dots, separators, or path segments)", participant)
+	}
+	// (1) exact spec-ID match. Preserve an already-explicit adapter (review MINOR).
 	for _, d := range discovered {
 		if d.Found && d.ID == participant {
-			d.Spec.AdapterID = d.Spec.ID
+			d.Spec.AdapterID = d.Spec.Adapter()
 			d.Spec.ID = participant
 			return d, nil
 		}

@@ -151,6 +151,9 @@ func TestParseFailsClosed(t *testing.T) {
 		"claude_opus-4.8-1m_max_1", // instance must be >= 2
 		"claude__max",              // empty model section
 		"",                         // empty
+		"codex_gpt-5.6-sol_x-high", // non-canonical effort spelling (normalizes to xhigh)
+		"codex_gpt-5.6-sol_xhigh",  // lowercase effort is non-canonical (want xHigh)
+		"codex_530_xHigh_02",       // leading-zero instance is non-canonical
 	} {
 		if _, err := Parse(bad); err == nil {
 			t.Errorf("Parse(%q) should fail closed", bad)

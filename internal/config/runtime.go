@@ -220,6 +220,31 @@ func LoadRosterAdapters(root string) (map[string]string, error) {
 	return out, nil
 }
 
+// RosterAdaptersInFile parses only the `[roster.*]` mappings in a single config
+// file (not the layered stack), so `parley roster init` can decide idempotency
+// against the exact target file it is about to write rather than an inherited
+// layer (review MAJOR, codex-1). A missing file yields an empty map, nil error.
+func RosterAdaptersInFile(path string) (map[string]string, error) {
+	out := map[string]string{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return out, nil
+		}
+		return out, err
+	}
+	var cfg fileConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return out, fmt.Errorf("%s: %w", path, err)
+	}
+	for id, ra := range cfg.Roster {
+		if fam := strings.TrimSpace(ra.Adapter); fam != "" {
+			out[id] = fam
+		}
+	}
+	return out, nil
+}
+
 func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
 	if s := strings.TrimSpace(gd.Speed); s != "" {
 		out.Speed = s
