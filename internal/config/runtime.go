@@ -23,6 +23,15 @@ type fileConfig struct {
 	Defaults *globalDefaults           `toml:"defaults"`
 	Agents   map[string]agentOverride  `toml:"agents"`
 	Rosters  map[string]rosterOverride `toml:"rosters"`
+	Roster   map[string]rosterAdapter  `toml:"roster"`
+}
+
+// rosterAdapter is one [roster.<roster-id>] block: the family/adapter a roster ID
+// resolves to (composite-agent-naming-and-roster-reinit). NOTE the singular table
+// name `[roster.*]` (the ID->family map) is distinct from the plural `[rosters.*]`
+// participant presets above.
+type rosterAdapter struct {
+	Adapter string `toml:"adapter"`
 }
 
 // rosterOverride is one [rosters.<slug>] block — a named participant preset
@@ -179,6 +188,33 @@ func LoadDefaults(root string) (CentralDefaults, error) {
 		}
 		if cfg.Defaults != nil {
 			mergeDefaults(&out, cfg.Defaults)
+		}
+	}
+	return out, nil
+}
+
+// LoadRosterAdapters merges `[roster.<id>] adapter = "<family>"` across the layered
+// config files (central < deck < local < env), later layers winning per id. The
+// result feeds the participant resolver so a roster whose IDs are `claude-1`, … can
+// be resolved to families fail-closed (idea composite-agent-naming-and-roster-reinit).
+func LoadRosterAdapters(root string) (map[string]string, error) {
+	out := map[string]string{}
+	for _, item := range configLayers(root) {
+		data, err := os.ReadFile(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		var cfg fileConfig
+		if err := toml.Unmarshal(data, &cfg); err != nil {
+			return out, fmt.Errorf("%s: %w", item.path, err)
+		}
+		for id, ra := range cfg.Roster {
+			if fam := strings.TrimSpace(ra.Adapter); fam != "" {
+				out[id] = fam
+			}
 		}
 	}
 	return out, nil

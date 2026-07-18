@@ -201,7 +201,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 		opts.RoundLabel = "round-01"
 	}
 
-	selected := selectedAgents(opts.Idea.Participants, opts.Agents, opts.RosterMapping)
+	selected := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	opts.SegmentID = appendSegmentStarted(opts, segmentReason(opts), agentIDs(selected))
 	results := make([]Result, len(selected))
 	var wg sync.WaitGroup
@@ -326,6 +326,22 @@ func agentIDs(selected []agents.Discovery) []string {
 		ids = append(ids, a.ID)
 	}
 	return ids
+}
+
+// RosterMappingLoader, when set by the app at startup, lazily loads the
+// roster-ID -> family map for a root so run paths that do not set
+// Options.RosterMapping still resolve roster-ID participants. Injected (rather than
+// importing config here) to avoid a runner -> config import cycle.
+var RosterMappingLoader func(root string) map[string]string
+
+func resolveMapping(opts Options) map[string]string {
+	if opts.RosterMapping != nil {
+		return opts.RosterMapping
+	}
+	if RosterMappingLoader != nil {
+		return RosterMappingLoader(opts.Root)
+	}
+	return nil
 }
 
 // selectedAgents resolves each participant/roster ID to a discovered agent via

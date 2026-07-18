@@ -96,6 +96,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runClassify(args[1:], stdout, stderr)
 	case "preset":
 		return runPreset(args[1:], stdout, stderr)
+	case "roster":
+		return runRoster(args[1:], stdout, stderr)
 	case "tui":
 		return runTUI(ctx, args[1:], stdout, stderr)
 	default:
