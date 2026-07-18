@@ -12,6 +12,32 @@ import (
 	"parley-deck-cli/internal/protocol"
 )
 
+func TestAppLevelRosterIDResolution(t *testing.T) {
+	// The deeper app-level paths must resolve a roster id (codex-1) via the mapping,
+	// not just the runner (review MAJOR #5: preflight/drafter/signoff/steer/selection).
+	discovered := []agents.Discovery{
+		{Spec: agents.Spec{ID: "codex", LaunchMode: agents.LaunchHeadless}, Found: true},
+	}
+	mapping := map[string]string{"codex-1": "codex"}
+
+	if sel, err := selectedParticipantIDs(discovered, "codex-1", mapping); err != nil || len(sel) != 1 || sel[0] != "codex-1" {
+		t.Fatalf("selectedParticipantIDs(codex-1) = %v, %v", sel, err)
+	}
+	if pd := participantDiscoveries(discovered, []string{"codex-1"}, mapping); len(pd) != 1 || pd[0].ID != "codex-1" || pd[0].Adapter() != "codex" {
+		t.Fatalf("participantDiscoveries(codex-1) = %+v", pd)
+	}
+	if d, ok := firstHeadlessAgent(discovered, []string{"codex-1"}, mapping); !ok || d.ID != "codex-1" || d.Adapter() != "codex" {
+		t.Fatalf("firstHeadlessAgent(codex-1) = %+v, ok=%v", d.Spec, ok)
+	}
+	if sel, err := requestSignoffAgents([]string{"codex-1"}, discovered, mapping); err != nil || len(sel) != 1 || sel[0].ID != "codex-1" {
+		t.Fatalf("requestSignoffAgents(codex-1) = %v, %v", sel, err)
+	}
+	// Without the mapping, a roster id is fail-closed (not silently a family).
+	if _, err := selectedParticipantIDs(discovered, "codex-1", nil); err == nil {
+		t.Fatal("selectedParticipantIDs(codex-1, nil) should fail closed")
+	}
+}
+
 func TestProposeFamily(t *testing.T) {
 	byFamily := map[string]agents.Spec{"claude": {}, "codex": {}, "agy": {}}
 	cases := map[string]string{

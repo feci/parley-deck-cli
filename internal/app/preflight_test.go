@@ -104,9 +104,9 @@ func TestRefreshProtocolSyncedLineReplacesExisting(t *testing.T) {
 
 func TestClassifyBump(t *testing.T) {
 	cases := []struct {
-		name             string
+		name              string
 		project, packaged string
-		want             bumpKind
+		want              bumpKind
 	}{
 		{"minor is additive", "1.3.1", "1.4.0", bumpPatchMinor},
 		{"patch is additive", "1.3.1", "1.3.2", bumpPatchMinor},
@@ -516,7 +516,7 @@ func TestPreflightNonWorkspaceHardFailExit1(t *testing.T) {
 
 func TestParticipantDiscoveriesSelectsExactSet(t *testing.T) {
 	discovered := []agents.Discovery{found("codex"), found("claude"), found("hermes")}
-	got := participantDiscoveries(discovered, []string{"codex"})
+	got := participantDiscoveries(discovered, []string{"codex"}, nil)
 	if len(got) != 1 || got[0].ID != "codex" {
 		t.Fatalf("participantDiscoveries selected %v, want exactly [codex]", got)
 	}
@@ -532,6 +532,7 @@ func TestPreflightSelectedSoloHardFailExit1(t *testing.T) {
 	selected := participantDiscoveries(
 		[]agents.Discovery{found("codex"), found("claude"), found("hermes")},
 		[]string{"codex"},
+		nil,
 	)
 	_, code, err := preflight(context.Background(), preflightOptions{Root: root}, selected, &bytes.Buffer{}, &bytes.Buffer{})
 	if err != nil {

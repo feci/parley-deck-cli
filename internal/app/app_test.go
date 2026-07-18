@@ -1405,11 +1405,11 @@ func TestFirstHeadlessAgentRestrictedToParticipants(t *testing.T) {
 		{Spec: agents.Spec{ID: "hermes", LaunchMode: agents.LaunchHeadless}, Found: true},
 		{Spec: agents.Spec{ID: "codex", LaunchMode: agents.LaunchHeadless}, Found: true},
 	}
-	got, ok := firstHeadlessAgent(discovered, []string{"codex", "agy"})
+	got, ok := firstHeadlessAgent(discovered, []string{"codex", "agy"}, nil)
 	if !ok || got.ID != "codex" {
 		t.Fatalf("got %q ok=%v, want codex (the only headless participant)", got.ID, ok)
 	}
-	if _, ok := firstHeadlessAgent(discovered, []string{"agy"}); ok {
+	if _, ok := firstHeadlessAgent(discovered, []string{"agy"}, nil); ok {
 		t.Fatal("no discovered agent is a participant; expected no drafter selected")
 	}
 }

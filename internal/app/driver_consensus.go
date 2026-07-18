@@ -79,7 +79,7 @@ func (o driverConsensusOps) Reopen(ctx context.Context, reason string) error {
 // runDrafter invokes the first available headless agent to author the target file
 // per the given prompt. Drafting is a single-agent facilitator action (D6).
 func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string) error {
-	drafter, ok := firstHeadlessAgent(o.discovered, o.participants)
+	drafter, ok := firstHeadlessAgent(o.discovered, o.participants, rosterMappingFor(o.root))
 	if !ok {
 		return fmt.Errorf("no headless idea participant available to draft %s", kind)
 	}
@@ -94,14 +94,14 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 // firstHeadlessAgent returns the first discovered headless agent that is also an
 // idea participant (Parley Deck §4/§6: the facilitator-drafter must be a
 // participant of the deliberation, not an arbitrary installed agent — AF2).
-func firstHeadlessAgent(discovered []agents.Discovery, participants []string) (agents.Discovery, bool) {
-	isParticipant := make(map[string]bool, len(participants))
+func firstHeadlessAgent(discovered []agents.Discovery, participants []string, mapping map[string]string) (agents.Discovery, bool) {
+	// Iterate participants in order and resolve each (roster id via [roster.*] or a
+	// bare family id) so a roster-id deck finds its drafter (composite-agent-naming).
 	for _, p := range participants {
-		isParticipant[p] = true
-	}
-	for _, agent := range discovered {
-		if agent.Found && isParticipant[agent.ID] && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
-			return agent, true
+		if agent, err := agents.ResolveParticipant(p, discovered, mapping); err == nil {
+			if agent.Found && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
+				return agent, true
+			}
 		}
 	}
 	return agents.Discovery{}, false

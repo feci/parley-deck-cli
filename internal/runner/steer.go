@@ -268,10 +268,11 @@ func containsString(items []string, want string) bool {
 }
 
 func (h *Handle) discoverAgent(agentID string) (agents.Discovery, bool) {
-	for _, a := range h.opts.Agents {
-		if a.ID == agentID && a.Found {
-			return a, true
-		}
+	// Resolve a roster id (claude-1) via the [roster.*] mapping as well as a bare
+	// family id, so steering a roster-id participant finds its launch spec — with
+	// identity = roster id and vendor dispatch = Adapter() (composite-agent-naming).
+	if resolved, err := agents.ResolveParticipant(agentID, h.opts.Agents, resolveMapping(h.opts)); err == nil {
+		return resolved, true
 	}
 	return agents.Discovery{}, false
 }
