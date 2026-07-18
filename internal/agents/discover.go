@@ -34,10 +34,14 @@ type Spec struct {
 	SandboxMode           string
 	ApprovalPolicy        string
 	Model                 string
-	Reasoning             string
-	Profile               string
-	Speed                 string
-	TimeoutMS             int
+	// ModelLabel is the human model name used to DERIVE the composite display
+	// name's model section (e.g. "Opus 4.8 1m" -> "opus-4.8-1m"). Empty falls back
+	// to Model. Never an identity; purely for rendering.
+	ModelLabel string
+	Reasoning  string
+	Profile    string
+	Speed      string
+	TimeoutMS  int
 	// Supervision windows (runner-hardening-kindly D2). 0 = use the default
 	// (first-event 120s, stall 30m clamped under timeout_ms, heartbeat 60s);
 	// negative = guard explicitly disabled (the TOML layer maps an explicit 0

@@ -34,9 +34,9 @@ type rosterOverride struct {
 // globalDefaults is the optional [defaults] block of a layered config file —
 // non-agent policy knobs that apply project-wide.
 type globalDefaults struct {
-	Speed              string         `toml:"speed"`
-	PingTier           string         `toml:"ping_tier"`
-	PreferredTransport string         `toml:"preferred_transport"`
+	Speed              string            `toml:"speed"`
+	PingTier           string            `toml:"ping_tier"`
+	PreferredTransport string            `toml:"preferred_transport"`
 	RosterChangePolicy string            `toml:"roster_change_policy"`
 	Timeouts           *timeoutsBlock    `toml:"timeouts"`
 	Loop               *loopBlock        `toml:"loop"`
@@ -106,6 +106,7 @@ type agentOverride struct {
 	SandboxMode           string            `toml:"sandbox_mode"`
 	ApprovalPolicy        string            `toml:"approval_policy"`
 	Model                 string            `toml:"model"`
+	ModelLabel            string            `toml:"model_label"`
 	Reasoning             string            `toml:"reasoning"`
 	Profile               string            `toml:"profile"`
 	Speed                 string            `toml:"speed"`
@@ -283,7 +284,7 @@ func centralDefaultTemplate() string {
 	b.WriteString("# strongest (highest) reasoning level each agent supports.\n\n")
 	b.WriteString("# Project-wide policy defaults; a deck's parley-deck/agents.toml overrides them.\n")
 	b.WriteString("[defaults]\n")
-	b.WriteString("speed = \"deep\"\n")
+	b.WriteString("speed = \"fast\"                             # fast output at the SAME model+effort (Claude Code /fast), NOT a downgrade; a separate axis from reasoning. Use \"deep\" per idea for heavy work.\n")
 	b.WriteString("ping_tier = \"hosted-pong\"                 # §9.0 roster liveness ping before each idea (or \"none\")\n")
 	b.WriteString("preferred_transport = \"local-dir\"          # parley init default transport (local-dir|github-pr|gitlab-mr)\n")
 	b.WriteString("roster_change_policy = \"confirm-breaking\"  # auto-add new agents; user confirms drops/breaking changes\n\n")
@@ -491,6 +492,10 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 	if override.Model != "" {
 		spec.Model = override.Model
 		spec.Sources["model"] = source
+	}
+	if override.ModelLabel != "" {
+		spec.ModelLabel = override.ModelLabel
+		spec.Sources["model_label"] = source
 	}
 	if override.Reasoning != "" {
 		spec.Reasoning = override.Reasoning
