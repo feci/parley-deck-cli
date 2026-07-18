@@ -122,6 +122,26 @@ func TestParseAllDigitModelIsUnambiguous(t *testing.T) {
 	}
 }
 
+func TestRenderDisplayName(t *testing.T) {
+	cases := []struct {
+		family string
+		spec   Spec
+		want   string
+	}{
+		{"claude", Spec{ModelLabel: "Opus 4.8 1m", Reasoning: "max"}, "claude_opus-4.8-1m_max"},
+		{"codex", Spec{Model: "gpt-5.6-sol", Reasoning: "xhigh"}, "codex_gpt-5.6-sol_xHigh"},
+		{"hermes", Spec{Model: "GLM 5.2", Reasoning: "high"}, "hermes_glm-5.2_high"},
+		{"agy", Spec{Model: "Gemini 3.5 Flash (High)", Reasoning: "cli-default"}, "agy_gemini-3.5-flash_high"},
+		{"kimi", Spec{Model: "k3", Reasoning: "max"}, "kimi_k3_max"},
+	}
+	for _, c := range cases {
+		got, err := RenderDisplayName(c.family, c.spec)
+		if err != nil || got != c.want {
+			t.Errorf("RenderDisplayName(%s) = %q,%v want %q", c.family, got, err, c.want)
+		}
+	}
+}
+
 func TestParseFailsClosed(t *testing.T) {
 	for _, bad := range []string{
 		"claude",                   // bare family (legacy id), not a composite

@@ -170,6 +170,26 @@ func Parse(name string) (ParsedName, error) {
 	return ParsedName{Family: family, Model: model, Effort: tok, Instance: instance}, nil
 }
 
+// RenderDisplayName derives the composite display name for a roster family and its
+// resolved spec, from the model label (falling back to Model), the reasoning
+// effort, and — for agy, whose tier lives in the model label — the parenthesized
+// tier used as the effort when reasoning is cli-default. Returns an error only when
+// the model/effort cannot be sanitized into the grammar; the caller then falls back
+// to the raw roster ID. This is the single source of the display everywhere it is
+// shown (§2 table, TUI, digests).
+func RenderDisplayName(family string, spec Spec) (string, error) {
+	label := strings.TrimSpace(spec.ModelLabel)
+	if label == "" {
+		label = spec.Model
+	}
+	base, tier := StripParenTier(label)
+	effortRaw := spec.Reasoning
+	if norm, ok := NormalizeEffortToken(effortRaw); (!ok || norm == "clidefault") && tier != "" {
+		effortRaw = tier
+	}
+	return Compose(SanitizeSection(family), SanitizeSection(base), effortRaw, 0)
+}
+
 func isAllDigits(s string) bool {
 	if s == "" {
 		return false
