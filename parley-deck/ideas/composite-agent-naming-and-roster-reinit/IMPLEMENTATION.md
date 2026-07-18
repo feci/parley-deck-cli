@@ -62,6 +62,45 @@ standard speed on a separate axis. `go build ./... && go vet ./... && go test ./
 - FINAL amendments 1 (underscore grammar) and 2 (codex `gpt-5.6-sol`) are post-signoff user
   decisions, recorded in FINAL.md.
 
+## Fix-up cycle 1 (review round-01)
+
+codex-1 ran a refutation-default review (verdict BLOCK) and found real defects. Fixed
+(commit 54b5282, full suite green):
+
+- **[CRITICAL] uncommitted compile blocker** — `naming.go`/`naming_test.go` (with
+  `RenderDisplayName`) were left out of the S5 commit, so a clean checkout failed
+  `undefined: agents.RenderDisplayName`. Committed.
+- **[CRITICAL] path traversal** — `ResolveParticipant` now validates the participant against
+  `^[a-z0-9][a-z0-9-]*$` before it reaches `filepath.Join`, so a malicious
+  `[roster."../../x"]` can't make a CLI write outside the deck.
+- **[CRITICAL] fail-open resolution** — `RunRoundOne` emits a failed result for every
+  unresolved participant, so a round is `round.incomplete`, never silently completed with a
+  partial/empty quorum.
+- **[MAJOR] run-selection wiring** — `selectedParticipantIDs` resolves a roster id via the
+  `[roster.*]` mapping, so `parley run --participants claude-1` works (was rejected as "not
+  installed").
+- **[MAJOR] roster init** — idempotency judged against the TARGET file (not the layered
+  stack); `--scope` validated; `--json` actually writes and reports the real outcome
+  (`written`/`unchanged`/`dry-run`/`needs-confirmation`); an existing-but-invalid mapping
+  fails closed; the write is atomic (temp+rename) and skips already-present blocks.
+- **[MINOR] Parse canonical round-trip** (rejects `x-high`, lowercase `xhigh`, `_02`);
+  exact-ID resolution preserves an already-explicit adapter.
+
+### Deferred from review (documented, not fixed this cycle)
+
+- **[MAJOR] deeper app-level roster-ID wiring** — beyond run selection, a few paths still
+  compare participant strings to raw family discovery ids: `preflight` readiness ping,
+  `driver_consensus` drafter attribution, `consensus request-signoffs`, and TUI `steer`.
+  They work for family-id rosters and for the driver's round runner (which resolves), but
+  full roster-id support there is a scoped follow-up (one shared resolution boundary). The
+  primary `parley run` + runner path is wired.
+- **[CRITICAL, contested] autonomous-write confinement honesty** — `AutonomousWrite.Scope="workspace"`
+  is asserted from the vendor's own scoping flags (`--add-dir {root}`, `--sandbox
+  workspace-write`, cwd), NOT an OS sandbox. Codex's `workspace-write` is a real sandbox;
+  claude/agy/hermes rely on flag+cwd confinement. This is the intended, documented mechanism
+  (the CLIs offer no stronger primitive); a true OS-enforced sandbox + live sentinel probe is
+  a follow-up. `AUTO=yes` means "declared + flag-scoped", not "OS-jailed".
+
 ## Notes for reviewers
 
 - The identity/adapter split is the crux: `runAgent` keys artifacts on `agent.ID` (now the
