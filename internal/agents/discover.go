@@ -10,7 +10,13 @@ import (
 )
 
 type Spec struct {
-	ID                    string
+	ID string
+	// AdapterID is the vendor/family adapter used for launch + discovery dispatch
+	// (env cleaning, isolated home, per-CLI invocation quirks). It is distinct from
+	// ID, which after participant resolution is the stable roster identity used for
+	// artifact paths and signoffs (idea: composite-agent-naming-and-roster-reinit).
+	// Empty means "same as ID" — specs that predate the split keep working.
+	AdapterID             string
 	Commands              []string
 	VersionArgs           []string
 	LaunchMode            string
@@ -54,6 +60,16 @@ type Spec struct {
 	// When LaunchMode == LaunchACP, the runner spawns Commands[0] with ACPArgs
 	// and speaks JSON-RPC 2.0 over NDJSON on stdio instead of a one-shot text run.
 	ACPArgs []string
+}
+
+// Adapter returns the vendor/family adapter id for launch + discovery dispatch.
+// It falls back to ID so specs that predate the roster-ID/adapter split (where ID
+// already IS the family) keep working unchanged.
+func (s Spec) Adapter() string {
+	if s.AdapterID != "" {
+		return s.AdapterID
+	}
+	return s.ID
 }
 
 type PromptMode string

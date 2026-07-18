@@ -20,15 +20,19 @@ import (
 )
 
 type Options struct {
-	Root       string
-	RunID      string
-	Idea       protocol.IdeaStatus
-	Task       string
-	Agents     []agents.Discovery
-	Timeout    time.Duration
-	Store      store.Store
-	Round      int
-	RoundLabel string
+	Root   string
+	RunID  string
+	Idea   protocol.IdeaStatus
+	Task   string
+	Agents []agents.Discovery
+	// RosterMapping is the roster-ID -> family map (from `[roster.*] adapter` in the
+	// deck config) used to resolve participants that are roster IDs (e.g. claude-1)
+	// rather than bare family ids. nil/empty falls back to exact spec-ID matching.
+	RosterMapping map[string]string
+	Timeout       time.Duration
+	Store         store.Store
+	Round         int
+	RoundLabel    string
 	// Phase selects the prompt + validation contract: "" or "deliberation"
 	// (Phase 1-4 rounds), "review" (Phase 6 code-review rounds), or
 	// "implementation" (Phase 5). Set via the RunReviewRound/RunImplementation
@@ -197,7 +201,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 		opts.RoundLabel = "round-01"
 	}
 
-	selected := selectedAgents(opts.Idea.Participants, opts.Agents)
+	selected := selectedAgents(opts.Idea.Participants, opts.Agents, opts.RosterMapping)
 	opts.SegmentID = appendSegmentStarted(opts, segmentReason(opts), agentIDs(selected))
 	results := make([]Result, len(selected))
 	var wg sync.WaitGroup
@@ -324,18 +328,16 @@ func agentIDs(selected []agents.Discovery) []string {
 	return ids
 }
 
-func selectedAgents(participants []string, discovered []agents.Discovery) []agents.Discovery {
-	byID := make(map[string]agents.Discovery, len(discovered))
-	for _, agent := range discovered {
-		if agent.Found {
-			byID[agent.ID] = agent
-		}
-	}
-
+// selectedAgents resolves each participant/roster ID to a discovered agent via
+// agents.ResolveParticipant (exact spec-ID -> [roster.*] mapping -> fail closed),
+// carrying the participant string as the agent identity and the family as its
+// adapter. Unresolvable participants are skipped (matching the pre-split behavior
+// of an absent participant); `parley roster init` + preflight surface the gap.
+func selectedAgents(participants []string, discovered []agents.Discovery, mapping map[string]string) []agents.Discovery {
 	var selected []agents.Discovery
 	for _, participant := range participants {
-		if agent, ok := byID[participant]; ok {
-			selected = append(selected, agent)
+		if resolved, err := agents.ResolveParticipant(participant, discovered, mapping); err == nil {
+			selected = append(selected, resolved)
 		}
 	}
 	return selected
@@ -1001,7 +1003,7 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	if env == nil {
 		env = os.Environ()
 	}
-	cmd.Env = append(cleanParticipantEnv(agent.ID, env), procctl.MarkerEnv(runID, agentID, marker)...)
+	cmd.Env = append(cleanParticipantEnv(agent.Adapter(), env), procctl.MarkerEnv(runID, agentID, marker)...)
 	cmd.Dir = root
 	procctl.SetNewProcessGroup(cmd)
 
@@ -1042,8 +1044,8 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 // participant is the claude CLI: a participant is independent by definition
 // and must not inherit the facilitator's session identity (consensus D8).
 // Parley's own PARLEY_* markers are kept.
-func cleanParticipantEnv(agentID string, env []string) []string {
-	if agentID != "claude" {
+func cleanParticipantEnv(family string, env []string) []string {
+	if family != "claude" {
 		return env
 	}
 	out := env[:0:0]
@@ -1083,7 +1085,7 @@ func buildAgentInvocation(root string, agent agents.Discovery, prompt string) (p
 		}
 		cleanup = remove
 		env = append(os.Environ(), e...)
-		if agent.ID == "hermes" {
+		if agent.Adapter() == "hermes" {
 			env = append(env, "HERMES_ACCEPT_HOOKS=1", "HERMES_SESSION_SOURCE=parley")
 		}
 	}
@@ -1133,7 +1135,7 @@ func firstNonEmpty(values ...string) string {
 }
 
 func isolatedAgentHome(agent agents.Discovery) ([]string, func(), error) {
-	switch agent.ID {
+	switch agent.Adapter() {
 	case "gemini":
 		home, err := isolatedGeminiHome()
 		if err != nil {
