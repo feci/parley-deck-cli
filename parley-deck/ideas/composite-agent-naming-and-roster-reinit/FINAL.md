@@ -15,6 +15,27 @@ supersedes: none
 The full ratified design is `consensus.md` (unanimously signed off). This FINAL.md restates
 the decisions as an implementation contract and adds the staged plan, scope, and non-goals.
 
+## Amendments (post-signoff user decisions)
+
+The design's *shape* is unchanged (display-derived name, roster ID = identity, schism fix,
+etc.); the user refined two concrete details during implementation. These supersede the
+matching examples in `consensus.md` §A:
+
+1. **Display-name grammar → `family_model_effort`.** Separators: `_` separates the three
+   MEANINGS, `-` separates WORDS within a section, `.` keeps version numbers. Effort renders
+   camelCase (`xHigh`, `cliDefault`). Models therefore stay structured rather than collapsed:
+   - `claude_opus-4.8-1m_max`
+   - `codex_gpt-5.6-sol_xHigh`
+   - `hermes_glm-5.2_high`
+   - `agy_gemini-3.5-flash_high`
+   - `kimi_k3_max`
+   (Was `family-model-effort` with a collapsed dotted model, e.g. `codex-gpt5.5-xhigh`.)
+   Implemented in `internal/agents/naming.go` (S1).
+2. **codex model → `gpt-5.6-sol`** (was `gpt-5.5`). `~/.codex/config.toml` pins
+   `model = "gpt-5.6-sol"`, `model_reasoning_effort = "xhigh"`; the central
+   `~/.parley/agents.toml` was stale. Names follow config truth, so the display becomes
+   `codex_gpt-5.6-sol_xHigh` automatically.
+
 ### The seven decisions (authoritative)
 
 1. **Identity = roster ID.** `claude-1`, `codex-1`, `hermes-1`, `kimi-1`, `antigravity-1` are
