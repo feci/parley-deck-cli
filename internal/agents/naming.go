@@ -9,43 +9,55 @@ import (
 
 // Composite agent display names (idea: composite-agent-naming-and-roster-reinit).
 //
-// A display name is the self-documenting form `family-model-effort` (optionally
-// with a `-N` collision instance), e.g. `claude-opus4.8-max`, `codex-gpt5.5-xhigh`,
-// `agy-gemini3.5flash-high`. It is DERIVED for rendering from a roster entry's
-// family + model label + reasoning; it is never a stable identity (the roster ID
-// is), and never stored as truth. All functions here are pure.
+// A display name is the self-documenting form `family_model_effort` (optionally
+// with a `_N` collision instance), e.g. `claude_opus-4.8-1m_max`,
+// `codex_gpt-5.6-sol_xHigh`, `agy_gemini-3.5-flash_high`. Separators (user
+// decision): `_` separates the three MEANINGS (family, model, effort); `-`
+// separates WORDS within a section; `.` keeps version numbers natural. The name
+// is DERIVED for rendering from a roster entry's family + model label + reasoning;
+// it is never a stable identity (the roster ID is) and never stored as truth. All
+// functions here are pure.
 //
-// Grammar (path-safe: dots only between alphanumerics, so never ".." or an edge dot):
+// Grammar (path-safe — dots only between alphanumerics, so never ".." or an edge dot):
 //
-//	display-name := family "-" model "-" effort [ "-" instance ]
-//	family       := [a-z0-9]+
-//	model        := [a-z0-9]+ ("." [a-z0-9]+)*
-//	effort       := low|medium|high|xhigh|max|ultracode|clidefault
+//	display-name := family "_" model "_" effort [ "_" instance ]
+//	family       := word ("-" word)*
+//	model        := word ("-" word)*
+//	effort       := one of the vocabulary tokens (rendered in its display form)
+//	word         := [a-z0-9]+ ("." [a-z0-9]+)*
 //	instance     := [2-9][0-9]*
 
-// EffortVocabulary is the closed set of effort tokens. Parsing is fail-closed:
-// a name whose effort token is outside this set is an error, never a guess. An
-// effort token can never be all-digits, which is what lets the parser tell an
-// instance suffix apart from the effort unambiguously.
+// EffortVocabulary is the closed set of effort tokens (normalized, lowercase).
+// Parsing is fail-closed: an effort outside this set is an error, never a guess.
 var EffortVocabulary = []string{"low", "medium", "high", "xhigh", "max", "ultracode", "clidefault"}
 
-var effortSet = func() map[string]bool {
-	m := make(map[string]bool, len(EffortVocabulary))
-	for _, e := range EffortVocabulary {
-		m[e] = true
-	}
-	return m
-}()
+// effortDisplay maps each normalized token to its camelCase display form (user
+// decision: `xHigh`, `cliDefault`).
+var effortDisplay = map[string]string{
+	"low":        "low",
+	"medium":     "medium",
+	"high":       "high",
+	"xhigh":      "xHigh",
+	"max":        "max",
+	"ultracode":  "ultracode",
+	"clidefault": "cliDefault",
+}
 
 var (
-	familyRe = regexp.MustCompile(`^[a-z0-9]+$`)
-	modelRe  = regexp.MustCompile(`^[a-z0-9]+(\.[a-z0-9]+)*$`)
-	tierRe   = regexp.MustCompile(`\s*\(([^)]*)\)\s*$`)
-	nonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
-	dotRuns  = regexp.MustCompile(`\.{2,}`)
+	// section = one or more words joined by '-', each word alphanumeric with
+	// optional internal version dots. No leading/trailing '-' or '.', no "..".
+	sectionRe = regexp.MustCompile(`^[a-z0-9]+(\.[a-z0-9]+)*(-[a-z0-9]+(\.[a-z0-9]+)*)*$`)
+	// wordSplit splits a raw label into words on any run of non-[a-z0-9.] chars,
+	// so spaces, hyphens, brackets, parens and slashes all delimit words while
+	// version dots are preserved inside a word.
+	wordSplit = regexp.MustCompile(`[^a-z0-9.]+`)
+	nonAlnum  = regexp.MustCompile(`[^a-z0-9]+`)
+	dotRuns   = regexp.MustCompile(`\.{2,}`)
+	tierRe    = regexp.MustCompile(`\s*\(([^)]*)\)\s*$`)
 )
 
-// ParsedName is the decomposition of a composite display name.
+// ParsedName is the decomposition of a composite display name. Effort is the
+// normalized (lowercase) token; use EffortDisplayForm to render it.
 type ParsedName struct {
 	Family   string
 	Model    string
@@ -53,41 +65,46 @@ type ParsedName struct {
 	Instance int // 0 when no instance suffix is present; >= 2 otherwise
 }
 
-// SanitizeFamily lowercases and keeps only [a-z0-9] (families never carry dots).
-func SanitizeFamily(s string) string {
-	return nonAlnum.ReplaceAllString(strings.ToLower(strings.TrimSpace(s)), "")
-}
-
-// SanitizeModelToken lowercases, deletes every character outside [a-z0-9.],
-// collapses dot runs to one, and strips leading/trailing dots — so a human model
-// label becomes a path-safe token that preserves version dots: "Opus 4.8" ->
-// "opus4.8", "GPT-5.5" -> "gpt5.5", "GLM 5.2" -> "glm5.2", "K3" -> "k3". The
-// caller strips a parenthesized tier first (see StripParenTier) when relevant.
-func SanitizeModelToken(s string) string {
+// SanitizeSection turns a human label into a section token: lowercase, split into
+// words on any non-[a-z0-9.] run, drop empties, collapse dot runs and strip edge
+// dots per word, join words with '-'. So "GPT-5.6 Sol" -> "gpt-5.6-sol",
+// "Opus 4.8 1m" -> "opus-4.8-1m", "Gemini 3.5 Flash" -> "gemini-3.5-flash",
+// "GLM 5.2" -> "glm-5.2", "K3" -> "k3". (Deriving from a raw model id like
+// "claude-opus-4-8[1m]" yields garbage — always derive the model from a label.)
+func SanitizeSection(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
-	// delete every char not in [a-z0-9.]
-	var b strings.Builder
-	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '.' {
-			b.WriteRune(r)
+	parts := wordSplit.Split(s, -1)
+	words := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.Trim(dotRuns.ReplaceAllString(p, "."), ".")
+		if p != "" {
+			words = append(words, p)
 		}
 	}
-	out := dotRuns.ReplaceAllString(b.String(), ".")
-	return strings.Trim(out, ".")
+	return strings.Join(words, "-")
 }
 
 // NormalizeEffortToken maps a raw reasoning/effort value to a vocabulary token
-// (e.g. "cli-default" -> "clidefault", "High" -> "high"); ok is false when the
-// result is not in EffortVocabulary. It never invents a token.
+// (e.g. "cli-default" -> "clidefault", "xHigh" -> "xhigh"); ok is false when the
+// result is not in the vocabulary. It never invents a token.
 func NormalizeEffortToken(s string) (string, bool) {
 	t := nonAlnum.ReplaceAllString(strings.ToLower(strings.TrimSpace(s)), "")
-	return t, effortSet[t]
+	_, ok := effortDisplay[t]
+	return t, ok
+}
+
+// EffortDisplayForm returns the camelCase display form for a normalized token
+// (falling back to the token itself if unknown).
+func EffortDisplayForm(token string) string {
+	if d, ok := effortDisplay[token]; ok {
+		return d
+	}
+	return token
 }
 
 // StripParenTier splits a trailing parenthesized qualifier off a model label,
 // e.g. "Gemini 3.5 Flash (High)" -> ("Gemini 3.5 Flash", "High"). Used for agy,
-// whose reasoning tier lives in the model label rather than a separate flag. When
-// there is no trailing "(...)", tier is "".
+// whose reasoning tier lives in the model label rather than a separate flag.
 func StripParenTier(label string) (base, tier string) {
 	if m := tierRe.FindStringSubmatch(label); m != nil {
 		return strings.TrimSpace(tierRe.ReplaceAllString(label, "")), strings.TrimSpace(m[1])
@@ -95,62 +112,62 @@ func StripParenTier(label string) (base, tier string) {
 	return strings.TrimSpace(label), ""
 }
 
-// Compose builds and validates a composite display name from already-derived
-// tokens. family and model are validated against their grammars, effort must be
-// a vocabulary member, and instance (0 = none) must be >= 2. It never guesses:
-// an out-of-charset token is an error, not a silently-repaired string.
-func Compose(family, model, effort string, instance int) (string, error) {
-	if !familyRe.MatchString(family) {
-		return "", fmt.Errorf("naming: family %q is not [a-z0-9]+", family)
+// Compose builds and validates a composite display name from already-sanitized
+// family and model sections plus a raw effort value. It never guesses: an
+// out-of-grammar section or unknown effort is an error, not a repaired string.
+func Compose(family, model, effortRaw string, instance int) (string, error) {
+	if !sectionRe.MatchString(family) {
+		return "", fmt.Errorf("naming: family %q is not a valid section", family)
 	}
-	if !modelRe.MatchString(model) {
-		return "", fmt.Errorf("naming: model %q is not a dotted [a-z0-9] token", model)
+	if !sectionRe.MatchString(model) {
+		return "", fmt.Errorf("naming: model %q is not a valid section", model)
 	}
-	if !effortSet[effort] {
-		return "", fmt.Errorf("naming: effort %q is not in the vocabulary %v", effort, EffortVocabulary)
+	tok, ok := NormalizeEffortToken(effortRaw)
+	if !ok {
+		return "", fmt.Errorf("naming: effort %q is not in the vocabulary %v", effortRaw, EffortVocabulary)
 	}
-	name := family + "-" + model + "-" + effort
+	name := family + "_" + model + "_" + EffortDisplayForm(tok)
 	if instance != 0 {
 		if instance < 2 {
 			return "", fmt.Errorf("naming: instance %d must be >= 2", instance)
 		}
-		name += "-" + strconv.Itoa(instance)
+		name += "_" + strconv.Itoa(instance)
 	}
 	return name, nil
 }
 
-// Parse decomposes a composite display name, fail-closed (right-to-left): a
-// trailing all-digit token is the instance; the next-from-right must be a
-// vocabulary effort; the single remaining middle token is the model (dots
-// allowed); the first token is the family. Anything else is an error — legacy
-// roster IDs (`claude`, `claude-1`) are NOT composite names and are rejected here.
+// Parse decomposes a composite display name, fail-closed. It splits on the
+// section separator '_'; a trailing all-digit fourth section is the instance; the
+// remaining three sections are family, model, effort. family and model must match
+// the section grammar; effort must normalize to a vocabulary token. Legacy roster
+// IDs (`claude`, `claude-1`) are NOT composite names and are rejected here.
 func Parse(name string) (ParsedName, error) {
 	var zero ParsedName
-	tokens := strings.Split(name, "-")
+	sections := strings.Split(name, "_")
 	instance := 0
-	// A trailing all-digit token is the instance suffix (effort is never all-digit).
-	if len(tokens) >= 4 && isAllDigits(tokens[len(tokens)-1]) {
-		n, err := strconv.Atoi(tokens[len(tokens)-1])
+	if len(sections) == 4 && isAllDigits(sections[3]) {
+		n, err := strconv.Atoi(sections[3])
 		if err != nil || n < 2 {
 			return zero, fmt.Errorf("naming: bad instance suffix in %q", name)
 		}
 		instance = n
-		tokens = tokens[:len(tokens)-1]
+		sections = sections[:3]
 	}
-	if len(tokens) != 3 {
-		return zero, fmt.Errorf("naming: %q is not a composite display name (family-model-effort)", name)
+	if len(sections) != 3 {
+		return zero, fmt.Errorf("naming: %q is not a composite display name (family_model_effort)", name)
 	}
-	family, model, effort := tokens[0], tokens[1], tokens[2]
-	if !familyRe.MatchString(family) {
-		return zero, fmt.Errorf("naming: family %q is not [a-z0-9]+", family)
+	family, model, effortSec := sections[0], sections[1], sections[2]
+	if !sectionRe.MatchString(family) {
+		return zero, fmt.Errorf("naming: family %q is not a valid section", family)
 	}
-	if !modelRe.MatchString(model) {
-		return zero, fmt.Errorf("naming: model %q is not a dotted [a-z0-9] token", model)
+	if !sectionRe.MatchString(model) {
+		return zero, fmt.Errorf("naming: model %q is not a valid section", model)
 	}
-	if !effortSet[effort] {
-		return zero, fmt.Errorf("naming: effort %q is not in the vocabulary", effort)
+	tok, ok := NormalizeEffortToken(effortSec)
+	if !ok {
+		return zero, fmt.Errorf("naming: effort %q is not in the vocabulary", effortSec)
 	}
-	return ParsedName{Family: family, Model: model, Effort: effort, Instance: instance}, nil
+	return ParsedName{Family: family, Model: model, Effort: tok, Instance: instance}, nil
 }
 
 func isAllDigits(s string) bool {

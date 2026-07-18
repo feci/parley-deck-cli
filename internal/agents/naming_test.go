@@ -2,26 +2,27 @@ package agents
 
 import "testing"
 
-func TestSanitizeModelToken(t *testing.T) {
+func TestSanitizeSection(t *testing.T) {
 	cases := map[string]string{
-		"Opus 4.8":            "opus4.8",
-		"GPT-5.5":             "gpt5.5",
-		"GLM 5.2":             "glm5.2",
+		"Opus 4.8 1m":         "opus-4.8-1m",
+		"GPT-5.6 Sol":         "gpt-5.6-sol",
+		"gpt-5.6-sol":         "gpt-5.6-sol", // already well-formed id round-trips
+		"GLM 5.2":             "glm-5.2",
+		"Gemini 3.5 Flash":    "gemini-3.5-flash",
 		"K3":                  "k3",
-		"Gemini 3.5 Flash":    "gemini3.5flash",
-		"  ..weird..  ":       "weird",          // edge dots stripped
-		"a....b":              "a.b",            // dot runs collapsed -> never ".."
-		"claude-opus-4-8[1m]": "claudeopus481m", // raw id: hyphens+brackets deleted, no dots -> garbage (proves we must derive from a label, not the raw id)
+		"  ..weird..  ":       "weird",
+		"a....b":              "a.b",
+		"claude-opus-4-8[1m]": "claude-opus-4-8-1m", // raw id: no version dot survives -> derive from a label
 	}
 	for in, want := range cases {
-		if got := SanitizeModelToken(in); got != want {
-			t.Errorf("SanitizeModelToken(%q) = %q, want %q", in, got, want)
+		if got := SanitizeSection(in); got != want {
+			t.Errorf("SanitizeSection(%q) = %q, want %q", in, got, want)
 		}
 	}
 }
 
-func TestNormalizeEffortToken(t *testing.T) {
-	ok := map[string]string{"max": "max", "xhigh": "xhigh", "High": "high", "cli-default": "clidefault", "  MAX ": "max"}
+func TestNormalizeEffortAndDisplay(t *testing.T) {
+	ok := map[string]string{"max": "max", "xhigh": "xhigh", "xHigh": "xhigh", "High": "high", "cli-default": "clidefault", "  MAX ": "max"}
 	for in, want := range ok {
 		got, valid := NormalizeEffortToken(in)
 		if !valid || got != want {
@@ -32,6 +33,10 @@ func TestNormalizeEffortToken(t *testing.T) {
 		if _, valid := NormalizeEffortToken(bad); valid {
 			t.Errorf("NormalizeEffortToken(%q) should be invalid", bad)
 		}
+	}
+	// camelCase display forms (user decision).
+	if EffortDisplayForm("xhigh") != "xHigh" || EffortDisplayForm("clidefault") != "cliDefault" || EffortDisplayForm("max") != "max" {
+		t.Error("effort display forms wrong")
 	}
 }
 
@@ -48,11 +53,11 @@ func TestStripParenTier(t *testing.T) {
 
 func TestComposeTheFiveRoster(t *testing.T) {
 	cases := []struct{ family, model, effort, want string }{
-		{"claude", "opus4.8", "max", "claude-opus4.8-max"},
-		{"codex", "gpt5.5", "xhigh", "codex-gpt5.5-xhigh"},
-		{"hermes", "glm5.2", "high", "hermes-glm5.2-high"},
-		{"agy", "gemini3.5flash", "high", "agy-gemini3.5flash-high"},
-		{"kimi", "k3", "max", "kimi-k3-max"},
+		{"claude", "opus-4.8-1m", "max", "claude_opus-4.8-1m_max"},
+		{"codex", "gpt-5.6-sol", "xhigh", "codex_gpt-5.6-sol_xHigh"},
+		{"hermes", "glm-5.2", "high", "hermes_glm-5.2_high"},
+		{"agy", "gemini-3.5-flash", "high", "agy_gemini-3.5-flash_high"},
+		{"kimi", "k3", "max", "kimi_k3_max"},
 	}
 	for _, c := range cases {
 		got, err := Compose(c.family, c.model, c.effort, 0)
@@ -63,36 +68,33 @@ func TestComposeTheFiveRoster(t *testing.T) {
 }
 
 func TestComposeRejects(t *testing.T) {
-	// bad effort
-	if _, err := Compose("claude", "opus4.8", "turbo", 0); err == nil {
+	if _, err := Compose("claude", "opus-4.8", "turbo", 0); err == nil {
 		t.Error("expected error for effort not in vocabulary")
 	}
-	// family with a dot
-	if _, err := Compose("cla.ude", "opus4.8", "max", 0); err == nil {
-		t.Error("expected error for dotted family")
-	}
-	// model with edge/double dot (path-unsafe) must not validate
+	// path-unsafe model sections must not validate
 	if _, err := Compose("claude", ".opus", "max", 0); err == nil {
 		t.Error("expected error for leading-dot model")
 	}
 	if _, err := Compose("claude", "opus..8", "max", 0); err == nil {
 		t.Error("expected error for double-dot model")
 	}
-	// instance < 2
-	if _, err := Compose("claude", "opus4.8", "max", 1); err == nil {
+	if _, err := Compose("claude", "opus-", "max", 0); err == nil {
+		t.Error("expected error for trailing-hyphen model")
+	}
+	if _, err := Compose("claude", "opus-4.8", "max", 1); err == nil {
 		t.Error("expected error for instance 1")
 	}
 }
 
 func TestComposeCollisionInstance(t *testing.T) {
-	got, err := Compose("claude", "opus4.8", "max", 2)
-	if err != nil || got != "claude-opus4.8-max-2" {
+	got, err := Compose("claude", "opus-4.8-1m", "max", 2)
+	if err != nil || got != "claude_opus-4.8-1m_max_2" {
 		t.Fatalf("got %q,%v", got, err)
 	}
 }
 
 func TestParseRoundTrip(t *testing.T) {
-	for _, name := range []string{"claude-opus4.8-max", "codex-gpt5.5-xhigh", "agy-gemini3.5flash-high", "kimi-k3-max"} {
+	for _, name := range []string{"claude_opus-4.8-1m_max", "codex_gpt-5.6-sol_xHigh", "agy_gemini-3.5-flash_high", "kimi_k3_max"} {
 		p, err := Parse(name)
 		if err != nil {
 			t.Fatalf("Parse(%q) error: %v", name, err)
@@ -105,16 +107,16 @@ func TestParseRoundTrip(t *testing.T) {
 }
 
 func TestParseInstance(t *testing.T) {
-	p, err := Parse("claude-opus4.8-max-2")
-	if err != nil || p.Instance != 2 || p.Effort != "max" || p.Model != "opus4.8" {
+	p, err := Parse("codex_gpt-5.6-sol_xHigh_2")
+	if err != nil || p.Instance != 2 || p.Effort != "xhigh" || p.Model != "gpt-5.6-sol" {
 		t.Fatalf("got %+v err=%v", p, err)
 	}
 }
 
 func TestParseAllDigitModelIsUnambiguous(t *testing.T) {
-	// A hypothetical all-digit model like "530" must still parse: the effort token
-	// (never all-digits) anchors the right side, so "530" is read as the model.
-	p, err := Parse("codex-530-xhigh")
+	// A single all-digit model word must still parse: instance is detected only at
+	// four sections, so `codex_530_xHigh` reads 530 as the model.
+	p, err := Parse("codex_530_xHigh")
 	if err != nil || p.Model != "530" || p.Effort != "xhigh" || p.Instance != 0 {
 		t.Fatalf("got %+v err=%v", p, err)
 	}
@@ -122,12 +124,13 @@ func TestParseAllDigitModelIsUnambiguous(t *testing.T) {
 
 func TestParseFailsClosed(t *testing.T) {
 	for _, bad := range []string{
-		"claude",               // bare family (legacy roster/spec id), not a composite
-		"claude-1",             // legacy roster id, not a composite
-		"claude-opus4.8",       // missing effort
-		"claude-opus4.8-turbo", // effort not in vocabulary
-		"claude-opus4.8-max-1", // instance must be >= 2
-		"",                     // empty
+		"claude",                   // bare family (legacy id), not a composite
+		"claude-1",                 // legacy roster id, not a composite
+		"claude_opus-4.8-1m",       // missing effort
+		"claude_opus-4.8-1m_turbo", // effort not in vocabulary
+		"claude_opus-4.8-1m_max_1", // instance must be >= 2
+		"claude__max",              // empty model section
+		"",                         // empty
 	} {
 		if _, err := Parse(bad); err == nil {
 			t.Errorf("Parse(%q) should fail closed", bad)
