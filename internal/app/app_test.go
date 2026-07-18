@@ -304,7 +304,7 @@ func TestAgentsListPrintsResolvedRuntime(t *testing.T) {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
 	out := stdout.String()
-	for _, want := range []string{"codex", "yes", "codex test 1.0", "configured", "workspace-write", "on-failure", "cli-default"} {
+	for _, want := range []string{"codex", "yes", "codex test 1.0", "configured", "workspace-write", "never", "cli-default"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("list output missing %q:\n%s", want, out)
 		}

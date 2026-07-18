@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+**composite-agent-naming-and-roster-reinit** (designed + implemented via a real 5-agent Parley Deck run; claude/codex/hermes/kimi active, agy quota-out). In progress:
+
+- **Self-documenting agent display names** `family_model_effort` (e.g. `codex_gpt-5.6-sol_xHigh`, `claude_opus-4.8-1m_max`) — `_` separates the three meanings, `-` separates words, `.` keeps versions; derived at render from config, never an identity.
+- **Two-namespace schism fixed**: `agents.Spec.ID` split into a stable roster identity + an `AdapterID` family for launch/vendor dispatch; a fail-closed participant resolver (exact spec-ID → explicit `[roster.*]` mapping → hard error). The driver can now run a deck whose roster is `[claude-1, …]`.
+- **Autonomous write is first-class** and the built-in defaults are now actually autonomous. **Posture change:** the built-in `claude` headless mode moved from `--permission-mode acceptEdits` to `bypassPermissions` (still workspace-confined via `--add-dir {root}`); `codex` moved from `approval_policy="on-failure"` to `"never"` (still `--sandbox workspace-write`); `hermes` gained `--yolo`.
+- **`fast` is the standard speed on a separate axis** — same model + same effort, faster output (never a downgrade); the central template defaults `speed = "fast"`.
+
 ## v1.35.0 - 2026-07-04
 
 Five features inspired by Hermes Agent v0.18.0, each designed + implemented + reviewed via a real multi-agent Parley Deck run (claude/codex/hermes/antigravity):
