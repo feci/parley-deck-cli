@@ -86,14 +86,24 @@ codex-1 ran a refutation-default review (verdict BLOCK) and found real defects. 
 - **[MINOR] Parse canonical round-trip** (rejects `x-high`, lowercase `xhigh`, `_02`);
   exact-ID resolution preserves an already-explicit adapter.
 
-### Deferred from review (documented, not fixed this cycle)
+## Fix-up cycle 2 (review MAJOR #5 — full app-level wiring)
 
-- **[MAJOR] deeper app-level roster-ID wiring** — beyond run selection, a few paths still
-  compare participant strings to raw family discovery ids: `preflight` readiness ping,
-  `driver_consensus` drafter attribution, `consensus request-signoffs`, and TUI `steer`.
-  They work for family-id rosters and for the driver's round runner (which resolves), but
-  full roster-id support there is a scoped follow-up (one shared resolution boundary). The
-  primary `parley run` + runner path is wired.
+Per the owner's decision to close #5 fully before release, roster-ID resolution is now wired
+through EVERY app/driver/TUI path via one shared boundary (`agents.ResolveParticipant`), so a
+deck whose §2 roster is `claude-1, …` works end-to-end (commit 0cb9936):
+
+- `selectedParticipantIDs` — `parley run --participants claude-1` (cycle 1).
+- `participantDiscoveries` — preflight readiness evaluates the resolved roster.
+- `firstHeadlessAgent` — the driver consensus/FINAL drafter resolves a roster-id participant.
+- `requestSignoffAgents` — `consensus request-signoffs` resolves roster ids.
+- `discoverAgent` — TUI steer resolves a roster-id target (identity = roster id, launch =
+  `Adapter()`).
+
+Test `TestAppLevelRosterIDResolution` covers all five + the fail-closed no-mapping case. Full
+suite green (25 pkg, 0 fail).
+
+### Deferred from review (documented, not fixed)
+
 - **[CRITICAL, contested] autonomous-write confinement honesty** — `AutonomousWrite.Scope="workspace"`
   is asserted from the vendor's own scoping flags (`--add-dir {root}`, `--sandbox
   workspace-write`, cwd), NOT an OS sandbox. Codex's `workspace-write` is a real sandbox;
