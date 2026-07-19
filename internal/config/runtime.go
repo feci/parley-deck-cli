@@ -245,6 +245,37 @@ func RosterAdaptersInFile(path string) (map[string]string, error) {
 	return out, nil
 }
 
+// MachineFamilyCatalog returns the set of agent families known machine-wide —
+// built-in specs plus the central ~/.parley/agents.toml [agents.*] keys — with NO
+// deck/local/env layer. `parley roster init --scope machine` uses it so a deck-only
+// custom family is never proposed for, written to, or blessed in the central file
+// (consensus §B "never copies deck values up"; review MAJOR, codex-1).
+func MachineFamilyCatalog() (map[string]bool, error) {
+	out := map[string]bool{}
+	for _, s := range agents.DefaultSpecs() {
+		out[s.ID] = true
+	}
+	central := CentralAgentsPath()
+	if central == "" {
+		return out, nil
+	}
+	data, err := os.ReadFile(central)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return out, nil
+		}
+		return out, err
+	}
+	var cfg fileConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return out, fmt.Errorf("%s: %w", central, err)
+	}
+	for id := range cfg.Agents {
+		out[id] = true
+	}
+	return out, nil
+}
+
 // ValidateAgentsConfigBytes reports whether data parses as a valid agents.toml
 // document. `parley roster init` calls it on the candidate BEFORE the atomic
 // replace, so a candidate that would install a duplicate or malformed `[roster.*]`

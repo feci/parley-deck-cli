@@ -143,13 +143,23 @@ in the fix-up; fixed:
   other families keep a `(...)` qualifier in the model. Non-agy + empty-label test cases added.
 - **[NIT] `selectedAgents` doc** corrected (unresolved are returned + failed, not skipped).
 
-### Deferred from review (documented, not fixed)
+## Fix-up cycle 5 (review round-03, codex-1)
 
-- **[MINOR] machine-scope proposals still consult layered specs** — `roster init --scope machine`
-  builds family PROPOSALS from the layered catalog (built-ins + central + deck), so a deck-only
-  custom family could be proposed for the machine file. Built-in families (the common case) are
-  scope-independent; a deck-only custom family being copied up is the only exposure. The target's
-  own mappings ARE validated (above). A machine-only proposal catalog is a scoped follow-up.
+codex-1's round-03 re-review confirmed the autonomous/TOML/render/doc fixes RESOLVED and found
+three genuine MAJOR correctness issues in the default-run and machine-scope paths; fixed:
+
+- **[MAJOR] default-run raw-family escape hatch** — a no-`--participants` run now distinguishes
+  "no readable §2 roster" (falls back to installed families, legacy) from "readable roster whose
+  members do not resolve" (hard stop — never launches unrelated installed agents).
+- **[MAJOR] inactive members launched by default** — the §2 default now EXCLUDES roster ids in
+  the returned inactive set (protocol inactive-retention respected).
+- **[MAJOR] machine-scope project-family leak** — new `config.MachineFamilyCatalog` (built-ins +
+  central only, no deck/local/env); `roster init --scope machine` restricts proposals AND target
+  validation to it, so a deck-only family is never proposed for, written to, or blessed in
+  `~/.parley/agents.toml` (consensus §B "never copies deck values up"). Session scope keeps the
+  full layered catalog. Tests: `TestResolveRosterFamilyFilter`, `TestMachineFamilyCatalogHasBuiltins`.
+
+### Deferred from review (documented, not fixed)
 
 - **[MINOR] `roster diff` subcommand + `autonomous_write` TOML override** (kimi-1) — FINAL §B
   lists `roster diff` (cross-layer skew) and §S3/§C an `autonomous_write` config field. Only

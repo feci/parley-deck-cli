@@ -38,6 +38,43 @@ func TestAppLevelRosterIDResolution(t *testing.T) {
 	}
 }
 
+func TestResolveRosterFamilyFilter(t *testing.T) {
+	root := setupRosterDeck(t)
+	// An empty allowed catalog (machine scope with no known families) resolves none.
+	rows, err := resolveRoster(root, map[string]bool{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rows {
+		if r.Family != "" {
+			t.Errorf("%s resolved to %q despite an empty allowed catalog", r.RosterID, r.Family)
+		}
+	}
+	// Restricting to {claude} leaves only claude-1 resolvable.
+	rows, _ = resolveRoster(root, map[string]bool{"claude": true})
+	for _, r := range rows {
+		if r.RosterID == "claude-1" && r.Family != "claude" {
+			t.Errorf("claude-1 should resolve to claude, got %q", r.Family)
+		}
+		if r.RosterID != "claude-1" && r.Family != "" {
+			t.Errorf("%s should be filtered by the {claude}-only catalog, got %q", r.RosterID, r.Family)
+		}
+	}
+}
+
+func TestMachineFamilyCatalogHasBuiltins(t *testing.T) {
+	t.Setenv(config.EnvParleyHome, t.TempDir()) // no central file -> built-ins only
+	cat, err := config.MachineFamilyCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, fam := range []string{"claude", "codex", "hermes", "agy"} {
+		if !cat[fam] {
+			t.Errorf("machine family catalog missing built-in %q", fam)
+		}
+	}
+}
+
 func TestProposeFamily(t *testing.T) {
 	byFamily := map[string]agents.Spec{"claude": {}, "codex": {}, "agy": {}}
 	cases := map[string]string{

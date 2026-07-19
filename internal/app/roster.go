@@ -92,7 +92,10 @@ type rosterRow struct {
 // resolveRoster builds one row per active §2 roster ID: family from the explicit
 // mapping (else an init-time proposal), the matching spec, and the derived display
 // name. A row whose family cannot be resolved is flagged (unmapped).
-func resolveRoster(root string) ([]rosterRow, error) {
+// resolveRoster builds one row per active §2 roster ID. allowedFamilies, when
+// non-nil, restricts usable families to a scope catalog (machine-only for
+// `--scope machine`) so a deck-only family is never proposed/blessed there.
+func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, error) {
 	specs, err := config.LoadAgentSpecs(root)
 	if err != nil {
 		return nil, err
@@ -127,6 +130,12 @@ func resolveRoster(root string) ([]rosterRow, error) {
 			// unresolved so init exits nonzero instead of "already initialized"
 			// (review MAJOR — a typoed adapter would later fail the resolver).
 			row.Note = fmt.Sprintf("mapped to unknown family %q — fix `[roster.%s] adapter`", family, id)
+			family = ""
+		}
+		// Scope filter: a family outside the allowed catalog (machine-only for
+		// --scope machine) is not usable in this scope (review MAJOR, codex-1).
+		if family != "" && allowedFamilies != nil && !allowedFamilies[family] {
+			row.Note = fmt.Sprintf("family %q is not known machine-wide — define [agents.%s] in ~/.parley/agents.toml", family, family)
 			family = ""
 		}
 		row.Family = family
@@ -174,7 +183,7 @@ func proposeFamily(id string, byFamily map[string]agents.Spec) string {
 }
 
 func rosterShow(root string, jsonOut bool, stdout, stderr io.Writer) int {
-	rows, err := resolveRoster(root)
+	rows, err := resolveRoster(root, nil)
 	if err != nil {
 		fmt.Fprintf(stderr, "roster show: %v\n", err)
 		return 1
@@ -204,7 +213,19 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 		fmt.Fprintf(stderr, "roster init: invalid --scope %q (want session|machine)\n", scope)
 		return 2
 	}
-	rows, err := resolveRoster(root)
+	// Machine scope must never propose, write, or bless a deck-only family (consensus
+	// §B); build a machine-only family catalog and restrict resolution to it. Session
+	// scope uses the full layered catalog (allowed == nil).
+	var allowed map[string]bool
+	if scope == "machine" {
+		c, cerr := config.MachineFamilyCatalog()
+		if cerr != nil {
+			fmt.Fprintf(stderr, "roster init: %v\n", cerr)
+			return 1
+		}
+		allowed = c
+	}
+	rows, err := resolveRoster(root, allowed)
 	if err != nil {
 		fmt.Fprintf(stderr, "roster init: %v\n", err)
 		return 1
@@ -217,14 +238,17 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 		fmt.Fprintf(stderr, "roster init: %v\n", err)
 		return 1
 	}
-	// Validate the TARGET file's own existing mappings against the family catalog: a
-	// broken adapter there (e.g. a typo in the machine file that a deck layer happens
-	// to override) must be a hard error, not a silent "already initialized" while the
-	// requested scope stays broken (review MAJOR, codex-1).
-	specs, _ := config.LoadAgentSpecs(root)
-	known := make(map[string]bool, len(specs))
-	for _, s := range specs {
-		known[s.ID] = true
+	// Validate the TARGET file's own existing mappings against the SCOPE catalog: a
+	// broken adapter there (e.g. a typo the deck layer happens to override, or a
+	// deck-only family in the machine file) must be a hard error, not a silent
+	// "already initialized" while the requested scope stays broken (review MAJOR).
+	known := allowed
+	if known == nil {
+		specs, _ := config.LoadAgentSpecs(root)
+		known = make(map[string]bool, len(specs))
+		for _, s := range specs {
+			known[s.ID] = true
+		}
 	}
 	for id, fam := range existing {
 		if !known[fam] {

@@ -1809,23 +1809,30 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	// Default the participant set to the INSTALLED subset of the §2 active roster
+	// Default the participant set to the INSTALLED, ACTIVE subset of the §2 roster
 	// (roster IDs like claude-1), not the raw installed family ids — so a default
-	// `parley run` uses the ratified identities (review MAJOR, codex-1). Falls
-	// through to installed families only when there is no readable §2 roster.
+	// `parley run` uses the ratified identities (review MAJOR, codex-1). Raw
+	// families are used ONLY when there is no readable §2 roster (legacy deck); a
+	// readable roster whose members do not resolve is a hard stop, and roster members
+	// explicitly marked inactive are excluded (never silently launched).
 	if strings.TrimSpace(*participantsFlag) == "" {
-		if active, _, ok := protocol.ReadRosterIDs(*root); ok && len(active) > 0 {
+		if active, inactive, ok := protocol.ReadRosterIDs(*root); ok && len(active) > 0 {
 			mapping := rosterMappingFor(*root)
 			ids := make([]string, 0, len(active))
 			for id := range active {
+				if inactive[id] {
+					continue
+				}
 				if _, rerr := agents.ResolveParticipant(id, discovered, mapping); rerr == nil {
 					ids = append(ids, id)
 				}
 			}
 			sort.Strings(ids)
-			if len(ids) > 0 {
-				*participantsFlag = strings.Join(ids, ",")
+			if len(ids) == 0 {
+				fmt.Fprintln(stderr, "no active §2 roster member resolves to an installed agent — run `parley roster init` or pass --participants")
+				return 1
 			}
+			*participantsFlag = strings.Join(ids, ",")
 		}
 	}
 
