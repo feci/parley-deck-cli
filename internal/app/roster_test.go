@@ -38,6 +38,51 @@ func TestAppLevelRosterIDResolution(t *testing.T) {
 	}
 }
 
+func TestDefaultRosterParticipants(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv(config.EnvParleyHome, filepath.Join(root, "no-central"))
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	coop := filepath.Join(root, protocol.DeckDir, "COOPERATION.md")
+	header := "# C\n\n## 2. Active agents (roster)\n\n| Agent ID | Workspace dir | Role |\n| -------- | ------------- | ---- |\n"
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"),
+		[]byte("[roster.codex-1]\nadapter=\"codex\"\n[roster.claude-1]\nadapter=\"claude\"\n[roster.antigravity-1]\nadapter=\"agy\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	discovered := []agents.Discovery{
+		{Spec: agents.Spec{ID: "codex"}, Found: true},
+		{Spec: agents.Spec{ID: "claude"}, Found: true},
+	}
+	bt := "`"
+	row := func(id, role string) string { return "| " + bt + id + bt + " | ../x/ | " + role + " |\n" }
+
+	// Case 1: an inactive installed member is excluded from the default set.
+	if err := os.WriteFile(coop, []byte(header+row("codex-1", "participant")+row("claude-1", "inactive")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ids, had, err := defaultRosterParticipants(root, discovered)
+	if err != nil || !had || len(ids) != 1 || ids[0] != "codex-1" {
+		t.Fatalf("case1 (inactive-filter): ids=%v had=%v err=%v", ids, had, err)
+	}
+
+	// Case 2: a readable roster whose members do not resolve is a hard error.
+	if err := os.WriteFile(coop, []byte(header+row("antigravity-1", "participant")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, had, err := defaultRosterParticipants(root, discovered); err == nil || !had {
+		t.Fatalf("case2 (zero-resolved) must hard-error with hadRoster=true: had=%v err=%v", had, err)
+	}
+
+	// Case 3: no readable §2 roster -> fall back (hadRoster=false, no error).
+	if err := os.WriteFile(coop, []byte("# C\nno roster table here\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, had, err := defaultRosterParticipants(root, discovered); err != nil || had {
+		t.Fatalf("case3 (no roster): want had=false err=nil, got had=%v err=%v", had, err)
+	}
+}
+
 func TestResolveRosterFamilyFilter(t *testing.T) {
 	root := setupRosterDeck(t)
 	// An empty allowed catalog (machine scope with no known families) resolves none.

@@ -1810,28 +1810,14 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 
 	// Default the participant set to the INSTALLED, ACTIVE subset of the §2 roster
-	// (roster IDs like claude-1), not the raw installed family ids — so a default
-	// `parley run` uses the ratified identities (review MAJOR, codex-1). Raw
-	// families are used ONLY when there is no readable §2 roster (legacy deck); a
-	// readable roster whose members do not resolve is a hard stop, and roster members
-	// explicitly marked inactive are excluded (never silently launched).
+	// (roster IDs like claude-1), not the raw installed family ids.
 	if strings.TrimSpace(*participantsFlag) == "" {
-		if active, inactive, ok := protocol.ReadRosterIDs(*root); ok && len(active) > 0 {
-			mapping := rosterMappingFor(*root)
-			ids := make([]string, 0, len(active))
-			for id := range active {
-				if inactive[id] {
-					continue
-				}
-				if _, rerr := agents.ResolveParticipant(id, discovered, mapping); rerr == nil {
-					ids = append(ids, id)
-				}
-			}
-			sort.Strings(ids)
-			if len(ids) == 0 {
-				fmt.Fprintln(stderr, "no active §2 roster member resolves to an installed agent — run `parley roster init` or pass --participants")
-				return 1
-			}
+		ids, hadRoster, derr := defaultRosterParticipants(*root, discovered)
+		if derr != nil {
+			fmt.Fprintln(stderr, derr)
+			return 1
+		}
+		if hadRoster {
 			*participantsFlag = strings.Join(ids, ",")
 		}
 	}
@@ -2414,6 +2400,33 @@ func installedAgentIDs(discovered []agents.Discovery) []string {
 		}
 	}
 	return ids
+}
+
+// defaultRosterParticipants computes the default participant set for a no-flag run
+// (review MAJOR, codex-1): the INSTALLED, ACTIVE subset of the §2 roster, as roster
+// ids. hadRoster is false when there is no readable §2 roster (the caller then falls
+// back to installed families, legacy). A readable roster whose active members do not
+// resolve is a hard error (never launch unrelated installed agents); ids explicitly
+// marked inactive are excluded (protocol inactive-retention).
+func defaultRosterParticipants(root string, discovered []agents.Discovery) (ids []string, hadRoster bool, err error) {
+	active, inactive, ok := protocol.ReadRosterIDs(root)
+	if !ok || len(active) == 0 {
+		return nil, false, nil
+	}
+	mapping := rosterMappingFor(root)
+	for id := range active {
+		if inactive[id] {
+			continue
+		}
+		if _, rerr := agents.ResolveParticipant(id, discovered, mapping); rerr == nil {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	if len(ids) == 0 {
+		return nil, true, fmt.Errorf("no active §2 roster member resolves to an installed agent — run `parley roster init` or pass --participants")
+	}
+	return ids, true, nil
 }
 
 func selectedParticipantIDs(discovered []agents.Discovery, raw string, mapping map[string]string) ([]string, error) {

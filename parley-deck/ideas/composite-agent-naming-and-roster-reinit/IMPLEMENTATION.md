@@ -1,9 +1,12 @@
 ---
 idea: composite-agent-naming-and-roster-reinit
-status: implemented
+status: complete
 implementer: claude-1
 started: 2026-07-18
+completed: 2026-07-19
 branch: parley-deck-cli#composite-agent-naming-and-roster-reinit
+review: codex-1 round-04 ACCEPT-WITH-FIXES (all CRITICAL/MAJOR resolved); kimi-1 round-01 ACCEPT-WITH-FIXES
+fix-up-cycles: 6
 ---
 
 ## Summary of work
