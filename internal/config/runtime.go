@@ -245,6 +245,16 @@ func RosterAdaptersInFile(path string) (map[string]string, error) {
 	return out, nil
 }
 
+// ValidateAgentsConfigBytes reports whether data parses as a valid agents.toml
+// document. `parley roster init` calls it on the candidate BEFORE the atomic
+// replace, so a candidate that would install a duplicate or malformed `[roster.*]`
+// table (e.g. against an existing quoted-key empty block) is rejected instead of
+// silently breaking every later config load (review MAJOR, codex-1).
+func ValidateAgentsConfigBytes(data []byte) error {
+	var cfg fileConfig
+	return toml.Unmarshal(data, &cfg)
+}
+
 func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
 	if s := strings.TrimSpace(gd.Speed); s != "" {
 		out.Speed = s

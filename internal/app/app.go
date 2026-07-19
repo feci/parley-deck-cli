@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1805,6 +1806,26 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			*participantsFlag = strings.Join(res.Participants, ",")
 			presetProvenance = res.Provenance
 			fmt.Fprintf(stdout, "Roster preset %q (source: %s) → %s\n", res.Preset, res.Source, strings.Join(res.Participants, ", "))
+		}
+	}
+
+	// Default the participant set to the INSTALLED subset of the §2 active roster
+	// (roster IDs like claude-1), not the raw installed family ids — so a default
+	// `parley run` uses the ratified identities (review MAJOR, codex-1). Falls
+	// through to installed families only when there is no readable §2 roster.
+	if strings.TrimSpace(*participantsFlag) == "" {
+		if active, _, ok := protocol.ReadRosterIDs(*root); ok && len(active) > 0 {
+			mapping := rosterMappingFor(*root)
+			ids := make([]string, 0, len(active))
+			for id := range active {
+				if _, rerr := agents.ResolveParticipant(id, discovered, mapping); rerr == nil {
+					ids = append(ids, id)
+				}
+			}
+			sort.Strings(ids)
+			if len(ids) > 0 {
+				*participantsFlag = strings.Join(ids, ",")
+			}
 		}
 	}
 

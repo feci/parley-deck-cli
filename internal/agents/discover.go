@@ -62,8 +62,8 @@ type Spec struct {
 	// participant can write its own artifact without a blocking permission prompt
 	// (idea composite-agent-naming-and-roster-reinit, component C). There is no
 	// common flag across vendors, so each spec names its own. Scope is "workspace"
-	// (deck/cwd-confined) or empty when the mode cannot be safely confined — the
-	// bit is then treated as unset (fail-closed). Secret redaction is orthogonal.
+	// ONLY where a real sandbox is enforced (honesty rule); Declared() reports the
+	// mode, Confined() the sandbox. Secret redaction is orthogonal.
 	AutonomousWrite AutonomousWrite
 	Sources         map[string]string
 	// ACPArgs are the launch flags that put an ACP-capable CLI into ACP mode
@@ -83,19 +83,29 @@ func (s Spec) Adapter() string {
 	return s.ID
 }
 
-// AutonomousWrite is the per-agent auto-approve declaration (component C). Mode
-// is the vendor's mode name (e.g. "bypassPermissions", "yolo"); Args are the flags
-// that enable it; Scope is "workspace" (confined) or empty (unverified -> the bit
-// is treated as unset). Declared() reports whether autonomous writes are enabled
-// AND workspace-confined — the only state the runner/skill treat as autonomous.
+// AutonomousWrite is the per-agent auto-approve declaration (component C). Mode is
+// the vendor's mode name (e.g. "bypassPermissions", "yolo"); Args are the flags that
+// enable it; Scope names the DEMONSTRABLE confinement and is set to "workspace" ONLY
+// where the CLI enforces a real workspace sandbox (codex `--sandbox workspace-write`).
+// For CLIs whose only confinement is a grant/bypass flag + cwd (claude `--add-dir`,
+// hermes `--yolo`), Scope is left EMPTY — the honesty rule (consensus §C, review
+// CRITICAL codex-1): never falsely assert workspace confinement that is not enforced.
 type AutonomousWrite struct {
 	Mode  string
 	Args  []string
 	Scope string
 }
 
+// Declared reports that an autonomous write mode is configured. It does NOT assert
+// OS confinement — read Scope for that (only "workspace" is a demonstrated sandbox).
 func (a AutonomousWrite) Declared() bool {
-	return strings.TrimSpace(a.Mode) != "" && a.Scope == "workspace"
+	return strings.TrimSpace(a.Mode) != ""
+}
+
+// Confined reports a demonstrated workspace sandbox (honesty signal, distinct from
+// merely being autonomous).
+func (a AutonomousWrite) Confined() bool {
+	return a.Scope == "workspace"
 }
 
 type PromptMode string
@@ -191,7 +201,7 @@ func defaultBuiltinSpecs() []Spec {
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "stream-json or final text depending on flags",
 			// Full autonomous writes, confined to the workspace via --add-dir {root}.
-			AutonomousWrite: AutonomousWrite{Mode: "bypassPermissions", Args: []string{"--permission-mode", "bypassPermissions"}, Scope: "workspace"},
+			AutonomousWrite: AutonomousWrite{Mode: "bypassPermissions", Args: []string{"--permission-mode", "bypassPermissions"}, Scope: ""},
 		}),
 		withBuiltinSources(Spec{
 			ID:           "agy",
@@ -216,7 +226,7 @@ func defaultBuiltinSpecs() []Spec {
 			Telemetry:             "unknown",
 			BuffersStdout:         true, // agy --print emits nothing until exit
 			Notes:                 "Antigravity CLI (active Gemini-family participant); agy 1.0.5 exposes --model. Best Gemini model: Gemini 3.5 Flash (High); see `agy models`",
-			AutonomousWrite:       AutonomousWrite{Mode: "dangerously-skip-permissions", Args: []string{"--dangerously-skip-permissions"}, Scope: "workspace"},
+			AutonomousWrite:       AutonomousWrite{Mode: "dangerously-skip-permissions", Args: []string{"--dangerously-skip-permissions"}, Scope: ""},
 		}),
 		withBuiltinSources(Spec{
 			ID:                    "gemini",
@@ -265,7 +275,7 @@ func defaultBuiltinSpecs() []Spec {
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "unknown",
 			Notes:                 "first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs",
-			AutonomousWrite:       AutonomousWrite{Mode: "yolo", Args: []string{"--yolo"}, Scope: "workspace"},
+			AutonomousWrite:       AutonomousWrite{Mode: "yolo", Args: []string{"--yolo"}, Scope: ""},
 		}),
 	}
 }

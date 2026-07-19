@@ -190,10 +190,18 @@ func RenderDisplayName(family string, spec Spec) (string, error) {
 	if label == "" {
 		label = spec.Model
 	}
-	base, tier := StripParenTier(label)
-	effortRaw := spec.Reasoning
-	if norm, ok := NormalizeEffortToken(effortRaw); (!ok || norm == "clidefault") && tier != "" {
-		effortRaw = tier
+	base, effortRaw := label, spec.Reasoning
+	// ONLY agy carries its reasoning tier inside the model label "(High)"; for any
+	// other family a parenthesized qualifier stays part of the model, so we do not
+	// strip/substitute it (review MINOR, codex-1: e.g. "Model (Preview)" must not
+	// move "Preview" into the effort).
+	if family == "agy" {
+		var tier string
+		if base, tier = StripParenTier(label); tier != "" {
+			if norm, ok := NormalizeEffortToken(effortRaw); !ok || norm == "clidefault" {
+				effortRaw = tier
+			}
+		}
 	}
 	return Compose(SanitizeSection(family), SanitizeSection(base), effortRaw, 0)
 }

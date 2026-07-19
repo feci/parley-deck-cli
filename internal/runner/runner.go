@@ -358,8 +358,9 @@ func resolveMapping(opts Options) map[string]string {
 // selectedAgents resolves each participant/roster ID to a discovered agent via
 // agents.ResolveParticipant (exact spec-ID -> [roster.*] mapping -> fail closed),
 // carrying the participant string as the agent identity and the family as its
-// adapter. Unresolvable participants are skipped (matching the pre-split behavior
-// of an absent participant); `parley roster init` + preflight surface the gap.
+// adapter. It RETURNS the unresolvable participants (rather than silently dropping
+// them) so the caller fails closed — RunRoundOne turns each into a failed result so
+// the round is round.incomplete, and `parley roster init` fixes the mapping.
 func selectedAgents(participants []string, discovered []agents.Discovery, mapping map[string]string) (selected []agents.Discovery, unresolved []string) {
 	for _, participant := range participants {
 		if resolved, err := agents.ResolveParticipant(participant, discovered, mapping); err == nil {

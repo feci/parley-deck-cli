@@ -133,12 +133,18 @@ func TestRenderDisplayName(t *testing.T) {
 		{"hermes", Spec{Model: "GLM 5.2", Reasoning: "high"}, "hermes_glm-5.2_high"},
 		{"agy", Spec{Model: "Gemini 3.5 Flash (High)", Reasoning: "cli-default"}, "agy_gemini-3.5-flash_high"},
 		{"kimi", Spec{Model: "k3", Reasoning: "max"}, "kimi_k3_max"},
+		// Non-agy parenthesized qualifier stays in the MODEL, not moved to effort (review MINOR).
+		{"codex", Spec{Model: "GPT-5 (Preview)", Reasoning: "xhigh"}, "codex_gpt-5-preview_xHigh"},
 	}
 	for _, c := range cases {
 		got, err := RenderDisplayName(c.family, c.spec)
 		if err != nil || got != c.want {
 			t.Errorf("RenderDisplayName(%s) = %q,%v want %q", c.family, got, err, c.want)
 		}
+	}
+	// An empty/unsanitizable model label errors, so the caller falls back to the roster id.
+	if _, err := RenderDisplayName("kimi", Spec{Model: "", Reasoning: "max"}); err == nil {
+		t.Error("RenderDisplayName with an empty model must error")
 	}
 }
 

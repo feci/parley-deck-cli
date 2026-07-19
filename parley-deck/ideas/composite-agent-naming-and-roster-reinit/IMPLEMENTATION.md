@@ -118,7 +118,38 @@ cycles 1–2) and added MINORs; fixed:
   raw family ids, so LE-7 goal-check and the LE-3 model-diversity gate silently no-op'd for a
   roster-id deck. Both now resolve via the mapping.
 
+## Fix-up cycle 4 (review round-02, codex-1 re-review OPEN items)
+
+codex-1's round-02 re-review confirmed all round-01 CRITICALs RESOLVED and found new issues
+in the fix-up; fixed:
+
+- **[CRITICAL] autonomous-write confinement honesty** — `AutonomousWrite.Scope="workspace"` is
+  now set ONLY for codex (real `--sandbox workspace-write`); claude/agy/hermes leave Scope
+  empty (their `--add-dir`/`--yolo`+cwd is not an OS sandbox). `Declared()` now means "an
+  autonomous mode is configured" (used for the AUTO column); a new `Confined()` reports the
+  demonstrated sandbox — no false workspace claim.
+- **[MAJOR] default run path** — a no-`--participants` `parley run` now defaults to the INSTALLED
+  subset of the §2 active roster (roster IDs like `claude-1`), not raw installed family ids, so
+  the run is created in the ratified namespace. Falls back to families only when there is no §2
+  roster.
+- **[MAJOR] roster init empty/quoted-key duplicate** — the candidate config is now structurally
+  validated (`config.ValidateAgentsConfigBytes`) before the atomic replace, so a duplicate/
+  malformed `[roster.*]` table (incl. a quoted-key empty block) is rejected instead of breaking
+  every later load.
+- **[MAJOR] machine-scope broken mapping** — `roster init` validates the TARGET file's existing
+  adapters against the family catalog; a broken adapter (that a deck layer happens to override)
+  is a hard error, not a silent "already initialized".
+- **[MINOR] RenderDisplayName** — the parenthesized-tier rule is now gated on `family=="agy"`;
+  other families keep a `(...)` qualifier in the model. Non-agy + empty-label test cases added.
+- **[NIT] `selectedAgents` doc** corrected (unresolved are returned + failed, not skipped).
+
 ### Deferred from review (documented, not fixed)
+
+- **[MINOR] machine-scope proposals still consult layered specs** — `roster init --scope machine`
+  builds family PROPOSALS from the layered catalog (built-ins + central + deck), so a deck-only
+  custom family could be proposed for the machine file. Built-in families (the common case) are
+  scope-independent; a deck-only custom family being copied up is the only exposure. The target's
+  own mappings ARE validated (above). A machine-only proposal catalog is a scoped follow-up.
 
 - **[MINOR] `roster diff` subcommand + `autonomous_write` TOML override** (kimi-1) — FINAL §B
   lists `roster diff` (cross-layer skew) and §S3/§C an `autonomous_write` config field. Only

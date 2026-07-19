@@ -217,6 +217,21 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 		fmt.Fprintf(stderr, "roster init: %v\n", err)
 		return 1
 	}
+	// Validate the TARGET file's own existing mappings against the family catalog: a
+	// broken adapter there (e.g. a typo in the machine file that a deck layer happens
+	// to override) must be a hard error, not a silent "already initialized" while the
+	// requested scope stays broken (review MAJOR, codex-1).
+	specs, _ := config.LoadAgentSpecs(root)
+	known := make(map[string]bool, len(specs))
+	for _, s := range specs {
+		known[s.ID] = true
+	}
+	for id, fam := range existing {
+		if !known[fam] {
+			fmt.Fprintf(stderr, "roster init: %s maps %s -> %q, which is not a known agent family — fix that [roster.%s] block\n", targetLabel, id, fam, id)
+			return 1
+		}
+	}
 	var toWrite []rosterMapEntry
 	var unresolved []string
 	for _, r := range rows {
@@ -323,16 +338,20 @@ func writeRosterMappings(target string, toWrite []rosterMapEntry) (int, error) {
 		if _, ok := present[e.id]; ok {
 			continue // a valid mapping already exists (concurrent/repeat guard)
 		}
-		if strings.Contains(content, "[roster."+e.id+"]") {
-			return 0, fmt.Errorf("[roster.%s] already exists in %s but has no valid adapter — fix or remove that block, then re-run", e.id, target)
-		}
 		b.WriteString(fmt.Sprintf("[roster.%s]\nadapter = %q\n", e.id, e.family))
 		wrote++
 	}
 	if wrote == 0 {
 		return 0, nil
 	}
-	return wrote, fsutil.WriteFileAtomic(target, []byte(b.String()), 0o644)
+	candidate := []byte(b.String())
+	// Structurally validate the whole candidate BEFORE the atomic replace so an
+	// existing empty/quoted-key `[roster.<id>]` block that our append would duplicate
+	// is rejected (a duplicate TOML table would break every later load) — review MAJOR.
+	if verr := config.ValidateAgentsConfigBytes(candidate); verr != nil {
+		return 0, fmt.Errorf("refusing to write %s: candidate is invalid (likely a duplicate/malformed [roster.*] table already present): %w", target, verr)
+	}
+	return wrote, fsutil.WriteFileAtomic(target, candidate, 0o644)
 }
 
 func rosterTargetPath(root, scope string) (path, label string) {
