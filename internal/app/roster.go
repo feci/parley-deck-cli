@@ -304,6 +304,14 @@ func writeRosterMappings(target string, toWrite []rosterMapEntry) (int, error) {
 		return 0, err
 	}
 	content := string(prior)
+	// Re-parse under the write to decide presence from the PARSED mapping, not a
+	// substring: an empty/malformed `[roster.<id>]` block (adapter = "") must be a
+	// hard error, never a silent "already initialized" (review MINOR, kimi-1). A
+	// concurrently-written VALID block is skipped (idempotent).
+	present, err := config.RosterAdaptersInFile(target)
+	if err != nil {
+		return 0, err
+	}
 	var b strings.Builder
 	b.WriteString(content)
 	if content != "" && !strings.HasSuffix(content, "\n") {
@@ -312,8 +320,11 @@ func writeRosterMappings(target string, toWrite []rosterMapEntry) (int, error) {
 	b.WriteString("\n# roster-ID -> family adapter map (parley roster init; composite-agent-naming-and-roster-reinit).\n")
 	wrote := 0
 	for _, e := range toWrite {
+		if _, ok := present[e.id]; ok {
+			continue // a valid mapping already exists (concurrent/repeat guard)
+		}
 		if strings.Contains(content, "[roster."+e.id+"]") {
-			continue // already present (concurrent/repeat guard)
+			return 0, fmt.Errorf("[roster.%s] already exists in %s but has no valid adapter — fix or remove that block, then re-run", e.id, target)
 		}
 		b.WriteString(fmt.Sprintf("[roster.%s]\nadapter = %q\n", e.id, e.family))
 		wrote++

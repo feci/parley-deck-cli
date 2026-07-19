@@ -2,15 +2,28 @@ package agents
 
 import (
 	"fmt"
-	"regexp"
+	"strings"
 )
 
-// rosterIDRe is the canonical roster/participant id grammar. Validating the
-// participant before it reaches filepath.Join (artifact paths, run-log dirs)
-// closes a path-traversal hole: a malicious deck could otherwise put
-// `[roster."../../x"]` / a `..`-bearing participant into the idea and make a CLI
-// write outside the deck (review CRITICAL, codex-1).
-var rosterIDRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+// pathSafeParticipant reports whether a participant id is safe to use as a single
+// filepath segment (artifact paths, run-log dirs) — closing a path-traversal hole
+// where a malicious deck could put `[roster."../../x"]` / a `..`-bearing participant
+// into an idea and make a CLI write outside the deck (review CRITICAL, codex-1). It
+// is deliberately a CONTAINMENT check, not the strict §2 grammar, so legacy custom
+// spec ids with `_`/uppercase still resolve (review MINOR, kimi-1); the §2 reader
+// (protocol/roster.go) enforces the stricter roster-id grammar where it matters.
+func pathSafeParticipant(id string) bool {
+	if id == "" || id == "." || id == ".." {
+		return false
+	}
+	if strings.ContainsAny(id, `/\`) || strings.Contains(id, "..") {
+		return false
+	}
+	if strings.HasPrefix(id, ".") || strings.HasSuffix(id, ".") {
+		return false
+	}
+	return true
+}
 
 // ResolveParticipant maps a participant / roster ID (e.g. "claude-1") to a
 // discovered agent, fail-closed. This closes the two-namespace schism: the driver
@@ -28,8 +41,8 @@ var rosterIDRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 // signoffs use the roster ID while launch/vendor dispatch uses the family via
 // Spec.Adapter().
 func ResolveParticipant(participant string, discovered []Discovery, mapping map[string]string) (Discovery, error) {
-	if !rosterIDRe.MatchString(participant) {
-		return Discovery{}, fmt.Errorf("agents: invalid participant id %q (want lowercase [a-z0-9-]; no dots, separators, or path segments)", participant)
+	if !pathSafeParticipant(participant) {
+		return Discovery{}, fmt.Errorf("agents: unsafe participant id %q (no `/`, `\\`, `..`, or leading/trailing dot)", participant)
 	}
 	// (1) exact spec-ID match. Preserve an already-explicit adapter (review MINOR).
 	for _, d := range discovered {

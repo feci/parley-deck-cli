@@ -56,9 +56,16 @@ func TestResolveFailsClosed(t *testing.T) {
 
 func TestResolveRejectsTraversal(t *testing.T) {
 	discovered := []Discovery{disco("claude", true)}
-	for _, bad := range []string{"../../tmp/x", "claude/1", "claude.1", "..", "Claude-1", "-claude"} {
+	// Only genuine path-traversal ids are rejected (containment check).
+	for _, bad := range []string{"../../tmp/x", "claude/1", "..", ".", "", "a..b", ".claude", "claude.", `a\b`} {
 		if _, err := ResolveParticipant(bad, discovered, map[string]string{bad: "claude"}); err == nil {
-			t.Errorf("ResolveParticipant(%q) must reject a non-roster-id (path-safety)", bad)
+			t.Errorf("ResolveParticipant(%q) must reject an unsafe participant id", bad)
+		}
+	}
+	// Legacy safe ids (underscore, uppercase, single dot) still resolve (review MINOR).
+	for _, ok := range []string{"my_cli", "Claude-1", "claude.v1"} {
+		if _, err := ResolveParticipant(ok, []Discovery{disco(ok, true)}, nil); err != nil {
+			t.Errorf("ResolveParticipant(%q) must accept a path-safe legacy id: %v", ok, err)
 		}
 	}
 }

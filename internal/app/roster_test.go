@@ -113,6 +113,20 @@ func TestRosterInitRejectsInvalidMapping(t *testing.T) {
 	}
 }
 
+func TestRosterInitEmptyAdapterBlockErrors(t *testing.T) {
+	root := setupRosterDeck(t)
+	// An existing [roster.claude-1] with an empty adapter must NOT read as "already
+	// initialized" — appending a second block would duplicate the table (review MINOR).
+	deckCfg := filepath.Join(root, protocol.DeckDir, "agents.toml")
+	if err := os.WriteFile(deckCfg, []byte("[roster.claude-1]\nadapter = \"\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	if code := runRoster([]string{"init", "--dir", root, "--yes"}, &out, &errb); code == 0 {
+		t.Fatalf("empty-adapter block must fail, not report success:\n%s / %s", out.String(), errb.String())
+	}
+}
+
 func TestRosterShowAndInit(t *testing.T) {
 	root := setupRosterDeck(t)
 

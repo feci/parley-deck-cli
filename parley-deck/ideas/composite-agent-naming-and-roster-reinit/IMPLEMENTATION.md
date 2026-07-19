@@ -102,8 +102,29 @@ deck whose §2 roster is `claude-1, …` works end-to-end (commit 0cb9936):
 Test `TestAppLevelRosterIDResolution` covers all five + the fail-closed no-mapping case. Full
 suite green (25 pkg, 0 fail).
 
+## Fix-up cycle 3 (review round-01, kimi-1 MINORs)
+
+kimi-1's round-01 review (ACCEPT-WITH-FIXES) corroborated codex's MAJORs (all already fixed in
+cycles 1–2) and added MINORs; fixed:
+
+- **[MINOR] over-strict participant grammar** — `ResolveParticipant` used `^[a-z0-9-]+$`, which
+  rejected legacy custom spec ids (`my_cli`, uppercase). Replaced with a path-safety
+  CONTAINMENT check (`pathSafeParticipant`: no `/ \ ..` or edge dots) that still blocks
+  traversal but accepts safe legacy ids.
+- **[MINOR] roster init silent-success on an empty block** — a `[roster.<id>] adapter = ""`
+  table made `writeRosterMappings` skip via substring and report "already initialized".
+  Presence is now decided from the PARSED mapping; an empty/malformed block is a hard error.
+- **[MINOR] driver_impl fail-open for roster-id decks** — `modelOf` and `discoveryFor` matched
+  raw family ids, so LE-7 goal-check and the LE-3 model-diversity gate silently no-op'd for a
+  roster-id deck. Both now resolve via the mapping.
+
 ### Deferred from review (documented, not fixed)
 
+- **[MINOR] `roster diff` subcommand + `autonomous_write` TOML override** (kimi-1) — FINAL §B
+  lists `roster diff` (cross-layer skew) and §S3/§C an `autonomous_write` config field. Only
+  `show|init` and `model_label` shipped. The autonomous bit is correct in the built-ins but
+  settable only in Go, not per-deck config; and there is no `diff` skew tool. Both are additive
+  features (not correctness bugs) — scoped as an explicit follow-up.
 - **[CRITICAL, contested] autonomous-write confinement honesty** — `AutonomousWrite.Scope="workspace"`
   is asserted from the vendor's own scoping flags (`--add-dir {root}`, `--sandbox
   workspace-write`, cwd), NOT an OS sandbox. Codex's `workspace-write` is a real sandbox;
