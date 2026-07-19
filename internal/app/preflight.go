@@ -78,8 +78,8 @@ type gate struct {
 
 // freshness summarizes the protocol freshness classification.
 type freshness struct {
-	Role        string `json:"role"`
-	DeckVersion string `json:"deckVersion"`
+	Role         string `json:"role"`
+	DeckVersion  string `json:"deckVersion"`
 	LiveSha      string `json:"protocolSha256"`
 	PackagedSha  string `json:"packagedProtocolSha256"`
 	SkillVersion string `json:"skillVersion,omitempty"`
@@ -203,14 +203,12 @@ func attendedRun(auto, yes bool) bool {
 // given participant IDs, in selection order. This is the set that will be written
 // to 00-prompt.md — preflight must evaluate the §1 non-solo hard-stop against it,
 // NOT against every installed agent.
-func participantDiscoveries(discovered []agents.Discovery, participants []string) []agents.Discovery {
-	byID := make(map[string]agents.Discovery, len(discovered))
-	for _, agent := range discovered {
-		byID[agent.ID] = agent
-	}
+func participantDiscoveries(discovered []agents.Discovery, participants []string, mapping map[string]string) []agents.Discovery {
 	out := make([]agents.Discovery, 0, len(participants))
 	for _, id := range participants {
-		if agent, ok := byID[id]; ok {
+		// Resolve roster ids (claude-1) via the [roster.*] mapping as well as bare
+		// family ids, so preflight evaluates the real roster (composite-agent-naming).
+		if agent, err := agents.ResolveParticipant(id, discovered, mapping); err == nil {
 			out = append(out, agent)
 		}
 	}
@@ -230,7 +228,7 @@ func participantDiscoveries(discovered []agents.Discovery, participants []string
 // because it never reads stdin.
 func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, stdout, stderr io.Writer) (int, []string, bool) {
 	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes}
-	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants), stdout, stderr)
+	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants, rosterMappingFor(opts.Root)), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
 		return 1, nil, true

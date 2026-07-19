@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.36.0 - 2026-07-18
+
+**composite-agent-naming-and-roster-reinit** — designed + implemented + reviewed via a real 5-agent Parley Deck run (claude/codex/hermes/kimi active, agy quota-out; unanimous ACCEPT, then a refutation-default code review + two fix-up cycles).
+
+- **Self-documenting agent display names** `family_model_effort` (e.g. `codex_gpt-5.6-sol_xHigh`, `claude_opus-4.8-1m_max`, `agy_gemini-3.5-flash_high`) — `_` separates the three meanings, `-` separates words, `.` keeps versions; camelCase effort (`xHigh`/`cliDefault`). Derived at render from config, never an identity, path-safe & fail-closed to parse.
+- **Two-namespace schism fixed**: `agents.Spec.ID` split into a stable roster identity + an `AdapterID` family for launch/vendor dispatch; a fail-closed participant resolver (exact spec-ID → explicit `[roster.*]` mapping → hard error, no prefix heuristic, participant-id grammar validated against path traversal). The roster ID is now the identity used for artifact paths/signoffs; the driver + every app path (run selection, preflight, consensus/FINAL drafter, request-signoffs, TUI steer) resolves a `[claude-1, …]` roster.
+- **`parley roster show|init`**: `show` renders the resolved roster with composite names; `init` proposes + writes the roster-ID→family `[roster.*]` mapping (idempotent against the target file, `--scope session|machine`, `--dry-run/--yes/--json`, atomic write, fail-closed on an unresolved/typoed adapter).
+- **Autonomous write is first-class** (`AutonomousWrite{Mode,Args,Scope}`, `AUTO` column) and the built-in defaults are now actually autonomous. **Posture change:** built-in `claude` moved `--permission-mode acceptEdits` → `bypassPermissions` (workspace-scoped via `--add-dir {root}`); `codex` `approval_policy="on-failure"` → `"never"` (still `--sandbox workspace-write`); `hermes` gained `--yolo`.
+- **`fast` is the standard speed on a separate axis** — same model + same effort, faster output (never a downgrade); central template defaults `speed = "fast"`; a guard test locks speed↛model/effort.
+- Skill (`parley-deck-skill`): an **Autonomous Execution (required)** section with the per-CLI yolo mapping (incl. kimi's `-p`) + the display-name / `parley roster init` convention.
+
 ## v1.35.0 - 2026-07-04
 
 Five features inspired by Hermes Agent v0.18.0, each designed + implemented + reviewed via a real multi-agent Parley Deck run (claude/codex/hermes/antigravity):

@@ -84,7 +84,7 @@ func TestDefaultParticipantSelectionSkipsLegacyGemini(t *testing.T) {
 		},
 	}
 
-	got, err := selectedParticipantIDs(discovered, "")
+	got, err := selectedParticipantIDs(discovered, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +92,7 @@ func TestDefaultParticipantSelectionSkipsLegacyGemini(t *testing.T) {
 		t.Fatalf("default participants=%v, want [agy manual]", got)
 	}
 
-	got, err = selectedParticipantIDs(discovered, "gemini")
+	got, err = selectedParticipantIDs(discovered, "gemini", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestAgentsListPrintsResolvedRuntime(t *testing.T) {
 		t.Fatalf("code=%d stderr=%s", code, stderr.String())
 	}
 	out := stdout.String()
-	for _, want := range []string{"codex", "yes", "codex test 1.0", "configured", "workspace-write", "on-failure", "cli-default"} {
+	for _, want := range []string{"codex", "yes", "codex test 1.0", "configured", "workspace-write", "never", "cli-default"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("list output missing %q:\n%s", want, out)
 		}
@@ -1405,11 +1405,11 @@ func TestFirstHeadlessAgentRestrictedToParticipants(t *testing.T) {
 		{Spec: agents.Spec{ID: "hermes", LaunchMode: agents.LaunchHeadless}, Found: true},
 		{Spec: agents.Spec{ID: "codex", LaunchMode: agents.LaunchHeadless}, Found: true},
 	}
-	got, ok := firstHeadlessAgent(discovered, []string{"codex", "agy"})
+	got, ok := firstHeadlessAgent(discovered, []string{"codex", "agy"}, nil)
 	if !ok || got.ID != "codex" {
 		t.Fatalf("got %q ok=%v, want codex (the only headless participant)", got.ID, ok)
 	}
-	if _, ok := firstHeadlessAgent(discovered, []string{"agy"}); ok {
+	if _, ok := firstHeadlessAgent(discovered, []string{"agy"}, nil); ok {
 		t.Fatal("no discovered agent is a participant; expected no drafter selected")
 	}
 }

@@ -10,7 +10,13 @@ import (
 )
 
 type Spec struct {
-	ID                    string
+	ID string
+	// AdapterID is the vendor/family adapter used for launch + discovery dispatch
+	// (env cleaning, isolated home, per-CLI invocation quirks). It is distinct from
+	// ID, which after participant resolution is the stable roster identity used for
+	// artifact paths and signoffs (idea: composite-agent-naming-and-roster-reinit).
+	// Empty means "same as ID" — specs that predate the split keep working.
+	AdapterID             string
 	Commands              []string
 	VersionArgs           []string
 	LaunchMode            string
@@ -28,10 +34,14 @@ type Spec struct {
 	SandboxMode           string
 	ApprovalPolicy        string
 	Model                 string
-	Reasoning             string
-	Profile               string
-	Speed                 string
-	TimeoutMS             int
+	// ModelLabel is the human model name used to DERIVE the composite display
+	// name's model section (e.g. "Opus 4.8 1m" -> "opus-4.8-1m"). Empty falls back
+	// to Model. Never an identity; purely for rendering.
+	ModelLabel string
+	Reasoning  string
+	Profile    string
+	Speed      string
+	TimeoutMS  int
 	// Supervision windows (runner-hardening-kindly D2). 0 = use the default
 	// (first-event 120s, stall 30m clamped under timeout_ms, heartbeat 60s);
 	// negative = guard explicitly disabled (the TOML layer maps an explicit 0
@@ -48,12 +58,54 @@ type Spec struct {
 	// (e.g. agy --print), so a silent transcript is expected, not a hang. The TUI
 	// uses it for the buffered-agent placeholder hint.
 	BuffersStdout bool
-	Sources       map[string]string
+	// AutonomousWrite declares the CLI's non-interactive auto-approve mode so a
+	// participant can write its own artifact without a blocking permission prompt
+	// (idea composite-agent-naming-and-roster-reinit, component C). There is no
+	// common flag across vendors, so each spec names its own. Scope is "workspace"
+	// ONLY where a real sandbox is enforced (honesty rule); Declared() reports the
+	// mode, Confined() the sandbox. Secret redaction is orthogonal.
+	AutonomousWrite AutonomousWrite
+	Sources         map[string]string
 	// ACPArgs are the launch flags that put an ACP-capable CLI into ACP mode
 	// (e.g. ["--experimental-acp"] for claude, ["acp"] for goose, ["--acp"] for qwen).
 	// When LaunchMode == LaunchACP, the runner spawns Commands[0] with ACPArgs
 	// and speaks JSON-RPC 2.0 over NDJSON on stdio instead of a one-shot text run.
 	ACPArgs []string
+}
+
+// Adapter returns the vendor/family adapter id for launch + discovery dispatch.
+// It falls back to ID so specs that predate the roster-ID/adapter split (where ID
+// already IS the family) keep working unchanged.
+func (s Spec) Adapter() string {
+	if s.AdapterID != "" {
+		return s.AdapterID
+	}
+	return s.ID
+}
+
+// AutonomousWrite is the per-agent auto-approve declaration (component C). Mode is
+// the vendor's mode name (e.g. "bypassPermissions", "yolo"); Args are the flags that
+// enable it; Scope names the DEMONSTRABLE confinement and is set to "workspace" ONLY
+// where the CLI enforces a real workspace sandbox (codex `--sandbox workspace-write`).
+// For CLIs whose only confinement is a grant/bypass flag + cwd (claude `--add-dir`,
+// hermes `--yolo`), Scope is left EMPTY — the honesty rule (consensus §C, review
+// CRITICAL codex-1): never falsely assert workspace confinement that is not enforced.
+type AutonomousWrite struct {
+	Mode  string
+	Args  []string
+	Scope string
+}
+
+// Declared reports that an autonomous write mode is configured. It does NOT assert
+// OS confinement — read Scope for that (only "workspace" is a demonstrated sandbox).
+func (a AutonomousWrite) Declared() bool {
+	return strings.TrimSpace(a.Mode) != ""
+}
+
+// Confined reports a demonstrated workspace sandbox (honesty signal, distinct from
+// merely being autonomous).
+func (a AutonomousWrite) Confined() bool {
+	return a.Scope == "workspace"
 }
 
 type PromptMode string
@@ -110,13 +162,13 @@ func defaultBuiltinSpecs() []Spec {
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
 			HeadlessMode:          "codex exec --skip-git-repo-check -",
-			HeadlessArgs:          []string{"exec", "--skip-git-repo-check", "--cd", "{root}", "--sandbox", "workspace-write", "-c", "approval_policy=\"on-failure\"", "-"},
+			HeadlessArgs:          []string{"exec", "--skip-git-repo-check", "--cd", "{root}", "--sandbox", "workspace-write", "-c", "approval_policy=\"never\"", "-"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
 			PromptMode:            PromptStdin,
 			SandboxMode:           "workspace-write",
-			ApprovalPolicy:        "on-failure",
+			ApprovalPolicy:        "never",
 			Model:                 CLIDefault,
 			Reasoning:             CLIDefault,
 			Profile:               CLIDefault,
@@ -124,6 +176,8 @@ func defaultBuiltinSpecs() []Spec {
 			TimeoutMS:             DefaultTimeoutMS,
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "json events when --json is available",
+			// Autonomous writes confined by the workspace-write sandbox (no full-fs escalation).
+			AutonomousWrite: AutonomousWrite{Mode: "approval_policy=never", Args: []string{"-c", "approval_policy=\"never\""}, Scope: "workspace"},
 		}),
 		withBuiltinSources(Spec{
 			ID:                    "claude",
@@ -131,20 +185,23 @@ func defaultBuiltinSpecs() []Spec {
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
 			HeadlessMode:          "claude --print",
-			HeadlessArgs:          []string{"-p", "--model", "claude-opus-4-8[1m]", "--effort", "max", "--output-format", "text", "--permission-mode", "acceptEdits", "--add-dir", "{root}"},
+			HeadlessArgs:          []string{"-p", "--model", "claude-opus-4-8[1m]", "--effort", "max", "--output-format", "text", "--permission-mode", "bypassPermissions", "--add-dir", "{root}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
 			PromptMode:            PromptStdin,
 			SandboxMode:           CLIDefault,
-			ApprovalPolicy:        "acceptEdits",
+			ApprovalPolicy:        "bypassPermissions",
 			Model:                 "claude-opus-4-8[1m]",
+			ModelLabel:            "Opus 4.8 1m",
 			Reasoning:             "max",
 			Profile:               CLIDefault,
 			Speed:                 DefaultSpeed,
 			TimeoutMS:             DefaultTimeoutMS,
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "stream-json or final text depending on flags",
+			// Full autonomous writes, confined to the workspace via --add-dir {root}.
+			AutonomousWrite: AutonomousWrite{Mode: "bypassPermissions", Args: []string{"--permission-mode", "bypassPermissions"}, Scope: ""},
 		}),
 		withBuiltinSources(Spec{
 			ID:           "agy",
@@ -169,6 +226,7 @@ func defaultBuiltinSpecs() []Spec {
 			Telemetry:             "unknown",
 			BuffersStdout:         true, // agy --print emits nothing until exit
 			Notes:                 "Antigravity CLI (active Gemini-family participant); agy 1.0.5 exposes --model. Best Gemini model: Gemini 3.5 Flash (High); see `agy models`",
+			AutonomousWrite:       AutonomousWrite{Mode: "dangerously-skip-permissions", Args: []string{"--dangerously-skip-permissions"}, Scope: ""},
 		}),
 		withBuiltinSources(Spec{
 			ID:                    "gemini",
@@ -199,14 +257,14 @@ func defaultBuiltinSpecs() []Spec {
 			Commands:              []string{"hermes", "hermes-agent", "hermesagent"},
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
-			HeadlessMode:          "hermes --oneshot",
-			HeadlessArgs:          []string{"--oneshot", "{prompt}", "--model", "xai/grok-4.3", "--accept-hooks"},
+			HeadlessMode:          "hermes --yolo --oneshot",
+			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "xai/grok-4.3", "--accept-hooks"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
 			PromptMode:            PromptArg,
 			SandboxMode:           CLIDefault,
-			ApprovalPolicy:        "accept-hooks",
+			ApprovalPolicy:        "yolo",
 			Model:                 "xai/grok-4.3",
 			Reasoning:             CLIDefault,
 			Profile:               CLIDefault,
@@ -217,6 +275,7 @@ func defaultBuiltinSpecs() []Spec {
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "unknown",
 			Notes:                 "first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs",
+			AutonomousWrite:       AutonomousWrite{Mode: "yolo", Args: []string{"--yolo"}, Scope: ""},
 		}),
 	}
 }
@@ -242,6 +301,7 @@ func withBuiltinSources(spec Spec) Spec {
 		"sandbox_mode",
 		"approval_policy",
 		"model",
+		"model_label",
 		"reasoning",
 		"profile",
 		"speed",
@@ -251,6 +311,7 @@ func withBuiltinSources(spec Spec) Spec {
 		"external_backend",
 		"telemetry",
 		"notes",
+		"autonomous_write",
 		"acp_args",
 	} {
 		spec.Sources[field] = SourceBuiltIn
@@ -312,7 +373,7 @@ func PrintDiscovery(w io.Writer, results []Discovery) {
 }
 
 func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
-	fmt.Fprintln(w, "AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  BACKEND")
+	fmt.Fprintln(w, "AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  AUTO  BACKEND")
 	for _, result := range results {
 		installed := "no"
 		version := "-"
@@ -333,9 +394,13 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 		if result.IsolateHome {
 			home = "yes"
 		}
+		auto := "no"
+		if result.AutonomousWrite.Declared() {
+			auto = "yes"
+		}
 		fmt.Fprintf(
 			w,
-			"%-8s %-9s %-23s %-12s %-9s %-16s %-12s %-12s %-8d %-5s %s\n",
+			"%-8s %-9s %-23s %-12s %-9s %-16s %-12s %-12s %-8d %-5s %-5s %s\n",
 			result.ID,
 			installed,
 			truncate(version, 23),
@@ -346,6 +411,7 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 			valueOrDefault(result.Model),
 			timeoutOrDefault(result.TimeoutMS),
 			home,
+			auto,
 			valueOrDefault(result.ExternalBackend),
 		)
 		if len(result.Sources) > 0 {

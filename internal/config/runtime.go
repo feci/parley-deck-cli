@@ -23,6 +23,15 @@ type fileConfig struct {
 	Defaults *globalDefaults           `toml:"defaults"`
 	Agents   map[string]agentOverride  `toml:"agents"`
 	Rosters  map[string]rosterOverride `toml:"rosters"`
+	Roster   map[string]rosterAdapter  `toml:"roster"`
+}
+
+// rosterAdapter is one [roster.<roster-id>] block: the family/adapter a roster ID
+// resolves to (composite-agent-naming-and-roster-reinit). NOTE the singular table
+// name `[roster.*]` (the ID->family map) is distinct from the plural `[rosters.*]`
+// participant presets above.
+type rosterAdapter struct {
+	Adapter string `toml:"adapter"`
 }
 
 // rosterOverride is one [rosters.<slug>] block — a named participant preset
@@ -34,9 +43,9 @@ type rosterOverride struct {
 // globalDefaults is the optional [defaults] block of a layered config file —
 // non-agent policy knobs that apply project-wide.
 type globalDefaults struct {
-	Speed              string         `toml:"speed"`
-	PingTier           string         `toml:"ping_tier"`
-	PreferredTransport string         `toml:"preferred_transport"`
+	Speed              string            `toml:"speed"`
+	PingTier           string            `toml:"ping_tier"`
+	PreferredTransport string            `toml:"preferred_transport"`
 	RosterChangePolicy string            `toml:"roster_change_policy"`
 	Timeouts           *timeoutsBlock    `toml:"timeouts"`
 	Loop               *loopBlock        `toml:"loop"`
@@ -106,6 +115,7 @@ type agentOverride struct {
 	SandboxMode           string            `toml:"sandbox_mode"`
 	ApprovalPolicy        string            `toml:"approval_policy"`
 	Model                 string            `toml:"model"`
+	ModelLabel            string            `toml:"model_label"`
 	Reasoning             string            `toml:"reasoning"`
 	Profile               string            `toml:"profile"`
 	Speed                 string            `toml:"speed"`
@@ -181,6 +191,99 @@ func LoadDefaults(root string) (CentralDefaults, error) {
 		}
 	}
 	return out, nil
+}
+
+// LoadRosterAdapters merges `[roster.<id>] adapter = "<family>"` across the layered
+// config files (central < deck < local < env), later layers winning per id. The
+// result feeds the participant resolver so a roster whose IDs are `claude-1`, … can
+// be resolved to families fail-closed (idea composite-agent-naming-and-roster-reinit).
+func LoadRosterAdapters(root string) (map[string]string, error) {
+	out := map[string]string{}
+	for _, item := range configLayers(root) {
+		data, err := os.ReadFile(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		var cfg fileConfig
+		if err := toml.Unmarshal(data, &cfg); err != nil {
+			return out, fmt.Errorf("%s: %w", item.path, err)
+		}
+		for id, ra := range cfg.Roster {
+			if fam := strings.TrimSpace(ra.Adapter); fam != "" {
+				out[id] = fam
+			}
+		}
+	}
+	return out, nil
+}
+
+// RosterAdaptersInFile parses only the `[roster.*]` mappings in a single config
+// file (not the layered stack), so `parley roster init` can decide idempotency
+// against the exact target file it is about to write rather than an inherited
+// layer (review MAJOR, codex-1). A missing file yields an empty map, nil error.
+func RosterAdaptersInFile(path string) (map[string]string, error) {
+	out := map[string]string{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return out, nil
+		}
+		return out, err
+	}
+	var cfg fileConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return out, fmt.Errorf("%s: %w", path, err)
+	}
+	for id, ra := range cfg.Roster {
+		if fam := strings.TrimSpace(ra.Adapter); fam != "" {
+			out[id] = fam
+		}
+	}
+	return out, nil
+}
+
+// MachineFamilyCatalog returns the set of agent families known machine-wide —
+// built-in specs plus the central ~/.parley/agents.toml [agents.*] keys — with NO
+// deck/local/env layer. `parley roster init --scope machine` uses it so a deck-only
+// custom family is never proposed for, written to, or blessed in the central file
+// (consensus §B "never copies deck values up"; review MAJOR, codex-1).
+func MachineFamilyCatalog() (map[string]bool, error) {
+	out := map[string]bool{}
+	for _, s := range agents.DefaultSpecs() {
+		out[s.ID] = true
+	}
+	central := CentralAgentsPath()
+	if central == "" {
+		return out, nil
+	}
+	data, err := os.ReadFile(central)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return out, nil
+		}
+		return out, err
+	}
+	var cfg fileConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return out, fmt.Errorf("%s: %w", central, err)
+	}
+	for id := range cfg.Agents {
+		out[id] = true
+	}
+	return out, nil
+}
+
+// ValidateAgentsConfigBytes reports whether data parses as a valid agents.toml
+// document. `parley roster init` calls it on the candidate BEFORE the atomic
+// replace, so a candidate that would install a duplicate or malformed `[roster.*]`
+// table (e.g. against an existing quoted-key empty block) is rejected instead of
+// silently breaking every later config load (review MAJOR, codex-1).
+func ValidateAgentsConfigBytes(data []byte) error {
+	var cfg fileConfig
+	return toml.Unmarshal(data, &cfg)
 }
 
 func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
@@ -283,7 +386,7 @@ func centralDefaultTemplate() string {
 	b.WriteString("# strongest (highest) reasoning level each agent supports.\n\n")
 	b.WriteString("# Project-wide policy defaults; a deck's parley-deck/agents.toml overrides them.\n")
 	b.WriteString("[defaults]\n")
-	b.WriteString("speed = \"deep\"\n")
+	b.WriteString("speed = \"fast\"                             # fast output at the SAME model+effort (Claude Code /fast), NOT a downgrade; a separate axis from reasoning. Use \"deep\" per idea for heavy work.\n")
 	b.WriteString("ping_tier = \"hosted-pong\"                 # §9.0 roster liveness ping before each idea (or \"none\")\n")
 	b.WriteString("preferred_transport = \"local-dir\"          # parley init default transport (local-dir|github-pr|gitlab-mr)\n")
 	b.WriteString("roster_change_policy = \"confirm-breaking\"  # auto-add new agents; user confirms drops/breaking changes\n\n")
@@ -491,6 +594,10 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 	if override.Model != "" {
 		spec.Model = override.Model
 		spec.Sources["model"] = source
+	}
+	if override.ModelLabel != "" {
+		spec.ModelLabel = override.ModelLabel
+		spec.Sources["model_label"] = source
 	}
 	if override.Reasoning != "" {
 		spec.Reasoning = override.Reasoning

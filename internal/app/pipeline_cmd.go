@@ -336,7 +336,7 @@ func runPipelineRunBlock(ctx context.Context, args []string, stdout, stderr io.W
 	if strings.TrimSpace(participantsArg) == "" {
 		participantsArg = strings.Join(m.Participants, ",")
 	}
-	participants, err := selectedParticipantIDs(discovered, participantsArg)
+	participants, err := selectedParticipantIDs(discovered, participantsArg, rosterMappingFor(*root))
 	if err != nil {
 		fmt.Fprintf(stderr, "participant selection failed: %v\n", err)
 		return 1
@@ -691,7 +691,7 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
 			pArg = strings.Join(m.Participants, ",")
 		}
 	}
-	participants, err := selectedParticipantIDs(discovered, pArg)
+	participants, err := selectedParticipantIDs(discovered, pArg, rosterMappingFor(root))
 	if err != nil {
 		fmt.Fprintf(stderr, "auto: participant selection failed: %v\n", err)
 		return 1
@@ -756,7 +756,7 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 			pArg = strings.Join(m.Participants, ",")
 		}
 	}
-	participants, err := selectedParticipantIDs(discovered, pArg)
+	participants, err := selectedParticipantIDs(discovered, pArg, rosterMappingFor(root))
 	if err != nil {
 		fmt.Fprintf(stderr, "auto: participant selection failed: %v\n", err)
 		return 1

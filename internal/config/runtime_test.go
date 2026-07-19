@@ -99,11 +99,15 @@ func TestCodexBuiltInRuntimeDefaults(t *testing.T) {
 	if codex.SandboxMode != "workspace-write" {
 		t.Fatalf("sandbox=%q", codex.SandboxMode)
 	}
-	if codex.ApprovalPolicy != "on-failure" {
+	// Autonomous default (composite-agent-naming S4): never-ask, workspace-sandboxed.
+	if codex.ApprovalPolicy != "never" {
 		t.Fatalf("approval=%q", codex.ApprovalPolicy)
 	}
-	if strings.Join(codex.HeadlessArgs, " ") != "exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy=\"on-failure\" -" {
+	if strings.Join(codex.HeadlessArgs, " ") != "exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy=\"never\" -" {
 		t.Fatalf("headless args=%v", codex.HeadlessArgs)
+	}
+	if !codex.AutonomousWrite.Declared() {
+		t.Fatalf("codex autonomous_write not declared: %+v", codex.AutonomousWrite)
 	}
 	if codex.Model != agents.CLIDefault || codex.Reasoning != agents.CLIDefault || codex.Profile != agents.CLIDefault {
 		t.Fatalf("unexpected model/reasoning/profile: %+v", codex)

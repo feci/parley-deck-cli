@@ -112,7 +112,7 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	if err != nil {
 		return err
 	}
-	selected, err := requestSignoffAgents(targets, discovered)
+	selected, err := requestSignoffAgents(targets, discovered, rosterMappingFor(opts.Root))
 	if err != nil {
 		return err
 	}
@@ -248,19 +248,14 @@ func requestSignoffTargets(summary consensus.Summary, raw string) ([]string, boo
 	return targets, true, nil
 }
 
-func requestSignoffAgents(targets []string, discovered []agents.Discovery) ([]agents.Discovery, error) {
-	byID := make(map[string]agents.Discovery, len(discovered))
-	for _, result := range discovered {
-		byID[result.ID] = result
-	}
+func requestSignoffAgents(targets []string, discovered []agents.Discovery, mapping map[string]string) ([]agents.Discovery, error) {
 	selected := make([]agents.Discovery, 0, len(targets))
 	for _, target := range targets {
-		agent, ok := byID[target]
-		if !ok {
-			return nil, fmt.Errorf("%w: participant %s has no configured runner entry", errRequestUsage, target)
-		}
-		if !agent.Found {
-			return nil, fmt.Errorf("%w: participant %s runner is not installed", errRequestUsage, target)
+		// Resolve a roster id (claude-1) via the [roster.*] mapping or a bare family
+		// id; ResolveParticipant already requires the agent to be installed/found.
+		agent, err := agents.ResolveParticipant(target, discovered, mapping)
+		if err != nil {
+			return nil, fmt.Errorf("%w: participant %s has no configured/installed runner entry (%v)", errRequestUsage, target, err)
 		}
 		selected = append(selected, agent)
 	}

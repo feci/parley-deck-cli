@@ -116,10 +116,15 @@ func (o driverImplOps) withParticipants(ids ...string) runner.Options {
 	return opts
 }
 
-// modelOf returns the discovered model id for an agent id, or "" if unknown.
+// modelOf returns the configured model id for an agent id, or "" if unknown. It
+// matches the id directly OR its mapped family (claude-1 -> claude) so the LE-3
+// model-diversity gate is not silently disabled for a roster-id deck (review MINOR,
+// kimi-1). It does NOT require the agent to be installed — the configured model
+// counts for the diversity comparison regardless of discovery.
 func (o driverImplOps) modelOf(id string) string {
+	family := rosterMappingFor(o.root)[id]
 	for _, a := range o.base.Agents {
-		if a.ID == id {
+		if a.ID == id || (family != "" && a.ID == family) {
 			return a.Model
 		}
 	}
@@ -350,10 +355,13 @@ func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
 	}, nil
 }
 
-// discoveryFor returns the discovered agent for an id.
+// discoveryFor returns the discovered agent for an id, matching the id directly OR
+// its mapped family (claude-1 -> claude) so the LE-7 goal-check is not silently
+// skipped for a roster-id deck (review MINOR, kimi-1).
 func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
+	family := rosterMappingFor(o.root)[id]
 	for _, a := range o.base.Agents {
-		if a.ID == id {
+		if a.ID == id || (family != "" && a.ID == family) {
 			return a, true
 		}
 	}

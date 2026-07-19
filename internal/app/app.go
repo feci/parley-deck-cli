@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -96,6 +97,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runClassify(args[1:], stdout, stderr)
 	case "preset":
 		return runPreset(args[1:], stdout, stderr)
+	case "roster":
+		return runRoster(args[1:], stdout, stderr)
 	case "tui":
 		return runTUI(ctx, args[1:], stdout, stderr)
 	default:
@@ -1806,7 +1809,20 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		}
 	}
 
-	participants, err := selectedParticipantIDs(discovered, *participantsFlag)
+	// Default the participant set to the INSTALLED, ACTIVE subset of the §2 roster
+	// (roster IDs like claude-1), not the raw installed family ids.
+	if strings.TrimSpace(*participantsFlag) == "" {
+		ids, hadRoster, derr := defaultRosterParticipants(*root, discovered)
+		if derr != nil {
+			fmt.Fprintln(stderr, derr)
+			return 1
+		}
+		if hadRoster {
+			*participantsFlag = strings.Join(ids, ",")
+		}
+	}
+
+	participants, err := selectedParticipantIDs(discovered, *participantsFlag, rosterMappingFor(*root))
 	if err != nil {
 		fmt.Fprintf(stderr, "participant selection failed: %v\n", err)
 		return 1
@@ -2386,16 +2402,36 @@ func installedAgentIDs(discovered []agents.Discovery) []string {
 	return ids
 }
 
-func selectedParticipantIDs(discovered []agents.Discovery, raw string) ([]string, error) {
+// defaultRosterParticipants computes the default participant set for a no-flag run
+// (review MAJOR, codex-1): the INSTALLED, ACTIVE subset of the §2 roster, as roster
+// ids. hadRoster is false when there is no readable §2 roster (the caller then falls
+// back to installed families, legacy). A readable roster whose active members do not
+// resolve is a hard error (never launch unrelated installed agents); ids explicitly
+// marked inactive are excluded (protocol inactive-retention).
+func defaultRosterParticipants(root string, discovered []agents.Discovery) (ids []string, hadRoster bool, err error) {
+	active, inactive, ok := protocol.ReadRosterIDs(root)
+	if !ok || len(active) == 0 {
+		return nil, false, nil
+	}
+	mapping := rosterMappingFor(root)
+	for id := range active {
+		if inactive[id] {
+			continue
+		}
+		if _, rerr := agents.ResolveParticipant(id, discovered, mapping); rerr == nil {
+			ids = append(ids, id)
+		}
+	}
+	sort.Strings(ids)
+	if len(ids) == 0 {
+		return nil, true, fmt.Errorf("no active §2 roster member resolves to an installed agent — run `parley roster init` or pass --participants")
+	}
+	return ids, true, nil
+}
+
+func selectedParticipantIDs(discovered []agents.Discovery, raw string, mapping map[string]string) ([]string, error) {
 	if strings.TrimSpace(raw) == "" {
 		return installedAgentIDs(discovered), nil
-	}
-
-	installed := map[string]bool{}
-	for _, result := range discovered {
-		if result.Found {
-			installed[result.ID] = true
-		}
 	}
 
 	var selected []string
@@ -2405,8 +2441,11 @@ func selectedParticipantIDs(discovered []agents.Discovery, raw string) ([]string
 		if id == "" || seen[id] {
 			continue
 		}
-		if !installed[id] {
-			return nil, fmt.Errorf("%s is not an installed agent", id)
+		// Accept either an installed family id (legacy) or a roster id that resolves
+		// via the [roster.*] mapping — fail-closed (composite-agent-naming: without
+		// this, `parley run --participants claude-1` wrongly rejected the roster id).
+		if _, err := agents.ResolveParticipant(id, discovered, mapping); err != nil {
+			return nil, fmt.Errorf("%s is not an installed agent or a mapped roster id: %w", id, err)
 		}
 		selected = append(selected, id)
 		seen[id] = true
