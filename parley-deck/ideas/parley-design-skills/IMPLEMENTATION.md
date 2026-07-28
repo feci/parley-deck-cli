@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-3
+status: fix-up-cycle-4
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: 8ebd8f7
+head-commit: 17f6619
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -108,7 +108,7 @@ them.
 ## Fix-up cycle 1 — the agreed fixes AF-1..AF-9
 status: superseded by cycle 2
 completed: 2026-07-28
-head-commit: 8ebd8f7
+head-commit: 17f6619
 
 ### Fixes applied
 Conformance levels modelled as explicit obligation sets, so a level cannot be certified on
@@ -181,7 +181,7 @@ C3), 250 bytes spare. `RULES.md` is untouched, so the declared `registry-digest`
 ## Fix-up cycle 3 — the two residuals cycle 2 left open
 status: complete
 completed: 2026-07-28
-head-commit: 8ebd8f7
+head-commit: 17f6619
 
 ### Fixes applied
 - A `disposition: waived` answer now requires a waiver entry whose scope actually covers the
@@ -208,3 +208,71 @@ recorded as a non-claim in the checker's `SKILL.md` and surfaced per run.
 
 ### Verification
 `npm test`: 197 passing, 0 failing (158 at review, 182 after cycle 1, 192 after cycle 2).
+
+## Fix-up cycle 4 — the round-02 re-review blocks
+
+Round-02 produced 2 CRITICAL + 1 MAJOR from codex-1 and 1 MAJOR + 1 MINOR from hermes-1.
+Every reproducer codex-1 published was re-run through `bin/check.js` before and after.
+
+### Fixes applied
+
+- **C-1, six forgeable-certificate holes (AF-1).**
+  - G1 now counts differences over the brief's declared axes and checks every declared
+    position against the brief's enumeration, so an invented axis is a violation rather than
+    a second difference (`checkG1`).
+  - The §4 rule 2 rotation runs over the deduplicated primary positions, and a brief that
+    lists a position twice fails the assignment (`checkAssignment`).
+  - `pds-check:l2-process-order` reads each artifact against §1's mapping — DIRECTION in
+    `round-01`, CRITIQUE in `round-02`, `DESIGN-BRIEF.md`, `consensus.md`, `FINAL.md` — so
+    swapped rounds no longer verify (`PROCESS_HOMES`).
+  - A gate recorded `pass` is recomputed for G3 and G4 from the run's own outcomes: open
+    `system` rules plus the token-graph conjuncts for G3, open `quality` rules for G4
+    (`gateRefutations`). PDS §1 rule 2 now states this normatively.
+  - The stylesheet scanner is quote- and escape-aware, so `content: "}"` no longer closes a
+    block and hides the declarations after it (`lib/css.js`).
+  - A file declaring the spec under a kind §2 does not define is a candidate artifact and
+    fails the new `pds-check:l1-artifact-kind` obligation. A file declaring the spec and no
+    kind stays uninspected: that is how `PDS.md` and `RULES.md` declare the spec they define,
+    and PDS §2 rule 1 now says so, so the checker never manufactures findings against the
+    doctrine itself.
+- **C-2, the waived work's author counter-signing (AF-2).** A scope is resolved to its
+  protocol owner through §1's naming (`round-0N/<agent>.*` belongs to `<agent>`), and a
+  counter-signer matching that owner is rejected. A counter-signer the run records only
+  through an artifact that signer wrote itself is also rejected, reusing the corroboration
+  set recusal already reports. PDS §8 rule 2 defines both, and states that work §1 gives no
+  owner has no author to exclude — otherwise a waiver on ordinary source could never be
+  counter-signed at all.
+- **C-3, the single-agent fast path.** Resolved as *outside* Parley. PDS §4 rule 8 and
+  `SKILL.md` now say a fast-path run is not a Parley Deck workflow (`COOPERATION.md` §1 makes
+  multi-agent execution mandatory, §0.3 rule 2 gives it the process), MUST NOT claim Parley
+  verification and MUST NOT claim a level above L1. The dispatcher row is labelled
+  accordingly, so nothing implies a solo Parley run.
+- **H-1, `waivers: ""` crashed the checker (EISDIR, exit 2).** An empty path field names no
+  file and the run continues. The same guard covers `tokens: ""` on the CONTRACT and on a
+  DIRECTION, which hermes-1's open question asked about, and every resolved path is confirmed
+  to be a file before it is read.
+- **H-2, alias direction.** Implemented rather than dropped. PDS §3 G3 defines it by group
+  name — `primitive`, `semantic`, `component`; a reference points down that order and a
+  primitive holds a value, never another primitive — and states that a document naming none
+  of those groups declares no direction, so the conjunct is vacuous rather than failed. The
+  checker enforces it as `pds-check:l3-alias-direction`. FINAL.md and the shipped spec now
+  agree.
+
+### Deviations from the review's literal remedies
+codex-1 asked that an unknown **or missing** kind be an L1 violation. A missing kind is not
+treated as one: `PDS.md` and `RULES.md` both declare `spec: PDS/1.0` with no `kind`, and
+flagging that would make the doctrine fail its own checker. The line is drawn at a kind that
+is present and undefined, which is the reproducer, and PDS §2 rule 1 states the distinction.
+
+### Byte budget
+The doctrine grew by the new normative text and was compressed to pay for it: 65,374 → 65,364
+of 65,536 bytes (SKILL 6,519 · PDS 25,598 · RULES 23,225 · WEB-ANNEX 10,022). No per-file
+threshold moved. `RULES.md` changed, so `PDS.md`'s `registry-digest` was recomputed to
+`b49ff596451f` in the same commit (§11 rule 3).
+
+### Verification
+`npm test`: 212 passing, 0 failing (197 before this cycle). Fifteen new tests, one per hole
+plus the passing-side controls; each was proved to fail against the pre-fix code by reverting
+that fix alone and re-running only its covering tests. All ten of codex-1's and hermes-1's
+reproducers were re-run through `bin/check.js`: every one that returned PASS/exit 0 before now
+returns a violation and an unverified level, and the `waivers: ""` crash now exits 0 clean.

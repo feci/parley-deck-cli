@@ -101,3 +101,20 @@ None.
 ## Signoffs
 
 <!-- Each participant appends its own block below. Do not edit another agent's block. -->
+
+### Signoff: codex-1 — 2026-07-28
+Status: ❌ BLOCK
+Notes: AF-1 and AF-2 are not genuinely closed. L1/L2/L3 can still certify invalid inputs or
+unverified gate conditions, and the author of waived work can still counter-sign the waiver.
+The one-agent fast path also contradicts the binding non-solo protocol.
+Counter-proposal (required if ❌): Apply the concrete fixes and regression fixtures in
+review/round-02/codex-1.md, then run another full-scope re-review.
+
+### Signoff: hermes-1 — 2026-07-28
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: All 10 agreed fixes (AF-1..AF-10) verified as landed with real commands. All 4 residual self-attestation doors (R-1..R-4) closed. One new MAJOR: `waivers: ""` in a CONTRACT crashes the checker (EISDIR, exit 2) — a valid value per the spec's own canonical frontmatter subset, fix is a one-line guard in engine.js line 1440. One MINOR residual: FINAL.md requires "alias direction" in L3 token integrity but PDS.md G3 dropped it and the checker never implemented it; this was my round-01 MINOR, accepted into the fix-up pass, and never landed. Neither blocks merge; both have concrete one-line fixes. D-1 accepted: 64 KiB total held (65286/65536), RULES.md headroom improved from 30 bytes to 1004 bytes. All cross-reviewer findings from codex-1 and kimi-1 are genuinely closed.
+
+### Signoff: kimi-1 — 2026-07-28
+Status: ❌ BLOCK
+Notes: On the pristine reviewed tree (8ebd8f7, named by 8fc3a18) I reproduced codex-1's two CRITICALs with my own commands: six paths to clean L1/L2/L3 certificates on evidence never obtained (rounds swapped, invented non-brief axis, duplicate primary values, G3/G4 recorded-pass overriding the checker's own findings, CSS quoted-brace hiding a raw colour, unknown artifact kind uninspected — four exit 0), and a waiver counter-signed by the waived work's own author suppressing its finding (PASS, exit 0). hermes-1's new MAJOR reproduces (waivers: "" → EISDIR crash; I found tokens: "" crashes the same way at a second site). AF-3..AF-8 closed, AF-9 partially (rotation genuinely recomputed; two residual holes are codex-1's findings). The doctrine layer conforms to the ratified protocol everywhere my lens checked — mapping, gates, ritual, roles, levels, and the four-part artifact shape all hold; the failure is confined to the checker's verification. Note: the skill worktree was patched mid-review (uncommitted in-flight fixes that do catch every reproduced probe); I pinned all adjudication to a git archive of 8ebd8f7, and those fixes are not yet a reviewable commit. Full evidence in review/round-02/kimi-1.md.
+Counter-proposal (required if ❌): Commit the in-flight fixes (or equivalent) closing the six AF-1 certificate paths and the AF-2 author-counter-signature hole — position keys/values validated against the brief's axes, materially-distinct primary positions enforced, artifact paths validated against §1's mapping, crossed-gate rule outcomes feeding level obligations, quote-aware CSS scanning, unknown kinds failing L1, and waiver counter-signers rejected when they authored the scoped work — plus the empty-string guards for waivers/tokens, each with a negative fixture; then run a cycle-4 re-review against the new commit.
