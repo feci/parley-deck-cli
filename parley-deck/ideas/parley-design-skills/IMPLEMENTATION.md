@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-9
+status: fix-up-cycle-10
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: aa6b9b3
+head-commit: 076ded5
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -414,3 +414,44 @@ An at-rule classifiable as neither rule- nor declaration-holding; a hex escape i
 that eats the newline (pre-existing, unchanged); `@starting-style` nested in a rule attributes
 its declarations to the enclosing rule, which loses nothing because the browser applies them.
 Each is asserted in a test and exits 4 rather than passing.
+
+## Fix-up cycle 10 — the token class, closed by enumeration
+status: complete
+completed: 2026-07-29
+head-commit: 076ded5
+
+### Fixes applied
+Round-06: codex-1 and kimi-1 independently found `#url(` and `@url(` bypassing the matched-block
+stack to forge a clean L3 over a Chromium-applied colour; codex-1 found `<style>` selector text
+still manufacturing undeclared `var()` references.
+
+Ten rounds of reviewer-finds-the-next-bypass is not convergence. Cycle 9 closed the structural
+class by building the block model; this closes the token class the same way — by enumerating the
+CSS Syntax Level 3 §4 token types and checking the scanner against the list. Hash and at-keyword
+tokens are bound before ident-like URL detection, and at-rule names are decoded rather than
+matched as written.
+
+**The enumeration found three OPENs no reviewer had**: a bad-string remnant opening a phantom
+rule, a hex escape inside a string swallowing the newline (previously mis-reported as guarded),
+and an escaped dimension unit flattening into the number before it. The per-token-type verdict
+table lives in the cycle-10 agent report; it is the artifact that lets a reviewer check the
+class rather than guess another member.
+
+### A filed remedy implemented, measured, and reverted
+codex-1's second remedy for the MAJOR was to narrow markup `var()` discovery to `style`
+attributes and supported utility brackets. Implemented and measured over 2,113 markup files, it
+lost **1,799 references across 203 files** that a browser resolves. The false clean it bought was
+larger than the false finding it closed, so only the `<style>` excision was taken. The departure
+is recorded in the code and the test rather than quietly made.
+
+### Verification
+`npm test` 233 → 237. Differential against real headless Chromium over 136 constructs: 126 read,
+0 guarded, 10 inert, **0 silent holes**. The over-read direction was measured separately: 134
+agree, 2 silent over-reads, both at the declared `T1 SOURCE` tier boundary. Real-world sweeps:
+521 stylesheets (6.7 MB) with 0 newly unreadable; 2,113 markup files (39 MB) with 0 token
+references gained or lost.
+
+### Remaining OPENs — named, both over-report rather than false-clean
+An escaped exponent in a dimension unit (`1\65 5`), which needs a token-boundary-aware value
+representation rather than a tokeniser fix; and declarations the scanner reads that Chromium
+discards as invalid, which is the declared `T1 SOURCE` tier boundary rather than a scanner defect.
