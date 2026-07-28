@@ -8,7 +8,7 @@ roles:
   codex-1: parley-design-check — enforcement tooling, rule-registry format, engine tiers, false positives, gate semantics
   hermes-1: the doctrine content itself — which design rules belong, artifact/token schema, standards alignment (DTCG, WCAG)
   kimi-1: the collaborative ritual and protocol shape — diverge/critique/decide/graft, anti-design-by-committee, conformance
-status: round-01
+status: final
 track: deliberation
 ---
 
