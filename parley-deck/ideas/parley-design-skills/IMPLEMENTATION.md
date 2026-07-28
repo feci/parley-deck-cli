@@ -108,7 +108,7 @@ them.
 ## Fix-up cycle 1 — the agreed fixes AF-1..AF-9
 status: superseded by cycle 2
 completed: 2026-07-28
-head-commit: f1c123d
+head-commit: 8ebd8f7
 
 ### Fixes applied
 Conformance levels modelled as explicit obligation sets, so a level cannot be certified on
@@ -133,6 +133,9 @@ the total, not as a partition — which also closes a reviewer NIT that they nev
 not reproduce after — not that a test passes.
 
 ## Fix-up cycle 2 — the four residual self-attestation doors
+status: superseded by cycle 3
+completed: 2026-07-28
+head-commit: 8ebd8f7
 
 An adversarial re-probe of cycle 1 found seven findings fixed, two partial and two new. All
 four were reproduced before being fixed, and each carries a fixture that fails against the
@@ -181,7 +184,7 @@ C3), 250 bytes spare. `RULES.md` is untouched, so the declared `registry-digest`
 ## Fix-up cycle 3 — the two residuals cycle 2 left open
 status: complete
 completed: 2026-07-28
-head-commit: f1c123d
+head-commit: 8ebd8f7
 
 ### Fixes applied
 - A `disposition: waived` answer now requires a waiver entry whose scope actually covers the
@@ -210,6 +213,9 @@ recorded as a non-claim in the checker's `SKILL.md` and surfaced per run.
 `npm test`: 197 passing, 0 failing (158 at review, 182 after cycle 1, 192 after cycle 2).
 
 ## Fix-up cycle 4 — the round-02 re-review blocks
+status: superseded by cycle 5
+completed: 2026-07-28
+head-commit: 17f6619
 
 Round-02 produced 2 CRITICAL + 1 MAJOR from codex-1 and 1 MAJOR + 1 MINOR from hermes-1.
 Every reproducer codex-1 published was re-run through `bin/check.js` before and after.
@@ -280,7 +286,7 @@ returns a violation and an unverified level, and the `waivers: ""` crash now exi
 ## Fix-up cycle 5 — round-03 findings
 status: superseded by cycle 6
 completed: 2026-07-28
-head-commit: f1c123d
+head-commit: e3ca916
 
 ### Fixes applied
 - L2 ignored the per-direction token sidecars entirely: two DIRECTIONs could name one shared
@@ -301,7 +307,7 @@ reproducer, so all three are independently load-bearing.
 ## Fix-up cycle 6 — the tokenisation family, closed as a class
 status: superseded by cycle 7
 completed: 2026-07-28
-head-commit: f1c123d
+head-commit: e3ca916
 
 ### Fixes applied
 Four holes in one family had been found one at a time by reviewer probes, each making a
