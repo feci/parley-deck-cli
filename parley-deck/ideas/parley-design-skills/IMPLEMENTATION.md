@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-8
+status: fix-up-cycle-9
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: f1c123d
+head-commit: aa6b9b3
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -377,3 +377,34 @@ frontmatter in place instead of recording each cycle at the commit it was verifi
 that cycles were being omitted. Both are corrected here: every cycle now carries its own
 commit and the frontmatter names only the current head. The audit trail is the point of the
 record, and rewriting a historical identity destroys it.
+
+## Fix-up cycle 9 — the block model, replacing nine cycles of special cases
+status: complete
+completed: 2026-07-29
+head-commit: aa6b9b3
+
+### Fixes applied
+Round-05 refuted the zero-silent-holes claim (codex-1: a nested curly matched block), caught a
+false positive cycle 8 had introduced (decoding whole lines manufactured `var()` uses from
+ordinary Tailwind-style escaped selector text), and found `@scope` bare declarations applied by
+the browser and passed by the checker (hermes-1).
+
+Nine cycles had closed members of one family one at a time, and each round a reviewer found the
+next. This cycle stops that: the accumulated special cases are replaced by one matched-bracket
+stack per css-syntax-3 §5.4.4, and the stack alone decides what a brace means. Declaration-holding
+at-rules are modelled as declaration blocks; an at-rule the scanner can classify as neither rules
+nor declarations is guarded rather than discarded. `var()` uses come from parsed declaration
+values. There is no per-construct branch left.
+
+### Verification
+`npm test` 230 → 233. Differential against real headless Chromium over 86 constructs: **before
+5 silent holes, after 0**. False-positive diff over 46 fixture runs: 0 new, 0 lost, 0 newly
+unreadable. A wider sweep over 278 real stylesheets (2.0 MB): 0 newly unreadable, 38 files now
+reading declarations previously dropped — and it caught a false alarm that would otherwise have
+shipped, the new at-rule guard firing on Tailwind v4 `@theme` in 32 files.
+
+### Remaining gaps — guarded, not silent
+An at-rule classifiable as neither rule- nor declaration-holding; a hex escape inside a string
+that eats the newline (pre-existing, unchanged); `@starting-style` nested in a rule attributes
+its declarations to the enclosing rule, which loses nothing because the browser applies them.
+Each is asserted in a test and exits 4 rather than passing.
