@@ -3,25 +3,40 @@
 
 [agents.codex]
 sandbox_mode = "workspace-write"
-approval_policy = "on-failure"
-model = "cli-default"
-reasoning = "cli-default"
+approval_policy = "never"
+model = "gpt-5.6-sol"        # pinned 2026-07-28; matches ~/.codex/config.toml
+reasoning = "xhigh"          # highest codex effort; matches config model_reasoning_effort
 profile = "cli-default"
 speed = "balanced"
 timeout_ms = 1800000
 external_backend = "hosted"
 
 [agents.claude]
-model = "opus"
+model = "claude-opus-5[1m]"  # pinned 2026-07-28; exact id, NOT the 'opus' alias
 reasoning = "max"
 profile = "cli-default"
 speed = "balanced"
 timeout_ms = 1800000
 external_backend = "hosted"
 
-# Antigravity CLI (agy) is the active Gemini-family participant; the legacy
-# `gemini` CLI has been retired from the roster. agy 1.0.5 exposes `--model`;
-# use the best available Gemini model.
+# Kimi Code — the active 4th participant since 2026-07-18 (replaced agy per user
+# instruction). Headless is plain `kimi -p "<prompt>"`: `--yolo`/`--auto` are mutually
+# exclusive with `-p`, and `-p` already auto-approves in-workspace writes. Model and
+# effort come from ~/.kimi-code/config.toml, so no per-invocation flag is needed.
+# parley 1.36 treats kimi as an ACP backend (AUTO=no) — invoke it manually, and do NOT
+# run `parley roster init` (it fail-closes and would drop kimi-1 for antigravity-1).
+[agents.kimi]
+model = "kimi-code/k3"
+reasoning = "max"            # K3 default_effort (strongest)
+profile = "cli-default"
+speed = "deep"
+timeout_ms = 2400000         # kimi is the slowest participant (~20 min/round)
+external_backend = "hosted"
+headless_args = ["-p", "{prompt}"]
+
+# Antigravity CLI (agy) — INACTIVE since 2026-07-18 (user instruction, reaffirmed
+# 2026-07-21): the 4th roster slot is kimi-1. Kept so historical artifacts resolve.
+# agy 1.0.5 exposes `--model`; use the best available Gemini model if reactivated.
 [agents.agy]
 model = "Gemini 3.5 Flash (High)"
 reasoning = "cli-default"
@@ -37,7 +52,7 @@ model = "glm-5p2"
 # Override the built-in headless args (which hardcode --model xai/grok-4.3) so the
 # actual invocation runs GLM 5.2. Keep {prompt} (runner-substituted) and --accept-hooks.
 headless_args = ["--oneshot", "{prompt}", "--model", "glm-5p2", "--accept-hooks"]
-reasoning = "cli-default"
+reasoning = "high"           # enforced in ~/.hermes/config.yaml (agent.reasoning_effort=high)
 profile = "cli-default"
 speed = "balanced"
 timeout_ms = 1800000
