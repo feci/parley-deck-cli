@@ -68,13 +68,15 @@ implementation chose differently from the written spec.
 
 **D-2 — `enforced-by: check` rules without a detector.**
 FINAL.md requires that such a rule report `UNJUDGEABLE` rather than pass silently, and it
-does. Eight rules are in that state, not five: `core:text-below-legible-floor`,
+does. Nine rules are in that state, not five: `core:contrast-applied` (`T2 RENDERED`, so it
+reports `UNJUDGEABLE` on tier grounds regardless — the count omitted it until hermes-1 caught
+it in review round-07), `core:text-below-legible-floor`,
 `core:unlabelled-inference`, `core:value-off-scale`, `core:colour-off-ramp` and
 `web:viewport-hero` report "no detector implements this rule", and `web:contrast-ratio`,
 `web:target-size` and `web:reflow-narrow` are equally undetected here, reported instead
 under the tier that is above this checker (kimi-1, round-01). For the two threshold rules the
 reason is structural — their numbers live in annex prose, and copying a calibration into a
-tool creates the second representation this project rejected in C2. All eight are visible in
+tool creates the second representation this project rejected in C2. All nine are visible in
 the generated capability output rather than hidden, and the two `system`-class ones are named
 on any L3 result as `system-rules-not-decided`, so a verified level is never read without
 them.
