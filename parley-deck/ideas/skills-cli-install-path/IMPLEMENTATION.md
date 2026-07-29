@@ -998,3 +998,82 @@ genuinely broken path still **runs and fails** rather than being refused. Suite 
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
 reviewer, confirmed by me after it was cut off) · r15: 1 (refuted a claim of mine) · r16: 5
 across 4 reviewers (two more refuted claims of mine)`.
+
+## Round 17 and cycles 19–21 — reviewing the parser, not the scanner
+
+Round 17 reviewed the rewrite. Three reviewers; `agy-1` could not take part.
+
+| reviewer | verdict |
+|---|---|
+| `codex-1` | ❌ BLOCK — 1 MAJOR, 1 MINOR |
+| `kimi-1` | ❌ BLOCK — 1 MAJOR, 1 MINOR |
+| `hermes-1` | 🟡 ACCEPT WITH RESERVATIONS — 1 MAJOR, 2 NIT |
+| `agy-1` | **no signoff — tool outage** |
+
+**`agy-1` outage.** After two complete review rounds it returned
+`Error: Individual quota reached … Resets in 158h59m` (~6.6 days). It is an account quota, not
+a per-model limit: a one-word prompt fails the same way, so there was no cheaper fallback and
+no point retrying. Recorded as an outage, never as an accept — the same treatment as codex-1's
+round-14 content-filter termination. **agy is a scarce reviewer and must be budgeted**: spend it
+where a fresh perspective is worth most, not on routine re-review.
+
+`hermes-1`'s 🟡 is the first non-blocking verdict this idea has produced in eighteen cycles.
+
+### What each found, and what I measured before accepting it
+
+**`codex-1` [MAJOR] — the visible text belongs to no bucket.** Cycle 18 asked which provenance
+bucket a fragment fell into; a command can be synthesized from fragments that fall into
+neither. Four measured false greens: `node` + a span holding `--test`; a tag splitting the word
+(`no<span></span>de`); a tag splitting the flag; the same inside an HTML block. Each fragment is
+harmless, the visible line is a runnable broken command.
+
+My code comment claiming raw HTML "reaches the reader as copyable text" was **wrong in the way
+that mattered** — the TAGS do not reach the reader, and appending them was hiding exactly this
+shape.
+
+**`codex-1` [MINOR] — a Map keyed by command text** let a valid code occurrence mask an invalid
+prose occurrence with identical text, so the contract went unenforced.
+
+**`kimi-1` [MAJOR] — comments, formatting tags, GFM strikethrough.** Cycle 19 had already closed
+the comment and `<ins>`/`<del>` cases before this was read; **strikethrough survived**:
+`node --t~~e~~st x` is literal to `commonmark` and rendered away by GitHub, npm and editor
+previews. The parser resolves nothing, the detector sees nothing.
+
+**`kimi-1` [MINOR] — invisible text policed as published.** `<script>` bodies failed the build
+over text no reader can reach, and — sharper — a command in **image alt text was EXECUTED**. A
+guard built to distrust invisible text was running it.
+
+**`hermes-1` [MAJOR] — a soft break renders as a space** (CommonMark 6.7). Emitting a newline
+split one copyable line into two the scanner judged separately, so a command spanning a soft
+break was neither run nor refused. A **hard** break correctly keeps its newline: there the
+reader really does see two lines.
+
+**`hermes-1` [NIT] ×2** — detection was case-sensitive though macOS is not, and `commonmark` was
+range-pinned. Both taken.
+
+### The rule that emerged, stated once
+
+> **Do both tokens of the occurrence come from one and the same code node?**
+> If they do, a single copyable element holds the whole command. If they do not, no such
+> element exists, and it is refused.
+
+Occurrence-level, deliberately. A whole-visible-line rule would have been simpler and **would
+have broken two shipped documents** that legitimately write `Verify: ` before a span, and a
+checklist item with the span in parentheses. I read those files before choosing the rule rather
+than discovering the breakage afterwards.
+
+### Proved — forty-six probes, clean tree
+
+Thirty-seven refused; four valid forms green; three invisible forms (comment, script body,
+image alt) correctly ignored rather than run or policed; a hard break correctly left alone; and
+a genuinely broken path still **runs and fails**. Suite 253/253.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
+reviewer, confirmed by me after it was cut off) · r15: 1 (refuted a claim of mine) · r16: 5
+across 4 reviewers · r17: 6 across 3 reviewers (two more refuted claims of mine)`.
+
+Three of my own written claims have now been refuted by measurement: that whitespace removal
+was fail-closed (r15), that every continuation shape was refused (r16), and that raw HTML
+reaches the reader as copyable text (r17).
