@@ -4,7 +4,7 @@ implementer: claude-1
 date: 2026-07-29
 status: ready-for-review
 target: parley-deck-skill/README.md
-commit: 0061dc2
+commit: 5df9d04   # cycle 2; cycle 1 was 4399bd4, initial was 0061dc2
 ---
 
 ## What was done
@@ -100,19 +100,24 @@ Two participants said cut it; I kept it and argued budget. Both reviewers ruled 
 and hermes-1's reason is the one that lands: **the binding constraint was the section order,
 not the line count**, and the section restated what the hook already says. Overridden and cut.
 
-### On the provenance finding — one reviewer was partly wrong, and it does not change the fix
+### On the provenance finding — I was wrong about a reviewer's finding, and both caught it
 
-hermes-1's MAJOR-1 stated that of the five attributions "only RHO appears in a shipped file"
-and that the other four "appear nowhere in the repo". That is not accurate: `Fusion`,
-`ExecPlans` and `preflight` all appear in `references/COOPERATION.md` (at `:1108` and `:751`).
-**But codex-1's stronger version of the same finding is correct**: appearing as an idea slug
-in a changelog line is not an attribution, and only RHO is actually *credited* as prior art
-(`:1078`). `kindly` appears nowhere in any shipped file. So the fix follows codex-1: keep the
-one lineage a shipped file records, delete the rest.
+Cycle 1 claimed hermes-1's MAJOR-1 was "partly inaccurate" because `Fusion`, `ExecPlans` and
+`preflight` "appear in `references/COOPERATION.md`". **That was wrong, and wrong in a
+self-favourable direction.** My grep was case-insensitive (`grep -ril`), so `Fusion` matched
+the lowercase idea slug `meta-protocol-change-fusion-execplans` and `preflight` matched the
+command `parley preflight`. Case-sensitively:
 
-`NOTICE.md` is where protocol-level prior art belongs, and adding it there is the better fix —
-but `FINAL.md` says no file other than `README.md` changes, so it is **recorded as a
-follow-up** rather than smuggled into this change.
+```text
+$ grep -c "Fusion" references/COOPERATION.md            → 0
+$ grep -c "ExecPlans" references/COOPERATION.md         → 0
+$ grep -c "Preflight readiness" references/COOPERATION.md → 0
+```
+
+hermes-1's round-01 finding was **accurate exactly as filed**. codex-1 independently reached
+the same conclusion ("an internal lower-case idea slug and a command named `parley preflight`
+are not those attributions"). The characterisation is withdrawn. The fix was already correct;
+the justification I attached to it was not.
 
 ### Rejected: MINOR-2 (heading case)
 
@@ -136,3 +141,39 @@ $ grep -c  "15 runtimes" "tier-1" "should be obvious" "append-only" "v1.2.1" \
   It is a GitHub-generated anchor and renders as inert text elsewhere. **NOT TESTED.**
 - `NIT-1` — `packaging/winget/README.md` still calls its manifest a draft. Follow-up.
 - Protocol prior art in `NOTICE.md`. Follow-up.
+
+---
+
+## Fix-up cycle 2 — commit 5df9d04
+
+Review round 02: **codex-1 ❌ BLOCK** (2 MAJOR, 3 MINOR, 1 NIT), **hermes-1 🟡
+ACCEPT-WITH-RESERVATIONS** (1 MAJOR, 2 MINOR, 1 NIT). Both round-01 MAJORs confirmed FIXED by
+both reviewers. Zero CRITICAL in either round.
+
+| Finding | Action |
+|---|---|
+| **The documented project-scope install command fails** | **Real defect, reproduced.** `install --scope project --target all --project .` prints *"No installed agent runtimes were detected"* and installs nothing: under project scope, detection looks for runtime-directory evidence *inside the project*, and a clean project has none. Fixed by adding `--include-undetected`, and **verified**: the old command produces the error, the new one plans 71 installs. |
+| Cross-repo location claim still unsupported | Removed. Now: "Deterministic automated orchestration is not part of it and requires separate tooling." No named external repository. |
+| "The one lineage a shipped file records" too absolute | → "The protocol lineage recorded here is…" — the next sentence names two more shipped design lineages. |
+| `paths` does not report every target | Now says every **detected** target, and documents `paths --target all --include-undetected` for all fourteen. Reproduced: default returns fewer entries than the long form. |
+| Runtime-channel instructions stated as fact | Qualified. The restart line is now conditional; the Gemini/Antigravity lines are explicitly marked as depending on those CLIs, not on anything this package ships. The Codex `$skill-installer` sentence is **deleted** — no shipped file records that path or what portion of a five-skill repository it installs. |
+| Frontmatter stale (`commit: 0061dc2`) | Updated to the cycle-2 head with the earlier commits listed. |
+| **My mischaracterisation of hermes-1's MAJOR-1** | **Withdrawn.** See the corrected section above — case-insensitive grep, wrong conclusion, caught by both reviewers. |
+| NIT: worktree sentence reads like a patch splice | Rewritten as two sentences that say what git does and does not give you. |
+
+### Verification
+
+```text
+$ wc -l README.md   → 260  (ceiling 300)
+$ npm test          → pass 247, fail 0
+$ node bin/parley-deck-skill.js install --scope project --target all --project /tmp/x --dry-run
+  → "No installed agent runtimes were detected…"        (the documented command, before)
+$ …same + --include-undetected --dry-run  → 71 planned install lines, rc 0   (after)
+$ node bin/parley-deck-skill.js paths                      → detected targets only
+$ node bin/parley-deck-skill.js paths --target all --include-undetected → all fourteen
+```
+
+### Still open, unchanged
+
+`#install-update-and-remove` anchor **NOT TESTED** on GitHub/npmjs · `packaging/winget/README.md`
+stale · protocol prior art belongs in `NOTICE.md` — all three are follow-ups.
