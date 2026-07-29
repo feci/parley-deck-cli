@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-5
+status: fix-up-cycle-6
 target: parley-deck-skill
-head-commit: 4f7fd32
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4]
+head-commit: 46b5730
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5]
 ---
 
 ## What was done
@@ -377,3 +377,59 @@ $ both restored                                              → pass 253, fail 
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1`. Every finding in this idea has been about
 shipped instructions or about a guard that was narrower than its claim — none about the
 installer, which has been correct since the first commit.
+
+---
+
+## Fix-up cycle 6 — the enumeration is abandoned
+
+Review round 05: **codex-1 ❌ BLOCK** (1 MAJOR). Tilde fences (`~~~`) are ordinary markdown
+fences and the cycle-5 extractor read only backtick fences. codex-1 measured it: a broken
+command in a `~~~` block left the suite at **253/0**, while the same command in a ``` block
+gave 252/1.
+
+**Adding `~~~` would have been the same mistake in a new costume.** Four rounds, four
+enumerations, each narrower than its claim:
+
+| cycle | what the guard enumerated | what it missed |
+|---|---|---|
+| 3 | the string `addons/` | a correct path in a broken *form* |
+| 4 | inline code spans | fenced blocks |
+| 5 | inline spans + backtick fences | tilde fences |
+
+Fence syntax is an **open set** — backtick, tilde, longer runs, indented blocks, HTML. An
+enumeration of an open set is incomplete by definition, so the next round would have found the
+next member. This is the same lesson the `parley-design-check` work reached the hard way:
+patching a family member-by-member never converges; you have to close the class.
+
+### What cycle 6 does
+
+The extractor **no longer parses markdown structure at all**. It scans every line for
+`node --test `, takes the command, and terminates it at the closing backtick if it is inside
+an inline span. There is no container to miss because containers are never consulted.
+
+A false positive is harmless and arguably correct here: if a shipped file prints a
+`node --test` command *anywhere*, in any context, that command should work.
+
+Two defects in my own first line-scan were caught by the fixture before commit: it ran past
+the closing backtick of a mid-sentence inline span, and it swallowed `` `) — COMMIT-SHA `` from
+a real Definition-of-Done line. Both fixed by terminating at the backtick.
+
+### Proved against five container forms, not argued
+
+Each form inserted into a shipped skill file in turn, with a deliberately missing test file:
+
+```text
+~~~ tilde fence            → pass 252, fail 1     (was 253/0 in cycle 5 — codex-1's case)
+``` backtick fence         → pass 252, fail 1
+    indented block         → pass 252, fail 1     (never tested before)
+inline span, mid-sentence  → pass 252, fail 1
+```` four-backtick fence   → pass 252, fail 1     (never tested before)
+restored                   → pass 253, fail 0
+```
+
+The fixture test now asserts the extractor finds commands in all of those forms plus prose,
+and ignores a non-`node --test` line.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1`. Not one was in the installer.
