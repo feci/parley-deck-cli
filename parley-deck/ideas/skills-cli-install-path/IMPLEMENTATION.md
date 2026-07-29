@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-7
+status: fix-up-cycle-8
 target: parley-deck-skill
-head-commit: c642636
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6]
+head-commit: 895d0f4
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7]
 ---
 
 ## What was done
@@ -486,3 +486,49 @@ $ restored                                                      → pass 253, fa
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1`. Six consecutive rounds
 where codex-1 found exactly one real defect, five of them in the guard rather than in the
 product. The installer has not been touched since the first commit.
+
+---
+
+## Fix-up cycle 8 — the guard finally models what it claims to run
+
+Review round 07: **codex-1 ❌ BLOCK** (1 MAJOR), and it is the sharpest framing of the whole
+idea: *"a mismatch between the claimed shell command surface and a handwritten
+extractor/runner that supports only one exact whitespace form and one target argument."*
+
+Two measured defects, in opposite directions:
+
+1. **A missed break.** A literal **tab** between `--test` and the target. A shell treats it as
+   ordinary argument whitespace, so the published command is valid syntax and fails when typed.
+   My regex required one literal ASCII space, so the guard never saw it: **253/0**.
+2. **A manufactured failure.** `node --test a.test.js b.test.js` — a legitimate two-target
+   command that runs 35 tests when typed. The runner passed both paths as **one** argument, so
+   Node reported `Could not find "claim.test.js validate.test.js"` and the suite failed
+   **252/1**. The guard was blaming the product for its own bug.
+
+The second is the more dangerous class: a guard that produces false failures gets relaxed, and
+a relaxed guard is how the original false-green comes back.
+
+### What changed
+
+- **Whitespace:** `/node\s+--test\s+([^`\n]*)/g`. Any whitespace, any amount, tabs included.
+- **Argument boundaries:** the captured text is tokenised into real `argv` — whitespace
+  separates, double quotes group — and passed to `execFileSync` as separate arguments. Quoted
+  globs still arrive as one argument; multiple targets arrive as several.
+- **Fixture:** now carries a tab-separated command and a multi-target command, and asserts both
+  are discovered.
+
+### Proved, both directions
+
+```text
+$ tab between --test and a missing target  → pass 252, fail 1   (before: 253/0, missed)
+$ legitimate two-target command            → pass 253, fail 0   (before: 252/1, false failure)
+$ restored                                 → pass 253, fail 0
+```
+
+A transcription slip while editing the fixture — a dropped comma between two array elements —
+broke the file into a `SyntaxError` and took the whole suite from 253 to 241. Caught by
+running it, fixed, recorded here rather than tidied away.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1 · r07: 1`.
