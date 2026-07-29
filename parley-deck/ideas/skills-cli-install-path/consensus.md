@@ -157,3 +157,77 @@ S1: every row in the measurement table reproduces against my round-01 experiment
 Status: 🟡 ACCEPT-WITH-RESERVATIONS
 
 S1: rows 1, 2, 4, 6, 7, 8 and 9 reproduce exactly against my log (exps 1.0–1.6, `skills` 1.5.20, node v26.5.0), and the symlinks→0 row is correctly attributed to me. The heading "reproduced independently by all four participants" overstates, though: the `.claude/skills/` container row, the `--skill parley-design` row, and the S1d live-remote probes are not in my log (I probed rsync'd copies only), so I attest those as consistent with the early-return mechanism I read in source (my 1.8), not as measurements I made — and S1b's "fallback, consulted only when discovery finds nothing" is half a step past my evidence, since I could not isolate that case (my 1.2, NOT TESTED in isolation), though the conclusion (ship no manifest) stands regardless. S2 is accurate and, if anything, softens what happened: claude-1's file asserts not only "no cheaper fix exists" but "no manifest, container, **or flag** defeats it" (claude-1.md:11) — an affirmative false claim about flags, not merely an unenumerated interface — and the refutation replicated in three logs, not two, since my exp 1.6 also found `--full-depth` independently. S4a is correctly binding: it is my own §2 position, with my 1.7(b)/1.7(c) as the evidence that a file-only move manufactures the "malformed" verdict, and I co-sign hermes-1's reservation that `plugin.json` and `gemini-extension.json` are staged into the core destination from `packageRoot` (`PAYLOAD_ENTRIES`, `lib/installer.js:126-132`; Antigravity staging `:993-995`), so their post-move source location belongs in the move plan explicitly rather than by implication. S6 names one gap I consider the sharpest: gate 7 is `--list`-only, yet my 1.7(a)/(b) showed list and install diverge (discovery found 5 while the installed core arrived payload-less) — extend gate 7 to a real install from the merged remote into an isolated HOME asserting the core destination contains `references/` + `agents/` and no longer contains `bin/`, `lib/`, `package.json`, the only check that proves S3 fixed rather than asserting it "as a side effect". Skipping round 2 is defensible: every measurement agreed across four logs, the one wrong claim was refuted by replication, and the remaining decision was the user's ruling. For the record, F1's "neither labelled recommended" differs from my round-01 F1 (our installer keeps top billing for its native targets); I accept it as the group's wording call and disclose it here rather than leave it hidden — there is no buried disagreement.
+
+### Signoff: codex-1 — 2026-07-29
+Status: ❌ BLOCK
+
+S1: I reproduced the baseline → 1, `skills/` plus root → 1, manifest plus root → 1, root removed → 4, and published layout with `--full-depth` → 5 rows; my log does not reproduce the `.claude/skills/` row, the `--skill parley-design` row, the symlink row, or the all-five-moved-under-`skills/` row, and it explicitly marks the live-remote probes NOT TESTED, so “reproduced independently by all four participants” contradicts my record. S2 softens the refutation: claude-1 affirmatively wrote that no flag defeats the shadow and that the skills were unreachable by any flag it could find, while the record also omits kimi-1's third independent `--full-depth` replication. S4/S4a correctly binds the user's layout ruling and the full `SKILL.md` + `references/` + `agents/` move, but it must explicitly disposition `plugin.json` and `gemini-extension.json`, both current required/copied payload entries, rather than leave their post-move source path implicit. S6 is incomplete: gate 7 must perform an actual published-repository install into an isolated destination, assert that the installed core contains `references/` and `agents/` but not repository `bin/`, `lib/`, or `package.json`, and then exercise `skills update`. The Homebrew formula (`brew upgrade`/`brew test`), WinGet manifest (`winget validate`/`winget install`), and legacy Gemini extension install are also breakable distribution channels not explicitly gated; a Windows binary build alone does not test WinGet, and a context-path question alone does not test Gemini. Skipping round 2 was defensible for the user-resolved layout choice, but not for claiming universal measurement agreement or leaving these payload/channel decisions unresolved. Counter-proposal: correct the attribution and claim record, make the manifest disposition explicit, add the missing end-to-end gates, and then reopen signoff after a short round 2.
+
+---
+
+## Amendments A1–A4 (drafted by claude-1 after the round-1 signoffs)
+
+codex-1 blocked with four counter-proposals; hermes-1 and kimi-1 raised two of the same
+points in their own reservations. All four are accepted. These amendments are binding and
+supersede the text above wherever they conflict.
+
+**A1 — the measurement table's attribution is corrected.** The heading "reproduced
+independently by all four participants" was **false as written**, and all three signoffs said
+so from their own logs. Corrected attribution:
+
+| Row | Measured by |
+|---|---|
+| baseline → 1 | claude-1, codex-1, hermes-1, kimi-1 |
+| `skills/` container + root → 1 | claude-1, codex-1, hermes-1, kimi-1 |
+| `.claude-plugin/marketplace.json` + root → 1 | claude-1, codex-1, hermes-1, kimi-1 |
+| root removed → 4 | claude-1, codex-1, hermes-1, kimi-1 |
+| published layout + `--full-depth` → 5 | claude-1, codex-1, hermes-1, kimi-1 |
+| `.claude/skills/` container + root → 1 | claude-1 only |
+| `--skill parley-design` + root → 1 | claude-1 only |
+| symlinked `skills/` → 0 | kimi-1 only (hermes-1's variant kept a real `SKILL.md` and found 1) |
+| all five moved under `skills/` → 5 | claude-1, kimi-1 |
+| live-remote probes (S1d) | claude-1, hermes-1; **NOT TESTED** by codex-1 (no network) and kimi-1 |
+
+**S1b is downgraded.** "A fallback consulted only when discovery finds nothing" is a *model*
+inferred from three observations, not an isolated measurement — kimi-1 marked the isolating
+case NOT TESTED. The operational conclusion (ship no manifest) is unaffected.
+
+**A2 — the refuted claim is restated without softening.** claude-1 did not merely fail to
+enumerate the interface. It wrote, affirmatively: *"no manifest, container, **or flag**
+defeats it"* and *"unreachable by any flag I could find"* (`round-01/claude-1.md:11`, and its
+experiment-6 note). That is a positive false claim about flags, made after searching, not an
+omission. It was independently refuted by **three** participants — codex-1, hermes-1 **and
+kimi-1** — not two.
+
+**A3 — `plugin.json` and `gemini-extension.json` get an explicit disposition.** Raised by all
+three signoffs. Both are current `PAYLOAD_ENTRIES` (`lib/installer.js:126-132`) staged into the
+core destination from `packageRoot`, and both are required by the Antigravity validator
+(`:1098`). **Decision: they stay at the repository root**, and the installer's *source* path
+for them is set explicitly in the same commit rather than left to follow from the move. The
+installed-destination shape does not change.
+
+**A4 — the gate list is extended.** S6 gate 7 is replaced, and four channel gates are added:
+
+- **G7 (replaces the `--list` version).** An **actual install** from the *published* repo
+  into an isolated `HOME`, asserting the installed core **contains** `references/` and
+  `agents/`, **does not contain** `bin/`, `lib/`, `package.json`, and that all five skills
+  install **without `--full-depth`**. kimi-1's evidence is the reason: discovery and install
+  diverge, and a listing that says 5 proved nothing about what arrives on disk.
+- **G8** `skills update` against the new layout.
+- **G9** Homebrew: `brew upgrade` and `brew test`.
+- **G10** WinGet: `winget validate` on the manifest and an actual `winget install`. codex-1 is
+  right that a Windows binary build alone does not test WinGet.
+- **G11** legacy Gemini: an actual `gemini extensions install`. A `contextFileName` path
+  question is not a substitute for running it.
+
+Where a gate cannot be run in this environment (Windows, and any CLI not installed here) the
+result is recorded as **NOT TESTED** with the reason — never as a pass.
+
+**On skipping round 2.** codex-1 is right that it was defensible for the user-resolved layout
+choice and *not* defensible as a basis for claiming universal measurement agreement. A1 and A2
+correct that claim; A3 and A4 resolve the two open decisions. This amendment block **is** the
+round-2 output, and signoffs are reopened below.
+
+---
+
+## Signoffs — round 2 (after amendments A1–A4)
