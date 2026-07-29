@@ -2,9 +2,9 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-9
+status: fix-up-cycle-10
 target: parley-deck-skill
-head-commit: 279a72c
+head-commit: 4a75eb6
 prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7, cycle-8]
 ---
 
@@ -586,3 +586,64 @@ $ node --test a.test.js | grep x            → pass 252, fail 1
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1 · r07: 1 · r08: 1`.
 Eight consecutive single-finding rounds, seven of them in the guard. The product — the layout
 move, the installer, the packaging — has needed no change since round 01.
+
+---
+
+## Fix-up cycle 10 — the extraction boundary, which was the real bug all along
+
+Review round 09: **codex-1 ❌ BLOCK** (1 MAJOR, 1 MINOR, 1 NIT).
+
+Cycle 9 delegated *parsing* to a real shell but kept capturing from the word `node` onward,
+discarding everything around it. **The guard was executing a substring of the published
+command.** Three measured cases, two directions:
+
+| probe | typed by a person | the guard |
+|---|---|---|
+| ``node --test `printf missing.test.js` `` | exits 1, file not found | stopped at the substitution backtick, dropped the fragment, **253/0 green** |
+| `NODE_OPTIONS='--require ./missing.cjs' node --test "…"` | exits 1, preload missing | discarded the assignment, ran the valid suffix, **253/0 green** |
+| `cd skills/parley-tracker/bin && node --test "*.test.js"` | 35 tests, 35 pass | discarded `cd … &&`, ran the suffix from the repo root, **252/1 false failure** |
+
+The `&` refusal added in cycle 9 never fired, because the ampersands were **outside the
+captured substring**. A fail-closed check that inspects only what the extractor kept is not
+fail-closed at all.
+
+### The fix
+
+Extraction now yields **whole command units**, never fragments: the content of each inline
+code span, or the whole line where there are none. Then a single strict grammar decides:
+
+```js
+const SUPPORTED_COMMAND = /^node\s+--test\s+[^`;|&<>$]+$/;
+```
+
+The command, its targets, and nothing else. Any environment prefix, `cd … &&`, command
+substitution, pipe or trailing operator is **refused by name**, not guessed at and not
+silently skipped:
+
+> published command is not a bare `node --test <targets>` form, so this guard refuses to
+> interpret it rather than execute a fragment of it: `cd skills/parley-tracker/bin && node --test "*.test.js"`
+
+Narrow and fail-closed beats broad and approximate. That is the whole lesson of rounds 03–09.
+
+### Proved
+
+```text
+$ backtick substitution   → pass 252, fail 1   (was 253/0 — false green)
+$ env-prefixed command    → pass 252, fail 1   (was 253/0 — false green)
+$ cd … && command         → pass 252, fail 1   (was 252/1 for the WRONG reason; now a
+                                                named refusal, not a fabricated zero-test)
+$ restored                → pass 253, fail 0
+```
+
+Also fixed this cycle:
+
+- **MINOR** — the install panel said the universal installer "detects your agents" and three
+  lines later claimed detection as something our installer adds. The G7 output itself prints
+  `Agent detected`. Detection is dropped from the exclusive list; `doctor`/`status` health
+  checks and project-metadata sync remain, and those are measured.
+- **NIT** — cycle 9 claimed the hand-written argv lexer was deleted. It was still there as dead
+  code with a stale comment. Now actually deleted, so the record and the code agree.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1 · r07: 1 · r08: 1 · r09: 3`.
