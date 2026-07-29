@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: ready-for-review
+status: fix-up-cycle-1
 target: parley-deck-skill
-head-commit: f8e3a1c
-prior-commits: [951d7a5 the move + installer + panel]
+head-commit: 085799e
+prior-commits: [951d7a5 the move + installer + panel, f8e3a1c gemini path]
 ---
 
 ## What was done
@@ -97,3 +97,66 @@ restructure. It is written here rather than left for someone to discover.
 3. Whether any per-target *destination* shape changed. I claim none did, because only
    `PAYLOAD_ENTRIES.from` moved. `validateInstalledPayload` is untouched — verify that.
 4. The README panel's wording against F1/F3/F4/F5.
+
+---
+
+## Fix-up cycle 1
+
+Review round 01: **codex-1 ❌ BLOCK** (1 MAJOR, 3 MINOR), **hermes-1 ✅ ACCEPT**.
+
+### The MAJOR overturns my deviation D-1, and codex-1 is right
+
+I claimed one `contextFileName` could not serve both consumers, and dropped the legacy Gemini
+extension-URL channel on that basis. codex-1 refuted it with the upstream source: Gemini's
+extension manager joins `contextFileName` to the extension root and **accepts nested paths**.
+So the reconciliation it proposed works, and it is strictly better than what I did:
+
+- **repository** `gemini-extension.json` → `"skills/parley-deck/SKILL.md"`, which is where the
+  file actually is in a checkout, so an extension installed from the repo URL resolves;
+- the native installer **rewrites the staged copy** to `"SKILL.md"`, matching the flat
+  destination shape it has always produced.
+
+One canonical skill tree, two consumers, no second copy of `SKILL.md`. **D-1 is withdrawn and
+the channel is restored.** I had reached for "remove the capability" when "reconcile the two
+consumers" was available — the removal was disclosed honestly, but honest disclosure of an
+unnecessary loss is still an unnecessary loss.
+
+Two regression tests were added, exactly as codex-1 asked: one asserting the repository
+manifest points at a file that exists **in the repository**, one asserting a staged install's
+manifest points at a file that exists **in the destination**. The second caught a real bug
+immediately: my first helper used `readJsonFile`, which returns a `{status, value}` wrapper,
+so it wrote the wrapper back and destroyed the manifest. Fixed to parse directly.
+
+| Finding | Action |
+|---|---|
+| MAJOR — D-1 removes a reconcilable channel | **Withdrawn.** Manifest reconciled both ways, channel restored, 2 tests added |
+| MINOR — G1 recorded as unconditional pass but is environment-dependent | Gate restated below with its preconditions. codex-1 found that in a clean `HOME` the Antigravity install is what creates the evidence that then detects Gemini — an **ordering defect that predates this change** and is recorded as a follow-up, not fixed here |
+| MINOR — README ships into destinations where its nested paths do not exist | Now states both shapes explicitly: checkout paths *and* installed-destination paths |
+| MINOR — "whichever coding agents you have" exceeds measured scope | → "the coding agents it supports … theirs to state, not ours" |
+
+### Verification
+
+```text
+$ npm test                              → pass 249, fail 0   (2 new tests)
+$ install --target gemini --force       → rc 0; staged contextFileName "SKILL.md", file present
+$ cat gemini-extension.json             → "skills/parley-deck/SKILL.md", file present in repo
+$ G7 re-run, no --full-depth            → Found 5 / Installed 5; core = SKILL.md + agents +
+                                          references; bin, lib, package.json all absent
+```
+
+### Gate status, restated honestly
+
+**G1 — PASS with preconditions.** On this host, with runtimes already present,
+`install --target all --force` → rc 0 and 30 `valid` lines. codex-1 is right that in a clean
+`HOME` the sequence is order-dependent; the deterministic form is
+`--target all --include-undetected`. Not a layout regression — reproducible on the parent
+commit.
+
+**Still NOT TESTED, unchanged:** G3 Windows binary · G8 `skills update` · G9 Homebrew ·
+G10 WinGet · **G11 `gemini extensions install <url>`** — the manifest now supports it and two
+tests guard both values, but no Gemini CLI is available here to run it end to end. That is
+stated in the README itself, not only here.
+
+### New follow-up
+
+Antigravity-before-Gemini detection ordering in a clean `HOME` (pre-existing, found by codex-1).
