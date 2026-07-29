@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-6
+status: fix-up-cycle-7
 target: parley-deck-skill
-head-commit: 46b5730
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5]
+head-commit: c642636
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6]
 ---
 
 ## What was done
@@ -433,3 +433,56 @@ and ignores a non-`node --test` line.
 ### Findings per round
 
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1`. Not one was in the installer.
+
+---
+
+## Fix-up cycle 7
+
+Review round 06: **codex-1 ❌ BLOCK** (1 MAJOR). I asked it to try to defeat the cycle-6 guard.
+It did, on the first attempt, with one line:
+
+```markdown
+first run `node --test "…/bin/*.test.js"`; then run `node --test definitely-missing-second.test.js`
+```
+
+The guard called `line.indexOf("node --test ")` **once per line** and never resumed scanning.
+First command valid, second broken, suite green at 253/0. Published alone on its own line, the
+same broken command turns it red — so the bypass was purely positional. codex-1 also noted the
+fixture could not have exposed it, because every fixture case held at most one command per line.
+
+### The fix is also a simplification
+
+Line-by-line `indexOf` is replaced by **one global match over the whole document**:
+
+```js
+markdown.matchAll(/node --test ([^`\n]*)/g)
+```
+
+A command runs to the first backtick — an inline span's close — or end of line, whichever comes
+first. This drops the line loop, the manual index arithmetic and the separate backtick-split,
+and it is strictly more complete: every occurrence, every line, every container.
+
+That is the fifth guard revision in this idea, and the first one that got *smaller*. Each
+earlier revision added a case; this one removed the machinery that made cases possible.
+
+### Fixture
+
+Extended with two commands on one line — the shape that hid the bypass — asserting both are
+found.
+
+### Proved
+
+```text
+$ codex-1's exact probe (valid first, broken second, one line)  → pass 252, fail 1
+   (before this cycle: 253, 0 — the bypass)
+$ ~~~ tilde fence            → pass 252, fail 1
+$     indented block         → pass 252, fail 1
+$ ```` four-backtick fence   → pass 252, fail 1
+$ restored                                                      → pass 253, fail 0
+```
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1`. Six consecutive rounds
+where codex-1 found exactly one real defect, five of them in the guard rather than in the
+product. The installer has not been touched since the first commit.
