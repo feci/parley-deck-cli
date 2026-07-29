@@ -231,3 +231,8 @@ round-2 output, and signoffs are reopened below.
 ---
 
 ## Signoffs — round 2 (after amendments A1–A4)
+
+### Signoff: codex-1 — 2026-07-29 (round 2)
+Status: ✅ ACCEPT
+
+A1 matches my log: the five rows attributed to codex-1 are the five I measured, the four rows not attributed to me remain outside my log, and the live-remote probes are correctly marked NOT TESTED; no row is still mis-attributed. A2 now states the affirmative false claim about flags and all three independent refutations without softening. A3 is the right disposition: `plugin.json` and `gemini-extension.json` remain repository-root manifests, while the installer source path is updated explicitly in the same commit. A4 now covers the missing real-install, update, Homebrew, WinGet, and legacy Gemini channel checks alongside the original gates; I see no remaining channel-breaking omission. The amendment block adequately serves as the round-2 output, so I do not require a full round 2.
