@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-10
+status: fix-up-cycle-11
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: 076ded5
+head-commit: 82bde7d
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -435,9 +435,9 @@ matched as written.
 
 **The enumeration found three OPENs no reviewer had**: a bad-string remnant opening a phantom
 rule, a hex escape inside a string swallowing the newline (previously mis-reported as guarded),
-and an escaped dimension unit flattening into the number before it. The per-token-type verdict
-table lives in the cycle-10 agent report; it is the artifact that lets a reviewer check the
-class rather than guess another member.
+and an escaped dimension unit flattening into the number before it. The per-token-type verdict table lives at the head of `lib/css.js`, where the checker's
+`SKILL.md` points at it. Cycle 11 rewrote it as token-type × **consumer** after codex-1 showed
+the string row had been verified against one pass while another pass carried its own consumer.
 
 ### A filed remedy implemented, measured, and reverted
 codex-1's second remedy for the MAJOR was to narrow markup `var()` discovery to `style`
@@ -457,3 +457,43 @@ references gained or lost.
 An escaped exponent in a dimension unit (`1\65 5`), which needs a token-boundary-aware value
 representation rather than a tokeniser fix; and declarations the scanner reads that Chromium
 discards as invalid, which is the declared `T1 SOURCE` tier boundary rather than a scanner defect.
+
+## Fix-up cycle 11 — one consumer, and the false positives on shipped CSS
+status: complete
+completed: 2026-07-29
+head-commit: 82bde7d
+
+### Fixes applied
+Round-07: hermes-1 ACCEPTED. codex-1 and kimi-1 independently found the same CRITICAL —
+`scanComments` consumed only one code point after a backslash, so a hex escape absorbing a
+newline desynchronised the two string readers and forged a clean L3 over a colour Chromium
+applies.
+
+The real defect was structural: `lib/css.js` carried **two implementations of string and escape
+consumption**, which is the one-source-of-truth failure this project rejects everywhere else —
+the registry has no second copy, the capability declaration is generated, the doctrine has no
+generated view. There is now exactly one string consumer, called from all six passes.
+
+The §4 string-token verdict was wrong, and the reason matters more than the row: it was true of
+the consumer it was checked against and false of the other path. The enumeration is now
+token-type × consumer, and states the rule it encodes — *a pass may decide what a token means
+for its own purpose, and may never decide where that token ends.*
+
+kimi-1's six false positives on shipped CSS are closed, each confirmed at the CLI in both
+directions: uppercase `RGB(`/`VAR(`/`11PX`; escaped quotes and backslashes in strings no longer
+costing a whole file; `url()` contents no longer scanned for literals; `@function`,
+`@position-fallback` and `@try` classified; CDO/CDC wrapping; and a contract naming a waiver
+file that resolves to nothing now reported rather than silently read as "no waivers" — which
+immediately caught **11 fixture contracts** doing exactly that.
+
+### Verification
+`npm test` 237 → 244. Differential over 170 constructs vs real headless Chromium: silent holes
+**3 → 0**; the 2 silent over-reads are unchanged and in the already-declared `T1` class. Sweep
+over 283 stylesheets and 2,288 markup files (14 MB): 0 newly unreadable, 3 no longer unreadable,
+1 finding lost (the false positive being closed), and **44 gained — all true positives**,
+Bootstrap's shipped uppercase `RGBA(...)` that the checker had been blind to.
+
+### Deliberately not done
+The differential harness stays in the session scratchpad rather than being committed: it is a
+non-checker artifact and adding it would put a Chromium-dependent tool inside a package whose
+whole posture is Node built-ins only.
