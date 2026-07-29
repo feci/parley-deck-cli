@@ -2,9 +2,9 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-12
+status: fix-up-cycle-13
 target: parley-deck-skill
-head-commit: c3aa392
+head-commit: 82507b5
 prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7, cycle-8]
 ---
 
@@ -749,3 +749,45 @@ worth less than no log.
 ### Findings per round
 
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10: 1 · r11: 1`.
+
+---
+
+## Fix-up cycle 13
+
+Review round 12: **codex-1 ❌ BLOCK** (1 MAJOR). Two more false greens, both from deciding
+**once per line** instead of once per command:
+
+1. **Compound.** ``echo `node --test "…"`; node --test missing.test.js`` — the extractor
+   emitted only the span's valid command and discarded the surrounding shell *and* the broken
+   second command. Suite stayed **253/0**.
+2. **Backslash continuation.** `node --test "…claim.test.js" \` + a second line. The guard ran
+   only the first physical line; `/bin/sh` stripped the trailing backslash and the five passing
+   claim tests reported green. The continuation was never seen. **253/0**.
+
+### What changed
+
+The discriminator no longer tries to work out *which part* of a mixed line to run:
+
+- a line ending in `\` is a command that does not fit on this line → **the whole line becomes
+  the unit**, and the grammar refuses it;
+- a line where `node --test` appears **both** inside a span and outside it is compound or
+  substituted → **the whole line becomes the unit**, refused;
+- only when *nothing outside the spans* runs the command are the spans executed individually.
+
+`SUPPORTED_COMMAND` also now excludes `\`. Without that the continuation line still matched —
+the grammar permitted the trailing backslash, `sh` stripped it, and the truncated half ran
+green. **P2 passed on the first attempt of this cycle and I caught it only by running the
+probe**, which is why the probe set is re-run in full every cycle rather than trusted.
+
+### Proved — all six probes from rounds 10, 11 and 12
+
+```text
+compound span+shell           → 252/1     backslash continuation      → 252/1
+fake closing fence            → 252/1     blockquoted fence (valid)   → 253/0
+fenced substitution           → 252/1     double-backtick (valid)     → 253/0
+restored                      → 253/0
+```
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10: 1 · r11: 1 · r12: 1`.
