@@ -2,10 +2,10 @@
 idea: readme-skill-catalogue
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-3
+status: fix-up-cycle-4
 target: parley-deck-skill/README.md
-head-commit: f855a6f
-prior-commits: [0061dc2 initial, 4399bd4 cycle-1, 5df9d04 cycle-2]
+head-commit: 94a4889
+prior-commits: [0061dc2 initial, 4399bd4 cycle-1, 5df9d04 cycle-2, f855a6f cycle-3]
 ---
 
 ## What was done
@@ -183,7 +183,7 @@ stale · protocol prior art belongs in `NOTICE.md` — all three are follow-ups.
 
 ## Fix-up cycle 3 — commit f855a6f
 
-Review round 03: **codex-1 ❌ BLOCK** (1 MAJOR, 2 MINOR), **hermes-1 ✅ ACCEPT** (0 findings).
+Review round 03: **codex-1 ❌ BLOCK** (1 MAJOR, 2 MINOR), **hermes-1 ✅ ACCEPT** (1 MINOR, 1 NIT — see the correction in cycle 4).
 Zero CRITICAL in any round.
 
 **The MAJOR is one my own cycle-2 edit introduced.** Fixing the "uncheckable runtime
@@ -203,7 +203,7 @@ something. That is what fix-up prose degenerates into if nobody is checking.
 |---|---|
 | Gemini/channel explanation factually wrong (MAJOR) | Rewritten from the installer source: named the shared destination `~/.gemini/extensions/parley-deck`, "use one or the other, never both", and separated the Antigravity guidance instead of lumping it in |
 | Restart sentence still not checkable (MINOR) | The cache assertion is gone. Now purely non-factual guidance: "follow its own instructions for reloading skills" |
-| Frontmatter not in Phase-8 shape; "71 installs" wrong (MINOR) | `status: fix-up-cycle-3`, `head-commit:`, `prior-commits:`. The count is **70 skill actions** (14 targets × 5 skills); 71 was the number of *output lines*, the 71st being the add-on hint |
+| Frontmatter not in Phase-8 shape; "71 installs" wrong (MINOR) | `status: fix-up-cycle-4`, `head-commit:`, `prior-commits:`. The count is **70 skill actions** (14 targets × 5 skills); 71 was the number of *output lines*, the 71st being the add-on hint |
 
 ### Verification
 
@@ -212,6 +212,45 @@ $ grep -n "\.gemini" lib/installer.js   → :33 .gemini/config/plugins (agy), :4
 $ wc -l README.md                       → 260   (ceiling 300)
 $ npm test                              → pass 247, fail 0
 ```
+
+### Still open, unchanged
+
+`#install-update-and-remove` anchor **NOT TESTED** on GitHub/npmjs · `packaging/winget/README.md`
+stale · protocol prior art belongs in `NOTICE.md`.
+
+---
+
+## Fix-up cycle 4 — head-commit below
+
+Review round 04: **codex-1 🟡 ACCEPT-WITH-RESERVATIONS** (1 MINOR, 1 NIT) — up from ❌ BLOCK
+in rounds 01, 02 and 03. codex-1 also confirmed: *"No factual README claim, command argument,
+link, or anchor regressed in cycle 3."*
+
+**A correction to my own audit, and it is the reason this cycle exists.** Cycle 3 recorded
+round 03 as *"hermes-1 ✅ ACCEPT (0 findings)"*. That was wrong: `review/round-03/hermes-1.md`
+contains a `MINOR-1` and a `NIT-1`. I read the signoff line and not the body. **An ACCEPT
+signoff does not turn filed findings into zero findings**, and recording it that way claimed
+a cleaner review than actually happened while silently dropping two dispositions. The cycle-3
+entry above is corrected in place, and both findings are actioned here.
+
+| Finding | Round | Action |
+|---|---|---|
+| Worktree prose line is 132 chars, breaking the file's wrap convention | hermes-1 r03 MINOR-1, re-filed by codex-1 r04 NIT | Rewrapped. A sweep for prose lines >100 chars now returns none — the eleven remaining long lines are HTML attribution comments, `###` headings containing links, fenced prompt text and command lines, none of which wrap |
+| `--yes` is in the general flag block but only affects `sync-project` | hermes-1 r03 NIT-1 | **Verified in source** — `lib/installer.js:403,407` gate only the `sync-project` path on `options.yes`. Moved out of the shared flag list and annotated: *"sync-project only: without it, sync-project is a dry run"* |
+| Cycle-3 audit reports hermes-1 as 0 findings | codex-1 r04 MINOR | Corrected in place, above |
+
+### Verification
+
+```text
+$ awk 'length($0)>100' README.md   → 11 lines, all comments/headings/code, no prose
+$ wc -l README.md                  → 261   (ceiling 300)
+$ npm test                         → pass 247, fail 0
+$ grep -n 'options.yes' lib/installer.js → :403, :407   (sync-project only)
+```
+
+### Findings per round
+
+`r01: 11 · r02: 8 · r03: 5 · r04: 2` — and no BLOCK for the first time.
 
 ### Still open, unchanged
 
