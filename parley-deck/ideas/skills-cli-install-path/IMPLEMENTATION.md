@@ -2,9 +2,9 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-11
+status: fix-up-cycle-12
 target: parley-deck-skill
-head-commit: 39919bf
+head-commit: c3aa392
 prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7, cycle-8]
 ---
 
@@ -698,3 +698,54 @@ The fixture now carries both new forms and asserts the grammar's verdict on each
 ### Findings per round
 
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10: 1`.
+
+---
+
+## Fix-up cycle 12 — the fence tracking is deleted, because it was never the right question
+
+Review round 11: **codex-1 ❌ BLOCK** (1 MAJOR). Two more CommonMark rules my cycle-11 fence
+tracker got wrong: a closing fence may be followed only by spaces or tabs (so
+` ```not-a-closing-fence ` is *content*), and a fenced block inside a blockquote carries a `>`
+prefix. False green in the first case, false failure in the second.
+
+**Adding those two rules would have bought one more round.** I was reimplementing CommonMark
+inside a test, one reviewer-found rule at a time.
+
+### The question was wrong
+
+I had been asking *"is this line inside a fence?"* — which requires a Markdown parser. The
+question that actually separates the two meanings of a backtick is much smaller:
+
+> **Does a backtick span contain the *whole* command?**
+
+- Inline publication wraps the whole command: `` `node --test "x"` `` → the span *is* the
+  command.
+- A fenced shell line wraps only a substitution: ``node --test `printf …` "x"`` → **no span
+  contains `node --test`**, so the unit is the whole line, backticks included, and the strict
+  grammar refuses it.
+
+One rule. No fence state, no closing-fence rule, no blockquote rule, no CommonMark. The
+unitizer got smaller for the second time, and this time it lost an entire category of bug
+rather than a case.
+
+### Proved — all four probes from rounds 10 and 11
+
+```text
+$ fake closing fence + substitution   → pass 252, fail 1   (refused)
+$ blockquoted fence, valid command    → pass 253, fail 0
+$ fenced substitution                 → pass 252, fail 1   (refused)
+$ double-backtick inline span, valid  → pass 253, fail 0
+$ restored                            → pass 253, fail 0
+```
+
+**A correction to my own testing.** My first run of these four reported two regressions. They
+were not regressions — my probe harness passed the fixture through `printf "%b"`, which mangled
+the `%s` inside the command, so the file under test was not the file I meant to write. Running
+the extractor directly against an exact heredoc showed the correct verdicts, and re-running the
+probes with `cat` instead of `printf` confirmed all four. **The tool was right and my
+measurement was wrong** — recorded here because a fix-up log that hides a bad measurement is
+worth less than no log.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10: 1 · r11: 1`.
