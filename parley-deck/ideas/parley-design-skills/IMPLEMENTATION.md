@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-12
+status: fix-up-cycle-13
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: 9121ec2
+head-commit: 1675b6f
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -529,3 +529,36 @@ Findings per review round: 10, 3, 3, 2, 2, 1, 1. hermes-1 has accepted twice. Th
 findings were regressions introduced by the fix before them, in opposite directions — which is
 the signature of a surface that has been driven down to its last trade-off rather than one still
 hiding whole classes.
+
+## Fix-up cycle 13 — opaque token contents are not references
+status: complete
+completed: 2026-07-29
+head-commit: 1675b6f
+
+### Fixes applied
+Round-09: kimi-1 ACCEPTED with no findings; codex-1 and hermes-1 filed the same one thing — a
+regression of cycle 12. Default-expression collection scanned raw text, so a `var()` appearing
+inside a string or a url token was counted as a real token use.
+
+That is the third round running where the finding was a regression of the fix before it,
+oscillating on one surface between a false clean and a false alarm. Broken by routing both
+collectors through the file's single string/url consumer rather than matching raw text, so
+neither caller re-decides where an opaque token ends — the same one-consumer discipline cycle 11
+established.
+
+### A deliberate non-fix, measured rather than argued
+The third `var()` site — the raw-line sweep over markup outside `<style>` and comments — was
+left unmasked on purpose. Routing it the same way loses **2,410 references across 306 of 2,236
+markup files**, because outside those spans a quote belongs to the host language and not to a
+CSS string token. The markup spans that *are* CSS pick the fix up automatically through the
+declaration path, and an assertion now locks both halves of that asymmetry so it is not "fixed"
+in a fourth round.
+
+### Verification
+`npm test` 245 → 246. Sweep over 2,933 files (697 stylesheets, 2,236 markup): 0 new, 0 lost, 0
+newly unreadable — and the harness was validated to discriminate rather than trusted for a null
+result. The defect never fired on real corpus CSS; it fired on the reviewers' probes, which is
+where a gate's credibility is tested.
+
+### Convergence
+Findings per review round: 10, 3, 3, 2, 2, 1, 1, 1. hermes-1 has accepted twice, kimi-1 once.
