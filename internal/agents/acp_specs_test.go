@@ -100,7 +100,7 @@ func TestDefaultSpecsPreferAntigravityAndStrongVerifiedDefaults(t *testing.T) {
 	if got := agy.Commands[0]; got != "agy" {
 		t.Fatalf("agy command=%q, want agy", got)
 	}
-	for _, want := range []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "Gemini 3.5 Flash (High)", "--add-dir", "{root}", "--print", "{prompt}"} {
+	for _, want := range []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "Gemini 3.6 Flash (High)", "--add-dir", "{root}", "--print", "{prompt}"} {
 		if !containsStringForTest(agy.HeadlessArgs, want) {
 			t.Fatalf("agy HeadlessArgs missing %q: %v", want, agy.HeadlessArgs)
 		}
@@ -108,8 +108,8 @@ func TestDefaultSpecsPreferAntigravityAndStrongVerifiedDefaults(t *testing.T) {
 	if agy.PromptMode != PromptArg {
 		t.Fatalf("agy PromptMode=%q, want %q", agy.PromptMode, PromptArg)
 	}
-	if agy.Model != "Gemini 3.5 Flash (High)" || agy.Reasoning != CLIDefault {
-		t.Fatalf("agy model/reasoning=%q/%q, want Gemini 3.5 Flash (High)/cli-default", agy.Model, agy.Reasoning)
+	if agy.Model != "Gemini 3.6 Flash (High)" || agy.Reasoning != CLIDefault {
+		t.Fatalf("agy model/reasoning=%q/%q, want Gemini 3.6 Flash (High)/cli-default", agy.Model, agy.Reasoning)
 	}
 
 	claude := findSpecForTest(specs, "claude")

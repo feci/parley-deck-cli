@@ -38,14 +38,14 @@ headless_args = ["-p", "{prompt}"]
 # 2026-07-21): the 4th roster slot is kimi-1. Kept so historical artifacts resolve.
 # agy 1.0.5 exposes `--model`; use the best available Gemini model if reactivated.
 [agents.agy]
-model = "Gemini 3.5 Flash (High)"
+model = "Gemini 3.6 Flash (High)"
 reasoning = "cli-default"
 profile = "cli-default"
 speed = "deep"
 timeout_ms = 1800000
 external_backend = "hosted"
 approval_policy = "dangerously-skip-permissions"
-notes = "Antigravity CLI; headless `agy --print-timeout 30m --dangerously-skip-permissions --model \"Gemini 3.5 Flash (High)\" -p <prompt>`. Models: agy models (Gemini 3.5 Flash Low/Med/High, Gemini 3.1 Pro Low/High)."
+notes = "Antigravity CLI; headless `agy --print-timeout 30m --dangerously-skip-permissions --model \"Gemini 3.6 Flash (High)\" -p <prompt>`. Models: agy models (Gemini 3.6/3.5 Flash Low/Med/High, Gemini 3.1 Pro Low/High)."
 
 [agents.hermes]
 model = "glm-5p2"

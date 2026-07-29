@@ -210,14 +210,14 @@ func defaultBuiltinSpecs() []Spec {
 			LaunchMode:   LaunchHeadless,
 			HeadlessMode: "agy --print",
 			// Keep {prompt} immediately after --print and last; agy treats --print as a value-taking flag.
-			HeadlessArgs:          []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "Gemini 3.5 Flash (High)", "--add-dir", "{root}", "--print", "{prompt}"},
+			HeadlessArgs:          []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "Gemini 3.6 Flash (High)", "--add-dir", "{root}", "--print", "{prompt}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
 			PromptMode:            PromptArg,
 			SandboxMode:           CLIDefault,
 			ApprovalPolicy:        "dangerously-skip-permissions",
-			Model:                 "Gemini 3.5 Flash (High)",
+			Model:                 "Gemini 3.6 Flash (High)",
 			Reasoning:             CLIDefault,
 			Profile:               CLIDefault,
 			Speed:                 DefaultSpeed,
@@ -225,7 +225,7 @@ func defaultBuiltinSpecs() []Spec {
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "unknown",
 			BuffersStdout:         true, // agy --print emits nothing until exit
-			Notes:                 "Antigravity CLI (active Gemini-family participant); agy 1.0.5 exposes --model. Best Gemini model: Gemini 3.5 Flash (High); see `agy models`",
+			Notes:                 "Antigravity CLI (active Gemini-family participant); agy 1.1.8 exposes --model. Strongest Gemini model as of 2026-07-29: Gemini 3.6 Flash (High); see `agy models` (3.6/3.5 Flash Low/Med/High, 3.1 Pro Low/High)",
 			AutonomousWrite:       AutonomousWrite{Mode: "dangerously-skip-permissions", Args: []string{"--dangerously-skip-permissions"}, Scope: ""},
 		}),
 		withBuiltinSources(Spec{
