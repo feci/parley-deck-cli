@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-13
+status: fix-up-cycle-14
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: 1675b6f
+head-commit: 1804985
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -562,3 +562,39 @@ where a gate's credibility is tested.
 
 ### Convergence
 Findings per review round: 10, 3, 3, 2, 2, 1, 1, 1. hermes-1 has accepted twice, kimi-1 once.
+
+## Fix-up cycle 14 — the style= boundary
+status: complete
+completed: 2026-07-29
+head-commit: 1804985
+
+### Fixes applied
+Round-10: hermes-1 filed nothing; codex-1 and kimi-1 filed the same one thing — the last edge of
+the asymmetry cycle 13 deliberately kept. `style=` spans were parsed as CSS *and* raw-scanned, so
+a `var()` inside a string in an inline style was counted by the raw path after the CSS path had
+already handled the span correctly.
+
+The corpus refused the naive fix: excluding every `style=` match loses 2 real references where
+the attribute sits inside a JS template literal assigned to `innerHTML` — the CSS path reads a
+phantom rule and finds nothing, and only the sweep finds the token a browser resolves once the
+template runs. That is the false clean, in exactly the host-language shape the measured decision
+protects.
+
+So the exclusion is of the span the CSS path *actually read* — one declaration list, nothing
+unreadable — which is the finding's own premise.
+
+### Disclosed residual
+Of 8,307 `style=` spans in the corpus, 8,235 are read as a declaration list and withheld from the
+sweep; **72 are not, and stay in it**. A span among those 72 that also carries a `var()` inside an
+opaque token would still double-count. Routing them to the unreadable channel would make ordinary
+shipped code carrying a Jinja conditional UNJUDGEABLE — the false alarm that gets a gate switched
+off — so the residual is disclosed rather than traded for one.
+
+### Verification
+`npm test` 246 → 247. Corpus sweep over 2,236 markup files: 11,675 references before and after, 0
+files changed. The measured counterfactual is unchanged at 2,410 references lost.
+
+### Convergence
+Findings per review round: 10, 3, 3, 2, 2, 1, 1, 1, 1, 1. Each of the last four was a narrower
+edge of the one before it, and the last three were regressions in alternating directions on one
+surface. hermes-1 has accepted three times, kimi-1 twice.
