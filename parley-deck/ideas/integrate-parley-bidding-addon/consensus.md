@@ -6,7 +6,7 @@ track: deliberation
 strict_gate: true
 rounds: 2
 participants: [claude-1, codex-1, hermes-1, kimi-1]
-status: awaiting-signoffs
+status: final
 ---
 
 ## The finding that changes what this idea is
