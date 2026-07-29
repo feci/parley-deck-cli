@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 target: parley-deck-skill
-head-commit: 085799e
-prior-commits: [951d7a5 the move + installer + panel, f8e3a1c gemini path]
+head-commit: a05bac7
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1]
 ---
 
 ## What was done
@@ -54,7 +54,7 @@ builds the new layout. **No test assertion was weakened** — only the paths the
 | **G5** `agy plugin validate` | **PASS** — `✔ skills: 1 processed` |
 | **G6** `npm test` | **PASS** — 247 pass, 0 fail |
 | **G7** real install, no `--full-depth`, isolated `HOME` | **PASS, and it is the point of the idea.** `Found 5 skills` / `Installed 5 skills` with **no flag**. Installed core contains exactly `SKILL.md`, `agents`, `references`; `bin`, `lib`, `package.json`, `test`, `dist` are all **absent**. Both the discovery defect (S1) and the whole-repo-as-skill defect (S3) are fixed and *measured*, not asserted |
-| **G8** `skills update` | **NOT TESTED** — `update` reported "No project skills to update" after a `--copy` install, so the run proved nothing about our layout. The reason is upstream bookkeeping, not our tree |
+| **G8** `skills update` | **NOT TESTED** — `update` reported "No project skills to update" after a `--copy` install, so the run proved nothing about our layout. kimi-1 root-caused it: `skills` skips `sourceType: "local"` by design, so a filesystem-path install has nothing to update from |
 | **G9** Homebrew `brew upgrade` / `brew test` | **NOT TESTED** — the formula points at a published tarball; untestable before the release |
 | **G10** WinGet `winget validate` / `winget install` | **NOT TESTED** — `winget` is not installed on this host (macOS) |
 | **G11** `gemini extensions install <url>` | **NOT TESTED and now unsupported** — see below |
@@ -160,3 +160,60 @@ stated in the README itself, not only here.
 ### New follow-up
 
 Antigravity-before-Gemini detection ordering in a clean `HOME` (pre-existing, found by codex-1).
+
+---
+
+## Fix-up cycle 2
+
+Review round 01 completed with all three reviewers: **codex-1 ❌ BLOCK** (1 MAJOR, 3 MINOR),
+**kimi-1 🟡 ACCEPT-WITH-RESERVATIONS** (1 MAJOR, 1 MINOR, 2 NIT), **hermes-1 ✅ ACCEPT**.
+
+### kimi-1's MAJOR is a miss of mine, and the kind that would have shipped
+
+**I renamed the directory and did not sweep the rename through the shipped skill content.**
+Six files still told the reader to run `addons/…` paths that no longer exist — including
+`parley-design-check`'s own documented run command,
+`node addons/parley-design-check/bin/check.js`, which kimi-1 proved broken. Every filled
+exemplar in `parley-tracker/templates/` had the same class of defect in its `files:`
+frontmatter and its `Verify:` commands.
+
+A layout move is not done when the tests pass. It is done when the **instructions the skills
+give their readers** still resolve. The installer had no reason to fail — none of these paths
+is code the installer runs — so nothing in my gate list could have caught it. kimi-1 found it
+by reading what the skills tell people to type.
+
+| Finding | Action |
+|---|---|
+| **MAJOR-1** — `addons/…` references stale in shipped skill content | Swept all 6 files. `grep -rn "addons/" skills/` → **0**. Verified the two commands that were provably broken now resolve |
+| **MINOR-1** — same class in the tracker's filled exemplars | Same sweep. **Re-ran the exemplars' own validator**: `validate.js --strict --dir templates` → *All 3 ticket(s) passed*. The exemplars still self-pass, which is the property they exist to have |
+| **NIT-1** — panel comparative unmeasured | Already reworded in cycle 1 to "a longer list than this package's own installer covers, and theirs to state, not ours". Verified absent |
+| **NIT-2** — G8's reason imprecise | Corrected above using kimi-1's root cause |
+
+### G8, root-caused by kimi-1 rather than hand-waved
+
+My note said "upstream bookkeeping". The actual mechanism: `skills` skips
+`sourceType === "local"` by design, and `skills-lock.json` records `"local"` for all five
+because the source was a filesystem path — a local copy has nothing to update *from*. **G8 is
+therefore only meaningful post-merge against the published remote.** That is a different
+re-test from the one my note implied, which is why the imprecision mattered.
+
+kimi-1 also confirmed G9 and G10 are genuinely untestable here for reasons independent of this
+change: `packaging/homebrew/Formula/` in this repo is empty (pre-existing), and the WinGet
+manifests reference GitHub-release binaries rather than repo paths, so the move does not
+invalidate them.
+
+### Verification
+
+```text
+$ grep -rn "addons/" skills/                                   → 0
+$ node skills/parley-tracker/bin/validate.js --strict --dir skills/parley-tracker/templates
+                                                               → All 3 ticket(s) passed, rc 0
+$ test -f skills/parley-design-check/bin/check.js               → present, matches its SKILL.md
+$ npm test                                                      → pass 249, fail 0
+```
+
+### Remaining NOT TESTED
+
+G3 Windows · G8 `skills update` (post-merge, against the remote) · G9 Homebrew (pre-release) ·
+G10 WinGet (no host) · G11 `gemini extensions install <url>` (no Gemini CLI). None is reported
+as a pass.
