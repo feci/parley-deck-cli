@@ -2,9 +2,9 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-10
+status: fix-up-cycle-11
 target: parley-deck-skill
-head-commit: 4a75eb6
+head-commit: 39919bf
 prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7, cycle-8]
 ---
 
@@ -647,3 +647,54 @@ Also fixed this cycle:
 ### Findings per round
 
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1 · r07: 1 · r08: 1 · r09: 3`.
+
+---
+
+## Fix-up cycle 11 — a backtick means two different things, and the guard knew only one
+
+Review round 10: **codex-1 ❌ BLOCK** (1 MAJOR). Both directions, both measured:
+
+1. **False green.** Inside a fenced `bash` block:
+   ``node --test `printf %s --test-reporter=definitely-missing-reporter` "…/*.test.js"``.
+   Typed verbatim it exits 7 with `ERR_MODULE_NOT_FOUND`. The unitizer treated the backtick
+   pair as a Markdown span, **deleted the substitution**, and executed the repaired remainder —
+   35 passing tests, suite green at **253/0**. It repaired a broken command into a working one,
+   which is the false-green class cycle 10 claimed to have closed.
+2. **Manufactured failure.** `` Run ``node --test "…/*.test.js"``. `` — a standard CommonMark
+   **double-backtick** span. The unitizer read the doubled backticks as two separate
+   delimiters and reconstructed `Run  node --test "…" .`, then rejected it as not a bare
+   command.
+
+### The missing fact
+
+Whether a backtick delimits a Markdown span or is shell syntax depends on exactly one thing:
+**whether the line is inside a fenced block.** The unitizer never tracked fence state, so it
+applied span rules to shell text and shell text to spans.
+
+Now it does:
+
+- it walks the document tracking the open fence marker (``` or `~~~`, any length ≥ 3);
+- **inside** a fence the line *is* the command, verbatim — no span parsing, so a command
+  substitution survives into the unit and is then refused by the strict grammar;
+- **outside** a fence, a run of N backticks opens a span that a matching run of N closes, so
+  ``` ``…`` ``` is one span rather than two delimiters.
+
+### Proved — the two new probes, and all nine earlier ones re-run
+
+```text
+$ fenced command substitution        → pass 252, fail 1, refused by name  (was 253/0)
+$ double-backtick inline span        → pass 253, fail 0                   (was a false failure)
+
+regression sweep, unchanged behaviour:
+  backtick fence / tilde fence / indented / two-per-line / tab / trailing period
+                                     → pass 252, fail 1   (each)
+  single-quoted glob / two targets   → pass 253, fail 0   (each, legitimately)
+  cd … &&                            → pass 252, fail 1   (named refusal)
+  restored                           → pass 253, fail 0
+```
+
+The fixture now carries both new forms and asserts the grammar's verdict on each.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10: 1`.
