@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-3
+status: fix-up-cycle-4
 target: parley-deck-skill
-head-commit: bddbf1a
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2]
+head-commit: fa1fdb1
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3]
 ---
 
 ## What was done
@@ -272,3 +272,59 @@ Three reviewers looked at this change. The installer was correct from the first 
 real defects were in **what the shipped files tell a human to type**. Neither the test suite
 nor any of my seven gates was capable of seeing them. kimi-1 found them by reading the
 instructions; codex-1 found the false-green by *running* one.
+
+---
+
+## Fix-up cycle 4
+
+Review round 03: **codex-1 ❌ BLOCK** (1 MAJOR), **kimi-1 ✅ ACCEPT** (all four of its round-01
+findings verified FIXED by running them, not by reading my claims).
+
+### codex-1 found a second instance of the class — and one my cycle-3 guard could not see
+
+`skills/parley-tracker/templates/subtask.md:68` and `:74` publish
+`node --test skills/parley-tracker/bin`. On Node v26.5.0 that directory form fails with
+`MODULE_NOT_FOUND`: **one failed harness entry, zero passing tests.** It is a filled exemplar,
+so its acceptance criterion and Definition of Done tell an implementer that this command
+proves the tests are green. It proves nothing, and the box cannot be ticked honestly.
+
+**The cycle-3 guard was blind to it by construction.** That guard greps for `addons/`. This
+path is perfectly correct — the *form* is wrong. Fixing symptoms one at a time was never going
+to converge; the guard had to be for the class.
+
+Fixed to `node --test "skills/parley-tracker/bin/*.test.js"` → **35 tests, 35 pass**.
+
+### The real deliverable: a guard for published verification commands
+
+New test: extract **every** `` `node --test …` `` command from every shipped `.md` under
+`skills/`, run each one, and assert both `fail == 0` **and `pass > 0`**. A command that exits
+0 while running nothing now fails the suite.
+
+Two bugs of mine surfaced while building it, and both are worth recording because each would
+have produced a guard that silently passed:
+
+1. **The summary parser looked for `# pass N`.** Node's default reporter prints `ℹ pass N`.
+   My first version read zero and would have been "fixed" by relaxing the assertion — the
+   wrong direction entirely. It now accepts either form and **treats an unparseable summary as
+   a failure**, not as zero.
+2. **A test runner spawned inside a test runner emits nothing to stdout.** It inherits
+   `NODE_TEST_CONTEXT` and reports through the parent, so the child's output was empty. The
+   child env is now stripped of `NODE_TEST*` so it behaves exactly as it does for a person
+   typing the published command.
+
+**Proved to fail before being trusted**, like the cycle-3 guard: reverting the exemplar to the
+directory form drops the suite to `pass 251, fail 1`; restoring it gives `pass 252, fail 0`.
+
+### Verification
+
+```text
+$ node --test "skills/parley-tracker/bin/*.test.js"        → 35 tests, 35 pass, 0 fail
+$ node --test "skills/parley-design-check/test/*.test.js"  → 159 tests, 159 pass, 0 fail
+$ npm test                                                  → pass 252, fail 0
+$ npm test, exemplar reverted to the directory form         → pass 251, fail 1 (guard fires)
+```
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1`. Every one of them was in shipped *instructions*,
+never in the installer.
