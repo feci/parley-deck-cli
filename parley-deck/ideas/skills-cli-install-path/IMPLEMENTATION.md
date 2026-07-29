@@ -791,3 +791,92 @@ restored                      → 253/0
 ### Findings per round
 
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10: 1 · r11: 1 · r12: 1`.
+
+## Fix-up cycles 14 and 15 — the continuation, and the container the continuation hid in
+
+Round 13 was `❌ BLOCK` with one MAJOR: a continuation *before* `--test` bypassed the guard.
+Round 14 was `❌ BLOCK` too — but nobody signed it, because the reviewer never got to finish.
+
+### Cycle 14 — logical lines before detection
+
+`publishedTestCommands` filtered each **physical** line with `/node\s+--test/` before it looked
+for a continuation, so it saw a continuation only when one line already held both tokens.
+codex-1's probe put the break between them:
+
+```text
+node \
+  --test skills/parley-worktrees/round13-definitely-missing.test.js
+```
+
+Copied out and run: exit 1. Suite: **253/0**. Neither line reached the refusal or the grammar.
+
+Physical lines are now spliced into logical ones — exactly as a shell removes
+backslash-newline — **before** anything looks for a command, and a spliced unit is emitted with
+its backslash restored so the strict grammar refuses it by name. Cycle 14b added codex-1's
+exact probe and both token-boundary splits it named (inside `node`, inside `--test`), because
+cycle 14's own fixture had covered neither.
+
+### Round 14 — no signoff exists, and why
+
+`codex exec` was terminated mid-run by an upstream OpenAI content filter
+(*"This content was flagged for possible cybersecurity risk"*) while writing its probe harness.
+It had spent ~119k tokens, wrote no review file, and left two untracked files behind
+(`.round14-probes.js`, `skills/round14-codex-probe.md`) which were removed. **Round 14 has no
+reviewer signoff.** This is recorded as a tool outage, not as an accept.
+
+Two things survived it, and both are usable:
+
+1. Its last recorded step: *"testing whether Markdown container syntax can still interrupt the
+   reconstructed logical shell line."*
+2. Its unrun harness, in which `P13-blockquote` carried `expected: "GREEN"` — codex-1 had
+   **predicted the false green before measuring it**.
+
+### Cycle 15 — the prediction was correct
+
+Its probe, run verbatim on a clean tree:
+
+```text
+> ```bash
+> node \
+>   --test skills/parley-worktrees/round14-blockquote-missing.test.js
+> ```
+```
+
+Guard **12/0 — green**. The same command copied out: **exit 1**.
+
+A blockquote marker sits at the start of *every* line it contains, but the container-noise
+strip ran **once, after splicing**, so it only ever cleaned the first line. The interior
+markers stayed embedded — `node > --test x` — which matches no command pattern, so the command
+was never tested at all.
+
+This is not a new rule. It is the existing rule applied to every physical line instead of one
+of them. Because the strip now precedes reconstruction, it also closes a shape raw splicing
+could never reach: the tokens themselves split across lines inside a blockquote.
+
+**Named divergence:** `/bin/sh` preserves a continuation line's leading whitespace; this does
+not. The guard reconstructs more aggressively than a shell — it refuses more and executes
+less. Fail-closed, and stated here rather than left to be discovered.
+
+### Proved — nineteen probes, clean tree, cycle 15 in place
+
+```text
+split after --test            → 252/1     round-13 exact probe        → 252/1
+split inside `node`           → 252/1     split inside `--test`       → 252/1
+valid half + poisoned tail    → 252/1     continuation, valid target  → 252/1
+fenced substitution           → 252/1     blockquote continuation     → 252/1
+cd … && …                     → 252/1     indented continuation       → 252/1
+NODE_OPTIONS=… prefix         → 252/1     list-item continuation      → 252/1
+                                          nested blockquote           → 252/1
+plain inline (valid)          → 253/0     tokens split in blockquote  → 252/1
+double-backtick (valid)       → 253/0     codex-1's exact probe       → 252/1
+blockquote single (valid)     → 253/0
+genuinely broken path         → 252/1  ← RUNS and fails, not refused
+```
+
+The last line is the one that matters most: the guard did not become a refuser that verifies
+nothing.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
+reviewer, confirmed by me after the reviewer was cut off)`.
