@@ -880,3 +880,53 @@ nothing.
 
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
 reviewer, confirmed by me after the reviewer was cut off)`.
+
+## Fix-up cycle 16 — the marker goes, the whitespace stays
+
+Round 15 ran (codex-1, `❌ BLOCK`) and refuted a claim **I** had made in cycle 15.
+
+I wrote that dropping a continuation line's leading whitespace could only cause extra
+refusals — fail-closed. codex-1 measured the opposite:
+
+```text
+node\
+  --test skills/parley-worktrees/round15-leading-space-missing.test.js
+```
+
+A shell removes only the backslash-newline, so a reader gets `node  --test x` — it runs, and
+it exits 1. Deleting the indentation produced `node--test x`, which the detector cannot see.
+Guard: **12 pass / 0 fail**. The same false-green class as round 14, from the opposite side.
+
+Cycle 15 had conflated two things that must be separated:
+
+- the container **marker** must go — it sits at the head of every line it contains;
+- the content's **whitespace** must stay — deleting it merges tokens the shell keeps apart.
+
+Cycle 16 removes exactly the marker: up to three spaces of lead-in, the `>`, and at most one
+space of padding, per nesting level — all CommonMark consumes. Nothing else is touched.
+
+**The divergence cycle 15 named as acceptable is gone rather than justified.** The
+reconstruction is no longer "more aggressive than a shell"; it is what the reader copies out
+of the rendered page.
+
+### Proved — twenty-two probes, clean tree
+
+Every continuation shape refused, with and without a space before the backslash, inside
+blockquotes, nested blockquotes, indented blocks and list items, and with the tokens
+themselves split across lines. All three valid forms still green. A genuinely broken path
+still **runs and fails** rather than being refused.
+
+### Process defect, and the correction
+
+Rounds 03–15 were reviewed by **codex-1 alone**. Thirteen consecutive single-reviewer rounds,
+each finding exactly one real problem from one perspective. Round 16 runs the **full roster** —
+`codex-1`, `agy-1`, `hermes-1`, `kimi-1` — with `antigravity-1` reactivated for it. Each
+reviewer works in its own git worktree with its own probe harness, because probing writes
+temporary files into the tree and concurrent reviewers on one checkout corrupt each other's
+measurements. I hit exactly that contamination myself earlier in this session and read three
+probe results wrong before the error message named a file I had not written.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
+reviewer, confirmed by me after it was cut off) · r15: 1 (refuted a claim of mine)`.
