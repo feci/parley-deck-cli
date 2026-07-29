@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-2
+status: fix-up-cycle-3
 target: parley-deck-skill
-head-commit: a05bac7
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1]
+head-commit: bddbf1a
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2]
 ---
 
 ## What was done
@@ -217,3 +217,58 @@ $ npm test                                                      → pass 249, fa
 G3 Windows · G8 `skills update` (post-merge, against the remote) · G9 Homebrew (pre-release) ·
 G10 WinGet (no host) · G11 `gemini extensions install <url>` (no Gemini CLI). None is reported
 as a pass.
+
+---
+
+## Fix-up cycle 3
+
+Review round 02: **codex-1 ❌ BLOCK** (1 MAJOR). codex-1's review ran against the cycle-1 tree,
+before the cycle-2 sweep, so the 34 stale paths it counted were already gone by the time it
+filed. **But it asked for something cycle 2 did not do, and it was right to.**
+
+### The false-green codex-1 found
+
+`skills/parley-design-check/SKILL.md:372` documented its own test command. With the stale
+path it **exited 0 while running zero tests** — a verification path that reports success by
+matching nothing. That is worse than a broken command, because a broken command is loud.
+
+Verified after the sweep:
+
+```text
+$ node --test "skills/parley-design-check/test/*.test.js"
+ℹ tests 159   ℹ pass 159   ℹ fail 0
+```
+
+### The guard, which is the actual deliverable of this cycle
+
+Cycle 2 fixed the paths. It added **nothing that would notice them coming back** — and
+`npm test` structurally cannot notice, because the moved files are valid; only their
+*instructions* were wrong. Two assertions added to `test/design-addons.test.js`:
+
+- every shipped `.md` / `.js` / `.json` / `.yaml` under `skills/` is scanned for a live
+  `addons/` path, reporting **file and line** for each offender;
+- the package ships no `addons/` directory at all.
+
+**The guard was proved to fail before it was trusted.** Reverting one line of
+`skills/parley-tracker/SKILL.md:79` back to `addons/parley-tracker` drops the suite to
+`pass 250, fail 1` with the offending file and line named; restoring it returns
+`pass 251, fail 0`.
+
+codex-1 also warned against restoring an `addons/` compatibility tree to make the old paths
+work. Not done — that would reintroduce the second tree S4b exists to prevent.
+
+### Verification
+
+```text
+$ grep -rn "addons/" skills/                                    → 0
+$ npm test                                                       → pass 251, fail 0
+$ npm test, with one addons/ path reintroduced                   → pass 250, fail 1 (guard fires)
+$ node --test "skills/parley-design-check/test/*.test.js"        → 159 tests, 159 pass
+```
+
+### Lesson worth keeping
+
+Three reviewers looked at this change. The installer was correct from the first commit; both
+real defects were in **what the shipped files tell a human to type**. Neither the test suite
+nor any of my seven gates was capable of seeing them. kimi-1 found them by reading the
+instructions; codex-1 found the false-green by *running* one.
