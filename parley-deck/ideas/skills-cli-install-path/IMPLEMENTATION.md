@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-4
+status: fix-up-cycle-5
 target: parley-deck-skill
-head-commit: fa1fdb1
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3]
+head-commit: 4f7fd32
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4]
 ---
 
 ## What was done
@@ -328,3 +328,52 @@ $ npm test, exemplar reverted to the directory form         → pass 251, fail 1
 
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1`. Every one of them was in shipped *instructions*,
 never in the installer.
+
+---
+
+## Fix-up cycle 5
+
+Review round 04: **codex-1 ❌ BLOCK** (1 MAJOR).
+
+### My cycle-4 guard did not do what cycle 4 claimed it did
+
+I wrote that it runs "every published `node --test` command". It ran the **inline** ones. The
+extractor was `` /`(node --test [^`]+)`/g `` — a single-backtick code span — and
+`skills/parley-design-check/SKILL.md:371-373` publishes its command inside a **fenced block**.
+So the 159-test command, the one whose false green started this whole thread, was never
+checked by the guard built to protect it.
+
+codex-1 did not argue this; it measured it in scratch copies:
+
+- a broken **inline** command → `npm test` 251/1 (caught)
+- the same broken command **fenced** → `npm test` 252/0 (**missed**)
+
+That is the third time in this idea that a guard or claim of mine was weaker than its
+description. The pattern is consistent and worth stating plainly: **I keep verifying the
+instance I just fixed rather than the class I claimed to cover.**
+
+### What changed
+
+- Extraction pulls commands from **both** inline code spans and fenced blocks, strips a
+  leading `$ ` prompt, normalises whitespace and deduplicates.
+- The extractor is now a **named function tested against a fixture** containing one valid and
+  one broken command in *each* form, plus a non-test line that must be ignored. An extractor
+  that silently misses a form yields a guard that silently passes — so the extractor itself
+  needed a test, not just the thing it feeds.
+- The runner assertion now requires `published.size >= 2`, so the suite fails if discovery
+  ever regresses to finding only one command again.
+
+### Proved, both forms
+
+```text
+$ npm test                                                   → pass 253, fail 0
+$ break the FENCED design-check command  → pass 252, fail 1   (was 252/0 before this cycle)
+$ break the INLINE tracker command       → pass 252, fail 1
+$ both restored                                              → pass 253, fail 0
+```
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1`. Every finding in this idea has been about
+shipped instructions or about a guard that was narrower than its claim — none about the
+installer, which has been correct since the first commit.
