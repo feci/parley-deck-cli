@@ -930,3 +930,71 @@ probe results wrong before the error message named a file I had not written.
 
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
 reviewer, confirmed by me after it was cut off) · r15: 1 (refuted a claim of mine)`.
+
+## Round 16 and cycles 17–18 — the roster change paid for itself in one round
+
+Round 16 was the first full-roster review since round 02. **All four reviewers signed
+`❌ BLOCK`, and three of the four findings came from the agents that had been absent for
+thirteen rounds.**
+
+| reviewer | finding | disposition |
+|---|---|---|
+| `agy-1` | a node flag between the tokens (`node --no-warnings --test x`, `node -r ./setup.js --test x`) matched no detection pattern, so the command was **skipped entirely** | cycle 17 |
+| `codex-1` | markdown **rendering** synthesizes commands no source scanner sees: an escaped backslash, emphasis inside the flag, a numeric entity | cycle 18 |
+| `kimi-1` **and** `hermes-1`, independently | cycle 16 stripped a `>` it could not prove was a marker and **executed the mutated text** — a fenced `> node --test x` certified green while the reader's copy is a redirection that creates a file named `node` and exits 127 | cycle 18 |
+| `kimi-1` | the zero-width continuation boundary — nothing on either side of the break | cycle 17 |
+| `hermes-1` | the same repair-instead-of-refuse defect for the `$ ` prompt | cycle 18 |
+
+`agy-1` found its MAJOR in its **first review after reactivation**, in a class thirteen
+single-reviewer rounds had not touched. That is the measurable answer to whether the roster
+gap mattered.
+
+### Cycle 17 — detection must be broader than acceptance
+
+`agy-1`'s finding exposed the mistake every false green in seventeen rounds shares: **detection
+used the same pattern as acceptance.** Whatever the grammar would refuse, detection also failed
+to see — so the command was not refused, it was skipped, and skipping reads as success.
+
+A unit is now a candidate if it mentions `node` and `--test` at all, in any order, with
+anything between them. What runs is decided afterwards and only by the grammar.
+
+### Cycle 18 — stop approximating markdown; parse it
+
+All four reviewers independently concluded the class cannot be closed by a scanner over source
+text. The user ratified the publication-contract-plus-parser direction.
+
+**The contract:** a verification command MUST be the whole text of a single code node — one
+inline span, or one line of one code block — in canonical form. Anything else that renders as
+such a command is refused by name.
+
+- A real CommonMark parser (`commonmark`, a new devDependency; CI already runs `npm ci`)
+  produces the AST.
+- `publishedTestCommands` returns command → **provenance** (`code` | `prose`), and provenance
+  is checked **before** form: a canonical command reaching the reader out of prose is refused
+  rather than run, so it cannot pass by happening to work.
+- Inside a code node a continuation is spliced raw and emitted **with** its backslash, so the
+  grammar refuses it. One node, one line.
+
+**What the parser buys that no line heuristic could:** a `>` is a marker or content depending
+only on its container. A fence *inside* a blockquote yields the bare command and runs; a `>`
+*inside* a fence stays in the literal and is refused. `kimi-1` named that asymmetry precisely
+and it is why cycle 16's per-line stripper could not be repaired.
+
+### The fixture was structurally wrong, and the old design could not tell
+
+Rewritten as a **well-formed** document. The previous fixture was authored for a line scanner,
+so its structure was accidental: an unclosed fence had been swallowing the blockquote cases
+below it, and its assertions still passed **because the scanner did not model containers
+either**. The parser exposed it on the first run. A fixture that agrees with a defect is not
+evidence.
+
+### Proved — thirty-one probes, clean tree
+
+Every finding from rounds 13–16 turns the guard red; all three valid forms stay green; a
+genuinely broken path still **runs and fails** rather than being refused. Suite 253/253.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 (predicted by the
+reviewer, confirmed by me after it was cut off) · r15: 1 (refuted a claim of mine) · r16: 5
+across 4 reviewers (two more refuted claims of mine)`.
