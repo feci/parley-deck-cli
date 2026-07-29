@@ -2,9 +2,10 @@
 idea: readme-skill-catalogue
 implementer: claude-1
 date: 2026-07-29
-status: ready-for-review
+status: fix-up-cycle-3
 target: parley-deck-skill/README.md
-commit: 5df9d04   # cycle 2; cycle 1 was 4399bd4, initial was 0061dc2
+head-commit: f855a6f
+prior-commits: [0061dc2 initial, 4399bd4 cycle-1, 5df9d04 cycle-2]
 ---
 
 ## What was done
@@ -152,7 +153,7 @@ both reviewers. Zero CRITICAL in either round.
 
 | Finding | Action |
 |---|---|
-| **The documented project-scope install command fails** | **Real defect, reproduced.** `install --scope project --target all --project .` prints *"No installed agent runtimes were detected"* and installs nothing: under project scope, detection looks for runtime-directory evidence *inside the project*, and a clean project has none. Fixed by adding `--include-undetected`, and **verified**: the old command produces the error, the new one plans 71 installs. |
+| **The documented project-scope install command fails** | **Real defect, reproduced.** `install --scope project --target all --project .` prints *"No installed agent runtimes were detected"* and installs nothing: under project scope, detection looks for runtime-directory evidence *inside the project*, and a clean project has none. Fixed by adding `--include-undetected`, and **verified**: the old command produces the error, the new one plans 70 skill actions (14 targets x 5 skills). |
 | Cross-repo location claim still unsupported | Removed. Now: "Deterministic automated orchestration is not part of it and requires separate tooling." No named external repository. |
 | "The one lineage a shipped file records" too absolute | → "The protocol lineage recorded here is…" — the next sentence names two more shipped design lineages. |
 | `paths` does not report every target | Now says every **detected** target, and documents `paths --target all --include-undetected` for all fourteen. Reproduced: default returns fewer entries than the long form. |
@@ -168,7 +169,7 @@ $ wc -l README.md   → 260  (ceiling 300)
 $ npm test          → pass 247, fail 0
 $ node bin/parley-deck-skill.js install --scope project --target all --project /tmp/x --dry-run
   → "No installed agent runtimes were detected…"        (the documented command, before)
-$ …same + --include-undetected --dry-run  → 71 planned install lines, rc 0   (after)
+$ …same + --include-undetected --dry-run  → 70 skill actions across 14 targets, rc 0   (after)
 $ node bin/parley-deck-skill.js paths                      → detected targets only
 $ node bin/parley-deck-skill.js paths --target all --include-undetected → all fourteen
 ```
@@ -177,3 +178,42 @@ $ node bin/parley-deck-skill.js paths --target all --include-undetected → all 
 
 `#install-update-and-remove` anchor **NOT TESTED** on GitHub/npmjs · `packaging/winget/README.md`
 stale · protocol prior art belongs in `NOTICE.md` — all three are follow-ups.
+
+---
+
+## Fix-up cycle 3 — commit f855a6f
+
+Review round 03: **codex-1 ❌ BLOCK** (1 MAJOR, 2 MINOR), **hermes-1 ✅ ACCEPT** (0 findings).
+Zero CRITICAL in any round.
+
+**The MAJOR is one my own cycle-2 edit introduced.** Fixing the "uncheckable runtime
+instructions" finding, I wrote *"The last two lines depend on those CLIs rather than on
+anything this package ships"* — and both halves were wrong. The last two lines are the npm
+and Gemini lines, and the npm line runs `parley-deck-skill install`, which is exactly what
+this package ships. I also asserted the Gemini CLI and `--target gemini` "write to different
+directories". They do not: `lib/installer.js:40` resolves the gemini target to
+`.gemini/extensions`, which is where the Gemini CLI puts extensions too. **Same destination,
+two managers** — the reason not to mix them is competing management, not divergence.
+
+codex-1 also named that sentence as the one line in the file that reads machine-made. It was:
+vague backward reference, abstract contrast, written to patch a finding rather than to say
+something. That is what fix-up prose degenerates into if nobody is checking.
+
+| Finding | Action |
+|---|---|
+| Gemini/channel explanation factually wrong (MAJOR) | Rewritten from the installer source: named the shared destination `~/.gemini/extensions/parley-deck`, "use one or the other, never both", and separated the Antigravity guidance instead of lumping it in |
+| Restart sentence still not checkable (MINOR) | The cache assertion is gone. Now purely non-factual guidance: "follow its own instructions for reloading skills" |
+| Frontmatter not in Phase-8 shape; "71 installs" wrong (MINOR) | `status: fix-up-cycle-3`, `head-commit:`, `prior-commits:`. The count is **70 skill actions** (14 targets × 5 skills); 71 was the number of *output lines*, the 71st being the add-on hint |
+
+### Verification
+
+```text
+$ grep -n "\.gemini" lib/installer.js   → :33 .gemini/config/plugins (agy), :40 .gemini/extensions (gemini)
+$ wc -l README.md                       → 260   (ceiling 300)
+$ npm test                              → pass 247, fail 0
+```
+
+### Still open, unchanged
+
+`#install-update-and-remove` anchor **NOT TESTED** on GitHub/npmjs · `packaging/winget/README.md`
+stale · protocol prior art belongs in `NOTICE.md`.
