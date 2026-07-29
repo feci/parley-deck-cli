@@ -1,6 +1,6 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-14
+status: complete
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
@@ -598,3 +598,24 @@ files changed. The measured counterfactual is unchanged at 2,410 references lost
 Findings per review round: 10, 3, 3, 2, 2, 1, 1, 1, 1, 1. Each of the last four was a narrower
 edge of the one before it, and the last three were regressions in alternating directions on one
 surface. hermes-1 has accepted three times, kimi-1 twice.
+
+## Complete
+status: complete
+completed: 2026-07-29
+head-commit: 1804985
+
+Review round 11: **all three reviewers ACCEPT, zero CRITICAL, zero MAJOR.** Review consensus
+lists no remaining agreed fixes, so Phases 6-8 close here.
+
+Findings per review round: 10, 3, 3, 2, 2, 1, 1, 1, 1, 1, 0. codex-1 blocked eight times and
+every block was substantive; hermes-1 accepted from round 7 onward; kimi-1 from round 9.
+
+Final state: `npm test` 247 passing, 0 failing. Doctrine 65,360 / 65,536 bytes across four files.
+Differential evidence against real headless Chromium over 170 constructs: 0 silent holes, 2
+disclosed over-reads at the declared `T1 SOURCE` tier boundary. Corpus sweeps over 697
+stylesheets and 2,236 markup files: 0 new findings, 0 lost, 0 newly unreadable.
+
+Disclosed residuals, none of them silent: the 72 `style=` spans the CSS path cannot read as a
+declaration list; an escaped exponent in a dimension unit; declarations the scanner reads that
+Chromium discards as invalid; and, in the protocol rather than the checker, a proposer filing
+under an unrelated fresh id being indistinguishable from a genuine critic without a roster.
