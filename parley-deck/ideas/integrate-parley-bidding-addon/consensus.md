@@ -118,4 +118,23 @@ validation evidence to the user. This overrides the standing release-after-every
 
 ---
 
+## User rulings — 2026-07-29, binding
+
+Asked directly, answered directly:
+
+1. **Scope: the full consensus.** The sixth skill **and** the integrity mechanism (F6 manifest
+   with SHA-256, preflight-before-first-write, a health check that separates a valid payload
+   from an unusable one). Blocker **B3 is not deferred** — the option to ship the skill with
+   `doctor` unable to detect a gutted tree was offered and **declined**.
+2. **The `skills-cli-install-path` guard is ground until codex-1 accepts.** No early stop, no
+   narrowing to a convention. Findings-per-round has been 1 for eight consecutive rounds; that
+   is accepted as the cost.
+3. **The release is `2.0.0`, a major.** Every skill moved and the
+   `gemini extensions install <url>` path behaves differently, so the repository shape is
+   treated as breaking even though the *installed* shape is unchanged.
+
+Consequence for F7: implementation of this idea still waits for `skills-cli-install-path` to
+reach zero agreed fixes and merge, and that idea now runs to codex-1's acceptance rather than
+to a bounded number of rounds.
+
 ## Signoffs
