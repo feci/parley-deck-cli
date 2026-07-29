@@ -2,10 +2,10 @@
 idea: skills-cli-install-path
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-8
+status: fix-up-cycle-9
 target: parley-deck-skill
-head-commit: 895d0f4
-prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7]
+head-commit: 279a72c
+prior-commits: [951d7a5 move+installer+panel, f8e3a1c gemini path, 085799e cycle-1, a05bac7 cycle-2, bddbf1a cycle-3, fa1fdb1 cycle-4, 4f7fd32 cycle-5, 46b5730 cycle-6, c642636 cycle-7, cycle-8]
 ---
 
 ## What was done
@@ -532,3 +532,57 @@ running it, fixed, recorded here rather than tidied away.
 ### Findings per round
 
 `r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1 · r07: 1`.
+
+---
+
+## Fix-up cycle 9 — the hand-written shell parser is deleted
+
+Review round 08: **codex-1 ❌ BLOCK** (1 MAJOR). Both directions again, both measured:
+
+1. **False green.** `node --test "…/bin/*.test.js".` — a trailing period the shell concatenates
+   onto the target. Typed, Node exits 0 having run **zero tests**. My normaliser stripped the
+   period as "prose punctuation", repaired the target back into the valid glob, and the suite
+   stayed **253/0**. The guard was *manufacturing* the exact false green it exists to catch.
+2. **Manufactured failure.** `node --test 'skills/parley-tracker/bin/*.test.js'` — legitimate,
+   runs 35 tests. My lexer understood only double quotes, so the single quotes survived into
+   the argv value, Node matched nothing, and the suite failed **252/1**.
+
+### The fix codex-1 prescribed, and why it is the last one
+
+*"Fix it without another case-by-case parser extension: capture command text without silently
+rewriting it, and use a fail-closed exact-command-to-argv registry (or an actual, explicitly
+scoped shell) so an unrecognised form fails as unsupported instead of being guessed."*
+
+So:
+
+- **Capture verbatim.** No stripping, no whitespace normalisation, no re-quoting. The command
+  stored is the command published.
+- **Execute through `/bin/sh -c`.** Quoting, whitespace and trailing characters are interpreted
+  by a real shell — exactly as they are for a person who copies the line and presses enter.
+  There is no approximation left to be wrong.
+- **Fail closed.** Anything containing `;`, `|`, `&`, `<`, `>` or `$(` is **refused before
+  execution** with a named reason, rather than guessed at or quietly run.
+
+Six revisions of this guard hand-wrote progressively better approximations of shell syntax.
+Every one of them was wrong in both directions at once. The correct move was to stop
+approximating and delegate to the thing that defines the semantics.
+
+### Proved
+
+```text
+$ trailing-period command    → pass 252, fail 1   (before: 253/0 — the false green)
+$ single-quoted glob         → pass 253, fail 0   (before: 252/1 — the false failure)
+$ restored                   → pass 253, fail 0
+
+fail-closed, refused before execution and named:
+$ node --test a.test.js; rm -rf /tmp/nope   → pass 252, fail 1
+$ node --test $(echo evil).test.js          → pass 252, fail 1
+$ node --test a.test.js | grep x            → pass 252, fail 1
+  message: "published command uses shell syntax this guard refuses to interpret: …"
+```
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02: 1 · r03: 1 · r04: 1 · r05: 1 · r06: 1 · r07: 1 · r08: 1`.
+Eight consecutive single-finding rounds, seven of them in the guard. The product — the layout
+move, the installer, the packaging — has needed no change since round 01.
