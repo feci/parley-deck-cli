@@ -1,11 +1,11 @@
 ---
 idea: parley-design-skills
-status: fix-up-cycle-11
+status: fix-up-cycle-12
 implementer: claude-1
 started: 2026-07-28
 completed: 2026-07-28
 branch: parley-deck-skill#parley-design-skills
-head-commit: 82bde7d
+head-commit: 9121ec2
 design-pr: n/a
 implementation-pr: pending
 ---
@@ -497,3 +497,35 @@ Bootstrap's shipped uppercase `RGBA(...)` that the checker had been blind to.
 The differential harness stays in the session scratchpad rather than being committed: it is a
 non-checker artifact and adding it would put a Chromium-dependent tool inside a package whose
 whole posture is Node built-ins only.
+
+## Fix-up cycle 12 — the @function regression
+status: complete
+completed: 2026-07-29
+head-commit: 9121ec2
+
+### Fixes applied
+Round-08: hermes-1 ACCEPTED with no findings; codex-1 and kimi-1 each filed exactly one thing,
+and it was the same thing — a regression cycle 11 introduced. Closing `@function`'s false
+*unreadable* had traded it for a false *clean*, which is the worse direction and precisely what
+the round asked reviewers to test for.
+
+`functionParameters` gathered every `--name` anywhere after the opening parenthesis, so
+`@function --pick(--x: var(--ghost))` bound `--ghost` as a formal and suppressed a real,
+browser-resolved reference, while the reference inside the default was never collected. The
+parameter list is now parsed at top-level commas through the shared string and escape consumers;
+only a segment's leading custom-property identifier is a formal; `var()` references in defaults
+are collected as real uses. A segment whose leading token is not a custom-property name goes to
+the unreadable channel rather than being guessed either way.
+
+That cycle's own sweep caught its own false alarm mid-flight — the first cut fired on Sass
+`@function px-to-rem($n)` in real `.scss` files — and it was fixed before the cycle reported.
+
+### Verification
+`npm test` 244 → 245. Sweep over 639 stylesheets and 2,032 markup files (36 MiB): 0 new, 0 lost,
+0 newly unreadable, 0 files changed.
+
+### Convergence
+Findings per review round: 10, 3, 3, 2, 2, 1, 1. hermes-1 has accepted twice. The last two
+findings were regressions introduced by the fix before them, in opposite directions — which is
+the signature of a surface that has been driven down to its last trade-off rather than one still
+hiding whole classes.
