@@ -6,7 +6,7 @@ track: standard
 participants: [claude-1, codex-1, hermes-1, kimi-1]
 target-repo: parley-deck-skill
 target-file: README.md
-status: round-01
+status: complete
 roles:
   claude-1: structure & voice (what shape the catalogue takes, what register it speaks in)
   codex-1: truthfulness (every sentence must be checkable against a shipped file)

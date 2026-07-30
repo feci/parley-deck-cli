@@ -2,9 +2,9 @@
 idea: readme-skill-catalogue
 implementer: claude-1
 date: 2026-07-29
-status: fix-up-cycle-4
+status: complete
 target: parley-deck-skill/README.md
-head-commit: 94a4889
+head-commit: a544dcd
 prior-commits: [0061dc2 initial, 4399bd4 cycle-1, 5df9d04 cycle-2, f855a6f cycle-3]
 ---
 

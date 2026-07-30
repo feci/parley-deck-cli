@@ -5,7 +5,7 @@ created: 2026-07-29
 track: standard
 participants: [claude-1, codex-1, hermes-1, kimi-1]
 target-repo: parley-deck-skill
-status: round-01
+status: complete
 depends-on: readme-skill-catalogue   # that idea defines the README structure this one writes into
 roles:
   claude-1: layout & compatibility (what changes in the repo, and what it breaks)
