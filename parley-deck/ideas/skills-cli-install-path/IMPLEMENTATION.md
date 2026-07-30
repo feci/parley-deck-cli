@@ -1246,3 +1246,97 @@ Five of my own written claims have now been refuted by measurement: that whitesp
 fail-closed (r15), that every continuation shape was refused (r16), that raw HTML reaches the
 reader as copyable text (r17), that a proxy assertion checked what it claimed (r18), and that a
 principle stated universally had been applied universally (r19).
+
+## Round 20 and cycles 26–28 — three reviewers, three findings, three corrections of mine
+
+All three delivered. `codex-1` completed a review for the first time since round 18: the brief
+forbade it to author probe tooling, which is what had been triggering the content filter that
+destroyed its previous two runs. Diagnosing that was worth more than any single finding.
+
+| reviewer | finding | disposition |
+|---|---|---|
+| `codex-1` | brace expansion builds a shell word out of plain letters — no backslash, quote, backtick or dollar anywhere | **cycle 26** |
+| `kimi-1` | a correctly published span silenced the synthesis rule for the WHOLE line | **cycle 27** |
+| `hermes-1` | `&#10;` / `&NewLine;` resolve to a newline inside a text literal, which HTML renders as whitespace | **cycle 28** |
+| `hermes-1` (NIT) | `codex-1`'s flag-arm reproduction does not actually expand | correction recorded |
+
+### Cycle 26 — brace expansion, and a predicate that had been duplicated
+
+```text
+n{o..o}de --test no/such/dir        pass 12 / fail 0    reader: exit 1
+```
+
+Measured rather than inferred: `/bin/sh` and `zsh` both expand `n{o..o}de` to `node`, and
+`/bin/sh -c 'n{o..o}de --version'` prints the node version. Cycle 24's stated rationale was that
+a word-building construct can produce **either** word; its implementation knew exactly two
+constructs.
+
+**And the first attempt at the fix reproduced the very asymmetry round 19 had been about**: I
+added braces to the code pass while the prose pass kept its own hard-coded copy of the older
+test, so the two fenced forms were refused and the two prose forms stayed green. The predicate
+now lives in one place and both passes call it. A rule duplicated across two passes is a rule
+that will drift between them, and this idea has now demonstrated that twice.
+
+A canonical command whose TARGET uses braces is unaffected — both command words are literal
+there, node's own glob expands it, and the probe confirms it still runs green.
+
+### Cycle 27 — exclude the published span, do not silence the line
+
+The guard added in cycle 25 was computed over the whole visible line, so one correct span
+anywhere on it silenced the synthesis rule for everything else:
+
+```text
+Verify: `node --test "…/bin/*.test.js"` — or run n$(printf '')ode --test no/such/dir instead.
+guard: pass 12 / fail 0        reader, second command: exit 1
+```
+
+`kimi-1` did not stop at the contrived one-liner: a soft break renders as a space, so a
+**soft-wrapped paragraph is one line**, and ordinary prose wrapping was enough to trigger the
+suppression. It demonstrated that rather than asserting it.
+
+The published span is now **excluded** — its characters are removed and the rule judges what
+remains. A line that merely mentions an unrelated `$FOO` beside a properly published command
+still passes, and that control is asserted too, so a later cycle cannot "fix" this by refusing
+every sentence containing a dollar sign.
+
+**Third time in this idea that a guard I added against a false positive created a false green.**
+The pattern is consistent enough to state: a rule that suppresses by CONTEXT suppresses more
+than the case it was written for. Excluding the exact thing already covered does not.
+
+### Cycle 28 — an entity newline is whitespace, not a line break
+
+```text
+Run node&#10;--test no/such/dir now.        pass 12 / fail 0    reader: exit 1
+```
+
+A newline inside a text literal can only have come from an entity, because CommonMark gives a
+real line break its own node. HTML renders it as whitespace: one line to the reader, two to a
+scanner that split on it.
+
+### A reproduction I accepted without running it
+
+`hermes-1` checked `codex-1`'s second reproduction and refuted it: `--{test..test}` does **not**
+expand — `{test..test}` is not a valid range, and both `sh` and `zsh` pass it through literally.
+Only the binary arm demonstrates the class. I had accepted both halves in cycle 26 without
+running the second.
+
+Nothing shipped wrong — node rejects the literal flag with exit 9, so that form is a broken
+published command and is still correctly refused — but the record claimed something the shell
+does not do, and that is the kind of error this deliberation exists to catch. The case stays,
+labelled with the reason that is true.
+
+### Proved — eighty-two probes, clean tree
+
+Sixty-nine refused; twelve green (3 valid published forms, 1 prose mention that is not a
+command, 5 invisible forms, 1 hard break, 1 canonical brace target, 1 unrelated dollar beside a
+valid command); one that **runs and fails**. Suite 253/253. Gates G1 and G2 re-run on this tree:
+25 valid installs, `addons/` absent from the package.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r15: 1 each · r16: 5 across 4 reviewers ·
+r17: 6 across 3 · r18: 4 across 3 · r19: 2 across 2, one lost to an outage · r20: 4 across 3`.
+
+Six of my own written claims have now been refuted by measurement, and two of my own fixes
+created the next round's finding. That is the record, and it is the argument for the process
+rather than against it: every one of them was caught before a user saw it.
