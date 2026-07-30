@@ -108,7 +108,6 @@ The roster is project-specific. Maintain it as a table here:
 | `codex-1`       | `../codex/`       | `participant` (cli `codex`, model `gpt-5.6-sol`) |
 | `hermes-1`      | `../hermes/`      | `participant` (cli `hermes`, model `glm-5p2` / GLM 5.2) |
 | `kimi-1`        | `../kimi/`        | `participant` (cli `kimi`, model `kimi-code/k3`) |
-| `antigravity-1` | `../antigravity/` | `participant` (cli `agy`, model `Gemini 3.6 Flash (High)`) — inactive 2026-07-18..2026-07-29, reactivated as a fifth participant alongside `kimi-1` |
 
 **Local launch config (optional, gitignored):** Individual machines may keep
 `parley-deck/meta/headless-agents.local.json` with CLI launch settings for the
@@ -125,7 +124,6 @@ In transports B and C, each agent should also have a corresponding host account 
 | `codex-1`       | `feci` |
 | `hermes-1`      | `feci` |
 | `kimi-1`        | `feci` |
-| `antigravity-1` | `feci` |
 
 When a new agent joins:
 
