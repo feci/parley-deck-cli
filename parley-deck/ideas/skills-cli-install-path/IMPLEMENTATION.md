@@ -1169,3 +1169,80 @@ Four of my own written claims have now been refuted by measurement: that whitesp
 fail-closed (r15), that every continuation shape was refused (r16), that raw HTML reaches the
 reader as copyable text (r17), and — implicitly — that a proxy assertion was checking what it
 claimed to check (r18).
+
+## Round 19 and cycles 24–25 — the same rule, applied where it was not
+
+| reviewer | verdict |
+|---|---|
+| `hermes-1` | **✅ ACCEPT** — second clean accept in a row; one NIT, on my arithmetic |
+| `codex-1` | **no signoff — tool outage**, the second time the same content filter terminated it |
+| `kimi-1` | ❌ BLOCK — 1 MAJOR |
+| `agy-1` | absent — account quota |
+
+### Cycle 24 — a substitution can build the binary name
+
+`codex-1` was killed mid-run, but its log records what it had measured:
+
+```text
+n$(printf '')ode --test no/such/dir      pass 12 / fail 0    reader: exit 1
+n${PATH#"$PATH"}ode --test no/such/dir   pass 12 / fail 0    reader: exit 1
+```
+
+Neither contains `node` anywhere. Cycle 23 had taught detection to read the shell's words but
+**gated the substitution rule behind seeing the binary name spelled out** — and a substitution
+that expands to nothing splices `n` and `ode` into it.
+
+One recognisable half is now enough to look. Not widened to "any unit containing `$` or a
+backtick": that would refuse ordinary shell examples in shipped fences, where `$HOME` is
+legitimate and has nothing to do with a verification command.
+
+The finding is credited to `codex-1`. A review that a tool outage destroys still counts when its
+measurements survive.
+
+### Cycle 25 — the prose pass was still reading characters
+
+`kimi-1`, and the shape of it matters more than the instance. Cycle 23 stated its principle
+universally — *detection reads the shell's words, not the page's characters* — and applied it to
+**one of the two passes**. The prose pass still matched raw characters, so the prose arm of
+`kimi-1`'s own round-18 finding had never been closed:
+
+```text
+Run node --\test no/such/dir now.                 pass 12 / fail 0   reader: exit 1
+Run nod\e --test no/such/dir now.                 pass 12 / fail 0   reader: exit 1
+Run node --te''st no/such/dir now.                pass 12 / fail 0   reader: exit 1
+Run node --TEST no/such/dir now.                  pass 12 / fail 0   reader: exit 9
+Run node --\test "…/bin/*.test.js" now.           pass 12 / fail 0   reader: 35 tests pass
+Run $(echo n)ode --test no/such/dir now.          pass 12 / fail 0   reader: exit 1
+```
+
+The fifth is the guard's purpose inverted for the second time in this idea: a published command
+that runs 35 real tests, which the test named for running published commands never ran.
+
+**Measured before fixing:** `kimi-1`'s span-form cases were already closed by cycle 24, which
+landed after its review started. Only the prose arm was open, and only that changed. Accepting a
+finding wholesale, without checking which parts of it a later cycle had already answered, would
+have produced work that looked like diligence and wasn't.
+
+The prose pass now builds the same shell word view, with an index map back into the raw line so
+an occurrence found in the view can still be attributed to the code node that produced it — or
+to none. The substitution rule applies here too, guarded: if one code node in the line already
+holds a whole command, the command is properly published and the rule does not fire on the
+sentence around it.
+
+### A correction to my own reporting
+
+`hermes-1`'s NIT: the probe breakdown was arithmetically wrong, and had been wrong twice. The
+correct shape of the battery after cycle 25 is **68 probes — 57 refused, 10 green (3 valid
+published forms, 1 prose mention that is not a command, 5 invisible forms, 1 hard break), 1 that
+RUNS and fails.** A summary that does not add up is not a summary; it is a claim nobody checked.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r15: 1 each · r16: 5 across 4 reviewers ·
+r17: 6 across 3 · r18: 4 across 3, one reviewer clean · r19: 2 across 2, one reviewer clean, one
+lost to an outage`.
+
+Five of my own written claims have now been refuted by measurement: that whitespace removal was
+fail-closed (r15), that every continuation shape was refused (r16), that raw HTML reaches the
+reader as copyable text (r17), that a proxy assertion checked what it claimed (r18), and that a
+principle stated universally had been applied universally (r19).
