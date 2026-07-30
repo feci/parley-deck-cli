@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.37.0 - 2026-07-30
+
+**Roster: `agy` is a participant again, on Gemini 3.6 Flash (High).**
+
+- `antigravity-1` was `inactive` from 2026-07-18, when `kimi-1` took the fourth roster slot. It
+  returns as a **fifth participant alongside `kimi-1`**, not as a replacement.
+- The built-in `agy` spec is pinned to **`Gemini 3.6 Flash (High)`** — a generation newer than
+  the `3.5 Flash (High)` it replaces. `agy models` refuses to list in a headless context
+  (`Please sign in`); passing an invalid `--model` prints the valid list instead, which is how
+  the current set was read: 3.6/3.5 Flash Low/Med/High and 3.1 Pro Low/High.
+- The headless regression that had kept `agy` out of headless rounds — no artifact emitted for
+  non-trivial `--print` prompts on 1.0.4 — is **gone on 1.1.8**, verified with a read-then-write
+  prompt that produced an accurate description of code it had to open to describe.
+
+The pin lives in four places and they must not drift: `~/.parley/agents.toml`, the deck's
+`parley-deck/agents.toml`, the machine-local `headless-agents.local.json`, and the built-in Go
+spec. `TestDefaultSpecsPreferAntigravityAndStrongVerifiedDefaults` catches the last one.
+
+**Known capacity limit.** `agy` returned `Individual quota reached … Resets in 158h59m` after
+two full review rounds on a large repository. It is an account quota, not a per-model limit — a
+one-word prompt fails identically once it trips — so there is no cheaper fallback and no point
+retrying. Budget it as a scarce reviewer, and record its absence from a round as an outage
+rather than as an accept.
+
 ## v1.36.0 - 2026-07-18
 
 **composite-agent-naming-and-roster-reinit** — designed + implemented + reviewed via a real 5-agent Parley Deck run (claude/codex/hermes/kimi active, agy quota-out; unanimous ACCEPT, then a refutation-default code review + two fix-up cycles).
