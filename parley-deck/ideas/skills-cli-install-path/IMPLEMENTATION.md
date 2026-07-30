@@ -1415,3 +1415,64 @@ which it certified green at some point in this deliberation.
 `r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r15: 1 each · r16: 5 across 4 reviewers ·
 r17: 6 across 3 · r18: 4 across 3 · r19: 2 across 2 · r20: 4 across 3 · r21: 3 across 3, all
 follow-ups, unanimous accept`.
+
+## Released — parley-deck-skill 2.0.0, 2026-07-30
+
+Merged to `main` (fast-forward), tagged `v2.0.0`, published on every channel.
+
+### G7 — the gate only the published repository could answer
+
+Run against the pushed tag, in an isolated `HOME`:
+
+```text
+$ npx -y skills add feci/parley-deck-skill --agent claude-code
+◇  Found 5 skills
+●  Installing all 5 skills
+◇  Installed 5 skills
+```
+
+Core destination asserted, not eyeballed:
+
+```text
+contains references/ ....... OK        absent bin/ ............ OK
+contains agents/ ........... OK        absent lib/ ............ OK
+                                       absent package.json .... OK
+references/COOPERATION.md .. OK (90,901 bytes)
+```
+
+That last line is the point of the whole idea: before the move, the core skill either arrived
+carrying `bin/`, `lib/` and `package.json`, or arrived payload-less without the bundled
+`COOPERATION.md` its own text promises. It now arrives with exactly what it promises and
+nothing else, with no flag.
+
+### Channels
+
+| channel | state |
+|---|---|
+| npm | `parley-deck-skill@2.0.0` published, `npm view` confirms |
+| GitHub | release `v2.0.0` with five portable binaries (linux-x64, macos-arm64, macos-x64, windows-x64, windows-arm64) |
+| Homebrew | `feci/parley` formula updated; `brew upgrade` confirmed 1.5.0 → 2.0.0 |
+| WinGet | PR microsoft/winget-pkgs#409827 |
+| local runtimes | reinstalled; `doctor --target all` → 30 valid, 0 other |
+
+### Gates, and the two limits stated rather than hidden
+
+G1–G6 were run before the merge and G1/G2 again after the last cycle. Two limits stand:
+
+- **G1 passes on the SECOND `install --target all` in a fresh `HOME`.** That is the
+  pre-existing Gemini/Antigravity detection-order defect recorded in round 01 — the Antigravity
+  install is what creates the evidence by which Gemini is then detected. Verified to be that
+  defect and not a regression. It remains an open follow-up against the installer.
+- **G3's "and installs" is verified for the NATIVE portable binary.** Windows binaries build
+  for both architectures, but a Windows install cannot be exercised from macOS, so that half is
+  untested rather than passed.
+
+### The shape of the whole thing
+
+21 review rounds, 29 fix-up cycles, four reviewers, two reviewer outages (`codex-1` terminated
+twice by a content filter; `agy-1` out on an account quota after two rounds).
+
+The shipped product — the layout move, the installer, the packaging, the README panel — was
+settled by round 02 and never changed after it. **Everything from round 03 onward was the
+documentation guard**, a test that now refuses eleven distinct ways of publishing a command
+that would fail for a reader, every one of which it had certified green at some point.
