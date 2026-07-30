@@ -1340,3 +1340,78 @@ r17: 6 across 3 · r18: 4 across 3 · r19: 2 across 2, one lost to an outage · 
 Six of my own written claims have now been refuted by measurement, and two of my own fixes
 created the next round's finding. That is the record, and it is the argument for the process
 rather than against it: every one of them was caught before a user saw it.
+
+## Round 21 — unanimous accept, and the follow-ups that stay open
+
+| reviewer | verdict | findings |
+|---|---|---|
+| `codex-1` | **✅ ACCEPT** — its first in this idea | 1 NIT (follow-up) |
+| `hermes-1` | **✅ ACCEPT** | 1 MINOR (follow-up), 1 NIT |
+| `kimi-1` | **✅ ACCEPT** | 1 NIT (follow-up) |
+| `agy-1` | absent — account quota |
+
+`codex-1`'s release decision, quoted because it is the narrow question this round asked:
+
+> nothing in cycles 26–28 changes the shipped product, every round-20 false green is now
+> refused, the intended controls remain green, a real bad command still runs and fails, and all
+> project-owned verification commands execute successfully.
+
+### Cycle 29 — taken rather than deferred
+
+`codex-1` and `hermes-1` both found that the shared detector's comment still claimed **both**
+brace forms build a word and ran for a reader. `hermes-1` had refuted the flag arm in round 20
+and the fixture comment was corrected then; this one was not. Three lines, and a comment that
+says something the shell does not do is exactly what the last two rounds were about.
+
+### The glob follow-up, and what it actually costs — measured, not argued
+
+`hermes-1` (MINOR) and `kimi-1` (NIT), independently: `?`, `*` and `[...]` can build a command
+word too. With a file named `node` in the working directory, `n?de --version` really does run.
+Detection has no construct for it.
+
+Both marked it a follow-up: glob expansion is **conditional on filesystem state** where brace
+expansion is unconditional, and no shipped file puts a glob character in the binary or flag
+position. `hermes-1` added the right caution — the fix needs testing against target-position
+globs.
+
+**I applied the suggested fix and measured what it costs before deferring it.** Adding `?`, `*`
+and `[` to the predicate immediately refuses a real shipped document:
+
+```text
+skills/parley-tracker/templates/epic.md
+AC-E2 [B][T] Measurable: 100% of ready child tickets pass readiness validation.
+Verify: `node skills/parley-tracker/bin/validate.js --strict --dir tickets`
+```
+
+`[B][T]` carries a `[`, the line names `node`, and the rule fires on an entirely innocent
+sentence. The change was reverted; the suite is back at 253/253. So the follow-up is real, and
+its obvious fix is not free — the next person does not have to rediscover that.
+
+### Follow-ups carried out of this idea
+
+1. **Glob characters as word-building constructs**, with the over-refusal above as the
+   constraint any fix must satisfy.
+2. **The occurrence rule is order-dependent** (`kimi-1`, round 18): a visible line where
+   `--test` precedes `node` is not judged. It is not a runnable command, so this is a
+   documentation question about the rule's scope, not a hole.
+3. **Detection uses a fail-closed approximation of shell word splitting**, not shell lexing.
+   `kimi-1` named lexing as the consistent move; `hermes-1` judged the approximation sound in
+   round 19, because removing quoting characters can only join characters into tokens, never
+   split them.
+
+### Where the twenty-one rounds actually landed
+
+Everything found from round 03 onward was in the **documentation guard** — a test. The shipped
+product (the layout move, the installer, the packaging, the README panel) has been unchanged and
+verified since round 01, and no shipped file has ever used any of the constructions found.
+
+That is not an argument that the guard work was wasted. Its purpose is to make a published
+verification command trustworthy without the reader re-auditing what they pasted, and it now
+refuses eleven distinct ways of publishing a command that would fail for them — every one of
+which it certified green at some point in this deliberation.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r15: 1 each · r16: 5 across 4 reviewers ·
+r17: 6 across 3 · r18: 4 across 3 · r19: 2 across 2 · r20: 4 across 3 · r21: 3 across 3, all
+follow-ups, unanimous accept`.
