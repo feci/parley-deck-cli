@@ -1077,3 +1077,95 @@ across 4 reviewers · r17: 6 across 3 reviewers (two more refuted claims of mine
 Three of my own written claims have now been refuted by measurement: that whitespace removal
 was fail-closed (r15), that every continuation shape was refused (r16), and that raw HTML
 reaches the reader as copyable text (r17).
+
+## Round 18 and cycles 22–23 — two layers below markdown
+
+| reviewer | verdict |
+|---|---|
+| `hermes-1` | **✅ ACCEPT — no findings.** The first clean accept this idea has produced. |
+| `codex-1` | ❌ BLOCK — 1 MAJOR |
+| `kimi-1` | ❌ BLOCK — 1 MAJOR, 1 MINOR, 1 NIT |
+| `agy-1` | absent — account quota, ~6 days |
+
+### Cycle 22 — a quoted `>` defeated the tag stripper
+
+`codex-1`. Cycle 20 modelled raw HTML with `/<[^>]*>/`, which cannot tell a tag terminator from
+a `>` inside a quoted attribute, nor from one inside a comment:
+
+```text
+no<span title="1 > 0"></span>de --test no/such/dir     pass 12 / fail 0
+node --t<!-- a > b -->est no/such/dir                  pass 12 / fail 0
+```
+
+The regex stops at the quoted `>` and leaves attribute debris inside the word, so `node` never
+forms. Both render as a clean, broken command.
+
+The fix removes the judgement rather than improving it: `html_inline` is ONE complete piece of
+markup, so the whole literal is dropped — nothing to parse. `html_block` carries markup and the
+text between it, so it is scanned by a tokenizer that understands quoted attributes, comments,
+CDATA and processing instructions. An unterminated `<` is kept as text: keeping it can only add
+a refusal, dropping it could hide a command.
+
+### Cycle 23 — the page shows characters; the shell builds words
+
+`kimi-1`, and it is the sharpest finding of the idea. Six measured false greens:
+
+```text
+`node --\test no/such/dir`                 pass 12 / fail 0    reader: exit 1
+`node --\test "…/bin/*.test.js"`           pass 12 / fail 0    reader: 35 tests pass
+`nod\e --test no/such/dir`                 pass 12 / fail 0    reader: exit 1
+`node --te''st no/such/dir`                pass 12 / fail 0    reader: exit 1
+node --t`echo e`st no/such/dir             pass 12 / fail 0    reader: exit 1
+`node --TEST no/such/dir`                  pass 12 / fail 0    reader: exit 9
+```
+
+None contains a literal `node --test`; each runs as exactly that when copied. **The second is
+the guard's purpose inverted**: a published command that runs 35 real tests, which the test
+named *"every `node --test` command a shipped file publishes runs tests and passes"* never ran.
+
+This is the same failure at a third layer. Cycle 17 stated the principle — *detection narrower
+than acceptance means the command is skipped, and skipping reads as success* — and the
+principle held for markdown structure and markdown rendering while detection still read the
+page's characters instead of the shell's words.
+
+Detection now reads a **shell word view** (quoting characters removed) alongside the raw text,
+and treats a unit naming `node` that carries a backtick or `$` as a candidate on that ground
+alone, because a substitution can produce any word. Both are fail-closed — they can only reveal
+a command, never conceal one — and the grammar already excluded those characters, so only
+detection had to reach them. Both tokens are matched case-insensitively: macOS runs `Node`, and
+`--TEST` reaches node itself, which rejects it.
+
+**A choice worth naming.** `kimi-1` offered two directions: lex each candidate through
+`/bin/sh` (the consistent move, since execution was delegated to the shell in cycle 9), or this
+cheaper fail-closed approximation. **The approximation was chosen** — lexing a line through a
+shell risks evaluating the very substitutions it exists to inspect. Round 19 was asked to
+challenge that choice explicitly.
+
+Also `kimi-1`'s NIT, taken: a script or style **body** is skipped wherever it appears, not only
+when the block starts with one; a script nested in a `<div>` had been policed as page text.
+
+`kimi-1`'s MINOR — the occurrence rule is order-dependent — is a **recorded follow-up**, on its
+own reasoning: the line it refuses (`` Use `node` with `--test x` ``) is not a runnable command,
+so refusing it exceeds the contract rather than missing it.
+
+### A test of mine that was wrong
+
+One assertion checked that no captured command contains the word `echo`, as a proxy for "not a
+command". A command can legitimately contain it — the substitution probe does. It now checks
+the non-command line by identity. A proxy assertion that happens to pass is not evidence.
+
+### Proved — fifty-seven probes, clean tree
+
+Forty-six refused; four valid forms green; four invisible forms (comment, script body, nested
+script body, image alt) ignored rather than run or policed; a hard break left alone; and a
+genuinely broken path still **runs and fails**. Suite 253/253.
+
+### Findings per round
+
+`r01: 8 (3 reviewers) · r02–r08: 1 each · r09: 3 · r10–r13: 1 each · r14: 1 · r15: 1 · r16: 5
+across 4 reviewers · r17: 6 across 3 reviewers · r18: 4 across 3 reviewers, one reviewer clean`.
+
+Four of my own written claims have now been refuted by measurement: that whitespace removal was
+fail-closed (r15), that every continuation shape was refused (r16), that raw HTML reaches the
+reader as copyable text (r17), and — implicitly — that a proxy assertion was checking what it
+claimed to check (r18).
