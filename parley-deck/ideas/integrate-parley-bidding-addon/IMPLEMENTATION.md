@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-11
+status: fix-up-cycle-13
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: dcd200e
+head-commit: 9ed2081
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -830,6 +830,88 @@ already shipped one such claim.
 ### Measured after cycle 11
 
 **320 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Round 9, second attempt — void, by two facilitator errors of mine
+
+The relaunch reached all three agents. It is still void, and both reasons are mine.
+
+**`codex-1` completed its review and could not write it.** I gave it a sandbox writable root
+covering only `parley-deck-skill`, while `review/round-09/` lives in the sibling
+`parley-deck-cli`. The write was rejected; no partial file was left. Its verdict reached stdout
+only: **BLOCK, one MAJOR** — quoted below and treated as a lead I verified myself, never as an
+artifact. Remedy: `--add-dir` on the sibling repository for every future round.
+
+**I edited the working tree while `hermes-1` and `kimi-1` were still reading it.** Having
+reproduced codex's MAJOR, I wrote cycle 12 into `lib/installer.js` and `test/bidding-addon.test.js`
+mid-run. `hermes-1` finished afterwards and returned ACCEPT; `kimi-1` was still running. Neither
+was reviewing a stable `dcd200e`. Their files stay on disk as evidence and count as **neither
+signoff nor accept**.
+
+The standing rule "commit before launching reviewers" was not enough. The rule this adds:
+**the tree does not move while a round is open** — a fix that cannot wait means the round is
+void and is re-run, which is what happened here.
+
+`kimi-1` handled the moving tree better than I did: it detected that HEAD had moved, re-measured
+against exact `dcd200e` copies, and pinned its suite runs by test count (320 = pre-cycle-12).
+Its finding stands on its own evidence. `hermes-1`'s ACCEPT, by contrast, reproduced codex's
+round-8 scenario only in the path *without* `--force` — which is precisely where the surviving
+MAJOR lived. An ACCEPT that never runs the failing input is not evidence of absence.
+
+## Fix-up cycles 12 and 13 — the same defect, two doors apart
+
+Both are B5 partial-fleet holes reachable under `--force`, found independently by two agents.
+
+**Cycle 12 — `codex-1`.** `--force` suppressed the only preflight check that looked at the
+destination path at all. Whether the destination can exist was therefore never examined under
+the one flag an operator reaches for when destinations are unusual. Measured before the fix,
+`~/.aionrs/skills` a regular file, `install --target all --include-undetected --force`:
+**78 units across 13 targets written** before `aionrs` failed; **0** without `--force`.
+`destinationAncestorObstacle` now walks to the nearest existing entry and blocks when it is not
+a directory, independently of `--force`. It resolves with `stat`, not `lstat`, so a symlinked
+home layout still installs — asserted.
+
+**Cycle 13 — `kimi-1`, on the arm cycle 12 left open.** `statSync` succeeds on a mode-000
+directory, so the walk saw a directory and stopped. Measured at `3330a6e`, `~/.aionrs/skills` a
+directory with mode 000: **78 units across 13 targets written** under `--force`, EACCES on the
+staging temp dir. The obstacle check now also requires write-and-search on the nearest existing
+ancestor — which is exactly the permission the write needs, since `copyPayloadAtomically` stages
+into `path.dirname(dest)`.
+
+`--force` overrides **whose** tree may be replaced. It does not override physics. That sentence
+is now the comment on the check.
+
+The four new regressions discriminate across three commits, measured rather than asserted:
+
+| installer under test | file-ancestor arm | permission arm |
+|---|---|---|
+| `dcd200e` (cycle 11) | fails | fails |
+| `3330a6e` (cycle 12) | **passes** | fails |
+| `9ed2081` (cycle 13) | passes | passes |
+
+The middle row is the point: cycle 12's own regression could not have caught cycle 13's arm, and
+a test that passes before and after proves nothing. Confirmed not running as root (uid 501), so
+the permission arm is genuinely exercised rather than bypassed.
+
+### Deferred, not fixed — `kimi-1`'s NIT
+
+The round-4 discovery guard in `targetSkillUnits` uses `dirExists`, which follows symlinks, so a
+dangling link at an *unselected* add-on path is invisible to unflagged `doctor` while a real
+directory there is reported. `kimi-1` marked it non-blocking and explicitly left it to the
+implementer: nothing usable is installed at that path — the fact the opt-out verification relies
+on — and the mutation path is coherent (`install --only` is `blocked` with an accurate message,
+`--force` remediates cleanly, both verified by kimi). Applying cycle 11's doctrine there would
+make the two leftover kinds symmetric.
+
+Recorded as a follow-up rather than absorbed, for the same reason B3.11 was: it changes
+discovery semantics that rounds 4 and 6 ratified, and a fix-up cycle is not where that gets
+decided. Reviewers who disagree should say so and it becomes cycle 14.
+
+### Measured after cycle 13
+
+**325 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
 3.9.6. Python leg **54/54** across seven files. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`.
