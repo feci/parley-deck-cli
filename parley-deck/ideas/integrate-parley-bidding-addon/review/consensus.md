@@ -155,10 +155,6 @@ recorded follow-up with its reasoning.
 - **Manifest check ok** — 47 files, aggregate unchanged since `714712f`.
 - **All seven collision arms refused**, each with a regression that fails at the commit it names.
 
-## Signoffs
-
-*(No signoffs yet at this revision. `codex-1` refused the first draft; see below.)*
-
 ## Amendments after the first signoff attempt
 
 `codex-1` **refused to sign** the first draft and was right on every count. The six corrections it
@@ -186,9 +182,6 @@ twenty-four rounds, is itself the strongest argument for the signoff step existi
 > **Verdict:** ❌ The consensus must be corrected before signoff.
 >
 > I checked the draft against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record and `review/round-09/VOID.md`; the zero-fix round-24 verdict, position 1, 2.1.0 judgment and final verification numbers are supported. The review summary nevertheless overclaims that the integrity mechanism, test runner, CI and documentation share the payload's clean history, misdates fleet-wide preflight's first measured failure as round 8 instead of round 1, and says cycles 10–27 are seventeen cycles when they are eighteen. Follow-up 4 omits the Phase-A crash-stop `.removing` state, follow-up 5 omits the selective per-file `uchg`/Finder-lock arm and its Linux/Windows analogues, and the facilitator record omits the read-only-source write plus `unittest discover` overstatement, the invalid Hermes model configuration behind round 5, and the cycle-24 entry written after round 21 launched; those omissions and inaccuracies must be repaired without weakening their recorded reasoning.
-
-*(Signoffs below are against this revision. Two earlier signoffs, and the refusal that corrected
-them, are recorded in the amendments section.)*
 
 ## Second amendment — after two agents had already signed
 
@@ -228,3 +221,6 @@ The two earlier signoffs, preserved:
 > I checked the consensus against my own reviews through round 24, the design-phase consensus and its inbox record, `review/round-09/VOID.md`, `IMPLEMENTATION.md`, `FINAL.md`, `CHANGELOG.md`, the CI workflows, and both sibling round-24 artifacts: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every other outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0 under both interpreters, 54/54 on 3.14, the 3.9.6-first refusal, the 47-file aggregate unchanged since `714712f`) are all accurate, and nothing is recorded as agreed that I did not agree to. The one defect: the Phase 5 entry says "`codex-1` and `kimi-1` both observed them appear and vanish", but the design consensus (C5.1), claude-1's inbox correction, and the round-01 artifacts all record that **hermes-1** observed the seven `.pyc` files present and built §4.1 around them, while **kimi-1** watched them appear and vanish running only read-only commands — codex-1's own round-01 reports the source clean, so the sentence credits an observation the record contradicts and drops the observer the cache-exclusion mitigation was built on. My round-24 position is unchanged — the gate is correct as it stands, no finding remains, releasable as 2.1.0 — and with that one-name correction this consensus has my accept; that two of us signed over the misattribution is one more data point for the section's own lesson that reviewers are not interchangeable.
 
 ## Signoffs
+
+*Against this revision. Two earlier signoffs and the two refusals that corrected them are in
+the amendment sections above.*
