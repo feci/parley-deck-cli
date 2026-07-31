@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-24
+status: fix-up-cycle-25
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 381e639
+head-commit: b1f43e4
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1758,6 +1758,69 @@ check ok — 47 files, aggregate
 `codex-1` filed it as a MINOR and was right to: a round should never open against a commit whose
 record does not exist yet. The rule this restores is the one every other cycle followed —
 commit, record, then launch.
+
+## Fix-up cycle 25 — review round 21: the arm two reviewers found, and a position on the gate
+
+`codex-1` **BLOCK** (position 3), `hermes-1` **ACCEPT** (position 1), `kimi-1` **BLOCK**
+(position 3). This round asked for more than a verdict: whether the gate is the right *shape*.
+Two of three said it was still wrong and named the same arm; `hermes-1` read the same code and
+judged it correct — because it examined the *expansion*, which does work, while the other two
+examined the *anchor*, which did not. Fourth time in this idea that two reviewers read one
+function and only one asks the question that finds the hole.
+
+### The arm
+
+`resolutionTouchpoints` accumulated its path by string join and **discarded the physical landing
+point `walkRawTarget` returns**. So once an ancestor link had been expanded, a later link's
+relative target was walked from `path.dirname(logical)` — the spelling — and every `..` in it
+climbed a different tree than the kernel climbs. Reproduced by me at `381e639`: `ok: true`,
+codex `installed`, kimi `replaced`, codex's payload orphaned under the outside directory.
+`codex-1` also measured it at `2b7ca3e`, establishing it as a round-20 arm cycle 24 did not
+close rather than a new regression.
+
+`kimi-1` gave the remedy exactly: propagate the landing into `logical`. Done, together with
+`codex-1`'s related point — a relative target must be anchored at the link's **physical** parent,
+not its spelling.
+
+### The separator
+
+`split(/[\\/]+/)` treated `\` as a separator on every platform. On POSIX it is an ordinary byte
+in a filename. Now platform-conditional.
+
+### On the gate's shape — and on my own recommendation
+
+I had told the user I favoured narrowing the gate and recording the exotic arms as known limits.
+`codex-1` refused position 2 with an argument I accept: symlinked runtime homes were
+*deliberately supported* by earlier fixes in this idea, and `CHANGELOG.md` currently promises
+fleet-wide atomicity without excluding them. Narrowing would therefore not be trimming an
+untouched edge case — it would be withdrawing a promise already in the documentation. If the
+project narrows later, it must rewrite that promise in the same change, not quietly.
+
+`kimi-1`, having named the arm, added: *"I found nothing else standing between this tree and
+release."*
+
+### A test of mine, labelled rather than counted
+
+The backslash regression **passes at `381e639` as well**: the parent component is recorded before
+the torn name, so the arm is caught there by accident. I could not construct an input where the
+tearing causes a miss rather than an extra. Rather than present it as discriminating, it is
+labelled in the test body as a pin. Five earlier findings in this idea were tests of mine dressed
+as proofs; this one says what it is.
+
+### Discrimination
+
+| regression | `381e639` (c24) | `b1f43e4` (c25) |
+|---|---|---|
+| link reached through an earlier link | fails | passes |
+| backslash in a POSIX link target | **passes** (pin) | passes |
+
+### Measured after cycle 25
+
+**368 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; refuses 3.9.6 by design. Manifest
+check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`. All seven accumulated arms refused.
 
 ## Notes for reviewers
 
