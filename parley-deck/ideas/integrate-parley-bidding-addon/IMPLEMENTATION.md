@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-20
+status: fix-up-cycle-21
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: fa3da41
+head-commit: 64e43f9
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1517,6 +1517,66 @@ first round-16 runs (both re-run cleanly afterwards), and it repeatedly blocked 
 runs. No artifact was lost — everything is in git — but several measurements in this cycle were
 taken in a narrow window between cleanups, and that is why they are stated with their commits
 rather than as running totals.
+
+## Fix-up cycle 21 — review round 17: the first unanimous BLOCK since round 10
+
+`codex-1` **BLOCK** (1 MAJOR), `hermes-1` **BLOCK** (1 MAJOR, 1 NIT), `kimi-1` **BLOCK**. Three
+independent reviewers, two independently-found holes in cycle 20's narrowing, and all three
+prescribing the same remedy: **compare physical identity, not `realpath` strings.**
+
+Cycle 20's code carried a comment claiming a symlink is the only component able to redirect
+resolution out of the lexical tree. Round 17 disproved it twice.
+
+### The two holes
+
+**Firmlinks** (codex-1, kimi-1). On macOS `/private/x` and `/System/Volumes/Data/private/x` are
+the same objects: `lstat` calls both directories, `stat` reports identical dev/ino, and
+`realpath` **preserves both spellings**. The symlink-only touchpoint check saw no symlink; the
+containment check compared two textually unrelated strings. Measured at `fa3da41`, no `--force`:
+`ok: true`, codex `installed`, kimi `replaced`, codex's destination absent afterwards.
+
+**Symlink chains** (hermes-1). Touchpoints recorded a symlink's *entry* and never what it points
+at. With the chain `B/skills → kimiCore/redirect → away`, the entry sits outside both
+destinations and only the intermediate hop is inside one. Same end state: `ok: true`, the earlier
+unit left dangling, its files orphaned at the chain's end. Uninstall identical, and worse —
+phase B's `rmSync(..., {force: true})` treats the broken path as successful cleanup.
+
+Both are the same class as codex-1's round-16 MAJOR; only the direction of the indirection
+differs.
+
+### The fix, and why it is smaller than proposed
+
+`codex-1` proposed retaining structured device/inode anchors and comparing tails. That machinery
+already existed: `physicalKey` has returned `dev:ino/tail` since cycle 18. It was only ever
+compared for **equality**. So:
+
+- containment and dependency comparisons now run on `physicalKey` with **prefix semantics** —
+  which closes firmlinks for free, because both spellings anchor on the same inode;
+- `resolutionTouchpoints` follows each symlink chain with `readlink` and records **every hop**,
+  not just the entry.
+
+### The regression I caused and caught inside the cycle
+
+Moving touchpoints onto identity broke round 16's fix immediately: `physicalKey` uses `stat`,
+which **follows** a link, so keying a symlink returned its *target's* identity and discarded the
+only fact that mattered — which directory the link lives in. The round-16 arm went green again
+(`ok: true`, destination gone). Caught by re-running the earlier repro before running the suite,
+and fixed with `physicalEntryKey`, which keys an entry by its parent's identity plus its own
+name. Recorded because the second consecutive cycle has now had a wrong first attempt, and both
+times what caught it was re-running the *older* arm rather than the new test.
+
+### Discrimination
+
+**0 / 2 pass at `fa3da41`, 2 / 2 at `64e43f9`.** The firmlink regression skips itself on a
+volume without firmlinks rather than asserting a platform-dependent result.
+
+### Measured after cycle 21
+
+**359 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
 
 ## Notes for reviewers
 
