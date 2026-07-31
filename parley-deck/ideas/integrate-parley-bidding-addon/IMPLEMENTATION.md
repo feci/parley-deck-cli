@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-13
+status: fix-up-cycle-14
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 9ed2081
+head-commit: 12f9071
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -830,7 +830,9 @@ already shipped one such claim.
 ### Measured after cycle 11
 
 **320 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
-3.9.6. Python leg **54/54** across seven files. Manifest check ok — 47 files, aggregate
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+to run by design (`python3 is 3.9, but the add-on declares >=3.10`), so only the node leg is
+measured on both interpreters. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`.
 
@@ -912,7 +914,94 @@ decided. Reviewers who disagree should say so and it becomes cycle 14.
 ### Measured after cycle 13
 
 **325 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
-3.9.6. Python leg **54/54** across seven files. Manifest check ok — 47 files, aggregate
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+to run by design (`python3 is 3.9, but the add-on declares >=3.10`), so only the node leg is
+measured on both interpreters. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Fix-up cycle 14 — review round 10: three BLOCKs, three independent MAJORs
+
+Round 10 was the first complete, uncompromised round since round 8: `codex-1` BLOCK (2 MAJOR),
+`hermes-1` BLOCK (1 MAJOR), `kimi-1` BLOCK (1 MAJOR, 1 NIT). The tree stayed at `9ed2081`
+throughout. Every finding was reproduced by me before it was accepted.
+
+Three of the four findings are **the same question asked in three places**, and `kimi-1` named
+it: four cycles preflighted whether a destination can be **created** (ancestor existence, type,
+permissions) and whether it may be **touched** (ownership). Nothing preflighted whether the tree
+already there can be **disposed of** — and both mutation paths depend on exactly that. The
+install replace path renames the old tree aside and removes it; uninstall removes it outright.
+
+`kimi-1` also established that this door **predates cycles 10–13**: its uninstall arm reproduces
+against `49fc3ec`'s installer. It is not damage those fixes did, it is the question they never
+asked.
+
+### The measurements, before the fix, all at `9ed2081` as uid 501
+
+| arm | reported by | scenario | measured |
+|---|---|---|---|
+| install, replace | codex-1, kimi-1 | one mode-000 subdirectory in a destination in the last target | **83 units written**, unit 84 `failed` — *while installed on disk* — plus a `.bak` debris tree |
+| install, frozen tree | kimi-1 | `chmod -R a-w` on an owned destination, no `--force` | same shape, 83 writes |
+| uninstall, one target | kimi-1 | one frozen owned add-on | **core and four add-ons removed**, then `parley-bidding` refused and left byte-valid |
+| uninstall, fleet | hermes-1 | foreign marker in the last of fourteen targets | **78 units removed across 13 targets**, `aionrs` blocked |
+| marker | codex-1 | delete only `markerSchema`, keep `manifest`, tamper with the payload | `status: valid`, `problems: []` |
+
+The uninstall arm is the one that stings: it is precisely the end state round 4's MAJOR measured
+and forbade — "removed the core and then refused the add-on" — reachable again with no flag and
+one chmodded directory.
+
+### What changed
+
+- **`firstRemovalObstacle`** — the mirror of `firstCopyObstacle`, pointed at the destination.
+  Requires write-and-search on `path.dirname(dest)`, then walks the whole tree requiring
+  read-write-search on every directory. The whole tree, because node's recursive `rm` empties
+  bottom-up: one 0555 subdirectory anywhere defeats it, so checking the root's mode would have
+  been a fix that looked complete and was not. Symlinks are not traversed, matching `rmSync`.
+- **`preflightSkillUnit`** calls it whenever the destination exists.
+- **`uninstallCommand` gets the fleet-wide preflight `installCommand` got in cycle 10**, via
+  `preflightUninstallUnit` — ownership (unless `--force`) plus removability (always). The
+  per-target check inside `uninstallTarget` stays as defence in depth.
+- **The post-commit cleanup can no longer fail a committed unit.** `copyPayloadAtomically` now
+  ends its transaction at the commit rename; removing the backup happens after, and a failure
+  there returns a warning instead of throwing. `installSkillUnit` attaches it, and `writeResult`
+  prints it. Preflight makes this unreachable through the command — which is the point: the
+  guard exists for what preflight cannot see, so `installSkillUnit` is exported to give the
+  regression a direct caller.
+- **The legacy-marker exemption is narrowed to the shape it was written for.** The released
+  2.0.0 marker carries *neither* `markerSchema` nor `manifest`. A marker that kept its manifest
+  and lost only the schema is not that shape; exempting it meant one deleted field silently
+  downgraded a current managed install from byte validation to none.
+
+Both remedies codex-1 offered for the replace arm are implemented, not one: preflight makes the
+failure impossible to reach, and the post-commit guard makes it harmless if it is reached
+anyway. A removability preflight alone is inherently racy — it answers a question about a tree
+another process can change a millisecond later.
+
+### `kimi-1`'s NIT — accepted and fixed
+
+"Python leg 54/54" sat next to "on 3.9.6 and 3.14" in the cycle-11 and cycle-13 entries and read
+as if both legs ran green on both interpreters. They do not: the Python leg **refuses** 3.9.6 by
+design, and only the node leg is measured on both. Corrected in both entries. The older entries
+already stated the refusal explicitly; these two were written today and lost it. Given D-2 and
+cycle 10's "every destination path", a third claim that claimed more than it showed is exactly
+the pattern worth spending a correction on.
+
+### Seven regressions, and what they discriminate
+
+All seven were run against `9ed2081`'s `lib/installer.js` and against cycle 14's:
+
+| commit | passing |
+|---|---|
+| `9ed2081` (cycle 13) | **0 / 7** |
+| `12f9071` (cycle 14) | **7 / 7** |
+
+Confirmed not running as root (uid 501), so the permission arms are genuinely exercised.
+
+### Measured after cycle 14
+
+**332 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`.
 
