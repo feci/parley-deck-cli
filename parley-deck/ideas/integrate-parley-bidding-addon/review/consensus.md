@@ -42,15 +42,22 @@ draft that collapsed all eighteen cycles into the gate; this is the corrected ac
 Each was measured on the tree before it was fixed, and each has a regression that fails at the
 commit it discriminates against:
 
-| arm | first measured |
-|---|---|
-| preflight leaving a partial fleet (source walk, then per-target rather than fleet-wide) | **round 1**, re-measured round 8 |
-| `existsSync` calling a dangling symlink absent | round 10 |
-| `--force` suppressing the only destination check | round 11 |
-| existence checked but not permission | round 11 |
-| create/touch checked but not **dispose** | round 10 |
-| stored data (marker, manifest keys) becoming a path | rounds 11–12 |
-| physical collision through symlink chains, firmlinks and nesting | rounds 15–21 |
+All numbers below are **review rounds**, not fix-up cycles; the cycle that closed each arm is
+given separately, because an earlier draft conflated the two.
+
+| arm | first measured in review round | closed in fix-up cycle |
+|---|---|---|
+| preflight leaving a partial fleet (source walk, then per-target rather than fleet-wide) | 1, re-measured 8 | 8–10 |
+| `existsSync` calling a dangling destination absent | 8 | 10–11 |
+| `--force` suppressing the only destination check | 9 (the void round) | 12 |
+| existence checked but not permission | 9 (the void round) | 13 |
+| create/touch checked but not **dispose** | 10 | 14 |
+| stored data (marker, manifest keys) becoming a path | 11–12 | 15–16 |
+| physical collision through nesting, firmlinks and symlink chains | 13 | 19–27 |
+
+The `--force` and permission arms were first measured in **round 9 — the round recorded as
+void**. They were real findings in a round that produced no valid verdict, which is why the void
+record matters: an invalidated round is not an empty one.
 
 ### What the shape of this review says
 
@@ -114,12 +121,17 @@ code:
 Recorded in full, because an absence must never read as an accept.
 
 - **Round 1** — `antigravity-1` exhausted its account quota mid-round and wrote nothing in that
-  round or the five that followed. Removed from the roster on 2026-07-30 by the user's decision.
+  round or the **four** that followed; removed from the roster on 2026-07-30 by the user's
+  decision, before round 6 opened. (An earlier draft said five, counting a round it was no longer
+  a member of.)
 - **Rounds 1–7 rested on an incomplete reading of round 1.** The facilitator read
   `review/round-01/codex-1.md` **while codex was still writing it**: 3.9 KB and two MAJOR when
   acted on, 9.4 KB and three MAJOR plus two MINOR when finished. Three findings went unaddressed
   for six rounds. Every prompt since carries "finish, then write".
-- **Round 5** — `hermes-1` produced no artifact because its configured `model` held the *display*
+- **Round 5** — `kimi-1` wrote its artifact with the verdict `PENDING MEASUREMENT` ("file written
+  first per protocol; code read complete, measurements running") — a participant mid-measurement,
+  not an absence, and recorded as such. `hermes-1`, separately, produced no artifact because its
+  configured `model` held the *display*
   name `GLM 5.2`, which the endpoint rejects as `-m` with "no healthy deployments". A silent
   configuration error read as an outage until the endpoint id `glm-5p2` was found. Recorded
   because a misconfigured participant and an absent one look identical from the facilitator's
@@ -205,7 +217,11 @@ finding carried it.
 `codex-1` and `hermes-1` had both already signed over that error — **including `hermes-1`, whose
 own contribution it erased**. As `kimi-1` put it, that is one more data point for this document's
 own lesson that reviewers are not interchangeable. Both earlier signoffs are therefore void
-against this revision, and all three were re-collected.
+against this revision.
+
+Re-collection began with `codex-1`, which refused again — see the third and fourth amendments. No
+signoff existed at that revision; an earlier draft of this sentence said all three "were
+re-collected", claiming a completed round of signoffs that had not happened.
 
 The two earlier signoffs, preserved:
 
@@ -223,43 +239,67 @@ The two earlier signoffs, preserved:
 Three refusals now, each catching a claim that flattered the work or the facilitator. The
 refusal, verbatim:
 
+> ## Fourth amendment — rounds confused with cycles, and three records overstated
+
+`codex-1` refused a fourth time. All four points verified against the artifacts before applying:
+
+1. **The arms table mixed review rounds with fix-up cycles.** The dangling-destination arm was
+   first measured in **round 8**, the `--force` and permission arms in **round 9 — the void
+   round** — and physical collision begins in **round 13**, not 15. The table now carries both
+   numbers in separate columns.
+2. **`antigravity-1`'s absences were overcounted** as five; the record says four, because round 6
+   opened after its removal.
+3. **`kimi-1`'s round-5 artifact was omitted.** It exists, with the verdict
+   `PENDING MEASUREMENT` — a participant mid-measurement, not an absence.
+4. **"All three were re-collected" was false.** Only `codex-1` was re-run at that revision, and it
+   refused; no signoff existed.
+
+Four refusals, each catching a claim that simplified toward a cleaner story: a tidier table, a
+rounder absence count, an omitted partial artifact, a completed round that never completed. The
+refusal, verbatim:
+
 > ### Signoff: codex-1 — 2026-08-01
+> > >
+> > > **Verdict:** ✅ ACCEPT
+> > >
+> > > I checked the amended consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record, and `review/round-09/VOID.md`; it now accurately records zero agreed fixes, all eleven deferred follow-ups with their reasoning, the outages and facilitator errors, and the verification evidence at `e274eb8`. My round-24 position remains unchanged: the destination-collision gate is correct as it stands, no new finding remains, and the idea is releasable as 2.1.0.
+> > >
+> > > ### Signoff: hermes-1 — 2026-08-01
+> > >
+> > > **Verdict:** ✅ ACCEPT
+> > >
+> > > I checked the consensus against my own reviews (rounds 9, 10, 12, 14, 16, 21, 24), the other two round-24 artifacts, `review/round-09/VOID.md`, and the round-2 transient record: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups, every outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0, 54/54, 47-file manifest unchanged since `714712f`) are all accurate and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
+> > >
+> > >
+> > > ### Signoff: kimi-1 — 2026-08-01
+> > >
+> > > **Verdict:** ❌ One name in the facilitator record must change before I can sign: in the Phase 5 bullet, `codex-1` must be `hermes-1`.
+> > >
+> > > I checked the consensus against my own reviews through round 24, the design-phase consensus and its inbox record, `review/round-09/VOID.md`, `IMPLEMENTATION.md`, `FINAL.md`, `CHANGELOG.md`, the CI workflows, and both sibling round-24 artifacts: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every other outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0 under both interpreters, 54/54 on 3.14, the 3.9.6-first refusal, the 47-file aggregate unchanged since `714712f`) are all accurate, and nothing is recorded as agreed that I did not agree to. The one defect: the Phase 5 entry says "`codex-1` and `kimi-1` both observed them appear and vanish", but the design consensus (C5.1), claude-1's inbox correction, and the round-01 artifacts all record that **hermes-1** observed the seven `.pyc` files present and built §4.1 around them, while **kimi-1** watched them appear and vanish running only read-only commands — codex-1's own round-01 reports the source clean, so the sentence credits an observation the record contradicts and drops the observer the cache-exclusion mitigation was built on. My round-24 position is unchanged — the gate is correct as it stands, no finding remains, releasable as 2.1.0 — and with that one-name correction this consensus has my accept; that two of us signed over the misattribution is one more data point for the section's own lesson that reviewers are not interchangeable.
 > >
-> > **Verdict:** ✅ ACCEPT
+> > ## Signoffs
 > >
-> > I checked the amended consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record, and `review/round-09/VOID.md`; it now accurately records zero agreed fixes, all eleven deferred follow-ups with their reasoning, the outages and facilitator errors, and the verification evidence at `e274eb8`. My round-24 position remains unchanged: the destination-collision gate is correct as it stands, no new finding remains, and the idea is releasable as 2.1.0.
+> > *Against this revision. Two earlier signoffs and the two refusals that corrected them are in
+> > the amendment sections above.*
 > >
-> > ### Signoff: hermes-1 — 2026-08-01
+> > ### Signoff: codex-1 — 2026-08-01
 > >
-> > **Verdict:** ✅ ACCEPT
+> > **Verdict:** ❌ Two factual overclaims in the review narrative must be corrected before signoff.
 > >
-> > I checked the consensus against my own reviews (rounds 9, 10, 12, 14, 16, 21, 24), the other two round-24 artifacts, `review/round-09/VOID.md`, and the round-2 transient record: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups, every outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0, 54/54, 47-file manifest unchanged since `714712f`) are all accurate and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
-> >
-> >
-> > ### Signoff: kimi-1 — 2026-08-01
-> >
-> > **Verdict:** ❌ One name in the facilitator record must change before I can sign: in the Phase 5 bullet, `codex-1` must be `hermes-1`.
-> >
-> > I checked the consensus against my own reviews through round 24, the design-phase consensus and its inbox record, `review/round-09/VOID.md`, `IMPLEMENTATION.md`, `FINAL.md`, `CHANGELOG.md`, the CI workflows, and both sibling round-24 artifacts: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every other outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0 under both interpreters, 54/54 on 3.14, the 3.9.6-first refusal, the 47-file aggregate unchanged since `714712f`) are all accurate, and nothing is recorded as agreed that I did not agree to. The one defect: the Phase 5 entry says "`codex-1` and `kimi-1` both observed them appear and vanish", but the design consensus (C5.1), claude-1's inbox correction, and the round-01 artifacts all record that **hermes-1** observed the seven `.pyc` files present and built §4.1 around them, while **kimi-1** watched them appear and vanish running only read-only commands — codex-1's own round-01 reports the source clean, so the sentence credits an observation the record contradicts and drops the observer the cache-exclusion mitigation was built on. My round-24 position is unchanged — the gate is correct as it stands, no finding remains, releasable as 2.1.0 — and with that one-name correction this consensus has my accept; that two of us signed over the misattribution is one more data point for the section's own lesson that reviewers are not interchangeable.
+> > I checked the consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox correction, and `review/round-09/VOID.md`; the corrected `.pyc` attribution, zero-fix round-24 verdict, eleven deferred follow-ups, outage/error ledger, and final verification figures are supported. The narrative still overclaims that every fix-up cycle 10–27 was in the destination-collision gate—cycles 14–20 also repaired independent marker/manifest trust, stored-data path scope, Python-runner, dry-run, and test/record defects—and it describes `skills/parley-bidding/` as 47 files when the tree contains 48 total files, with 47 only the manifest-inventoried payload count excluding `parley-addon.json`; both sentences must be narrowed accordingly. My round-24 position remains unchanged: the gate is correct as it stands, no code finding remains, and the idea is releasable as 2.1.0 once the consensus record is corrected.
 >
 > ## Signoffs
 >
-> *Against this revision. Two earlier signoffs and the two refusals that corrected them are in
-> the amendment sections above.*
+> *Against this revision. Earlier signoffs and all three refusals are in the amendment sections
+> above.*
 >
 > ### Signoff: codex-1 — 2026-08-01
 >
-> **Verdict:** ❌ Two factual overclaims in the review narrative must be corrected before signoff.
+> **Verdict:** ❌ The consensus record must be corrected before signoff.
 >
-> I checked the consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox correction, and `review/round-09/VOID.md`; the corrected `.pyc` attribution, zero-fix round-24 verdict, eleven deferred follow-ups, outage/error ledger, and final verification figures are supported. The narrative still overclaims that every fix-up cycle 10–27 was in the destination-collision gate—cycles 14–20 also repaired independent marker/manifest trust, stored-data path scope, Python-runner, dry-run, and test/record defects—and it describes `skills/parley-bidding/` as 47 files when the tree contains 48 total files, with 47 only the manifest-inventoried payload count excluding `parley-addon.json`; both sentences must be narrowed accordingly. My round-24 position remains unchanged: the gate is correct as it stands, no code finding remains, and the idea is releasable as 2.1.0 once the consensus record is corrected.
+> I checked this revision against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox record, `review/round-09/VOID.md`, and a fresh verification at `e274eb8`; zero agreed fixes, all eleven follow-ups and their dispositions, the round-24 release judgment, and the 368/0, 54/54, 3.9-refusal, and 47-of-48 manifest evidence are supported, and my position remains that the idea is releasable as 2.1.0. The “first measured” table still mixes review rounds with fix-up cycles: the dangling-`existsSync` arm was first measured in review round 8 (fixed in cycle 10), the `--force` and permission arms were measured in void review round 9 (fixed in cycles 12–13), and physical-destination collision begins in review round 13, not 15; those cells must be corrected or relabelled as fix-up cycles where that is what they mean. The participation/amendment record also overcounts `antigravity-1`'s post-round-1 absences as five when the roster-removal inbox says four and round 6 began after removal, omits `kimi-1`'s round-5 `PENDING MEASUREMENT` artifact, and says all three signoffs “were re-collected” after the second refusal even though the third attempt contains only my refusal; it must record those events without implying completed participation or signoffs.
 
 ## Signoffs
 
-*Against this revision. Earlier signoffs and all three refusals are in the amendment sections
+*Against this revision. Earlier signoffs and all four refusals are in the amendment sections
 above.*
-
-### Signoff: codex-1 — 2026-08-01
-
-**Verdict:** ❌ The consensus record must be corrected before signoff.
-
-I checked this revision against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox record, `review/round-09/VOID.md`, and a fresh verification at `e274eb8`; zero agreed fixes, all eleven follow-ups and their dispositions, the round-24 release judgment, and the 368/0, 54/54, 3.9-refusal, and 47-of-48 manifest evidence are supported, and my position remains that the idea is releasable as 2.1.0. The “first measured” table still mixes review rounds with fix-up cycles: the dangling-`existsSync` arm was first measured in review round 8 (fixed in cycle 10), the `--force` and permission arms were measured in void review round 9 (fixed in cycles 12–13), and physical-destination collision begins in review round 13, not 15; those cells must be corrected or relabelled as fix-up cycles where that is what they mean. The participation/amendment record also overcounts `antigravity-1`'s post-round-1 absences as five when the roster-removal inbox says four and round 6 began after removal, omits `kimi-1`'s round-5 `PENDING MEASUREMENT` artifact, and says all three signoffs “were re-collected” after the second refusal even though the third attempt contains only my refusal; it must record those events without implying completed participation or signoffs.
