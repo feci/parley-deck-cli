@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-21
+status: fix-up-cycle-22
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 64e43f9
+head-commit: 2b680a2
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1573,6 +1573,73 @@ volume without firmlinks rather than asserting a platform-dependent result.
 ### Measured after cycle 21
 
 **359 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Fix-up cycle 22 — review round 18: unanimous BLOCK on a regression of mine
+
+`codex-1`, `hermes-1` and `kimi-1` all BLOCK, all on the same defect, and it is one **cycle 21
+introduced**. Two rounds running with a wrong first attempt; this time the wrong attempt shipped
+into a round.
+
+### What I got wrong
+
+Cycle 21 keyed each destination by its **nearest existing ancestor** — one scalar
+`dev:ino/tail` — and compared two such keys as string prefixes. That relation only holds when
+both keys happen to share an anchor. When both destinations already exist, or the inner one has
+its own existing parent, the two keys start from different inodes and no prefix relation exists
+even though the paths are physically nested. Measured at `64e43f9`, no second process:
+`ok: true`, codex `replaced`, its destination gone afterwards.
+
+I closed firmlinks and opened plain nesting. `hermes-1` named it as a regression, `codex-1`
+measured three arms of it, `kimi-1` reached the same conclusion independently.
+
+**`codex-1` also caught the test that let it through**: my cycle-21 firmlink regression does not
+create an existing inner parent, so both of its keys share an anchor and it never exercises the
+skewed case. That is the fifth finding in this idea about one of my tests rather than my code.
+
+### The model that survives all of it
+
+Three models have now been tried and each lost something:
+
+| model | loses |
+|---|---|
+| `realpath` strings (cycle 19) | APFS firmlink respellings — two spellings, one object |
+| scalar `dev:ino` + tail (cycle 21) | nesting whose two sides anchor on different ancestors |
+| the union of both (`kimi-1`'s proposal) | a respelling that *has* an existing inner parent |
+
+What survives is the **chain**: every component's identity, root first. Existing components
+contribute `dev:ino`, so any two spellings of one directory agree there; a not-yet-created tail
+contributes the nearest existing identity plus the remaining names. Containment becomes "B's
+identity appears somewhere in A's chain", which is true in every arm above and false for
+siblings.
+
+`entryChain` does the same for a symlink: its parent's full ancestry plus its own name, so a
+link buried two directories deep is still located by the destination containing it — the third
+arm `codex-1` measured. Names are NFC-normalized and case-folded on case-insensitive platforms.
+
+I chose this over `kimi-1`'s smaller union deliberately, because `codex-1` had already measured
+an arm the union does not cover; the reasoning is recorded rather than left as a preference.
+
+### Discrimination, and what it says
+
+| regression | `fa3da41` (c20) | `64e43f9` (c21) | `2b680a2` (c22) |
+|---|---|---|---|
+| nesting with skewed anchors | **passes** | **fails** | passes |
+| symlink buried below a subdirectory | **passes** | **fails** | passes |
+| firmlink respelling | fails | passes | passes |
+
+The first two columns are the point: cycle 21 traded coverage rather than adding it, and the
+table says so plainly instead of reporting a single number.
+
+One message string was realigned to the wording two existing tests assert — caught by those
+tests, not by inspection.
+
+### Measured after cycle 22
+
+**361 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
 3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
