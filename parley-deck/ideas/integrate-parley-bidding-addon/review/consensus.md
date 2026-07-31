@@ -16,12 +16,17 @@ all three holding **position 1** on the destination-collision gate: correct as i
 
 `skills/parley-bidding/` **has not changed since `714712f`**, its first integration commit — 47
 files, aggregate `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`,
-re-verified in every round. **No round found a defect in the payload this idea exists to ship.**
-The same holds for the integrity mechanism, the seven Python tools, the four platform adapters,
-the test runner, the CI workflow and the documentation.
+re-verified in every round. **No round found a defect in the payload this idea exists to ship**,
+nor in the seven Python tools or four platform adapters inside it.
+
+That clean history belongs to the payload alone. The **integrity mechanism** was itself the
+subject of repeated findings — the marker schema, the legacy exemption twice, manifest keys
+escaping the payload root, a symlinked manifest read as authority — and the **test runner**
+failed open in two directions on a malformed interpreter version and a malformed runtime floor.
+The earlier draft of this paragraph claimed otherwise; `codex-1` refused to sign it, correctly.
 
 Every fix-up cycle from 10 onward was in **one mechanism**: the gate that refuses an install or
-uninstall plan in which two destinations would physically collide. Seventeen cycles on a
+uninstall plan in which two destinations would physically collide. Eighteen cycles (10 through 27) on a
 mechanism that was not the subject of this idea, but without which shipping a 47-file
 security-relevant payload could not be defended.
 
@@ -32,7 +37,7 @@ commit it discriminates against:
 
 | arm | first measured |
 |---|---|
-| per-target rather than fleet-wide preflight | round 8 |
+| preflight leaving a partial fleet (source walk, then per-target rather than fleet-wide) | **round 1**, re-measured round 8 |
 | `existsSync` calling a dangling symlink absent | round 10 |
 | `--force` suppressing the only destination check | round 11 |
 | existence checked but not permission | round 11 |
@@ -73,10 +78,14 @@ code:
    invisible to unflagged `doctor`. Agreed as a follow-up by all three in round 10.
 4. **Quarantine debris is not visible to `doctor`.** When phase B cannot delete a quarantined
    tree the unit warns and names the path, but `doctor` inspects destinations, not `.removing`
-   directories.
-5. **Residual disposal arms** — `uappnd` directories and delete-denying ACLs pass `access(2)`
-   entirely and node exposes no `st_flags`. Under the quarantine transaction these produce debris
-   rather than a partial fleet.
+   directories. **The same applies with no warning at all** if the process stops between phase A
+   and phase B — a crash or a kill leaves quarantined trees on disk that nothing reports, because
+   no unit result was ever produced for them.
+5. **Residual disposal arms** — a selective per-file `uchg` (the Finder "Locked" checkbox on a
+   single file), `uappnd` directories, and delete-denying ACLs all pass `access(2)` entirely, and
+   node exposes no `st_flags`. Linux `chattr +i` and Windows deny-delete ACLs are the same
+   question on those platforms. Under the quarantine transaction these produce debris rather than
+   a partial fleet, which is why they are follow-ups rather than blockers.
 6. **`valid-unselected` masks `valid-unmanaged`** — the selection fact wins the status string;
    the provenance fact survives in `managed: false`.
 7. **`status` always exits 0** — `doctor` is the documented health gate.
@@ -103,7 +112,17 @@ Recorded in full, because an absence must never read as an accept.
   `review/round-01/codex-1.md` **while codex was still writing it**: 3.9 KB and two MAJOR when
   acted on, 9.4 KB and three MAJOR plus two MINOR when finished. Three findings went unaddressed
   for six rounds. Every prompt since carries "finish, then write".
-- **Round 5** — `hermes-1` outage.
+- **Round 5** — `hermes-1` produced no artifact because its configured `model` held the *display*
+  name `GLM 5.2`, which the endpoint rejects as `-m` with "no healthy deployments". A silent
+  configuration error read as an outage until the endpoint id `glm-5p2` was found. Recorded
+  because a misconfigured participant and an absent one look identical from the facilitator's
+  side.
+- **Phase 5, before the reviews began** — the facilitator wrote into the **read-only source**
+  tree: seven `.pyc` files appeared there during a run, and `codex-1` and `kimi-1` both observed
+  them appear and vanish while running only read-only commands. The facilitator also claimed
+  `unittest discover` "fails" as a categorical fact when it was invocation-dependent. Both are
+  recorded in the design-phase `consensus.md` as self-corrections and are repeated here because
+  the facilitator record must be readable in one place.
 - **Round 9 is void, twice over, and both reasons are the facilitator's.** The first launch died
   in a DNS outage (all three agents, no artifact). On the relaunch `codex-1` was given a sandbox
   writable root covering only `parley-deck-skill`, so it completed a full review it could not
@@ -114,6 +133,9 @@ Recorded in full, because an absence must never read as an accept.
 - **Round 16** — the machine's data volume reached 100% and killed `hermes-1` and `kimi-1`
   mid-review; both were re-run cleanly. Several measurements in cycles 20–21 were taken in narrow
   windows between cleanups and are stated with their commits rather than as running totals.
+- **Round 21** — the cycle-24 entry in `IMPLEMENTATION.md` was written **after** round 21 had
+  already been launched. `codex-1` filed it as a MINOR: a round must never open against a commit
+  whose record does not exist yet.
 - **A reviewer ran `git reset` in the repo under review** in an early round, discarding one
   uncommitted edit. Every prompt since forbids tree mutation.
 
@@ -132,3 +154,33 @@ recorded follow-up with its reasoning.
 - **All seven collision arms refused**, each with a regression that fails at the commit it names.
 
 ## Signoffs
+
+*(No signoffs yet at this revision. `codex-1` refused the first draft; see below.)*
+
+## Amendments after the first signoff attempt
+
+`codex-1` **refused to sign** the first draft and was right on every count. The six corrections it
+required are applied above, without weakening any recorded reasoning:
+
+1. The summary claimed the integrity mechanism, test runner, CI and documentation shared the
+   payload's clean history. They did not — both were themselves the subject of findings.
+2. Fleet-wide preflight's first measured partial fleet was **round 1**, not round 8.
+3. Cycles 10–27 are **eighteen**, not seventeen.
+4. Follow-up 4 omitted the phase-A crash-stop `.removing` state, which is worse than the warned
+   case because nothing reports it at all.
+5. Follow-up 5 omitted the selective per-file `uchg` / Finder-lock arm and its Linux and Windows
+   analogues.
+6. The facilitator record omitted the read-only-source write and the `unittest discover`
+   overstatement from Phase 5, the invalid hermes model configuration behind round 5, and the
+   cycle-24 entry written after round 21 had launched.
+
+That a consensus drafted by the implementer needed six corrections from a reviewer, after
+twenty-four rounds, is itself the strongest argument for the signoff step existing.
+
+`codex-1`'s refusal, verbatim:
+
+> ### Signoff: codex-1 — 2026-07-31
+>
+> **Verdict:** ❌ The consensus must be corrected before signoff.
+>
+> I checked the draft against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record and `review/round-09/VOID.md`; the zero-fix round-24 verdict, position 1, 2.1.0 judgment and final verification numbers are supported. The review summary nevertheless overclaims that the integrity mechanism, test runner, CI and documentation share the payload's clean history, misdates fleet-wide preflight's first measured failure as round 8 instead of round 1, and says cycles 10–27 are seventeen cycles when they are eighteen. Follow-up 4 omits the Phase-A crash-stop `.removing` state, follow-up 5 omits the selective per-file `uchg`/Finder-lock arm and its Linux/Windows analogues, and the facilitator record omits the read-only-source write plus `unittest discover` overstatement, the invalid Hermes model configuration behind round 5, and the cycle-24 entry written after round 21 launched; those omissions and inaccuracies must be repaired without weakening their recorded reasoning.
