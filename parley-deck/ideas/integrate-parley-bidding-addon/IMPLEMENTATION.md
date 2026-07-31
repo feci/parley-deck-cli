@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-5
+status: fix-up-cycle-10
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 3634cc8
+head-commit: 3553f47
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -72,7 +72,8 @@ re-typing and comparing against my own typing.
   - `MARKER_SCHEMA = 2`, and the marker now records `manifest: {aggregate, sha256}` — or
     `false` when the source genuinely shipped none.
   - `preflightSkillUnit` validates **every** unit and destination before the first write;
-    `installTarget` aborts the whole target on any blocker (B5).
+    `installTarget` aborts the whole target on any blocker (B5). *(As first written this
+    traversed the source only for manifested add-ons — see fix-up cycle 8.)*
   - staged bytes are re-verified before the marker is written, then the complete staged unit
     is validated, then the atomic replace happens — codex-1's ordering, unchanged.
   - `manifestProblems` is the marker-anchored check; `doctor`/`status` print `integrity:` lines.
@@ -124,20 +125,40 @@ mechanism is **defect detection after a validated install, not tamper resistance
 can rewrite the payload can rewrite the marker beside it. `lib/addon-manifest.js` says so at
 the top of the file.
 
-### D-2 — PRE-7's proving artefact replaced
+### D-2 — PRE-7's proving artefact replaced, and the replacement claimed more than it showed
 
 `git status --porcelain software-bidding` returns `?? software-bidding/` in the parent repo —
-the source is *untracked* there, so the check can never be empty and proves nothing. Replaced
-with a byte-level check: file count plus a cache scan before and after. Deviation from the
-stated method, not from its intent. **Result: source still 48 files, 0 caches, untouched.**
+the source is *untracked* there, so the check can never be empty and proves nothing. It was
+replaced with a file count plus a cache scan, before and after.
 
-### D-3 — the Python command grammar accepts `<` and `>`
+**That replacement was described as a "byte-level check" proving the source "untouched". It is
+neither** — `codex-1` (round 1, MINOR) is right: neither check observes the bytes of any
+ordinary source file, so a content edit preserving all 48 paths and creating no cache would
+pass it. A before/after path-plus-SHA-256 inventory is what would have established the claim,
+and it was not captured; it cannot be reconstructed now.
+
+**Narrowed to what is actually established:** the source still holds **48 files with zero cache
+artefacts**, and the source-vs-integrated comparison accounts for every path and content
+difference (1 path dropped, 1 added, 9 files differing, each listed). No indication of an edit
+was found, by me or by any reviewer. That is weaker than "proven untouched", and the record now
+says so.
+
+### D-3 — the Python command grammar accepts `<`, `>`, and backslash continuations
 
 Open question F5.3/F5.5, now closed. `SUPPORTED_COMMAND` refuses `<`/`>` because it hands the
 string to `/bin/sh`, where they redirect. The Python arm is **static** — F5 says so — and
 hands nothing to a shell, so those characters carry no hazard, while all five published Python
 commands legitimately carry `<placeholder>` arguments. `;` `|` `&` backtick `$` and `\` are
 still refused, because they mean the published line is not one self-contained command.
+
+**Correction, `codex-1` round 1 MINOR.** This section previously said `\` "remains refused".
+It does not: the extractor marks a backslash-continued unit by re-appending `\`, and the Python
+arm strips that sentinel before matching, so **both shipped multi-line commands are accepted**.
+That is a deliberate exception to F5's "shell syntax refused" and it is safe only because this
+arm never executes what it finds — a reader who copies all the continued lines gets exactly the
+command shown. The node arm, which does execute, still refuses splices. The exception is now
+stated in the guard's comment and asserted in both directions by the grammar test, instead of
+being contradicted by the record.
 
 ### D-4 — B4.3 resolved as NOT TESTED, and the claim dropped
 
@@ -159,24 +180,23 @@ siblings inside it would couple the protocol to this package's contents.
 
 | check | result |
 |---|---|
-| `npm test` (node leg) | **309 pass / 0 fail**, measured on python3 **3.9.6 and 3.14** (253 before this idea; 278 at cycle 0) |
+| `npm test` (node leg) | **318 pass / 0 fail**, re-measured at cycle 10 on python3 **3.9.6 and 3.14** (253 before this idea; 278 at cycle 0; 314 at round 7) |
 | `npm test` (Python leg) | **54 pass / 0 fail on supported interpreters only.** On 3.9.6 the leg **refuses to run** — `python3 is 3.9, but the add-on declares >=3.10` — and zero Python tests execute through it. That is the F2 contract working, not a failure. Run file-by-file, 3.9.6 does pass all 54; that is a *compatibility* observation, not the package gate. |
-| Python leg | **54 tests**, 4+20+2+3+15+3+7, 0 fail |
 | Python floor `>=3.10` | **measured** on 3.10, 3.11 and 3.14 — 54/54 on each |
 | Python absent | runner exits **1** with a failure message, does not skip |
-| `npm pack --dry-run` | 202 files; **48** under `skills/parley-bidding/`; **no** `__pycache__`/`.pyc`; no nested `.gitignore`; `prepack` fires |
+| `npm pack --dry-run` | **202** files; **48** under `skills/parley-bidding/`; **zero** `__pycache__`/`.pyc`; zero nested `.gitignore`; `prepack` fires — re-measured at `ebe269e` |
 | default install / `--no-addons` / `--only parley-bidding` | all three behave; covered by tests |
 | `doctor` / `status` / `paths` / `uninstall` | all four exercised against the new add-on |
 | adapter validator | all **4** shipped adapters OK |
 | shipped JSON | **16** files parse; **4** schemas carry `$schema` 2020-12 and `example.invalid` `$id`s |
 | B3 negative test | gutted tree, four single-file deletions, one flipped byte, stray `.pyc`, deleted manifest, corrupt manifest, stripped marker field, newer marker schema, and a **self-consistent manifest+payload swap** — every one reports `malformed` |
 | B5 zero-writes | a corrupt source payload leaves the destination **non-existent**, not half-written |
-| B7 cross-channel | identical aggregate `sha256:7854adf1…` across **repository, npm tarball, portable binary install, native install** |
+| B7 cross-channel | identical aggregate `sha256:7854adf1…` across **repository, npm tarball, native install, portable binary install** — re-measured at `ebe269e` |
 | source vs integrated | 1 path dropped (`.gitignore`), 1 added (`parley-addon.json`), **9** files differ in content — 8 rename, 2 consent paragraph — each listed above |
 | secret / identity scan | no credentials, no `BYTE`, no customer data; the only email-shaped strings are `operator@example.invalid` in test fixtures |
 | cache / symlink scan | zero in repository, tarball, and every install |
 | `npx skills add … --list` | **"Found 6 skills"**, `parley-bidding` among them |
-| portable binary | builds; installs 49 files (47 payload + manifest + marker); `doctor` valid |
+| portable binary | builds; installs **49** files (47 payload + manifest + marker); payload verifies; `doctor` valid — re-measured at `ebe269e` |
 
 ## Release implications
 
@@ -560,6 +580,207 @@ commands. With an explicit selector the command inspects exactly what was reques
 - Python leg: **54 / 54** on 3.10, 3.11 and 3.14; refuses 3.9.6 by design
 - three new tests: ownership agreement across doctor/install/uninstall, a read filter that
   narrows instead of accusing, and unrelated sibling directories being ignored
+
+## Fix-up cycles 6 and 7 — review round 6
+
+`codex-1` **BLOCK** (1 MAJOR), `hermes-1` **ACCEPT** — its first clean accept — `kimi-1`
+**BLOCK** (1 MINOR). Both findings were the same species: a fix from the previous cycle that
+was one field short of consistent.
+
+### F18 — an ABSENT marker skill was exempt from the identity check
+
+**MAJOR, `codex-1`.** Cycle 5 wrote `state.marker.skill !== undefined && state.marker.skill
+!== unit.skill`, while `installerOwnsDestination` requires exact equality. Deleting that one
+field therefore restored the round-5 contradiction exactly: `doctor` said `valid`,
+`managed: true`; `install` and `uninstall` refused the same directory.
+
+I had added the `undefined` exemption for imagined legacy compatibility. codex checked the
+actual released markers — **v1.0.0, v1.4.0 and v2.0.0 all wrote the identity** — so it
+protected nothing. Removed, with a distinct message for an absent identity versus a mismatched
+one.
+
+**Backward compatibility measured, not assumed:** markers downgraded to the exact 2.0.0 shape
+(no `markerSchema`, no `manifest`, `skill` present) still report `valid` for all six units.
+
+### F19 — `selected` was derived from the flag, not from the recorded selection
+
+**MINOR, `kimi-1`, and the sharpest finding of the round.** Cycle 5 made an explicit `--only`
+a filter over *what to inspect*, which was right — but `selected` kept being set from that
+filter. So on a tree where bidding is a residual:
+
+| command | verdict |
+|---|---|
+| `doctor` | `selected: false`, `valid-unselected`, `ok: false` |
+| `doctor --only parley-bidding` | `selected: true`, `valid`, `ok: true` |
+
+Two reads, opposite answers about a **recorded** fact, for the same directory — and a scoped
+probe is precisely how someone would verify the bidding opt-out. **Fixed**: `selected` is read
+from the core marker for read commands; install and uninstall keep the requested set, because
+they are the commands writing the selection. The cycle-5 narrowing is untouched.
+
+### A test that conflated two facts
+
+Found while fixing F19: `a faithfully copied tree with no marker at all is valid-unmanaged`
+installed **core-only** and then asserted the copied tree was `valid-unmanaged` — but under
+that setup it is both unmanaged *and* outside the recorded selection. The test was passing for
+a reason it did not name. Split into two, one per fact, plus an explicit assertion of which
+status wins when both hold.
+
+### Measured after cycle 7
+
+**314 node tests, 0 fail, on python3 3.9.6 and 3.14.** Python leg unchanged: 54/54 on 3.10,
+3.11 and 3.14; refuses 3.9.6 by design.
+
+### Roster change during this idea
+
+`antigravity-1` (cli `agy`) was **removed from the roster on 2026-07-30** by user instruction,
+after exhausting its account quota in round 1 and producing nothing in the five rounds after.
+Active quorum is four: `claude-1` (implementer, does not review its own work), `codex-1`,
+`hermes-1`, `kimi-1`. Recorded in `COOPERATION.md` §2, `meta/headless-agents.local.json`
+(`removedAgents`), and `inbox/claude-1-to-all_roster_antigravity-removed.md`. Consensus must
+record it as **absent for the whole review, never as an accept**.
+
+A second roster defect surfaced with it: `hermes-1`'s `model` field held the display name
+`GLM 5.2`, which the endpoint rejects as `-m` with `no healthy deployments`. That is why
+hermes was missing a review artifact in round 5. The endpoint id is `glm-5p2`, now corrected and
+verified with a PONG probe.
+
+## Fix-up cycle 8 — findings I never saw in round 1
+
+`codex-1` gave **❌ CHANGES REQUESTED** on the consensus draft rather than a signoff, and the
+reason is a facilitation failure of mine, not a disagreement.
+
+**I read `review/round-01/codex-1.md` while codex was still writing it.** The file was 3.9 KB
+and held two MAJOR findings when I acted on it; it is 9.4 KB and holds **three MAJOR and two
+MINOR** now. Cycles 1–7 were therefore built on an incomplete reading of round 1, and the
+consensus table recorded "BLOCK (2 MAJOR)" for a review that raised five findings. Three of
+them had never been addressed at all.
+
+The lesson is procedural: **a review file is not final because it exists.** Wait for the
+process to exit, then read.
+
+### F20 — preflight walked the source only for manifested add-ons
+
+**MAJOR.** `preflightSkillUnit` verified a source payload only when it carried a manifest. A
+manifest-free add-on's tree was first traversed by `copyRecursive` *during the write loop*, so
+a symlink in it — a predictable, statically detectable defect — failed after the core and every
+preceding add-on had already been replaced. codex staged exactly that (`zz-broken`, sorting
+last) and measured six units installed before the failure. **That is the partial fleet B5
+forbids**, and this file claimed the guarantee it did not have.
+
+**Fixed** with `firstCopyObstacle`: a read-only mirror of everything `copyRecursive` refuses —
+symlinks, non-regular files, unreadable entries — run during preflight. *As first written it
+covered only add-ons; `codex-1` caught that the core was excluded while this paragraph claimed
+"every source unit". `copySourcesFor` now enumerates the core's package entries too, and a
+second regression covers a symlink in the core source.* Both regressions assert the skills
+destination stays non-existent.
+
+### F21 — D-2's evidence did not support D-2's claim
+
+**MINOR, and the third evidence error a reviewer has caught in this idea.** I called a file
+count plus a cache scan a "byte-level check" proving the source "untouched". Neither observes
+the bytes of any source file. A content edit preserving all 48 paths would have passed it, and
+the before/after SHA inventory that would have established the claim was never captured — it
+cannot be reconstructed now. D-2 is narrowed to what the checks actually show.
+
+### F22 — the record claimed a stricter grammar than the guard enforces
+
+**MINOR.** D-3 said backslash "remains refused". It is not: the extractor marks a continued
+unit by re-appending `\`, and the Python arm strips that sentinel before matching, so both
+shipped multi-line commands are accepted. Safe — this arm never executes — but the
+documentation asserted a contract the test did not keep. The exception is now stated in the
+guard comment, in D-3, and asserted in both directions by the grammar test.
+
+### Consensus corrections
+
+- `codex-1`'s round-1 row corrected to **3 MAJOR + 2 MINOR**; the three previously invisible
+  findings added to the record as fixed in this cycle.
+- `hermes-1`'s and `codex-1`'s shared precision applied: hermes was missing an artifact in
+  **round 5 only**, not "several rounds".
+
+### Measured after cycle 8
+
+**315 node tests, 0 fail**, on python3 3.9.6 and 3.14.
+
+## Fix-up cycle 9 — codex-1 refused the re-signoff, correctly
+
+`codex-1` returned **❌ CHANGES REQUESTED a second time**, on the amended draft. It was right
+four times over, and one of those is a protocol violation I was walking into.
+
+### The protocol point, which matters most
+
+`00-prompt.md` sets **`track: deliberation`** and **`strict_gate: true`**. Cycle 8 changed
+installer code and tests *after* round 7's unanimous accept. Under a strict gate that requires
+a **fresh full-scope review round by every non-implementer** at the new commit — a re-signoff
+from one reviewer cannot stand in for it. I was treating the signoff round as a place to land
+new code, which is exactly the shortcut the gate exists to prevent. Round 8 is therefore run as
+a full round, not as a signature collection.
+
+### F23 — the preflight excluded the core, while the record said "every source unit"
+
+**The fourth overstated claim in this idea.** `preflightSkillUnit` called `firstCopyObstacle`
+only when `unit.addon` was truthy. The core skill is assembled from several package entries
+rather than one directory, so it was never walked — and both this file and the consensus said
+"every source unit".
+
+**Fixed:** `copySourcesFor` enumerates an add-on's directory *or* the core's `PAYLOAD_ENTRIES`
+and `OPTIONAL_PAYLOAD_ENTRIES`, and `firstCopyObstacle` now accepts a single-file root, because
+several of those entries are files. A second regression puts a symlink in the core's
+`references/` and asserts zero writes.
+
+### F24/F25 — two documents still contradicted their own corrections
+
+- The verification tables in **both** files still called the read-only source "untouched" on
+  exactly the file-count-plus-cache evidence that D-2 had just been narrowed for saying. Both
+  rows now state what the evidence shows and point at D-2.
+- `IMPLEMENTATION.md` still said "several hermes rounds produced nothing" after the consensus
+  had been corrected to round 5 only. Fixed.
+
+Correcting a claim in one place and leaving it standing in another is its own failure mode, and
+it is the one a reviewer should not have had to find.
+
+### Measured after cycle 9
+
+**316 node tests, 0 fail**, on python3 3.9.6 and 3.14.
+
+## Fix-up cycle 10 — review round 8
+
+`codex-1` **BLOCK** (1 MAJOR), `hermes-1` **ACCEPT**, `kimi-1` **ACCEPT**. The full-scope round
+the strict gate required found one more real defect — the same B5 property, reached from the
+destination side instead of the source side.
+
+### F26 — preflight was per-target, and destination presence followed symlinks
+
+**MAJOR, two halves of one guarantee.**
+
+`installCommand` preflighted *inside* each target, immediately before writing it. codex ran
+`--target all --include-undetected` with an unmarked `parley-bidding` destination in the **last**
+target and measured the result: `ok:false`, `aionrs` refused — and **all thirteen preceding
+targets already written**. B5 says every unit *and destination* is preflighted before the first
+write; mine preflighted before the first write *of that target*.
+
+The second half: every destination check used `fs.existsSync`, which follows symlinks and
+answers **false** for a dangling one. A dangling link at the last unit therefore bypassed
+ownership preflight entirely, and the atomic rename failed with `ENOTDIR` after five units had
+been installed.
+
+**Fixed.** `installCommand` now builds the complete target × unit plan and preflights all of it
+before invoking any write; a single blocker anywhere returns every unit as `blocked` or
+`skipped` with zero writes. `pathEntryExists` replaces `fs.existsSync` on every destination
+path — preflight, install, and the backup/replace path alike — treating only `ENOENT` as
+absence. Two regressions: a blocker in the fourteenth target asserts no earlier target was
+written; a dangling destination symlink asserts no unit was written.
+
+### The `head-commit` front matter, again
+
+`codex-1` also caught that the front matter still read `3634cc8` under `status:
+fix-up-cycle-9`. My cycle-9 correction targeted the wrong string and silently matched nothing —
+the same failure mode as the two documents that contradicted each other. Fixed, and the number
+is now taken from `git rev-parse` rather than typed.
+
+### Measured after cycle 10
+
+**318 node tests, 0 fail**, on python3 3.9.6 and 3.14.
 
 ## Notes for reviewers
 
