@@ -14,8 +14,9 @@ all three holding **position 1** on the destination-collision gate: correct as i
 
 ## What twenty-four rounds found
 
-`skills/parley-bidding/` **has not changed since `714712f`**, its first integration commit — 47
-files, aggregate `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`,
+`skills/parley-bidding/` **has not changed since `714712f`**, its first integration commit —
+**48 files on disk**, of which **47 are inventoried by `parley-addon.json`** (the manifest does
+not list itself), aggregate `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`,
 re-verified in every round. **No round found a defect in the payload this idea exists to ship**,
 nor in the seven Python tools or four platform adapters inside it.
 
@@ -25,10 +26,16 @@ escaping the payload root, a symlinked manifest read as authority — and the **
 failed open in two directions on a malformed interpreter version and a malformed runtime floor.
 The earlier draft of this paragraph claimed otherwise; `codex-1` refused to sign it, correctly.
 
-Every fix-up cycle from 10 onward was in **one mechanism**: the gate that refuses an install or
-uninstall plan in which two destinations would physically collide. Eighteen cycles (10 through 27) on a
-mechanism that was not the subject of this idea, but without which shipping a 47-file
-security-relevant payload could not be defended.
+Every fix-up cycle from 10 onward was in the **installer**, not the payload — and the largest
+share of them in one mechanism: the gate that refuses an install or uninstall plan in which two
+destinations would physically collide.
+
+The gate is not the whole of it, and an earlier draft said it was. Cycles 14 through 20 also
+repaired independent defects: marker and manifest **trust** (the legacy exemption, a symlinked
+manifest read as authority, manifest keys escaping the payload root), the **path scope** stored
+data may reach, the **Python runner** failing open in two directions, **dry-run** disagreeing
+with the command it models, and defects in the record and tests themselves. `codex-1` refused a
+draft that collapsed all eighteen cycles into the gate; this is the corrected account.
 
 ### The seven arms the gate now refuses
 
@@ -152,7 +159,8 @@ recorded follow-up with its reasoning.
   3.9.6.
 - **Python leg 54/54** across seven files on 3.14; under a 3.9.6-first PATH the leg **refuses to
   run** by design (`>=3.10` floor) — that is the F2 contract working, not a skip.
-- **Manifest check ok** — 47 files, aggregate unchanged since `714712f`.
+- **Manifest check ok** — 47 inventoried files (48 on disk, the manifest excluding itself),
+  aggregate unchanged since `714712f`.
 - **All seven collision arms refused**, each with a regression that fails at the commit it names.
 
 ## Amendments after the first signoff attempt
@@ -201,26 +209,51 @@ against this revision, and all three were re-collected.
 
 The two earlier signoffs, preserved:
 
+> ### Third amendment — two overclaims in the narrative
+
+`codex-1` refused again, and again correctly:
+
+1. The narrative said **every** cycle 10–27 was in the collision gate. Cycles 14–20 also repaired
+   marker and manifest trust, the path scope stored data may reach, the Python runner, dry-run
+   fidelity, and defects in the record and tests. Corrected above; the gate is the largest share,
+   not the whole.
+2. `skills/parley-bidding/` was described as **47 files**. The tree holds **48**; 47 is the
+   manifest's inventory, which excludes `parley-addon.json` itself. Corrected in both places.
+
+Three refusals now, each catching a claim that flattered the work or the facilitator. The
+refusal, verbatim:
+
+> ### Signoff: codex-1 — 2026-08-01
+> >
+> > **Verdict:** ✅ ACCEPT
+> >
+> > I checked the amended consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record, and `review/round-09/VOID.md`; it now accurately records zero agreed fixes, all eleven deferred follow-ups with their reasoning, the outages and facilitator errors, and the verification evidence at `e274eb8`. My round-24 position remains unchanged: the destination-collision gate is correct as it stands, no new finding remains, and the idea is releasable as 2.1.0.
+> >
+> > ### Signoff: hermes-1 — 2026-08-01
+> >
+> > **Verdict:** ✅ ACCEPT
+> >
+> > I checked the consensus against my own reviews (rounds 9, 10, 12, 14, 16, 21, 24), the other two round-24 artifacts, `review/round-09/VOID.md`, and the round-2 transient record: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups, every outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0, 54/54, 47-file manifest unchanged since `714712f`) are all accurate and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
+> >
+> >
+> > ### Signoff: kimi-1 — 2026-08-01
+> >
+> > **Verdict:** ❌ One name in the facilitator record must change before I can sign: in the Phase 5 bullet, `codex-1` must be `hermes-1`.
+> >
+> > I checked the consensus against my own reviews through round 24, the design-phase consensus and its inbox record, `review/round-09/VOID.md`, `IMPLEMENTATION.md`, `FINAL.md`, `CHANGELOG.md`, the CI workflows, and both sibling round-24 artifacts: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every other outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0 under both interpreters, 54/54 on 3.14, the 3.9.6-first refusal, the 47-file aggregate unchanged since `714712f`) are all accurate, and nothing is recorded as agreed that I did not agree to. The one defect: the Phase 5 entry says "`codex-1` and `kimi-1` both observed them appear and vanish", but the design consensus (C5.1), claude-1's inbox correction, and the round-01 artifacts all record that **hermes-1** observed the seven `.pyc` files present and built §4.1 around them, while **kimi-1** watched them appear and vanish running only read-only commands — codex-1's own round-01 reports the source clean, so the sentence credits an observation the record contradicts and drops the observer the cache-exclusion mitigation was built on. My round-24 position is unchanged — the gate is correct as it stands, no finding remains, releasable as 2.1.0 — and with that one-name correction this consensus has my accept; that two of us signed over the misattribution is one more data point for the section's own lesson that reviewers are not interchangeable.
+>
+> ## Signoffs
+>
+> *Against this revision. Two earlier signoffs and the two refusals that corrected them are in
+> the amendment sections above.*
+>
 > ### Signoff: codex-1 — 2026-08-01
 >
-> **Verdict:** ✅ ACCEPT
+> **Verdict:** ❌ Two factual overclaims in the review narrative must be corrected before signoff.
 >
-> I checked the amended consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record, and `review/round-09/VOID.md`; it now accurately records zero agreed fixes, all eleven deferred follow-ups with their reasoning, the outages and facilitator errors, and the verification evidence at `e274eb8`. My round-24 position remains unchanged: the destination-collision gate is correct as it stands, no new finding remains, and the idea is releasable as 2.1.0.
->
-> ### Signoff: hermes-1 — 2026-08-01
->
-> **Verdict:** ✅ ACCEPT
->
-> I checked the consensus against my own reviews (rounds 9, 10, 12, 14, 16, 21, 24), the other two round-24 artifacts, `review/round-09/VOID.md`, and the round-2 transient record: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups, every outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0, 54/54, 47-file manifest unchanged since `714712f`) are all accurate and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
->
->
-> ### Signoff: kimi-1 — 2026-08-01
->
-> **Verdict:** ❌ One name in the facilitator record must change before I can sign: in the Phase 5 bullet, `codex-1` must be `hermes-1`.
->
-> I checked the consensus against my own reviews through round 24, the design-phase consensus and its inbox record, `review/round-09/VOID.md`, `IMPLEMENTATION.md`, `FINAL.md`, `CHANGELOG.md`, the CI workflows, and both sibling round-24 artifacts: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every other outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0 under both interpreters, 54/54 on 3.14, the 3.9.6-first refusal, the 47-file aggregate unchanged since `714712f`) are all accurate, and nothing is recorded as agreed that I did not agree to. The one defect: the Phase 5 entry says "`codex-1` and `kimi-1` both observed them appear and vanish", but the design consensus (C5.1), claude-1's inbox correction, and the round-01 artifacts all record that **hermes-1** observed the seven `.pyc` files present and built §4.1 around them, while **kimi-1** watched them appear and vanish running only read-only commands — codex-1's own round-01 reports the source clean, so the sentence credits an observation the record contradicts and drops the observer the cache-exclusion mitigation was built on. My round-24 position is unchanged — the gate is correct as it stands, no finding remains, releasable as 2.1.0 — and with that one-name correction this consensus has my accept; that two of us signed over the misattribution is one more data point for the section's own lesson that reviewers are not interchangeable.
+> I checked the consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox correction, and `review/round-09/VOID.md`; the corrected `.pyc` attribution, zero-fix round-24 verdict, eleven deferred follow-ups, outage/error ledger, and final verification figures are supported. The narrative still overclaims that every fix-up cycle 10–27 was in the destination-collision gate—cycles 14–20 also repaired independent marker/manifest trust, stored-data path scope, Python-runner, dry-run, and test/record defects—and it describes `skills/parley-bidding/` as 47 files when the tree contains 48 total files, with 47 only the manifest-inventoried payload count excluding `parley-addon.json`; both sentences must be narrowed accordingly. My round-24 position remains unchanged: the gate is correct as it stands, no code finding remains, and the idea is releasable as 2.1.0 once the consensus record is corrected.
 
 ## Signoffs
 
-*Against this revision. Two earlier signoffs and the two refusals that corrected them are in
-the amendment sections above.*
+*Against this revision. Earlier signoffs and all three refusals are in the amendment sections
+above.*
