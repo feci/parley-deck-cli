@@ -118,8 +118,10 @@ Recorded in full, because an absence must never read as an accept.
   because a misconfigured participant and an absent one look identical from the facilitator's
   side.
 - **Phase 5, before the reviews began** — the facilitator wrote into the **read-only source**
-  tree: seven `.pyc` files appeared there during a run, and `codex-1` and `kimi-1` both observed
-  them appear and vanish while running only read-only commands. The facilitator also claimed
+  tree: seven `.pyc` files appeared there during a run. **`hermes-1` reported them present** and
+  built its round-01 §4.1 around them — the finding the cache-exclusion mitigation was then built
+  on — while **`kimi-1` watched them appear and vanish** running only read-only commands.
+  `codex-1` reported the source clean. The facilitator also claimed
   `unittest discover` "fails" as a categorical fact when it was invocation-dependent. Both are
   recorded in the design-phase `consensus.md` as self-corrections and are repeated here because
   the facilitator record must be readable in one place.
@@ -184,3 +186,45 @@ twenty-four rounds, is itself the strongest argument for the signoff step existi
 > **Verdict:** ❌ The consensus must be corrected before signoff.
 >
 > I checked the draft against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record and `review/round-09/VOID.md`; the zero-fix round-24 verdict, position 1, 2.1.0 judgment and final verification numbers are supported. The review summary nevertheless overclaims that the integrity mechanism, test runner, CI and documentation share the payload's clean history, misdates fleet-wide preflight's first measured failure as round 8 instead of round 1, and says cycles 10–27 are seventeen cycles when they are eighteen. Follow-up 4 omits the Phase-A crash-stop `.removing` state, follow-up 5 omits the selective per-file `uchg`/Finder-lock arm and its Linux/Windows analogues, and the facilitator record omits the read-only-source write plus `unittest discover` overstatement, the invalid Hermes model configuration behind round 5, and the cycle-24 entry written after round 21 launched; those omissions and inaccuracies must be repaired without weakening their recorded reasoning.
+
+*(Signoffs below are against this revision. Two earlier signoffs, and the refusal that corrected
+them, are recorded in the amendments section.)*
+
+## Second amendment — after two agents had already signed
+
+`kimi-1` refused to sign and was right. The Phase-5 bullet credited the `.pyc` observation to
+`codex-1` and `kimi-1`. The record says otherwise, and I verified it: **`hermes-1`** reported the
+seven files present and built its round-01 §4.1 on them — 23 references in that artifact — and
+that finding is what the cache-exclusion mitigation was built on; **`kimi-1`** watched them appear
+and vanish while running only read-only commands; **`codex-1`** reported the source clean.
+
+So the sentence credited an agent that did not make the observation and erased the one whose
+finding carried it.
+
+`codex-1` and `hermes-1` had both already signed over that error — **including `hermes-1`, whose
+own contribution it erased**. As `kimi-1` put it, that is one more data point for this document's
+own lesson that reviewers are not interchangeable. Both earlier signoffs are therefore void
+against this revision, and all three were re-collected.
+
+The two earlier signoffs, preserved:
+
+> ### Signoff: codex-1 — 2026-08-01
+>
+> **Verdict:** ✅ ACCEPT
+>
+> I checked the amended consensus against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus, the inbox record, and `review/round-09/VOID.md`; it now accurately records zero agreed fixes, all eleven deferred follow-ups with their reasoning, the outages and facilitator errors, and the verification evidence at `e274eb8`. My round-24 position remains unchanged: the destination-collision gate is correct as it stands, no new finding remains, and the idea is releasable as 2.1.0.
+>
+> ### Signoff: hermes-1 — 2026-08-01
+>
+> **Verdict:** ✅ ACCEPT
+>
+> I checked the consensus against my own reviews (rounds 9, 10, 12, 14, 16, 21, 24), the other two round-24 artifacts, `review/round-09/VOID.md`, and the round-2 transient record: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups, every outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0, 54/54, 47-file manifest unchanged since `714712f`) are all accurate and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
+>
+>
+> ### Signoff: kimi-1 — 2026-08-01
+>
+> **Verdict:** ❌ One name in the facilitator record must change before I can sign: in the Phase 5 bullet, `codex-1` must be `hermes-1`.
+>
+> I checked the consensus against my own reviews through round 24, the design-phase consensus and its inbox record, `review/round-09/VOID.md`, `IMPLEMENTATION.md`, `FINAL.md`, `CHANGELOG.md`, the CI workflows, and both sibling round-24 artifacts: the zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every other outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers (368/0 under both interpreters, 54/54 on 3.14, the 3.9.6-first refusal, the 47-file aggregate unchanged since `714712f`) are all accurate, and nothing is recorded as agreed that I did not agree to. The one defect: the Phase 5 entry says "`codex-1` and `kimi-1` both observed them appear and vanish", but the design consensus (C5.1), claude-1's inbox correction, and the round-01 artifacts all record that **hermes-1** observed the seven `.pyc` files present and built §4.1 around them, while **kimi-1** watched them appear and vanish running only read-only commands — codex-1's own round-01 reports the source clean, so the sentence credits an observation the record contradicts and drops the observer the cache-exclusion mitigation was built on. My round-24 position is unchanged — the gate is correct as it stands, no finding remains, releasable as 2.1.0 — and with that one-name correction this consensus has my accept; that two of us signed over the misattribution is one more data point for the section's own lesson that reviewers are not interchangeable.
+
+## Signoffs
