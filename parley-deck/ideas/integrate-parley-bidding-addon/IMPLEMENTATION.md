@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-25
+status: fix-up-cycle-26
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: b1f43e4
+head-commit: 7e8ccec
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1821,6 +1821,57 @@ as proofs; this one says what it is.
 check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`. All seven accumulated arms refused.
+
+## Fix-up cycle 26 — review round 22: unanimous on the shape, one block on coverage
+
+`hermes-1` **ACCEPT** (position 1), `kimi-1` **ACCEPT** (position 1), `codex-1` **BLOCK** —
+**also position 1**. For the first time in twenty-two rounds all three agree the gate is the
+right shape; codex-1's block is explicitly *"executable Windows coverage, not a defect in the
+gate's current shape."*
+
+### What was missing
+
+`splitAtRoot` was made injectable in cycle 23 so the Windows arithmetic could be proven from a
+POSIX host. `walkRawTarget` carried a **second copy of the same logic** and was not — so the
+drive and UNC arms of the very defect cycle 24 fixed had nothing executable asserting them.
+
+That is the same shape as the original bug: cycle 23 fixed the root handling in one place and
+wrote it again twenty lines below. Cycle 24 corrected the copy; cycle 26 finally makes it
+provable.
+
+`rawTargetArithmetic(from, rawTarget, impl, resolveParent)` is now extracted and exported. The
+regression asserts, against the real helper: a drive-absolute target does not replay `C:\` as a
+component; a UNC target does not duplicate its server and share; a relative target anchors on the
+resolved parent, with the resolver observed being consulted; and a POSIX target keeps a backslash
+as an ordinary filename byte. It fails at `b1f43e4` and at `2b7ca3e` — the commit codex-1 named.
+
+The dead `seen`/`record` scaffolding codex-1 flagged in my absolute-target test is gone with the
+test it belonged to.
+
+### On the record, from the reviewers themselves
+
+`kimi-1` moved from position 3 to 1 and asked that the record be precise about why: it and
+`codex-1` examined the anchor and found it wrong; `hermes-1` reached the right answer in round 21
+"for an incomplete reason", having examined only the expansion. `hermes-1` said the same about
+itself this round — "the part I did not examine closely enough". Recorded as they asked, because
+a split that closes should show *how* it closed.
+
+`kimi-1`, having named the round-21 arm and measured it shut: *"In round 21 I said I found
+nothing else standing between this tree and release; with the named arm measured closed, nothing
+is."*
+
+Both `codex-1` and `kimi-1` refused position 2 — narrowing the gate — on the same ground:
+`CHANGELOG.md` promises fleet-wide atomicity without excluding symlinked runtime homes, which
+earlier cycles deliberately supported. `kimi-1` noted it had originally leaned toward narrowing
+and accepted codex-1's argument against it. That closes the question I put to the user.
+
+### Measured after cycle 26
+
+**372 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; refuses 3.9.6 by design. Manifest
+check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`. All seven accumulated collision arms refused.
 
 ## Notes for reviewers
 
