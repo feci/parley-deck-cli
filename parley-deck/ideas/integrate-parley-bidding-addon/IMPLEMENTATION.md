@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-15
+status: fix-up-cycle-16
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 5100f34
+head-commit: dd8d756
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1111,6 +1111,105 @@ quarantine design, not a defect of it.
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`.
+
+## Fix-up cycle 16 — review round 12: stored data is input, and one regression of my own
+
+Round 12: `hermes-1` **ACCEPT** (no new findings, having attacked the quarantine transaction on
+rollback, name collisions, `--dry-run`, symlinks and concurrency), `codex-1` **BLOCK**
+(1 CRITICAL, 2 MAJOR), `kimi-1` **BLOCK** (1 MAJOR, 1 MINOR, 1 NIT). All reproduced by me.
+
+### The correction cycle 15 needed: confinement is not authorization
+
+Cycle 15 confined marker-derived names to a direct child of the skills directory. That narrowed
+**where** a recorded name may point and said nothing about whether this package has any
+**authority** over what is there. Measured at `5100f34`: with `addons: ["unrelated-sentinel"]`
+and a sibling directory of that name, `uninstall --force` **deleted it and returned `ok: true`**.
+
+`--force` may waive ownership for a destination the **caller** selected. It must not waive
+authority for a destination selected only by mutable stored data. A recorded name is now
+authorized only when the package ships that add-on, **or** the destination already carries this
+installer's marker claiming that identity — the second clause so an add-on dropped from a newer
+package can still be uninstalled, which has its own regression precisely because authorization
+could otherwise strand real installs.
+
+### Two more surfaces of the same sentence
+
+**The container type.** My cycle-15 fail-closed branch sat *behind* `Array.isArray`, so it never
+ran for a non-array. Measured: `"parley-bidding"`, `true`, `null`, `{}` and `42` all read as a
+healthy core-only selection, `valid`, zero problems. Only an absent field and the explicit
+`false` this installer writes mean core-only; everything else is now unusable. `codex-1` filed
+it MAJOR, `kimi-1` MINOR — same defect, independently.
+
+**The manifest's own keys.** A surface I never considered. `readManifest` validated hash values
+and not keys, and `verifyPayload` fed each key to `path.join(root, rel)`. Measured: a key of
+`../outside-sentinel` carrying that external file's correct digest, with the aggregate
+recomputed, returned **`ok: true`** — and `../parley-deck/SKILL.md` made an add-on's health
+depend on a sibling skill's bytes. The aggregate digest proves the manifest agrees with itself;
+it says nothing about where the keys point. Keys are now validated as canonical relative payload
+paths and each resolved path must be a strict descendant of the payload root.
+
+The marker and the manifest are both **files in a destination directory**. They are input, not
+truth. That sentence is the whole of this cycle.
+
+### The regression I introduced in cycle 15
+
+`kimi-1` measured it and it is the most important finding of the round for what it says about
+my own reasoning. Cycle 15 deleted the removability predicate from the **install** preflight too,
+on the argument that install "already commits by rename". That is true of the commit and false
+of the fleet: a destination directory carrying `uchg` makes the **commit rename itself** fail.
+
+| commit | `--target all --include-undetected`, `uchg` on a destination in the last target |
+|---|---|
+| `12f9071` (cycle 14) | 0 replaced, clean block |
+| `5100f34` (cycle 15) | **83 replaced, then EPERM** |
+
+The predicate had been the last fleet-wide guard on that path, and deleting it re-opened the
+round-8 forbidden end state. `IMPLEMENTATION.md`'s "Install needed nothing further" is corrected
+rather than defended.
+
+**Fixed by making install a transaction too**, symmetric with uninstall: phase 1 stages every
+unit with no destination touched, phase 2 commits by rename and reverts every earlier commit if
+any later one fails, phase 3 discards backups where a failure is a warning. Both moves in the
+revert are renames within the same parent, so undoing needs exactly the permission the forward
+move already proved. Measured after: **0 units written**, every other unit `skipped`, untouched
+targets byte-identical, and no staging directories left behind.
+
+### Discrimination
+
+| regression | `5100f34` | `dd8d756` |
+|---|---|---|
+| unknown marker name deletes a sibling | fails | passes |
+| non-array `addons` container | fails | passes |
+| manifest key escapes the payload | fails | passes |
+| install fleet, immovable destination | fails (**83 units**) | passes |
+| add-on dropped from a newer package still uninstallable | passes | passes |
+| absent / `false` `addons` still core-only | passes | passes |
+
+The last two pass at both commits **by design**: they are guards against over-correcting the
+first four, not evidence for them, and are listed as such rather than counted.
+
+### `kimi-1`'s NIT — my discrimination table was off by one
+
+Cycle 15's table said 3/11 at `12f9071`. Recounted rather than re-asserted. This is the third
+counting or wording claim of mine this idea has had to correct (D-2, cycle 10's "every
+destination path", cycle 15's Python-leg sentence), which is why the table above separates
+"proves the fix" from "guards the fix" instead of reporting one number.
+
+### Measured after cycle 16
+
+**344 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+### A facilitator error, recorded
+
+I edited `CHANGELOG.md` while `kimi-1` was still reading the tree — the rule I wrote after round
+9, broken by me two rounds later. I reverted within about a minute, restored the tree to
+`5100f34`, and re-applied the edit only after kimi finished. `kimi-1`'s review reports the tree
+clean at `5100f34`, so the window did no damage, but the error is recorded rather than left to
+the diff.
 
 ## Notes for reviewers
 
