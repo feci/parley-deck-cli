@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-19
+status: fix-up-cycle-20
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: a49d68f
+head-commit: fa3da41
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1447,6 +1447,76 @@ cycle 19.
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`.
+
+## Fix-up cycle 20 — review round 16: what a path goes *through*, not where it ends
+
+Round 16: `codex-1` **BLOCK** (1 MAJOR, 1 MINOR, 1 NIT), `hermes-1` **ACCEPT** (1 NIT),
+`kimi-1` **ACCEPT** (1 MINOR, 1 NIT). The fourth 2-1 in a row, and the fourth time codex-1's
+finding was real — I reproduced it before accepting it.
+
+### The MAJOR
+
+Cycle 19 compared **final** resolved paths. `resolvedDestination` records where a destination
+ends up and says nothing about what it passes through, and a plain symlink stored *inside*
+another planned destination is exactly a path that goes through something a later commit will
+destroy.
+
+Measured at `a49d68f`, with a managed kimi core, a `redirect` symlink inside it, and
+`CODEX_HOME` pointing at that symlink:
+
+| observed | value |
+|---|---|
+| top-level | `ok: true` |
+| codex core | `installed` |
+| kimi core | `replaced` |
+| codex's reported destination afterwards | **absent** |
+| orphan tree at the symlink's old target | present |
+| surviving marker | `target: kimi` |
+
+The final paths never overlap — the symlink points elsewhere — so cycle 19's containment check
+was silent. Uninstall has the same blindness with a worse ending: quarantine goes through the
+link, a later commit destroys it, and `rmSync(..., {force: true})` treats the now-missing path
+as **successful cleanup**, reporting `removed` with no warning and leaving the tree behind.
+
+**Fixed** by rejecting a plan in which resolving one destination passes through another.
+
+**And I got the first version wrong**, which is worth recording. My initial touchpoint set was
+every component of the path, so it flagged every pair of *siblings* — `parley-deck` and
+`parley-bidding` in one skills directory — because their shared parent contains them both. The
+check now records **only symlinks**, which are the sole component able to redirect resolution
+out of the lexical tree. Caught by my own new regression failing on a case it should have
+passed, not by a reviewer.
+
+### The rest
+
+- **The Python gate failed open in two directions** (codex-1 MINOR, kimi-1 MINOR): an unreadable
+  `python3` version produced `NaN`, which compares false against every floor, and a malformed
+  `runtime.python` produced a null floor that skipped the comparison entirely. Either way the
+  gate that exists to stop an untested interpreter reported success. Both now fail closed.
+- **Dead code** (codex-1 NIT, kimi-1 NIT): `preflightUninstallUnit` survived the preflight
+  deletion in cycle 19 with no callers.
+- **`uninstall --dry-run` did not carry the per-action `dryRun` flag install carries**
+  (hermes-1 NIT) — an asymmetry cycle 19's single result path introduced.
+
+### Discrimination
+
+**0 / 2 pass at `a49d68f`, 2 / 2 at `fa3da41`.**
+
+### Measured after cycle 20
+
+**357 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+### An infrastructure note, recorded because it shaped the round
+
+The machine's data volume reached 100% mid-round. It killed `hermes-1` and `kimi-1` in their
+first round-16 runs (both re-run cleanly afterwards), and it repeatedly blocked commits and test
+runs. No artifact was lost — everything is in git — but several measurements in this cycle were
+taken in a narrow window between cleanups, and that is why they are stated with their commits
+rather than as running totals.
 
 ## Notes for reviewers
 
