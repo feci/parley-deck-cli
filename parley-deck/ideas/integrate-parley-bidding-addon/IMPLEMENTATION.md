@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-10
+status: fix-up-cycle-11
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 3553f47
+head-commit: dcd200e
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -766,10 +766,14 @@ been installed.
 
 **Fixed.** `installCommand` now builds the complete target × unit plan and preflights all of it
 before invoking any write; a single blocker anywhere returns every unit as `blocked` or
-`skipped` with zero writes. `pathEntryExists` replaces `fs.existsSync` on every destination
-path — preflight, install, and the backup/replace path alike — treating only `ENOENT` as
-absence. Two regressions: a blocker in the fourteenth target asserts no earlier target was
-written; a dangling destination symlink asserts no unit was written.
+`skipped` with zero writes. `pathEntryExists` replaces `fs.existsSync` on the destination paths
+of the **install** path — preflight, install, and the backup/replace path alike — treating only
+`ENOENT` as absence. Two regressions: a blocker in the fourteenth target asserts no earlier
+target was written; a dangling destination symlink asserts no unit was written.
+
+> This paragraph originally read "on **every** destination path". It was not true: `doctor` and
+> `uninstall` still used `fs.existsSync` on `unit.dest`. Narrowed to what cycle 10 did, and the
+> gap itself closed in cycle 11 below.
 
 ### The `head-commit` front matter, again
 
@@ -781,6 +785,54 @@ is now taken from `git rev-parse` rather than typed.
 ### Measured after cycle 10
 
 **318 node tests, 0 fail**, on python3 3.9.6 and 3.14.
+
+## Round 9 — a network outage, not a round
+
+Round 9 was launched at `3553f47` against `codex-1`, `hermes-1` and `kimi-1`. All three died
+inside a DNS outage on this machine and **none wrote a review file**:
+
+- `codex-1` — `failed to lookup address information` on `wss://chatgpt.com/...`, five websocket
+  reconnects, HTTPS fallback, then `stream disconnected before completion`. 189,376 tokens of
+  work, no artifact.
+- `hermes-1` — `API call failed after 3 retries: Connection error.`
+- `kimi-1` — `getaddrinfo ENOTFOUND auth.kimi.com` while refreshing its OAuth token.
+
+Recorded as an **outage, never as an accept**: `review/round-09/` is empty and round 9 is being
+re-run at the cycle-11 commit. Connectivity was re-verified before the re-launch (DNS for all
+four hosts, `registry.npmjs.org` 200, `api.github.com` 200).
+
+## Fix-up cycle 11 — a finding rescued from an outage log
+
+`kimi-1`'s transcript reached the disk before its OAuth token expired, and its *reasoning* —
+not a review, and not treated as one — named two `fs.existsSync` calls cycle 10 had missed.
+I verified the claim directly rather than crediting it: it was correct on both counts.
+
+**`skillUnitStatus` (`lib/installer.js:1440`)** answered `status: "missing"` for a dangling
+destination symlink. `doctor` therefore reported nothing installed at a path that plainly has an
+entry — and `missing` is an invitation to install, which fleet preflight then refuses. The two
+commands disagreed about the same path.
+
+**`uninstallSkillUnit` (`lib/installer.js:1269`)** returned `action: "missing"`, `ok: true`, and
+left the link in place. `--force` is the flag a user reaches for precisely to clear a
+destination the installer will not otherwise touch, and it walked past this one silently.
+
+**Fixed.** Both now use `pathEntryExists`. A dangling destination is `malformed` in health, and
+`blocked` in an unforced uninstall, and is actually removed by a forced one. The remaining
+`fs.existsSync` calls are on files *inside* an already-located root, where dangling and absent
+both mean "required file not usable" and receive the same disposition; the predicate's comment
+now states that boundary instead of claiming universality.
+
+Both regressions were confirmed to **fail against `3553f47`'s `lib/installer.js`** and pass
+against cycle 11 — the health assertion on `actual: 'missing'`, the uninstall assertion on the
+surviving link. A test that passes both before and after proves nothing, and this idea has
+already shipped one such claim.
+
+### Measured after cycle 11
+
+**320 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
 
 ## Notes for reviewers
 
