@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-14
+status: fix-up-cycle-15
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 12f9071
+head-commit: 5100f34
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1000,6 +1000,113 @@ Confirmed not running as root (uid 501), so the permission arms are genuinely ex
 ### Measured after cycle 14
 
 **332 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Fix-up cycle 15 — review round 11: a CRITICAL, and the disposal class closed by removing the question
+
+Round 11: `codex-1` **BLOCK** (1 CRITICAL, 2 MAJOR, 1 MINOR), `hermes-1` **BLOCK** (the same four,
+reproduced independently rather than read), `kimi-1` **ACCEPT** — but kimi's review never
+examined the marker traversal (zero mentions), so its accept is scoped to a picture without the
+CRITICAL in it. Two BLOCKs with a CRITICAL I reproduced myself decide the round.
+
+### The CRITICAL — a marker could steer deletion out of the skills directory
+
+`markerAddonNames` returned the core marker's `addons` array unvalidated, `expectedAddonNames`
+treated it as the selection, and `targetSkillUnits` fed each entry straight into
+`path.join(skillsDir, name)`. Under `--force`, ownership is deliberately skipped, so a marker
+entry of `"../../outside-sentinel"` became a deletion target. Measured at `12f9071`:
+`uninstall --force` **deleted `$HOME/outside-sentinel` and returned `ok: true`**, reporting a
+skill literally named `../../outside-sentinel`.
+
+The recorded names are user-writable data that become filesystem paths. `--force` may override
+*whose* tree is replaced; it must not let mutable data widen the command's path scope.
+
+**Fixed on both sides.** Every entry must be a string matching `^[A-Za-z0-9][A-Za-z0-9._-]*$`,
+must not be `.`/`..`, must contain no separator, and must not repeat. Any violation makes the
+recorded selection unusable: no unit is constructed from it, health reports the core
+`malformed`, and both mutation preflights block — fail closed in all three directions. Behind
+that, `targetSkillUnits` confines every derived destination to an exact direct child of the
+skills directory whatever the name's origin.
+
+### The disposal class — stop predicting `rmSync`
+
+`firstRemovalObstacle` (cycle 14) tried to decide disposability with an `accessSync` walk. It
+was wrong in **both** directions, and all three reviewers landed on it:
+
+- **false negative** — a `uchg` file keeps ordinary mode bits: **83 units removed**, then a
+  failed 84th (codex-1; kimi-1 measured three more arms — `uappnd`, a delete-denying ACL, and a
+  `uchg` file inside the *core*, which gutted the core to the locked file);
+- **false positive** — an empty mode-0555 directory was refused as "cannot be emptied" although
+  `rmSync` removes it happily, since rmdir needs permission on the *parent* (codex-1 and kimi-1
+  independently).
+
+`kimi-1` established that no complete stdlib fix exists: node exposes no `st_flags`, and
+`uappnd` or ACL-based obstacles pass `access(2)` entirely.
+
+So the predicate is **deleted**, and the question removed rather than answered better. Measured
+first, then built on: **`rename` succeeds on exactly the trees whose recursive removal fails** —
+a `chmod -R a-w` tree and a directory containing a `uchg` file both rename cleanly, and `rm -rf`
+fails on both.
+
+- **Uninstall is a two-phase transaction.** Phase A renames every destination in the whole plan
+  aside to `.<name>.<pid>.<ts>.removing`; a failure rolls back every rename already made and
+  returns the fleet blocked with **zero deletions**. Phase B deletes the quarantined trees; a
+  failure there is a warning naming the residue, and the unit is still `removed`, because its
+  destination genuinely is gone.
+- **Install needed nothing further**: it already commits by rename, and cycle 14 already made a
+  failed backup cleanup a warning.
+
+On kimi's `uchg` arm the new behaviour is **84 of 84 units removed, zero failures, one warning
+naming the debris** — the class kimi judged unclosable-in-stdlib, closed by not asking the
+question.
+
+**I caught my own regression doing this.** With the predicate gone, the per-target quarantine
+let 78 units be removed across 13 targets before an unwritable skills directory in the
+fourteenth refused — the partial fleet again, unmasked. Phase A now runs across the whole plan,
+not per target. It was this idea's own cycle-14 regression that failed and exposed it.
+
+### The legacy exemption, again
+
+Cycle 14 moved the silent downgrade from one deleted field to two: deleting **both**
+`markerSchema` and `manifest` still bought the exemption. `parley-bidding` shipped in neither
+2.0.0 nor with a manifest-free installer, so that marker shape can only be damage. The exemption
+is now scoped to units whose **packaged source ships no manifest** — the shape a genuine 2.0.0
+install actually has. My cycle-14 test was itself wrong and is rewritten: it asserted legacy
+compatibility using `parley-bidding`, a skill that never had a legacy install. It now uses
+`parley-worktrees`, which did.
+
+### The MINOR
+
+`hashFile` sat outside `verifyPayload`'s try, so one mode-000 declared file threw raw `EACCES`
+out of `doctorCommand` — a JSON consumer got no health document for exactly the condition the
+function's list-returning contract exists to describe. Now reported as `unreadable (EACCES): <file>`.
+
+### Discrimination, measured
+
+Eleven changed or new regressions run against `12f9071`'s `lib/installer.js` and
+`lib/addon-manifest.js`:
+
+| commit | passing |
+|---|---|
+| `12f9071` (cycle 14) | **3 / 11** |
+| `5100f34` (cycle 15) | **11 / 11** |
+
+The three that pass at both are cycle-14 properties this cycle preserves rather than introduces,
+and they are named as such rather than counted as evidence for cycle 15.
+
+### Recorded as a known limit, not silently absorbed
+
+Phase B debris is reported per unit and named, but it is not visible to `doctor`, which inspects
+destinations rather than quarantine directories. An operator who ignores the warning keeps a
+hidden copy of the old payload. Stated here because it is the honest boundary of the
+quarantine design, not a defect of it.
+
+### Measured after cycle 15
+
+**338 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
 3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
