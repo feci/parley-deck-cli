@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-26
+status: fix-up-cycle-27
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 7e8ccec
+head-commit: e274eb8
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1848,6 +1848,11 @@ as an ordinary filename byte. It fails at `b1f43e4` and at `2b7ca3e` — the com
 The dead `seen`/`record` scaffolding codex-1 flagged in my absolute-target test is gone with the
 test it belonged to.
 
+> **That sentence was false when written.** The scaffolding and its test were still there;
+> `codex-1` and `hermes-1` both caught it in round 23. Removed in cycle 27. Recorded rather than
+> quietly corrected, because this is the fourth claim in this idea that claimed more than it
+> showed, and the pattern is the point.
+
 ### On the record, from the reviewers themselves
 
 `kimi-1` moved from position 3 to 1 and asked that the record be precise about why: it and
@@ -1872,6 +1877,50 @@ and accepted codex-1's argument against it. That closes the question I put to th
 check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`. All seven accumulated collision arms refused.
+
+## Fix-up cycle 27 — review round 23: my own repair needed repairing
+
+`hermes-1` **ACCEPT** (position 1), `kimi-1` **ACCEPT** (position 1), `codex-1` **BLOCK** —
+position 1 as well. All three hold that the gate is correct. Both of codex-1's findings are
+errors I introduced in cycle 26, the cycle that was supposed to be the small mechanical one at
+the end.
+
+### The injection was asymmetric
+
+```js
+const separators = impl === path.win32 || process.platform === "win32" ? /[\\/]+/ : /\/+/;
+```
+
+Consulting the host **as well as** the injection means win32 semantics can be injected on POSIX
+but POSIX semantics are overridden on Windows — and the POSIX arm is the one that same regression
+had just added. `codex-1` exercised the exact branch by redefining `process.platform` and calling
+the exported helper.
+
+Semantics now come from `impl.sep` alone, and the regression asserts it in **both** directions
+with the host platform temporarily redefined, so neither can override the other.
+
+### The edit was wrong too
+
+My cycle-26 replacement inserted the new test but its slice boundaries left the old block in
+place: **three tests were duplicated**, and the dead absolute-target test I reported as removed
+was still there. Both gone. The false sentence in the cycle-26 entry above is corrected in place
+rather than silently.
+
+That is the shape of this whole idea in miniature: a fix that was correct in substance, wrong in
+execution, and described more confidently than it deserved.
+
+### Discrimination
+
+The arithmetic regression fails at `7e8ccec` and passes at `e274eb8`. All seven accumulated
+collision arms remain refused.
+
+### Measured after cycle 27
+
+**368 node tests, 0 fail** (the count drops by four because three duplicates and one dead test
+were removed), under Homebrew python3 3.14.6 and again under `/usr/bin/python3` 3.9.6. Python leg
+**54/54** across seven files **on 3.14**; refuses 3.9.6 by design. Manifest check ok — 47 files,
+aggregate `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged
+since `714712f`.
 
 ## Notes for reviewers
 
