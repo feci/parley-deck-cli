@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-22
+status: fix-up-cycle-23
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 2b680a2
+head-commit: 2b7ca3e
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1640,6 +1640,88 @@ tests, not by inspection.
 ### Measured after cycle 22
 
 **361 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Fix-up cycle 23 — review round 19: the model held, the implementation did not
+
+`codex-1` **BLOCK** (2 MAJOR, 1 NIT), `hermes-1` **ACCEPT** (1 NIT), `kimi-1` **BLOCK**
+(1 MAJOR, 1 MINOR, 1 NIT).
+
+`kimi-1` wrote the sentence this idea has been working toward for twenty-two cycles:
+
+> The POSIX gate at `2b680a2` is, by everything I could measure, correct and complete against
+> every arm this idea has accumulated — the first cycle I can say that of.
+
+`hermes-1` agreed and accepted. Everything below is about the *implementation* of that model,
+not the model.
+
+### Windows: a shipped channel the gate never reached
+
+`codex-1` and `kimi-1` found this independently. Both walkers split at `path.sep` and restarted
+from it — valid for POSIX only. Using Node's own `path.win32` semantics, `C:\Users\a` becomes
+the probes `\C:` and `\C:\Users`, and a UNC path loses its whole `\\server\share\` root.
+Neither is an ancestor of anything, so `statSync` never sees a real component, the chain degrades
+to spelling-derived values, and two junctions into one skills container pass the gate.
+
+This matters because **Windows is a release channel** — winget and a portable binary — while
+`.github/workflows/test.yml` runs the suite on Ubuntu only and the Windows job cross-builds
+without executing the installer. The gate has never run there.
+
+`splitAtRoot` now anchors on `path.parse(resolved).root`. Verified: `C:\Users\a\skills` yields
+root `C:\` and probes `C:\Users`, `C:\Users\a`, `C:\Users\a\skills`; `\\server\share\dir\x`
+yields root `\\server\share\` and probes below it.
+
+### Raw link targets, normalized before their dependencies were seen
+
+`resolutionTouchpoints` passed a link's target through `path.join`, which collapses `name/..`
+lexically. Measured at `2b680a2`: a link whose raw target is
+`../KM/skills/parley-deck/transient/../../../../away` reduces to `away`, so the dependency on
+`transient` — which lives inside another planned destination and is the only reason the link
+resolves at all — was never recorded. Result: `ok: true`, codex `installed`, kimi `replaced`,
+codex's payload orphaned under `away`. Uninstall the same, with `rmSync(..., {force:true})`
+treating the broken path as successful cleanup.
+
+`walkRawTarget` now walks the raw string component by component and records each entry **before**
+applying `..`. My first attempt at it was over-elaborate and did not work; the simple form — start
+at `dirname(link)` for a relative target, at the root for an absolute one, record each real
+component, pop on `..` — does.
+
+### `kimi-1`'s two smaller points
+
+- **The arm that decided the model had no regression.** The firmlink respelling *with an existing
+  inner parent* is exactly the case that rules out all three predecessor models, and nothing
+  pinned it. Added — and it passes at `2b680a2` too, because cycle 22 already handled it; it is a
+  pin on an existing property, labelled as such rather than counted as evidence for this cycle.
+- **`canonicalSegment` NFC-folded on case-sensitive filesystems.** APFS and HFS+ normalize names
+  themselves; a byte-exact filesystem does not, so folding there would conflate genuinely
+  different entries. Now folds only where the filesystem folds.
+
+The stale comment naming a deleted caller, flagged by `codex-1` and `hermes-1`, is gone.
+
+### A test of mine I caught myself
+
+My first Windows regression asserted `path.win32`'s own behaviour rather than the installer's use
+of it — it would have passed at every commit in this idea's history. That is the sixth
+test-quality problem here, and the first I found before a reviewer did. `splitAtRoot` now takes
+an injectable `impl`, so the regression exercises the real function with win32 semantics from a
+POSIX host. It fails at `2b680a2` as it must.
+
+### Discrimination
+
+| regression | `2b680a2` (c22) | `2b7ca3e` (c23) |
+|---|---|---|
+| raw link target's intermediate directories | fails | passes |
+| chain walk starts at the platform root | fails | passes |
+| firmlink respelling with existing inner parent | **passes** | passes |
+
+The third row is a pin, not a proof, and is listed that way.
+
+### Measured after cycle 23
+
+**364 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
 3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
