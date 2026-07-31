@@ -257,3 +257,9 @@ refusal, verbatim:
 
 *Against this revision. Earlier signoffs and all three refusals are in the amendment sections
 above.*
+
+### Signoff: codex-1 — 2026-08-01
+
+**Verdict:** ❌ The consensus record must be corrected before signoff.
+
+I checked this revision against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox record, `review/round-09/VOID.md`, and a fresh verification at `e274eb8`; zero agreed fixes, all eleven follow-ups and their dispositions, the round-24 release judgment, and the 368/0, 54/54, 3.9-refusal, and 47-of-48 manifest evidence are supported, and my position remains that the idea is releasable as 2.1.0. The “first measured” table still mixes review rounds with fix-up cycles: the dangling-`existsSync` arm was first measured in review round 8 (fixed in cycle 10), the `--force` and permission arms were measured in void review round 9 (fixed in cycles 12–13), and physical-destination collision begins in review round 13, not 15; those cells must be corrected or relabelled as fix-up cycles where that is what they mean. The participation/amendment record also overcounts `antigravity-1`'s post-round-1 absences as five when the roster-removal inbox says four and round 6 began after removal, omits `kimi-1`'s round-5 `PENDING MEASUREMENT` artifact, and says all three signoffs “were re-collected” after the second refusal even though the third attempt contains only my refusal; it must record those events without implying completed participation or signoffs.
