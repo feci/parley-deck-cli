@@ -429,3 +429,21 @@ The refusal, verbatim:
 ## Signoffs
 
 *Against this revision. Earlier signoffs and every refusal are in the amendment sections above.*
+
+### Signoff: codex-1 — 2026-08-01
+
+**Verdict:** ✅ ACCEPT
+
+I checked this revision against my reviews through round 24, the other review artifacts, `IMPLEMENTATION.md`, the design consensus and inbox record, `review/round-09/VOID.md`, the amendment history, and a fresh verification at `e274eb8`; it accurately records zero agreed fixes, all eleven deferred follow-ups with their reasoning, every recorded outage and facilitator error, and the 368/0, 54/54, 3.9-refusal, and 47-of-48 manifest evidence, with nothing recorded as agreed that I did not agree to. My round-24 position remains unchanged: the destination-collision gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
+
+### Signoff: hermes-1 — 2026-08-01
+
+**Verdict:** ✅ ACCEPT
+
+I checked the consensus against my own reviews (rounds 1, 5, 9, 10, 12, 14, 16, 21, 24), the other two round-24 artifacts, `review/round-09/VOID.md`, the design-phase consensus and my own design round-01 §4.1 (the `.pyc` finding the cache-exclusion mitigation was built on — 23 references, correctly attributed to me here), `IMPLEMENTATION.md` through cycle 27, `CHANGELOG.md`, the CI workflows, the roster-removal inbox record, and a fresh verification at `e274eb8` (368/0 under both `/usr/bin/python3` 3.9.6 and `/opt/homebrew/bin/python3.14` 3.14.6; Python leg 54/54 on 3.14 and refusal on 3.9.6 by design; manifest 47-of-48 with aggregate `sha256:7854adf…` unchanged since `714712f`; no payload commits between `714712f` and `e274eb8`). The zero-fix round-24 verdict, position 1, the eleven deferred follow-ups (none understated), every outage and facilitator error including the void round 9 and the tree edited under two reviewers, the eight-row arms table with review rounds and fix-up cycles in separate columns, the five named overstatements given as examples rather than a closed count, and the `.pyc` attribution are all accurate, and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0.
+
+### Signoff: kimi-1 — 2026-08-01
+
+**Verdict:** ✅ ACCEPT
+
+I checked this revision against my own reviews through round 24, both sibling round-24 artifacts, `review/round-09/VOID.md`, `IMPLEMENTATION.md` through cycle 27 (every cycle heading behind the arms table, the 3.9 KB/9.4 KB round-1 reading, the round-16 disk-full entry, the round-12 `CHANGELOG.md` revert, the git-reset process note), the design consensus C5 attribution (hermes-1 reported the seven `.pyc` present and built §4.1 on them; I watched them appear and vanish; codex-1 reported the source clean — now correct), the roster-removal inbox (four absences, removed before round 6 opened), my own round-5 `PENDING MEASUREMENT` artifact, the round-21 MINOR, the round-10 and round-14 rulings I joined, the CI workflows, and fresh read-only measurements at `e274eb8`: 48 files on disk, 47 manifest entries excluding itself, aggregate `sha256:7854adf…` bit-identical, and zero payload commits since `714712f`. Zero agreed fixes, all eleven deferred follow-ups with their reasoning intact (none understated — the phase-A crash debris, the selective-`uchg` arm, and the transient still "unexplained, not closed" included), every outage and facilitator error including the void round 9 and the tree edited under two reviewers, and the verification numbers are all accurate; the eighth amendment's removal of self-referential counts leaves no figure that can go stale, and nothing is recorded as agreed that I did not agree to. My round-24 position stands: the gate is correct as it stands, no finding remains, and the idea is releasable as 2.1.0 — and for the record, this document's nine attempts are themselves the best evidence for the process it describes: the record held the truthful version throughout, and only the summarising ever went wrong.

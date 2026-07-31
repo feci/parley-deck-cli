@@ -1,9 +1,9 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-27
+status: complete
 implementer: claude-1
 started: 2026-07-30
-completed: n/a
+completed: 2026-08-01
 branch: parley-deck-skill#integrate-parley-bidding-addon
 head-commit: e274eb8
 design-pr: n/a
