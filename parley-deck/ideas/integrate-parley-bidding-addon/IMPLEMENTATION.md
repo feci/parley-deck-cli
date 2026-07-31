@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-17
+status: fix-up-cycle-18
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: d7ab1c3
+head-commit: 26478e9
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1285,6 +1285,76 @@ Five regressions, run against `dd8d756`'s `lib/installer.js` and `lib/addon-mani
 ### Measured after cycle 17
 
 **349 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Fix-up cycle 18 — review round 14: the scope question answered, three partial closures finished
+
+Round 14: `hermes-1` **ACCEPT**, `kimi-1` **ACCEPT**, `codex-1` **BLOCK**. The same 2–1 shape as
+round 13, on the same items, at a lower severity.
+
+### The scope question, ruled unanimously
+
+I put concurrent-installer isolation to the reviewers rather than deciding it myself. **All
+three ruled it a recorded follow-up that does not gate 2.1.0**, and their reasons converge:
+the ratified design claims an atomic fleet for **one invocation** and never claimed multi-process
+serializability; a portable lock protocol across several skills roots — with crash recovery,
+stale ownership and network-filesystem semantics — is a new subsystem, not the minimum
+correction; and `lib/addon-manifest.js` already disclaims the threat model that a second writer
+inhabits.
+
+`codex-1` supplied the release-note wording and it is adopted verbatim into `CHANGELOG.md`:
+
+> Installer mutations are single-writer in 2.1.0. Do not run two `install`/`uninstall` commands,
+> or another skill manager targeting any of the same skills roots, at the same time. Wait for one
+> command to finish before starting the next. Concurrent processes are not isolated; an
+> overlapping rollback can invalidate a command that already reported success. After any
+> suspected overlap, serialize further commands, run `doctor`, and reinstall the intended
+> selection.
+
+This is the second scope question this idea escalated rather than absorbed (the first was
+B3.11), and both times the answer was worth having.
+
+### Three closures cycle 17 left at eighty percent
+
+**Destination identity was still string comparison** (codex-1 MAJOR; hermes-1 and kimi-1 MINOR).
+`physicalKey` used `realpath` on the parent and fell back to the logical path when that failed.
+Two measured false negatives:
+
+| arm | measured at `d7ab1c3` |
+|---|---|
+| two runtime roots symlinked to one **empty** root, `skills/` not yet created | `ok: true`; codex `installed`, hermes `replaced`, **final marker `target: hermes`** |
+| case-only home spellings on this case-insensitive APFS volume | `ok: true`; one target's core became the other's |
+
+The first is the *natural first-install form* of exactly the configuration cycle 17 meant to
+refuse — my regression pre-created the aliased parent, so it only ever exercised the case where
+`realpath` succeeds. Identity now comes from the **nearest existing ancestor's `dev`/`ino`** plus
+the not-yet-created tail, case-normalized on case-insensitive platforms.
+
+**The manifest rule reached three of four readers.** `hasManifest`, `manifestFileHash` and
+`verifyPayload` refused a symlinked manifest while `readManifest` still read through it —
+measured `readManifest.ok: true` against the other three false. The predicate now lives in the
+parser itself, so every read shares it including future callers.
+
+**Uninstall dry-run promised removals the real command refuses.** The fleet gate was evaluated
+*after* each good unit had been recorded as `remove`, and those records were never revisited:
+measured, dry-run promised **5 removals where the real command performed 0**. The gate now runs
+before anything is recorded.
+
+**And a redundant preflight was removed** (hermes-1 NIT-2): `installCommand` still carried the
+pre-cycle-15 block, which did not check aliasing, so with two blockers present the reported
+message could differ between dry-run and real. Dead since the paths were unified.
+
+### Discrimination
+
+**0 / 3 pass at `d7ab1c3`, 3 / 3 at `18d95f4`.** The case-insensitivity regression is written to
+skip on a case-sensitive volume rather than assert a platform-dependent result.
+
+### Measured after cycle 18
+
+**353 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
 3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
