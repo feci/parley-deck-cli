@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-23
+status: fix-up-cycle-24
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 2b7ca3e
+head-commit: 381e639
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1726,6 +1726,38 @@ The third row is a pin, not a proof, and is listed that way.
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
 `714712f`.
+
+## Fix-up cycle 24 — review round 20: unanimous, one root cause, one remedy
+
+`codex-1`, `hermes-1` and `kimi-1` all BLOCK, all naming the same thing. `kimi-1` stated it most
+compactly: **the resolution walk was lexical where the kernel is physical.** `codex-1` and
+`hermes-1` filed the same two arms of it independently.
+
+- **Intermediate links were not expanded**, so `..` after them stepped through the *spelling*
+  rather than the expanded target. A raw target of
+  `../mid/transient/../../../../../away`, where `mid` points inside another planned destination,
+  never recorded that destination. Measured: `ok: true`, payload orphaned.
+- **An absolute target's root was both the starting point and the first component**, so on
+  Windows `C:\target\x` probed `C:\C:\target\x` and a UNC target duplicated its server and
+  share, stopping the chain on a path that cannot exist.
+
+`walkRawTarget` now expands a link the moment it is entered and uses an absolute target's root
+only as a starting point. The replacement is shorter than what it replaced: the outer hop loop in
+`resolutionTouchpoints` is gone, because `walkRawTarget` recurses.
+
+**Discrimination:** 0 / 1 discriminating regression passes at `2b7ca3e`, 1 / 1 at `381e639`. The
+absolute-root regression is a pin — it passes at both — and is labelled as such.
+
+**Measured after cycle 24:** **366 node tests, 0 fail**, under Homebrew python3 3.14.6 and again
+under `/usr/bin/python3` 3.9.6. Python leg **54/54** on 3.14; refuses 3.9.6 by design. Manifest
+check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+**Process slip, recorded:** this entry was written *after* round 21 had already been launched.
+`codex-1` filed it as a MINOR and was right to: a round should never open against a commit whose
+record does not exist yet. The rule this restores is the one every other cycle followed —
+commit, record, then launch.
 
 ## Notes for reviewers
 
