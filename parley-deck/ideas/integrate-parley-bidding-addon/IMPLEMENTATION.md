@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-16
+status: fix-up-cycle-17
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: dd8d756
+head-commit: d7ab1c3
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1210,6 +1210,85 @@ I edited `CHANGELOG.md` while `kimi-1` was still reading the tree — the rule I
 `5100f34`, and re-applied the edit only after kimi finished. `kimi-1`'s review reports the tree
 clean at `5100f34`, so the window did no damage, but the error is recorded rather than left to
 the diff.
+
+## Fix-up cycle 17 — review round 13: a severity dispute, resolved by doing the work anyway
+
+Round 13 is the first round whose disagreement was about **severity**, not about whether
+something is true: `hermes-1` **ACCEPT**, `kimi-1` **ACCEPT**, `codex-1` **BLOCK**. All three
+found overlapping issues; `codex-1` rated two of them MAJOR and the other two rated the same two
+MINOR. I reproduced every finding.
+
+`hermes-1`'s downgrade argument is good and is recorded rather than waved away: the manifest
+symlink is **pre-existing** (`hasManifest` has used `statSync` since `714712f`), it sits inside
+the threat model `lib/addon-manifest.js` openly disclaims at the top of the file, and a
+*modified* external file **is** caught by the marker's own hash — the gap is only that a
+**byte-identical** external file is trusted.
+
+I fixed them anyway, and the reason is narrow: all three reviewers agreed the fixes *should*
+happen; the only dispute was when. Each is surgical. Deferring them would ship a known false
+green inside the mechanism that is the entire justification for shipping this payload.
+
+### What was fixed
+
+**The manifest is now inside the trust boundary it defines.** It supplies the keys, hashes and
+runtime policy everything else trusts, and it was the last file in a destination directory read
+as truth rather than input. `hasManifest` followed links; `verifyPayload` never checked the
+manifest entry itself because the payload walker deliberately skips it. Measured before:
+manifest moved out and replaced by a symlink to a byte-identical file → `verifyPayload ok:true`,
+`doctor` `valid`, **`managed: true`**. One predicate — regular, non-symlink file — now applies in
+`hasManifest`, `manifestFileHash` and `verifyPayload` alike, so they cannot disagree.
+
+**Aliased physical destinations are refused.** A runtime's configured skills container may be a
+symlink, and two of them may resolve to one directory: measured, `install --target all` returned
+`ok: true` for both `agy` and `gemini` while one commit silently overwrote the other's
+specialized core. Each unit now resolves to a physical key (`realpath` of the parent plus the
+basename, since the destination may not exist yet) and a shared key refuses the whole plan. Not
+collapsed silently — the two targets want *different* payloads, so a shared destination is a
+configuration this tool cannot satisfy and must say so.
+
+**Dry-run predicts the real command.** It skipped fleet planning entirely: measured `ok: true`
+where the real install blocked. Both commands now run the identical read-only planning and omit
+only staging, commit and cleanup. `kimi-1` found the same gap on `uninstall`; both are covered.
+The per-action `dryRun` flag went missing while unifying the paths and was caught by the
+existing CLI regression — recorded because it is the kind of contract detail a refactor drops
+silently.
+
+**A damaged recorded selection is repairable, and the message says how** (`kimi-1`). Everything
+failed closed, including the one command that could fix it, and no output named the exit.
+`kimi-1`'s observation is the key: install's units come from discovery and flags, **never** from
+the marker, so blocking install bought no path safety. Install now proceeds and rewrites the
+selection — which is the repair — while health reports the damage and uninstall still refuses,
+because uninstall *does* build paths from it. The messages now name the remedy.
+
+**A recorded selection naming the core is refused** (`kimi-1` NIT). It slipped through because
+the core's own marker satisfies the ownership clause meant for add-ons dropped from newer
+packages.
+
+### What was NOT fixed, and why — put to the reviewers
+
+`codex-1`'s second arm is **cross-process transaction isolation**: two interleaved installers,
+where one's rollback moved the other's committed core aside while the other still returned
+`ok: true`. The finding is real. The remedy is a lock protocol over every affected skills root,
+held through preflight, commit, rollback and cleanup.
+
+I am not adding that in a fix-up cycle. It is a new mechanism with its own failure modes — stale
+locks, network filesystems, cleanup after a crash — and introducing it at round 13 is a design
+change, not a fix. `hermes-1` and `kimi-1` both scoped it out explicitly; `codex-1` did not.
+Recorded as the first follow-up, and the reviewers should rule: if the round-14 consensus says it
+gates 2.1.0, it becomes cycle 18.
+
+### Discrimination
+
+Five regressions, run against `dd8d756`'s `lib/installer.js` and `lib/addon-manifest.js`:
+**0 / 5 pass at `dd8d756`, 5 / 5 at `d7ab1c3`.**
+
+### Measured after cycle 17
+
+**349 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
 
 ## Notes for reviewers
 
