@@ -1,11 +1,11 @@
 ---
 idea: integrate-parley-bidding-addon
-status: fix-up-cycle-18
+status: fix-up-cycle-19
 implementer: claude-1
 started: 2026-07-30
 completed: n/a
 branch: parley-deck-skill#integrate-parley-bidding-addon
-head-commit: 26478e9
+head-commit: a49d68f
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -1355,6 +1355,94 @@ skip on a case-sensitive volume rather than assert a platform-dependent result.
 ### Measured after cycle 18
 
 **353 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
+3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
+by design. Manifest check ok — 47 files, aggregate
+`sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
+`714712f`.
+
+## Fix-up cycle 19 — review round 15: containment, not equality; and a fourth bad test of mine
+
+Round 15: `hermes-1` **ACCEPT**, `kimi-1` **ACCEPT**, `codex-1` **BLOCK** — the third round in a
+row with that shape, and the third in a row where `codex-1`'s finding was real.
+
+### The MAJOR: staging materializes another unit's destination
+
+`aliasedDestinations` grouped by **equality** of physical key. It never asked whether one planned
+destination lies **inside** another — and staging calls `mkdirSync(parent, { recursive: true })`,
+so a unit can materialize another unit's destination between planning and commit.
+
+Reproduced exactly, at `26478e9`, with `CODEX_HOME` set to kimi's planned core destination:
+
+| observed | value |
+|---|---|
+| top-level | `ok: true` |
+| codex core | `installed` |
+| kimi core | `replaced` |
+| codex install on disk afterwards | **absent** |
+| surviving marker | `target: kimi` |
+
+Deterministic: codex staging creates kimi's destination as a parent, codex commits inside it,
+kimi's commit renames that whole ancestor to its backup, and phase 3 deletes the backup with
+codex's install inside. A single-process false success with a partial fleet — the state B5 and
+the `CHANGELOG` explicitly claim cannot occur.
+
+**Fixed by rejecting overlap rather than equality**: no planned destination may equal, contain,
+or be contained by another, computed on the resolved physical path (nearest existing ancestor's
+`realpath` plus the not-yet-created tail, case-normalized). Both nesting directions regress.
+
+`kimi-1` attacked destination identity with six shapes in this same round and found nothing —
+correctly, because all six were about **aliasing**. Its conclusion that "staging only ever
+`mkdir`s real directories, which cannot manufacture an alias the planning-time walk did not see"
+is true of equality and silent on containment. Two thorough reviewers can share a blind spot;
+that is the argument for the third.
+
+### The MINOR all three found
+
+`uninstallCommand` still carried the fleet preflight whose install twin cycle 18 deleted, with
+its own early-return builder that flattened **every** non-blocked unit to `skipped`, including
+units whose destination simply does not exist — while the dry path records those as `missing`.
+`codex-1`, `hermes-1` and `kimi-1` filed it independently and prescribed the same remedy. Deleted;
+both modes now build results from one path. The regression compares **per-unit** `ok`, action and
+skill, not just the top-level `ok` — which is what let the earlier version of this fix look
+complete.
+
+### A fourth manifest reader
+
+`scripts/run-python-tests.js` read `parley-addon.json` with `readFileSync` and swallowed every
+error as "no declared floor". Measured by `codex-1`: with a symlinked manifest the module
+returned `hasManifest: false`, `readManifest.ok: false`, `manifestFileHash: null`,
+`verifyPayload.ok: false` — and the runner still reported **54/54**. It now goes through
+`readManifest`, so the regular-file rule reaches every reader, and an unreadable manifest fails
+the leg instead of quietly removing the floor.
+
+### The fourth bad test of mine
+
+`codex-1` also checked my cycle-18 case-only regression and found it **passes at `d7ab1c3`** —
+it installed one `generic` target and then queried `doctor` through another spelling, so it never
+put two targets in one plan and never exercised the alias key at all. I confirmed this by running
+it against `d7ab1c3` myself: green.
+
+That is the fourth time this idea has caught a claim of mine that claimed more than it showed
+(D-2's "byte-level check"; cycle 10's "every destination path"; cycle 15's Python-leg sentence;
+now this). The pattern is consistent and worth naming: when I write the test for my own fix, I
+build it so it passes, not so it fails on the previous commit. Rewritten to construct two targets
+in one plan; it now fails at `d7ab1c3` as it should have from the start.
+
+### Discrimination
+
+| regression | `26478e9` | `d7ab1c3` | `a49d68f` |
+|---|---|---|---|
+| nested destinations refused | fails | — | passes |
+| uninstall dry/real agree per unit | fails | — | passes |
+| case-only spellings in one plan | passes (cycle-18 property) | **fails** | passes |
+
+The case-only row is listed against `d7ab1c3` because that is the commit it exists to
+discriminate; at `26478e9` it is a guard on a property cycle 18 introduced, not evidence for
+cycle 19.
+
+### Measured after cycle 19
+
+**355 node tests, 0 fail**, under Homebrew python3 3.14.6 and again under `/usr/bin/python3`
 3.9.6. Python leg **54/54** across seven files **on 3.14**; under a 3.9.6-first PATH it refuses
 by design. Manifest check ok — 47 files, aggregate
 `sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d`, unchanged since
