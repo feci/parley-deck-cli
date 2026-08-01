@@ -31,7 +31,9 @@ five new `parley-addon.json` files, one new test file, four existing tests rewor
 - [x] F4 — `manifestProblems`: `declared === false && sourceHasManifest` → re-install to validate
 - [x] F5 — core required-file list derived from `PAYLOAD_ENTRIES`
 - [x] F6 — `README.md` and `CHANGELOG.md`
-- [x] Checks run: `npm test` 378/378, python leg 54/54, `--check` green on all six
+- [x] Checks run — at `205416d`: 378/378, python leg 54/54, `--check` green on all six.
+      **That 378/378 was PATH-dependent and hermes-1 measured 376/378 on a stock macOS PATH;
+      see fix-up cycle 1.** After cycle 1, at `e46f661`: 382/382 on both PATHs.
 - [x] Every fix-proving regression confirmed failing at `23a9856`; every survival guard confirmed
       passing there
 
