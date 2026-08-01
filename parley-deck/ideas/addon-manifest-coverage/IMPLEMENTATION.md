@@ -1,11 +1,11 @@
 ---
 idea: addon-manifest-coverage
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: claude-1
 started: 2026-08-01
 completed: 2026-08-01
 branch: parley-deck-skill#main
-head-commit: e46f661
+head-commit: f61e66b
 base-commit: 23a9856
 design-pr: n/a
 implementation-pr: n/a
@@ -185,3 +185,60 @@ None. Every round-1 finding was reproduced before being accepted, and every one 
 - python leg 54/54; `--check` green on all six
 - three new regressions fail at `205416d` and pass at `e46f661`
 - at `23a9856`: 8 fail, 3 survival guards pass
+
+## Fix-up cycle 2
+status: complete
+completed: 2026-08-02
+head-commit: f61e66b
+review-round: 2 (codex-1, hermes-1, kimi-1) — no MAJOR outstanding
+
+### Fixes applied
+
+All five agreed fixes from `review/consensus.md`, which carries ✅ from all three reviewers.
+
+**1. `package-lock.json` still said 2.1.0.** Found independently by all three. Both root
+`version` fields bumped. kimi-1's measurement of the consequence — `npm ci` tolerates it, but a
+plain `npm install --package-lock-only` rewrites them and dirties the release tree — is why this
+is worth a cycle rather than a note.
+
+**2. `managed: false` contradicted a present, valid marker.** `payloadOk` went false on a
+source-enumeration problem alone and dragged ownership with it, so a byte-perfect tree carrying
+this installer's own marker was reported unowned in the same JSON that showed the marker.
+`managed` is now computed from marker evidence plus installed-payload validity, excluding
+source-enumeration problems. Health still fails — that part was dismissed, see below.
+
+**3. The F4 regression failed at the base commit during fixture construction.** Raised by kimi-1
+in round 1, carried, and independently raised by codex-1 in round 2. `packageWithoutManifest()`
+asserted the manifest existed before removing it, which at `23a9856` is false for every skill —
+so the fixture threw and the test's "failure" said nothing about the migration branch. The
+fixture now removes if present and asserts the post-condition. Verified: at `23a9856` the test
+now runs and fails on its own F4 assertion; at `e46f661` and later it passes.
+
+**4. The foreign-copy regression covered two of three staging shapes.** kimi-1. `agy` — the
+antigravity shape, with its second `skills/SKILL.md` — is now exercised alongside codex and
+gemini.
+
+**5. `safeSourceFiles` returned an empty floor for an empty source directory.** hermes-1. An
+empty packaged skill directory demanded nothing of the installed tree. `SKILL.md` is now the
+floor and the empty directory is reported as a packaging defect.
+
+### Dismissed, and why it is recorded here
+
+**hermes-1's R2-2(a)** — that a complete install reporting `malformed` against a damaged package
+is a false red — was dismissed, with codex-1 and kimi-1 both dissenting in their own words
+(quoted verbatim in `review/consensus.md`). The fail-closed red stays: a tree whose packaged
+source cannot be enumerated is a tree `doctor` cannot certify, and the alternative is the false
+green this idea exists to close. Only the `managed` half of hermes-1's finding was agreed, and
+that is fix 2 above. hermes-1 signed ✅ on the consensus containing this dismissal.
+
+### Deviations from agreed fixes
+
+None.
+
+### Verification
+
+- `npm test`: 384/384, and 384/384 again under a PATH whose only python3 is 3.9.6
+- python leg 54/54; `--check` green on all six manifests
+- both new regressions fail at `e46f661` and pass at `f61e66b`
+- the repaired F4 regression fails at `23a9856` on its own assertion rather than its fixture
+- `skills/parley-bidding/` aggregate still `sha256:7854adf1…`, unchanged since `714712f`
