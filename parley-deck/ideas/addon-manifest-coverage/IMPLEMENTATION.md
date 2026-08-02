@@ -1,11 +1,11 @@
 ---
 idea: addon-manifest-coverage
-status: fix-up-cycle-2
+status: fix-up-cycle-3
 implementer: claude-1
 started: 2026-08-01
 completed: 2026-08-01
 branch: parley-deck-skill#main
-head-commit: f61e66b
+head-commit: 065985e
 base-commit: 23a9856
 design-pr: n/a
 implementation-pr: n/a
@@ -242,3 +242,67 @@ None.
 - both new regressions fail at `e46f661` and pass at `f61e66b`
 - the repaired F4 regression fails at `23a9856` on its own assertion rather than its fixture
 - `skills/parley-bidding/` aggregate still `sha256:7854adf1…`, unchanged since `714712f`
+
+## Fix-up cycle 3
+status: complete
+completed: 2026-08-02
+head-commit: 065985e
+review-round: 3 (codex-1 FINDINGS, hermes-1 NO FINDINGS, kimi-1 NO FINDINGS)
+
+### Fixes applied
+
+**[MINOR — codex-1] `managed` disagreed with the predicate the mutation paths use.** Delete one
+installed file, keep a valid marker: `doctor` reported `managed: false`, and an unforced
+`uninstall` removed that same tree. Two answers about one directory, and external automation was
+being told an ordinary damaged install is unowned by the tool that will replace it without
+`--force`. Reproduced before accepting.
+
+`managed` is now `installerOwnsDestination(unit.dest, unit.skill)` — the same call the mutation
+paths make. Health stays in `status`, `missing` and `problems`.
+
+**What cycle 2 got half right.** The cycle-2 fix addressed only the source-damaged case hermes-1
+reported, while the comment I wrote above it claimed the general principle — that ownership is a
+fact about the marker. codex-1 found the gap the comment had already promised away. The comment
+was accurate about the intent and wrong about the code.
+
+**A conflict with a previously ratified assertion, resolved and flagged rather than settled.**
+`a symlinked manifest is a payload defect, not payload authority` (from the prior idea's review
+round 13) asserted both that such a tree must not read `valid` **and** that it must not report
+`managed: true`. Those two cannot both hold alongside codex-1's finding: `managed` cannot
+simultaneously equal what `uninstall` believes and be false for a marked-but-defective tree.
+
+Resolved in codex-1's favour — the tree genuinely is ours, our installer put it there, and what
+is wrong with it is its payload. The `valid` guarantee that round 13 actually established is
+untouched and is now asserted twice in that test (status `malformed`, and `doctor.ok === false`).
+The inverted half carries a comment saying it is a deliberate change put to review round 4, not
+an implementer's decision.
+
+### A defect of mine that no reviewer reported
+
+The test suite created a package copy per fixture via `mkdtempSync` and never removed it. Across
+runs that left 340 directories from this idea's own tests and over **29 GB** in `/var/folders`.
+It filled the disk twice mid-review, each time blocking every tool including `rm`, and killed two
+reviewer processes in review round 2.
+
+Temp directories are now registered and removed on process exit in all three test files that
+create them, and the child process spawned via `node -e` cleans up its own — the first mechanical
+pass rewrote a `mkdtempSync` call inside that child's script string, where the helper does not
+exist, and five runtime-probe tests failed until it was reverted. Measured after the fix: **0
+temp directories before and after a full suite run**, where the same measurement previously grew
+by hundreds.
+
+`installer.test.js` was the largest single contributor (5,154 directories) and predates this
+idea. It is fixed here too rather than left, because the disk it fills is shared.
+
+### Deviations from agreed fixes
+
+The `managed` semantics change is broader than codex-1's literal proposal in one respect: it
+supersedes an assertion ratified by an earlier idea. That is stated above, in the test, and is
+the one item review round 4 must rule on.
+
+### Verification
+
+- `npm test`: 385/385, and 385/385 under a PATH whose only python3 is 3.9.6
+- `--check` green on all six manifests
+- both changed assertions fail at `f61e66b` and pass at `065985e`
+- temp-dir leak: 0 before, 0 after a full run
