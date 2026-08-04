@@ -203,7 +203,7 @@ every active participant signs off," read it through this table for `fast`/`stan
 non-facilitator artifact (non-solo, §1); refutation-default review — the reviewer *count*
 shrinks by track, the refutation discipline never does; round-1 independence discipline
 (Phase 1; an unenforced cooperative convention unless kickoff selects §11.B sub-branches or
-per-agent isolated staging — see §15.1);
+per-agent isolated staging);
 append-only ✅/🟡/❌ signoffs; files-canonical audit trail; the §14 human brake; English-only;
 no-secrets. (Rules tagged `LE-N` below are the loop-engineering rules; the tag is only a
 reference id — the rule text is what binds.)
@@ -316,7 +316,9 @@ Once all participants submitted round N, any agent may open round N+1 by creatin
 
 ### Phase 3 — Consensus
 
-> Verification verdicts, their provenance, and verdict conflicts follow **§15**.
+> Verification verdicts, their provenance, and verdict conflicts follow **§15**. At this phase
+> §15 also carries two drafter-facing duties: §15.5's `## Drafter position changes` and §15.6's
+> close-conditions.
 
 When discussion has converged, an agent creates `ideas/<slug>/consensus.md`:
 
@@ -346,7 +348,9 @@ Every listed participant then **appends** their own signoff block:
 
 **Consensus rules:**
 
-- ✅ from _every_ active participant = consensus reached → Phase 4.
+- ✅ from _every_ active participant = consensus reached → Phase 4, subject to the close-conditions
+  already binding under §15.3 (an unresolved `DISPUTED` claim a decision depends on) and §15.6
+  (the correlated-agreement duties). Signoffs do not waive them; this line adds no new condition.
 - Any ❌ → new round; the blocker's counter-proposal is the starting point.
 - 🟡 is acceptable _if_ the reservation is logged as "open items deferred to implementation" and no one upgrades it to ❌.
 - Agent silent past deadline is treated as ✅ — but only if they were pinged via `inbox/` first.
@@ -694,7 +698,7 @@ Escalation is not a veto — the user's answer becomes input to the next round l
 2. **`consensus.md` signoffs are append-only.**
 3. **Never edit another agent's file.** If it's factually wrong, raise in next round with `@<agent-id>`. Exception: direct user instruction (e.g. a mandated translation or migration) overrides this rule — the editor must log the override in the commit message and append a trailing HTML comment in the file identifying the change and its authority.
 4. If referring to something outside `parley-deck/`, **copy the snippet** — agents may lack cross-workdir read access.
-   This applies to **scoping**: source material the facilitator gathered while scoping an idea MUST be copied into
+   §6 rule 4 applies to scoping: source material the facilitator gathered while scoping an idea MUST be copied into
    `00-prompt.md`, or a sibling file referenced from it, before participants are invoked. If material cannot be
    shared — size, access, confidentiality, rights — the asymmetry MUST be disclosed and the source-dependent
    proposition MUST NOT be presented as established.
@@ -1162,149 +1166,131 @@ idea `automation-outer-loop` (2026-06-24).
 
 ## 15. Verification integrity
 
-This section governs **what makes a verification valid**. The rest of the protocol regulates who
-writes which artifact; without §15, a participant could stamp `CONFIRMED` on any claim — including
-its own — with no stated basis, and a disagreement between two verdicts had nowhere to live and no
-rule for resolving it. Ratified by idea `meta-protocol-change-verification-integrity` (2026-08-04).
-
-It composes with §4.0's per-track table and never overrides it, and with the Phase 6 no-suppression
-rule: §15 gates what enters `consensus.md`, never what a reviewer may report.
+This section governs what makes a verification valid. Ratified by idea
+`meta-protocol-change-verification-integrity` (2026-08-04). It composes with §4.0's per-track table
+and never overrides it, and with the Phase 6 no-suppression rule: §15 gates what enters
+`consensus.md`, never what a reviewer may report.
 
 ### 15.1 Scope, ownership, location
 
-A factual assertion enters the verification regime only when (a) a participant assigns a
-verification verdict to it, (b) another participant challenges it and requests a verdict, or (c) a
-rule in this section expressly requires verification. **It does not require a verdict for every
-descriptive sentence.** The invoking artifact identifies the claim by a stable identifier or an
-exact quotation.
+A factual assertion enters the verification regime only when a participant assigns a verdict to
+it, another participant challenges it, or a rule in §15 expressly requires it. It does not apply
+to every descriptive sentence.
+
+An assignment of `CONFIRMED`, `WRONG`, or `UNVERIFIED`, or equivalent language that classifies a
+claim as true, false, or not established, is a verification verdict; raw source text or command
+output reported without a truth-status classification is evidence, not a verdict.
 
 A claim is **material** when changing its truth value could change a recommendation, acceptance
 criterion, finding severity, signoff, or close decision. Any participant may challenge a
 materiality classification in its own next canonical artifact; the facilitator does not decide it.
 
-**Every participant that asserts a claim as true where it first appears canonically is an owner.**
-Quoting or endorsing another participant's claim does not transfer ownership. Material a
-participant merely transcribes and explicitly marks as unverified testimony is **not** owned by the
-transcriber, who may issue verdicts on it; a participant that marks material as testimony while
-relying on it as established **is** an owner.
+**Every participant that asserts a claim as true where it first appears canonically is an
+owner.** Quoting or endorsing another participant's claim does not transfer ownership. Material
+a participant merely transcribes and explicitly marks as unverified testimony is **not** owned
+by the transcriber, who may issue verdicts on it; a participant that marks material as testimony
+while relying on it as established **is** an owner.
 
 **An owner MUST NOT issue a verification verdict on a claim it owns.** An owner may append a
-`SELF-CORRECTION` in its own artifact naming the statement it replaces. A weakening takes effect
-immediately; a strengthening remains `UNVERIFIED` until a non-owner verdicts it.
+`SELF-CORRECTION` in its own artifact naming the statement it replaces; a weakening takes effect
+immediately, a strengthening remains `UNVERIFIED` until a non-owner verdicts it.
 
 A verdict is written in the **verifier's own** `round-NN/<agent-id>.md` or
-`review/round-NN/<agent-id>.md`. On `fast`, where cross-review is skipped, it may be written in that
-verifier's append-only signoff block. `consensus.md` and `FINAL.md` summarize statuses and
-conflicts; they never originate another participant's verdict.
+`review/round-NN/<agent-id>.md`. On `fast`, where cross-review is skipped, it may be written in
+that verifier's append-only signoff block. `consensus.md` and `FINAL.md` summarise statuses;
+they never originate another participant's verdict.
 
 Tags bind on verdicts about **what is**, not on positions about **what should be**.
 
 ### 15.2 Verdict provenance
 
-Every verification verdict carries exactly one provenance tag.
-
 | Tag | Meaning | Maximum verdict |
-| --- | --- | --- |
-| `PRIMARY` | The verifier consulted the thing itself: an authoritative source located and quoted with a stable locator and the relevant passage, **or a check the verifier executed, with the command or steps, inputs and relevant output quoted** | `CONFIRMED` / `WRONG` |
-| `SECONDARY` | The verifier relies on a **named** other participant's non-`RECALL` verdict; name the participant and the artifact. The dependency chain MUST be acyclic and terminate in `PRIMARY` | `CONFIRMED` / `WRONG` |
-| `RECALL` | Memory or unsupported reasoning only; no source consulted and no check run | `UNVERIFIED` |
+|---|---|---|
+| `PRIMARY` | The verifier consulted the thing itself: an authoritative source located and quoted with a stable locator and the relevant passage, **or a check the verifier executed, with the command, inputs and relevant output quoted** | `CONFIRMED` / `WRONG` |
+| `SECONDARY` | The verifier relies on a **named** other participant's non-`RECALL` verdict; the dependency chain MUST be acyclic and terminate in `PRIMARY` | `CONFIRMED` / `WRONG` |
+| `RECALL` | Memory or unsupported reasoning only | `UNVERIFIED` |
 
-**A verdict with no provenance tag is treated as `RECALL`.** A `PRIMARY` without its locator or
-quoted output, and a `SECONDARY` without its named dependency, are malformed and read as `RECALL`.
+**A verdict with no tag is treated as `RECALL`.** A `PRIMARY` without its locator or quoted
+output, and a `SECONDARY` without its named dependency, are malformed and read as `RECALL`.
 A material claim reaching `FINAL.md` with only `RECALL` support MUST remain `UNVERIFIED`.
 
-Where a verdict rests on more than one basis, tag the **decisive** basis and disclose the rest in
-prose.
+Where a verdict rests on more than one basis, tag the **decisive** basis and disclose the rest
+in prose.
+
+A locator proves that something was consulted. It does not prove it was interpreted correctly.
 
 A claim that a problem is open, a result novel, or an approach previously untried carries
-provenance under this section; `RECALL`-only support is recorded `NOVELTY UNVERIFIED` and may not
-be presented as recommended work.
-
-**A locator proves that something was consulted. It does not prove it was interpreted correctly.**
+provenance under this section; `RECALL`-only support is recorded `NOVELTY UNVERIFIED` and may
+not be presented as recommended work. *(This is the surviving core of MAJOR-5, folded in.)*
 
 ### 15.3 Conflicting verdicts
 
 Contradictory verdicts on the same identified claim are resolved by reviewable evidence and
-argument, **never by counting participants, including where the count is unanimous.** Provenance
-controls whether a verdict is admissible; **it does not select the winner.**
+argument, **never by counting participants, including where the count is unanimous.**
+Provenance controls whether a verdict is admissible; **it does not select the winner.**
 
-A resolution MUST explain why the relied-upon evidence applies to and entails the scoped claim, and
-why contrary sources, checks or counterexamples do not. Until that engagement resolves the
+A resolution MUST explain why the relied-upon evidence applies to and entails the scoped claim,
+and why contrary sources, checks or counterexamples do not. Until that engagement resolves the
 conflict, the claim is `DISPUTED`.
 
-A `DISPUTED` claim enters `FINAL.md` under a mandatory heading and **may not be cited in support of
-any acceptance criterion.** Consensus may close over a `DISPUTED` claim only when no decision or
-acceptance criterion depends on it being true, and `FINAL.md` MUST record that dependency check;
-otherwise the conflict blocks, or follows the §8 user-escalation path.
+A `DISPUTED` claim enters `FINAL.md` under a mandatory heading and **may not be cited in support
+of any acceptance criterion**. Consensus may close over a `DISPUTED` claim only when no decision
+or acceptance criterion depends on it being true, and `FINAL.md` MUST record that dependency
+check; otherwise the conflict blocks or follows the existing user-escalation path.
 
-If any contradictory verdicts exist when consensus opens, or are first issued during consensus, the
-drafter adds a `## Verdict conflicts` section to `consensus.md` quoting each verdict, its author,
-its tag and its evidence verbatim, with the resolution. **Absent any conflict the section does not
-exist.** No separate verdict file is created.
-
-Review-phase disputes continue to close only by reviewer withdrawal, review consensus, or an
-explicit operator ruling — this section does not change that.
+If any contradictory verdicts exist when consensus opens, or are first issued during consensus,
+the drafter adds a `## Verdict conflicts` section to `consensus.md` quoting each verdict, its
+author, its tag and its evidence verbatim, with the resolution. **Absent any conflict the
+section does not exist.** No new file.
 
 ### 15.4 Exemption-claim admissibility
 
-A canonical recommendation claiming to avoid a **named, known obstacle** MUST identify the obstacle
-and supply a witness: an explicit mapping of the obstacle's preconditions to the proposal showing
-that a necessary precondition does not hold; a reproducible check or counterexample **logically
-sufficient for the scoped claim**; or a located authoritative result establishing the exemption.
+A canonical recommendation claiming to avoid a named known obstacle MUST identify the obstacle
+and supply a witness: an explicit mapping of the obstacle's preconditions to the proposal
+showing a necessary precondition does not hold; a reproducible check or counterexample
+logically sufficient for the scoped claim; or a located authoritative result establishing the
+exemption. **Adjectives asserting the exemption are not witnesses.** Without one, the artifact
+records `EXEMPTION-CLAIM UNVERIFIED` and the assertion MUST NOT be used as a reason to accept
+or implement the recommendation.
 
-**Adjectives asserting the exemption are not witnesses.** Without one, the artifact records
-`EXEMPTION-CLAIM UNVERIFIED` and the assertion MUST NOT be used as a reason to accept or implement
-the recommendation.
-
-The same shape appears as *"this cannot regress X"*, *"this path is unreachable"*, *"that case
-can't happen"*, *"this sidesteps the licensing issue"* — the rule is about the claim's form, not
-its subject matter.
-
-This gates entry into `consensus.md`. It does **not** gate what a reviewer may report.
+This gates entry into `consensus.md`. It does not gate what a reviewer may report — P6 governs
+that, and this section never overrides it.
 
 ### 15.5 Role concentration
 
 The facilitator has no dispute-adjudication authority beyond its own participant position. Its
 **procedural** calls — declaring discussion converged, opening consensus, closing a round — are
-provisional until the corresponding signoff gate passes. **The signoffs, not the facilitator's
-judgment, are the close.**
+provisional until the corresponding signoff gate passes. The signoffs, not the facilitator's
+judgment, are the close. Binds on every track.
 
-When the facilitator is also a participant and drafts `consensus.md` — or, on `fast`, the collapsed
-`FINAL.md` — that artifact MUST record the role concentration in one line and MUST contain
-`## Drafter position changes`: every material change in the drafter's position since its most
-recent round file, each with an exact prior quotation or claim identifier, the prior position, the
-new position, and the correct source round path. If there were none, write `None`. Existing
-participant signoffs ratify its accuracy and completeness; no new reviewer, ownership transfer or
-signoff weight is created.
-
-**How this rule is actually enforced.** The ratifying idea produced four rounds of evidence that a
-drafter's own enumeration is unreliable even when the drafter wrote the rule and expects the check:
-the disclosure went 8 → 13 → 21 → 23 of 23 material changes, and every increment came from other
-participants re-running the source comparison. **This section is not self-enforcing.** A signer
-performing the check SHOULD state the scope it actually read, so that a gap in coverage is visible
-rather than inferred from silence.
+On every track, when the facilitator is also a participant and drafts `consensus.md` — or, on
+`fast`, the collapsed `FINAL.md` — that artifact MUST record the role concentration in one line
+and MUST contain `## Drafter position changes`: every material change in the drafter's position
+since its most recent round file, each with an exact prior quotation or claim identifier, the
+prior position, the new position, and the correct source round path. If there were none, write
+`None`. Existing signoffs ratify its accuracy and completeness; no new reviewer, ownership
+transfer or signoff weight is created.
 
 ### 15.6 Correlated agreement
 
-Agreement between participants drawn from related models is a shared prior, not independent
-confirmation. On `standard` and `deliberation`, if round 1 closes with no substantive disagreement
-and the idea's output is primarily a **judgment** rather than a mechanically decidable artifact,
-consensus MUST NOT close until:
+On `standard` and `deliberation`, if round 1 closes with no substantive disagreement and the
+idea's output is primarily a judgment rather than a mechanically decidable artifact, consensus
+MUST NOT close until:
 
-**(a)** the strongest rejected or unconsidered alternative is steelmanned, with its best supporting
-evidence and an observation that would change the recommendation. **If no credible alternative is
-found, the record states the search scope, the candidates considered, and why each failed — that is
-a finding, not a failure to comply.** The form differs by track:
+(a) the strongest rejected or unconsidered alternative is steelmanned, with its best supporting
+evidence and an observation that would change the recommendation. **If no credible alternative
+is found, the record states the search scope, the candidates considered and why each failed** —
+that is a finding, not a failure to comply. The form differs by track:
 
 - On `deliberation`, one participant is **assigned** and files it as a canonical round artifact.
-- On `standard`, it is an `## Adversarial alternative` **section inside an existing round-02 file**
-  — no separate assignment and no extra round. Consensus MUST NOT close unless at least one
-  existing round-02 artifact contains that section and satisfies this clause, null-result form
-  included.
+- On `standard`, it is an `## Adversarial alternative` **section inside an existing round-02
+  file** — no separate assignment and no extra round. Consensus MUST NOT close unless at least
+  one existing round-02 artifact contains that section and satisfies this clause, null-result
+  form included.
 
-**(b)** `consensus.md` records that unanimity among related models is a shared prior, not
+(b) `consensus.md` records that unanimity among related models is a shared prior, not
 independent evidence, and states what would have to be true for the agreed position to be wrong.
-This clause binds unchanged on both tracks.
+This clause binds unchanged on both tracks, since `standard` has a separate `consensus.md`.
 
 `FINAL.md` MUST state where multiple nominally independent proposals are in fact one family.
 
@@ -1312,10 +1298,10 @@ This clause binds unchanged on both tracks.
 
 | Rule | `fast` | `standard` | `deliberation` |
 | --- | --- | --- | --- |
-| 15.1 scope, ownership, no self-verdicts | yes | yes | yes |
+| 15.1 scope / no self-verdicts | yes | yes | yes |
 | 15.2 provenance | yes | yes | yes |
-| 15.3 conflicting verdicts | yes | yes | yes |
-| 15.4 exemption-claim admissibility | yes | yes | yes |
+| 15.3 conflicts | yes | yes | yes |
+| 15.4 exemption claims | yes | yes | yes |
 | 15.5 procedural calls provisional | yes | yes | yes |
-| 15.5 drafter position changes | yes (in the collapsed `FINAL.md`) | yes | yes |
+| 15.5 drafter position changes | yes (in collapsed `FINAL.md`) | yes | yes |
 | 15.6 correlated agreement | no | yes (section in an existing round-02 file) | yes (assigned round artifact) |
