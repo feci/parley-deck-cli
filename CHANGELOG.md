@@ -1,5 +1,50 @@
 # Changelog
 
+## v1.38.0 - 2026-08-04
+
+**Protocol: new `§15 Verification integrity`.** Ratified by idea
+`meta-protocol-change-verification-integrity` (two design rounds, four consensus revisions, four
+signoff rounds, two review rounds, two fix-up cycles).
+
+The protocol had strong rules about who *writes* which artifact and no rules about what makes a
+*verification* valid. A participant could stamp `CONFIRMED` on any claim — including its own —
+with no stated basis, and two contradictory verdicts had nowhere to live and no resolution rule.
+
+- **§15.1 — scope, ownership, location.** A claim enters the regime only when someone verdicts it,
+  someone challenges it, or §15 requires it. **Every participant that asserts a claim as true where
+  it first appears canonically is an owner, and an owner MUST NOT verdict a claim it owns.**
+  Material transcribed and explicitly marked as unverified testimony is not owned by the
+  transcriber — without that branch a facilitator could never verify anything it put in a brief.
+- **§15.2 — provenance.** `PRIMARY` (source located and quoted, **or a check the verifier executed
+  with command, inputs and output quoted**) / `SECONDARY` (a *named* participant's non-`RECALL`
+  verdict, chain acyclic and terminating in `PRIMARY`) / `RECALL` (caps at `UNVERIFIED`).
+  **An untagged verdict is treated as `RECALL`** — the scheme fails closed.
+- **§15.3 — conflicting verdicts.** Resolved by reviewable evidence and argument, **never by
+  counting participants, including where the count is unanimous.** Provenance controls
+  admissibility; it does not select the winner. Unresolved → `DISPUTED`, which may not support any
+  acceptance criterion. No new file.
+- **§15.4 — exemption-claim admissibility.** A claim to avoid a named obstacle needs a witness
+  logically sufficient for the scoped claim. Adjectives are not witnesses.
+- **§15.5 — role concentration.** Facilitator procedural calls are provisional until the signoff
+  gate passes. A facilitator-drafter must publish `## Drafter position changes` with an exact prior
+  quotation and source path per change.
+- **§15.6 — correlated agreement.** On unanimous judgment-shaped ideas, consensus may not close
+  without a steelman of the strongest alternative; a null result recording the search scope is a
+  finding, not non-compliance. `deliberation` takes an assigned round artifact, `standard` a
+  section inside an existing round-02 file.
+
+**Two text fixes.** §4.0 listed round-1 independence among invariants "never dropped for speed"
+while §11.A said "there is no enforcement beyond agent discipline" — the qualifier reconciles them.
+§6 rule 4 now applies explicitly to scoping.
+
+Applied to **both** `COOPERATION.md` copies (live deck and the embedded `parley init` template),
+per the drift guard.
+
+**Recorded finding about §15.5 itself.** Across four consensus revisions the drafter's own
+disclosure went 8 → 13 → 21 → 23 of 23 material changes; every increment came from other
+participants re-running the source comparison. §15.5 is not self-enforcing, and `FINAL.md` carries
+that as an open follow-up rather than pretending otherwise.
+
 ## v1.37.0 - 2026-07-30
 
 **Roster: `agy` is a participant again, on Gemini 3.6 Flash (High).**
