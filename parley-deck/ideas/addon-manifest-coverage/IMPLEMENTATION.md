@@ -1,9 +1,9 @@
 ---
 idea: addon-manifest-coverage
-status: fix-up-cycle-4
+status: complete
 implementer: claude-1
 started: 2026-08-01
-completed: 2026-08-01
+completed: 2026-08-04
 branch: parley-deck-skill#main
 head-commit: e4ee4d2
 base-commit: 23a9856
