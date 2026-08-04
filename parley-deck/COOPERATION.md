@@ -1211,7 +1211,7 @@ they never originate another participant's verdict.
 
 Tags bind on verdicts about **what is**, not on positions about **what should be**.
 
-### 15.2 Verdict provenance
+### 15.2 Provenance
 
 | Tag | Meaning | Maximum verdict |
 |---|---|---|
