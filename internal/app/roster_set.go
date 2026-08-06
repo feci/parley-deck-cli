@@ -102,13 +102,15 @@ func rosterFieldMaskedBy(root, agent, field, target string) (string, bool) {
 		// State is decided by the membership authority, not by the layer stack, so a
 		// higher layer's `active` cannot mask a write to the authority. Warning here
 		// claimed the opposite of what `roster show` then reported.
-		authority, aerr := config.RosterStateSource(root)
+		// The authority depends on the scope being written: a machine-scope write is
+		// governed by the machine roster, a deck-scope write by the deck's.
+		authority, aerr := config.RosterStateSourceForTarget(root, target)
 		if aerr != nil || authority == "" {
 			return "", false
 		}
 		ap := config.RosterSourcePath(root, authority)
 		if ap == "" {
-			return "", false
+			ap = authority
 		}
 		tp, _ := filepath.Abs(target)
 		app, _ := filepath.Abs(ap)

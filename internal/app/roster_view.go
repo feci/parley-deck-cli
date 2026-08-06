@@ -174,9 +174,12 @@ func rosterExplain(root, agent string, opts rosterViewOpts, stdout, stderr io.Wr
 	// that actually reaches the launch.
 	specSources := config.AgentFieldSources(root, row.Adapter, opts.scope == "machine")
 	// `active` is not layered — it follows the membership authority — so its provenance
-	// must name that authority rather than whichever layer last wrote the key.
-	if src, serr := config.RosterStateSource(root); serr == nil && src != "" {
-		layers["active"] = src
+	// must name that authority rather than whichever layer last wrote the key. Use the
+	// authority for THIS scope: re-deriving the deck's authority here made
+	// `--scope machine --explain` name parley-deck/agents.toml while its own membership
+	// header named the machine file.
+	if scope.Source != "" {
+		layers["active"] = scope.Source
 	}
 	show := func(field, effective string) {
 		src := layers[field]

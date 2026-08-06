@@ -1178,3 +1178,21 @@ func RosterStateSource(root string) (string, error) {
 	}
 	return scope.Source, nil
 }
+
+// RosterStateSourceForTarget names the layer that decides active/inactive state for the
+// scope the given file belongs to. A machine-scope write is governed by the machine
+// roster; a deck-scope write by the deck's authority chain.
+func RosterStateSourceForTarget(root, target string) (string, error) {
+	if central := CentralAgentsPath(); central != "" {
+		a, _ := filepath.Abs(central)
+		b, _ := filepath.Abs(target)
+		if a == b {
+			return "~/.parley/agents.toml", nil
+		}
+	}
+	scope, err := LoadRosterScoped(root)
+	if err != nil {
+		return "", err
+	}
+	return scope.Source, nil
+}

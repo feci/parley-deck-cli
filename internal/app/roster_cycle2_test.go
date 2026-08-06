@@ -334,3 +334,39 @@ func TestMembershipGateIgnoresNoOpStateWrites(t *testing.T) {
 		t.Error("reviving a retired member was not gated")
 	}
 }
+
+// State provenance must name the authority for the SCOPE being asked about. Cycle 5's
+// override re-derived the deck's authority unconditionally, so `--scope machine --explain`
+// named parley-deck/agents.toml while its own membership header named the machine file.
+func TestActiveProvenanceIsScopeAware(t *testing.T) {
+	root := deckWith(t,
+		"[roster.claude-1]\nadapter=\"claude\"\nactive = false\n",
+		"[roster.claude-1]\nadapter=\"claude\"\nactive = true\n")
+
+	for _, tc := range []struct{ scope, wantState string }{
+		{"deck", "inactive"},
+		{"machine", "active"},
+	} {
+		var out, errb strings.Builder
+		if code := rosterExplain(root, "claude-1", rosterViewOpts{scope: tc.scope}, &out, &errb); code != 0 {
+			t.Fatalf("%s: exit=%d %s", tc.scope, code, errb.String())
+		}
+		text := out.String()
+		header := strings.SplitN(text, "\n", 2)[0]
+		var activeLine string
+		for _, l := range strings.Split(text, "\n") {
+			if strings.HasPrefix(l, "active") {
+				activeLine = l
+			}
+		}
+		if !strings.Contains(activeLine, tc.wantState) {
+			t.Errorf("%s scope: active line %q, want state %q", tc.scope, activeLine, tc.wantState)
+		}
+		// The provenance must agree with the membership header of the same output.
+		src := strings.TrimSpace(strings.TrimPrefix(header, "claude-1 — membership from "))
+		src = strings.TrimSuffix(src, " (INHERITED — this deck declares no roster of its own)")
+		if !strings.Contains(activeLine, src) {
+			t.Errorf("%s scope: provenance %q contradicts its own membership header %q", tc.scope, activeLine, src)
+		}
+	}
+}

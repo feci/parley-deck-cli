@@ -192,3 +192,22 @@ gate stops being one. It now compares the prior state in the file being edited.
 
 **Tests.** Two more: active-provenance-and-masking-follow-the-authority, and
 membership-gate-ignores-no-op-state-writes.
+
+## Fix-up cycle 6 — re-review round 5 findings (2026-08-06)
+
+Round 5: hermes-1 CLEAN; codex-1 (MAJOR) and kimi-1 (MINOR) found the same defect — cycle 5's own
+regression.
+
+**Cycle 5's state-provenance override ignored scope.** `config.RosterStateSource(root)` always
+resolved the DECK authority, so `roster show --scope machine --explain` attributed `active` to
+`parley-deck/agents.toml` while its own membership header named the machine file — the same output
+contradicting itself. `rosterExplain` now uses the scope it already resolved, and the masking check
+uses `RosterStateSourceForTarget`, which recognizes a machine-scope write as governed by the
+machine roster.
+
+This is the second cycle in a row where fixing a reporting surface introduced a new inconsistency
+in that surface. The test added here asserts the two halves of one output agree with each other,
+rather than checking either alone.
+
+**Tests.** One more: active-provenance-is-scope-aware, which fails if provenance and the membership
+header of the same command disagree.
