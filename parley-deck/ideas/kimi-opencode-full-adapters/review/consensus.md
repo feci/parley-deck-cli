@@ -129,3 +129,116 @@ implementer's contrary probe was withdrawn once its environment was shown to be 
 ## Signoffs
 
 <!-- Each participant appends its own block. Do not edit another participant's block. -->
+
+### codex-1
+
+**Verdict:** ✅ accept
+
+**Scope checked:** I compared this consensus with my complete
+`review/round-01/codex-1.md`. I checked the treatment of AF-1 through AF-6, the dismissal, all
+three follow-ups, AF-4's chosen remedy, and the proposed fix-up and verification boundary. For
+the pre-existing Hermes instance I also read the effective deck and central overrides and the
+config merge path. I did not rerun the adapter probes or perform a fresh full-diff code review.
+
+**My review and AF-1:** AF-1 and AF-2 are represented as I filed them. In particular, AF-1 still
+states the effective-argv mismatch, the false `AUTO=yes`/label-derived display, and the requested
+fail-closed plus effective-args hardening; AF-2 retains the contract-test gap, with the ACP portion
+covered separately by AF-3. AF-1 and AF-2 are claims I own, so I issue no §15 verdict on them.
+**[PRIMARY] CONFIRMED** — the wider Hermes instance predates this change:
+`parley-deck/agents.toml:54` and `~/.parley/agents.toml:43` replace its headless args without
+`--yolo`, while `internal/agents/discover.go:260-261,278` declares `--yolo`, and
+`internal/config/runtime.go:542-544` replaces `HeadlessArgs` without changing that declaration.
+
+**Other dispositions:** AF-3 through AF-6, the dismissal, and the follow-ups do not conflict with
+my review. I accept moving the all-agent `Confined()` display change to a follow-up. For AF-4,
+documentation in `Notes` is enough for this idea: probing well-known install prefixes changes
+shared discovery behaviour and is appropriately deferred.
+
+**Fix-up verification:** I accept targeted verification and do not require review round 2. It
+must show the two full adapters, fail-closed effective `AUTO`, effective-args display, and tests
+covering those contracts, plus the AF-3 through AF-6 edits. It should include the layered-override
+cases, focused agent tests, the full Go suite, and one actual Parley-launched OpenCode round after
+the effective config is repaired.
+
+### hermes-1
+
+**Verdict:** ✅ accept
+
+**Scope checked:** I compared this consensus with my complete
+`review/round-01/hermes-1.md`. I checked the treatment of AF-1 through AF-6, the dismissal, all
+three follow-ups, AF-4's chosen remedy, and the fix-up boundary. I re-read
+`internal/config/runtime.go:542` (the override-replace path) and the `agents list` display path
+to confirm AF-1's mechanism. I did not re-run the adapter probes or re-execute the full test suite.
+
+**My review and AF-1:** AF-5 is my finding and is represented as I filed it. My review returned
+*ready to release* with no MAJOR. I accept AF-1 on the evidence: the config scan is reproducible,
+`runtime.go:542` replaces `HeadlessArgs` without touching `AutonomousWrite`, and `agents list`
+derives its `AUTO=` and `headless:` lines from the built-in declaration, not the effective argv.
+My release verdict rested on verifying the built-in specs and the launch path — both correct for
+that layer — but I did not check the effective merged config where the override strips
+`--auto`/`--yolo`. That is the scope gap that let AF-1 through. The consensus's framing ("rest on
+a premise the evidence contradicts") is fair: my probe results were not wrong, I measured the
+right things for the layer I checked and missed the layer I didn't. AF-1 is a claim I do not own,
+so per §15 I issue no verdict on it; I accept it as filed by `codex-1` and confirmed by the
+implementer.
+
+**Other dispositions:** AF-2 through AF-4 and AF-6 do not conflict with my review. AF-5 is mine.
+I accept moving the all-agent `Confined()` display change (`kimi-1` NIT-1) to a follow-up — it
+changes the runtime matrix for every agent and does not belong in this idea. For AF-4,
+documentation in `Notes` is sufficient for this idea; probing well-known install prefixes is a
+discovery-behaviour change that is correctly deferred.
+
+**Fix-up verification:** I accept targeted verification and do not require review round 2. The
+fixes are well-specified and bounded; no new design decisions are needed. Verification must show
+the two full adapters, fail-closed effective `AUTO` when declared args are absent from effective
+`HeadlessArgs`, the `headless:` line derived from effective argv, the local config repair, the
+extended contract and ACP-merge tests, the `Notes` documentation, the Telemetry text fix, and the
+stale comment/pin refresh. It should include the full Go suite and one `agents list` run
+demonstrating the corrected display against the real effective config.
+
+### kimi-1
+
+**Verdict:** ✅ accept
+
+**Scope checked:** I compared this consensus with my complete `review/round-01/kimi-1.md`. I
+checked the treatment of AF-1 through AF-6, the dismissal of my NIT-1, all three follow-ups,
+AF-4's chosen remedy, and the fix-up boundary. For AF-1 I re-verified the mechanism at source
+level: the override-replace path (`internal/config/runtime.go:542`), the built-in declarations
+(`internal/agents/discover.go`), and both config layers (`parley-deck/agents.toml`,
+`~/.parley/agents.toml` — the latter machine-local, read-only) are the same files and bytes I
+read in round 1. I did not re-run the probes, the test suite, or a fresh full-diff review.
+
+**My review and AF-1:** AF-3, AF-4, and AF-6 are my MINOR-1, MINOR-2, and NIT-2, and each is
+represented as I filed it — including AF-6's roster-init reproduction on both binaries and
+AF-4's "not a regression, but not out of the box" framing. Those are claims I own, so per §15 I
+issue no verdict on them. My review returned *ready to release* with no MAJOR, and the
+consensus says that verdict falls with its premise. I accept AF-1 on the evidence and do not
+contest the scan — with a candour note on what the scan contains: the config facts underneath
+AF-1 are bytes I verified myself in round 1 (`PRIMARY`, my §5: central config pins opencode
+`headless_args` without `--auto`, hermes without `--yolo`). What I did not do is run
+`agents list` against the effective merged config — my display checks ran under an isolated
+`PARLEY_HOME` against pure built-ins, so I saw `AUTO=yes` only where it was true. I assessed the
+override-strip as a "pre-existing pattern, out of scope" observation with no severity; AF-1 is
+the same facts plus the display-honesty consequence I never traced. The disagreement was
+therefore judgment (severity and scope), not measurement — and on the fail-closed rule the
+consensus is right: a display that asserts a declared mode the effective argv does not enable is
+the exact honesty violation the `AutonomousWrite` type exists to prevent, one level up. AF-1 is
+not my claim; verdict on its mechanism: `CONFIRMED`, `PRIMARY`. My release verdict is withdrawn.
+
+**Other dispositions:** AF-2 and AF-5 do not conflict with my review. **The dismissal:** I
+accept it. NIT-1 was filed as a display gap precisely because it is not a deception, and the
+dismissal's reason — it changes the runtime matrix for every agent, not just the two promoted
+here — is the correct scoping call. Follow-up 1 is the right home for it. **AF-4's fix:**
+documentation in `Notes` is enough for this idea. My MINOR-2 said either remedy suffices, and
+probing well-known install prefixes changes shared discovery behaviour for every adapter — that
+belongs in follow-up 2, not in a two-adapter promotion.
+
+**Fix-up verification:** I accept targeted verification and do not require review round 2. The
+fixes are bounded and fully specified by AF-1..AF-6; a second round adds no new design decision.
+Verification must show: the two full adapters unchanged in shape; fail-closed `AUTO` (declared
+args absent from effective `HeadlessArgs` ⇒ `AUTO=no` plus the reason); the `headless:` line
+derived from effective argv; the extended contract test including a layered-config fail-closed
+case; the extended ACP-merge test for both IDs; the `Notes` documentation; the Telemetry text
+fix; the deck-config comment/pin refresh; and the machine-local config repair. It should include
+the full Go suite and one `agents list` run against the real effective config demonstrating the
+corrected display — the exact check I failed to run in round 1.

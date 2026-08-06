@@ -150,7 +150,9 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 		row.Model = spec.Model
 		row.Effort = spec.Reasoning
 		row.Speed = spec.Speed
-		row.Auto = spec.AutonomousWrite.Declared()
+		// Fail-closed: a declared mode whose enabling args the launch does not pass is
+		// not autonomous (review MAJOR, codex-1).
+		row.Auto = spec.AutonomousEffective()
 		if name, derr := agents.RenderDisplayName(family, spec); derr == nil {
 			row.Display = name
 		} else {

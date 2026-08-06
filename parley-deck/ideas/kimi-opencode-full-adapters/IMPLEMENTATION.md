@@ -1,8 +1,8 @@
 ---
 idea: kimi-opencode-full-adapters
 implementer: claude-1
-status: ready-for-review
-cycle: 0
+status: complete
+cycle: 1
 date: 2026-08-06
 ---
 
@@ -85,3 +85,71 @@ drives a whole round with them. That is the main thing review should push on.
 - `~/.parley/agents.toml` corrections (machine-local, gitignored).
 - Removing the stale roster-init warning from that file.
 - Any other adapter.
+
+---
+
+## Cycle 1 — fix-up after review round 1
+
+All three signoffs on `review/consensus.md` were ✅ and all three accepted **targeted
+verification** instead of a second review round.
+
+### AF-1 — the MAJOR, and it was wider than the idea
+
+`internal/config/runtime.go:542` replaces `spec.HeadlessArgs` wholesale when a config layer
+supplies them and never touches `AutonomousWrite`. So a spec could declare an autonomous mode
+whose enabling flag the launched command never passes, while `agents list` printed `AUTO=yes` and
+a `headless:` line taken from the built-in **label** rather than the effective argv.
+
+**Three parts, all applied:**
+
+1. **Fail closed.** New `AutonomousWrite.MissingFrom(headlessArgs)` and `Spec.AutonomousEffective()`.
+   The `AUTO` cell in both `agents list` (`discover.go`) and `roster show` (`roster.go`) now uses
+   the effective reading. A declared mode the launch does not enable reports `no`.
+2. **Show the truth.** The `headless:` detail line is now built from the resolved binary plus the
+   **effective** `HeadlessArgs`, and prints an explicit warning naming the missing args.
+3. **Repair the config** (machine-local, backed up to `agents.toml.bak-2026-08-06-pre-autofix`):
+   `--auto` added to the central `opencode` override, `--yolo` restored to `hermes` in **both**
+   the central and the in-repo deck override.
+
+**The defect was live before this idea.** With the fix in place and before the config repair:
+
+```
+hermes   ... AUTO=no
+  headless: …/hermes --oneshot {prompt} --model glm-5p2 --accept-hooks
+  ** autonomous mode "yolo" declared but its enabling args [--yolo] are absent from the launch **
+opencode ... AUTO=no
+  headless: …/opencode run -m litellm/xai/grok-4.5 {prompt}
+  ** autonomous mode "auto" declared but its enabling args [--auto] are absent from the launch **
+```
+
+The opencode line is the exact effective argv `codex-1` derived from source. **That is the
+measurement that settled the conflict**: the implementer's contrary probe had run inside `go test`,
+where `PARLEY_HOME` is isolated and the real central config is never read. Withdrawn.
+
+### AF-2 to AF-6
+
+| AF | Fix |
+|---|---|
+| AF-2 | `TestPromotedAdaptersFullContract` locks autonomous args, headless argv, `PromptArg`, `LaunchHeadless`, empty `Scope`, `Confined()==false`, and `AutonomousEffective()` for both IDs. `TestAutonomousFailsClosedWhenLaunchDropsTheFlag` is the AF-1 regression, written against the exact shape that was live |
+| AF-3 | `TestPromotedAdaptersKeepACPAsAlternative` asserts `ACPArgs == ["acp"]`, `LaunchHeadless`, non-empty `HeadlessArgs` and a declared mode survive `mergeACPBackend` |
+| AF-4 | kimi's `Notes` now state that the official installer puts the binary at `~/.kimi-code/bin/kimi` and does **not** add it to PATH, so `command` must be set |
+| AF-5 | opencode `Telemetry` → `"streamed build/tool events, then final text on stdout"` |
+| AF-6 | The in-repo deck guidance for kimi is rewritten: the "do NOT run `parley roster init`" warning is removed as false on current builds, the redundant `headless_args` pin is dropped (a redundant override is exactly how hermes lost `--yolo`), and the `reasoning` comment now says `max` comes from `[thinking]`, not from the model's own `default_effort`, which is `"high"` |
+
+### Targeted verification
+
+| # | Check | Result | Kind |
+|---|---|---|---|
+| 1 | `go build ./...` | OK | survival |
+| 2 | `go test -count=1 ./...` | rc=0 | survival |
+| 3 | `TestAutonomousFailsClosedWhenLaunchDropsTheFlag` | passes; asserts `AUTO=false` with the flag stripped and `true` once restored | **fix-proving for AF-1** |
+| 4 | `agents list` with the config **unrepaired** | `hermes` and `opencode` → `AUTO=no` + explicit missing-args warning | **fix-proving for AF-1** |
+| 5 | `agents list` after the config repair | all five agents `AUTO=yes`, effective args carry the declared flag | control |
+| 6 | `TestPromotedAdaptersFullContract`, `TestPromotedAdaptersKeepACPAsAlternative` | pass | fix-proving for AF-2/AF-3 |
+
+Check 4 is the one that matters: it reproduces the defect on the shipped configuration before the
+repair, which is what makes the fail-closed behaviour a fix rather than a claim.
+
+**Still not verified:** that `parley` drives a complete protocol round with either agent. The
+reviewers did not require it and the launch path is now asserted at the spec level, but it remains
+the gap named in cycle 0.

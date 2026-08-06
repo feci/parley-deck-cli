@@ -108,6 +108,37 @@ func (a AutonomousWrite) Confined() bool {
 	return a.Scope == "workspace"
 }
 
+// MissingFrom returns the declared enabling arguments that are absent from the
+// supplied effective launch argv. A config layer may replace HeadlessArgs
+// wholesale (config.applyFile) without touching AutonomousWrite, so a spec can
+// declare a mode whose enabling flag the launched command never passes.
+func (a AutonomousWrite) MissingFrom(headlessArgs []string) []string {
+	if !a.Declared() || len(a.Args) == 0 {
+		return nil
+	}
+	present := make(map[string]bool, len(headlessArgs))
+	for _, arg := range headlessArgs {
+		present[arg] = true
+	}
+	var missing []string
+	for _, want := range a.Args {
+		if !present[want] {
+			missing = append(missing, want)
+		}
+	}
+	return missing
+}
+
+// AutonomousEffective reports an autonomous write mode that the spec's own
+// effective launch argv actually enables. This is the FAIL-CLOSED reading and it
+// is what the AUTO column must use: declaring a mode the launch does not enable
+// is the same false assurance the Scope rule forbids one level down (review
+// MAJOR, codex-1 — an override had stripped --auto from opencode and --yolo from
+// hermes while both still reported AUTO=yes).
+func (s Spec) AutonomousEffective() bool {
+	return s.AutonomousWrite.Declared() && len(s.AutonomousWrite.MissingFrom(s.HeadlessArgs)) == 0
+}
+
 type PromptMode string
 
 const (
@@ -305,7 +336,7 @@ func defaultBuiltinSpecs() []Spec {
 			TimeoutMS:       DefaultTimeoutMS,
 			ExternalBackend: ExternalHosted,
 			Telemetry:       "final text on stdout",
-			Notes:           "Kimi Code. Headless is `kimi -p <prompt>`; --auto/--yolo cannot combine with -p. ACP remains available as an alternative launch mode via `kimi acp`.",
+			Notes:           "Kimi Code. Headless is `kimi -p <prompt>`; --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.",
 			// Scope is deliberately EMPTY: print mode confines nothing at the OS level, it only
 			// auto-approves. Only codex --sandbox workspace-write earns Scope "workspace".
 			AutonomousWrite: AutonomousWrite{Mode: "prompt", Args: []string{"-p"}, Scope: ""},
@@ -337,7 +368,7 @@ func defaultBuiltinSpecs() []Spec {
 			Speed:           DefaultSpeed,
 			TimeoutMS:       DefaultTimeoutMS,
 			ExternalBackend: ExternalHosted,
-			Telemetry:       "final text on stdout",
+			Telemetry:       "streamed build/tool events, then final text on stdout",
 			Notes:           "OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.",
 			// Scope EMPTY: --auto is a permission grant, not an enforced sandbox.
 			AutonomousWrite: AutonomousWrite{Mode: "auto", Args: []string{"--auto"}, Scope: ""},
@@ -411,6 +442,18 @@ func Discover(ctx context.Context, specs []Spec) []Discovery {
 	return results
 }
 
+// commandName is the binary a discovery row would actually launch: the resolved
+// path when found, else the first configured command name.
+func commandName(d Discovery) string {
+	if d.Path != "" {
+		return d.Path
+	}
+	if len(d.Commands) > 0 {
+		return d.Commands[0]
+	}
+	return d.ID
+}
+
 func PrintDiscovery(w io.Writer, results []Discovery) {
 	fmt.Fprintln(w, "AGENT    INSTALLED  VERSION                 HEADLESS")
 	for _, result := range results {
@@ -460,7 +503,7 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 			home = "yes"
 		}
 		auto := "no"
-		if result.AutonomousWrite.Declared() {
+		if result.AutonomousEffective() {
 			auto = "yes"
 		}
 		fmt.Fprintf(
@@ -488,7 +531,14 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 			)
 		}
 		if result.HeadlessMode != "" {
-			fmt.Fprintf(w, "  headless: %s\n", result.HeadlessMode)
+			// The effective argv, not the built-in HeadlessMode label: the label is
+			// what misled the implementer during this idea's review, because a config
+			// override replaces HeadlessArgs while leaving the label untouched.
+			fmt.Fprintf(w, "  headless: %s %s\n", commandName(result), strings.Join(result.HeadlessArgs, " "))
+			if missing := result.AutonomousWrite.MissingFrom(result.HeadlessArgs); len(missing) > 0 {
+				fmt.Fprintf(w, "  ** autonomous mode %q declared but its enabling args %v are absent from the launch — reporting AUTO=no **\n",
+					result.AutonomousWrite.Mode, missing)
+			}
 		}
 		if result.ACPArgs != nil {
 			command := CLIDefault

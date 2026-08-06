@@ -1,6 +1,9 @@
 package agents
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestACPCatalogCoversKnownBackends(t *testing.T) {
 	wantBinaries := map[string]string{
@@ -156,4 +159,35 @@ func sameStringsForTest(got, want []string) bool {
 		}
 	}
 	return true
+}
+
+// AF-3 (review MINOR, kimi-1): kimi and opencode now live in DefaultSpecs, so
+// mergeACPCatalog takes the MERGE branch for them instead of the append branch.
+// Nothing previously asserted that `kimi acp` / `opencode acp` survive as an
+// alternative launch mode — the constraint 00-prompt names — nor that the merge
+// leaves their headless launch intact.
+func TestPromotedAdaptersKeepACPAsAlternative(t *testing.T) {
+	byID := map[string]Spec{}
+	for _, s := range DefaultSpecs() {
+		byID[s.ID] = s
+	}
+	for _, id := range []string{"kimi", "opencode"} {
+		s, ok := byID[id]
+		if !ok {
+			t.Fatalf("missing built-in %q", id)
+		}
+		if got := strings.Join(s.ACPArgs, " "); got != "acp" {
+			t.Errorf("%s: ACPArgs=%v want [acp] — the ACP launch mode was lost in the merge", id, s.ACPArgs)
+		}
+		// The merge must not demote the headless promotion this idea made.
+		if s.LaunchMode != LaunchHeadless {
+			t.Errorf("%s: launch mode=%q want %q — merge overwrote the headless promotion", id, s.LaunchMode, LaunchHeadless)
+		}
+		if len(s.HeadlessArgs) == 0 {
+			t.Errorf("%s: HeadlessArgs emptied by the merge", id)
+		}
+		if !s.AutonomousWrite.Declared() {
+			t.Errorf("%s: AutonomousWrite cleared by the merge", id)
+		}
+	}
 }
