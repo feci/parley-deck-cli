@@ -62,8 +62,11 @@ var prefixRules = []prefixRule{
 	{"gemini", "Gemini", "Google"},
 	{"glm", "GLM", "Zhipu AI"},
 	{"grok", "Grok", "xAI"},
-	{"k", "Kimi K", "Moonshot AI"},
 	{"kimi", "Kimi", "Moonshot AI"},
+	// "k" is a deliberately broad match for bare Kimi codenames (k2, k3). It MUST stay
+	// last: placed before "kimi" it swallowed every id starting with k, making the
+	// "kimi" rule unreachable and misclassifying unrelated models.
+	{"k", "Kimi K", "Moonshot AI"},
 }
 
 // DeriveModelMeta resolves family/company/route for an effective model reference.

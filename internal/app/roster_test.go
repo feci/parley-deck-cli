@@ -104,7 +104,7 @@ func TestDefaultRosterParticipants(t *testing.T) {
 func TestResolveRosterFamilyFilter(t *testing.T) {
 	root := setupRosterDeck(t)
 	// An empty allowed catalog (machine scope with no known families) resolves none.
-	rows, err := resolveRoster(root, map[string]bool{})
+	rows, err := resolveRoster(root, map[string]bool{}, rosterViewOpts{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestResolveRosterFamilyFilter(t *testing.T) {
 		}
 	}
 	// Restricting to {claude} leaves only claude-1 resolvable.
-	rows, _ = resolveRoster(root, map[string]bool{"claude": true})
+	rows, _ = resolveRoster(root, map[string]bool{"claude": true}, rosterViewOpts{})
 	for _, r := range rows {
 		if r.Agent == "claude-1" && r.Adapter != "claude" {
 			t.Errorf("claude-1 should resolve to claude, got %q", r.Adapter)

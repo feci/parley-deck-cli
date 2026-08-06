@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -56,7 +57,18 @@ type migrateReport struct {
 }
 
 // rosterMigrate walks every deck under root and moves its §2 membership into config.
-func rosterMigrate(root, backupDir string, dryRun, yes, jsonOut bool, stdout, stderr io.Writer) int {
+func rosterMigrate(root, backupDir string, dryRun, yes, jsonOut, confirmBreaking bool, stdout, stderr io.Writer) int {
+	// INTERIM GUARD (review DF-1). The ratified migration contract also requires
+	// compare-and-swap between preview and apply, per-deck confirmation honoring
+	// roster_change_policy, a foreign-deck version gate and a fuller inventory. Those are
+	// deferred; until they land, a fleet-wide apply must not be reachable on --yes alone,
+	// because --yes here means "rewrite the roster of every repository under this root".
+	if yes && !dryRun && !confirmBreaking {
+		fmt.Fprintln(stderr, "roster migrate: --yes rewrites the roster of EVERY deck under this root.\n"+
+			"The full migration contract (compare-and-swap, per-deck confirmation, version gate) is not\n"+
+			"implemented yet, so this operation is attended-only. Re-run with --confirm-breaking as well as --yes.")
+		return 2
+	}
 	decks, err := findDecks(root)
 	if err != nil {
 		fmt.Fprintf(stderr, "roster migrate: %v\n", err)
@@ -69,6 +81,17 @@ func rosterMigrate(root, backupDir string, dryRun, yes, jsonOut bool, stdout, st
 
 	report := migrateReport{SchemaVersion: 1, Root: root, DryRun: dryRun || !yes}
 	for _, deck := range decks {
+		// A deck with uncommitted changes is migrated in place with git history as its
+		// only rollback — and a dirty tree makes that rollback ambiguous. Skip and report
+		// rather than write.
+		if !dryRun && yes && deckTreeDirty(deck) {
+			report.Decks = append(report.Decks, migrateDeck{
+				Deck:        deck,
+				Disposition: migrateSkipped,
+				Reason:      "working tree has uncommitted changes; commit or stash first so the migration is reversible",
+			})
+			continue
+		}
 		report.Decks = append(report.Decks, migrateOneDeck(deck, backupDir, dryRun || !yes))
 	}
 	for _, d := range report.Decks {
@@ -350,4 +373,17 @@ func shortHash(b []byte) string {
 	}
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])[:16]
+}
+
+// deckTreeDirty reports whether a deck's repository has uncommitted changes. A
+// non-repository, or a git that will not answer, is treated as CLEAN: the guard exists to
+// protect a reversible rollback path, and outside a repository there was never one to
+// protect, so refusing there would block migration for no gain.
+func deckTreeDirty(deck string) bool {
+	cmd := exec.Command("git", "-C", deck, "status", "--porcelain")
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return len(strings.TrimSpace(string(out))) > 0
 }

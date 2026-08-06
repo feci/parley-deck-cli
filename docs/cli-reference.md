@@ -49,6 +49,77 @@ parley agents verify --dir . --agent codex
 parley agents verify --dir . --full --agent hermes --yes
 ```
 
+
+### `parley roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]`
+
+**This is the answer to "what is my roster?"** — the single canonical table. `agents list` is the
+adapter/runtime inventory (what this machine *can* launch); `roster show` is the team (who this
+deck *does* run). Do not parse `parley-deck/agents.toml` or the §2 table to answer the question:
+reproduce this command's output.
+
+The eleven columns are a versioned contract (`schema_version: 1`), identical in text and `--json`:
+
+```
+AGENT  ADAPTER  STATE  INSTALLED  MODEL  MODEL-FAMILY  MODEL-COMPANY  EFFORT  SPEED  AUTO  STATUS
+```
+
+`MODEL` and `EFFORT` hold the value the launch **actually passes**, or `unknown` — never a
+declaration wearing the effective cell. Divergence and absence surface through `STATUS`:
+
+| Status | Meaning |
+| --- | --- |
+| `ok` | nothing to report |
+| `model-drift` | the configured model is not the one the launch passes |
+| `model-unbound` / `effort-unknown` | the placeholder could not be bound; the flag is dropped |
+| `metadata-unknown` | no `modelmeta` rule matched the model reference |
+| `unmapped` | no adapter resolves this roster ID |
+| `section2-only` | declared only in the legacy §2 table, which is no longer authoritative |
+| `legacy-roster` | this deck has no `[roster.*]` block; §2 is the fallback |
+| `inherited-roster` | this deck declares no roster; rows come from `~/.parley/agents.toml` |
+| `inactive` | retired member, kept for history |
+| `masked-by-env` | a higher config layer overrides this value |
+
+Flags:
+
+- `--scope deck` (default) — the roster this project declares. `--scope machine` — the user-global
+  roster in `~/.parley/agents.toml`.
+- `--all` — additionally list configured adapters that no roster declares. Use this when you
+  installed an agent and it does not appear: the roster legitimately excludes it.
+- `--explain AGENT` — per-field provenance: which config layer set each value.
+
+### `parley roster set AGENT --scope deck|machine [--adapter A] [--model M] [--effort E] [--speed S] [--state active|inactive] [--dry-run] [--yes] [--confirm-breaking]`
+
+Changes one member's settings. Preview is the default; nothing is written without `--yes`.
+
+A **membership change** — adding a member, retiring one, or reviving one — additionally requires
+`--confirm-breaking`, because it changes who deliberates and therefore a future idea's quorum.
+Retiring sets `active = false`; members are marked, never deleted, so past ideas stay readable.
+
+### `parley roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]`
+
+Rebases the deck onto the machine defaults, one direction only (machine → deck); the machine file
+is never written. It removes deck overrides so the deck inherits: redundant ones silently, and
+**deliberate pins only after listing each one** with the exact `--keep` token that protects it. A
+`--keep` token that matches no override is an error, not a no-op — a typo must not silently fail to
+protect the field it names. Apply is bound to the preview: if the file changed in between, the
+command refuses rather than discarding the edit.
+
+### `parley roster render [--dir DIR] [--dry-run] [--yes] [--adopt-inherited]`
+
+Regenerates the §2 roster table in `COOPERATION.md` from the authority. §2 is a **generated,
+non-authoritative view**; do not hand-edit it. Generation is idempotent — rendering twice produces
+byte-identical output. Rows present in §2 but absent from the roster are **reported** before they
+are removed. A deck that declares no roster of its own will not have the inherited machine roster
+written into its committed `COOPERATION.md` without `--adopt-inherited`.
+
+### `parley roster migrate [--dir ROOT] --backup-dir DIR [--dry-run] [--yes --confirm-breaking] [--json]`
+
+One-shot fleet migration: converts legacy §2-only decks under `ROOT` to `[roster.*]` blocks. Every
+write is backed up first and validated after, with automatic rollback on failure; a deck whose
+adapters cannot be resolved is skipped and reported rather than guessed. A deck with uncommitted
+changes is skipped, so git history remains a usable rollback. `--yes` alone is refused: this
+rewrites every deck under the root and is attended-only.
+
 ### `parley run [--dir DIR] [--no-tui] [--auto] [--participants IDS] [--yes] TASK`
 
 Create a new idea from `TASK` and launch round-01 with selected participants.

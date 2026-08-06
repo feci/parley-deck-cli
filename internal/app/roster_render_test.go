@@ -46,14 +46,14 @@ func TestRosterRenderIsIdempotent(t *testing.T) {
 	path := filepath.Join(root, "parley-deck", "COOPERATION.md")
 
 	var out, errb strings.Builder
-	if code := rosterRender(root, false, true, &out, &errb); code != 0 {
+	if code := rosterRender(root, false, true, false, &out, &errb); code != 0 {
 		t.Fatalf("first render exit=%d stderr=%s", code, errb.String())
 	}
 	first, _ := os.ReadFile(path)
 
 	out.Reset()
 	errb.Reset()
-	if code := rosterRender(root, false, true, &out, &errb); code != 0 {
+	if code := rosterRender(root, false, true, false, &out, &errb); code != 0 {
 		t.Fatalf("second render exit=%d stderr=%s", code, errb.String())
 	}
 	second, _ := os.ReadFile(path)
@@ -71,7 +71,7 @@ func TestRosterRenderIsIdempotent(t *testing.T) {
 func TestRosterRenderPreservesLegacyCells(t *testing.T) {
 	root := renderFixture(t, "[roster.claude-1]\nadapter = \"claude\"\n", coopSkeleton)
 	var out, errb strings.Builder
-	if code := rosterRender(root, false, true, &out, &errb); code != 0 {
+	if code := rosterRender(root, false, true, false, &out, &errb); code != 0 {
 		t.Fatalf("exit=%d stderr=%s", code, errb.String())
 	}
 	got, _ := os.ReadFile(filepath.Join(root, "parley-deck", "COOPERATION.md"))
@@ -85,7 +85,7 @@ func TestRosterRenderPreservesLegacyCells(t *testing.T) {
 func TestRosterRenderTouchesOnlyTheTable(t *testing.T) {
 	root := renderFixture(t, "[roster.claude-1]\nadapter = \"claude\"\n[roster.kimi-1]\nadapter = \"kimi\"\n", coopSkeleton)
 	var out, errb strings.Builder
-	rosterRender(root, false, true, &out, &errb)
+	rosterRender(root, false, true, false, &out, &errb)
 	got, _ := os.ReadFile(filepath.Join(root, "parley-deck", "COOPERATION.md"))
 	for _, want := range []string{"# Protocol", "Prose explaining that this table is generated.", "## 3. Next section", "Body."} {
 		if !strings.Contains(string(got), want) {
@@ -102,7 +102,7 @@ func TestRosterRenderTouchesOnlyTheTable(t *testing.T) {
 func TestRosterRenderOrderingIsDeterministic(t *testing.T) {
 	toml := "[roster.zulu-1]\nadapter = \"claude\"\n[roster.alpha-1]\nadapter = \"kimi\"\n[roster.retired-1]\nadapter = \"claude\"\nactive = false\n"
 	root := renderFixture(t, toml, coopSkeleton)
-	table, err := renderRosterTable(root, nil)
+	table, _, err := renderRosterTable(root, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}

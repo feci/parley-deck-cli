@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -80,38 +81,137 @@ func LoadRoster(root string) (map[string]RosterEntry, error) {
 			return out, fmt.Errorf("%s: %w", item.path, err)
 		}
 		for id, ra := range cfg.Roster {
-			e, ok := out[id]
-			if !ok {
-				e = RosterEntry{ID: id, Active: true}
-			}
-			if v := strings.TrimSpace(ra.Adapter); v != "" {
-				e.Adapter = v
-			}
-			if ra.Active != nil {
-				e.Active = *ra.Active
-			}
-			if v := strings.TrimSpace(ra.Model); v != "" {
-				e.Model = v
-			}
-			if v := strings.TrimSpace(ra.Effort); v != "" {
-				e.Effort = v
-			}
-			if v := strings.TrimSpace(ra.Speed); v != "" {
-				e.Speed = v
-			}
-			if v := strings.TrimSpace(ra.WorkspaceDir); v != "" {
-				e.WorkspaceDir = v
-			}
-			if v := strings.TrimSpace(ra.Role); v != "" {
-				e.Role = v
-			}
-			if v := strings.TrimSpace(ra.HostHandle); v != "" {
-				e.HostHandle = v
-			}
-			out[id] = e
+			out[id] = mergeRosterEntry(out[id], id, ra)
 		}
 	}
 	return out, nil
+}
+
+// RosterScope is the layered roster split into the two things that were previously
+// conflated: WHO is on the deck, and WHAT VALUES each member launches with.
+//
+// LoadRoster unions membership across every layer, which meant a deck declaring two
+// members resolved to five whenever the machine file listed five — and, because
+// `roster render` writes §2 from the same view, that inherited membership got committed
+// into COOPERATION.md, where it went stale on the next machine change. That is the exact
+// drift this change exists to end, re-created inside committed files.
+//
+// The rule: the DECK FILE owns membership. The machine layer seeds values only — the same
+// rebase model `roster sync` already implements. A deck that declares no roster of its own
+// (neither a [roster.*] block nor a valid legacy §2 table) may still display the machine
+// roster, but every such row is marked Inherited so no surface can mistake it for a
+// deck-level decision.
+type RosterScope struct {
+	// Entries holds the fully layered values for every member, keyed by roster ID.
+	Entries map[string]RosterEntry
+	// Members is the authoritative membership set.
+	Members map[string]bool
+	// Inherited is true when Members came from the machine layer because no deck
+	// layer declared a roster. Callers that write committed files MUST refuse to
+	// persist an inherited roster without an explicit operator flag.
+	Inherited bool
+	// Source names the layer that decided membership, for display and diagnostics.
+	Source string
+}
+
+// LoadRosterScoped returns the roster with membership and values separated. See
+// RosterScope for the rule and the reason it exists.
+func LoadRosterScoped(root string) (RosterScope, error) {
+	out := RosterScope{Entries: map[string]RosterEntry{}, Members: map[string]bool{}}
+	deckMembers := map[string]bool{}
+	machineMembers := map[string]bool{}
+	deckSource, machineSource := "", ""
+	for _, item := range configLayers(root) {
+		ids, entries, err := rosterLayer(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		// Values merge across every layer, lowest first, exactly as before.
+		for id, ra := range entries {
+			out.Entries[id] = mergeRosterEntry(out.Entries[id], id, ra)
+		}
+		if len(ids) == 0 {
+			continue
+		}
+		if item.machine {
+			for _, id := range ids {
+				machineMembers[id] = true
+			}
+			if machineSource == "" {
+				machineSource = item.source
+			}
+			continue
+		}
+		for _, id := range ids {
+			deckMembers[id] = true
+		}
+		if deckSource == "" {
+			deckSource = item.source
+		}
+	}
+	if len(deckMembers) > 0 {
+		out.Members, out.Source = deckMembers, deckSource
+		return out, nil
+	}
+	if len(machineMembers) > 0 {
+		out.Members, out.Source, out.Inherited = machineMembers, machineSource, true
+	}
+	return out, nil
+}
+
+// rosterLayer reads one config file and returns the roster IDs it declares plus their
+// raw blocks. A missing file yields os.ErrNotExist for the caller to skip.
+func rosterLayer(path string) ([]string, map[string]rosterAdapter, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	var cfg fileConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return nil, nil, fmt.Errorf("%s: %w", path, err)
+	}
+	ids := make([]string, 0, len(cfg.Roster))
+	for id := range cfg.Roster {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids, cfg.Roster, nil
+}
+
+// mergeRosterEntry applies one layer's block over the accumulated entry. Extracted so
+// LoadRoster and LoadRosterScoped cannot drift apart in how a field wins.
+func mergeRosterEntry(e RosterEntry, id string, ra rosterAdapter) RosterEntry {
+	if e.ID == "" {
+		e = RosterEntry{ID: id, Active: true}
+	}
+	if v := strings.TrimSpace(ra.Adapter); v != "" {
+		e.Adapter = v
+	}
+	if ra.Active != nil {
+		e.Active = *ra.Active
+	}
+	if v := strings.TrimSpace(ra.Model); v != "" {
+		e.Model = v
+	}
+	if v := strings.TrimSpace(ra.Effort); v != "" {
+		e.Effort = v
+	}
+	if v := strings.TrimSpace(ra.Speed); v != "" {
+		e.Speed = v
+	}
+	if v := strings.TrimSpace(ra.WorkspaceDir); v != "" {
+		e.WorkspaceDir = v
+	}
+	if v := strings.TrimSpace(ra.Role); v != "" {
+		e.Role = v
+	}
+	if v := strings.TrimSpace(ra.HostHandle); v != "" {
+		e.HostHandle = v
+	}
+	return e
 }
 
 // rosterOverride is one [rosters.<slug>] block — a named participant preset
@@ -172,6 +272,10 @@ type configLayer struct {
 	path     string
 	source   string
 	optional bool
+	// machine marks the user-global ~/.parley layer. Deck layers own MEMBERSHIP;
+	// the machine layer only seeds VALUES for members the deck already declares.
+	// See LoadRosterScoped for why the distinction exists.
+	machine bool
 }
 
 type agentOverride struct {
@@ -218,7 +322,7 @@ func configLayers(root string) []configLayer {
 	deck := filepath.Join(root, protocol.DeckDir)
 	layers := []configLayer{}
 	if central := CentralAgentsPath(); central != "" {
-		layers = append(layers, configLayer{path: central, source: "~/.parley/agents.toml", optional: true})
+		layers = append(layers, configLayer{path: central, source: "~/.parley/agents.toml", optional: true, machine: true})
 	}
 	layers = append(layers,
 		configLayer{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml", optional: true},
@@ -620,7 +724,21 @@ func applyOverride(root string, spec agents.Spec, override agentOverride, source
 		spec.Sources["headless_mode"] = source
 	}
 	if len(override.HeadlessArgs) > 0 {
-		spec.HeadlessArgs = expandSlice(override.HeadlessArgs, root, tempdir)
+		args := expandSlice(override.HeadlessArgs, root, tempdir)
+		// LEGACY NORMALIZER (D7's second half). A config layer replaces headless_args
+		// wholesale, so an override that spells out `--model <literal>` silently outranks
+		// the `model` field beside it — the exact declared-vs-effective split this change
+		// exists to remove, just relocated into the operator's own file. Rewrite the
+		// literal back to the placeholder so the declared field wins; record it so the
+		// rewrite is visible rather than magic.
+		if normalized, changed := agents.NormalizeLegacyModelArgs(args); changed {
+			args = normalized
+			if spec.Sources == nil {
+				spec.Sources = map[string]string{}
+			}
+			spec.Sources["headless_args_normalized"] = source
+		}
+		spec.HeadlessArgs = args
 		spec.Sources["headless_args"] = source
 	}
 	if override.ACPArgs != nil {
@@ -814,6 +932,43 @@ func RosterEntriesInFile(path string) (map[string]RosterEntry, error) {
 			e.Active = *ra.Active
 		}
 		out[id] = e
+	}
+	return out, nil
+}
+
+// RosterFieldSources reports which config layer last set each [roster.<id>] field, for
+// `roster show --explain`. D3 parked per-field provenance here rather than in a SOURCE
+// column: one column cannot describe eleven fields whose values come from different
+// files. An absent field means no layer set it (the built-in default applies).
+func RosterFieldSources(root, id string) (map[string]string, error) {
+	out := map[string]string{}
+	for _, item := range configLayers(root) {
+		_, entries, err := rosterLayer(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		ra, ok := entries[id]
+		if !ok {
+			continue
+		}
+		if strings.TrimSpace(ra.Adapter) != "" {
+			out["adapter"] = item.source
+		}
+		if ra.Active != nil {
+			out["active"] = item.source
+		}
+		if strings.TrimSpace(ra.Model) != "" {
+			out["model"] = item.source
+		}
+		if strings.TrimSpace(ra.Effort) != "" {
+			out["effort"] = item.source
+		}
+		if strings.TrimSpace(ra.Speed) != "" {
+			out["speed"] = item.source
+		}
 	}
 	return out, nil
 }

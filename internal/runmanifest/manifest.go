@@ -70,6 +70,11 @@ type RosterSnapshotEntry struct {
 	Speed     string `json:"speed"`
 	Auto      bool   `json:"autonomous"`
 	Installed bool   `json:"installed"`
+	// LaunchArgs is the RESOLVED headless argv at run creation. Without it, Auto is a
+	// number the snapshot reports but cannot enforce: a machine-config change that drops
+	// --dangerously-skip-permissions would change a continuation's autonomy posture while
+	// the frozen row still claimed AUTO=yes. G1 requires auto-args to be pinned too.
+	LaunchArgs []string `json:"launch_args,omitempty"`
 }
 
 // RosterRevisionOf hashes a snapshot deterministically. Field order and formatting are

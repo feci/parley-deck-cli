@@ -487,6 +487,11 @@ func PrintDiscovery(w io.Writer, results []Discovery) {
 }
 
 func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
+	// This is the ADAPTER/RUNTIME inventory, not the roster: it lists every agent CLI
+	// this machine can launch, whether or not any deck puts it on a team. Three surfaces
+	// used to answer "what is the roster?" differently; `parley roster show` is the one
+	// that answers it, and saying so here is how a reader stops confusing the two.
+	fmt.Fprintln(w, "adapter/runtime inventory — NOT the roster (see `parley roster show`)")
 	fmt.Fprintln(w, "AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  AUTO  BACKEND")
 	for _, result := range results {
 		installed := "no"

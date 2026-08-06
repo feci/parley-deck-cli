@@ -243,3 +243,43 @@ func TestDefaultCooperationForInit(t *testing.T) {
 		}
 	}
 }
+
+// TestNoSection2AsAStoreInstructions pins the authority cutover in TEXT.
+//
+// G3 required the cutover to be atomic: §2 became "a generated, non-authoritative view"
+// in every protocol copy, but the bootstrap section and Appendix A still told a
+// facilitator to record roster choices *in* §2 and to "Fill in §2 roster" by hand. Both
+// statements shipped in the same document, so an agent following the instructions would
+// hand-edit the file the same document calls generated. Phrases, not prose style, are
+// what regressed — so phrases are what this test forbids.
+func TestNoSection2AsAStoreInstructions(t *testing.T) {
+	banned := []string{
+		"mirrored in the §2 roster",
+		"Fill in §2 roster",
+		"Modify the active roster (§2).",
+		"and the §2 roster)",
+	}
+	for _, tc := range []struct{ name, text string }{
+		{"embedded default", defaultCooperation},
+		{"live deck", readLiveDeck(t)},
+	} {
+		for _, phrase := range banned {
+			if strings.Contains(tc.text, phrase) {
+				t.Errorf("%s still instructs the reader to treat §2 as a store: %q\n"+
+					"§2 is a generated view; membership lives in parley-deck/agents.toml. "+
+					"Update the instruction to name `parley roster set` / `parley roster render`.",
+					tc.name, phrase)
+			}
+		}
+	}
+}
+
+// readLiveDeck loads the canonical project deck, failing closed like the guard above.
+func readLiveDeck(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile(liveDeckPath)
+	if err != nil {
+		t.Fatalf("cannot read live deck %s: %v", liveDeckPath, err)
+	}
+	return string(b)
+}

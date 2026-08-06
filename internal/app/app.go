@@ -118,10 +118,13 @@ signoffs, and emits repository context that can be handed to agents.
 
 Usage:
   %s init [--dir DIR]
-  %s agents list [--dir DIR]
+  %s agents list [--dir DIR]                        (adapter/runtime inventory — NOT the roster)
   %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
-  %s roster show [--scope deck|machine] [--dir DIR] [--json]
-  %s roster set AGENT --scope deck|machine [--model M] [--effort E] [--speed S] [--state active|inactive] [--dry-run] [--yes]
+  %s roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]
+  %s roster set AGENT --scope deck|machine [--adapter A] [--model M] [--effort E] [--speed S] [--state active|inactive] [--dry-run] [--yes] [--confirm-breaking]
+  %s roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]
+  %s roster render [--dir DIR] [--dry-run] [--yes] [--adopt-inherited]
+  %s roster migrate [--dir ROOT] --backup-dir DIR [--dry-run] [--yes --confirm-breaking] [--json]
   %s consensus status [--dir DIR] [--review] [--json] IDEA
   %s consensus draft [--dir DIR] [--review] [--round N] [--by AGENT] IDEA
   %s consensus signoff [--dir DIR] [--review] --agent ID --status accept|reserve|reservations|block [--notes TEXT] [--counter TEXT] IDEA
@@ -318,6 +321,9 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
+		appName,
+		appName,
 		appName,
 		appName,
 		appName,
@@ -868,6 +874,9 @@ type sessionInspectPayload struct {
 	ManifestError string                `json:"manifest_error,omitempty"`
 	Run           *runstate.RunSummary  `json:"run,omitempty"`
 	RunError      string                `json:"run_error,omitempty"`
+	// RosterSnapshotState is one of "current", "stale-snapshot", "no-snapshot" or
+	// "unknown" (deck unreadable). See rosterSnapshotState.
+	RosterSnapshotState string `json:"roster_snapshot_state,omitempty"`
 }
 
 func resolveIndexedSession(sessionStore sessionstore.Store, target, filterRoot, fallbackRoot string) (sessionstore.Session, error) {
@@ -944,6 +953,11 @@ func inspectSession(indexPath string, session sessionstore.Session) sessionInspe
 	manifest, err := runmanifest.Load(session.WorkspaceRoot, session.RunID)
 	if err == nil {
 		payload.Manifest = &manifest
+		// D6's audit half: a snapshot is only trustworthy if you can tell when the deck
+		// has moved past it. Compare the frozen revision against the deck's current
+		// roster and report `stale-snapshot` — the STATUS vocabulary already reserved the
+		// code, but nothing computed it, so no surface could ever emit it.
+		payload.RosterSnapshotState = rosterSnapshotState(session.WorkspaceRoot, manifest)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		payload.ManifestError = err.Error()
 	}
@@ -970,6 +984,9 @@ func printSessionDetail(stdout io.Writer, payload sessionInspectPayload) {
 	}
 	fmt.Fprintf(stdout, "Status: %s\n", sessionStatus(session))
 	fmt.Fprintf(stdout, "Last event: %s\n", sessionTimestamp(session))
+	if payload.RosterSnapshotState != "" {
+		fmt.Fprintf(stdout, "Roster snapshot: %s\n", payload.RosterSnapshotState)
+	}
 	if payload.Manifest != nil {
 		fmt.Fprintf(stdout, "Manifest: %s\n", payload.ManifestPath)
 		fmt.Fprintf(stdout, "Manifest schema: %d\n", payload.Manifest.SchemaVersion)
@@ -1156,7 +1173,14 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 	}
 	// CONSUME the run's frozen roster. Re-discovering configuration on every continuation
 	// is what let a machine-default change move a running idea onto a different model.
-	if m, mErr := runmanifest.Load(root, run.RunID); mErr == nil {
+	if m, mErr := runmanifest.Load(root, run.RunID); mErr != nil {
+		// A run predating snapshots legitimately has no manifest; anything else means the
+		// continuation is proceeding UNFROZEN, which is exactly the state the snapshot
+		// exists to prevent. Say so rather than continuing silently.
+		if !errors.Is(mErr, os.ErrNotExist) {
+			fmt.Fprintf(stderr, "warning: cannot read this run's manifest (%v) — continuing with the CURRENT config, not the frozen roster\n", mErr)
+		}
+	} else {
 		discovered = applyRosterSnapshot(discovered, m.RosterSnapshot, stderr)
 	}
 	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", run.IdeaSlug)

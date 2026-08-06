@@ -117,9 +117,14 @@ Summary: Replaced placeholder roster rows with `codex`, `claude`, `gemini`, and 
   bundled snapshot still needs a sync — flagged via inbox.
 
 ## 2026-08-06 — §2 roster authority moves to `parley-deck/agents.toml`
+Idea: ideas/roster-operations-standard/
+Drafted by: claude-1
+Summary: §2's roster table stops being the hand-edited membership store and becomes a generated,
+non-authoritative view; `[roster.<id>]` blocks in `parley-deck/agents.toml` own membership and
+per-agent settings, with retired members marked rather than deleted.
 
-**Idea:** `roster-operations-standard` (track `deliberation`, 2 rounds, 3 signoff revisions,
-accepted by claude-1, codex-1, hermes-1, kimi-1).
+**Ratification:** track `deliberation`, 2 rounds, 3 signoff revisions, accepted by claude-1,
+codex-1, hermes-1, kimi-1.
 
 **Change:** §2's roster table stops being the hand-edited membership store and becomes a
 generated, non-authoritative view. `[roster.<id>]` blocks in `parley-deck/agents.toml` carry

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"parley-deck-cli/internal/config"
+	"parley-deck-cli/internal/fsutil"
 )
 
 // rosterSetField is one requested change to one roster entry.
@@ -63,7 +64,7 @@ func rosterSet(root, scope, agent string, fields []rosterSetField, dryRun, yes, 
 	// Adding a member or retiring one changes WHO deliberates, and therefore who a future
 	// idea's quorum is. `--yes` is the ordinary confirmation; a membership change needs a
 	// second, explicit one so it can never ride along with a routine model change.
-	if breaking := membershipChange(changes); breaking != "" {
+	if breaking := membershipChange(changes, blockExists(string(existing), agent)); breaking != "" {
 		if !confirmBreaking {
 			fmt.Fprintf(stderr, "\nroster set: this %s — a membership change, not a settings change.\n"+
 				"Re-run with --confirm-breaking as well as --yes.\n", breaking)
@@ -76,7 +77,34 @@ func rosterSet(root, scope, agent string, fields []rosterSetField, dryRun, yes, 
 		return 1
 	}
 	fmt.Fprintf(stdout, "\nWrote %s\n", target)
+	// POST-WRITE RE-RESOLVE. A write to a lower layer can be completely masked by a
+	// higher one ($PARLEY_HEADLESS_AGENT_CONFIG, agents.local.toml). Reporting "Wrote"
+	// and stopping there is a false success: the file changed and the effective value
+	// did not. `masked-by-env` was in the frozen STATUS vocabulary with nothing to emit
+	// it; this is the emitter.
+	for _, f := range fields {
+		if src, masked := rosterFieldMaskedBy(root, agent, f.key, target); masked {
+			fmt.Fprintf(stderr, "\nwarning: %s = %q is MASKED — %s sets it at a higher layer, so the effective value did not change.\n"+
+				"  (status `masked-by-env`; see `parley roster show --explain %s`)\n", f.key, f.value, src, agent)
+		}
+	}
 	return 0
+}
+
+// rosterFieldMaskedBy reports whether a higher config layer overrides the field just
+// written to `target`, and which one.
+func rosterFieldMaskedBy(root, agent, field, target string) (string, bool) {
+	sources, err := config.RosterFieldSources(root, agent)
+	if err != nil {
+		return "", false
+	}
+	src := sources[field]
+	if src == "" {
+		return "", false
+	}
+	// RosterFieldSources reports the LAST layer that set the field. If that is not the
+	// file we just wrote, something above it wins.
+	return src, !strings.HasSuffix(target, src) && src != target && !strings.Contains(target, src)
 }
 
 func previewLabel(dryRun, yes bool) string {
@@ -212,38 +240,50 @@ func tomlValue(v string) string {
 // writeRosterFileAtomic writes via a temp file in the same directory and renames, so a
 // crash mid-write cannot leave a half-written roster behind.
 func writeRosterFileAtomic(path string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+	// Preserve the existing mode. os.CreateTemp makes a 0600 file, and renaming it over a
+	// 0644 config silently tightened the machine file to owner-only — harmless for one
+	// user, wrong on a shared or team setup, and invisible until someone else's read
+	// fails. New files get 0644, the conventional mode for these configs.
+	perm := os.FileMode(0o644)
+	if fi, err := os.Stat(path); err == nil {
+		perm = fi.Mode().Perm()
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".agents-*.toml")
-	if err != nil {
-		return err
-	}
-	name := tmp.Name()
-	defer os.Remove(name)
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(name, path)
+	return fsutil.WriteFileAtomic(path, data, perm)
 }
 
 // membershipChange reports whether a change set alters who is in the roster, rather than
 // how an existing member is configured.
-func membershipChange(changes []string) string {
+//
+// The gate keys on whether the BLOCK existed before, not on which field is written. Using
+// "+ adapter = " as a proxy for "new member" let `roster set sneaky-9 --model k3 --yes`
+// create a real member with no second confirmation: the member is only as new as its
+// block, and any first write to a missing block creates one.
+func membershipChange(changes []string, existed bool) string {
+	if !existed {
+		return "adds a new roster member"
+	}
 	for _, c := range changes {
-		if strings.Contains(c, "+ adapter = ") {
-			return "adds a new roster member"
+		// A reactivation matches "active = false" on its removal line, so check the
+		// added value first or a revival reports itself as a retirement.
+		if strings.Contains(c, "+ active = true") {
+			return "reactivates a retired roster member"
 		}
-		if strings.Contains(c, "active = false") {
+		if strings.Contains(c, "+ active = false") {
 			return "retires a roster member"
-		}
-		if strings.Contains(c, "+ active = true") || strings.Contains(c, "+ active = false") {
-			return "changes roster membership state"
 		}
 	}
 	return ""
+}
+
+// blockExists reports whether [roster.<agent>] is already declared in the file being
+// edited. It is deliberately a text check against the SAME bytes applyRosterBlock
+// patches, so the gate and the write can never disagree about what existed.
+func blockExists(doc, agent string) bool {
+	header := "[roster." + agent + "]"
+	for _, line := range strings.Split(doc, "\n") {
+		if strings.TrimSpace(line) == header {
+			return true
+		}
+	}
+	return false
 }

@@ -26,18 +26,41 @@ const rosterSectionHeader = "## 2. Active agents (roster)"
 // renderRosterTable renders the §2 table rows for a deck. Ordering is fixed: active
 // before inactive, then agent ID byte-ascending, so the output cannot depend on map
 // iteration order.
-func renderRosterTable(root string, carry map[string]legacyCells) (string, error) {
-	entries, err := config.LoadRoster(root)
+func renderRosterTable(root string, carry map[string]legacyCells, adoptInherited bool) (string, []string, error) {
+	scope, err := config.LoadRosterScoped(root)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	if len(entries) == 0 {
-		return "", fmt.Errorf("no [roster.*] entries in this deck's config — nothing to render")
+	if len(scope.Members) == 0 {
+		return "", nil, fmt.Errorf("no [roster.*] entries in this deck's config — nothing to render")
 	}
-	ids := make([]string, 0, len(entries))
-	for id := range entries {
+	// A deck that declares no roster of its own shows the machine roster, but committing
+	// it into COOPERATION.md would bake a machine-local accident into a shared file and
+	// stale it on the next machine change. Refuse unless the operator says otherwise.
+	if scope.Inherited && !adoptInherited {
+		return "", nil, fmt.Errorf(
+			"this deck declares no roster of its own; the %d rows shown come from %s.\n"+
+				"Writing them into §2 would commit a machine-local roster into a shared file.\n"+
+				"Declare the roster with `parley roster set <agent> --scope deck --adapter <family>`,\n"+
+				"or re-run with --adopt-inherited to accept the inherited roster as this deck's own",
+			len(scope.Members), scope.Source)
+	}
+	entries := scope.Entries
+	ids := make([]string, 0, len(scope.Members))
+	for id := range scope.Members {
 		ids = append(ids, id)
 	}
+	// Rows present in the existing §2 but absent from the authority are REMOVED by this
+	// render. The ratified field table says a §2-only ID is "reported `unmapped`, never
+	// auto-added" — so it does not re-enter the generated table, but its removal must be
+	// stated. Erasing project data silently is how the previous generator lost rows.
+	removed := make([]string, 0)
+	for id := range carry {
+		if !scope.Members[id] {
+			removed = append(removed, id)
+		}
+	}
+	sort.Strings(removed)
 	sort.Slice(ids, func(i, j int) bool {
 		a, b := entries[ids[i]], entries[ids[j]]
 		if a.Active != b.Active {
@@ -75,18 +98,30 @@ func renderRosterTable(root string, carry map[string]legacyCells) (string, error
 		}
 		b.WriteString(fmt.Sprintf("| `%s` | %s | %s | %s |\n", id, dir, role, state))
 	}
-	return b.String(), nil
+	return b.String(), removed, nil
 }
 
 // rosterRender writes the generated table into COOPERATION.md between the §2 heading and
 // the next section, leaving every other byte untouched.
-func rosterRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int {
+func rosterRender(root string, dryRun, yes, adoptInherited bool, stdout, stderr io.Writer) int {
 	path0 := filepath.Join(root, "parley-deck", "COOPERATION.md")
 	prior, _ := os.ReadFile(path0)
-	table, err := renderRosterTable(root, parseLegacyCells(string(prior)))
+	table, removed, err := renderRosterTable(root, parseLegacyCells(string(prior)), adoptInherited)
 	if err != nil {
 		fmt.Fprintf(stderr, "roster render: %v\n", err)
 		return 1
+	}
+	// Report removals before anything else, in preview AND on apply: they are the one
+	// consequence of regeneration that destroys existing content.
+	reportRemoved := func(w io.Writer) {
+		if len(removed) == 0 {
+			return
+		}
+		fmt.Fprintf(w, "the following §2 row(s) are NOT in this deck's roster and will be removed:\n")
+		for _, id := range removed {
+			fmt.Fprintf(w, "  - %s (reported `unmapped` by `parley roster show`; add it with\n"+
+				"    `parley roster set %s --scope deck --adapter <family> --yes --confirm-breaking` to keep it)\n", id, id)
+		}
 	}
 	path := path0
 	doc, err := os.ReadFile(path)
@@ -104,9 +139,11 @@ func rosterRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int {
 		return 0
 	}
 	if dryRun || !yes {
+		reportRemoved(stdout)
 		fmt.Fprintf(stdout, "would regenerate §2 in %s:\n\n%s\nNothing was written. Re-run with --yes to apply.\n", path, table)
 		return 0
 	}
+	reportRemoved(stdout)
 	if err := writeRosterFileAtomic(path, []byte(updated)); err != nil {
 		fmt.Fprintf(stderr, "roster render: %v\n", err)
 		return 1

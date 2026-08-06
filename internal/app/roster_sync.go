@@ -53,6 +53,10 @@ func rosterSync(root string, keep []string, dryRun, yes bool, stdout, stderr io.
 	for _, k := range keep {
 		keepSet[strings.ToLower(strings.TrimSpace(k))] = true
 	}
+	// An unmatched --keep token is almost always a typo, and a typo used to be silent:
+	// `--keep kimi-1.modle --yes` protected nothing and removed kimi-1.model anyway. A
+	// keep flag is a statement of intent about a specific field, so it must name one.
+	usedKeep := map[string]bool{}
 
 	type drop struct{ agent, field, deckVal, machineVal string }
 	var redundant, pins, kept []drop
@@ -81,6 +85,7 @@ func rosterSync(root string, keep []string, dryRun, yes bool, stdout, stderr io.
 			rec := drop{id, f.name, f.deckVal, f.machineVal}
 			switch {
 			case keepSet[strings.ToLower(id+"."+f.name)]:
+				usedKeep[strings.ToLower(id+"."+f.name)] = true
 				kept = append(kept, rec)
 			case f.deckVal == f.machineVal:
 				redundant = append(redundant, rec)
@@ -88,6 +93,15 @@ func rosterSync(root string, keep []string, dryRun, yes bool, stdout, stderr io.
 				pins = append(pins, rec)
 			}
 		}
+	}
+
+	if unmatched := unmatchedKeeps(keepSet, usedKeep); len(unmatched) > 0 {
+		fmt.Fprintf(stderr, "roster sync: --keep names %d field(s) this deck does not override:\n", len(unmatched))
+		for _, k := range unmatched {
+			fmt.Fprintf(stderr, "  - %s\n", k)
+		}
+		fmt.Fprintln(stderr, "Nothing was written. Fix the spelling (AGENT.FIELD, e.g. kimi-1.model) or drop the flag.")
+		return 2
 	}
 
 	if len(redundant) == 0 && len(pins) == 0 {
@@ -127,6 +141,22 @@ func rosterSync(root string, keep []string, dryRun, yes bool, stdout, stderr io.
 	if err != nil {
 		fmt.Fprintf(stderr, "roster sync: %v\n", err)
 		return 1
+	}
+	// BIND APPLY TO THE PREVIEW. Drops were computed from an earlier read; deleting from
+	// a second read without checking the values still match means an edit landing between
+	// the two reads is silently discarded, atomic rename or not. Refuse instead.
+	current, cerr := config.RosterEntriesInFile(deckFile)
+	if cerr != nil {
+		fmt.Fprintf(stderr, "roster sync: re-reading %s: %v\n", deckFile, cerr)
+		return 1
+	}
+	for _, r := range append(append([]drop{}, redundant...), pins...) {
+		if got := rosterFieldValue(current[r.agent], r.field); got != r.deckVal {
+			fmt.Fprintf(stderr, "roster sync: %s changed since the preview ([roster.%s] %s is now %q, was %q).\n"+
+				"Nothing was written. Re-run to preview against the current file.\n",
+				deckFile, r.agent, r.field, got, r.deckVal)
+			return 1
+		}
 	}
 	updated := string(doc)
 	for _, r := range append(append([]drop{}, redundant...), pins...) {
@@ -172,4 +202,31 @@ func removeRosterField(doc, agent, field string) string {
 	}
 	out = append(out, lines[end:]...)
 	return strings.Join(out, "\n")
+}
+
+// unmatchedKeeps returns the --keep tokens that matched no deck override, sorted.
+func unmatchedKeeps(keepSet, used map[string]bool) []string {
+	var out []string
+	for k := range keepSet {
+		if k != "" && !used[k] {
+			out = append(out, k)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// rosterFieldValue reads one named field off a roster entry, for preview/apply binding.
+func rosterFieldValue(e config.RosterEntry, field string) string {
+	switch field {
+	case "adapter":
+		return e.Adapter
+	case "model":
+		return e.Model
+	case "effort":
+		return e.Effort
+	case "speed":
+		return e.Speed
+	}
+	return ""
 }

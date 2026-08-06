@@ -23,13 +23,26 @@ func applyRosterSnapshot(discovered []agents.Discovery, snapshot []runmanifest.R
 	if len(snapshot) == 0 {
 		return discovered
 	}
+	// Key by ROSTER ID, not by adapter family. Two roster IDs may share an adapter and
+	// still run different models — the implementation's own contract says so — and an
+	// adapter-keyed map made the second entry overwrite the first, so both continuations
+	// launched the last entry's model. The freeze must be per member.
 	frozen := make(map[string]runmanifest.RosterSnapshotEntry, len(snapshot))
+	byAdapter := make(map[string]runmanifest.RosterSnapshotEntry, len(snapshot))
 	for _, e := range snapshot {
-		frozen[e.Adapter] = e
+		frozen[e.Agent] = e
+		// Adapter is only a FALLBACK, for runs frozen before roster IDs were recorded.
+		// First writer wins so the fallback cannot silently reorder.
+		if _, seen := byAdapter[e.Adapter]; !seen {
+			byAdapter[e.Adapter] = e
+		}
 	}
 	out := make([]agents.Discovery, 0, len(discovered))
 	for _, d := range discovered {
-		e, ok := frozen[d.Spec.Adapter()]
+		e, ok := frozen[d.Spec.ID]
+		if !ok {
+			e, ok = byAdapter[d.Spec.Adapter()]
+		}
 		if !ok {
 			if warn != nil {
 				fmt.Fprintf(warn, "warning: %s is not in this run's roster snapshot — launching it as currently configured\n", d.Spec.ID)
@@ -45,6 +58,13 @@ func applyRosterSnapshot(discovered []agents.Discovery, snapshot []runmanifest.R
 		}
 		if e.Speed != "" {
 			d.Spec.Speed = e.Speed
+		}
+		// Pin the AUTO posture too. Model/effort/speed alone leave the launch shape free
+		// to change under a running idea: dropping an auto-approve flag from the machine
+		// config would alter what the continuation is permitted to do while the frozen
+		// row still reported AUTO=yes.
+		if len(e.LaunchArgs) > 0 {
+			d.Spec.HeadlessArgs = append([]string(nil), e.LaunchArgs...)
 		}
 		out = append(out, d)
 	}

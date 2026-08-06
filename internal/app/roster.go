@@ -54,13 +54,17 @@ func (m *multiFlag) String() string     { return strings.Join(*m, ",") }
 func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
 
 const rosterUsage = `usage:
-  parley roster show [--scope deck|machine] [--dir DIR] [--json]
+  parley roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]
   parley roster set  AGENT --scope deck|machine [--adapter A] [--state active|inactive]
-                     [--model M] [--effort E] [--speed S] [--dry-run] [--yes]
+                     [--model M] [--effort E] [--speed S] [--dry-run] [--yes] [--confirm-breaking]
   parley roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]
-  parley roster render [--dir DIR] [--dry-run] [--yes]
-  parley roster migrate [--dir ROOT] --backup-dir DIR [--dry-run] [--yes] [--json]
-  parley roster init [--scope deck|machine] [--dir DIR] [--dry-run] [--yes] [--json]`
+  parley roster render [--dir DIR] [--dry-run] [--yes] [--adopt-inherited]
+  parley roster migrate [--dir ROOT] --backup-dir DIR [--dry-run] [--yes --confirm-breaking] [--json]
+  parley roster init [--scope deck|machine] [--dir DIR] [--dry-run] [--yes] [--json]   (deprecated)
+
+  --all           also list configured adapters that no roster declares
+  --explain AGENT per-field provenance: which config layer set each value
+  --scope         deck (this project, default) or machine (~/.parley/agents.toml)`
 
 // rosterScopeAlias keeps the pre-1.40 spelling working. `session` was always a
 // misnomer: it never named a per-session store, it named the deck.
@@ -89,7 +93,7 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("roster", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	dir := fs.String("dir", ".", "workspace directory")
-	scope := fs.String("scope", "session", "session (deck) or machine (~/.parley)")
+	scope := fs.String("scope", "deck", "deck (this project) or machine (~/.parley); `session` is a hidden pre-1.40 alias for deck")
 	dryRun := fs.Bool("dry-run", false, "print what would change; write nothing")
 	yes := fs.Bool("yes", false, "write without confirmation")
 	jsonOut := fs.Bool("json", false, "machine-readable output")
@@ -102,6 +106,9 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	model := fs.String("model", "", "roster set: exact model id")
 	effort := fs.String("effort", "", "roster set: reasoning/effort level")
 	speed := fs.String("speed", "", "roster set: fast|balanced|deep|review")
+	all := fs.Bool("all", false, "roster show: also list configured adapters that no roster declares")
+	explain := fs.String("explain", "", "roster show: per-field provenance for one AGENT")
+	adoptInherited := fs.Bool("adopt-inherited", false, "roster render: accept an inherited machine roster as this deck's own")
 	if err := fs.Parse(rest); err != nil {
 		return 2
 	}
@@ -112,7 +119,16 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	}
 	switch sub {
 	case "show":
-		return rosterShow(root, *jsonOut, stdout, stderr)
+		viewScope := rosterScopeAlias(*scope)
+		if viewScope != "deck" && viewScope != "machine" {
+			fmt.Fprintf(stderr, "roster show: invalid --scope %q (want deck|machine)\n", *scope)
+			return 2
+		}
+		opts := rosterViewOpts{scope: viewScope, all: *all}
+		if strings.TrimSpace(*explain) != "" {
+			return rosterExplain(root, strings.TrimSpace(*explain), opts, stdout, stderr)
+		}
+		return rosterShow(root, *jsonOut, opts, stdout, stderr)
 	case "set":
 		var fields []rosterSetField
 		add := func(k, v string) {
@@ -142,9 +158,9 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintln(stderr, "roster migrate: --backup-dir is required with --yes; every write is backed up before it happens")
 			return 2
 		}
-		return rosterMigrate(root, *backupDir, *dryRun, *yes, *jsonOut, stdout, stderr)
+		return rosterMigrate(root, *backupDir, *dryRun, *yes, *jsonOut, *confirmBreaking, stdout, stderr)
 	case "render":
-		return rosterRender(root, *dryRun, *yes, stdout, stderr)
+		return rosterRender(root, *dryRun, *yes, *adoptInherited, stdout, stderr)
 	case "sync":
 		return rosterSync(root, keep, *dryRun, *yes, stdout, stderr)
 	case "init":
@@ -191,6 +207,9 @@ type rosterRow struct {
 	// TUI and artifact rendering, derived from this row.
 	Display string `json:"display_name,omitempty"`
 	Note    string `json:"note,omitempty"`
+	// launchArgs is the resolved headless argv behind AUTO. Unexported: it is run-freeze
+	// input, not part of the frozen v1 column/JSON contract.
+	launchArgs []string `json:"-"`
 }
 
 // addStatus appends a status code, keeping the list free of duplicates.
@@ -217,7 +236,7 @@ func (r rosterRow) statusOrOK() string {
 // resolveRoster builds one row per active §2 roster ID. allowedFamilies, when
 // non-nil, restricts usable families to a scope catalog (machine-only for
 // `--scope machine`) so a deck-only family is never proposed/blessed there.
-func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, error) {
+func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterViewOpts) ([]rosterRow, error) {
 	specs, err := config.LoadAgentSpecs(root)
 	if err != nil {
 		return nil, err
@@ -241,11 +260,12 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 	// all, so it falls back to the legacy §2 table and every row is flagged
 	// `legacy-roster` — the drift this idea exists to end came from 40 decks maintaining
 	// that table by hand, nine different ways.
-	entries, entriesErr := config.LoadRoster(root)
+	scope, entriesErr := rosterScopeFor(root, opts.scope)
 	if entriesErr != nil {
 		return nil, entriesErr
 	}
-	legacy := len(entries) == 0
+	entries := scope.Entries
+	legacy := len(scope.Members) == 0
 	inactive := map[string]bool{}
 	var ids []string
 	if legacy {
@@ -261,9 +281,12 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 			ids = append(ids, id)
 		}
 	} else {
-		for id, e := range entries {
+		// MEMBERSHIP IS THE DECK FILE, not the layered union. Iterating `entries` here
+		// (which merges the machine layer in) is what made a deck declaring two members
+		// resolve to five, and made `roster render` commit the machine roster into §2.
+		for id := range scope.Members {
 			ids = append(ids, id)
-			if !e.Active {
+			if e, ok := entries[id]; ok && !e.Active {
 				inactive[id] = true
 			}
 		}
@@ -275,6 +298,12 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 		if legacy {
 			row.addStatus("legacy-roster")
 		}
+		// An inherited row is the machine roster showing through a deck that declares
+		// none of its own. It is display-only: never a silent deck-level decision, and
+		// `roster render` refuses to commit it without --adopt-inherited.
+		if scope.Inherited {
+			row.addStatus("inherited-roster")
+		}
 		if inactive[id] {
 			row.State = "inactive"
 			row.addStatus("inactive")
@@ -283,7 +312,7 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 		if !mapped {
 			family = proposeFamily(id, byFamily)
 			if family != "" {
-				row.Note = "unmapped — run `parley roster init`"
+				row.Note = fmt.Sprintf("unmapped — declare the adapter with `parley roster set %s --scope deck --adapter <family> --yes`", id)
 				row.addStatus("unmapped")
 			}
 		} else if _, ok := byFamily[family]; !ok {
@@ -354,6 +383,7 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 		// Fail-closed: a declared mode whose enabling args the launch does not pass is
 		// not autonomous (review MAJOR, codex-1).
 		row.Auto = spec.AutonomousEffective()
+		row.launchArgs, _ = spec.ResolveLaunchArgs()
 		if name, derr := agents.RenderDisplayName(family, spec); derr == nil {
 			row.Display = name
 		} else {
@@ -385,11 +415,25 @@ func proposeFamily(id string, byFamily map[string]agents.Spec) string {
 	return ""
 }
 
-func rosterShow(root string, jsonOut bool, stdout, stderr io.Writer) int {
-	rows, err := resolveRoster(root, nil)
+func rosterShow(root string, jsonOut bool, opts rosterViewOpts, stdout, stderr io.Writer) int {
+	rows, err := resolveRoster(root, nil, opts)
 	if err != nil {
 		fmt.Fprintf(stderr, "roster show: %v\n", err)
 		return 1
+	}
+	// A §2-only ID is reported `unmapped`, never auto-added (ratified field table).
+	// Dropping it silently is what let `roster render` erase project data unannounced.
+	rows = append(rows, section2OnlyRows(root, membersOf(root, opts.scope))...)
+	if opts.all {
+		rows = append(rows, unrosteredRows(root, membersOf(root, opts.scope))...)
+	}
+	// STATUS is []string, so a healthy row marshalled to JSON as `null` while the text
+	// table printed `ok` — the same row contradicting itself across two renderings of a
+	// contract that claims both are the same. Normalize before marshalling.
+	for i := range rows {
+		if len(rows[i].Status) == 0 {
+			rows[i].Status = []string{"ok"}
+		}
 	}
 	if jsonOut {
 		// schema_version and the ordered column list travel WITH the rows: a consumer
@@ -397,6 +441,7 @@ func rosterShow(root string, jsonOut bool, stdout, stderr io.Writer) int {
 		return writeJSON(stdout, stderr, map[string]any{
 			"schema_version": RosterSchemaVersion,
 			"columns":        RosterColumns,
+			"scope":          orDeck(opts.scope),
 			"roster":         rows,
 		})
 	}
@@ -418,10 +463,16 @@ func rosterShow(root string, jsonOut bool, stdout, stderr io.Writer) int {
 type rosterMapEntry struct{ id, family string }
 
 func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io.Writer) int {
-	if scope != "session" && scope != "machine" {
-		fmt.Fprintf(stderr, "roster init: invalid --scope %q (want session|machine)\n", scope)
+	// `init` is a deprecated bootstrap alias. It kept demanding the pre-1.40 `session`
+	// spelling while set/sync/show speak `deck|machine`, so the documented remediation
+	// path rejected the documented vocabulary.
+	scope = rosterScopeAlias(scope)
+	if scope != "deck" && scope != "machine" {
+		fmt.Fprintf(stderr, "roster init: invalid --scope %q (want deck|machine)\n", scope)
 		return 2
 	}
+	fmt.Fprintln(stderr, "note: `parley roster init` is deprecated; prefer `parley roster set AGENT --adapter FAMILY` "+
+		"to declare members and `parley roster render` to regenerate §2.")
 	// Machine scope must never propose, write, or bless a deck-only family (consensus
 	// §B); build a machine-only family catalog and restrict resolution to it. Session
 	// scope uses the full layered catalog (allowed == nil).
@@ -434,7 +485,7 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 		}
 		allowed = c
 	}
-	rows, err := resolveRoster(root, allowed)
+	rows, err := resolveRoster(root, allowed, rosterViewOpts{})
 	if err != nil {
 		fmt.Fprintf(stderr, "roster init: %v\n", err)
 		return 1
@@ -610,7 +661,7 @@ func writeJSON(stdout, stderr io.Writer, v any) int {
 // reads the stored snapshot instead of resolving again, so a machine-config change
 // cannot silently move a running idea to a different model.
 func RosterSnapshot(root string) ([]runmanifest.RosterSnapshotEntry, string, error) {
-	rows, err := resolveRoster(root, nil)
+	rows, err := resolveRoster(root, nil, rosterViewOpts{})
 	if err != nil {
 		return nil, "", err
 	}
@@ -620,13 +671,14 @@ func RosterSnapshot(root string) ([]runmanifest.RosterSnapshotEntry, string, err
 			continue
 		}
 		entries = append(entries, runmanifest.RosterSnapshotEntry{
-			Agent:     r.Agent,
-			Adapter:   r.Adapter,
-			Model:     r.Model,
-			Effort:    r.Effort,
-			Speed:     r.Speed,
-			Auto:      r.Auto,
-			Installed: r.Installed,
+			Agent:      r.Agent,
+			Adapter:    r.Adapter,
+			Model:      r.Model,
+			Effort:     r.Effort,
+			Speed:      r.Speed,
+			Auto:       r.Auto,
+			Installed:  r.Installed,
+			LaunchArgs: r.launchArgs,
 		})
 	}
 	return entries, runmanifest.RosterRevisionOf(entries), nil
@@ -640,15 +692,18 @@ func RosterSnapshot(root string) ([]runmanifest.RosterSnapshotEntry, string, err
 // selection on `protocol.ReadRosterIDs` while `roster show` read config is what made the
 // authority cutover half-done: the table said one thing and the run selected another —
 // the exact two-sources-of-truth defect this change exists to remove.
+// Membership is the DECK FILE's roster, never the layered machine+deck union: a run
+// must select the participants the deck declares, not whichever agents happen to be
+// configured on this machine.
 func RosterMembership(root string) (active map[string]bool, inactive map[string]bool, ok bool) {
-	entries, err := config.LoadRoster(root)
-	if err == nil && len(entries) > 0 {
+	scope, err := config.LoadRosterScoped(root)
+	if err == nil && len(scope.Members) > 0 {
 		active, inactive = map[string]bool{}, map[string]bool{}
-		for id, e := range entries {
-			if e.Active {
-				active[id] = true
-			} else {
+		for id := range scope.Members {
+			if e, found := scope.Entries[id]; found && !e.Active {
 				inactive[id] = true
+			} else {
+				active[id] = true
 			}
 		}
 		return active, inactive, true

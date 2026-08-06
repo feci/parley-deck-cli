@@ -120,3 +120,49 @@ func (s Spec) EffectiveEffort() (string, bool) {
 	}
 	return "", false
 }
+
+// modelFlags and effortFlags are the argv flags that INTRODUCE a model or effort value.
+// They exist so a config layer that hardcodes a literal can be normalized back to the
+// placeholder form.
+var modelFlags = map[string]bool{"--model": true, "-m": true, "--mdl": true}
+
+var effortFlags = map[string]bool{"--effort": true, "--reasoning": true, "--reasoning-effort": true, "--thinking": true}
+
+// NormalizeLegacyModelArgs rewrites a hardcoded model/effort literal in a config-supplied
+// headless_args vector back into the {model}/{effort} placeholders.
+//
+// This is the second half of the model-argv fix. The first half made the built-in specs
+// carry placeholders; but `applyOverride` replaces HeadlessArgs WHOLESALE, so any deck or
+// machine config that still spells out `headless_args = [..., "--model", "some-literal"]`
+// silently outranks the `model` field next to it. The row then reports `model-drift` —
+// true, but the operator's fix is to hand-edit an argv vector they probably copied from a
+// release note years ago. Normalizing means the declared `model` field wins, which is what
+// D7 ratified and what every layer above already assumes.
+//
+// Only the VALUE is rewritten; the flag, its position, and every other argument are left
+// exactly as written, because an override's argv is otherwise the operator's business.
+func NormalizeLegacyModelArgs(args []string) ([]string, bool) {
+	if len(args) == 0 {
+		return args, false
+	}
+	out := make([]string, len(args))
+	copy(out, args)
+	changed := false
+	for i := 0; i < len(out)-1; i++ {
+		flag, value := out[i], out[i+1]
+		// A value that is already a placeholder, or that is itself a flag (meaning the
+		// preceding flag is boolean here), must not be touched.
+		if strings.HasPrefix(value, "-") {
+			continue
+		}
+		switch {
+		case modelFlags[flag] && value != ModelPlaceholder:
+			out[i+1] = ModelPlaceholder
+			changed = true
+		case effortFlags[flag] && value != EffortPlaceholder:
+			out[i+1] = EffortPlaceholder
+			changed = true
+		}
+	}
+	return out, changed
+}
