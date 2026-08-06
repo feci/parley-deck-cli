@@ -120,3 +120,99 @@ func TestJSONStatusMatchesTextForAHealthyRow(t *testing.T) {
 		}
 	}
 }
+
+// A5's residual: at the real continuation boundary the discoveries are still keyed by
+// ADAPTER, so per-roster-ID pins collapsed even though applyRosterSnapshot itself was
+// correct. The cycle-2 test proved the function; this one proves the call site.
+func TestSnapshotPinsSurviveParticipantResolution(t *testing.T) {
+	frozen := []runmanifest.RosterSnapshotEntry{
+		{Agent: "claude-1", Adapter: "claude", Model: "opus-a"},
+		{Agent: "claude-2", Adapter: "claude", Model: "opus-b"},
+	}
+	// What the continuation actually holds: one adapter-level discovery.
+	discovered := []agents.Discovery{{Found: true, Spec: agents.Spec{ID: "claude", Model: "drifted"}}}
+	mapping := map[string]string{"claude-1": "claude", "claude-2": "claude"}
+
+	out := applyRosterSnapshotToParticipants([]string{"claude-1", "claude-2"}, discovered, mapping, frozen, nil)
+
+	got := map[string]string{}
+	for _, d := range out {
+		got[d.Spec.ID] = d.Spec.Model
+	}
+	if got["claude-1"] != "opus-a" || got["claude-2"] != "opus-b" {
+		t.Fatalf("per-ID pins collapsed at the continuation boundary: %v", got)
+	}
+}
+
+// The run revision must change when only the frozen launch args change, or autonomy drift
+// reports `current` and `stale-snapshot` never fires for it.
+func TestRosterRevisionCoversLaunchArgs(t *testing.T) {
+	a := []runmanifest.RosterSnapshotEntry{{Agent: "h-1", Adapter: "hermes", Auto: true, LaunchArgs: []string{"--yolo"}}}
+	b := []runmanifest.RosterSnapshotEntry{{Agent: "h-1", Adapter: "hermes", Auto: true, LaunchArgs: []string{}}}
+	if runmanifest.RosterRevisionOf(a) == runmanifest.RosterRevisionOf(b) {
+		t.Fatal("revision ignores launch args; autonomy drift would report `current`")
+	}
+}
+
+// A valid legacy §2 table is the deck's compatibility membership. A machine roster must
+// not be inherited over it — that was ratified in the consensus and omitted in cycle 2.
+func TestLegacySection2BeatsTheMachineRoster(t *testing.T) {
+	root := deckWith(t, "", "[roster.claude-1]\nadapter=\"claude\"\n[roster.codex-1]\nadapter=\"codex\"\n"+
+		"[roster.hermes-1]\nadapter=\"hermes\"\n[roster.kimi-1]\nadapter=\"kimi\"\n[roster.opencode-1]\nadapter=\"opencode\"\n")
+	coop := "## 2. Active agents (roster)\n\n| Agent ID | Workspace dir | Role |\n| --- | --- | --- |\n" +
+		"| `claude-1` | . | participant |\n| `kimi-1` | . | reviewer |\n"
+	if err := os.WriteFile(filepath.Join(root, "parley-deck", "COOPERATION.md"), []byte(coop), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	active, inactive, ok := RosterMembership(root)
+	if !ok {
+		t.Fatal("membership not resolved")
+	}
+	if len(active)+len(inactive) != 2 || !active["claude-1"] || !active["kimi-1"] {
+		t.Fatalf("legacy §2 membership overridden by the machine roster: active=%v inactive=%v", active, inactive)
+	}
+	rows, err := resolveRoster(root, nil, rosterViewOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rows {
+		if hasStatus(r, "inherited-roster") {
+			t.Errorf("%s marked inherited-roster; a legacy deck declares its own roster", r.Agent)
+		}
+		if !hasStatus(r, "legacy-roster") {
+			t.Errorf("%s missing legacy-roster status: %v", r.Agent, r.Status)
+		}
+	}
+}
+
+// A machine-scope write must not warn that the file it just wrote is masking itself.
+func TestMachineScopeWriteIsNotReportedAsMasked(t *testing.T) {
+	root := deckWith(t, "", "[roster.claude-1]\nadapter=\"claude\"\n")
+	target := filepath.Join(os.Getenv("PARLEY_HOME"), "agents.toml")
+	if _, masked := rosterFieldMaskedBy(root, "claude-1", "adapter", target); masked {
+		t.Error("machine-scope write reported itself as masked")
+	}
+}
+
+// `roster init` writes [roster.*] blocks, which is a membership change. Gating only
+// `roster set` left the confirmation bypassable through the deprecated alias.
+func TestRosterInitRequiresConfirmBreaking(t *testing.T) {
+	root := deckWith(t, "", "")
+	coop := "## 2. Active agents (roster)\n\n| Agent ID | Workspace dir | Role |\n| --- | --- | --- |\n" +
+		"| `claude-1` | . | participant |\n"
+	if err := os.WriteFile(filepath.Join(root, "parley-deck", "COOPERATION.md"), []byte(coop), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb strings.Builder
+	if code := runRoster([]string{"init", "--dir", root, "--yes"}, &out, &errb); code != 2 {
+		t.Fatalf("init --yes alone wrote membership; exit=%d out=%s", code, out.String())
+	}
+	if _, err := os.Stat(filepath.Join(root, "parley-deck", "agents.toml")); err == nil {
+		t.Error("init wrote agents.toml despite refusing")
+	}
+	out.Reset()
+	errb.Reset()
+	if code := runRoster([]string{"init", "--dir", root, "--yes", "--confirm-breaking"}, &out, &errb); code != 0 {
+		t.Fatalf("init with --confirm-breaking exit=%d: %s", code, errb.String())
+	}
+}

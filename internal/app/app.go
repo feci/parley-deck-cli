@@ -1181,7 +1181,7 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 			fmt.Fprintf(stderr, "warning: cannot read this run's manifest (%v) — continuing with the CURRENT config, not the frozen roster\n", mErr)
 		}
 	} else {
-		discovered = applyRosterSnapshot(discovered, m.RosterSnapshot, stderr)
+		discovered = applyRosterSnapshotToParticipants(run.Participants, discovered, rosterMappingFor(root), m.RosterSnapshot, stderr)
 	}
 	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", run.IdeaSlug)
 	idea := protocol.IdeaStatus{Slug: run.IdeaSlug, Path: ideaDir, Participants: run.Participants}

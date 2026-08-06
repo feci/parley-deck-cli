@@ -189,7 +189,7 @@ func TestRosterInitJSONAndScope(t *testing.T) {
 	// --json --yes must ACTUALLY write and report the real outcome (review MAJOR: no-op bug).
 	out.Reset()
 	errb.Reset()
-	if code := runRoster([]string{"init", "--dir", root, "--yes", "--json"}, &out, &errb); code != 0 {
+	if code := runRoster([]string{"init", "--dir", root, "--yes", "--confirm-breaking", "--json"}, &out, &errb); code != 0 {
 		t.Fatalf("json init exit=%d stderr=%s", code, errb.String())
 	}
 	if !strings.Contains(out.String(), `"outcome": "written"`) {
@@ -255,7 +255,7 @@ func TestRosterShowAndInit(t *testing.T) {
 	// A real init writes the [roster.*] mapping for every resolvable id.
 	out.Reset()
 	errb.Reset()
-	if code := runRoster([]string{"init", "--dir", root, "--yes"}, &out, &errb); code != 0 {
+	if code := runRoster([]string{"init", "--dir", root, "--yes", "--confirm-breaking"}, &out, &errb); code != 0 {
 		t.Fatalf("roster init --yes exit=%d stderr=%s", code, errb.String())
 	}
 	mapping, err := config.LoadRosterAdapters(root)
@@ -287,7 +287,7 @@ func TestRosterShowAndInit(t *testing.T) {
 	// Re-running is idempotent (no duplicate blocks).
 	out.Reset()
 	errb.Reset()
-	if code := runRoster([]string{"init", "--dir", root, "--yes"}, &out, &errb); code != 0 {
+	if code := runRoster([]string{"init", "--dir", root, "--yes", "--confirm-breaking"}, &out, &errb); code != 0 {
 		t.Fatalf("second init exit=%d stderr=%s", code, errb.String())
 	}
 	if !strings.Contains(out.String(), "already initialized") {

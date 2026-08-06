@@ -4,7 +4,8 @@
 
 Fixes from the Phase 6 review of 1.40.0. **1.40.0 shipped before that review** — the user directed
 the work to deploy — and the review found two CRITICALs and several MAJORs. Everything below is a
-defect in 1.40.0, found by codex-1 and hermes-1.
+defect in 1.40.0, found by codex-1, hermes-1 and kimi-1 — all three corroborated both
+CRITICALs independently.
 
 ### Fixed
 

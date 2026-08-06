@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"parley-deck-cli/internal/fsutil"
@@ -87,8 +88,12 @@ func RosterRevisionOf(entries []RosterSnapshotEntry) string {
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Agent < sorted[j].Agent })
 	h := sha256.New()
 	for _, e := range sorted {
-		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s\x00%t\x00%t\n",
-			e.Agent, e.Adapter, e.Model, e.Effort, e.Speed, e.Auto, e.Installed)
+		// LaunchArgs is hashed too: it is part of what the run froze, so a change that
+		// alters only the argv (e.g. an auto-approve flag added or removed) must make the
+		// revision differ. Omitting it let real autonomy drift report `current`.
+		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s\x00%t\x00%t\x00%s\n",
+			e.Agent, e.Adapter, e.Model, e.Effort, e.Speed, e.Auto, e.Installed,
+			strings.Join(e.LaunchArgs, "\x1f"))
 	}
 	return hex.EncodeToString(h.Sum(nil))[:16]
 }

@@ -112,6 +112,9 @@ type RosterScope struct {
 	Inherited bool
 	// Source names the layer that decided membership, for display and diagnostics.
 	Source string
+	// Legacy is true when membership came from the pre-cutover §2 table. Values still
+	// layer normally; the rows are reported `legacy-roster` until the deck is migrated.
+	Legacy bool
 }
 
 // LoadRosterScoped returns the roster with membership and values separated. See
@@ -136,12 +139,18 @@ func LoadRosterScoped(root string) (RosterScope, error) {
 		if len(ids) == 0 {
 			continue
 		}
-		if item.machine {
-			for _, id := range ids {
-				machineMembers[id] = true
-			}
-			if machineSource == "" {
-				machineSource = item.source
+		if item.machine || !item.membership {
+			// Only the machine layer is tracked as a membership candidate; the gitignored
+			// agents.local.toml and $PARLEY_HEADLESS_AGENT_CONFIG are per-machine value
+			// layers. Letting them add members would put a deck's quorum in a file its
+			// collaborators never see.
+			if item.machine {
+				for _, id := range ids {
+					machineMembers[id] = true
+				}
+				if machineSource == "" {
+					machineSource = item.source
+				}
 			}
 			continue
 		}
@@ -152,8 +161,33 @@ func LoadRosterScoped(root string) (RosterScope, error) {
 			deckSource = item.source
 		}
 	}
+	// AUTHORITY ORDER, decided before any value layering:
+	//   1. committed deck blocks (parley-deck/agents.toml)
+	//   2. else a VALID legacy §2 table — a deck that predates the cutover keeps its own
+	//      membership until it is migrated; the machine roster must not be inherited over
+	//      a roster the deck actually declares, merely because it declares it in prose
+	//   3. else the machine roster, explicitly marked Inherited
+	// Step 2 was ratified and then omitted: LoadRosterScoped knew only about TOML, so any
+	// machine roster silently outranked a legacy deck's four declared members.
 	if len(deckMembers) > 0 {
 		out.Members, out.Source = deckMembers, deckSource
+		return out, nil
+	}
+	if active, inactive, ok := protocol.ReadRosterIDs(root); ok {
+		out.Members = map[string]bool{}
+		for id := range active {
+			out.Members[id] = true
+		}
+		for id := range inactive {
+			out.Members[id] = true
+			e := out.Entries[id]
+			if e.ID == "" {
+				e = RosterEntry{ID: id}
+			}
+			e.Active = false
+			out.Entries[id] = e
+		}
+		out.Source, out.Legacy = "COOPERATION.md §2", true
 		return out, nil
 	}
 	if len(machineMembers) > 0 {
@@ -272,6 +306,9 @@ type configLayer struct {
 	path     string
 	source   string
 	optional bool
+	// membership marks the ONE layer that may declare who is on the deck: the committed
+	// parley-deck/agents.toml. Every other layer supplies values only.
+	membership bool
 	// machine marks the user-global ~/.parley layer. Deck layers own MEMBERSHIP;
 	// the machine layer only seeds VALUES for members the deck already declares.
 	// See LoadRosterScoped for why the distinction exists.
@@ -325,7 +362,7 @@ func configLayers(root string) []configLayer {
 		layers = append(layers, configLayer{path: central, source: "~/.parley/agents.toml", optional: true, machine: true})
 	}
 	layers = append(layers,
-		configLayer{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml", optional: true},
+		configLayer{path: filepath.Join(deck, "agents.toml"), source: "parley-deck/agents.toml", optional: true, membership: true},
 		configLayer{path: filepath.Join(deck, "agents.local.toml"), source: "parley-deck/agents.local.toml", optional: true},
 	)
 	if envPath := strings.TrimSpace(os.Getenv(EnvAgentConfig)); envPath != "" {
@@ -968,6 +1005,104 @@ func RosterFieldSources(root, id string) (map[string]string, error) {
 		}
 		if strings.TrimSpace(ra.Speed) != "" {
 			out["speed"] = item.source
+		}
+	}
+	return out, nil
+}
+
+// RosterSourcePath resolves a layer's display label back to the file it names, so callers
+// comparing "which layer won" against a path they just wrote compare paths with paths.
+func RosterSourcePath(root, source string) string {
+	for _, item := range configLayers(root) {
+		if item.source == source {
+			return item.path
+		}
+	}
+	return ""
+}
+
+// machineOnlyLayers narrows the layer stack to the user-global config, for `--scope
+// machine`. Without it, a machine-scope query answered with deck values.
+func machineOnlyLayers(layers []configLayer) []configLayer {
+	out := make([]configLayer, 0, 1)
+	for _, item := range layers {
+		if item.machine {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+// LoadAgentSpecsScoped is LoadAgentSpecs, optionally restricted to the machine layer.
+func LoadAgentSpecsScoped(root string, machineOnly bool) ([]agents.Spec, error) {
+	layers := configLayers(root)
+	if machineOnly {
+		layers = machineOnlyLayers(layers)
+	}
+	specs := cloneSpecs(agents.DefaultSpecs())
+	for _, item := range layers {
+		var err error
+		specs, err = applyFile(root, specs, item.path, item.source, item.optional)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return specs, nil
+}
+
+// LoadRosterAdaptersScoped is LoadRosterAdapters, optionally restricted to the machine layer.
+func LoadRosterAdaptersScoped(root string, machineOnly bool) (map[string]string, error) {
+	layers := configLayers(root)
+	if machineOnly {
+		layers = machineOnlyLayers(layers)
+	}
+	out := map[string]string{}
+	for _, item := range layers {
+		_, entries, err := rosterLayer(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		for id, ra := range entries {
+			if v := strings.TrimSpace(ra.Adapter); v != "" {
+				out[id] = v
+			}
+		}
+	}
+	return out, nil
+}
+
+// RosterFieldSourcesScoped is RosterFieldSources, optionally restricted to the machine layer.
+func RosterFieldSourcesScoped(root, id string, machineOnly bool) (map[string]string, error) {
+	layers := configLayers(root)
+	if machineOnly {
+		layers = machineOnlyLayers(layers)
+	}
+	out := map[string]string{}
+	for _, item := range layers {
+		_, entries, err := rosterLayer(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		ra, ok := entries[id]
+		if !ok {
+			continue
+		}
+		for field, set := range map[string]bool{
+			"adapter": strings.TrimSpace(ra.Adapter) != "",
+			"active":  ra.Active != nil,
+			"model":   strings.TrimSpace(ra.Model) != "",
+			"effort":  strings.TrimSpace(ra.Effort) != "",
+			"speed":   strings.TrimSpace(ra.Speed) != "",
+		} {
+			if set {
+				out[field] = item.source
+			}
 		}
 	}
 	return out, nil

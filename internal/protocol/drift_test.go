@@ -258,11 +258,35 @@ func TestNoSection2AsAStoreInstructions(t *testing.T) {
 		"Fill in §2 roster",
 		"Modify the active roster (§2).",
 		"and the §2 roster)",
+		// hermes-1, re-review round 2: A14 corrected SKILL.md but this identical false
+		// claim survived in all three protocol copies with different wording.
+		"roster sync` moves it over",
+		"roster sync` moves it across",
 	}
-	for _, tc := range []struct{ name, text string }{
+	// All FOUR surfaces, not two. The bundled snapshot and SKILL.md ship to every agent
+	// that installs the skill without this repository, so a contradiction regressing there
+	// is exactly as harmful and was previously unguarded. Sibling files are checked when
+	// present and reported as skipped when the sibling checkout is absent, so the guard
+	// never silently passes on a surface it did not read.
+	surfaces := []struct{ name, text string }{
 		{"embedded default", defaultCooperation},
 		{"live deck", readLiveDeck(t)},
+	}
+	for _, sib := range []struct{ name, path string }{
+		{"bundled skill protocol", "../../../parley-deck-skill/skills/parley-deck/references/COOPERATION.md"},
+		{"skill SKILL.md", "../../../parley-deck-skill/skills/parley-deck/SKILL.md"},
 	} {
+		b, err := os.ReadFile(sib.path)
+		if err != nil {
+			t.Logf("skipping %s: %v (sibling checkout not present)", sib.name, err)
+			continue
+		}
+		surfaces = append(surfaces, struct{ name, text string }{sib.name, string(b)})
+	}
+	if len(surfaces) < 4 {
+		t.Logf("checked %d of 4 surfaces; the skill repo is a sibling checkout", len(surfaces))
+	}
+	for _, tc := range surfaces {
 		for _, phrase := range banned {
 			if strings.Contains(tc.text, phrase) {
 				t.Errorf("%s still instructs the reader to treat §2 as a store: %q\n"+

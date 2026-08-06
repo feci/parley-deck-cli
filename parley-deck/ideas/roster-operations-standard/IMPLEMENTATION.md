@@ -72,5 +72,60 @@ reports itself as a retirement.
 uncommitted changes is skipped and reported, so a second unattended fleet run cannot happen while
 the full migration contract is outstanding.
 
-**Tests.** Nine new tests covering A1 (membership, inherited marking, render refusal), A2, A3,
-A4/A5, A7, A8 and A15. Full suite green; `go vet` clean.
+**Tests.** Ten new tests covering A1 (membership, inherited marking, render refusal), A2, A3,
+A4/A5, A7, A8 and A15. `go vet` clean; `go test ./...` green on this machine. Note for reviewers:
+`internal/runner`'s `TestDurableKillEndToEndRealProcess` is environment-dependent (it needs a
+readable boot id) and fails under some sandboxes; it predates this cycle and `internal/runner` is
+untouched by it.
+
+## Fix-up cycle 3 — re-review round 2 findings (2026-08-06)
+
+Re-review round 2 returned FINDINGS from all three reviewers. Every finding is fixed below.
+
+**[CRITICAL, all three reviewers] A1's legacy-fallback clarification was never implemented.**
+The consensus adopted codex-1's condition — "no roster of its own" means neither a deck `[roster.*]`
+block **nor** a valid legacy §2 table — and cycle 2 recorded it as landed while
+`LoadRosterScoped` knew nothing about §2. A legacy deck declaring four members inherited the
+machine's five instead, quorum included. `LoadRosterScoped` now decides authority in an explicit
+order: committed deck blocks → valid legacy §2 (`Legacy: true`, rows reported `legacy-roster`) →
+machine roster (`Inherited: true`). Same defect class as cycle 1: documented as done, not done.
+
+**Membership narrowed to the committed deck file.** codex-1 noted every non-machine layer was
+pooled as deck membership, so `agents.local.toml` or `$PARLEY_HEADLESS_AGENT_CONFIG` could add
+members. Only `parley-deck/agents.toml` carries `membership: true`; the rest supply values.
+
+**[MAJOR] A3 — `roster init --yes` bypassed the membership gate.** It writes `[roster.*]` blocks,
+so it now requires `--confirm-breaking` too. Two existing tests encoded the old behavior and were
+updated.
+
+**[MAJOR] A5 — per-ID pins still collapsed at the real call site.** `applyRosterSnapshot` keys by
+roster ID, but `continueAuto` applied it to adapter-keyed discoveries, so every lookup took the
+adapter fallback. `applyRosterSnapshotToParticipants` resolves participants first, then freezes.
+The cycle-2 test proved the function; the new test proves the boundary.
+
+**[MAJOR] A6 — machine scope was still layered.** Specs, adapter mappings and field provenance now
+have `*Scoped` variants; `--scope machine` no longer reports deck-only values.
+
+**[MAJOR] A7 — `display_name`/`note` are no longer serialized.** They are outside the frozen eleven
+columns; keeping them made "the same table in text and JSON" false.
+
+**[MAJOR] A9 — the drift guard covered two of four surfaces.** It now also reads the bundled skill
+protocol and `SKILL.md`, and its banned-phrase list gained the stale `roster sync moves it
+over/across` claim — which immediately failed on all three protocol copies (hermes-1's MAJOR), now
+replaced with the real migration path.
+
+**[MAJOR] A10 — the run revision ignored frozen launch args**, so autonomy drift reported
+`current`. `RosterRevisionOf` hashes `LaunchArgs`.
+
+**[MAJOR/MINOR] A12 — `masked-by-env` false-positived on every machine-scope write**, comparing a
+display label against an absolute path. `config.RosterSourcePath` resolves the label first.
+
+**[MINOR] A16 residuals** — unmapped guidance names `--confirm-breaking`; `modelmeta`'s broad `k`
+prefix replaced by `kimiCodename` (k + digit); kimi-1 added to the 1.40.1 CHANGELOG attribution.
+
+**[NIT] Handoff accuracy** — the test-count and "full suite green" claims are corrected, with the
+environment-dependent `internal/runner` failure named explicitly.
+
+**Tests.** Six more: legacy-§2-beats-machine, snapshot-survives-participant-resolution,
+revision-covers-launch-args, machine-scope-not-masked, init-requires-confirm-breaking, plus the
+extended drift guard.

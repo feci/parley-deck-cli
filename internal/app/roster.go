@@ -164,7 +164,7 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	case "sync":
 		return rosterSync(root, keep, *dryRun, *yes, stdout, stderr)
 	case "init":
-		return rosterInit(root, *scope, *dryRun, *yes, *jsonOut, stdout, stderr)
+		return rosterInit(root, *scope, *dryRun, *yes, *jsonOut, *confirmBreaking, stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|set|sync|render|migrate|init)\n", sub)
 		return 2
@@ -205,8 +205,13 @@ type rosterRow struct {
 	// Display is the derived composite name. It left the canonical table because it
 	// duplicates ADAPTER+MODEL+EFFORT and could contradict MODEL; it stays here for
 	// TUI and artifact rendering, derived from this row.
-	Display string `json:"display_name,omitempty"`
-	Note    string `json:"note,omitempty"`
+	// Display and Note are NOT part of the frozen v1 contract and are deliberately not
+	// serialized: the contract declares eleven columns, and shipping two extra JSON-only
+	// fields made the "same table in text and --json" claim false on its first release.
+	// Display is derived for TUI/artifact rendering; Note is operator guidance surfaced in
+	// the text table and by `roster show --explain`.
+	Display string `json:"-"`
+	Note    string `json:"-"`
 	// launchArgs is the resolved headless argv behind AUTO. Unexported: it is run-freeze
 	// input, not part of the frozen v1 column/JSON contract.
 	launchArgs []string `json:"-"`
@@ -237,7 +242,11 @@ func (r rosterRow) statusOrOK() string {
 // non-nil, restricts usable families to a scope catalog (machine-only for
 // `--scope machine`) so a deck-only family is never proposed/blessed there.
 func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterViewOpts) ([]rosterRow, error) {
-	specs, err := config.LoadAgentSpecs(root)
+	// `--scope machine` must answer about the MACHINE, not the machine's membership wearing
+	// the deck's values. Scoping only membership let a deck-only model appear in a
+	// machine-scope row — a different kind of wrong answer than the one --scope used to
+	// give, but still a wrong answer.
+	specs, err := config.LoadAgentSpecsScoped(root, opts.scope == "machine")
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +262,7 @@ func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterView
 	for _, d := range agents.Discover(context.Background(), specs) {
 		installed[d.ID] = d.Found
 	}
-	mapping, _ := config.LoadRosterAdapters(root)
+	mapping, _ := config.LoadRosterAdaptersScoped(root, opts.scope == "machine")
 
 	// MEMBERSHIP AUTHORITY. parley-deck/agents.toml owns the roster; §2 is a generated,
 	// non-authoritative view. A deck that predates the cutover has no [roster.*] block at
@@ -265,10 +274,10 @@ func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterView
 		return nil, entriesErr
 	}
 	entries := scope.Entries
-	legacy := len(scope.Members) == 0
+	legacy := scope.Legacy || len(scope.Members) == 0
 	inactive := map[string]bool{}
 	var ids []string
-	if legacy {
+	if len(scope.Members) == 0 {
 		// The parser puts EVERY row in `active`, including inactive ones, and reports
 		// `inactive` separately; STATE is what distinguishes them. That second map used
 		// to be discarded, so a retired agent rendered as a full member.
@@ -312,7 +321,7 @@ func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterView
 		if !mapped {
 			family = proposeFamily(id, byFamily)
 			if family != "" {
-				row.Note = fmt.Sprintf("unmapped — declare the adapter with `parley roster set %s --scope deck --adapter <family> --yes`", id)
+				row.Note = fmt.Sprintf("unmapped — declare the adapter with `parley roster set %s --scope deck --adapter <family> --yes --confirm-breaking`", id)
 				row.addStatus("unmapped")
 			}
 		} else if _, ok := byFamily[family]; !ok {
@@ -462,7 +471,7 @@ func rosterShow(root string, jsonOut bool, opts rosterViewOpts, stdout, stderr i
 
 type rosterMapEntry struct{ id, family string }
 
-func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io.Writer) int {
+func rosterInit(root, scope string, dryRun, yes, jsonOut, confirmBreaking bool, stdout, stderr io.Writer) int {
 	// `init` is a deprecated bootstrap alias. It kept demanding the pre-1.40 `session`
 	// spelling while set/sync/show speak `deck|machine`, so the documented remediation
 	// path rejected the documented vocabulary.
@@ -542,6 +551,11 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 			outcome = "dry-run"
 		case !yes:
 			outcome = "needs-confirmation"
+		case !confirmBreaking:
+			// init WRITES [roster.*] blocks, which is a membership change by any other
+			// name. Gating `roster set` while leaving the deprecated alias ungated left
+			// the confirmation D5 mandates bypassable through the older command.
+			outcome = "needs-breaking-confirmation"
 		default:
 			n, werr := writeRosterMappings(target, toWrite)
 			if werr != nil {
@@ -562,8 +576,11 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 			adds = append(adds, map[string]string{"roster_id": e.id, "adapter": e.family})
 		}
 		code := 0
-		if outcome == "needs-confirmation" {
+		switch outcome {
+		case "needs-confirmation":
 			code = 1
+		case "needs-breaking-confirmation":
+			code = 2
 		}
 		_ = writeJSON(stdout, stderr, map[string]any{"scope": scope, "target": target, "outcome": outcome, "adds": adds})
 		return code
@@ -584,6 +601,10 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 		fmt.Fprintf(stdout, "roster init (%s) will add %d mapping(s) to %s.\n", scope, len(toWrite), targetLabel)
 		fmt.Fprintln(stderr, "refusing to write without --yes (or use --dry-run to preview)")
 		return 1
+	case "needs-breaking-confirmation":
+		fmt.Fprintf(stdout, "roster init (%s) will add %d roster member(s) to %s.\n", scope, len(toWrite), targetLabel)
+		fmt.Fprintln(stderr, "this is a membership change — re-run with --confirm-breaking as well as --yes.")
+		return 2
 	default: // written
 		fmt.Fprintf(stdout, "Wrote %d mapping(s) to %s. The driver can now run this roster.\n", len(toWrite), targetLabel)
 		return 0

@@ -63,10 +63,9 @@ var prefixRules = []prefixRule{
 	{"glm", "GLM", "Zhipu AI"},
 	{"grok", "Grok", "xAI"},
 	{"kimi", "Kimi", "Moonshot AI"},
-	// "k" is a deliberately broad match for bare Kimi codenames (k2, k3). It MUST stay
-	// last: placed before "kimi" it swallowed every id starting with k, making the
-	// "kimi" rule unreachable and misclassifying unrelated models.
-	{"k", "Kimi K", "Moonshot AI"},
+	// Bare Kimi codenames are k<digit> (k2, k3) — matched by kimiCodename below rather
+	// than by a plain "k" prefix, which swallowed every id starting with k, made the
+	// "kimi" rule unreachable, and misclassified unrelated models.
 }
 
 // DeriveModelMeta resolves family/company/route for an effective model reference.
@@ -107,6 +106,9 @@ func DeriveModelMeta(ref string) ModelMeta {
 			return ModelMeta{Family: r.family, Company: r.company, Route: meta.Route, Known: true}
 		}
 	}
+	if kimiCodename(id) {
+		return ModelMeta{Family: "Kimi K", Company: "Moonshot AI", Route: meta.Route, Known: true}
+	}
 
 	return ModelMeta{Family: Unknown, Company: Unknown, Route: meta.Route}
 }
@@ -119,5 +121,16 @@ func familyFromID(id string) string {
 			return r.family
 		}
 	}
+	if kimiCodename(id) {
+		return "Kimi K"
+	}
 	return ""
+}
+
+// kimiCodename matches a BARE Kimi codename: `k` followed by a digit (k2, k3, k2-0711).
+// The former `{"k", ...}` prefix rule matched any id starting with k, which is why an
+// unrelated model could come back as "Kimi K".
+func kimiCodename(id string) bool {
+	id = strings.ToLower(strings.TrimSpace(id))
+	return len(id) >= 2 && id[0] == 'k' && id[1] >= '0' && id[1] <= '9'
 }

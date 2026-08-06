@@ -162,7 +162,7 @@ func rosterExplain(root, agent string, opts rosterViewOpts, stdout, stderr io.Wr
 		fmt.Fprintf(stderr, "roster show: %q resolved to no row\n", agent)
 		return 1
 	}
-	layers, err := config.RosterFieldSources(root, agent)
+	layers, err := config.RosterFieldSourcesScoped(root, agent, opts.scope == "machine")
 	if err != nil {
 		fmt.Fprintf(stderr, "roster show: %v\n", err)
 		return 1

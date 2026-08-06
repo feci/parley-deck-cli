@@ -102,9 +102,17 @@ func rosterFieldMaskedBy(root, agent, field, target string) (string, bool) {
 	if src == "" {
 		return "", false
 	}
-	// RosterFieldSources reports the LAST layer that set the field. If that is not the
-	// file we just wrote, something above it wins.
-	return src, !strings.HasSuffix(target, src) && src != target && !strings.Contains(target, src)
+	// RosterFieldSources reports the LAST layer that set the field, as a DISPLAY LABEL
+	// ("~/.parley/agents.toml", "parley-deck/agents.toml"). Comparing that label against
+	// an absolute path made every machine-scope write claim it was masking itself.
+	// Resolve the label to the path it names and compare paths.
+	winner := config.RosterSourcePath(root, src)
+	if winner == "" {
+		return "", false
+	}
+	tp, _ := filepath.Abs(target)
+	wp, _ := filepath.Abs(winner)
+	return src, tp != wp
 }
 
 func previewLabel(dryRun, yes bool) string {

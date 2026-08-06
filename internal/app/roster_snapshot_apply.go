@@ -70,3 +70,31 @@ func applyRosterSnapshot(discovered []agents.Discovery, snapshot []runmanifest.R
 	}
 	return out
 }
+
+// applyRosterSnapshotToParticipants freezes the run's PARTICIPANTS, not the adapter-level
+// discoveries.
+//
+// applyRosterSnapshot keys by roster ID, but at the continuation call site the discoveries
+// are still adapter-keyed (`claude`, `codex`) — resolution to roster IDs happens later,
+// inside the runner. So every lookup missed and silently took the adapter fallback, and
+// the per-ID pin the snapshot exists to protect collapsed exactly where two roster IDs
+// share an adapter. Resolve first, then freeze, and hand the runner discoveries whose IDs
+// are the roster IDs (its own resolver matches those exactly, rule 1).
+func applyRosterSnapshotToParticipants(participants []string, discovered []agents.Discovery,
+	mapping map[string]string, snapshot []runmanifest.RosterSnapshotEntry, warn io.Writer) []agents.Discovery {
+	if len(snapshot) == 0 || len(participants) == 0 {
+		return applyRosterSnapshot(discovered, snapshot, warn)
+	}
+	out := append([]agents.Discovery(nil), discovered...)
+	for _, participant := range participants {
+		resolved, err := agents.ResolveParticipant(participant, discovered, mapping)
+		if err != nil {
+			continue // the runner reports unresolvable participants and fails closed
+		}
+		frozen := applyRosterSnapshot([]agents.Discovery{resolved}, snapshot, warn)
+		if len(frozen) == 1 {
+			out = append(out, frozen[0])
+		}
+	}
+	return out
+}
