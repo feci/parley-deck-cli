@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.40.1 — 2026-08-06
+
+Fixes from the Phase 6 review of 1.40.0. **1.40.0 shipped before that review** — the user directed
+the work to deploy — and the review found two CRITICALs and several MAJORs. Everything below is a
+defect in 1.40.0, found by codex-1 and hermes-1.
+
+### Fixed
+
+- **The run snapshot was written and never read.** 1.40.0 froze each participant's launch identity
+  at run creation, but `continue` still re-discovered configuration, so changing a machine default —
+  or running `roster sync`, which exists to change deck values — could move a running idea onto a
+  different model mid-deliberation. Continuations now consume the frozen row, with the acceptance
+  test the ratified gate required. **Rebase had shipped without the half that made it safe.**
+- **The authority cutover was half-done.** `roster show` read config while participant selection
+  still parsed §2, so the table and the run could disagree about who was in it — the exact
+  two-sources-of-truth defect this work exists to remove. All membership decisions now resolve
+  through one function.
+- **There was no §2 generator**, although 1.40.0 had already changed the protocol in three copies to
+  describe §2 as generated. `parley roster render` generates it idempotently and preserves the
+  workspace-dir and role values that only ever existed in the hand-written table.
+- **`--yes` alone performed membership changes.** Adding or retiring a member alters who deliberates
+  and therefore a future quorum; it now additionally requires `--confirm-breaking`.
+- **Machine-scope writes went to a file nothing reads.** `PARLEY_HOME` names the central config
+  *directory*, but the writer composed `$PARLEY_HOME/.parley/agents.toml` while the loader reads
+  `$PARLEY_HOME/agents.toml`. A machine update reported success and changed nothing. The tests had
+  encoded the wrong path and passed the defect.
+
+### Added
+
+- `parley roster migrate` — the fleet migration tool: per-deck inventory, dry-run by default,
+  file-level backups, post-write validation with automatic rollback, skip-and-report on anything
+  unclean, and a machine-readable final report.
+
 ## 1.40.0 — 2026-08-06
 
 Standardize roster operations. "What is the current agent roster?" had no single answer: three CLI
