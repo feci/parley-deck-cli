@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/runmanifest"
 )
 
@@ -292,5 +293,44 @@ func TestJSONRowHasExactlyTheFrozenColumns(t *testing.T) {
 				t.Errorf("row is missing frozen column %q", k)
 			}
 		}
+	}
+}
+
+// `active` follows the membership authority, so its PROVENANCE and its masking warning
+// must name that authority too. Cycle 4 fixed the behavior and left both reporting
+// surfaces attributing state to a layer the resolver ignores — the diagnostics
+// contradicting the result they describe.
+func TestActiveProvenanceAndMaskingFollowTheAuthority(t *testing.T) {
+	root := deckWith(t, "[roster.claude-1]\nadapter=\"claude\"\n", "[roster.claude-1]\nadapter=\"claude\"\nactive = false\n")
+	env := filepath.Join(t.TempDir(), "env.toml")
+	if err := os.WriteFile(env, []byte("[roster.claude-1]\nactive = false\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PARLEY_HEADLESS_AGENT_CONFIG", env)
+
+	src, err := config.RosterStateSource(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if src != "parley-deck/agents.toml" {
+		t.Errorf("state provenance = %q, want the membership authority", src)
+	}
+	// A write to the authority must not be reported as masked by an ignored layer.
+	target := filepath.Join(root, "parley-deck", "agents.toml")
+	if who, masked := rosterFieldMaskedBy(root, "claude-1", "active", target); masked {
+		t.Errorf("write to the authority reported as masked by %q", who)
+	}
+}
+
+// The gate fires on a real state FLIP, not on writing a value the member already has.
+func TestMembershipGateIgnoresNoOpStateWrites(t *testing.T) {
+	if got := membershipChange([]string{"+ active = true"}, true, true); got != "" {
+		t.Errorf("writing active=true to an already-active member gated as %q", got)
+	}
+	if got := membershipChange([]string{"+ active = false"}, true, true); got == "" {
+		t.Error("retiring an active member was not gated")
+	}
+	if got := membershipChange([]string{"+ active = true"}, true, false); got == "" {
+		t.Error("reviving a retired member was not gated")
 	}
 }

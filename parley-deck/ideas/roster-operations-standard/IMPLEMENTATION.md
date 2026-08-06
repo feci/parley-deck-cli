@@ -162,7 +162,33 @@ run, instead of implying four-surface coverage.
 only asserted status was non-null, so re-adding `display_name`/`note` would have passed. The new
 test asserts the exact eleven-key set in both directions.
 
-**[MINOR, both] Skill 2.5.1** is released with this cycle rather than left uncommitted.
+**[MINOR, both] Skill 2.5.1** — corrected on all four surfaces in this cycle; the release itself
+is performed at Phase 8 close (see cycle 5).
 
 **Tests.** Four more: value-layers-cannot-change-membership-state, freeze-reaches-bare-family-
 participants, exact-frozen-JSON-columns, plus the corrected guard note.
+
+## Fix-up cycle 5 — re-review round 4 findings (2026-08-06)
+
+Round 4: all three reviewers verified every round-03 finding fixed at the real call site, and
+hermes-1 confirmed each new test FAILS when its fix is reverted (no tautologies). Two findings
+remained.
+
+**[MAJOR, codex-1 R4-M1] The diagnostics contradicted the result they described.** Cycle 4 made
+`active` follow the membership authority, but `roster show --explain` and the `masked-by-env`
+warning still read it from the general layer stack — so `--explain` attributed a member's
+effective state to an env file asserting the opposite, and `roster set --state` warned that a
+write to the authority was masked when it was not. `config.RosterStateSource` names the deciding
+layer, and both surfaces use it. Fixing the behavior without fixing what reports it leaves two
+sources of truth, which is the defect this whole idea exists to remove.
+
+**Gate correctness, found while verifying the above.** `roster set claude-1 --state active` on an
+already-active member demanded `--confirm-breaking`: `membershipChange` fired on the presence of
+`+ active = true` rather than on a state change, and absence of the key already means active. A
+gate that fires on no-ops trains operators to pass the confirmation reflexively, which is how a
+gate stops being one. It now compares the prior state in the file being edited.
+
+**[MINOR, all three] Skill 2.5.1** is released as part of the Phase 8 close.
+
+**Tests.** Two more: active-provenance-and-masking-follow-the-authority, and
+membership-gate-ignores-no-op-state-writes.

@@ -118,15 +118,15 @@ func TestSection2OnlyIDIsReportedNotDropped(t *testing.T) {
 // second confirmation.
 func TestMembershipGateCatchesNewBlockWrittenWithAnyField(t *testing.T) {
 	for _, field := range []string{"model", "effort", "speed"} {
-		if got := membershipChange([]string{"+ " + field + " = \"x\""}, false); got == "" {
+		if got := membershipChange([]string{"+ " + field + " = \"x\""}, false, true); got == "" {
 			t.Errorf("a new block written with only --%s was not treated as a membership change", field)
 		}
 	}
-	if got := membershipChange([]string{"+ model = \"x\""}, true); got != "" {
+	if got := membershipChange([]string{"+ model = \"x\""}, true, true); got != "" {
 		t.Errorf("changing an existing member's model is a settings change, got %q", got)
 	}
 	// A revival must not report itself as a retirement.
-	if got := membershipChange([]string{"- active = false", "+ active = true"}, true); !strings.Contains(got, "reactivat") {
+	if got := membershipChange([]string{"- active = false", "+ active = true"}, true, false); !strings.Contains(got, "reactivat") {
 		t.Errorf("reactivation reported as %q", got)
 	}
 }

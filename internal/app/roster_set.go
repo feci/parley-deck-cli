@@ -64,7 +64,7 @@ func rosterSet(root, scope, agent string, fields []rosterSetField, dryRun, yes, 
 	// Adding a member or retiring one changes WHO deliberates, and therefore who a future
 	// idea's quorum is. `--yes` is the ordinary confirmation; a membership change needs a
 	// second, explicit one so it can never ride along with a routine model change.
-	if breaking := membershipChange(changes, blockExists(string(existing), agent)); breaking != "" {
+	if breaking := membershipChange(changes, blockExists(string(existing), agent), priorActiveIn(target, agent)); breaking != "" {
 		if !confirmBreaking {
 			fmt.Fprintf(stderr, "\nroster set: this %s — a membership change, not a settings change.\n"+
 				"Re-run with --confirm-breaking as well as --yes.\n", breaking)
@@ -97,6 +97,22 @@ func rosterFieldMaskedBy(root, agent, field, target string) (string, bool) {
 	sources, err := config.RosterFieldSources(root, agent)
 	if err != nil {
 		return "", false
+	}
+	if field == "active" {
+		// State is decided by the membership authority, not by the layer stack, so a
+		// higher layer's `active` cannot mask a write to the authority. Warning here
+		// claimed the opposite of what `roster show` then reported.
+		authority, aerr := config.RosterStateSource(root)
+		if aerr != nil || authority == "" {
+			return "", false
+		}
+		ap := config.RosterSourcePath(root, authority)
+		if ap == "" {
+			return "", false
+		}
+		tp, _ := filepath.Abs(target)
+		app, _ := filepath.Abs(ap)
+		return authority, tp != app
 	}
 	src := sources[field]
 	if src == "" {
@@ -266,21 +282,37 @@ func writeRosterFileAtomic(path string, data []byte) error {
 // "+ adapter = " as a proxy for "new member" let `roster set sneaky-9 --model k3 --yes`
 // create a real member with no second confirmation: the member is only as new as its
 // block, and any first write to a missing block creates one.
-func membershipChange(changes []string, existed bool) string {
+func membershipChange(changes []string, existed, priorActive bool) string {
 	if !existed {
 		return "adds a new roster member"
 	}
 	for _, c := range changes {
-		// A reactivation matches "active = false" on its removal line, so check the
-		// added value first or a revival reports itself as a retirement.
-		if strings.Contains(c, "+ active = true") {
+		// Gate on an actual STATE FLIP. Writing `active = true` to a block that had no
+		// `active` key is a no-op — absence already means active — and demanding a
+		// membership confirmation for it trains operators to pass --confirm-breaking
+		// reflexively, which is how a gate stops being one.
+		if strings.Contains(c, "+ active = true") && !priorActive {
 			return "reactivates a retired roster member"
 		}
-		if strings.Contains(c, "+ active = false") {
+		if strings.Contains(c, "+ active = false") && priorActive {
 			return "retires a roster member"
 		}
 	}
 	return ""
+}
+
+// priorActiveIn reports the member's state in the file being edited, before this write.
+// Absence of the key (or of the block) means active, matching the field table.
+func priorActiveIn(path, agent string) bool {
+	entries, err := config.RosterEntriesInFile(path)
+	if err != nil {
+		return true
+	}
+	e, ok := entries[agent]
+	if !ok {
+		return true
+	}
+	return e.Active
 }
 
 // blockExists reports whether [roster.<agent>] is already declared in the file being

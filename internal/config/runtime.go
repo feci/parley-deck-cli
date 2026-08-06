@@ -1166,3 +1166,15 @@ func AgentFieldSources(root, family string, machineOnly bool) map[string]string 
 	}
 	return out
 }
+
+// RosterStateSource names the layer that decides a member's active/inactive state — the
+// same layer that granted membership. `active` is deliberately NOT layered, so reporting
+// its provenance from the general layer stack made `--explain` and the masking warning
+// contradict the state `roster show` actually resolved.
+func RosterStateSource(root string) (string, error) {
+	scope, err := LoadRosterScoped(root)
+	if err != nil {
+		return "", err
+	}
+	return scope.Source, nil
+}
