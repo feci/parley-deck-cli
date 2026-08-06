@@ -62,8 +62,8 @@ func TestPromotedAdaptersFullContract(t *testing.T) {
 		autoArgs []string
 		headless []string
 	}{
-		{"kimi", []string{"-p"}, []string{"-p", "{prompt}"}},
-		{"opencode", []string{"--auto"}, []string{"run", "--auto", "{prompt}"}},
+		{"kimi", []string{"-p"}, []string{"-m", "{model}", "-p", "{prompt}"}},
+		{"opencode", []string{"--auto"}, []string{"run", "--auto", "-m", "{model}", "{prompt}"}},
 	}
 	for _, c := range cases {
 		s, ok := byID[c.id]

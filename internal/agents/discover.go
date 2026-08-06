@@ -136,7 +136,13 @@ func (a AutonomousWrite) MissingFrom(headlessArgs []string) []string {
 // MAJOR, codex-1 — an override had stripped --auto from opencode and --yolo from
 // hermes while both still reported AUTO=yes).
 func (s Spec) AutonomousEffective() bool {
-	return s.AutonomousWrite.Declared() && len(s.AutonomousWrite.MissingFrom(s.HeadlessArgs)) == 0
+	if !s.AutonomousWrite.Declared() {
+		return false
+	}
+	// Checked against the RESOLVED argv, not the raw one: the placeholder pass can drop
+	// an unbindable flag pair, and AUTO must describe the vector the process receives.
+	resolved, _ := s.ResolveLaunchArgs()
+	return len(s.AutonomousWrite.MissingFrom(resolved)) == 0
 }
 
 type PromptMode string
@@ -193,7 +199,7 @@ func defaultBuiltinSpecs() []Spec {
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
 			HeadlessMode:          "codex exec --skip-git-repo-check -",
-			HeadlessArgs:          []string{"exec", "--skip-git-repo-check", "--cd", "{root}", "--sandbox", "workspace-write", "-c", "approval_policy=\"never\"", "-"},
+			HeadlessArgs:          []string{"exec", "--skip-git-repo-check", "--cd", "{root}", "--sandbox", "workspace-write", "-c", "approval_policy=\"never\"", "-m", "{model}", "-"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -216,7 +222,7 @@ func defaultBuiltinSpecs() []Spec {
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
 			HeadlessMode:          "claude --print",
-			HeadlessArgs:          []string{"-p", "--model", "claude-opus-4-8[1m]", "--effort", "max", "--output-format", "text", "--permission-mode", "bypassPermissions", "--add-dir", "{root}"},
+			HeadlessArgs:          []string{"-p", "--model", "{model}", "--effort", "{effort}", "--output-format", "text", "--permission-mode", "bypassPermissions", "--add-dir", "{root}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -241,7 +247,7 @@ func defaultBuiltinSpecs() []Spec {
 			LaunchMode:   LaunchHeadless,
 			HeadlessMode: "agy --print",
 			// Keep {prompt} immediately after --print and last; agy treats --print as a value-taking flag.
-			HeadlessArgs:          []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "Gemini 3.6 Flash (High)", "--add-dir", "{root}", "--print", "{prompt}"},
+			HeadlessArgs:          []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "{model}", "--add-dir", "{root}", "--print", "{prompt}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -289,7 +295,7 @@ func defaultBuiltinSpecs() []Spec {
 			VersionArgs:           []string{"--version"},
 			LaunchMode:            LaunchHeadless,
 			HeadlessMode:          "hermes --yolo --oneshot",
-			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "xai/grok-4.3", "--accept-hooks"},
+			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "{model}", "--accept-hooks"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -320,7 +326,7 @@ func defaultBuiltinSpecs() []Spec {
 			// autonomous") and `-y/--yolo`, but BOTH are rejected alongside `-p`:
 			// `kimi --auto -p …` exits 1 with "Cannot combine --prompt with --auto." So `-p` is
 			// the only autonomous headless shape, and it is what we declare.
-			HeadlessArgs:          []string{"-p", "{prompt}"},
+			HeadlessArgs:          []string{"-m", "{model}", "-p", "{prompt}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -352,7 +358,7 @@ func defaultBuiltinSpecs() []Spec {
 			// built-in adapter carries its auto-approve flag in HeadlessArgs, and an implicit
 			// default is exactly the thing a vendor may change between versions. Declaring it
 			// keeps AutonomousWrite.Args a subset of HeadlessArgs, as for claude/codex/hermes.
-			HeadlessArgs:          []string{"run", "--auto", "{prompt}"},
+			HeadlessArgs:          []string{"run", "--auto", "-m", "{model}", "{prompt}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -534,8 +540,16 @@ func PrintRuntimeMatrix(w io.Writer, results []Discovery) {
 			// The effective argv, not the built-in HeadlessMode label: the label is
 			// what misled the implementer during this idea's review, because a config
 			// override replaces HeadlessArgs while leaving the label untouched.
-			fmt.Fprintf(w, "  headless: %s %s\n", commandName(result), strings.Join(result.HeadlessArgs, " "))
-			if missing := result.AutonomousWrite.MissingFrom(result.HeadlessArgs); len(missing) > 0 {
+			// {model}/{effort} are resolved here for the same reason the label is not used:
+			// this line must show what the process receives. Printing the raw placeholder
+			// would report an argv no launch ever runs.
+			effectiveArgs, argStatus := result.Spec.ResolveLaunchArgs()
+			fmt.Fprintf(w, "  headless: %s %s\n", commandName(result), strings.Join(effectiveArgs, " "))
+			if codes := argStatus.Codes(); len(codes) > 0 {
+				fmt.Fprintf(w, "  ** %s: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **\n",
+					strings.Join(codes, ", "))
+			}
+			if missing := result.AutonomousWrite.MissingFrom(effectiveArgs); len(missing) > 0 {
 				fmt.Fprintf(w, "  ** autonomous mode %q declared but its enabling args %v are absent from the launch — reporting AUTO=no **\n",
 					result.AutonomousWrite.Mode, missing)
 			}

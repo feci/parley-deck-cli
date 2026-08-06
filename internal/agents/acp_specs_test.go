@@ -103,10 +103,16 @@ func TestDefaultSpecsPreferAntigravityAndStrongVerifiedDefaults(t *testing.T) {
 	if got := agy.Commands[0]; got != "agy" {
 		t.Fatalf("agy command=%q, want agy", got)
 	}
-	for _, want := range []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "Gemini 3.6 Flash (High)", "--add-dir", "{root}", "--print", "{prompt}"} {
+	// The model is no longer a literal in the args: it lives once, in Spec.Model, and
+	// reaches the argv through the {model} placeholder. Assert BOTH halves — the
+	// placeholder is present, and resolving it yields the strong verified default.
+	for _, want := range []string{"--print-timeout", "30m", "--dangerously-skip-permissions", "--model", "{model}", "--add-dir", "{root}", "--print", "{prompt}"} {
 		if !containsStringForTest(agy.HeadlessArgs, want) {
 			t.Fatalf("agy HeadlessArgs missing %q: %v", want, agy.HeadlessArgs)
 		}
+	}
+	if got, ok := agy.EffectiveModel(); !ok || got != "Gemini 3.6 Flash (High)" {
+		t.Fatalf("agy effective model=%q ok=%v, want Gemini 3.6 Flash (High)", got, ok)
 	}
 	if agy.PromptMode != PromptArg {
 		t.Fatalf("agy PromptMode=%q, want %q", agy.PromptMode, PromptArg)

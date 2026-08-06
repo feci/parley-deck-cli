@@ -103,8 +103,17 @@ func TestCodexBuiltInRuntimeDefaults(t *testing.T) {
 	if codex.ApprovalPolicy != "never" {
 		t.Fatalf("approval=%q", codex.ApprovalPolicy)
 	}
-	if strings.Join(codex.HeadlessArgs, " ") != "exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy=\"never\" -" {
+	if strings.Join(codex.HeadlessArgs, " ") != "exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy=\"never\" -m {model} -" {
 		t.Fatalf("headless args=%v", codex.HeadlessArgs)
+	}
+	// With no configured model the {model} pair is dropped rather than sending the
+	// literal "cli-default" to the CLI, and the stdin marker must survive intact.
+	resolved, status := codex.ResolveLaunchArgs()
+	if !status.ModelUnbound {
+		t.Fatalf("codex built-in has model=cli-default, expected ModelUnbound; status=%+v", status)
+	}
+	if strings.Join(resolved, " ") != "exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy=\"never\" -" {
+		t.Fatalf("resolved args=%v", resolved)
 	}
 	if !codex.AutonomousWrite.Declared() {
 		t.Fatalf("codex autonomous_write not declared: %+v", codex.AutonomousWrite)

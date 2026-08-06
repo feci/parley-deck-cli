@@ -4,11 +4,18 @@ drafter: claude-1
 participants: [claude-1, codex-1, hermes-1, kimi-1]
 track: deliberation
 rounds: 2
-revision: 2
+revision: 3
 date: 2026-08-06
 status: consensus
 ---
 
+> **Revision 3** — codex-1 blocked revision 2 as well. Three of its four revision-1 requirements
+> were met; the fourth was not, because the drafter wrote *"the change MUST define"* the §2 field
+> contract and then did not define it — a requirement restated as a TODO. Revision 3 supplies the
+> normative field table, the ordering rule, the migration-of-values rule, the protocol-changelog
+> requirement, the foreign-deck compatibility gate, and kimi-1's R4. Revision 2's own summary is
+> preserved below.
+>
 > **Revision 2** — codex-1 blocked revision 1 on four grounds, all upheld. Two were errors in the
 > drafter's own text (a mis-cited protocol exception and a mis-classified track); two were
 > substantive gaps (the rebase safety gate and an incomplete §2 authority spec). hermes-1's R1-R3
@@ -257,9 +264,14 @@ claude-1 is facilitator, participant and drafter. Required by §15.5.
 | 10 | Migration would fix the 17 retired-agent decks | `consensus.md` rev 1, decision 9 | `STATE` wiring is a hard prerequisite or the migration is a no-op | hermes-1's R3.1, confirmed by the drafter as a non-owner: `resolveRoster` discards the inactive map into `_` (`app/roster.go:110`) |
 | 11 | VC-3 recorded as an open disagreement | `consensus.md` rev 1 | Closed; it was already converged in round 2 | kimi-1: codex-1's round-2 SELF-CORRECTION C1 had adopted `deck\|machine` before consensus opened. The drafter recorded a stale conflict |
 
-Eleven changes: four forced by another participant in the rounds, **seven more at signoff** — five
-by codex-1's block (two of which were outright drafter errors), one by hermes-1, one by kimi-1.
-**Revision 1 did not survive review.**
+| 12 | Revision 2 stated *"Before ratification the protocol change MUST define"* the §2 field contract, then did not define it | `consensus.md` rev 2, decision 10 | A normative field table: per field, the committed TOML key, legacy §2 source, absence/conflict behaviour, and runtime-semantic vs render-only; plus a deterministic ordering rule and a verbatim-carry migration rule | codex-1's second block. A requirement restated as a TODO is not a specification. The drafter also measured that only the agent ID and the `inactive` marker are runtime-semantic, which made the table tractable |
+| 13 | No protocol-changelog requirement | — | `meta/protocol-changelog.md` entry in §7 format naming this idea and the one-off | codex-1 requirement 2, originally requested by kimi-1 |
+| 14 | Migration silent on foreign decks and retired rows | `consensus.md` rev 2 | Decks on an older protocol/schema are skipped and reported; retired rows are retained as `active = false`, never removed | codex-1 requirement 3 |
+| 15 | kimi-1's R4 unaddressed | — | `--keep <agent>.<field>` ships, **and** the dry-run and final report enumerate every removed deliberate pin per deck | kimi-1's R4, adopted as both halves rather than either/or |
+
+Fifteen changes: four in the rounds, seven at revision-1 signoff, **four more at revision-2
+signoff**. **Neither revision 1 nor revision 2 survived review.** Both times the failure was the
+same shape — the drafter wrote what *must* be true instead of making it true.
 
 ## Comparison & blind spots
 
@@ -323,21 +335,63 @@ Three participants converged on it, which is why it is binding rather than advis
 
 **This overrides deferral decision 10 and follow-up F1.** The protocol change is now IN SCOPE here.
 
-**Revision-2 addition — the §2 authority spec was incomplete (codex-1's block, upheld).** Revision 1
-described commands managing only `adapter`/`state`/`model`/`effort`/`speed`, but §2 today also
-stores **Workspace dir** and **Role** (`COOPERATION.md:101-117`) and a separate **Host handle**
-table for PR/MR identity (`:119-126`). A generated view that drops them loses project data. Before
-ratification the protocol change MUST define, for each of: workspace dir, role, host handle,
-active/inactive history, and row ordering —
+**Revision-3 — the normative §2 field contract (codex-1 blocked revision 2 for stating this as a
+requirement and then not supplying it; upheld).**
 
-- which file is the canonical source,
-- the migration path for existing values,
-- that the **generated §2 is non-authoritative** and is a rendering, not a store,
-- that **runtime code MUST NOT parse the generated view as roster authority** (today
-  `resolveRoster` parses §2 — `internal/app/roster.go:110`),
+**Measured first (`PRIMARY`, drafter).** `protocol.ReadRosterIDs` (`internal/protocol/roster.go:39-65`)
+extracts from each §2 row **only** the agent ID (capture group 1) and whether the line contains the
+literal `inactive`. It reads no other cell. A `find`-based enumeration of every non-test `*.go` file
+for `Host handle` / `host_handle` / `Workspace dir` / `workspace_dir` returns **zero hits** — nothing
+in the codebase consumes those columns. **So most of §2 is already render-only prose; only the ID
+and the inactive marker are runtime-semantic.** That is what makes this cutover tractable.
 
-and every other protocol reference calling §2 authoritative, plus the **embedded protocol copy**
-and the **skill's bundled snapshot**, must change in the same release.
+A second detail, refining hermes-1's R3.1: the parser sets `active[id] = true` for **every** row,
+including rows marked inactive, and populates `inactive` as a *separate* map. An inactive agent is
+therefore in **both** maps, and because `resolveRoster` keeps only the first
+(`internal/app/roster.go:110`), a retired agent renders as a full member.
+
+| roster field | committed TOML key | legacy §2 source | absence / conflict behaviour | kind |
+|---|---|---|---|---|
+| agent ID | `[roster.<id>]` section name | col 1 `Agent ID` | absent ⇒ not a member. TOML wins; a §2-only ID is reported `unmapped`, never auto-added | **runtime-semantic** |
+| adapter | `[roster.<id>].adapter` | inferred from col 3 prose (`(cli \`claude\`…)`) | absent ⇒ `STATUS=unmapped`, row shown, never guessed from the ID | **runtime-semantic** |
+| state | `[roster.<id>].active` (bool) | row text containing `inactive` | absent ⇒ `true`. **Mark inactive; never delete** — history is retained permanently | **runtime-semantic** |
+| model | `[roster.<id>].model` | col 3 prose (`model \`…\``) | absent ⇒ inherit `[agents.<adapter>]`, then machine, then built-in | **runtime-semantic** |
+| effort | `[roster.<id>].effort` | not in §2 | absent ⇒ inherit as above | **runtime-semantic** |
+| speed | `[roster.<id>].speed` | not in §2 | absent ⇒ inherit as above | **runtime-semantic** |
+| workspace dir | `[roster.<id>].workspace_dir` | col 2 | absent ⇒ empty cell; **never blocks a launch** | **render-only** |
+| role | `[roster.<id>].role` | col 3 prose (`facilitator+participant`) | absent ⇒ `participant` | **render-only** |
+| host handle | `[roster.<id>].host_handle` | the separate host-handle table (`COOPERATION.md:119-126`) | absent ⇒ empty; PR/MR identity is a human concern, unread by code | **render-only** |
+
+**Deterministic ordering rule.** Generated §2 rows are ordered **active before inactive, then by
+agent ID, byte-ascending**. No other ordering is permitted, so the generator is idempotent
+(hermes-1's R2) and a re-render never produces a diff.
+
+**Migration of existing values.** For each deck: parse the ID and the inactive marker (the only
+values the code trusts today), and carry `workspace_dir`, `role` and `host_handle` across as
+**verbatim strings** from the existing prose without interpretation. Anything that does not parse
+cleanly is `unclean` → deck skipped and reported, per the migration contract.
+
+**Authority statements that must ship in the same release:**
+- `parley-deck/agents.toml` is the deck authority for every field above.
+- The **generated §2 is a rendering, not a store**, and is explicitly non-authoritative.
+- **Runtime code MUST NOT parse the generated §2 as roster authority.** Today `resolveRoster` does
+  (`internal/app/roster.go:110`); that call site is removed in the same change.
+- Every other protocol reference calling §2 authoritative, the **embedded protocol copy**
+  (`internal/protocol/defaults/COOPERATION.md`) and the **skill's bundled snapshot**
+  (`skills/parley-deck/references/COOPERATION.md`) change together — three copies, per the standing
+  drift guard.
+- A `meta/protocol-changelog.md` entry in §7 format names this idea and the user-authorized one-off
+  (codex-1's requirement 2, kimi-1's request).
+
+**Foreign-deck compatibility gate (codex-1's requirement 3).** A deck whose protocol/schema version
+predates this change is **skipped and reported**, not silently upgraded. Retired-agent rows are
+**retained as `active = false`**, never removed — the migration must not erase history it did not
+create.
+
+**Deliberate pins survive discoverably (kimi-1's R4, adopted).** `roster sync` gains
+`--keep <agent>.<field>` to exempt a deliberate pin from the rebase. Whether or not `--keep` is
+used, **the dry-run and the final report MUST enumerate every deliberate pin the rebase removes,
+per deck**, so re-application is a checklist rather than an archaeological dig.
 
 **`STATE` wiring is a hard prerequisite for the migration (hermes-1's R3.1, confirmed by the
 drafter as a non-owner).** `resolveRoster` reads `active, _, ok := protocol.ReadRosterIDs(root)` —

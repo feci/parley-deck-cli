@@ -1095,8 +1095,12 @@ func cleanParticipantEnv(family string, env []string) []string {
 // {prompt} substitution), and isolated-home env, without binding a context. Used
 // by both CommandFor (ctx-bound, for one-shot helpers) and execAgentProcess.
 func buildAgentInvocation(root string, agent agents.Discovery, prompt string) (path string, args, env []string, cleanup func(), err error) {
-	args = make([]string, 0, len(agent.HeadlessArgs))
-	for _, arg := range agent.HeadlessArgs {
+	// {model}/{effort} resolve from the spec's effective configuration BEFORE {root}/{prompt},
+	// because an unbindable model drops its introducing flag and must not leave a dangling
+	// value-taking flag for the later pass to fill. See agents.ResolveLaunchArgs.
+	resolved, _ := agent.Spec.ResolveLaunchArgs()
+	args = make([]string, 0, len(resolved))
+	for _, arg := range resolved {
 		switch arg {
 		case "{root}":
 			args = append(args, root)
