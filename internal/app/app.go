@@ -120,6 +120,8 @@ Usage:
   %s init [--dir DIR]
   %s agents list [--dir DIR]
   %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
+  %s roster show [--scope deck|machine] [--dir DIR] [--json]
+  %s roster set AGENT --scope deck|machine [--model M] [--effort E] [--speed S] [--state active|inactive] [--dry-run] [--yes]
   %s consensus status [--dir DIR] [--review] [--json] IDEA
   %s consensus draft [--dir DIR] [--review] [--round N] [--by AGENT] IDEA
   %s consensus signoff [--dir DIR] [--review] --agent ID --status accept|reserve|reservations|block [--notes TEXT] [--counter TEXT] IDEA
@@ -316,6 +318,8 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
+		appName,
 		appName,
 		appName,
 		appName,

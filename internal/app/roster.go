@@ -46,13 +46,36 @@ var rosterInstanceSuffix = regexp.MustCompile(`-[0-9]+$`)
 // runRoster implements `parley roster show|init` (component B): show renders the
 // resolved roster with composite display names; init writes the roster-ID -> family
 // `[roster.*]` mapping so the resolver can run a deck whose §2 roster is claude-1, …
+const rosterUsage = `usage:
+  parley roster show [--scope deck|machine] [--dir DIR] [--json]
+  parley roster set  AGENT --scope deck|machine [--adapter A] [--state active|inactive]
+                     [--model M] [--effort E] [--speed S] [--dry-run] [--yes]
+  parley roster init [--scope deck|machine] [--dir DIR] [--dry-run] [--yes] [--json]`
+
+// rosterScopeAlias keeps the pre-1.40 spelling working. `session` was always a
+// misnomer: it never named a per-session store, it named the deck.
+func rosterScopeAlias(scope string) string {
+	if scope == "session" {
+		return "deck"
+	}
+	return scope
+}
+
 func runRoster(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: parley roster <show|init> [--scope session|machine] [--dir DIR] [--dry-run] [--yes] [--json]")
+		fmt.Fprintln(stderr, rosterUsage)
 		return 2
 	}
 	sub := args[0]
 	rest := args[1:]
+	// `roster set AGENT --flags` puts a positional first, and Go's flag package stops
+	// parsing at the first non-flag token. Lift it out before parsing so the flags after
+	// it are still seen.
+	positional := ""
+	if sub == "set" && len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+		positional = rest[0]
+		rest = rest[1:]
+	}
 	fs := flag.NewFlagSet("roster", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	dir := fs.String("dir", ".", "workspace directory")
@@ -60,6 +83,11 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	dryRun := fs.Bool("dry-run", false, "print what would change; write nothing")
 	yes := fs.Bool("yes", false, "write without confirmation")
 	jsonOut := fs.Bool("json", false, "machine-readable output")
+	adapter := fs.String("adapter", "", "roster set: adapter/family this agent launches")
+	state := fs.String("state", "", "roster set: active|inactive")
+	model := fs.String("model", "", "roster set: exact model id")
+	effort := fs.String("effort", "", "roster set: reasoning/effort level")
+	speed := fs.String("speed", "", "roster set: fast|balanced|deep|review")
 	if err := fs.Parse(rest); err != nil {
 		return 2
 	}
@@ -71,10 +99,34 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	switch sub {
 	case "show":
 		return rosterShow(root, *jsonOut, stdout, stderr)
+	case "set":
+		var fields []rosterSetField
+		add := func(k, v string) {
+			if strings.TrimSpace(v) != "" {
+				fields = append(fields, rosterSetField{k, v})
+			}
+		}
+		add("adapter", *adapter)
+		add("model", *model)
+		add("effort", *effort)
+		add("speed", *speed)
+		switch *state {
+		case "":
+		case "active":
+			fields = append(fields, rosterSetField{"active", "true"})
+		case "inactive":
+			// Retired agents are marked, never deleted: the roster keeps its history so
+			// a past idea's participant list stays interpretable.
+			fields = append(fields, rosterSetField{"active", "false"})
+		default:
+			fmt.Fprintf(stderr, "roster set: invalid --state %q (want active|inactive)\n", *state)
+			return 2
+		}
+		return rosterSet(root, rosterScopeAlias(*scope), positional, fields, *dryRun, *yes, stdout, stderr)
 	case "init":
 		return rosterInit(root, *scope, *dryRun, *yes, *jsonOut, stdout, stderr)
 	default:
-		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|init)\n", sub)
+		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|set|init)\n", sub)
 		return 2
 	}
 }
