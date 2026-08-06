@@ -4,7 +4,7 @@
 **Parley deck:** `./parley-deck/`
 **Transport:** `github-pr`
 **Created:** 2026-05-09 (initial draft)
-**Protocol synced:** 2026-06-13 — parley-deck-skill 1.3.1 (claude)
+**Protocol synced:** 2026-08-06 — parley-deck-skill 2.5.1 / parley-deck-cli 1.41.0
 **Status:** Living document — any agent may propose changes via a dedicated idea (see §7).
 
 ---

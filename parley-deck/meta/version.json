@@ -1,14 +1,13 @@
 {
   "schemaVersion": 1,
-  "protocolRole": "source",
-  "deckVersion": "1.3.1",
+  "deckVersion": "2.5.1",
   "protocolSchema": 1,
   "projectMetadataSchema": 1,
-  "source": "npm:parley-deck-skill@1.3.1",
-  "protocolSha256": "5f3540f0e853c6437ff9f09039590d8dd927b55e5a06424ac7e019e1a5504bdf",
-  "skillSha256": "218e607d37f89c3944a3803057aaf1ec0cd49140b39f8737f7b94f7b807998f7",
-  "packagedProtocolSha256": "59905d3df97b22b960f16f28e3f4edec2c444c1d50ae75185e07ff1169f8f89e",
-  "compatibilityManifestSha256": "04ac8aa76c2ceb46d1b3f4221061eabf53b8caf717846e63cc02737b4655a151",
-  "updatedAt": "2026-07-03T00:00:00.000Z",
-  "updatedBy": "protocol-restructure-appendices (claude-1)"
+  "source": "npm:parley-deck-skill@2.5.1",
+  "protocolSha256": "dc75760c8e4f3736b7faa4632b4220adae066fb971868067f9324931985689bf",
+  "skillSha256": "003d034d3775e29dd464c587dd150a19facbcd4eb49a983fed688337971b0d1d",
+  "packagedProtocolSha256": "8cd0c64340eb990f045947c23312061c7265e2e24cffcdc74f9122955b62b23e",
+  "compatibilityManifestSha256": "69cdc756e904f726960ade0718a846819839789f2136e3b917842b01556fccf6",
+  "updatedAt": "2026-08-06T21:08:52.805Z",
+  "updatedBy": "parley-deck-skill sync-project"
 }
