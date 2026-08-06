@@ -18,6 +18,11 @@ func TestBuiltinsAreAutonomous(t *testing.T) {
 		"codex":  "approval_policy=never",
 		"agy":    "dangerously-skip-permissions",
 		"hermes": "yolo",
+		// Promoted from ACP-only stubs to full adapters (2026-08-06). Both were probed
+		// live before the mode names below were written: `kimi -p` and
+		// `opencode run --auto` each wrote their file unattended, exit 0.
+		"kimi":     "prompt",
+		"opencode": "auto",
 	}
 	for id, mode := range wantMode {
 		s, ok := byID[id]

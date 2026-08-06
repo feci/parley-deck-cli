@@ -277,6 +277,71 @@ func defaultBuiltinSpecs() []Spec {
 			Notes:                 "first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs",
 			AutonomousWrite:       AutonomousWrite{Mode: "yolo", Args: []string{"--yolo"}, Scope: ""},
 		}),
+		withBuiltinSources(Spec{
+			ID:           "kimi",
+			Commands:     []string{"kimi"},
+			VersionArgs:  []string{"--version"},
+			LaunchMode:   LaunchHeadless,
+			HeadlessMode: "kimi -p",
+			// `-p/--prompt` IS kimi's non-interactive mode AND its auto-approve path: in print
+			// mode the default permission policy applies tool calls without asking (probed
+			// 2026-08-06 on 0.33.0 — wrote its file, exit 0). kimi also ships `--auto` ("fully
+			// autonomous") and `-y/--yolo`, but BOTH are rejected alongside `-p`:
+			// `kimi --auto -p …` exits 1 with "Cannot combine --prompt with --auto." So `-p` is
+			// the only autonomous headless shape, and it is what we declare.
+			HeadlessArgs:          []string{"-p", "{prompt}"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptArg,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "print-mode default",
+			// Model and effort come from ~/.kimi-code/config.toml (default_model +
+			// [thinking].effort). A per-invocation `-m/--model` exists; no effort flag does.
+			Model:           CLIDefault,
+			Reasoning:       CLIDefault,
+			Profile:         CLIDefault,
+			Speed:           DefaultSpeed,
+			TimeoutMS:       DefaultTimeoutMS,
+			ExternalBackend: ExternalHosted,
+			Telemetry:       "final text on stdout",
+			Notes:           "Kimi Code. Headless is `kimi -p <prompt>`; --auto/--yolo cannot combine with -p. ACP remains available as an alternative launch mode via `kimi acp`.",
+			// Scope is deliberately EMPTY: print mode confines nothing at the OS level, it only
+			// auto-approves. Only codex --sandbox workspace-write earns Scope "workspace".
+			AutonomousWrite: AutonomousWrite{Mode: "prompt", Args: []string{"-p"}, Scope: ""},
+		}),
+		withBuiltinSources(Spec{
+			ID:           "opencode",
+			Commands:     []string{"opencode"},
+			VersionArgs:  []string{"--version"},
+			LaunchMode:   LaunchHeadless,
+			HeadlessMode: "opencode run --auto",
+			// `run` alone already writes in-workspace unattended (probed 2026-08-06 on 1.18.13,
+			// exit 0, file written). `--auto` is nevertheless passed EXPLICITLY: every other
+			// built-in adapter carries its auto-approve flag in HeadlessArgs, and an implicit
+			// default is exactly the thing a vendor may change between versions. Declaring it
+			// keeps AutonomousWrite.Args a subset of HeadlessArgs, as for claude/codex/hermes.
+			HeadlessArgs:          []string{"run", "--auto", "{prompt}"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptArg,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "auto",
+			// Model comes from ~/.config/opencode/opencode.jsonc ("model"); `-m provider/model`
+			// overrides per invocation. Reasoning effort is `--variant <level>`; the level set
+			// cannot be enumerated from the CLI, so it is left to config.
+			Model:           CLIDefault,
+			Reasoning:       CLIDefault,
+			Profile:         CLIDefault,
+			Speed:           DefaultSpeed,
+			TimeoutMS:       DefaultTimeoutMS,
+			ExternalBackend: ExternalHosted,
+			Telemetry:       "final text on stdout",
+			Notes:           "OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.",
+			// Scope EMPTY: --auto is a permission grant, not an enforced sandbox.
+			AutonomousWrite: AutonomousWrite{Mode: "auto", Args: []string{"--auto"}, Scope: ""},
+		}),
 	}
 }
 
