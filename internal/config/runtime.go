@@ -781,3 +781,39 @@ func cloneOptionalStringSlice(values []string) []string {
 	}
 	return append([]string{}, values...)
 }
+
+// RosterEntriesInFile parses the [roster.*] blocks of ONE file rather than the layered
+// stack. `roster sync` needs to compare a deck's own declarations against the machine's,
+// and a layered read would already have merged them.
+func RosterEntriesInFile(path string) (map[string]RosterEntry, error) {
+	out := map[string]RosterEntry{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return out, nil
+		}
+		return out, err
+	}
+	var cfg fileConfig
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return out, fmt.Errorf("%s: %w", path, err)
+	}
+	for id, ra := range cfg.Roster {
+		e := RosterEntry{
+			ID:           id,
+			Adapter:      strings.TrimSpace(ra.Adapter),
+			Active:       true,
+			Model:        strings.TrimSpace(ra.Model),
+			Effort:       strings.TrimSpace(ra.Effort),
+			Speed:        strings.TrimSpace(ra.Speed),
+			WorkspaceDir: strings.TrimSpace(ra.WorkspaceDir),
+			Role:         strings.TrimSpace(ra.Role),
+			HostHandle:   strings.TrimSpace(ra.HostHandle),
+		}
+		if ra.Active != nil {
+			e.Active = *ra.Active
+		}
+		out[id] = e
+	}
+	return out, nil
+}

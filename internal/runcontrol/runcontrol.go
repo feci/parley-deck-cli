@@ -24,6 +24,11 @@ type CreateOptions struct {
 	Now          time.Time
 	Track        string // optional `track:` frontmatter (track-aware-driver)
 	Provenance   string // optional roster-preset provenance comment (named-roster-presets)
+	// RosterSnapshot freezes each participant's effective launch identity at creation.
+	// The caller resolves it (the roster resolver lives a layer up); runcontrol only
+	// persists it, so a continuation reads the frozen row instead of re-discovering.
+	RosterSnapshot []runmanifest.RosterSnapshotEntry
+	RosterRevision string
 }
 
 type CreatedRun struct {
@@ -69,19 +74,21 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		return CreatedRun{}, err
 	}
 	if err := writeManifest(opts.Root, runID, runmanifest.New(runmanifest.Options{
-		Root:         opts.Root,
-		RunID:        runID,
-		IdeaSlug:     idea.Slug,
-		Task:         opts.Task,
-		Mode:         mode,
-		Transport:    transport,
-		Phase:        "round",
-		IdeaStatus:   idea.Status,
-		CurrentRound: "round-01",
-		ActiveSteps:  initialRoundSteps(opts.Participants),
-		Participants: opts.Participants,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Root:           opts.Root,
+		RunID:          runID,
+		IdeaSlug:       idea.Slug,
+		Task:           opts.Task,
+		Mode:           mode,
+		Transport:      transport,
+		Phase:          "round",
+		IdeaStatus:     idea.Status,
+		CurrentRound:   "round-01",
+		ActiveSteps:    initialRoundSteps(opts.Participants),
+		Participants:   opts.Participants,
+		RosterSnapshot: opts.RosterSnapshot,
+		RosterRevision: opts.RosterRevision,
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	})); err != nil {
 		// Best-effort: a transient manifest-write failure on a weakly-coherent mount
 		// (e.g. virtio-fs) must NOT orphan an already-created run. The run is defined by

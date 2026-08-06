@@ -16,6 +16,7 @@ import (
 	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 )
 
@@ -46,10 +47,17 @@ var rosterInstanceSuffix = regexp.MustCompile(`-[0-9]+$`)
 // runRoster implements `parley roster show|init` (component B): show renders the
 // resolved roster with composite display names; init writes the roster-ID -> family
 // `[roster.*]` mapping so the resolver can run a deck whose §2 roster is claude-1, …
+// multiFlag collects a repeatable string flag.
+type multiFlag []string
+
+func (m *multiFlag) String() string     { return strings.Join(*m, ",") }
+func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
+
 const rosterUsage = `usage:
   parley roster show [--scope deck|machine] [--dir DIR] [--json]
   parley roster set  AGENT --scope deck|machine [--adapter A] [--state active|inactive]
                      [--model M] [--effort E] [--speed S] [--dry-run] [--yes]
+  parley roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]
   parley roster init [--scope deck|machine] [--dir DIR] [--dry-run] [--yes] [--json]`
 
 // rosterScopeAlias keeps the pre-1.40 spelling working. `session` was always a
@@ -84,6 +92,8 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	yes := fs.Bool("yes", false, "write without confirmation")
 	jsonOut := fs.Bool("json", false, "machine-readable output")
 	adapter := fs.String("adapter", "", "roster set: adapter/family this agent launches")
+	var keep multiFlag
+	fs.Var(&keep, "keep", "roster sync: AGENT.FIELD to exempt from the rebase (repeatable)")
 	state := fs.String("state", "", "roster set: active|inactive")
 	model := fs.String("model", "", "roster set: exact model id")
 	effort := fs.String("effort", "", "roster set: reasoning/effort level")
@@ -123,10 +133,12 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 			return 2
 		}
 		return rosterSet(root, rosterScopeAlias(*scope), positional, fields, *dryRun, *yes, stdout, stderr)
+	case "sync":
+		return rosterSync(root, keep, *dryRun, *yes, stdout, stderr)
 	case "init":
 		return rosterInit(root, *scope, *dryRun, *yes, *jsonOut, stdout, stderr)
 	default:
-		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|set|init)\n", sub)
+		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|set|sync|init)\n", sub)
 		return 2
 	}
 }
@@ -579,4 +591,31 @@ func writeJSON(stdout, stderr io.Writer, v any) int {
 	}
 	fmt.Fprintln(stdout, string(b))
 	return 0
+}
+
+// RosterSnapshot builds the immutable per-run roster snapshot from the deck's CURRENT
+// resolved roster. It is called once, at run creation; every later phase of that run
+// reads the stored snapshot instead of resolving again, so a machine-config change
+// cannot silently move a running idea to a different model.
+func RosterSnapshot(root string) ([]runmanifest.RosterSnapshotEntry, string, error) {
+	rows, err := resolveRoster(root, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	entries := make([]runmanifest.RosterSnapshotEntry, 0, len(rows))
+	for _, r := range rows {
+		if r.State == "inactive" {
+			continue
+		}
+		entries = append(entries, runmanifest.RosterSnapshotEntry{
+			Agent:     r.Agent,
+			Adapter:   r.Adapter,
+			Model:     r.Model,
+			Effort:    r.Effort,
+			Speed:     r.Speed,
+			Auto:      r.Auto,
+			Installed: r.Installed,
+		})
+	}
+	return entries, runmanifest.RosterRevisionOf(entries), nil
 }

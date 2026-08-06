@@ -1854,15 +1854,24 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "No run started. Use `--yes` or `--auto` to launch without an interactive confirmation prompt.")
 		return 0
 	}
+	// Freeze the roster at creation. A best-effort resolve: a deck whose roster cannot
+	// be resolved still gets a run (the run is defined by its events), it just carries no
+	// snapshot and `sessions inspect` will say so.
+	rosterSnapshot, rosterRevision, snapErr := RosterSnapshot(*root)
+	if snapErr != nil {
+		fmt.Fprintf(stderr, "warning: roster snapshot unavailable (%v) — this run will not record what each agent ran\n", snapErr)
+	}
 	created, err := runcontrol.Create(runcontrol.CreateOptions{
-		Root:         *root,
-		Task:         task,
-		Participants: participants,
-		Excluded:     preflightExcluded,
-		Discovered:   discovered,
-		Auto:         *auto,
-		Track:        strings.TrimSpace(*trackFlag),
-		Provenance:   presetProvenance,
+		Root:           *root,
+		Task:           task,
+		Participants:   participants,
+		Excluded:       preflightExcluded,
+		Discovered:     discovered,
+		Auto:           *auto,
+		Track:          strings.TrimSpace(*trackFlag),
+		Provenance:     presetProvenance,
+		RosterSnapshot: rosterSnapshot,
+		RosterRevision: rosterRevision,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "run create failed: %v\n", err)

@@ -1,9 +1,13 @@
 package runmanifest
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"parley-deck-cli/internal/fsutil"
@@ -41,8 +45,47 @@ type Manifest struct {
 	LastActionAt  *time.Time   `json:"last_action_at,omitempty"`
 	NextActions   []NextAction `json:"next_actions,omitempty"`
 	Participants  []string     `json:"participants,omitempty"`
-	CreatedAt     time.Time    `json:"created_at,omitempty"`
-	UpdatedAt     time.Time    `json:"updated_at,omitempty"`
+	// RosterSnapshot freezes what each participant ACTUALLY runs, captured at run
+	// creation. Before it existed the manifest recorded participant IDs and nothing
+	// else, so a finished run could not tell you which model any agent had used — and
+	// `continue` re-discovers configuration, so changing a machine default mid-run could
+	// silently continue it on a different model. Every later phase of a run uses this
+	// snapshot, never a fresh resolve.
+	RosterSnapshot []RosterSnapshotEntry `json:"roster_snapshot,omitempty"`
+	// RosterRevision is a content hash of the snapshot. `sessions inspect` compares it
+	// with the deck's current roster and reports `stale-snapshot` when they differ.
+	RosterRevision string    `json:"roster_revision,omitempty"`
+	CreatedAt      time.Time `json:"created_at,omitempty"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty"`
+}
+
+// RosterSnapshotEntry is one participant's effective launch identity at run creation.
+// It carries no credentials and no prompt — only what is needed to answer "what did this
+// agent actually run?".
+type RosterSnapshotEntry struct {
+	Agent     string `json:"agent"`
+	Adapter   string `json:"adapter"`
+	Model     string `json:"model"`
+	Effort    string `json:"effort"`
+	Speed     string `json:"speed"`
+	Auto      bool   `json:"autonomous"`
+	Installed bool   `json:"installed"`
+}
+
+// RosterRevisionOf hashes a snapshot deterministically. Field order and formatting are
+// fixed so the same roster always yields the same revision.
+func RosterRevisionOf(entries []RosterSnapshotEntry) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	sorted := append([]RosterSnapshotEntry(nil), entries...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Agent < sorted[j].Agent })
+	h := sha256.New()
+	for _, e := range sorted {
+		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s\x00%t\x00%t\n",
+			e.Agent, e.Adapter, e.Model, e.Effort, e.Speed, e.Auto, e.Installed)
+	}
+	return hex.EncodeToString(h.Sum(nil))[:16]
 }
 
 type Step struct {
@@ -58,22 +101,24 @@ type Step struct {
 type NextAction = runaction.NextAction
 
 type Options struct {
-	Root         string
-	RunID        string
-	IdeaSlug     string
-	Task         string
-	Mode         string
-	Transport    string
-	Status       string
-	Phase        string
-	IdeaStatus   string
-	CurrentRound string
-	ActiveSteps  []Step
-	LastActionAt time.Time
-	NextActions  []NextAction
-	Participants []string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	Root           string
+	RunID          string
+	IdeaSlug       string
+	Task           string
+	Mode           string
+	Transport      string
+	Status         string
+	Phase          string
+	IdeaStatus     string
+	CurrentRound   string
+	ActiveSteps    []Step
+	LastActionAt   time.Time
+	NextActions    []NextAction
+	Participants   []string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	RosterSnapshot []RosterSnapshotEntry
+	RosterRevision string
 }
 
 func New(opts Options) Manifest {
@@ -99,23 +144,25 @@ func New(opts Options) Manifest {
 		lastActionAt = &value
 	}
 	return Manifest{
-		SchemaVersion: SchemaVersion,
-		RunID:         opts.RunID,
-		WorkspaceRoot: root,
-		IdeaSlug:      opts.IdeaSlug,
-		Task:          opts.Task,
-		Mode:          opts.Mode,
-		Transport:     opts.Transport,
-		Status:        status,
-		Phase:         opts.Phase,
-		IdeaStatus:    opts.IdeaStatus,
-		CurrentRound:  opts.CurrentRound,
-		ActiveSteps:   append([]Step(nil), opts.ActiveSteps...),
-		LastActionAt:  lastActionAt,
-		NextActions:   append([]NextAction(nil), opts.NextActions...),
-		Participants:  append([]string(nil), opts.Participants...),
-		CreatedAt:     createdAt,
-		UpdatedAt:     updatedAt,
+		SchemaVersion:  SchemaVersion,
+		RunID:          opts.RunID,
+		WorkspaceRoot:  root,
+		IdeaSlug:       opts.IdeaSlug,
+		Task:           opts.Task,
+		Mode:           opts.Mode,
+		Transport:      opts.Transport,
+		Status:         status,
+		Phase:          opts.Phase,
+		IdeaStatus:     opts.IdeaStatus,
+		CurrentRound:   opts.CurrentRound,
+		ActiveSteps:    append([]Step(nil), opts.ActiveSteps...),
+		LastActionAt:   lastActionAt,
+		NextActions:    append([]NextAction(nil), opts.NextActions...),
+		RosterSnapshot: opts.RosterSnapshot,
+		RosterRevision: opts.RosterRevision,
+		Participants:   append([]string(nil), opts.Participants...),
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
 	}
 }
 
