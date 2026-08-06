@@ -1,5 +1,83 @@
 # Changelog
 
+## 1.41.0 — 2026-08-06
+
+Standardized roster operations, completed. 1.40.x shipped the surface; this release fixes what six
+rounds of multi-agent review found underneath it. **The headline defect: a deck's declared
+membership was not what ran.**
+
+### Fixed — membership authority
+
+- **A deck declaring N participants ran however many the machine configured.** Membership was read
+  from the layered machine+deck view, so a deck listing two agents resolved to five whenever
+  `~/.parley/agents.toml` listed five — and, since 1.40.1 routed participant selection through the
+  same view, it would have *deliberated* with five. `roster render` then committed that inherited
+  roster into `COOPERATION.md`, re-creating the drift this whole change exists to remove, inside a
+  file collaborators share.
+  Membership is now **the committed `parley-deck/agents.toml`**. The machine layer seeds values
+  only.
+- **A legacy §2 deck was overridden by the machine roster.** A deck that predates the cutover keeps
+  its §2 table as its membership — reported `legacy-roster` — until it is migrated. Authority
+  order: committed deck blocks → valid legacy §2 → machine roster (marked `inherited-roster`, and
+  `roster render` refuses to commit it without `--adopt-inherited`).
+- **A gitignored or machine-local file could retire a committed member.** `active` merged from
+  every layer, so `active = false` in `agents.local.toml`, `$PARLEY_HEADLESS_AGENT_CONFIG` or the
+  machine file silently dropped a member from the quorum. State now follows the layer that granted
+  membership.
+- **`§2`-only IDs are reported, never silently erased.** They surface as `unmapped` /
+  `section2-only`, are never auto-added to the generated table, and `roster render` reports every
+  row it removes — in preview and on apply.
+
+### Fixed — run snapshots
+
+- **Per-roster-ID pins collapsed.** The frozen map was keyed by adapter family, so two roster IDs
+  sharing an adapter overwrote each other. Now keyed by agent, and applied *after* participant
+  resolution — before, the freeze was computed against adapter-keyed discoveries and never reached
+  the launch.
+- **AUTO was reported but not pinned.** The snapshot now carries the resolved launch argv, so a
+  config change cannot alter a running idea's autonomy posture, and `RosterRevisionOf` hashes it so
+  the drift is detectable.
+- **`sessions inspect` reports `stale-snapshot`** — the frozen vocabulary previously shipped a code
+  no surface could emit.
+
+### Fixed — the query surface
+
+- **`--scope` parsed, was advertised, and did nothing.** It now selects the deck or machine roster,
+  including values, adapter mappings and provenance.
+- **`--all`** lists configured adapters no roster declares — the answer to "I installed an agent and
+  it is invisible".
+- **`--explain AGENT`** reports per-field provenance: which config layer set each value.
+- **Text and JSON now agree.** A healthy row printed `ok` and marshalled to `null`; `display_name`
+  and `note` were serialized outside the eleven frozen columns.
+
+### Fixed — writes
+
+- **The membership gate was bypassable.** `roster set new-9 --model X --yes` created a member
+  without the second confirmation, because the gate keyed on `--adapter` rather than on whether the
+  block existed. `roster init --yes` bypassed it entirely. Both fixed; the gate now fires on a real
+  state change, not on writing a value a member already has.
+- **`roster sync` accepted typoed `--keep` tokens** (`--keep kimi-1.modle` removed `kimi-1.model`),
+  and applied against a second read without binding to the preview. Both are errors now.
+- **`masked-by-env` has an emitter**: a write overridden by a higher layer is reported instead of
+  returning a false success.
+- **File mode regression**: writes no longer tighten a `0644` config to `0600`.
+
+### Fixed — model arguments
+
+- **D7's legacy normalizer shipped.** A config layer that hardcodes `--model <literal>` in
+  `headless_args` no longer outranks the `model` field beside it; the literal is normalized back to
+  the `{model}` placeholder.
+
+### Fixed — protocol and docs
+
+- Every protocol surface still instructed the reader to treat §2 as a store while calling it
+  generated. Removed from all three `COOPERATION.md` copies and `SKILL.md`, with a drift assertion
+  so the contradiction cannot silently return — it caught a fourth instance the moment it was added.
+- `roster` gained full sections in `docs/cli-reference.md` and `docs/agent-runtime-configuration.md`
+  (previously zero mentions), and all five verbs appear in `parley --help`.
+- `agents list` is labelled the adapter/runtime inventory — not the roster.
+- `roster migrate --yes` requires `--confirm-breaking` and skips decks with uncommitted changes.
+
 ## 1.40.1 — 2026-08-06
 
 Fixes from the Phase 6 review of 1.40.0. **1.40.0 shipped before that review** — the user directed

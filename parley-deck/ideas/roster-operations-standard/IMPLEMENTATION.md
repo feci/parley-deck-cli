@@ -211,3 +211,19 @@ rather than checking either alone.
 
 **Tests.** One more: active-provenance-is-scope-aware, which fails if provenance and the membership
 header of the same command disagree.
+
+## Phase 8 — complete (2026-08-06)
+
+Re-review round 6: **CLEAN from all three reviewers** (codex-1, hermes-1, kimi-1), each verified
+independently against `d312c53` with behavioral reproduction, not diff reading. Zero agreed fixes
+remain. The exit condition is met.
+
+**Cycle count: six.** Rounds 2–5 each returned findings, and three of them were defects introduced
+by the *previous* cycle's fix — a snapshot helper that appended where the runner reads first-match,
+a state override that ignored scope, and a membership gate that fired on no-ops. The pattern worth
+recording: every one of those was in code I had just written to fix a review finding, and in each
+case my own test passed because it exercised the helper rather than the call site or the surface a
+user actually reads. The tests that caught real problems were the ones asserting that two
+independently-produced outputs agree with each other.
+
+Released as parley-deck-cli **1.41.0** and parley-deck-skill **2.5.1**.
