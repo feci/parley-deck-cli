@@ -1,0 +1,431 @@
+{
+  "schema_version": 1,
+  "root": "/Volumes/My Shared Files/AI_WORKSPACE",
+  "dry_run": false,
+  "decks": [
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/BYTE",
+      "disposition": "unchanged",
+      "reason": "already declares [roster.*]",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ]
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/Finance",
+      "disposition": "applied",
+      "members": [
+        "claude",
+        "codex"
+      ],
+      "before_hash": "empty",
+      "after_hash": "0777ce07ccde7120",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__Finance/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/IGBCE",
+      "disposition": "skipped",
+      "reason": "unclean: no readable §2 roster table to migrate"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/IHK_PFALZ",
+      "disposition": "skipped",
+      "reason": "unclean: no readable §2 roster table to migrate"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/SU-Group-Prompt_library",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "051723565f8acecd",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__SU-Group-Prompt_library/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/adito-outlook-plugin",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "051723565f8acecd",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__adito-outlook-plugin/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/aditoLeads",
+      "disposition": "unchanged",
+      "reason": "already declares [roster.*]",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ]
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/adito_jvm _issue",
+      "disposition": "skipped",
+      "reason": "unclean: no readable §2 roster table to migrate"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/ai_prezz",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "f0236989dc9d2d02",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__ai_prezz/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/altfins",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "051723565f8acecd",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__altfins/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/altfins/altfins-patterns",
+      "disposition": "unchanged",
+      "reason": "already declares [roster.*]",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1",
+        "opencode-1"
+      ]
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/auftra",
+      "disposition": "skipped",
+      "reason": "unclean: no adapter resolves for claude-code — map them with `parley roster set \u003cid\u003e --adapter \u003cfamily\u003e` first"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/cms",
+      "disposition": "applied",
+      "members": [
+        "claude",
+        "codex",
+        "hermes",
+        "kimi"
+      ],
+      "before_hash": "edf76ec96e9ca8c6",
+      "after_hash": "d870eca6906758db",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__cms/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/design-mail",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1",
+        "opencode-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "3e212bd9d07becb9",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__design-mail/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/design-mail/design-mail",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1",
+        "opencode-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "3e212bd9d07becb9",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__design-mail__design-mail/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/design-mail/design-mail-fe",
+      "disposition": "skipped",
+      "reason": "unclean: no readable §2 roster table to migrate"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/ecb-ai-prezz",
+      "disposition": "applied",
+      "members": [
+        "claude",
+        "codex",
+        "hermes"
+      ],
+      "before_hash": "empty",
+      "after_hash": "a02f5b577d09eca3",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__ecb-ai-prezz/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/ecb-api",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "046c71f2f1c8efc4",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__ecb-api/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/ecb-meeting-2026.05",
+      "disposition": "applied",
+      "members": [
+        "claude",
+        "codex",
+        "gemini",
+        "hermes"
+      ],
+      "inactive": [
+        "gemini"
+      ],
+      "before_hash": "empty",
+      "after_hash": "552f11ff807ad67e",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__ecb-meeting-2026.05/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/igm-app",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1",
+        "opencode-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "3e212bd9d07becb9",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__igm-app/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/ldx",
+      "disposition": "skipped",
+      "reason": "unclean: no adapter resolves for claude-code — map them with `parley roster set \u003cid\u003e --adapter \u003cfamily\u003e` first"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/ldx-wt-mail-fixups",
+      "disposition": "skipped",
+      "reason": "unclean: no adapter resolves for claude-code — map them with `parley roster set \u003cid\u003e --adapter \u003cfamily\u003e` first"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/librade-algoTrader",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "62471db0288e7029",
+      "after_hash": "ac817487b688bcfa",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__librade-algoTrader/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/lustrator",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "051723565f8acecd",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__lustrator/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/millenniumProblems",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1",
+        "opencode-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "3e212bd9d07becb9",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__millenniumProblems/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/paritaetische",
+      "disposition": "skipped",
+      "reason": "unclean: no readable §2 roster table to migrate"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "43976ece4ba065db",
+      "after_hash": "bf9795b7627b5b2a",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__parley-deck__parley-deck-cli/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "5ec35da353f07b75",
+      "after_hash": "0f7582e12564a018",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__parley-deck__wt-editor-composer/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "5ec35da353f07b75",
+      "after_hash": "0f7582e12564a018",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__parley-deck__wt-learn-playbooks/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "5ec35da353f07b75",
+      "after_hash": "0f7582e12564a018",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__parley-deck__wt-roster-presets/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "5ec35da353f07b75",
+      "after_hash": "0f7582e12564a018",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__parley-deck__wt-round-summary/agents.toml"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/rev-kimi-scratch",
+      "disposition": "skipped",
+      "reason": "unclean: no adapter resolves for claude-code — map them with `parley roster set \u003cid\u003e --adapter \u003cfamily\u003e` first"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/scaleup",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "051723565f8acecd",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__scaleup/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/scaleup/scaleup-report",
+      "disposition": "applied",
+      "members": [
+        "antigravity-1",
+        "claude-1",
+        "codex-1",
+        "hermes-1"
+      ],
+      "inactive": [
+        "antigravity-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "d2f870ee5c73a27b",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__scaleup__scaleup-report/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/servers",
+      "disposition": "applied",
+      "members": [
+        "claude",
+        "codex",
+        "hermes",
+        "kimi"
+      ],
+      "before_hash": "empty",
+      "after_hash": "460dc85907b3ce06",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__servers/agents.toml.absent"
+    },
+    {
+      "deck": "/Volumes/My Shared Files/AI_WORKSPACE/zeroTrust",
+      "disposition": "applied",
+      "members": [
+        "claude-1",
+        "codex-1",
+        "hermes-1",
+        "kimi-1"
+      ],
+      "before_hash": "empty",
+      "after_hash": "051723565f8acecd",
+      "backup": "/Volumes/My Shared Files/AI_WORKSPACE/.parley-migrate-backup-2026-08-06/Volumes__My Shared Files__AI_WORKSPACE__zeroTrust/agents.toml.absent"
+    }
+  ],
+  "applied": 24,
+  "skipped": 9,
+  "unchanged": 3,
+  "failed": 0
+}
