@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"parley-deck-cli/internal/config"
 )
 
 // rosterSetField is one requested change to one roster entry.
@@ -18,7 +20,7 @@ type rosterSetField struct{ key, value string }
 // parley-deck/agents.toml, never the gitignored agents.local.toml — a roster change
 // invisible to the repository is how a deck silently diverges from its own history, which
 // is the failure this whole change exists to end. `machine` writes ~/.parley/agents.toml.
-func rosterSet(root, scope, agent string, fields []rosterSetField, dryRun, yes bool, stdout, stderr io.Writer) int {
+func rosterSet(root, scope, agent string, fields []rosterSetField, dryRun, yes, confirmBreaking bool, stdout, stderr io.Writer) int {
 	if strings.TrimSpace(agent) == "" {
 		fmt.Fprintln(stderr, "roster set: AGENT is required")
 		return 2
@@ -58,6 +60,17 @@ func rosterSet(root, scope, agent string, fields []rosterSetField, dryRun, yes b
 		fmt.Fprintln(stdout, "\nNothing was written. Re-run with --yes to apply.")
 		return 0
 	}
+	// Adding a member or retiring one changes WHO deliberates, and therefore who a future
+	// idea's quorum is. `--yes` is the ordinary confirmation; a membership change needs a
+	// second, explicit one so it can never ride along with a routine model change.
+	if breaking := membershipChange(changes); breaking != "" {
+		if !confirmBreaking {
+			fmt.Fprintf(stderr, "\nroster set: this %s — a membership change, not a settings change.\n"+
+				"Re-run with --confirm-breaking as well as --yes.\n", breaking)
+			return 2
+		}
+		fmt.Fprintf(stdout, "\n(%s — confirmed with --confirm-breaking)\n", breaking)
+	}
 	if err := writeRosterFileAtomic(target, []byte(updated)); err != nil {
 		fmt.Fprintf(stderr, "roster set: %v\n", err)
 		return 1
@@ -79,14 +92,15 @@ func rosterScopeFile(root, scope string) (string, error) {
 	case "deck", "session": // `session` is the pre-1.40 spelling, kept as a hidden alias
 		return filepath.Join(root, "parley-deck", "agents.toml"), nil
 	case "machine", "global":
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
+		// Ask the config loader, never reconstruct the path. PARLEY_HOME names the central
+		// config DIRECTORY, not a user home, so composing $PARLEY_HOME/.parley/agents.toml
+		// wrote a file no resolver reads — a machine update that reported success and
+		// changed nothing.
+		path := config.CentralAgentsPath()
+		if path == "" {
+			return "", fmt.Errorf("cannot resolve the central config directory")
 		}
-		if h := strings.TrimSpace(os.Getenv("PARLEY_HOME")); h != "" {
-			home = h
-		}
-		return filepath.Join(home, ".parley", "agents.toml"), nil
+		return path, nil
 	default:
 		return "", fmt.Errorf("invalid --scope %q (want deck|machine)", scope)
 	}
@@ -215,4 +229,21 @@ func writeRosterFileAtomic(path string, data []byte) error {
 		return err
 	}
 	return os.Rename(name, path)
+}
+
+// membershipChange reports whether a change set alters who is in the roster, rather than
+// how an existing member is configured.
+func membershipChange(changes []string) string {
+	for _, c := range changes {
+		if strings.Contains(c, "+ adapter = ") {
+			return "adds a new roster member"
+		}
+		if strings.Contains(c, "active = false") {
+			return "retires a roster member"
+		}
+		if strings.Contains(c, "+ active = true") || strings.Contains(c, "+ active = false") {
+			return "changes roster membership state"
+		}
+	}
+	return ""
 }

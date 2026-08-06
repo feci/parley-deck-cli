@@ -58,6 +58,8 @@ const rosterUsage = `usage:
   parley roster set  AGENT --scope deck|machine [--adapter A] [--state active|inactive]
                      [--model M] [--effort E] [--speed S] [--dry-run] [--yes]
   parley roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]
+  parley roster render [--dir DIR] [--dry-run] [--yes]
+  parley roster migrate [--dir ROOT] --backup-dir DIR [--dry-run] [--yes] [--json]
   parley roster init [--scope deck|machine] [--dir DIR] [--dry-run] [--yes] [--json]`
 
 // rosterScopeAlias keeps the pre-1.40 spelling working. `session` was always a
@@ -92,6 +94,8 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	yes := fs.Bool("yes", false, "write without confirmation")
 	jsonOut := fs.Bool("json", false, "machine-readable output")
 	adapter := fs.String("adapter", "", "roster set: adapter/family this agent launches")
+	confirmBreaking := fs.Bool("confirm-breaking", false, "roster set: additionally confirm a membership change")
+	backupDir := fs.String("backup-dir", "", "roster migrate: directory for per-deck backups (required with --yes)")
 	var keep multiFlag
 	fs.Var(&keep, "keep", "roster sync: AGENT.FIELD to exempt from the rebase (repeatable)")
 	state := fs.String("state", "", "roster set: active|inactive")
@@ -132,13 +136,21 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "roster set: invalid --state %q (want active|inactive)\n", *state)
 			return 2
 		}
-		return rosterSet(root, rosterScopeAlias(*scope), positional, fields, *dryRun, *yes, stdout, stderr)
+		return rosterSet(root, rosterScopeAlias(*scope), positional, fields, *dryRun, *yes, *confirmBreaking, stdout, stderr)
+	case "migrate":
+		if *yes && strings.TrimSpace(*backupDir) == "" {
+			fmt.Fprintln(stderr, "roster migrate: --backup-dir is required with --yes; every write is backed up before it happens")
+			return 2
+		}
+		return rosterMigrate(root, *backupDir, *dryRun, *yes, *jsonOut, stdout, stderr)
+	case "render":
+		return rosterRender(root, *dryRun, *yes, stdout, stderr)
 	case "sync":
 		return rosterSync(root, keep, *dryRun, *yes, stdout, stderr)
 	case "init":
 		return rosterInit(root, *scope, *dryRun, *yes, *jsonOut, stdout, stderr)
 	default:
-		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|set|sync|init)\n", sub)
+		fmt.Fprintf(stderr, "roster: unknown subcommand %q (want show|set|sync|render|migrate|init)\n", sub)
 		return 2
 	}
 }
@@ -618,4 +630,28 @@ func RosterSnapshot(root string) ([]runmanifest.RosterSnapshotEntry, string, err
 		})
 	}
 	return entries, runmanifest.RosterRevisionOf(entries), nil
+}
+
+// RosterMembership returns the deck's active and inactive roster IDs from the SAME
+// authority `roster show` uses: config first, the legacy §2 table only when no config
+// roster exists.
+//
+// Every caller that decides WHO participates must go through this. Leaving participant
+// selection on `protocol.ReadRosterIDs` while `roster show` read config is what made the
+// authority cutover half-done: the table said one thing and the run selected another —
+// the exact two-sources-of-truth defect this change exists to remove.
+func RosterMembership(root string) (active map[string]bool, inactive map[string]bool, ok bool) {
+	entries, err := config.LoadRoster(root)
+	if err == nil && len(entries) > 0 {
+		active, inactive = map[string]bool{}, map[string]bool{}
+		for id, e := range entries {
+			if e.Active {
+				active[id] = true
+			} else {
+				inactive[id] = true
+			}
+		}
+		return active, inactive, true
+	}
+	return protocol.ReadRosterIDs(root)
 }

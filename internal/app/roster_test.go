@@ -58,7 +58,17 @@ func TestDefaultRosterParticipants(t *testing.T) {
 	row := func(id, role string) string { return "| " + bt + id + bt + " | ../x/ | " + role + " |\n" }
 
 	// Case 1: an inactive installed member is excluded from the default set.
-	if err := os.WriteFile(coop, []byte(header+row("codex-1", "participant")+row("claude-1", "inactive")), 0o644); err != nil {
+	//
+	// State comes from CONFIG, not from the §2 prose. This test used to flip a §2 cell to
+	// "inactive" and assert the effect — which is exactly how the authority cutover stayed
+	// half-done: `roster show` read config while participant selection read the table, so
+	// the two could disagree about who was in the run. §2 is written here deliberately
+	// DISAGREEING with config, to prove config wins.
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"),
+		[]byte("[roster.codex-1]\nadapter=\"codex\"\n[roster.claude-1]\nadapter=\"claude\"\nactive = false\n[roster.antigravity-1]\nadapter=\"agy\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(coop, []byte(header+row("codex-1", "participant")+row("claude-1", "participant")), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	ids, had, err := defaultRosterParticipants(root, discovered)
@@ -67,6 +77,10 @@ func TestDefaultRosterParticipants(t *testing.T) {
 	}
 
 	// Case 2: a readable roster whose members do not resolve is a hard error.
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"),
+		[]byte("[roster.antigravity-1]\nadapter=\"agy\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(coop, []byte(header+row("antigravity-1", "participant")), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +88,11 @@ func TestDefaultRosterParticipants(t *testing.T) {
 		t.Fatalf("case2 (zero-resolved) must hard-error with hadRoster=true: had=%v err=%v", had, err)
 	}
 
-	// Case 3: no readable §2 roster -> fall back (hadRoster=false, no error).
+	// Case 3: no roster at all -> fall back (hadRoster=false, no error). Both authorities
+	// must be empty: config is checked first, and the §2 table is the legacy fallback.
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"), []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(coop, []byte("# C\nno roster table here\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +294,6 @@ func TestRosterShowAndInit(t *testing.T) {
 		t.Fatalf("second init not idempotent:\n%s", out.String())
 	}
 }
-
 
 func slicesEqual(a, b []string) bool {
 	if len(a) != len(b) {

@@ -73,3 +73,19 @@ approval_policy = "accept-hooks"
 
 [agents.hermes.isolated_home_env]
 HERMES_HOME = "{tempdir}"
+
+# Roster membership, migrated from the §2 table of COOPERATION.md on 2026-08-06.
+# §2 is now a generated, non-authoritative view; this file is the deck's roster authority.
+# Retired agents are kept with active = false rather than deleted, so past ideas stay readable.
+
+[roster.claude-1]
+adapter = "claude"
+
+[roster.codex-1]
+adapter = "codex"
+
+[roster.hermes-1]
+adapter = "hermes"
+
+[roster.kimi-1]
+adapter = "kimi"

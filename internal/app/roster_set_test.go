@@ -81,7 +81,7 @@ func TestRosterSetIsIdempotent(t *testing.T) {
 func TestRosterSetInactiveMarksRatherThanDeletes(t *testing.T) {
 	root := writeDeckTOML(t, "[roster.antigravity-1]\nadapter = \"agy\"\n")
 	var out, errb bytes.Buffer
-	if code := runRoster([]string{"set", "antigravity-1", "--dir", root, "--scope", "deck", "--state", "inactive", "--yes"}, &out, &errb); code != 0 {
+	if code := runRoster([]string{"set", "antigravity-1", "--dir", root, "--scope", "deck", "--state", "inactive", "--yes", "--confirm-breaking"}, &out, &errb); code != 0 {
 		t.Fatalf("exit=%d stderr=%s", code, errb.String())
 	}
 	got, _ := os.ReadFile(filepath.Join(root, "parley-deck", "agents.toml"))
@@ -107,5 +107,33 @@ func TestRosterSetDeckScopeTargetsCommittedFile(t *testing.T) {
 	}
 	if strings.Contains(target, "agents.local.toml") {
 		t.Fatalf("deck scope must never write the gitignored local file: %s", target)
+	}
+}
+
+// Membership changes alter WHO deliberates, and therefore a future idea's quorum. `--yes`
+// is the ordinary confirmation; a membership change needs a second one so it can never
+// ride along unnoticed with a routine model change.
+func TestRosterSetRefusesMembershipChangeOnYesAlone(t *testing.T) {
+	root := writeDeckTOML(t, "[roster.claude-1]\nadapter = \"claude\"\n")
+	var out, errb bytes.Buffer
+	code := runRoster([]string{"set", "claude-1", "--dir", root, "--scope", "deck", "--state", "inactive", "--yes"}, &out, &errb)
+	if code == 0 {
+		t.Fatalf("--yes alone must not retire a member; output:\n%s", out.String())
+	}
+	if !strings.Contains(errb.String(), "--confirm-breaking") {
+		t.Fatalf("the refusal must name the flag that would allow it:\n%s", errb.String())
+	}
+	got, _ := os.ReadFile(filepath.Join(root, "parley-deck", "agents.toml"))
+	if strings.Contains(string(got), "active = false") {
+		t.Fatalf("the file was written despite the refusal:\n%s", got)
+	}
+}
+
+// Adding a brand-new member is also a membership change.
+func TestRosterSetRefusesNewMemberOnYesAlone(t *testing.T) {
+	root := writeDeckTOML(t, "[roster.claude-1]\nadapter = \"claude\"\n")
+	var out, errb bytes.Buffer
+	if code := runRoster([]string{"set", "newcomer-1", "--dir", root, "--scope", "deck", "--adapter", "kimi", "--yes"}, &out, &errb); code == 0 {
+		t.Fatalf("--yes alone must not add a member; output:\n%s", out.String())
 	}
 }

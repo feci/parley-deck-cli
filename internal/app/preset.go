@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"parley-deck-cli/internal/config"
-	"parley-deck-cli/internal/protocol"
 )
 
 // runPreset implements `parley preset list` (named-roster-presets): print the roster
@@ -47,7 +46,7 @@ func runPreset(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "No roster presets defined. Add a [rosters.<name>] block to ~/.parley/agents.toml or parley-deck/agents.toml.")
 		return 0
 	}
-	rosterIDs, inactive, ok := protocol.ReadRosterIDs(*root)
+	rosterIDs, inactive, ok := RosterMembership(*root)
 	if !ok {
 		fmt.Fprintln(stdout, "⚠ could not read the §2 roster (COOPERATION.md) — stale-member validation skipped.")
 	}

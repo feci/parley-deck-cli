@@ -1154,6 +1154,11 @@ func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noI
 		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
 		return 1
 	}
+	// CONSUME the run's frozen roster. Re-discovering configuration on every continuation
+	// is what let a machine-default change move a running idea onto a different model.
+	if m, mErr := runmanifest.Load(root, run.RunID); mErr == nil {
+		discovered = applyRosterSnapshot(discovered, m.RosterSnapshot, stderr)
+	}
 	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", run.IdeaSlug)
 	idea := protocol.IdeaStatus{Slug: run.IdeaSlug, Path: ideaDir, Participants: run.Participants}
 	runOpts := runner.Options{
@@ -1794,7 +1799,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "roster presets failed: %v\n", rerr)
 		return 1
 	} else if strings.TrimSpace(*presetFlag) != "" || (strings.TrimSpace(*participantsFlag) == "" && strings.TrimSpace(*trackFlag) != "") {
-		rosterIDs, inactive, ok := protocol.ReadRosterIDs(*root)
+		rosterIDs, inactive, ok := RosterMembership(*root)
 		if !ok {
 			// Fail closed (FINAL §Validation): without a parseable §2 roster we cannot
 			// validate preset membership, so refuse rather than silently expand.
@@ -2422,7 +2427,7 @@ func installedAgentIDs(discovered []agents.Discovery) []string {
 // resolve is a hard error (never launch unrelated installed agents); ids explicitly
 // marked inactive are excluded (protocol inactive-retention).
 func defaultRosterParticipants(root string, discovered []agents.Discovery) (ids []string, hadRoster bool, err error) {
-	active, inactive, ok := protocol.ReadRosterIDs(root)
+	active, inactive, ok := RosterMembership(root)
 	if !ok || len(active) == 0 {
 		return nil, false, nil
 	}
