@@ -115,3 +115,25 @@ Summary: Replaced placeholder roster rows with `codex`, `claude`, `gemini`, and 
 - Mirrored into the embedded default protocol
   (internal/protocol/defaults/COOPERATION.md). The external parley-deck-skill
   bundled snapshot still needs a sync — flagged via inbox.
+
+## 2026-08-06 — §2 roster authority moves to `parley-deck/agents.toml`
+
+**Idea:** `roster-operations-standard` (track `deliberation`, 2 rounds, 3 signoff revisions,
+accepted by claude-1, codex-1, hermes-1, kimi-1).
+
+**Change:** §2's roster table stops being the hand-edited membership store and becomes a
+generated, non-authoritative view. `[roster.<id>]` blocks in `parley-deck/agents.toml` carry
+membership plus adapter/model/effort/speed (runtime-semantic) and workspace_dir/role/host_handle
+(render-only). Retired agents are marked `active = false`, never deleted. Decks with only a legacy
+table keep working and report `legacy-roster`.
+
+**Why:** measured across 40 decks — nine distinct rosters, 17 with no roster at all, 17 still
+naming an agent retired months earlier. The store the protocol told humans to maintain by hand was
+the store that drifted.
+
+**Venue deviation, recorded.** §7 requires a protocol change to run as its own
+`meta-protocol-change-*` idea. It ran inside `roster-operations-standard` on the **user's explicit
+one-off authorization**. This is NOT a general exception to §7 — §6 rule 3's direct-user-instruction
+exception is scoped to editing another agent's file — and it sets **no precedent**: the next
+protocol change needs its own meta idea unless the user again directs otherwise. Full participant
+ratification was still required and obtained.
