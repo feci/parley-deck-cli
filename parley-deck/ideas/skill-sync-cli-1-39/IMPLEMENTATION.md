@@ -4,7 +4,7 @@ implementer: claude-1
 target-repo: parley-deck-skill
 released-as: 2.4.0
 date: 2026-08-06
-status: ready-for-review
+status: complete
 ---
 
 # IMPLEMENTATION — skill 2.4.0
@@ -88,4 +88,4 @@ updated.
 
 - No deck outside this repository was edited. The 9 exclusive decks are follow-up 1 in `FINAL.md`;
   D5's migration rule is the instruction, not an automated migration.
-- No release performed yet — awaiting `hermes-1`'s revision-2 signoff (see `consensus.md`).
+- Released as skill 2.4.0 after review round 2 closed with three accepts and zero open fixes.
