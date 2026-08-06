@@ -30,8 +30,88 @@ type fileConfig struct {
 // resolves to (composite-agent-naming-and-roster-reinit). NOTE the singular table
 // name `[roster.*]` (the ID->family map) is distinct from the plural `[rosters.*]`
 // participant presets above.
+// rosterAdapter is one [roster.<id>] block. It began as an adapter mapping only; the
+// remaining fields make parley-deck/agents.toml the deck's roster AUTHORITY, so
+// membership and per-agent settings stop living in hand-edited §2 prose. Only ID,
+// Adapter, Active, Model, Effort and Speed are runtime-semantic; WorkspaceDir, Role and
+// HostHandle are render-only and are carried verbatim from the legacy §2 table.
+//
+// Absent Active means true: existing blocks that carry only `adapter` keep working.
 type rosterAdapter struct {
-	Adapter string `toml:"adapter"`
+	Adapter      string `toml:"adapter"`
+	Active       *bool  `toml:"active"`
+	Model        string `toml:"model"`
+	Effort       string `toml:"effort"`
+	Speed        string `toml:"speed"`
+	WorkspaceDir string `toml:"workspace_dir"`
+	Role         string `toml:"role"`
+	HostHandle   string `toml:"host_handle"`
+}
+
+// RosterEntry is the resolved, layered view of one [roster.<id>] block.
+type RosterEntry struct {
+	ID           string
+	Adapter      string
+	Active       bool
+	Model        string
+	Effort       string
+	Speed        string
+	WorkspaceDir string
+	Role         string
+	HostHandle   string
+}
+
+// LoadRoster returns the layered roster entries keyed by roster ID, lowest layer first
+// so a deck overrides the machine default field by field. An empty result means no
+// config layer declares a roster at all — the caller then falls back to the legacy §2
+// table and reports `legacy-roster`.
+func LoadRoster(root string) (map[string]RosterEntry, error) {
+	out := map[string]RosterEntry{}
+	for _, item := range configLayers(root) {
+		data, err := os.ReadFile(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return out, err
+		}
+		var cfg fileConfig
+		if err := toml.Unmarshal(data, &cfg); err != nil {
+			return out, fmt.Errorf("%s: %w", item.path, err)
+		}
+		for id, ra := range cfg.Roster {
+			e, ok := out[id]
+			if !ok {
+				e = RosterEntry{ID: id, Active: true}
+			}
+			if v := strings.TrimSpace(ra.Adapter); v != "" {
+				e.Adapter = v
+			}
+			if ra.Active != nil {
+				e.Active = *ra.Active
+			}
+			if v := strings.TrimSpace(ra.Model); v != "" {
+				e.Model = v
+			}
+			if v := strings.TrimSpace(ra.Effort); v != "" {
+				e.Effort = v
+			}
+			if v := strings.TrimSpace(ra.Speed); v != "" {
+				e.Speed = v
+			}
+			if v := strings.TrimSpace(ra.WorkspaceDir); v != "" {
+				e.WorkspaceDir = v
+			}
+			if v := strings.TrimSpace(ra.Role); v != "" {
+				e.Role = v
+			}
+			if v := strings.TrimSpace(ra.HostHandle); v != "" {
+				e.HostHandle = v
+			}
+			out[id] = e
+		}
+	}
+	return out, nil
 }
 
 // rosterOverride is one [rosters.<slug>] block — a named participant preset

@@ -159,22 +159,46 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 		installed[d.ID] = d.Found
 	}
 	mapping, _ := config.LoadRosterAdapters(root)
-	// The inactive set was previously discarded into `_`, so a retired agent — 17 decks
-	// still name antigravity-1 — rendered as a full member. The parser puts EVERY row in
-	// `active`, including inactive ones, and reports `inactive` separately; STATE is what
-	// distinguishes them.
-	active, inactive, ok := protocol.ReadRosterIDs(root)
-	if !ok {
-		return nil, fmt.Errorf("could not read the §2 roster (COOPERATION.md)")
+
+	// MEMBERSHIP AUTHORITY. parley-deck/agents.toml owns the roster; §2 is a generated,
+	// non-authoritative view. A deck that predates the cutover has no [roster.*] block at
+	// all, so it falls back to the legacy §2 table and every row is flagged
+	// `legacy-roster` — the drift this idea exists to end came from 40 decks maintaining
+	// that table by hand, nine different ways.
+	entries, entriesErr := config.LoadRoster(root)
+	if entriesErr != nil {
+		return nil, entriesErr
 	}
-	ids := make([]string, 0, len(active))
-	for id := range active {
-		ids = append(ids, id)
+	legacy := len(entries) == 0
+	inactive := map[string]bool{}
+	var ids []string
+	if legacy {
+		// The parser puts EVERY row in `active`, including inactive ones, and reports
+		// `inactive` separately; STATE is what distinguishes them. That second map used
+		// to be discarded, so a retired agent rendered as a full member.
+		active, inactiveIDs, ok := protocol.ReadRosterIDs(root)
+		if !ok {
+			return nil, fmt.Errorf("no roster: declare [roster.<id>] in parley-deck/agents.toml (or keep a legacy §2 table in COOPERATION.md)")
+		}
+		inactive = inactiveIDs
+		for id := range active {
+			ids = append(ids, id)
+		}
+	} else {
+		for id, e := range entries {
+			ids = append(ids, id)
+			if !e.Active {
+				inactive[id] = true
+			}
+		}
 	}
 	sort.Strings(ids)
 	rows := make([]rosterRow, 0, len(ids))
 	for _, id := range ids {
 		row := rosterRow{Agent: id, State: "active"}
+		if legacy {
+			row.addStatus("legacy-roster")
+		}
 		if inactive[id] {
 			row.State = "inactive"
 			row.addStatus("inactive")
@@ -211,6 +235,19 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 			continue
 		}
 		spec := byFamily[family]
+		// Per-roster-ID settings beat the adapter-family default, so two roster IDs can
+		// share an adapter and still run different models.
+		if e, ok := entries[id]; ok {
+			if e.Model != "" {
+				spec.Model = e.Model
+			}
+			if e.Effort != "" {
+				spec.Reasoning = e.Effort
+			}
+			if e.Speed != "" {
+				spec.Speed = e.Speed
+			}
+		}
 		row.Installed = installed[family]
 		if !row.Installed {
 			row.addStatus("not-installed")
