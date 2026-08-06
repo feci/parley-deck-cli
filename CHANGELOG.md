@@ -1,5 +1,61 @@
 # Changelog
 
+## 1.40.0 — 2026-08-06
+
+Standardize roster operations. "What is the current agent roster?" had no single answer: three CLI
+surfaces produced three different tables, two independent stores held membership, and the table
+reported a `MODEL` the launcher never passed.
+
+Measured across 40 decks: **nine distinct rosters**, 17 with no roster at all, 17 still naming an
+agent retired months earlier, and one deck missing a participant entirely — which is why the same
+agent worked in some sessions and not others.
+
+### Fixed
+
+- **A configured model never reached the process.** The model lived in two places — `Spec.Model`
+  AND a literal baked into `HeadlessArgs` — and config layers set the field without rewriting the
+  args. Pinning a model changed only what was *displayed*: `claude` launched Opus 4.8 while every
+  config layer said Opus 5, and **six of seven adapters passed no effort flag at all**. Built-in
+  args now carry `{model}`/`{effort}` placeholders that the runner substitutes, so one value lives
+  in one place. `codex`, `kimi` and `opencode` gained `-m`. An unbindable placeholder drops its
+  introducing flag rather than leaving a value-taking flag dangling, which would abort the CLI.
+- **`AUTO` is computed from the resolved argv**, not the raw one.
+- **Retired agents rendered as full members.** `resolveRoster` discarded the inactive set, so
+  marking a row inactive did nothing. `STATE` is now wired.
+- **`roster` was dispatched but absent from `parley --help` and the docs** — the command the skill
+  tells agents to run was undiscoverable.
+
+### Added
+
+- **A frozen 11-column roster contract**, identical in text and `--json`, carrying
+  `schema_version` and the ordered column list so consumers can detect a contract change:
+  `AGENT ADAPTER STATE INSTALLED MODEL MODEL-FAMILY MODEL-COMPANY EFFORT SPEED AUTO STATUS`.
+  `MODEL` and `EFFORT` hold what the launch actually passes, or `unknown` — never a declaration
+  wearing the effective cell. Divergence surfaces as `STATUS=model-drift` / `effort-unknown`.
+- **`modelmeta`**, a CLI-owned derivation of model family and company. Gateway prefixes are peeled
+  first, so `litellm/xai/grok-4.5` is **xAI via LiteLLM**, and an adapter never implies a company.
+- **`parley roster set AGENT --scope deck|machine`** — change one member in one file. Preview by
+  default. `--scope deck` writes the **committed** `parley-deck/agents.toml`, never the gitignored
+  local file. `--state inactive` marks; rows are never deleted.
+- **`parley roster sync`** — the single defined machine → deck reconciliation, with **rebase**
+  semantics: redundant deck overrides are removed so the deck inherits, and a deliberate pin is
+  never dropped silently — it is enumerated with the exact `--keep AGENT.FIELD` that retains it.
+- **An immutable per-run roster snapshot** plus `roster_revision`. Runs previously recorded
+  participant IDs and nothing else, and `continue` re-discovers configuration — so changing a
+  machine default mid-run could silently continue it on a different model.
+
+### Changed — protocol
+
+- **`COOPERATION.md` §2 is now a generated, non-authoritative view**; `parley-deck/agents.toml`
+  owns the roster. Decks with only the old hand-written table keep working and report
+  `legacy-roster` until `parley roster sync` moves them across. See
+  `parley-deck/meta/protocol-changelog.md` for the recorded, user-authorized one-off venue
+  deviation from §7.
+
+Designed and reviewed through a full Parley Deck run (`roster-operations-standard`, track
+`deliberation`, four participants, two rounds, three consensus revisions). codex-1 blocked twice;
+both blocks were upheld and discharged. Fifteen drafter position changes are recorded.
+
 ## v1.39.0 - 2026-08-06
 
 **`kimi` and `opencode` are full adapters, and a silent auto-approve defect is fixed.**
