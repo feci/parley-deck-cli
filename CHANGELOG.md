@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.39.0 - 2026-08-06
+
+**`kimi` and `opencode` are full adapters, and a silent auto-approve defect is fixed.**
+
+Both agents existed only as one-line entries in the ACP catalog. `specFromACPBackend()` never sets
+`AutonomousWrite`, so `agents list` reported `AUTO=no` for them — not a statement about the CLIs,
+which both write unattended, but about parley not knowing which flag enables it.
+
+- **Full built-in specs.** `kimi` launches as `kimi -p <prompt>`, `opencode` as
+  `opencode run --auto <prompt>`. Both keep `kimi acp` / `opencode acp` as an alternative launch
+  mode. Every field was probed live before being written: `kimi --auto -p …` exits 1 with
+  *"Cannot combine --prompt with --auto"*, so `-p` is the only autonomous headless shape kimi has.
+- **`Scope` stays empty for both.** Only `codex --sandbox workspace-write` enforces a real sandbox;
+  the type forbids claiming confinement that is not enforced.
+
+**The defect, found in review by codex-1 and wider than the change that exposed it.** A config
+layer replaces `HeadlessArgs` wholesale without touching `AutonomousWrite`, so parley could declare
+an autonomous mode whose enabling flag the launched command never passed — and still print
+`AUTO=yes`. **`hermes` was already in that state**: its override had dropped `--yolo`.
+
+- `AUTO` now **fails closed**: a declared mode whose enabling args are absent from the effective
+  launch reports `no`, with a warning naming the missing args.
+- The `headless:` line in `agents list` now shows the **resolved binary and effective argv**
+  instead of the built-in label. The label is what hid the defect.
+
+Also: kimi's notes now record that its installer does not add the binary to `PATH`, so `command`
+must be set; opencode's telemetry description no longer understates its streamed output.
+
 ## v1.38.0 - 2026-08-04
 
 **Protocol: new `§15 Verification integrity`.** Ratified by idea
