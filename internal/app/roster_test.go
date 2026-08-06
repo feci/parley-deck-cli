@@ -91,18 +91,18 @@ func TestResolveRosterFamilyFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, r := range rows {
-		if r.Family != "" {
-			t.Errorf("%s resolved to %q despite an empty allowed catalog", r.RosterID, r.Family)
+		if r.Adapter != "" {
+			t.Errorf("%s resolved to %q despite an empty allowed catalog", r.Agent, r.Adapter)
 		}
 	}
 	// Restricting to {claude} leaves only claude-1 resolvable.
 	rows, _ = resolveRoster(root, map[string]bool{"claude": true})
 	for _, r := range rows {
-		if r.RosterID == "claude-1" && r.Family != "claude" {
-			t.Errorf("claude-1 should resolve to claude, got %q", r.Family)
+		if r.Agent == "claude-1" && r.Adapter != "claude" {
+			t.Errorf("claude-1 should resolve to claude, got %q", r.Adapter)
 		}
-		if r.RosterID != "claude-1" && r.Family != "" {
-			t.Errorf("%s should be filtered by the {claude}-only catalog, got %q", r.RosterID, r.Family)
+		if r.Agent != "claude-1" && r.Adapter != "" {
+			t.Errorf("%s should be filtered by the {claude}-only catalog, got %q", r.Agent, r.Adapter)
 		}
 	}
 }
@@ -212,13 +212,16 @@ func TestRosterInitEmptyAdapterBlockErrors(t *testing.T) {
 func TestRosterShowAndInit(t *testing.T) {
 	root := setupRosterDeck(t)
 
-	// show must run and render every §2 roster id with a family_model_effort name.
+	// show must render the frozen v1 column contract, in order. The header is an API:
+	// three CLI surfaces used to answer "what is the roster?" with three different
+	// tables, so the columns and their order are pinned here rather than left to drift.
 	var out, errb bytes.Buffer
 	if code := runRoster([]string{"show", "--dir", root}, &out, &errb); code != 0 {
 		t.Fatalf("roster show exit=%d stderr=%s", code, errb.String())
 	}
-	if !strings.Contains(out.String(), "DISPLAY-NAME") {
-		t.Fatalf("show output missing header:\n%s", out.String())
+	header := strings.SplitN(out.String(), "\n", 2)[0]
+	if got := strings.Fields(header); !slicesEqual(got, RosterColumns) {
+		t.Fatalf("show header=%v, want the frozen contract %v", got, RosterColumns)
 	}
 
 	// A dry-run proposes the mapping and writes nothing.
@@ -272,4 +275,17 @@ func TestRosterShowAndInit(t *testing.T) {
 	if !strings.Contains(out.String(), "already initialized") {
 		t.Fatalf("second init not idempotent:\n%s", out.String())
 	}
+}
+
+
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

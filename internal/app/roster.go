@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -78,15 +79,60 @@ func runRoster(args []string, stdout, stderr io.Writer) int {
 	}
 }
 
+// RosterSchemaVersion versions the canonical roster contract. The column list, their
+// order, and the JSON field names are an API: adding a column is an additive, documented
+// change that bumps this, and golden tests pin the shape. Before it existed, three CLI
+// surfaces answered "what is the roster?" with three different tables.
+const RosterSchemaVersion = 1
+
+// RosterColumns is the frozen v1 column list, in render order.
+var RosterColumns = []string{
+	"AGENT", "ADAPTER", "STATE", "INSTALLED", "MODEL",
+	"MODEL-FAMILY", "MODEL-COMPANY", "EFFORT", "SPEED", "AUTO", "STATUS",
+}
+
+// rosterRow is one canonical roster row.
+//
+// MODEL and EFFORT hold the value the launch ACTUALLY passes, or "unknown" — never a
+// declaration wearing the effective cell. That distinction is the whole point: the old
+// table printed spec.Model while the process launched a different model entirely.
+// Divergence and absence surface through Status codes rather than by quietly
+// substituting the declared value.
 type rosterRow struct {
-	RosterID string `json:"roster_id"`
-	Family   string `json:"family"`
-	Display  string `json:"display_name"`
-	Model    string `json:"model"`
-	Effort   string `json:"effort"`
-	Speed    string `json:"speed"`
-	Auto     bool   `json:"autonomous"`
-	Note     string `json:"note,omitempty"`
+	Agent        string   `json:"agent"`
+	Adapter      string   `json:"adapter"`
+	State        string   `json:"state"`
+	Installed    bool     `json:"installed"`
+	Model        string   `json:"model"`
+	ModelFamily  string   `json:"model_family"`
+	ModelCompany string   `json:"model_company"`
+	Effort       string   `json:"effort"`
+	Speed        string   `json:"speed"`
+	Auto         bool     `json:"autonomous"`
+	Status       []string `json:"status"`
+	// Display is the derived composite name. It left the canonical table because it
+	// duplicates ADAPTER+MODEL+EFFORT and could contradict MODEL; it stays here for
+	// TUI and artifact rendering, derived from this row.
+	Display string `json:"display_name,omitempty"`
+	Note    string `json:"note,omitempty"`
+}
+
+// addStatus appends a status code, keeping the list free of duplicates.
+func (r *rosterRow) addStatus(code string) {
+	for _, existing := range r.Status {
+		if existing == code {
+			return
+		}
+	}
+	r.Status = append(r.Status, code)
+}
+
+// statusOrOK renders the status cell; an empty list means nothing is wrong.
+func (r rosterRow) statusOrOK() string {
+	if len(r.Status) == 0 {
+		return "ok"
+	}
+	return strings.Join(r.Status, ",")
 }
 
 // resolveRoster builds one row per active §2 roster ID: family from the explicit
@@ -106,8 +152,18 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 		byFamily[s.ID] = s
 		families = append(families, s.ID)
 	}
+	// INSTALLED comes from a real discovery probe: a rostered agent whose binary is not
+	// on this machine is operationally absent, and the roster must say so.
+	installed := map[string]bool{}
+	for _, d := range agents.Discover(context.Background(), specs) {
+		installed[d.ID] = d.Found
+	}
 	mapping, _ := config.LoadRosterAdapters(root)
-	active, _, ok := protocol.ReadRosterIDs(root)
+	// The inactive set was previously discarded into `_`, so a retired agent — 17 decks
+	// still name antigravity-1 — rendered as a full member. The parser puts EVERY row in
+	// `active`, including inactive ones, and reports `inactive` separately; STATE is what
+	// distinguishes them.
+	active, inactive, ok := protocol.ReadRosterIDs(root)
 	if !ok {
 		return nil, fmt.Errorf("could not read the §2 roster (COOPERATION.md)")
 	}
@@ -118,12 +174,17 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 	sort.Strings(ids)
 	rows := make([]rosterRow, 0, len(ids))
 	for _, id := range ids {
-		row := rosterRow{RosterID: id}
+		row := rosterRow{Agent: id, State: "active"}
+		if inactive[id] {
+			row.State = "inactive"
+			row.addStatus("inactive")
+		}
 		family, mapped := mapping[id]
 		if !mapped {
 			family = proposeFamily(id, byFamily)
 			if family != "" {
 				row.Note = "unmapped — run `parley roster init`"
+				row.addStatus("unmapped")
 			}
 		} else if _, ok := byFamily[family]; !ok {
 			// Mapped to a family that is not configured/discovered: treat as
@@ -138,17 +199,44 @@ func resolveRoster(root string, allowedFamilies map[string]bool) ([]rosterRow, e
 			row.Note = fmt.Sprintf("family %q is not known machine-wide — define [agents.%s] in ~/.parley/agents.toml", family, family)
 			family = ""
 		}
-		row.Family = family
+		row.Adapter = family
 		if family == "" {
 			if row.Note == "" {
 				row.Note = "unresolved — add `[roster." + id + "] adapter = \"<family>\"`"
 			}
+			row.addStatus("unmapped")
+			row.Model, row.Effort = agents.Unknown, agents.Unknown
+			row.ModelFamily, row.ModelCompany = agents.Unknown, agents.Unknown
 			rows = append(rows, row)
 			continue
 		}
 		spec := byFamily[family]
-		row.Model = spec.Model
-		row.Effort = spec.Reasoning
+		row.Installed = installed[family]
+		if !row.Installed {
+			row.addStatus("not-installed")
+		}
+		// MODEL and EFFORT are the values the launch passes, or unknown. A configured
+		// value the argv never carries is NOT effective and must not fill the cell.
+		if model, ok := spec.EffectiveModel(); ok {
+			row.Model = model
+			if declared := strings.TrimSpace(spec.Model); declared != "" && declared != agents.CLIDefault && declared != model {
+				row.addStatus("model-drift")
+			}
+		} else {
+			row.Model = agents.Unknown
+			row.addStatus("model-unbound")
+		}
+		if effort, ok := spec.EffectiveEffort(); ok {
+			row.Effort = effort
+		} else {
+			row.Effort = agents.Unknown
+			row.addStatus("effort-unknown")
+		}
+		meta := agents.DeriveModelMeta(row.Model)
+		row.ModelFamily, row.ModelCompany = meta.Family, meta.Company
+		if !meta.Known {
+			row.addStatus("metadata-unknown")
+		}
 		row.Speed = spec.Speed
 		// Fail-closed: a declared mode whose enabling args the launch does not pass is
 		// not autonomous (review MAJOR, codex-1).
@@ -191,16 +279,22 @@ func rosterShow(root string, jsonOut bool, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if jsonOut {
-		return writeJSON(stdout, stderr, map[string]any{"roster": rows})
+		// schema_version and the ordered column list travel WITH the rows: a consumer
+		// must be able to detect a contract change rather than infer it from the keys.
+		return writeJSON(stdout, stderr, map[string]any{
+			"schema_version": RosterSchemaVersion,
+			"columns":        RosterColumns,
+			"roster":         rows,
+		})
 	}
-	fmt.Fprintf(stdout, "%-16s %-10s %-30s %-22s %-10s %-8s %s\n", "ROSTER-ID", "FAMILY", "DISPLAY-NAME", "MODEL", "EFFORT", "SPEED", "AUTO")
+	const format = "%-12s %-10s %-8s %-9s %-22s %-14s %-13s %-8s %-8s %-4s %s\n"
+	fmt.Fprintf(stdout, format, "AGENT", "ADAPTER", "STATE", "INSTALLED", "MODEL",
+		"MODEL-FAMILY", "MODEL-COMPANY", "EFFORT", "SPEED", "AUTO", "STATUS")
 	for _, r := range rows {
-		auto := "no"
-		if r.Auto {
-			auto = "yes"
-		}
-		fmt.Fprintf(stdout, "%-16s %-10s %-30s %-22s %-10s %-8s %s\n",
-			r.RosterID, orDash(r.Family), orDash(r.Display), orDash(r.Model), orDash(r.Effort), orDash(r.Speed), auto)
+		fmt.Fprintf(stdout, format,
+			r.Agent, orDash(r.Adapter), r.State, yesNo(r.Installed), orDash(r.Model),
+			orDash(r.ModelFamily), orDash(r.ModelCompany), orDash(r.Effort),
+			orDash(r.Speed), yesNo(r.Auto), r.statusOrOK())
 		if r.Note != "" {
 			fmt.Fprintf(stdout, "  ⚠ %s\n", r.Note)
 		}
@@ -261,14 +355,14 @@ func rosterInit(root, scope string, dryRun, yes, jsonOut bool, stdout, stderr io
 	var toWrite []rosterMapEntry
 	var unresolved []string
 	for _, r := range rows {
-		if r.Family == "" {
-			unresolved = append(unresolved, r.RosterID)
+		if r.Adapter == "" {
+			unresolved = append(unresolved, r.Agent)
 			continue
 		}
-		if _, ok := existing[r.RosterID]; ok {
+		if _, ok := existing[r.Agent]; ok {
 			continue // already in the target file — idempotent
 		}
-		toWrite = append(toWrite, rosterMapEntry{r.RosterID, r.Family})
+		toWrite = append(toWrite, rosterMapEntry{r.Agent, r.Adapter})
 	}
 	if len(unresolved) > 0 {
 		fmt.Fprintf(stderr, "roster init: cannot resolve a family for: %s\n  add `[roster.<id>] adapter = \"<family>\"` for each, then re-run.\n", strings.Join(unresolved, ", "))
