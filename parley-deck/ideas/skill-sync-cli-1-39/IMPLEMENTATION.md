@@ -43,6 +43,18 @@ comparison with two callers:
 executing. This is a shape difference, not a scope change: no new script, job, or checker exists,
 and both gates are closed.
 
+**Correction (review AF-4, hermes-1).** "Two callers" understates what `npm test` does.
+`package.json:60` is `node --test && node scripts/run-python-tests.js && node
+scripts/build-addon-manifest.js --check`, so a single `npm test` run exercises the guard through
+**both** callers — the test assertion and the `--check` invocation. `prepack` exercises only the
+script caller. The redundancy is harmless and is what D4 asked for; the original wording was just
+inaccurate about it.
+
+**Adaptation (review AF-5, kimi-1).** FINAL's migration rule is written in snake_case
+(`headless_args`), because that is the Parley CLI's spelling. It was applied to the manual JSON
+shape as `headlessArgs`, which is that shape's actual spelling. This is a deliberate adaptation of
+ratified text to its target context, recorded here rather than left silent.
+
 ## Verification
 
 All measured, not asserted.
