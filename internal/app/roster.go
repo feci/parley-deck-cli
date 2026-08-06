@@ -434,7 +434,7 @@ func rosterShow(root string, jsonOut bool, opts rosterViewOpts, stdout, stderr i
 	// Dropping it silently is what let `roster render` erase project data unannounced.
 	rows = append(rows, section2OnlyRows(root, membersOf(root, opts.scope))...)
 	if opts.all {
-		rows = append(rows, unrosteredRows(root, membersOf(root, opts.scope))...)
+		rows = append(rows, unrosteredRows(root, membersOf(root, opts.scope), opts.scope == "machine")...)
 	}
 	// STATUS is []string, so a healthy row marshalled to JSON as `null` while the text
 	// table printed `ok` — the same row contradicting itself across two renderings of a

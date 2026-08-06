@@ -95,13 +95,13 @@ func section2OnlyRows(root string, members map[string]bool) []rosterRow {
 // unrosteredRows returns rows for configured adapters that no roster declares, used by
 // --all. They are not members; they are shown so an operator can see that an agent they
 // installed is deliberately not on this deck.
-func unrosteredRows(root string, members map[string]bool) []rosterRow {
-	specs, err := config.LoadAgentSpecs(root)
+func unrosteredRows(root string, members map[string]bool, machineOnly bool) []rosterRow {
+	specs, err := config.LoadAgentSpecsScoped(root, machineOnly)
 	if err != nil {
 		return nil
 	}
 	claimed := map[string]bool{}
-	mapping, _ := config.LoadRosterAdapters(root)
+	mapping, _ := config.LoadRosterAdaptersScoped(root, machineOnly)
 	for id := range members {
 		if fam := mapping[id]; fam != "" {
 			claimed[fam] = true
@@ -169,8 +169,15 @@ func rosterExplain(root, agent string, opts rosterViewOpts, stdout, stderr io.Wr
 	}
 	fmt.Fprintf(stdout, "%s — membership from %s%s\n\n", agent, scope.Source, inheritedSuffix(scope.Inherited))
 	fmt.Fprintf(stdout, "%-14s %-24s %s\n", "FIELD", "EFFECTIVE", "SET BY")
+	// A field no [roster.<id>] block sets can still come from a central or deck
+	// [agents.<family>] block. Reporting "built-in default" there misattributes the value
+	// that actually reaches the launch.
+	specSources := config.AgentFieldSources(root, row.Adapter, opts.scope == "machine")
 	show := func(field, effective string) {
 		src := layers[field]
+		if src == "" {
+			src = specSources[field]
+		}
 		if src == "" {
 			src = "built-in default"
 		}

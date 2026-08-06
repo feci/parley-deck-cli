@@ -129,3 +129,40 @@ environment-dependent `internal/runner` failure named explicitly.
 **Tests.** Six more: legacy-§2-beats-machine, snapshot-survives-participant-resolution,
 revision-covers-launch-args, machine-scope-not-masked, init-requires-confirm-breaking, plus the
 extended drift guard.
+
+## Fix-up cycle 4 — re-review round 3 findings (2026-08-06)
+
+Round 3: hermes-1 CLEAN; codex-1 and kimi-1 FINDINGS. All fixed.
+
+**[CRITICAL, codex-1] Value-only layers could retire or revive a committed deck member.**
+Cycle 3 gated which layers may add membership IDs but left `active` merging from every layer, so
+`[roster.claude-1] active = false` in the gitignored `agents.local.toml`, the env config, or the
+machine file silently dropped a committed member from the quorum — using a file collaborators
+never see. `RosterScope.applyAuthorityState` now forces each member's state to the value declared
+by the layer that granted membership (deck file, legacy §2, or machine when inherited).
+
+**[MAJOR, codex-1 R3-M1 / kimi-1 N-1] A regression introduced by cycle 3.** The A5 fix appended
+the frozen discovery instead of replacing it. The runner resolves a participant by FIRST exact ID
+match, so for a participant spelled exactly like its adapter family (`claude`, not `claude-1`) the
+live unfrozen record still won: the freeze existed in memory and never reached the launch.
+Composite IDs hid it because they do not collide with the adapter ID they resolve through. The
+helper now replaces in place, and the test resolves through `agents.ResolveParticipant` and asserts
+the record the runner would actually launch.
+
+**[MAJOR, codex-1 R3-M2] `--scope machine` still leaked.** `--all` used the layered spec/mapping
+loaders, and `--explain` reported "built-in default" for values that reach the launch through an
+`[agents.<family>]` block. Both are scope-threaded now, and `config.AgentFieldSources` attributes
+agent-block fields.
+
+**[MAJOR, codex-1 R3-M3] The four-surface guard overclaimed.** It now states explicitly when the
+sibling skill checkout was not readable and that those surfaces are therefore not enforced by that
+run, instead of implying four-surface coverage.
+
+**[MINOR, codex-1 R3-m1] The JSON contract had no reversion-sensitive test.** The previous test
+only asserted status was non-null, so re-adding `display_name`/`note` would have passed. The new
+test asserts the exact eleven-key set in both directions.
+
+**[MINOR, both] Skill 2.5.1** is released with this cycle rather than left uncommitted.
+
+**Tests.** Four more: value-layers-cannot-change-membership-state, freeze-reaches-bare-family-
+participants, exact-frozen-JSON-columns, plus the corrected guard note.

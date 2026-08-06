@@ -216,3 +216,81 @@ func TestRosterInitRequiresConfirmBreaking(t *testing.T) {
 		t.Fatalf("init with --confirm-breaking exit=%d: %s", code, errb.String())
 	}
 }
+
+// A participant spelled exactly like its adapter family (`claude`, not `claude-1`) must
+// still get the frozen values. Cycle 3's append-based helper left the live discovery first,
+// and the runner resolves by FIRST exact ID match — so the freeze never reached the launch.
+func TestSnapshotFreezeReachesBareFamilyParticipants(t *testing.T) {
+	frozen := []runmanifest.RosterSnapshotEntry{{Agent: "claude", Adapter: "claude", Model: "frozen-model"}}
+	discovered := []agents.Discovery{{Found: true, Spec: agents.Spec{ID: "claude", Model: "drifted"}}}
+
+	out := applyRosterSnapshotToParticipants([]string{"claude"}, discovered, map[string]string{}, frozen, nil)
+
+	// Resolve exactly as the runner does, and assert the record it would launch.
+	picked, err := agents.ResolveParticipant("claude", out, map[string]string{})
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if picked.Spec.Model != "frozen-model" {
+		t.Fatalf("runner would launch %q, not the frozen %q", picked.Spec.Model, "frozen-model")
+	}
+}
+
+// A value-only layer must not be able to retire or revive a committed deck member:
+// membership state belongs to the record that grants membership.
+func TestValueLayersCannotChangeMembershipState(t *testing.T) {
+	root := deckWith(t,
+		"[roster.claude-1]\nadapter=\"claude\"\n[roster.kimi-1]\nadapter=\"kimi\"\n",
+		"[roster.claude-1]\nadapter=\"claude\"\nactive = false\n")
+	// The gitignored local layer also tries to retire a committed member.
+	if err := os.WriteFile(filepath.Join(root, "parley-deck", "agents.local.toml"),
+		[]byte("[roster.kimi-1]\nactive = false\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	active, inactive, ok := RosterMembership(root)
+	if !ok {
+		t.Fatal("membership not resolved")
+	}
+	for _, id := range []string{"claude-1", "kimi-1"} {
+		if inactive[id] || !active[id] {
+			t.Errorf("%s was retired by a value-only layer; the deck file says active", id)
+		}
+	}
+}
+
+// The frozen v1 contract is eleven columns in BOTH renderings. The earlier test only
+// checked that status was non-null, so re-adding display_name/note — or any twelfth field
+// — would not have failed it. This asserts the exact key set, so a regression must fail.
+func TestJSONRowHasExactlyTheFrozenColumns(t *testing.T) {
+	root := deckWith(t, "[roster.claude-1]\nadapter = \"claude\"\nmodel = \"m\"\n", "")
+	var out, errb strings.Builder
+	if code := rosterShow(root, true, rosterViewOpts{}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	var payload struct {
+		Roster []map[string]any `json:"roster"`
+	}
+	if err := json.Unmarshal([]byte(out.String()), &payload); err != nil {
+		t.Fatalf("invalid JSON: %v", err)
+	}
+	want := map[string]bool{
+		"agent": true, "adapter": true, "state": true, "installed": true, "model": true,
+		"model_family": true, "model_company": true, "effort": true, "speed": true,
+		"autonomous": true, "status": true,
+	}
+	if len(payload.Roster) == 0 {
+		t.Fatal("no rows")
+	}
+	for _, row := range payload.Roster {
+		for k := range row {
+			if !want[k] {
+				t.Errorf("row carries %q, which is outside the frozen eleven columns", k)
+			}
+		}
+		for k := range want {
+			if _, ok := row[k]; !ok {
+				t.Errorf("row is missing frozen column %q", k)
+			}
+		}
+	}
+}

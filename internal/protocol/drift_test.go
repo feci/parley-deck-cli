@@ -283,8 +283,13 @@ func TestNoSection2AsAStoreInstructions(t *testing.T) {
 		}
 		surfaces = append(surfaces, struct{ name, text string }{sib.name, string(b)})
 	}
+	// Do not claim four-surface enforcement when only two were readable. The skill lives
+	// in a sibling checkout, so in a CLI-only clone this guard covers the in-repo copies
+	// and says so; the skill repo carries its own check.
 	if len(surfaces) < 4 {
-		t.Logf("checked %d of 4 surfaces; the skill repo is a sibling checkout", len(surfaces))
+		t.Logf("NOTE: checked %d of 4 surfaces — the bundled skill protocol and SKILL.md live in the "+
+			"sibling parley-deck-skill checkout and were not readable here; they are NOT enforced by this run",
+			len(surfaces))
 	}
 	for _, tc := range surfaces {
 		for _, phrase := range banned {

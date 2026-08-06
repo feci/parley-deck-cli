@@ -92,7 +92,23 @@ func applyRosterSnapshotToParticipants(participants []string, discovered []agent
 			continue // the runner reports unresolvable participants and fails closed
 		}
 		frozen := applyRosterSnapshot([]agents.Discovery{resolved}, snapshot, warn)
-		if len(frozen) == 1 {
+		if len(frozen) != 1 {
+			continue
+		}
+		// REPLACE, never append. The runner resolves a participant by FIRST exact ID
+		// match, so appending a frozen `claude` behind the live `claude` discovery left
+		// the unfrozen one winning — the freeze existed in memory and never reached the
+		// launch. Composite IDs (claude-1) hid this because they do not collide with the
+		// adapter ID they resolve through.
+		replaced := false
+		for i := range out {
+			if out[i].Spec.ID == frozen[0].Spec.ID {
+				out[i] = frozen[0]
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
 			out = append(out, frozen[0])
 		}
 	}

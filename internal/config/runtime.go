@@ -124,6 +124,14 @@ func LoadRosterScoped(root string) (RosterScope, error) {
 	deckMembers := map[string]bool{}
 	machineMembers := map[string]bool{}
 	deckSource, machineSource := "", ""
+	// ACTIVE STATE FOLLOWS THE AUTHORITY, not the layer stack. Membership IDs were gated
+	// to the committed deck file, but `active` still merged from every layer — so
+	// `[roster.claude-1] active = false` in the gitignored agents.local.toml, the env
+	// config, or the machine file could quietly drop a committed member from the quorum
+	// (or revive one the deck retired) using a file collaborators never see. Retiring a
+	// member is a membership change; it belongs to the same record that grants membership.
+	deckActive := map[string]bool{}
+	machineActive := map[string]bool{}
 	for _, item := range configLayers(root) {
 		ids, entries, err := rosterLayer(item.path)
 		if err != nil {
@@ -147,6 +155,7 @@ func LoadRosterScoped(root string) (RosterScope, error) {
 			if item.machine {
 				for _, id := range ids {
 					machineMembers[id] = true
+					machineActive[id] = entries[id].Active == nil || *entries[id].Active
 				}
 				if machineSource == "" {
 					machineSource = item.source
@@ -156,6 +165,7 @@ func LoadRosterScoped(root string) (RosterScope, error) {
 		}
 		for _, id := range ids {
 			deckMembers[id] = true
+			deckActive[id] = entries[id].Active == nil || *entries[id].Active
 		}
 		if deckSource == "" {
 			deckSource = item.source
@@ -171,29 +181,43 @@ func LoadRosterScoped(root string) (RosterScope, error) {
 	// machine roster silently outranked a legacy deck's four declared members.
 	if len(deckMembers) > 0 {
 		out.Members, out.Source = deckMembers, deckSource
+		out.applyAuthorityState(deckActive)
 		return out, nil
 	}
 	if active, inactive, ok := protocol.ReadRosterIDs(root); ok {
 		out.Members = map[string]bool{}
+		legacyActive := map[string]bool{}
 		for id := range active {
 			out.Members[id] = true
+			legacyActive[id] = true
 		}
 		for id := range inactive {
 			out.Members[id] = true
-			e := out.Entries[id]
-			if e.ID == "" {
-				e = RosterEntry{ID: id}
-			}
-			e.Active = false
-			out.Entries[id] = e
+			legacyActive[id] = false
 		}
 		out.Source, out.Legacy = "COOPERATION.md §2", true
+		out.applyAuthorityState(legacyActive)
 		return out, nil
 	}
 	if len(machineMembers) > 0 {
 		out.Members, out.Source, out.Inherited = machineMembers, machineSource, true
+		out.applyAuthorityState(machineActive)
 	}
 	return out, nil
+}
+
+// applyAuthorityState forces each member's Active to the value the AUTHORITY layer
+// declared, discarding any `active` a value-only layer merged in.
+func (r RosterScope) applyAuthorityState(active map[string]bool) {
+	for id := range r.Members {
+		e := r.Entries[id]
+		if e.ID == "" {
+			e = RosterEntry{ID: id}
+		}
+		state, declared := active[id]
+		e.Active = !declared || state
+		r.Entries[id] = e
+	}
 }
 
 // rosterLayer reads one config file and returns the roster IDs it declares plus their
@@ -1106,4 +1130,39 @@ func RosterFieldSourcesScoped(root, id string, machineOnly bool) (map[string]str
 		}
 	}
 	return out, nil
+}
+
+// AgentFieldSources reports which layer last set each [agents.<family>] field, so
+// `roster show --explain` can attribute a value that reaches the launch through the agent
+// block rather than through a [roster.<id>] block.
+func AgentFieldSources(root, family string, machineOnly bool) map[string]string {
+	layers := configLayers(root)
+	if machineOnly {
+		layers = machineOnlyLayers(layers)
+	}
+	out := map[string]string{}
+	for _, item := range layers {
+		data, err := os.ReadFile(item.path)
+		if err != nil {
+			continue
+		}
+		var cfg fileConfig
+		if err := toml.Unmarshal(data, &cfg); err != nil {
+			continue
+		}
+		ov, ok := cfg.Agents[family]
+		if !ok {
+			continue
+		}
+		if strings.TrimSpace(ov.Model) != "" {
+			out["model"] = item.source
+		}
+		if strings.TrimSpace(ov.Reasoning) != "" {
+			out["effort"] = item.source
+		}
+		if strings.TrimSpace(ov.Speed) != "" {
+			out["speed"] = item.source
+		}
+	}
+	return out
 }
