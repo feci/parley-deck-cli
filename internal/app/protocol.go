@@ -191,11 +191,11 @@ func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int
 			fmt.Fprintf(w, "preserved from this deck: %s\n", strings.Join(res.Preserved, ", "))
 		}
 		if len(res.Removed) > 0 {
-			fmt.Fprintf(w, "the following section(s) exist in this deck but NOT in core %s and will be REMOVED:\n", rel.Version)
+			fmt.Fprintf(w, "deck content NOT carried forward by core %s:\n", rel.Version)
 			for _, h := range res.Removed {
 				fmt.Fprintf(w, "  - %s\n", h)
 			}
-			fmt.Fprintln(w, "  (they are project-local content; the overlay mechanism that will carry them is not shipped yet)")
+			fmt.Fprintln(w, "  (project-local content; the overlay that will carry it is ratified but not shipped)")
 		}
 	}
 

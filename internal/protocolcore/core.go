@@ -46,7 +46,11 @@ func StoreAt(parleyHome string) Store {
 // is joined onto the store root. Without this, `core-version: ../../../etc` reads and (through
 // Publish) writes wherever it likes.
 func ValidVersion(v string) bool {
-	v = strings.TrimSpace(v)
+	// Deliberately NOT trimmed: validating a trimmed copy while the untrimmed string is what gets
+	// joined onto a path means the check and the use disagree.
+	if v != strings.TrimSpace(v) {
+		return false
+	}
 	if v == "" || v == "." || v == ".." {
 		return false
 	}
@@ -129,6 +133,11 @@ func (s Store) Publish(version, body string) (Release, error) {
 	}
 	dir := s.ReleaseDir(version)
 	path := filepath.Join(dir, CoreFileName)
+	// No component of the store path may be a symlink. Hardening only the final create still lets
+	// an intermediate link redirect the whole store elsewhere.
+	if err := assertNoSymlinkComponents(s.Root); err != nil {
+		return Release{}, err
+	}
 	// Write-once is per RELEASE, not per file: a directory that already exists is an existing
 	// release namespace even when its body is missing, and populating it would let a second
 	// publish complete a half-written one. Refuse.
@@ -147,13 +156,20 @@ func (s Store) Publish(version, body string) (Release, error) {
 	// 0444 freezes the release the moment it exists; a second layer, not the boundary (D9).
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|noFollow, 0o444)
 	if err != nil {
+		// A failed publish must not brick the version label: the directory we just created would
+		// otherwise make every later attempt at this version report "already exists".
+		os.Remove(dir)
 		return Release{}, err
 	}
 	if _, err := f.WriteString(body); err != nil {
 		f.Close()
+		os.Remove(path)
+		os.Remove(dir)
 		return Release{}, err
 	}
 	if err := f.Close(); err != nil {
+		os.Remove(path)
+		os.Remove(dir)
 		return Release{}, err
 	}
 	return Release{Version: version, Body: body, SHA256: Hash(body)}, nil
@@ -171,4 +187,35 @@ func ShortHash(h string) string {
 		return h
 	}
 	return h[:12]
+}
+
+// assertNoSymlinkComponents refuses if any component OF THE STORE ITSELF is a symlink.
+//
+// O_NOFOLLOW protects only the file being opened. Someone who can plant a link at
+// ~/.parley/protocol or ~/.parley/protocol/core redirects the whole release store, and every
+// "write-once" guarantee then applies somewhere else entirely.
+//
+// Scope matters: only the components the store owns are checked, not the whole path to the
+// filesystem root. On macOS /var is itself a symlink to /private/var, so walking to the root
+// rejects every temp directory on the machine — the first version of this check did exactly that
+// and failed eight of its own tests.
+func assertNoSymlinkComponents(root string) error {
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
+	// root is <parley-home>/protocol/core; check core, protocol, and the home itself.
+	p := abs
+	for i := 0; i < 3; i++ {
+		fi, err := os.Lstat(p)
+		if err == nil && fi.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("protocolcore: %s is a symlink; the core store must not be reached through one", p)
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			break
+		}
+		p = parent
+	}
+	return nil
 }

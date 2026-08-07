@@ -344,17 +344,50 @@ func TestProtocolRenderHandlesCRLFDecks(t *testing.T) {
 
 // D8/G8: the version comes from a COMMITTED lock any contributor can edit, and it is joined onto
 // the store root. It must never escape the store.
+//
+// The first version of this test was VACUOUS — kimi-1 caught it: it asserted only a non-zero exit,
+// which render returns anyway because no release exists at the traversal target. It now asserts the
+// REASON, and exercises Load directly against a store where the escape would otherwise succeed.
 func TestProtocolRejectsPathTraversalInTheLock(t *testing.T) {
 	root := protocolFixture(t, testDeck)
 	lock := filepath.Join(root, "parley-deck", "meta", "protocol-lock.yaml")
+	// NOTE: a leading space is NOT in this list — the lock parser trims the value before it reaches
+	// ValidVersion, which is correct for a YAML-ish field. Untrimmed input is rejected at the API
+	// level instead; see TestPublishRejectsUnsafeVersions.
 	for _, bad := range []string{"../../../etc", "..", ".", "a/b"} {
 		if err := os.WriteFile(lock, []byte("core-version: "+bad+"\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		var out, errb strings.Builder
-		if code := runProtocol([]string{"render", "--dir", root, "--yes"}, &out, &errb); code == 0 {
+		code := runProtocol([]string{"render", "--dir", root, "--yes"}, &out, &errb)
+		if code == 0 {
 			t.Errorf("accepted unsafe version %q", bad)
 		}
+		if !strings.Contains(errb.String(), "unsafe version") {
+			t.Errorf("version %q was rejected for the wrong reason: %s", bad, errb.String())
+		}
+	}
+}
+
+// The escape must be refused even when the traversal target really exists — otherwise the test
+// passes for the wrong reason and would survive reverting the fix.
+func TestLoadRefusesToEscapeTheStore(t *testing.T) {
+	home := t.TempDir()
+	store := protocolcore.StoreAt(home)
+	outside := filepath.Join(home, "outside")
+	if err := os.MkdirAll(outside, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(outside, protocolcore.CoreFileName), []byte("PLANTED"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// ../../outside resolves to a real, readable release body outside the store.
+	rel, err := store.Load("../../outside")
+	if err == nil {
+		t.Fatalf("Load escaped the store and read %q", rel.Body)
+	}
+	if !strings.Contains(err.Error(), "unsafe version") {
+		t.Errorf("rejected for the wrong reason: %v", err)
 	}
 }
 
@@ -419,5 +452,49 @@ func TestProtocolIsReachableThroughProductionDispatch(t *testing.T) {
 	body, _ := os.ReadFile(filepath.Join(root, "parley-deck", "COOPERATION.md"))
 	if !strings.Contains(string(body), "Core rules live here") {
 		t.Error("render via dispatch did not apply the core")
+	}
+}
+
+// G7b: the publisher's refusal is a stated guarantee, so it gets an end-to-end test through the
+// real entry point rather than a claim in prose (hermes-1).
+func TestPublishRefusesWithoutATerminal(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("PARLEY_HOME", home)
+	src := filepath.Join(t.TempDir(), "core.md")
+	if err := os.WriteFile(src, []byte(testCore), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb strings.Builder
+	// `go test` runs with stdin/stdout not a tty, which is exactly an agent run's shape.
+	code := runProtocol([]string{"publish", "--version", "1.0.0", "--from", src}, &out, &errb)
+	if code == 0 {
+		t.Fatal("published without a controlling terminal")
+	}
+	if _, err := protocolcore.StoreAt(home).Load("1.0.0"); err == nil {
+		t.Error("a release was written despite the refusal")
+	}
+	msg := errb.String()
+	if !strings.Contains(msg, "attended") {
+		t.Errorf("refusal does not explain itself: %s", msg)
+	}
+	// The refusal must not overclaim: a pty defeats it, and the text says so.
+	if !strings.Contains(msg, "pty") && !strings.Contains(msg, "unavailable on this platform") {
+		t.Errorf("refusal overclaims its own strength: %s", msg)
+	}
+}
+
+// G7b: `protocol status` must report a read failure, not render it as an empty store (hermes-1).
+func TestProtocolStatusReportsReadErrors(t *testing.T) {
+	root := protocolFixture(t, testDeck)
+	lock := filepath.Join(root, "parley-deck", "meta", "protocol-lock.yaml")
+	if err := os.Remove(lock); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(lock, 0o755); err != nil { // a directory where a file is expected
+		t.Fatal(err)
+	}
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"status", "--dir", root}, &out, &errb); code == 0 {
+		t.Errorf("status reported success on an unreadable lock: %s", out.String())
 	}
 }

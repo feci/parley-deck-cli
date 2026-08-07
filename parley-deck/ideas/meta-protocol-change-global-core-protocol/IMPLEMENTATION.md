@@ -113,3 +113,47 @@ completed: 2026-08-07
 - **[MINOR, hermes-1] `--help` omitted `publish`**; added.
 - **[MINOR, hermes-1] `protocol status` swallowed read errors**, rendering an unreadable store as
   an empty one. Now reports and exits non-zero.
+
+## Fix-up cycle 2
+
+status: complete
+completed: 2026-08-07
+
+### Fixes applied
+
+- **[MAJOR, hermes-1 + kimi-1] The §7 protocol text I wrote shipped guarantees the code does not
+  implement** — per-idea pinning stated as present fact, and `DETECTED-UNATTRIBUTED` cited as a
+  shipped signal. Both are ranks 2 and 4. All three copies now carry an explicit **"Not yet in
+  force — do not rely on it"** paragraph naming what IS in force. This is the exact violation of
+  G7b, a gate I wrote, inside the protocol section I wrote.
+- **[CRITICAL, codex-1] `droppedContent` lost section context and multiplicity.** A flat set of
+  trimmed lines made a dropped line look kept when an identical line existed elsewhere in the
+  render, and collapsed N dropped copies into one. Now per-section and multiplicity-aware
+  (consume-a-copy), so semantic erasure cannot hide behind a coincidental match.
+- **[MAJOR, codex-1 + kimi-1] Symlink hardening covered only the final create.** An intermediate
+  link at `~/.parley/protocol` redirects the whole store. `assertNoSymlinkComponents` now checks
+  the store's own components — deliberately NOT up to the filesystem root, because `/var` is itself
+  a symlink on macOS and the first attempt rejected every temp directory on the machine, failing
+  eight of its own tests.
+- **[MINOR, codex-1] `ValidVersion` validated a trimmed copy while the untrimmed string was used**
+  in the path. It now rejects untrimmed input outright.
+- **[MINOR, kimi-1] `TestProtocolRejectsPathTraversalInTheLock` was VACUOUS** — it asserted only a
+  non-zero exit, which render returns anyway because no release exists at the traversal target. It
+  passed with the fix reverted (verified). It now asserts the *reason*, and a new
+  `TestLoadRefusesToEscapeTheStore` plants a real readable body outside the store so the refusal
+  cannot pass for the wrong reason.
+- **[MAJOR, hermes-1] The TTY refusal and the `status` read-error path had no end-to-end tests.**
+  Both added, driving the real entry point; the refusal test also asserts the message does not
+  overclaim its own strength.
+- **[MINOR, kimi-1] CRLF *cores* were never normalized** (mixed endings, non-convergent renders,
+  `\r\r\n` mangling) and **the synced stamp was reported as lost project content on every version
+  bump**. Both fixed; the report preamble no longer contradicts its entries.
+- A failed publish now removes the directory it created so the version label is not bricked. This
+  is defensive code, **not claimed as a tested guarantee**: the failure could not be injected on
+  this filesystem (a `0555` store root remained writable), and per G7b an untested guarantee is not
+  documented as landed.
+
+### Verification
+
+`go build ./...`, `GOOS=windows go build ./...`, `GOOS=linux go build ./...`, `go vet ./...` and
+`go test ./...` are all clean. Nineteen protocol tests, one of which drives production dispatch.
