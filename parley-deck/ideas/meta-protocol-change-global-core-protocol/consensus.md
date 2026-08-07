@@ -5,13 +5,17 @@ date: 2026-08-07
 rounds: 2
 participants: [claude-1, codex-1, hermes-1, kimi-1]
 absent: [opencode-1]
-status: revision 2 — awaiting signoffs (rev-2 signoffs in signoffs/rev2/)
+status: revision 3 — awaiting signoffs
 ---
 
 # Consensus — global core protocol with local override/extension
 
-**Revision 2.** Revision 1: hermes-1 ACCEPT; codex-1 and kimi-1 BLOCK. Both blocks are upheld in
-full — see `## Drafter position changes` for what reversed and why.
+**Revision 3.** Rev 1: hermes-1 ACCEPT, codex-1 + kimi-1 BLOCK — both upheld in full. Rev 2:
+hermes-1 + kimi-1 ACCEPT, codex-1 BLOCK on four retained textual contradictions — all upheld:
+G8 contradicted D7's "continuation succeeds with the release deleted"; D4 demanded a
+replaced-block hash from extensions, which replace nothing; §1 still carried the blanket
+"detection and attribution" after D9 narrowed it; and the confinement probe wrote into release
+space. See `## Drafter position changes` for the design reversals.
 
 ## 0. Provenance and role concentration (§15)
 
@@ -66,8 +70,11 @@ profile.
    `$HOME` traverses a symlink is exactly that case. A configured sandbox is therefore not evidence
    that anything is confined.
 
-Adopted wording: **prevention for parley-launched participants, detection and attribution for the
-facilitator and any unmanaged agent, and no claim of either without a runtime proof.**
+Adopted wording: **prevention for parley-launched participants; detection for the facilitator and
+any unmanaged agent, with attribution only where the change came through the attended publisher —
+an unexplained hash mismatch is `DETECTED-UNATTRIBUTED` (D9); and no claim of either without a
+runtime proof.** (Revision 2 left "detection and attribution" standing here after narrowing it in
+D9 — codex-1 caught the leftover.)
 
 ## 2. Decisions
 
@@ -101,8 +108,10 @@ evidence.
 ### D4 — One overlay file per deck, two operations, no empty overlays
 
 `parley-deck/protocol-overlay.md`, committed. Operations: **replace a replaceable block by ID** and
-**extend at `ext-1`**. Each operation records a rationale and the **expected hash of the core block
-it replaces**. Unknown ID, duplicate provider, sealed target, or a changed base hash **fails
+**extend at `ext-1`**. Each operation records a rationale, plus operation-specific provenance:
+a **replace** records the expected hash of the target block; an **extend** replaces nothing and
+instead records D10's dependency set and their hashes. (Revision 2 demanded a "hash of the block it
+replaces" from both, which an extension has no answer to — codex-1.) Unknown ID, duplicate provider, sealed target, or a changed base hash **fails
 closed**. The *absence* of the file is the only canonical "no customization" state; an empty
 overlay file is forbidden, so the fleet cannot accumulate 36 vacuous overlays (codex-1's rule,
 adopted by kimi-1 and claude-1).
@@ -155,17 +164,19 @@ next idea in that deck picks up the current one (user constraint 1).
 ### D8 — Deck lock; a missing pinned release BLOCKS
 
 The deck commits a lock with core version + hash, overlay hash or `none`, resolver version,
-effective hash. A machine that does not have the exact pinned release **blocks** rather than
-substituting its own same-named or current version (codex-1). This is what makes the per-machine
+effective hash. A machine that does not have the exact pinned release **blocks adoption and rendering** rather than
+substituting its own same-named or current version (codex-1). It does **not** block continuation of
+an already-pinned idea, which proceeds from its snapshot (D7). This is what makes the per-machine
 `~/.parley` safe: divergence surfaces as a refusal and as a diff in the committed render, not as
 two machines quietly running different protocols.
 
 ### D9 — Enforcement, stated per launch path, never claimed without proof
 
 - **parley-launched participants:** an OS sandbox denying writes to the core subtree, built from
-  the **resolved** path. Preflight **proves it** by attempting a real write to a sentinel inside the
-  protected subtree; if that write succeeds, the run reports `confinement-unproven` and must not
-  claim prevention. This is the fail-closed pattern already used for the AUTO bit.
+  the **resolved** path. Preflight **proves it** by attempting a real write to a sentinel in a **dedicated non-release probe
+  location inside the protected subtree** (e.g. `~/.parley/protocol/.probe/`), never by modifying
+  release bytes; the trusted launcher cleans it up. If that write succeeds, the run reports
+  `confinement-unproven` and must not claim prevention. This is the fail-closed pattern already used for the AUTO bit.
 - **facilitator and unmanaged agents:** **detection**, and attribution only where the change came
   through the supported path. A change made by the attended, TTY-gated publisher is attributable
   because it emits a release receipt. An unexplained hash mismatch is `DETECTED-UNATTRIBUTED` — we
@@ -269,10 +280,15 @@ upheld.)
   REAL command entry point against a fixture deck, asserting exit code, reported status, and
   resulting file state — not only unit tests of internals. **A guarantee without such a test MUST
   NOT be documented as landed.**
-- **G8 — lock byte-verification** (kimi-1). Adoption and continuation MUST byte-compare the on-disk
-  release against the deck lock's core hash and refuse on mismatch. A test MUST install a
-  same-version-label / different-bytes release and prove refusal. Without this, D8's lock records a
-  hash nothing checks — the documented-not-wired failure this project has shipped before.
+- **G8 — lock byte-verification** (kimi-1, scoped by codex-1). **Adoption** MUST byte-compare the
+  on-disk release against the deck lock's core hash and refuse on mismatch. **Continuation** MUST
+  verify the release only when it is present, and MUST **always** verify the snapshot against the
+  recorded effective hash — because D7 requires continuation to succeed with the release deleted, an
+  unconditional release check would contradict the guarantee it is meant to protect. A test MUST
+  install a same-version-label / different-bytes release and prove refusal at adoption, and MUST
+  prove continuation still succeeds from the snapshot with the release absent. Without this, D8's
+  lock records a hash nothing checks — the documented-not-wired failure this project has shipped
+  before.
 
 ### D12 — `protocolRole` is retired, replaced by the deck lock
 
@@ -332,4 +348,5 @@ changes in the drafter's design position.
 ## Signoffs
 
 Revision 1: `signoffs/<agent-id>.md` (hermes-1 ACCEPT; codex-1, kimi-1 BLOCK).
-Revision 2: `signoffs/rev2/<agent-id>.md`.
+Revision 2: `signoffs/rev2/<agent-id>.md` (hermes-1, kimi-1 ACCEPT; codex-1 BLOCK).
+Revision 3: `signoffs/rev3/<agent-id>.md`.
