@@ -880,3 +880,18 @@ func TestWhitespaceOnlyLinesAreCounted(t *testing.T) {
 		t.Errorf("a whitespace-only line was normalized away instead of reported:\n%s", got)
 	}
 }
+
+// `parley protocol --help` must print the group usage and succeed. It exited 2 with an
+// unknown-subcommand error, so the documented way to discover the command failed (deploy
+// verification, codex-1).
+func TestProtocolHelpSucceeds(t *testing.T) {
+	for _, arg := range []string{"--help", "-h", "help"} {
+		var out, errb strings.Builder
+		if code := runProtocol([]string{arg}, &out, &errb); code != 0 {
+			t.Errorf("protocol %s exit=%d: %s", arg, code, errb.String())
+		}
+		if !strings.Contains(out.String(), "parley protocol status") {
+			t.Errorf("protocol %s did not print the group usage: %s", arg, out.String())
+		}
+	}
+}

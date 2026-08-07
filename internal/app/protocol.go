@@ -31,6 +31,13 @@ func runProtocol(args []string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	sub, rest := args[0], args[1:]
+	// `parley protocol --help` must print the group's usage and succeed. Falling through to the
+	// unknown-subcommand branch made the documented way to discover this command exit 2.
+	switch sub {
+	case "--help", "-h", "help":
+		fmt.Fprintln(stdout, protocolUsage)
+		return 0
+	}
 	fs := flag.NewFlagSet("protocol", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	dir := fs.String("dir", ".", "workspace directory")
