@@ -499,24 +499,26 @@ func TestProtocolStatusReportsReadErrors(t *testing.T) {
 	}
 }
 
-// Cross-section erasure: a line deleted from one section while an identical line survives in
-// another. A global multiset says "kept" and reports nothing — which is what the previous two
-// implementations did, one of them while DOCUMENTED as per-section.
+// Cross-section erasure: a line the deck has under §2 that the render has ONLY under §3.
+//
+// Per-section matching must report it as lost from §2. A GLOBAL multiset finds the identical line
+// in §3 and reports nothing — which is exactly what cycle 2 shipped while documenting the fix as
+// per-section. The first version of this test was itself tautological (hermes-1): its fixture put
+// the line in the same section on both sides, so it passed with the fix reverted. Verified: with
+// matching reverted to global, this version FAILS.
 func TestProtocolRenderDetectsCrossSectionErasure(t *testing.T) {
+	// "Core rules live here." lives under ## 3. in the core. Put it under ## 2. in the deck.
 	deck := strings.Replace(testDeck,
-		"STALE core text that must be replaced.",
-		"STALE core text that must be replaced.\n\nCore rules live here.", 1)
+		"## 3. Phases",
+		"Core rules live here.\n\n## 3. Phases", 1)
 	root := protocolFixture(t, deck)
 
 	var out, errb strings.Builder
 	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
 		t.Fatalf("exit=%d: %s", code, errb.String())
 	}
-	// "Core rules live here." exists in the RENDER, but under "## 3. Phases" in the core — while
-	// in the deck it sat under "## 3. Phases" too, so this must NOT be reported...
-	// The erasure to catch is the deck's OTHER line in that section.
-	if !strings.Contains(out.String(), "## 3. Phases") {
-		t.Errorf("erasure in a section with a coincidental match elsewhere was not reported:\n%s", out.String())
+	if !strings.Contains(out.String(), "## 2. Active agents") {
+		t.Errorf("a line dropped from §2 was masked by an identical line surviving in §3:\n%s", out.String())
 	}
 }
 
@@ -541,5 +543,65 @@ func TestLoadRefusesASymlinkedStore(t *testing.T) {
 	}
 	if _, err := protocolcore.StoreAt(home).Load("1.0.0"); err == nil {
 		t.Fatal("Load read through a symlinked store component")
+	}
+}
+
+// Load must refuse a symlinked RELEASE DIRECTORY, not only a symlinked store component. kimi-1
+// showed the two halves are separate code paths and only one was pinned by a test.
+func TestLoadRefusesASymlinkedReleaseDirectory(t *testing.T) {
+	home := t.TempDir()
+	store := protocolcore.StoreAt(home)
+	elsewhere := t.TempDir()
+	if err := os.WriteFile(filepath.Join(elsewhere, protocolcore.CoreFileName), []byte("PLANTED"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(store.Root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(elsewhere, store.ReleaseDir("1.0.0")); err != nil {
+		t.Skipf("cannot symlink: %v", err)
+	}
+	rel, err := store.Load("1.0.0")
+	if err == nil {
+		t.Fatalf("Load read through a symlinked release directory and got %q", rel.Body)
+	}
+}
+
+// Publish must refuse a symlinked store component too. The read half was pinned; the write half
+// was not, while the changelog asserted both (kimi-1).
+func TestPublishRefusesASymlinkedStoreComponent(t *testing.T) {
+	home := t.TempDir()
+	real := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(real, "protocol"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(real, "protocol"), filepath.Join(home, "protocol")); err != nil {
+		t.Skipf("cannot symlink: %v", err)
+	}
+	if _, err := protocolcore.StoreAt(home).Publish("1.0.0", testCore); err == nil {
+		t.Fatal("published through a symlinked store component")
+	}
+}
+
+// `protocol render` must report an unreadable deck file, not treat it as empty — rendering as
+// though the deck had no content would report nothing lost, the silent-erasure shape again.
+func TestProtocolRenderReportsDeckReadErrors(t *testing.T) {
+	root := protocolFixture(t, testDeck)
+	path := filepath.Join(root, "parley-deck", "COOPERATION.md")
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(path, 0o755); err != nil { // a directory where the file is expected
+		t.Fatal(err)
+	}
+	// --dry-run, so the failure cannot come from the WRITE also failing: with the read error
+	// swallowed, a dry run would happily report a full regeneration and exit 0.
+	var out, errb strings.Builder
+	code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb)
+	if code == 0 {
+		t.Errorf("render treated an unreadable deck as empty: %s", out.String())
+	}
+	if !strings.Contains(errb.String(), "protocol render:") {
+		t.Errorf("render did not report the read failure: %s", errb.String())
 	}
 }

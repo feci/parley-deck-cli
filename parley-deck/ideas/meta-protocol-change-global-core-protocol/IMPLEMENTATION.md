@@ -194,3 +194,37 @@ completed: 2026-08-07
 
 `go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
 20 protocol tests.
+
+## Fix-up cycle 4
+
+status: complete
+completed: 2026-08-07
+
+### Fixes applied
+
+- **[MAJOR, hermes-1 + kimi-1] The cross-section test was a tautology.** Its fixture put the line
+  in the same section on both sides, so it passed with the per-section fix reverted — verified.
+  The headline fix of cycle 3 therefore had zero regression protection. The fixture now places the
+  line under §2 in the deck while the render has it only under §3, and reverting to global matching
+  makes it FAIL (verified both directions).
+- **[MINOR, kimi-1] Three cycle-3 fixes had no test that noticed their absence** — Load's
+  release-directory symlink refusal, Publish's store-component refusal, and render's read-error
+  report. Each now has a test, and each was proven to FAIL with its fix reverted. The third needed
+  a second pass: it initially passed for the wrong reason (the write failed anyway), so it now uses
+  `--dry-run` and asserts the reported reason.
+- **[NIT, kimi-1] A core-side section RENAME reports a surviving line as not carried forward.**
+  Kept as-is deliberately: this is the cost of per-section strictness, and a data-loss report
+  should err loud. Recorded rather than silently accepted.
+
+### Reviewer availability
+
+codex-1 declined rounds 3 and 4: the prompt asked it to "try to defeat" the symlink and version
+guards, which its policy filter read as offensive security work. That is a reasonable refusal to a
+badly-worded request — the task is verifying our own defences in our own repository. Round 5 is
+reworded accordingly. codex-1's round-01 and round-02 findings are all addressed; its absence from
+3-4 is recorded, not treated as agreement.
+
+### Verification
+
+`go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
+23 protocol tests.
