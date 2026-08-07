@@ -280,13 +280,13 @@ meaning changed: a lost Markdown hard break (two trailing spaces), prose moved o
 comment, a rule moved between two sections that share a heading name, and a second
 stamp-prefixed line swallowed by the stamp exemption.
 
-The pattern across six cycles is the finding.  was a MULTISET comparison, and it was
+The pattern across six cycles is the finding. `droppedContent` was a MULTISET comparison, and it was
 defeated five separate times — by content under a shared heading, by a line surviving in another
-section, by a per-section claim that was not implemented, by  equating an indented code
+section, by a per-section claim that was not implemented, by `TrimSpace` equating an indented code
 block with unindented prose, and now by ORDER. **A multiset cannot see order, so no further patch
 would have made it correct.** Each fix was locally reasonable and the approach was wrong.
 
-It is now an **LCS sequence diff over exact lines** (only a CRLF's  is stripped). A moved line
+It is now an **LCS sequence diff over exact lines** (only a CRLF's carriage return is stripped). A moved line
 is a removal plus an addition; a lost hard break is a changed line; whitespace is compared as
 written. And the claim is narrowed to what it can support: it reports what regeneration will
 change so a human can judge — it does not interpret Markdown semantics.
