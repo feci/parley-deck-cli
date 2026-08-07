@@ -744,3 +744,90 @@ func TestDroppedContentForgivesExactlyOneStamp(t *testing.T) {
 		t.Errorf("the regenerated stamp was reported as a loss:\n%s", got2)
 	}
 }
+
+// codex-1's round-8 case: a deck that ALREADY carries the current generated stamp, plus genuine
+// stamp-prefixed prose. Nothing was replaced, so nothing may be forgiven — and the prose must be
+// reported. Verified to fail when the exemption reverts to a prefix or position rule.
+func TestStampExemptionForgivesNothingWhenNothingWasReplaced(t *testing.T) {
+	core := strings.Replace(minimalCore, "**Created:** `<d>`",
+		"**Created:** `<d>`\n**Protocol synced:** placeholder", 1)
+	root := protocolFixtureWith(t, core, core)
+
+	// Converge the deck first, so it holds the exact generated stamp.
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--yes"}, &out, &errb); code != 0 {
+		t.Fatalf("initial render exit=%d: %s", code, errb.String())
+	}
+	path := filepath.Join(root, "parley-deck", "COOPERATION.md")
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Insert genuine prose immediately BEFORE the current stamp.
+	lines := strings.Split(string(body), "\n")
+	var withProse []string
+	for _, l := range lines {
+		if strings.HasPrefix(l, "**Protocol synced:**") {
+			withProse = append(withProse, "**Protocol synced:** genuine project prose")
+		}
+		withProse = append(withProse, l)
+	}
+	if err := os.WriteFile(path, []byte(strings.Join(withProse, "\n")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := renderPreview(t, root)
+	if !strings.Contains(got, "not carried forward") {
+		t.Errorf("genuine stamp-prefixed prose was silently forgiven:\n%s", got)
+	}
+}
+
+// Hirschberg must agree with a straightforward full-DP LCS, not merely be small. Randomized
+// comparison, since a linear-space rewrite is exactly where an off-by-one hides.
+func TestHirschbergAgreesWithFullDP(t *testing.T) {
+	alphabet := []string{"a", "b", "c", "d"}
+	seed := 12345
+	next := func(n int) int { seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed % n }
+	for trial := 0; trial < 200; trial++ {
+		a := make([]string, next(12))
+		for i := range a {
+			a[i] = alphabet[next(len(alphabet))]
+		}
+		b := make([]string, next(12))
+		for i := range b {
+			b[i] = alphabet[next(len(alphabet))]
+		}
+		got := protocolcore.LCSMaskForTest(a, b)
+		wantLen := fullDPLCSLength(a, b)
+		gotLen := 0
+		for _, m := range got {
+			if m {
+				gotLen++
+			}
+		}
+		if gotLen != wantLen {
+			t.Fatalf("trial %d: Hirschberg matched %d lines, full DP says LCS is %d\na=%v\nb=%v",
+				trial, gotLen, wantLen, a, b)
+		}
+	}
+}
+
+func fullDPLCSLength(a, b []string) int {
+	n, m := len(a), len(b)
+	dp := make([][]int, n+1)
+	for i := range dp {
+		dp[i] = make([]int, m+1)
+	}
+	for i := n - 1; i >= 0; i-- {
+		for j := m - 1; j >= 0; j-- {
+			if a[i] == b[j] {
+				dp[i][j] = dp[i+1][j+1] + 1
+			} else if dp[i+1][j] >= dp[i][j+1] {
+				dp[i][j] = dp[i+1][j]
+			} else {
+				dp[i][j] = dp[i][j+1]
+			}
+		}
+	}
+	return dp[0][0]
+}

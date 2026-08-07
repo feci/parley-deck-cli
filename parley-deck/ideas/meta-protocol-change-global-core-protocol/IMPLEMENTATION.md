@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-global-core-protocol
-status: fix-up-cycle-7
+status: fix-up-cycle-8
 implementer: claude-1
 started: 2026-08-07
 completed: 2026-08-07
 branch: parley-deck-cli#main
-head-commit: 134c52a (cycle 6); cycle 7 lands in the next commit
+head-commit: c4a8b83 (cycle 7); cycle 8 lands in the next commit
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -329,3 +329,31 @@ Round 7: hermes-1 FINDINGS, codex-1 FINDINGS. All upheld.
 ### Verification
 
 go build, GOOS=windows, GOOS=linux, go vet, go test — all clean. 31 protocol/diff tests.
+
+## Fix-up cycle 8
+
+status: complete
+completed: 2026-08-07
+
+Round 8: codex-1 FINDINGS. All upheld. (hermes-1 and kimi-1 were interrupted before writing.)
+
+### Fixes applied
+
+- **[MAJOR] The stamp exemption forgave genuine prose that came FIRST.** Two rules had already
+  failed here — "first unmatched stamp-prefixed line", then "the line after **Created:**" — and
+  while fixing the second I found it did not solve codex-1's case either: if the prose sits in the
+  slot, the positional rule forgives the prose. The rule that holds is about REPLACEMENT: if the
+  render's generated stamp is already present in the deck, nothing was replaced, so nothing is
+  forgiven. Otherwise exactly the deck's own stamp-slot line is.
+- **[MINOR] A lone terminal carriage return was erased silently.** Only a CRLF pair's CR is line
+  ending noise; on the final element there is no following newline, so stripping it deleted real
+  content.
+- **[MAJOR] Three cycle-7 fixes had no deterministic reversion-sensitive test.** Added, and each
+  proven by reverting its own fix. One attempt did not count: the revert failed to COMPILE, so the
+  red result proved nothing — the revert must build for the test result to mean anything.
+- **Hirschberg is now verified against an independent full-DP LCS** on 200 randomized inputs, not
+  only through the command surface. A linear-space rewrite is exactly where an off-by-one hides.
+
+### Verification
+
+go build, GOOS=windows, GOOS=linux, go vet, go test — all clean. 33 protocol/diff tests.

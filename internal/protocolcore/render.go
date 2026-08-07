@@ -211,14 +211,17 @@ func droppedContent(priorBody, renderedBody string) []string {
 	}
 	keep := lcsMask(prior, rendered)
 
-	// A regenerated stamp is not a loss — but ONLY the specific line that was regenerated.
-	// Consuming "the first unmatched stamp-prefixed line" was wrong: when the deck already carries
-	// the current stamp, LCS keeps it, the exemption goes unused, and the next genuine
-	// stamp-prefixed line inherits the forgiveness (codex-1). Pair the two stamps explicitly, and
-	// forgive nothing when they are equal, because then nothing was replaced.
-	deckStamp := headerStamp(prior)
+	// A regenerated stamp is not a loss — but the exemption must apply to the ONE line that was
+	// actually replaced, and to nothing else. Two earlier rules failed: "first unmatched
+	// stamp-prefixed line" let genuine prose inherit the forgiveness when the deck already carried
+	// the current stamp, and "the line after **Created:**" did the same when the prose sat in that
+	// slot.
+	//
+	// The rule that holds: if the render's generated stamp is ALREADY in the deck, nothing was
+	// replaced, so nothing is forgiven. Otherwise forgive exactly the deck's own stamp slot line.
 	renderStamp := headerStamp(rendered)
-	forgive := deckStamp != "" && deckStamp != renderStamp
+	deckStamp := headerStamp(prior)
+	forgive := renderStamp != "" && deckStamp != "" && !containsLine(prior, renderStamp)
 
 	type group struct {
 		heading string
@@ -267,7 +270,11 @@ func splitLines(s string) []string {
 	}
 	out := strings.Split(s, "\n")
 	for i := range out {
-		out[i] = strings.TrimSuffix(out[i], "\r")
+		// Only a CRLF pair's carriage return is line-ending noise. A lone terminal CR on the LAST
+		// element has no following newline, so stripping it would erase real content silently.
+		if i < len(out)-1 {
+			out[i] = strings.TrimSuffix(out[i], "\r")
+		}
 	}
 	return out
 }
@@ -349,18 +356,22 @@ func lcsRowReverse(a, b []string) []int32 {
 	return lcsRow(ra, rb)
 }
 
-// headerStamp returns the synced-stamp line from a document's header region — everything before
-// the first level-2+ heading. Restricting it to the header is what keeps a genuine
-// stamp-prefixed line elsewhere in the document from being mistaken for the generated one.
+// headerStamp returns the GENERATED stamp line: the one immediately after `**Created:**`.
+//
+// Identifying it by prefix was wrong twice over. "First stamp-prefixed line before the first ##"
+// picks genuine project prose whenever that prose precedes the real stamp, and then the prose is
+// the thing forgiven while the real stamp is kept by LCS (codex-1's round-8 reproduction). The
+// generated stamp has a STRUCTURAL position — Render writes it directly after Created — so that
+// is how it is found. A stamp-prefixed line anywhere else is project content and is reported.
 func headerStamp(lines []string) string {
-	for _, l := range lines {
-		t := strings.TrimSpace(l)
-		if strings.HasPrefix(t, "## ") {
-			return ""
+	for i, l := range lines {
+		if !strings.HasPrefix(l, createdPrefix) {
+			continue
 		}
-		if strings.HasPrefix(t, syncedPrefix) {
-			return l
+		if i+1 < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i+1]), syncedPrefix) {
+			return lines[i+1]
 		}
+		return ""
 	}
 	return ""
 }
@@ -376,4 +387,19 @@ func heading(line string) string {
 		}
 	}
 	return ""
+}
+
+// LCSMaskForTest exposes the diff to package-external tests. The algorithm is correctness-critical
+// and a linear-space rewrite is exactly where an off-by-one hides, so it is verified against an
+// independent full-DP implementation rather than only through the command surface.
+func LCSMaskForTest(a, b []string) []bool { return lcsMask(a, b) }
+
+// containsLine reports whether an exact line is present.
+func containsLine(lines []string, want string) bool {
+	for _, l := range lines {
+		if l == want {
+			return true
+		}
+	}
+	return false
 }
