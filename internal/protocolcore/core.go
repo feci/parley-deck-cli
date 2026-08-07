@@ -40,6 +40,33 @@ func StoreAt(parleyHome string) Store {
 	return Store{Root: filepath.Join(parleyHome, "protocol", "core")}
 }
 
+// ValidVersion reports whether a version string is safe to use as a path element.
+//
+// The version comes from a COMMITTED deck lock, i.e. from a file any contributor can edit, and it
+// is joined onto the store root. Without this, `core-version: ../../../etc` reads and (through
+// Publish) writes wherever it likes.
+func ValidVersion(v string) bool {
+	v = strings.TrimSpace(v)
+	if v == "" || v == "." || v == ".." {
+		return false
+	}
+	if strings.ContainsAny(v, "/\\") || strings.Contains(v, "..") {
+		return false
+	}
+	if strings.HasPrefix(v, ".") {
+		return false
+	}
+	for _, r := range v {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+		case r == '.' || r == '-' || r == '_' || r == '+':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // ReleaseDir is the directory holding one version's frozen bytes.
 func (s Store) ReleaseDir(version string) string { return filepath.Join(s.Root, version) }
 
@@ -53,6 +80,9 @@ type Release struct {
 // Load reads a release. It deliberately verifies nothing beyond existence: only the caller knows
 // which hash it expected, so the byte-comparison against a deck lock (G8) belongs there.
 func (s Store) Load(version string) (Release, error) {
+	if !ValidVersion(version) {
+		return Release{}, fmt.Errorf("protocolcore: unsafe version %q", version)
+	}
 	path := filepath.Join(s.ReleaseDir(version), CoreFileName)
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -94,21 +124,36 @@ func (s Store) Publish(version, body string) (Release, error) {
 	if strings.TrimSpace(version) == "" {
 		return Release{}, errors.New("protocolcore: empty version")
 	}
-	if strings.ContainsAny(version, "/\\") || strings.Contains(version, "..") {
+	if !ValidVersion(version) {
 		return Release{}, fmt.Errorf("protocolcore: unsafe version %q", version)
 	}
 	dir := s.ReleaseDir(version)
 	path := filepath.Join(dir, CoreFileName)
-	if _, err := os.Stat(path); err == nil {
+	// Write-once is per RELEASE, not per file: a directory that already exists is an existing
+	// release namespace even when its body is missing, and populating it would let a second
+	// publish complete a half-written one. Refuse.
+	if _, err := os.Lstat(dir); err == nil {
 		return Release{}, fmt.Errorf(
 			"protocolcore: release %s already exists and releases are write-once; publish a new version instead", version)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return Release{}, err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return Release{}, err
 	}
-	// 0444: a release is frozen the moment it exists. This is a second layer, not the boundary
-	// (D9) — it converts an accidental write into a visible error.
-	if err := os.WriteFile(path, []byte(body), 0o444); err != nil {
+	// O_EXCL|O_NOFOLLOW: never write THROUGH a symlink, and never overwrite. os.WriteFile follows
+	// symlinks, so a planted link at the release path would have redirected a "write-once" release
+	// to an arbitrary file — the guarantee inverted into an arbitrary-write primitive.
+	// 0444 freezes the release the moment it exists; a second layer, not the boundary (D9).
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL|noFollow, 0o444)
+	if err != nil {
+		return Release{}, err
+	}
+	if _, err := f.WriteString(body); err != nil {
+		f.Close()
+		return Release{}, err
+	}
+	if err := f.Close(); err != nil {
 		return Release{}, err
 	}
 	return Release{Version: version, Body: body, SHA256: Hash(body)}, nil

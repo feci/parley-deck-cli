@@ -2,6 +2,19 @@
 
 package app
 
-import "golang.org/x/sys/unix"
+import (
+	"os"
 
-const termiosGet = unix.TCGETS
+	"golang.org/x/sys/unix"
+)
+
+const hasTTYSupported = true
+
+func platformHasTTY() bool {
+	for _, f := range []*os.File{os.Stdin, os.Stdout} {
+		if _, err := unix.IoctlGetTermios(int(f.Fd()), unix.TCGETS); err == nil {
+			return true
+		}
+	}
+	return false
+}

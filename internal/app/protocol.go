@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/sys/unix"
-
 	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
@@ -131,9 +129,19 @@ func protocolStatus(root string, jsonOut bool, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "protocol status: %v\n", err)
 		return 1
 	}
-	versions, _ := store.Versions()
-	pinned, _ := pinnedVersion(root)
+	// Report read failures rather than rendering them as "(none)" / "-": a status command whose
+	// unreadable store looks identical to an empty one is a status command that lies.
+	versions, verErr := store.Versions()
+	pinned, pinErr := pinnedVersion(root)
 	deck, deckErr := os.ReadFile(deckProtocolPath(root))
+	if verErr != nil {
+		fmt.Fprintf(stderr, "protocol status: reading %s: %v\n", store.Root, verErr)
+		return 1
+	}
+	if pinErr != nil {
+		fmt.Fprintf(stderr, "protocol status: reading %s: %v\n", deckLockPath(root), pinErr)
+		return 1
+	}
 	payload := map[string]any{
 		"store":              store.Root,
 		"installed":          versions,
@@ -274,9 +282,17 @@ func protocolPublish(version, from string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "protocol publish: --version and --from are both required")
 		return 2
 	}
-	if !hasTTY() {
-		fmt.Fprintln(stderr, "protocol publish: refusing — publishing a core release is an attended operation and no controlling terminal is present.\n"+
-			"Only the user may change the global protocol; an agent run cannot.")
+	if !hasTTYSupported {
+		fmt.Fprintln(stderr, "protocol publish: unavailable on this platform — it cannot prove a controlling terminal,\n"+
+			"and an unprovable attended-only gate is not a gate. Publish from a platform that can.")
+		return 2
+	}
+	if !platformHasTTY() {
+		fmt.Fprintln(stderr, "protocol publish: refusing — publishing a core release is an attended operation and no\n"+
+			"controlling terminal is present. Only the user may change the global protocol.\n"+
+			"NOTE: this stops an ordinary agent run (whose stdin is a pipe or /dev/null). It does NOT stop an\n"+
+			"agent that allocates a pty; that case is covered only by the sandbox follow-up (DF-1), which is\n"+
+			"not shipped. The durable guarantees today are write-once releases and hash detection.")
 		return 2
 	}
 	body, err := os.ReadFile(from)
@@ -296,22 +312,4 @@ func protocolPublish(version, from string, stdout, stderr io.Writer) int {
 	}
 	fmt.Fprintf(stdout, "Published core %s (%s) to %s\n", rel.Version, protocolcore.ShortHash(rel.SHA256), store.ReleaseDir(version))
 	return 0
-}
-
-// hasTTY reports whether this process has a CONTROLLING TERMINAL.
-//
-// The obvious check — stdin's mode has os.ModeCharDevice — is wrong for this gate, and testing the
-// real entry point caught it: `/dev/null` is a character device too, so `protocol publish … <
-// /dev/null` sailed straight through the refusal it was supposed to hit. An agent run redirects
-// stdin exactly that way, which is precisely the case G2 must stop.
-//
-// Asking the kernel for the terminal attributes of the fd is the actual question: it succeeds only
-// for a real tty.
-func hasTTY() bool {
-	for _, f := range []*os.File{os.Stdin, os.Stdout} {
-		if _, err := unix.IoctlGetTermios(int(f.Fd()), termiosGet); err == nil {
-			return true
-		}
-	}
-	return false
 }

@@ -47,6 +47,10 @@ func Render(rel Release, priorDeckBody string) (RenderResult, error) {
 		return RenderResult{}, fmt.Errorf("protocolcore: release %s has an empty body", rel.Version)
 	}
 	res := RenderResult{}
+	// A CRLF deck must not produce a false removal for every section (each line differing only by
+	// \r) nor mixed endings in the output. Normalize in, restore the deck's convention out.
+	crlf := strings.Contains(priorDeckBody, "\r\n")
+	priorDeckBody = strings.ReplaceAll(priorDeckBody, "\r\n", "\n")
 	slots := ExtractIdentity(priorDeckBody)
 
 	out := make([]string, 0, 512)
@@ -88,8 +92,11 @@ func Render(rel Release, priorDeckBody string) (RenderResult, error) {
 	if created := findLine(body, createdPrefix); created != "" {
 		body = strings.Replace(body, created, created+"\n"+stamp, 1)
 	}
+	res.Removed = droppedContent(priorDeckBody, body)
+	if crlf {
+		body = strings.ReplaceAll(body, "\n", "\r\n")
+	}
 	res.Body = body
-	res.Removed = removedSections(priorDeckBody, rel.Body)
 	return res, nil
 }
 
@@ -177,29 +184,56 @@ func tableRows(body, marker string) []string {
 	return nil
 }
 
-// removedSections lists headings the deck had that the core does not.
+// droppedContent lists the deck content the render does NOT carry forward.
 //
-// This is the report G1 requires. The 2026-08-06 fleet sync destroyed a deck's genuine local
-// section precisely because nothing enumerated what a regeneration was about to drop.
-func removedSections(priorBody, coreBody string) []string {
+// The first implementation compared HEADINGS, and reviewers were right that it is not enough: a
+// deck paragraph living under a heading the core also has would vanish with nothing reported —
+// exactly the silent-erasure class G1 exists to prevent, and exactly what destroyed a deck's local
+// section during the 2026-08-06 fleet sync. So the comparison is over CONTENT: every substantive
+// line of the deck that does not appear in the render is reported, grouped under the heading it
+// sat beneath so the report is readable rather than a wall of diff.
+func droppedContent(priorBody, renderedBody string) []string {
 	if strings.TrimSpace(priorBody) == "" {
 		return nil
 	}
-	core := map[string]bool{}
-	for _, l := range strings.Split(coreBody, "\n") {
-		if h := heading(l); h != "" {
-			core[h] = true
-		}
+	kept := map[string]bool{}
+	for _, l := range strings.Split(renderedBody, "\n") {
+		kept[strings.TrimSpace(l)] = true
 	}
-	seen := map[string]bool{}
-	var out []string
+	type group struct {
+		heading string
+		lines   int
+	}
+	var groups []group
+	idx := map[string]int{}
+	current := "(document header)"
 	for _, l := range strings.Split(priorBody, "\n") {
-		h := heading(l)
-		if h == "" || core[h] || seen[h] {
+		t := strings.TrimSpace(l)
+		if h := heading(l); h != "" {
+			current = h
+			if kept[t] {
+				continue
+			}
+		}
+		if t == "" || kept[t] {
 			continue
 		}
-		seen[h] = true
-		out = append(out, h)
+		// Table rows are identity data the renderer carries by slot; if the slot was preserved the
+		// row is present, and if it was not, the row shows up here like any other dropped line.
+		if i, ok := idx[current]; ok {
+			groups[i].lines++
+			continue
+		}
+		idx[current] = len(groups)
+		groups = append(groups, group{heading: current, lines: 1})
+	}
+	out := make([]string, 0, len(groups))
+	for _, g := range groups {
+		if g.lines == 1 {
+			out = append(out, fmt.Sprintf("%s — 1 line not carried forward", g.heading))
+			continue
+		}
+		out = append(out, fmt.Sprintf("%s — %d lines not carried forward", g.heading, g.lines))
 	}
 	return out
 }

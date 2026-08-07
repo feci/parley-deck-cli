@@ -123,6 +123,7 @@ Usage:
   %s agents list [--dir DIR]                        (adapter/runtime inventory — NOT the roster)
   %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
   %s protocol status|render|check [--dir DIR] [--dry-run] [--yes] [--json]
+  %s protocol publish --version V --from FILE            (attended; requires a terminal)
   %s roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]
   %s roster set AGENT --scope deck|machine [--adapter A] [--model M] [--effort E] [--speed S] [--state active|inactive] [--dry-run] [--yes] [--confirm-breaking]
   %s roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]
@@ -324,6 +325,7 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
 		appName,
 		appName,
 		appName,

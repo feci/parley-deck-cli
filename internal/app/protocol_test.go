@@ -300,3 +300,124 @@ func TestProtocolRenderOnAFreshDeck(t *testing.T) {
 		t.Errorf("fresh deck reported removals: %s", out.String())
 	}
 }
+
+// The removal report must be CONTENT-based, not heading-based. Content under a heading the core
+// ALSO has was the gap: it vanished with nothing reported — the silent-erasure class G1 exists to
+// prevent, and the one that destroyed a real deck's local section during the 2026-08-06 sync.
+func TestProtocolRenderReportsContentLostUnderASharedHeading(t *testing.T) {
+	deck := strings.Replace(testDeck,
+		"STALE core text that must be replaced.",
+		"STALE core text that must be replaced.\n\nPROJECT RULE: deployments need two approvals.", 1)
+	root := protocolFixture(t, deck)
+
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	// "## 3. Phases" exists in BOTH deck and core, so a heading diff reports nothing here.
+	if !strings.Contains(out.String(), "## 3. Phases") {
+		t.Errorf("content lost under a shared heading was not reported:\n%s", out.String())
+	}
+}
+
+// A CRLF deck must not report every section as removed, and must not produce mixed endings.
+func TestProtocolRenderHandlesCRLFDecks(t *testing.T) {
+	root := protocolFixture(t, strings.ReplaceAll(testDeck, "\n", "\r\n"))
+	path := filepath.Join(root, "parley-deck", "COOPERATION.md")
+
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	if strings.Contains(out.String(), "## 2. Active agents") {
+		t.Errorf("CRLF deck produced a false removal report:\n%s", out.String())
+	}
+	out.Reset()
+	if code := runProtocol([]string{"render", "--dir", root, "--yes"}, &out, &errb); code != 0 {
+		t.Fatalf("apply exit=%d: %s", code, errb.String())
+	}
+	body, _ := os.ReadFile(path)
+	if strings.Contains(strings.ReplaceAll(string(body), "\r\n", ""), "\n") {
+		t.Error("output has mixed line endings")
+	}
+}
+
+// D8/G8: the version comes from a COMMITTED lock any contributor can edit, and it is joined onto
+// the store root. It must never escape the store.
+func TestProtocolRejectsPathTraversalInTheLock(t *testing.T) {
+	root := protocolFixture(t, testDeck)
+	lock := filepath.Join(root, "parley-deck", "meta", "protocol-lock.yaml")
+	for _, bad := range []string{"../../../etc", "..", ".", "a/b"} {
+		if err := os.WriteFile(lock, []byte("core-version: "+bad+"\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		var out, errb strings.Builder
+		if code := runProtocol([]string{"render", "--dir", root, "--yes"}, &out, &errb); code == 0 {
+			t.Errorf("accepted unsafe version %q", bad)
+		}
+	}
+}
+
+// Write-once is per RELEASE, not per file: an existing release directory whose body is missing is
+// still an existing release, and populating it would let a second publish complete a half-written
+// one. A symlink at the release path must never be written through.
+func TestPublishRefusesExistingReleaseDirAndSymlinks(t *testing.T) {
+	home := t.TempDir()
+	store := protocolcore.StoreAt(home)
+
+	if err := os.MkdirAll(store.ReleaseDir("2.0.0"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Publish("2.0.0", testCore); err == nil {
+		t.Error("published into an existing release directory")
+	}
+
+	victim := filepath.Join(t.TempDir(), "victim.md")
+	if err := os.WriteFile(victim, []byte("original"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(store.ReleaseDir("3.0.0"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(store.ReleaseDir("3.0.0"), protocolcore.CoreFileName)); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+	_, _ = store.Publish("3.0.0", "attacker body")
+	got, _ := os.ReadFile(victim)
+	if string(got) != "original" {
+		t.Error("publish wrote THROUGH a symlink to a file outside the store")
+	}
+}
+
+// An unsafe version must be rejected by Publish as well as Load.
+func TestPublishRejectsUnsafeVersions(t *testing.T) {
+	store := protocolcore.StoreAt(t.TempDir())
+	for _, bad := range []string{"", ".", "..", "../x", "a/b", ".hidden"} {
+		if _, err := store.Publish(bad, testCore); err == nil {
+			t.Errorf("accepted unsafe version %q", bad)
+		}
+	}
+}
+
+// G7b demands the REAL command entry point. The tests above call runProtocol, which is one layer
+// below dispatch; codex-1 was right that this can pass while the command is unreachable. This one
+// goes through Run, exactly as `parley protocol …` does.
+func TestProtocolIsReachableThroughProductionDispatch(t *testing.T) {
+	root := protocolFixture(t, testDeck)
+	var out, errb strings.Builder
+	if code := Run([]string{"protocol", "status", "--dir", root, "--json"}, &out, &errb); code != 0 {
+		t.Fatalf("dispatch exit=%d: out=%s err=%s", code, out.String(), errb.String())
+	}
+	if !strings.Contains(out.String(), `"pinned"`) {
+		t.Errorf("dispatch did not reach protocol status: %s", out.String())
+	}
+	out.Reset()
+	errb.Reset()
+	if code := Run([]string{"protocol", "render", "--dir", root, "--yes"}, &out, &errb); code != 0 {
+		t.Fatalf("render via dispatch exit=%d: %s", code, errb.String())
+	}
+	body, _ := os.ReadFile(filepath.Join(root, "parley-deck", "COOPERATION.md"))
+	if !strings.Contains(string(body), "Core rules live here") {
+		t.Error("render via dispatch did not apply the core")
+	}
+}

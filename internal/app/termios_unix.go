@@ -2,9 +2,21 @@
 
 package app
 
-import "golang.org/x/sys/unix"
+import (
+	"os"
 
-// termiosGet is the ioctl that reads terminal attributes. It succeeds only on a real tty, which
-// is what makes it a usable controlling-terminal test; the constant differs between BSD-derived
-// systems (TIOCGETA) and Linux (TCGETS).
-const termiosGet = unix.TIOCGETA
+	"golang.org/x/sys/unix"
+)
+
+const hasTTYSupported = true
+
+// platformHasTTY asks the kernel for the terminal attributes of the fd. It succeeds only for a
+// real tty — unlike a character-device test, which also accepts /dev/null.
+func platformHasTTY() bool {
+	for _, f := range []*os.File{os.Stdin, os.Stdout} {
+		if _, err := unix.IoctlGetTermios(int(f.Fd()), unix.TIOCGETA); err == nil {
+			return true
+		}
+	}
+	return false
+}
