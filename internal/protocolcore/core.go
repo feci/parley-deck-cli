@@ -87,7 +87,17 @@ func (s Store) Load(version string) (Release, error) {
 	if !ValidVersion(version) {
 		return Release{}, fmt.Errorf("protocolcore: unsafe version %q", version)
 	}
-	path := filepath.Join(s.ReleaseDir(version), CoreFileName)
+	// The same refusal as Publish: a symlinked store component redirects reads too, and a read
+	// that silently comes from elsewhere is how a deck ends up governed by a protocol nobody
+	// published. Reviewers caught that this guard was applied on write only.
+	if err := assertNoSymlinkComponents(s.Root); err != nil {
+		return Release{}, err
+	}
+	dir := s.ReleaseDir(version)
+	if fi, err := os.Lstat(dir); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		return Release{}, fmt.Errorf("protocolcore: release directory %s is a symlink", dir)
+	}
+	path := filepath.Join(dir, CoreFileName)
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

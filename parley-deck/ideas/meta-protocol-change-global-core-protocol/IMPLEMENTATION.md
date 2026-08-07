@@ -81,7 +81,7 @@ class G1 exists to prevent, and the one that destroyed a real deck's local secti
 beneath. CRLF decks no longer produce a false removal for every section, and no longer get mixed
 line endings.
 
-Fifteen tests, including one that drives **production dispatch** (`Run`) rather than `runProtocol`
+20 tests, including one that drives **production dispatch** (`Run`) rather than `runProtocol`
 — codex-1 was right that a test one layer below dispatch can pass while the command is unreachable.
 They cover idempotence, identity preservation, removal reporting in preview and apply, content lost
 under a shared heading, CRLF decks, check-reports-never-overwrites, block-on-missing-release,
@@ -156,4 +156,41 @@ completed: 2026-08-07
 ### Verification
 
 `go build ./...`, `GOOS=windows go build ./...`, `GOOS=linux go build ./...`, `go vet ./...` and
-`go test ./...` are all clean. Nineteen protocol tests, one of which drives production dispatch.
+`go test ./...` are all clean. 20 protocol tests (count generated, not asserted from memory — reviewers found the previous
+figure did not reproduce), one of which drives production dispatch.
+
+## Fix-up cycle 3
+
+status: complete
+completed: 2026-08-07
+
+### Fixes applied
+
+- **[MAJOR, hermes-1 + kimi-1] Cycle 2's "per-section" fix was not per-section.** The counts were
+  built over the WHOLE rendered body, so a line deleted from §3 still matched an identical line
+  surviving in §11 and reported nothing. Both reviewers caught that the documented fix was not the
+  implemented one — the third time this cycle that a claim outran the code, which is why every
+  cycle now ends in a re-review rather than a self-assessment. `indexBySection` now indexes the
+  render per section and matches within the same section; multiplicity is preserved by consuming a
+  copy. A new test constructs exactly the cross-section case.
+- **[MAJOR, hermes-1 + MINOR, kimi-1] `assertNoSymlinkComponents` was applied on write only.**
+  `Load` now refuses a symlinked store component and a symlinked release directory: a read that
+  silently comes from elsewhere is how a deck ends up governed by a protocol nobody published.
+- **[MAJOR, hermes-1 + MINOR, kimi-1] The changelog still cited `DETECTED-UNATTRIBUTED` as a
+  shipped guarantee** after the protocol copies were corrected. Fixed; it now names exactly what
+  ships and marks pinning and the tamper signal as ratified-but-not-implemented.
+- **[MINOR, kimi-1] The new §7 "in force" sentence itself overclaimed.** It now says the publisher
+  refusal stops an ordinary agent run but not one that allocates a pty, and that releases are
+  refused through a symlinked store.
+- **[MINOR, kimi-1 round-02, still open] `protocol render` swallowed deck-file read errors**,
+  treating an unreadable deck as empty — which would render as though the deck had no content and
+  report nothing lost. Now reports and exits non-zero.
+- **[MINOR, hermes-1] `protocol check`'s preamble contradicted its content-based entries** ("
+  sections present here" vs per-section line counts). Reworded.
+- **[NIT, kimi-1] The test count did not reproduce.** It is now generated from an actual run rather
+  than written from memory.
+
+### Verification
+
+`go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
+20 protocol tests.

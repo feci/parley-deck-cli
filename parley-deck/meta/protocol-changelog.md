@@ -20,9 +20,12 @@ synced — content that belongs in the core, not in a deck.
 parley-launched participants under an OS sandbox (verified: a macOS seatbelt profile denies the
 write, the denial is inherited by children, and `rm` is denied too) — but a profile built from an
 UNRESOLVED path silently denies nothing, and the facilitator is not launched by parley. So the
-shipped guarantee is: write-once releases, an attended TTY-gated publisher, no agent-accessible
-write path, and detection with `DETECTED-UNATTRIBUTED` for anything else. The sandbox itself is a
-ratified follow-up, not shipped here, and nothing claims confinement without a runtime probe.
+shipped guarantee is: write-once releases (per release directory, `O_EXCL|O_NOFOLLOW`, symlinked
+store components refused on read and write), an attended publisher that refuses without a
+controlling terminal, and no agent-accessible write path. **`DETECTED-UNATTRIBUTED` and per-idea
+pinning are ratified but NOT implemented** — they are ranks 2 and 4 — and the attended refusal
+stops an ordinary agent run but not one that allocates a pty. The sandbox is the ratified DF-1
+follow-up.
 
 ## 2026-07-04 - Add §13.5 Playbooks (parley learn distillation)
 

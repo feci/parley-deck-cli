@@ -177,7 +177,13 @@ func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int
 		return 1
 	}
 	path := deckProtocolPath(root)
-	prior, _ := os.ReadFile(path)
+	prior, readErr := os.ReadFile(path)
+	if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
+		// An unreadable deck file is not an absent one. Treating it as empty would render as if
+		// the deck had no content and report nothing as lost — the silent-erasure shape again.
+		fmt.Fprintf(stderr, "protocol render: %v\n", readErr)
+		return 1
+	}
 	res, err := protocolcore.Render(rel, string(prior))
 	if err != nil {
 		fmt.Fprintf(stderr, "protocol render: %v\n", err)
@@ -265,7 +271,7 @@ func protocolCheck(root string, jsonOut bool, stdout, stderr io.Writer) int {
 	// Report, never overwrite — the same posture `roster show` takes for `legacy-roster`.
 	fmt.Fprintf(stdout, "protocol check: %s does NOT match core %s.\n", path, version)
 	if len(res.Removed) > 0 {
-		fmt.Fprintln(stdout, "sections present here but not in the core:")
+		fmt.Fprintln(stdout, "deck content not carried forward by this core:")
 		for _, h := range res.Removed {
 			fmt.Fprintf(stdout, "  - %s\n", h)
 		}

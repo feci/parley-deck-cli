@@ -498,3 +498,48 @@ func TestProtocolStatusReportsReadErrors(t *testing.T) {
 		t.Errorf("status reported success on an unreadable lock: %s", out.String())
 	}
 }
+
+// Cross-section erasure: a line deleted from one section while an identical line survives in
+// another. A global multiset says "kept" and reports nothing — which is what the previous two
+// implementations did, one of them while DOCUMENTED as per-section.
+func TestProtocolRenderDetectsCrossSectionErasure(t *testing.T) {
+	deck := strings.Replace(testDeck,
+		"STALE core text that must be replaced.",
+		"STALE core text that must be replaced.\n\nCore rules live here.", 1)
+	root := protocolFixture(t, deck)
+
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	// "Core rules live here." exists in the RENDER, but under "## 3. Phases" in the core — while
+	// in the deck it sat under "## 3. Phases" too, so this must NOT be reported...
+	// The erasure to catch is the deck's OTHER line in that section.
+	if !strings.Contains(out.String(), "## 3. Phases") {
+		t.Errorf("erasure in a section with a coincidental match elsewhere was not reported:\n%s", out.String())
+	}
+}
+
+// Load must refuse a symlinked store just as Publish does — a read that silently comes from
+// elsewhere is how a deck ends up governed by a protocol nobody published.
+func TestLoadRefusesASymlinkedStore(t *testing.T) {
+	home := t.TempDir()
+	real := t.TempDir()
+	store := protocolcore.StoreAt(real)
+	if _, err := store.Publish("1.0.0", testCore); err != nil {
+		t.Fatal(err)
+	}
+	// ~/.parley/protocol -> <real>/protocol
+	if err := os.MkdirAll(filepath.Join(home, "protocol"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(home, "protocol")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(real, "protocol"), filepath.Join(home, "protocol")); err != nil {
+		t.Skipf("cannot symlink: %v", err)
+	}
+	if _, err := protocolcore.StoreAt(home).Load("1.0.0"); err == nil {
+		t.Fatal("Load read through a symlinked store component")
+	}
+}

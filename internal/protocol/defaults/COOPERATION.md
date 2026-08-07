@@ -760,8 +760,10 @@ project at once, so the two are not the same act:
 the version it started with) and the `DETECTED-UNATTRIBUTED` tamper signal are **ratified but not
 implemented**. They are ranks 2 and 4 of the implementation plan. Until they ship, an idea does NOT
 carry a pinned protocol version, and this section states that rather than describing an intended
-future as present fact. What IS in force today: the core store is write-once, `parley protocol
-publish` is attended-only, and no agent-accessible code path writes a release.
+future as present fact. What IS in force today, and no more than this: releases are
+write-once and are refused through a symlinked store, `parley protocol publish` refuses when it
+cannot see a controlling terminal (which stops an ordinary agent run, not one that allocates a
+pty), and no agent-accessible code path writes a release.
 
 **Carve-out — a version sync is not a protocol change.** Adopting an upstream-ratified
 protocol version via the §9.0 freshness sync — when it is additive/compatible and

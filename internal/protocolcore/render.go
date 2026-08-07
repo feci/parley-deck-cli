@@ -189,47 +189,41 @@ func tableRows(body, marker string) []string {
 
 // droppedContent lists the deck content the render does NOT carry forward.
 //
-// Two earlier attempts were wrong in instructive ways. Comparing HEADINGS missed content living
-// under a heading the core also has. Comparing a flat SET of trimmed lines then lost section
-// context and multiplicity: an identical line elsewhere in the render made a dropped line look
-// kept, and three dropped lines that happened to be equal reported as one. Both leave semantic
-// erasure silent, which is what G1 exists to prevent — and what destroyed a deck's local section
-// during the 2026-08-06 fleet sync.
+// Three attempts, and the first two are worth recording because each looked correct:
 //
-// So the comparison is per-section and multiplicity-aware: within the section a line belongs to,
-// a deck line counts as carried only if the render still has an unconsumed copy of it.
+//  1. Compare HEADINGS — missed everything under a heading the core also has.
+//  2. Compare a flat multiset of trimmed lines — the fix was DOCUMENTED as per-section and was
+//     not: the counts were built over the whole rendered body, so a line dropped from §3 still
+//     looked "kept" because an identical line survived in §11. Reviewers caught that the claimed
+//     fix was not the implemented one.
+//
+// This one indexes the render BY SECTION and matches a deck line against the counts of the same
+// section, so cross-section coincidence cannot mask a deletion. Multiplicity is preserved:
+// matching consumes a copy, so three dropped duplicates report as three.
 func droppedContent(priorBody, renderedBody string) []string {
 	if strings.TrimSpace(priorBody) == "" {
 		return nil
 	}
-	renderCounts := map[string]int{}
-	for _, l := range strings.Split(renderedBody, "\n") {
-		if t := strings.TrimSpace(l); t != "" {
-			renderCounts[t]++
-		}
-	}
+	rendered := indexBySection(renderedBody)
 	type group struct {
 		heading string
 		lines   int
 	}
 	var groups []group
 	idx := map[string]int{}
-	current := "(document header)"
+	current := headerSection
 	for _, l := range strings.Split(priorBody, "\n") {
 		t := strings.TrimSpace(l)
 		if h := heading(l); h != "" {
 			current = h
 		}
-		if t == "" {
+		if t == "" || strings.HasPrefix(t, syncedPrefix) {
+			// The synced stamp is regenerated every render by design; reporting the old one as
+			// lost project content would cry wolf on every version bump.
 			continue
 		}
-		// The synced stamp is regenerated on every render by design; reporting the old one as
-		// "lost project content" would cry wolf on every single version bump.
-		if strings.HasPrefix(t, syncedPrefix) {
-			continue
-		}
-		if renderCounts[t] > 0 {
-			renderCounts[t]--
+		if counts, ok := rendered[current]; ok && counts[t] > 0 {
+			counts[t]--
 			continue
 		}
 		if i, ok := idx[current]; ok {
@@ -246,6 +240,28 @@ func droppedContent(priorBody, renderedBody string) []string {
 			unit = "line"
 		}
 		out = append(out, fmt.Sprintf("%s — %d %s not carried forward", g.heading, g.lines, unit))
+	}
+	return out
+}
+
+const headerSection = "(document header)"
+
+// indexBySection maps each section heading to the multiset of trimmed lines beneath it.
+func indexBySection(body string) map[string]map[string]int {
+	out := map[string]map[string]int{}
+	current := headerSection
+	for _, l := range strings.Split(body, "\n") {
+		t := strings.TrimSpace(l)
+		if h := heading(l); h != "" {
+			current = h
+		}
+		if t == "" {
+			continue
+		}
+		if out[current] == nil {
+			out[current] = map[string]int{}
+		}
+		out[current][t]++
 	}
 	return out
 }
