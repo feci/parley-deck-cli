@@ -648,52 +648,99 @@ func TestDroppedContentTreatsDeeperHeadingsAsSections(t *testing.T) {
 	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
 		t.Fatalf("exit=%d: %s", code, errb.String())
 	}
-	// 3 = the heading itself plus its two body lines; the heading is dropped too.
-	if !strings.Contains(out.String(), "#### Parent — 3 lines") {
+	// The point is ATTRIBUTION: the loss is charged to #### Parent, not merged into its parent
+	// section. The exact count also includes the heading and the blank lines around it, which are
+	// content too — an earlier version silently normalized whitespace-only lines away.
+	if !strings.Contains(out.String(), "#### Parent — ") {
 		t.Errorf("a level-4 subsection was not treated as its own section:\n%s", out.String())
 	}
 }
 
-// codex-1's four round-6 cases, as permanent tests. Each is a transformation where a MULTISET of
-// lines is unchanged while the document's meaning is not — which is why the comparison is now a
-// sequence diff.
+// codex-1's round-6 cases, as permanent tests.
+//
+// The fixtures matter as much as the assertions: an earlier version of these tests kept an extra
+// dropped line in the section, so the report appeared under a multiset too and all three passed
+// with the fix reverted (hermes-1). Each fixture below differs from the core ONLY by the
+// transformation under test, so a multiset sees no difference and only a sequence diff does.
+// Verified in both directions.
+
+// protocolFixtureWith builds a deck against an arbitrary core body.
+func protocolFixtureWith(t *testing.T, core, deck string) string {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("PARLEY_HOME", home)
+	if _, err := protocolcore.StoreAt(home).Publish("1.0.0", core); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	meta := filepath.Join(root, "parley-deck", "meta")
+	if err := os.MkdirAll(meta, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "parley-deck", "COOPERATION.md"), []byte(deck), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(meta, "protocol-lock.yaml"), []byte("core-version: 1.0.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+const minimalCore = `# T
+
+**Workspace:** ` + "`<w>`" + `
+**Transport:** ` + "`<t>`" + `
+**Created:** ` + "`<d>`" + `
+
+## 3. Phases
+
+alpha
+beta
+gamma
+`
+
+func renderPreview(t *testing.T, root string) string {
+	t.Helper()
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	return out.String()
+}
+
+// A Markdown hard break (two trailing spaces) is meaning-bearing. Trimmed comparison equates the
+// two lines; exact comparison does not. The ONLY difference from the core is those two spaces.
 func TestDroppedContentDetectsMarkdownHardBreakLoss(t *testing.T) {
-	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
-		"Core rules live here.  \nNext line.", 1) // two trailing spaces = hard break
-	root := protocolFixture(t, deck)
-	var out, errb strings.Builder
-	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
-		t.Fatalf("exit=%d: %s", code, errb.String())
-	}
-	if !strings.Contains(out.String(), "## 3. Phases") {
-		t.Errorf("a lost Markdown hard break was not reported:\n%s", out.String())
+	deck := strings.Replace(minimalCore, "alpha", "alpha  ", 1)
+	got := renderPreview(t, protocolFixtureWith(t, minimalCore, deck))
+	if !strings.Contains(got, "## 3. Phases") {
+		t.Errorf("a lost Markdown hard break was not reported:\n%s", got)
 	}
 }
 
+// Same lines, different ORDER. A multiset is identical; a sequence diff is not.
 func TestDroppedContentDetectsReorderedContent(t *testing.T) {
-	// Same lines, different order: prose moved out of an HTML comment becomes visible.
-	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
-		"<!--\nCore rules live here.\n-->", 1)
-	root := protocolFixture(t, deck)
-	var out, errb strings.Builder
-	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
-		t.Fatalf("exit=%d: %s", code, errb.String())
-	}
-	if !strings.Contains(out.String(), "## 3. Phases") {
-		t.Errorf("reordering that changes meaning was not reported:\n%s", out.String())
+	deck := strings.Replace(minimalCore, "alpha\nbeta\ngamma", "gamma\nbeta\nalpha", 1)
+	got := renderPreview(t, protocolFixtureWith(t, minimalCore, deck))
+	if !strings.Contains(got, "## 3. Phases") {
+		t.Errorf("reordering that changes meaning was not reported:\n%s", got)
 	}
 }
 
+// Exactly ONE stamp is forgiven — the regenerated one. A second stamp-prefixed line is genuine
+// project prose and must be reported.
 func TestDroppedContentForgivesExactlyOneStamp(t *testing.T) {
-	// The regenerated stamp is not a loss; a SECOND stamp-prefixed line is genuine project prose.
-	deck := strings.Replace(testDeck, "**Protocol synced:** 2026-06-13 — old",
-		"**Protocol synced:** 2026-06-13 — old\n**Protocol synced:** this is genuine project prose", 1)
-	root := protocolFixture(t, deck)
-	var out, errb strings.Builder
-	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
-		t.Fatalf("exit=%d: %s", code, errb.String())
+	core := strings.Replace(minimalCore, "**Created:** `<d>`", "**Created:** `<d>`\n**Protocol synced:** placeholder", 1)
+	deck := strings.Replace(core, "**Protocol synced:** placeholder",
+		"**Protocol synced:** old\n**Protocol synced:** genuine project prose", 1)
+	got := renderPreview(t, protocolFixtureWith(t, core, deck))
+	if !strings.Contains(got, "not carried forward") {
+		t.Errorf("a second stamp-prefixed line was silently swallowed:\n%s", got)
 	}
-	if !strings.Contains(out.String(), "not carried forward") {
-		t.Errorf("a second stamp-prefixed line was silently swallowed:\n%s", out.String())
+	// And the single regenerated stamp alone must NOT be reported.
+	deck2 := strings.Replace(core, "**Protocol synced:** placeholder", "**Protocol synced:** old", 1)
+	got2 := renderPreview(t, protocolFixtureWith(t, core, deck2))
+	if strings.Contains(got2, "not carried forward") {
+		t.Errorf("the regenerated stamp was reported as a loss:\n%s", got2)
 	}
 }

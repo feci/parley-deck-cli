@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-global-core-protocol
-status: fix-up-cycle-6
+status: fix-up-cycle-7
 implementer: claude-1
 started: 2026-08-07
 completed: 2026-08-07
 branch: parley-deck-cli#main
-head-commit: 8ed3c4b (cycle 5); cycle 6 lands in the next commit
+head-commit: 134c52a (cycle 6); cycle 7 lands in the next commit
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -298,3 +298,34 @@ and is reported. All four of codex-1's cases are permanent tests.
 
 `go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
 29 protocol tests.
+
+## Fix-up cycle 7
+
+status: complete
+completed: 2026-08-07
+
+Round 7: hermes-1 FINDINGS, codex-1 FINDINGS. All upheld.
+
+### Fixes applied
+
+- **[MAJOR, hermes-1] The three round-6 probe tests were not reversion-sensitive.** Verified: all
+  three passed with the multiset restored. Their fixtures kept an unrelated dropped line in the
+  section, so the report appeared either way. Each fixture now differs from the core by ONLY the
+  transformation under test, against a purpose-built minimal core. Verified in both directions —
+  they now FAIL when the LCS diff is reverted. This is the third time a TEST was the defective
+  artifact, which is why every fix is now reverted-and-re-run rather than declared.
+- **[MAJOR, codex-1] "Exactly one stamp forgiven" was not exactly one.** The exemption was consumed
+  by the first UNMATCHED stamp line, so when the deck already carried the current stamp (LCS keeps
+  it, exemption unused) a following genuine stamp-prefixed line inherited the forgiveness. The two
+  stamps are now paired explicitly by their header-region lines, and nothing is forgiven when they
+  are equal — because then nothing was replaced.
+- **[MAJOR, codex-1] Whitespace-only lines were silently normalized away** from the report. They
+  are content; they are now counted.
+- **[MAJOR, codex-1] The LCS used a full O(n*m) DP table — unbounded memory.** A 100k-line document
+  would have allocated tens of gigabytes and taken the process down. Replaced with **Hirschberg's
+  algorithm** (linear space). A 20k-line test exercises a size at which the old approach would
+  already be allocating ~1.6 GB.
+
+### Verification
+
+go build, GOOS=windows, GOOS=linux, go vet, go test — all clean. 31 protocol/diff tests.

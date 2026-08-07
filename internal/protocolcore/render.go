@@ -211,15 +211,14 @@ func droppedContent(priorBody, renderedBody string) []string {
 	}
 	keep := lcsMask(prior, rendered)
 
-	// A regenerated stamp is not a loss: if the deck's removed line and one of the render's added
-	// lines are both stamps, they are the same line rewritten.
-	addedStamp := false
-	for _, l := range rendered {
-		if strings.HasPrefix(strings.TrimSpace(l), syncedPrefix) {
-			addedStamp = true
-			break
-		}
-	}
+	// A regenerated stamp is not a loss — but ONLY the specific line that was regenerated.
+	// Consuming "the first unmatched stamp-prefixed line" was wrong: when the deck already carries
+	// the current stamp, LCS keeps it, the exemption goes unused, and the next genuine
+	// stamp-prefixed line inherits the forgiveness (codex-1). Pair the two stamps explicitly, and
+	// forgive nothing when they are equal, because then nothing was replaced.
+	deckStamp := headerStamp(prior)
+	renderStamp := headerStamp(rendered)
+	forgive := deckStamp != "" && deckStamp != renderStamp
 
 	type group struct {
 		heading string
@@ -233,12 +232,10 @@ func droppedContent(priorBody, renderedBody string) []string {
 		if h := heading(l); h != "" {
 			current = h
 		}
-		if keep[i] || strings.TrimSpace(l) == "" {
+		if keep[i] {
 			continue
 		}
-		if addedStamp && !stampSkipped && strings.HasPrefix(strings.TrimSpace(l), syncedPrefix) {
-			// Exactly ONE stamp is forgiven — the one that was regenerated. A second
-			// stamp-prefixed line is genuine project prose and is reported.
+		if forgive && !stampSkipped && l == deckStamp {
 			stampSkipped = true
 			continue
 		}
@@ -275,47 +272,102 @@ func splitLines(s string) []string {
 	return out
 }
 
-// lcsMask returns, for each line of a, whether it belongs to a longest common subsequence with b —
-// i.e. whether the render still carries it, in order.
+// lcsMask returns, for each line of a, whether it belongs to a longest common subsequence with b
+// — i.e. whether the render still carries it, in order.
+//
+// Hirschberg's algorithm: linear space. The obvious full DP table is O(n*m) MEMORY, which codex-1
+// correctly flagged as unbounded — a 100k-line document would allocate tens of gigabytes and take
+// the process down. A protocol is normally ~1-2k lines, but "normally" is not a bound, and a
+// correctness-critical report must not be the thing that crashes on a big input.
 func lcsMask(a, b []string) []bool {
-	n, m := len(a), len(b)
-	keep := make([]bool, n)
-	if n == 0 || m == 0 {
+	keep := make([]bool, len(a))
+	if len(a) == 0 || len(b) == 0 {
 		return keep
 	}
-	// Classic LCS table. Documents here are ~1-2k lines, so the quadratic table is a few MB and
-	// runs in milliseconds; clarity beats cleverness for a correctness-critical report.
-	table := make([][]int32, n+1)
-	for i := range table {
-		table[i] = make([]int32, m+1)
-	}
-	for i := n - 1; i >= 0; i-- {
-		for j := m - 1; j >= 0; j-- {
-			if a[i] == b[j] {
-				table[i][j] = table[i+1][j+1] + 1
-			} else if table[i+1][j] >= table[i][j+1] {
-				table[i][j] = table[i+1][j]
-			} else {
-				table[i][j] = table[i][j+1]
-			}
-		}
-	}
-	i, j := 0, 0
-	for i < n && j < m {
-		switch {
-		case a[i] == b[j]:
-			keep[i] = true
-			i++
-			j++
-		case table[i+1][j] >= table[i][j+1]:
-			i++
-		default:
-			j++
-		}
-	}
+	hirschberg(a, b, 0, keep)
 	return keep
 }
 
+// hirschberg marks the LCS of a against b, offsetting marks by base into keep.
+func hirschberg(a, b []string, base int, keep []bool) {
+	switch {
+	case len(a) == 0 || len(b) == 0:
+		return
+	case len(a) == 1:
+		for _, x := range b {
+			if x == a[0] {
+				keep[base] = true
+				return
+			}
+		}
+		return
+	}
+	mid := len(a) / 2
+	left := lcsRow(a[:mid], b)
+	right := lcsRowReverse(a[mid:], b)
+	var best int32 = -1
+	split := 0
+	for j := 0; j <= len(b); j++ {
+		if v := left[j] + right[len(b)-j]; v > best {
+			best, split = v, j
+		}
+	}
+	hirschberg(a[:mid], b[:split], base, keep)
+	hirschberg(a[mid:], b[split:], base+mid, keep)
+}
+
+// lcsRow is the last row of the LCS DP for a against b, in O(len(b)) space.
+func lcsRow(a, b []string) []int32 {
+	prev := make([]int32, len(b)+1)
+	cur := make([]int32, len(b)+1)
+	for i := 0; i < len(a); i++ {
+		cur[0] = 0
+		for j := 1; j <= len(b); j++ {
+			if a[i] == b[j-1] {
+				cur[j] = prev[j-1] + 1
+			} else if prev[j] >= cur[j-1] {
+				cur[j] = prev[j]
+			} else {
+				cur[j] = cur[j-1]
+			}
+		}
+		prev, cur = cur, prev
+	}
+	return prev
+}
+
+// lcsRowReverse is lcsRow over the reversed sequences.
+func lcsRowReverse(a, b []string) []int32 {
+	ra := make([]string, len(a))
+	for i := range a {
+		ra[i] = a[len(a)-1-i]
+	}
+	rb := make([]string, len(b))
+	for i := range b {
+		rb[i] = b[len(b)-1-i]
+	}
+	return lcsRow(ra, rb)
+}
+
+// headerStamp returns the synced-stamp line from a document's header region — everything before
+// the first level-2+ heading. Restricting it to the header is what keeps a genuine
+// stamp-prefixed line elsewhere in the document from being mistaken for the generated one.
+func headerStamp(lines []string) string {
+	for _, l := range lines {
+		t := strings.TrimSpace(l)
+		if strings.HasPrefix(t, "## ") {
+			return ""
+		}
+		if strings.HasPrefix(t, syncedPrefix) {
+			return l
+		}
+	}
+	return ""
+}
+
+// heading recognizes ANY ATX heading level. Recognizing only ## and ### meant a #### subsection
+// was not a section boundary, so content lost from it was attributed to — and masked by — its
+// parent section.
 func heading(line string) string {
 	t := strings.TrimRight(line, " \t")
 	for _, p := range []string{"# ", "## ", "### ", "#### ", "##### ", "###### "} {
