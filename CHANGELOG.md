@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.42.1 — 2026-08-07
+
+Two defects found by the independent deploy verification of 1.42.0, which is exactly what that
+step is for.
+
+### Fixed
+
+- **`parley protocol --help` exited 2** with an unknown-subcommand error, so the documented way to
+  discover the new command failed. It now prints the group usage and succeeds.
+- This repository's own `parley-deck/meta/version.json` was left at the previous skill version, so
+  the tool reported its own deck as stale.
+
 ## 1.42.0 — 2026-08-07
 
 A global core protocol, and `parley protocol` to work with it. Designed and reviewed across two
