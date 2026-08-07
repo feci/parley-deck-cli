@@ -97,6 +97,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runClassify(args[1:], stdout, stderr)
 	case "preset":
 		return runPreset(args[1:], stdout, stderr)
+	case "protocol":
+		return runProtocol(args[1:], stdout, stderr)
 	case "roster":
 		return runRoster(args[1:], stdout, stderr)
 	case "tui":
@@ -120,6 +122,7 @@ Usage:
   %s init [--dir DIR]
   %s agents list [--dir DIR]                        (adapter/runtime inventory — NOT the roster)
   %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
+  %s protocol status|render|check [--dir DIR] [--dry-run] [--yes] [--json]
   %s roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]
   %s roster set AGENT --scope deck|machine [--adapter A] [--model M] [--effort E] [--speed S] [--state active|inactive] [--dry-run] [--yes] [--confirm-breaking]
   %s roster sync [--dir DIR] [--keep AGENT.FIELD]... [--dry-run] [--yes]
@@ -321,6 +324,7 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
 		appName,
 		appName,
 		appName,

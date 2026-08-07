@@ -1,3 +1,29 @@
+## 2026-08-07 — §7 blast radius: a core change is not a deck change
+Idea: ideas/meta-protocol-change-global-core-protocol/
+Drafted by: claude-1
+Summary: The protocol moves to a single global core under `~/.parley/protocol/core/<version>/`, of
+which each deck's COOPERATION.md is a generated view; §7 now distinguishes a CORE change (meta idea
+plus explicit user ratification, user-only) from a DECK overlay change (a normal idea in that deck).
+
+**Ratification:** track `deliberation`, 2 rounds, 3 consensus revisions, accepted by claude-1,
+codex-1, hermes-1, kimi-1. opencode-1 was invoked four times, produced no artifact, and is recorded
+absent rather than agreeing
+(`inbox/claude-1-to-all_meta-protocol-change-global-core-protocol_opencode-timeout.md`).
+
+**Why:** measured across 36 decks before a one-off sync — eight different `deckVersion` values, §15
+present in 5 of 36, the §2 roster-authority change in 1 of 36. The per-deck copy-as-store model had
+already failed, and the hand-written sync that repaired it was not a mechanism. Only ONE genuine
+local protocol section existed in the whole fleet, and it was governance about how the protocol is
+synced — content that belongs in the core, not in a deck.
+
+**Enforcement, stated honestly.** Prevention of an agent writing the core is real for
+parley-launched participants under an OS sandbox (verified: a macOS seatbelt profile denies the
+write, the denial is inherited by children, and `rm` is denied too) — but a profile built from an
+UNRESOLVED path silently denies nothing, and the facilitator is not launched by parley. So the
+shipped guarantee is: write-once releases, an attended TTY-gated publisher, no agent-accessible
+write path, and detection with `DETECTED-UNATTRIBUTED` for anything else. The sandbox itself is a
+ratified follow-up, not shipped here, and nothing claims confinement without a runtime probe.
+
 ## 2026-07-04 - Add §13.5 Playbooks (parley learn distillation)
 
 Idea: ideas/parley-learn-playbooks/ (parley-learn-playbooks)
