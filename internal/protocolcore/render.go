@@ -2,6 +2,7 @@ package protocolcore
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -356,19 +357,26 @@ func lcsRowReverse(a, b []string) []int32 {
 	return lcsRow(ra, rb)
 }
 
-// headerStamp returns the GENERATED stamp line: the one immediately after `**Created:**`.
+// generatedStampRe matches the stamp this renderer PRODUCES: `**Protocol synced:** core <v> (<h>)`.
 //
-// Identifying it by prefix was wrong twice over. "First stamp-prefixed line before the first ##"
-// picks genuine project prose whenever that prose precedes the real stamp, and then the prose is
-// the thing forgiven while the real stamp is kept by LCS (codex-1's round-8 reproduction). The
-// generated stamp has a STRUCTURAL position — Render writes it directly after Created — so that
-// is how it is found. A stamp-prefixed line anywhere else is project content and is reported.
+// The exemption needs proof that the deck's slot line really was a generated stamp, not merely
+// that something sits after `**Created:**`. Without that proof, genuine stamp-prefixed prose
+// occupying the slot in a deck that never had a generated stamp is forgiven and deleted with no
+// removal report (codex-1, round 9).
+//
+// A legacy stamp in some older format does NOT match, so it is reported as not carried forward.
+// That is the intended side: a data-loss report should err loud, and a legacy stamp genuinely is
+// being replaced.
+var generatedStampRe = regexp.MustCompile(`^\*\*Protocol synced:\*\* core \S+ \([0-9a-f]+\)\s*$`)
+
+// headerStamp returns the deck's generated stamp line — the slot immediately after
+// `**Created:**`, and only when that line is recognizably a generated stamp.
 func headerStamp(lines []string) string {
 	for i, l := range lines {
 		if !strings.HasPrefix(l, createdPrefix) {
 			continue
 		}
-		if i+1 < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i+1]), syncedPrefix) {
+		if i+1 < len(lines) && generatedStampRe.MatchString(strings.TrimRight(lines[i+1], " \t")) {
 			return lines[i+1]
 		}
 		return ""
@@ -376,9 +384,18 @@ func headerStamp(lines []string) string {
 	return ""
 }
 
-// heading recognizes ANY ATX heading level. Recognizing only ## and ### meant a #### subsection
-// was not a section boundary, so content lost from it was attributed to — and masked by — its
-// parent section.
+// containsLine reports whether an exact line is present.
+func containsLine(lines []string, want string) bool {
+	for _, l := range lines {
+		if l == want {
+			return true
+		}
+	}
+	return false
+}
+
+// heading recognizes ANY ATX heading level, so a #### subsection is its own section boundary and
+// its losses are not masked by the parent.
 func heading(line string) string {
 	t := strings.TrimRight(line, " \t")
 	for _, p := range []string{"# ", "## ", "### ", "#### ", "##### ", "###### "} {
@@ -393,13 +410,3 @@ func heading(line string) string {
 // and a linear-space rewrite is exactly where an off-by-one hides, so it is verified against an
 // independent full-DP implementation rather than only through the command surface.
 func LCSMaskForTest(a, b []string) []bool { return lcsMask(a, b) }
-
-// containsLine reports whether an exact line is present.
-func containsLine(lines []string, want string) bool {
-	for _, l := range lines {
-		if l == want {
-			return true
-		}
-	}
-	return false
-}

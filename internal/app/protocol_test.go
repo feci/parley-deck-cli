@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -731,17 +732,28 @@ func TestDroppedContentDetectsReorderedContent(t *testing.T) {
 // project prose and must be reported.
 func TestDroppedContentForgivesExactlyOneStamp(t *testing.T) {
 	core := strings.Replace(minimalCore, "**Created:** `<d>`", "**Created:** `<d>`\n**Protocol synced:** placeholder", 1)
-	deck := strings.Replace(core, "**Protocol synced:** placeholder",
-		"**Protocol synced:** old\n**Protocol synced:** genuine project prose", 1)
-	got := renderPreview(t, protocolFixtureWith(t, core, deck))
-	if !strings.Contains(got, "not carried forward") {
-		t.Errorf("a second stamp-prefixed line was silently swallowed:\n%s", got)
+
+	// Converge once so the deck holds a REAL generated stamp, then re-render: the regenerated
+	// stamp alone must not be reported. Only a recognizably-generated stamp is forgiven — a
+	// legacy stamp in some other format is genuinely being replaced and is reported.
+	root := protocolFixtureWith(t, core, core)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--yes"}, &out, &errb); code != 0 {
+		t.Fatalf("initial render exit=%d: %s", code, errb.String())
 	}
-	// And the single regenerated stamp alone must NOT be reported.
-	deck2 := strings.Replace(core, "**Protocol synced:** placeholder", "**Protocol synced:** old", 1)
-	got2 := renderPreview(t, protocolFixtureWith(t, core, deck2))
-	if strings.Contains(got2, "not carried forward") {
-		t.Errorf("the regenerated stamp was reported as a loss:\n%s", got2)
+	path := filepath.Join(root, "parley-deck", "COOPERATION.md")
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Age the stamp: same generated FORMAT, different content — exactly what a version bump does.
+	aged := regexp.MustCompile(`\*\*Protocol synced:\*\* core \S+ \([0-9a-f]+\)`).
+		ReplaceAllString(string(body), "**Protocol synced:** core 0.9.0 (deadbeefcafe)")
+	if err := os.WriteFile(path, []byte(aged), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := renderPreview(t, root); strings.Contains(got, "not carried forward") {
+		t.Errorf("a regenerated stamp was reported as a loss:\n%s", got)
 	}
 }
 
@@ -830,4 +842,41 @@ func fullDPLCSLength(a, b []string) int {
 		}
 	}
 	return dp[0][0]
+}
+
+// codex-1's round-9 case: a deck that never had a generated stamp, with genuine stamp-prefixed
+// prose occupying the slot after **Created:**. Nothing was generated there, so nothing may be
+// forgiven — the prose must be reported.
+func TestStampExemptionRequiresProofTheSlotWasGenerated(t *testing.T) {
+	core := strings.Replace(minimalCore, "**Created:** `<d>`",
+		"**Created:** `<d>`\n**Protocol synced:** placeholder", 1)
+	deck := strings.Replace(core, "**Protocol synced:** placeholder",
+		"**Protocol synced:** genuine project prose, never a generated stamp", 1)
+	got := renderPreview(t, protocolFixtureWith(t, core, deck))
+	if !strings.Contains(got, "not carried forward") {
+		t.Errorf("prose in the stamp slot of a deck with no generated stamp was silently forgiven:\n%s", got)
+	}
+}
+
+// The terminal-CR fix needs its own pin: a lone CR on the last line is content, not line-ending
+// noise, and stripping it deleted real characters.
+func TestTerminalCarriageReturnIsNotErased(t *testing.T) {
+	// The core's LAST line is "trailing"; the deck's is "trailing\r". Stripping the lone CR makes
+	// them compare equal and the change vanishes from the report. The earlier version of this test
+	// appended a line the core lacked entirely, so it was reported either way — a tautology.
+	core := minimalCore + "trailing"
+	deck := minimalCore + "trailing\r"
+	got := renderPreview(t, protocolFixtureWith(t, core, deck))
+	if !strings.Contains(got, "not carried forward") {
+		t.Errorf("a lone terminal carriage return was erased without a report:\n%s", got)
+	}
+}
+
+// Whitespace-only lines are content; normalizing them away hid real changes.
+func TestWhitespaceOnlyLinesAreCounted(t *testing.T) {
+	deck := strings.Replace(minimalCore, "alpha\nbeta", "alpha\n   \nbeta", 1)
+	got := renderPreview(t, protocolFixtureWith(t, minimalCore, deck))
+	if !strings.Contains(got, "not carried forward") {
+		t.Errorf("a whitespace-only line was normalized away instead of reported:\n%s", got)
+	}
 }

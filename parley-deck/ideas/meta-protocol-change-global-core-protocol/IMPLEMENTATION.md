@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-global-core-protocol
-status: fix-up-cycle-8
+status: fix-up-cycle-9
 implementer: claude-1
 started: 2026-08-07
 completed: 2026-08-07
 branch: parley-deck-cli#main
-head-commit: c4a8b83 (cycle 7); cycle 8 lands in the next commit
+head-commit: c7f0c6e (cycle 8); cycle 9 lands in the next commit
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -357,3 +357,36 @@ Round 8: codex-1 FINDINGS. All upheld. (hermes-1 and kimi-1 were interrupted bef
 ### Verification
 
 go build, GOOS=windows, GOOS=linux, go vet, go test — all clean. 33 protocol/diff tests.
+
+## Fix-up cycle 9
+
+status: complete
+completed: 2026-08-07
+
+Round 9: codex-1 FINDINGS, all upheld. (hermes-1 and kimi-1 interrupted again before writing.)
+
+### Fixes applied
+
+- **[MAJOR] The stamp exemption still had no PROOF the slot line was ever generated.** A deck that
+  never carried a generated stamp, with genuine stamp-prefixed prose in the slot after
+  `**Created:**`, had that prose forgiven and deleted with no report. This is the fourth rule
+  attempted for one exemption — first-unmatched, then positional, then replacement-based, and now
+  format-proven: the line must match the shape this renderer actually produces
+  (`**Protocol synced:** core <version> (<hash>)`). A legacy stamp in an older format no longer
+  matches and is therefore REPORTED as replaced, which is the intended side: a data-loss report
+  should err loud.
+- **[MAJOR] The cycle-8 claim that all three cycle-7 fixes had reversion-sensitive tests was
+  false.** codex-1 checked and only one did. Pins added for the terminal-CR and whitespace-only
+  fixes, and each verified by a compiling revert.
+
+### A note on how these were verified
+
+Two of my own reversion checks were themselves wrong this cycle, in opposite directions: one
+"failure" came from a revert that did not COMPILE (a build error proves nothing), and one "pass"
+came from a revert that never APPLIED (a shell quoting bug meant the file was unchanged). Both
+were caught only by re-running with the substitution confirmed. A reversion check is itself an
+experiment and needs the same scepticism as the code.
+
+### Verification
+
+go build, GOOS=windows, GOOS=linux, go vet, go test — all clean. 36 protocol/diff tests.
