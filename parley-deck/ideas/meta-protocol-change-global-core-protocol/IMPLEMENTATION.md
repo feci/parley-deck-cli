@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-global-core-protocol
-status: implemented
+status: fix-up-cycle-5
 implementer: claude-1
 started: 2026-08-07
 completed: 2026-08-07
 branch: parley-deck-cli#main
-head-commit: (see release commit)
+head-commit: 1903e49 (cycle 4); cycle 5 lands in the next commit
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -228,3 +228,39 @@ reworded accordingly. codex-1's round-01 and round-02 findings are all addressed
 
 `go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
 23 protocol tests.
+
+## Fix-up cycle 5
+
+status: complete
+completed: 2026-08-07
+
+Round 5: hermes-1 CLEAN, kimi-1 CLEAN, codex-1 FINDINGS (reviewing cycles 2-4 together, having
+declined 3-4 over wording). All of codex-1's findings upheld.
+
+### Fixes applied
+
+- **[MAJOR] `droppedContent` lost content three more ways**, each proven by codex-1 with a scratch
+  probe. This function has now been wrong in four distinct ways across four cycles, which is itself
+  the finding: comparing documents for lossless transformation is harder than it looks, and every
+  simplification I reached for turned out to be a lossy one.
+  - `TrimSpace` on both sides made an INDENTED code line and its unindented prose twin compare
+    equal, so a Markdown-meaning-changing edit passed as carried forward. Comparison now trims only
+    trailing whitespace.
+  - The synced-stamp skip was location-blind, so genuine project prose beginning with that prefix
+    vanished unreported. It is now structural: skip only where the render has a regenerated stamp
+    in the same section.
+  - Only `##` and `###` were headings, so a `####` subsection was not a section boundary and its
+    losses were masked by its parent. All ATX levels now count.
+  All three of codex-1's probes are permanent tests.
+- **[MAJOR] The third protocol copy was still uncommitted.** Committed as
+  `parley-deck-skill@4b80468`; all three copies verified to carry the same text.
+- **[MINOR] "Only the user may change the global core" contradicted the documented pty behaviour.**
+  Reworded across all three copies: it is a rule backed by mechanism, not a proof, and what the
+  tooling guarantees is that a change cannot happen quietly or through the normal path.
+- **[MINOR] The Phase-8 record named neither the phase nor the reviewed HEAD.** Frontmatter now
+  carries `status: fix-up-cycle-5` and the reviewed commit.
+
+### Verification
+
+`go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
+26 protocol tests.

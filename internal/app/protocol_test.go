@@ -605,3 +605,51 @@ func TestProtocolRenderReportsDeckReadErrors(t *testing.T) {
 		t.Errorf("render did not report the read failure: %s", errb.String())
 	}
 }
+
+// codex-1's three probes, as permanent tests: each is a way content changed meaning or vanished
+// while the report stayed silent.
+func TestDroppedContentDetectsIndentationLoss(t *testing.T) {
+	// The core has unindented prose; the deck has it as an indented code block. TrimSpace called
+	// them identical, so the meaning-changing edit passed as "carried forward".
+	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
+		"    Core rules live here.", 1)
+	root := protocolFixture(t, deck)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), "## 3. Phases") {
+		t.Errorf("indentation-significant content was lost without a report:\n%s", out.String())
+	}
+}
+
+func TestDroppedContentDetectsSyncedPrefixOutsideTheHeader(t *testing.T) {
+	// Genuine project prose that happens to start with the stamp prefix must not be skipped just
+	// because the header's stamp is regenerated.
+	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
+		"**Protocol synced:** this deck documents its own sync policy here.", 1)
+	root := protocolFixture(t, deck)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), "## 3. Phases") {
+		t.Errorf("project prose beginning with the stamp prefix vanished unreported:\n%s", out.String())
+	}
+}
+
+func TestDroppedContentTreatsDeeperHeadingsAsSections(t *testing.T) {
+	// A #### subsection was not a section boundary, so content lost from it was attributed to —
+	// and masked by — its parent.
+	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
+		"#### Parent\n\nfirst deck line\nsecond deck line", 1)
+	root := protocolFixture(t, deck)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	// 3 = the heading itself plus its two body lines; the heading is dropped too.
+	if !strings.Contains(out.String(), "#### Parent — 3 lines") {
+		t.Errorf("a level-4 subsection was not treated as its own section:\n%s", out.String())
+	}
+}

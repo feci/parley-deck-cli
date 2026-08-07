@@ -217,13 +217,19 @@ func droppedContent(priorBody, renderedBody string) []string {
 		if h := heading(l); h != "" {
 			current = h
 		}
-		if t == "" || strings.HasPrefix(t, syncedPrefix) {
-			// The synced stamp is regenerated every render by design; reporting the old one as
-			// lost project content would cry wolf on every version bump.
+		if t == "" {
 			continue
 		}
-		if counts, ok := rendered[current]; ok && counts[t] > 0 {
-			counts[t]--
+		// The synced stamp is regenerated every render by design, so the deck's old one is not a
+		// loss. But skipping the prefix ANYWHERE would let genuine project prose that happens to
+		// begin with it vanish unreported. Structural test: skip only where the render has a stamp
+		// in this same section — i.e. where one really was regenerated.
+		if strings.HasPrefix(t, syncedPrefix) && sectionHasStamp(rendered[current]) {
+			continue
+		}
+		key := lineKey(l)
+		if counts, ok := rendered[current]; ok && counts[key] > 0 {
+			counts[key]--
 			continue
 		}
 		if i, ok := idx[current]; ok {
@@ -246,7 +252,22 @@ func droppedContent(priorBody, renderedBody string) []string {
 
 const headerSection = "(document header)"
 
-// indexBySection maps each section heading to the multiset of trimmed lines beneath it.
+// sectionHasStamp reports whether a rendered section contains a regenerated synced stamp.
+func sectionHasStamp(counts map[string]int) bool {
+	for line, n := range counts {
+		if n > 0 && strings.HasPrefix(strings.TrimSpace(line), syncedPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// lineKey is the comparison form of a line: trailing whitespace is noise, LEADING whitespace is
+// not — four spaces make a Markdown code block, and TrimSpace made an indented code line and its
+// unindented prose twin compare equal, so a meaning-changing edit passed as "carried forward".
+func lineKey(line string) string { return strings.TrimRight(line, " \t") }
+
+// indexBySection maps each section heading to the multiset of lines beneath it.
 func indexBySection(body string) map[string]map[string]int {
 	out := map[string]map[string]int{}
 	current := headerSection
@@ -261,15 +282,20 @@ func indexBySection(body string) map[string]map[string]int {
 		if out[current] == nil {
 			out[current] = map[string]int{}
 		}
-		out[current][t]++
+		out[current][lineKey(l)]++
 	}
 	return out
 }
 
+// heading recognizes ANY ATX heading level. Recognizing only ## and ### meant a #### subsection
+// was not a section boundary, so content lost from it was attributed to — and masked by — its
+// parent section.
 func heading(line string) string {
 	t := strings.TrimRight(line, " \t")
-	if strings.HasPrefix(t, "## ") || strings.HasPrefix(t, "### ") {
-		return t
+	for _, p := range []string{"# ", "## ", "### ", "#### ", "##### ", "###### "} {
+		if strings.HasPrefix(t, p) {
+			return t
+		}
 	}
 	return ""
 }
