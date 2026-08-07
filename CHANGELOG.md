@@ -1,5 +1,57 @@
 # Changelog
 
+## 1.42.0 — 2026-08-07
+
+A global core protocol, and `parley protocol` to work with it. Designed and reviewed across two
+design rounds, three consensus revisions and nine review rounds by claude-1, codex-1, hermes-1 and
+kimi-1 (idea `meta-protocol-change-global-core-protocol`).
+
+### Why
+
+Measured across 36 decks: **eight different `deckVersion` values**, §15 present in 5 of them, the
+§2 roster-authority change in 1. `COOPERATION.md` was copied into every deck and hand-editable
+there, and the sync that repaired it was a one-off script, not a mechanism. Yet the drift was not
+project customization: only **one** deck in 36 carried a genuine local section, and it was
+governance about how the protocol is synced — content that belongs in the core.
+
+### Added
+
+- **A global core protocol store** at `~/.parley/protocol/core/<version>/`. Releases are
+  **write-once**: a release is never edited in place, so a change by the user becomes a new version
+  by construction rather than by discipline. Symlinked store components are refused on read and
+  write; version strings are validated before they reach a path.
+- **`parley protocol status|render|check|publish`.**
+  - `render` regenerates the deck's `COOPERATION.md` from the core, preserving the six per-deck
+    identity values (workspace, created, transport, the sync stamp, and both §2 tables). Preview is
+    the default. It **reports what it will not carry forward**, in preview and on apply.
+  - `check` reports a hand-edited or stale deck copy and **never overwrites** it, exiting non-zero
+    so a script can act.
+  - `publish` is attended-only: it refuses without a controlling terminal, which stops an ordinary
+    agent run whose stdin is a pipe or `/dev/null`. It does not stop an agent that allocates a pty —
+    the command says so itself rather than implying more.
+- **A deck lock** (`parley-deck/meta/protocol-lock.yaml`). A machine that lacks the exact pinned
+  release **blocks** rather than substituting its own same-named or current version.
+
+### Changed
+
+- **§7 gains a blast-radius clause** in all three protocol copies: a CORE change requires the meta
+  idea and explicit user ratification; a DECK change is a normal idea. The section states plainly
+  which parts of this design are **not yet in force** — per-idea pinning and the tamper signal are
+  ratified but unimplemented — instead of describing an intended future as present fact.
+
+### Known limits, stated rather than implied
+
+`render`'s loss report is a **line-level diff**, not a Markdown semantic analysis. An empty report
+means no line disappeared; it does not prove no meaning was lost. Read the diff before `--yes`. The
+report was wrong in nine distinct ways during review before reaching this form, which is why its
+claim is narrow.
+
+### Not shipped (ratified, scheduled)
+
+Per-idea protocol pinning, the deck overlay (local override/extension), the OS sandbox that would
+make core-write prevention enforceable for parley-launched agents, and migration of the existing
+36 decks. Nothing in this release claims any of them.
+
 ## 1.41.0 — 2026-08-06
 
 Standardized roster operations, completed. 1.40.x shipped the surface; this release fixes what six
