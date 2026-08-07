@@ -653,3 +653,47 @@ func TestDroppedContentTreatsDeeperHeadingsAsSections(t *testing.T) {
 		t.Errorf("a level-4 subsection was not treated as its own section:\n%s", out.String())
 	}
 }
+
+// codex-1's four round-6 cases, as permanent tests. Each is a transformation where a MULTISET of
+// lines is unchanged while the document's meaning is not — which is why the comparison is now a
+// sequence diff.
+func TestDroppedContentDetectsMarkdownHardBreakLoss(t *testing.T) {
+	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
+		"Core rules live here.  \nNext line.", 1) // two trailing spaces = hard break
+	root := protocolFixture(t, deck)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), "## 3. Phases") {
+		t.Errorf("a lost Markdown hard break was not reported:\n%s", out.String())
+	}
+}
+
+func TestDroppedContentDetectsReorderedContent(t *testing.T) {
+	// Same lines, different order: prose moved out of an HTML comment becomes visible.
+	deck := strings.Replace(testDeck, "STALE core text that must be replaced.",
+		"<!--\nCore rules live here.\n-->", 1)
+	root := protocolFixture(t, deck)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), "## 3. Phases") {
+		t.Errorf("reordering that changes meaning was not reported:\n%s", out.String())
+	}
+}
+
+func TestDroppedContentForgivesExactlyOneStamp(t *testing.T) {
+	// The regenerated stamp is not a loss; a SECOND stamp-prefixed line is genuine project prose.
+	deck := strings.Replace(testDeck, "**Protocol synced:** 2026-06-13 — old",
+		"**Protocol synced:** 2026-06-13 — old\n**Protocol synced:** this is genuine project prose", 1)
+	root := protocolFixture(t, deck)
+	var out, errb strings.Builder
+	if code := runProtocol([]string{"render", "--dir", root, "--dry-run"}, &out, &errb); code != 0 {
+		t.Fatalf("exit=%d: %s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), "not carried forward") {
+		t.Errorf("a second stamp-prefixed line was silently swallowed:\n%s", out.String())
+	}
+}

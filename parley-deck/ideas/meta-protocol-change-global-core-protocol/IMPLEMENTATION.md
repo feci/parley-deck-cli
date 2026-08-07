@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-global-core-protocol
-status: fix-up-cycle-5
+status: fix-up-cycle-6
 implementer: claude-1
 started: 2026-08-07
 completed: 2026-08-07
 branch: parley-deck-cli#main
-head-commit: 1903e49 (cycle 4); cycle 5 lands in the next commit
+head-commit: 8ed3c4b (cycle 5); cycle 6 lands in the next commit
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -264,3 +264,37 @@ declined 3-4 over wording). All of codex-1's findings upheld.
 
 `go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
 26 protocol tests.
+
+## Fix-up cycle 6
+
+status: complete
+completed: 2026-08-07
+
+Round 6: codex-1 FINDINGS (one MAJOR). hermes-1 and kimi-1 were interrupted before writing and
+re-run in round 7.
+
+### The multiset was abandoned, not patched again
+
+codex-1 showed four more transformations where the report stayed silent while the document's
+meaning changed: a lost Markdown hard break (two trailing spaces), prose moved out of an HTML
+comment, a rule moved between two sections that share a heading name, and a second
+stamp-prefixed line swallowed by the stamp exemption.
+
+The pattern across six cycles is the finding.  was a MULTISET comparison, and it was
+defeated five separate times — by content under a shared heading, by a line surviving in another
+section, by a per-section claim that was not implemented, by  equating an indented code
+block with unindented prose, and now by ORDER. **A multiset cannot see order, so no further patch
+would have made it correct.** Each fix was locally reasonable and the approach was wrong.
+
+It is now an **LCS sequence diff over exact lines** (only a CRLF's  is stripped). A moved line
+is a removal plus an addition; a lost hard break is a changed line; whitespace is compared as
+written. And the claim is narrowed to what it can support: it reports what regeneration will
+change so a human can judge — it does not interpret Markdown semantics.
+
+Exactly one stamp is forgiven, the regenerated one; a second stamp-prefixed line is project prose
+and is reported. All four of codex-1's cases are permanent tests.
+
+### Verification
+
+`go build ./...`, `GOOS=windows`, `GOOS=linux`, `go vet ./...`, `go test ./...` all clean.
+29 protocol tests.

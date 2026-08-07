@@ -189,22 +189,38 @@ func tableRows(body, marker string) []string {
 
 // droppedContent lists the deck content the render does NOT carry forward.
 //
-// Three attempts, and the first two are worth recording because each looked correct:
+// This is a real SEQUENCE diff, not a multiset comparison, and the difference is the whole point.
+// Five successive multiset variants were each defeated by a different Markdown construct — content
+// under a shared heading, a line surviving in another section, a claimed-but-not-implemented
+// per-section index, an indented code block equated with its unindented twin, and finally
+// reordering, duplicate headings, hard line breaks and HTML-comment boundaries, where the same
+// lines in a different ORDER change the meaning while every multiset stays equal.
 //
-//  1. Compare HEADINGS — missed everything under a heading the core also has.
-//  2. Compare a flat multiset of trimmed lines — the fix was DOCUMENTED as per-section and was
-//     not: the counts were built over the whole rendered body, so a line dropped from §3 still
-//     looked "kept" because an identical line survived in §11. Reviewers caught that the claimed
-//     fix was not the implemented one.
+// A multiset cannot see order, so no amount of further patching would have made it correct. An
+// LCS diff over exact lines can: a moved line is a removal plus an addition, a lost hard break is a
+// changed line, and whitespace is compared as written.
 //
-// This one indexes the render BY SECTION and matches a deck line against the counts of the same
-// section, so cross-section coincidence cannot mask a deletion. Multiplicity is preserved:
-// matching consumes a copy, so three dropped duplicates report as three.
+// What it reports, precisely: lines present in the deck that the render does not contain at that
+// position. It does NOT interpret Markdown semantics — it tells the operator what regeneration
+// will change so a human can judge, which is what G1 asks for.
 func droppedContent(priorBody, renderedBody string) []string {
-	if strings.TrimSpace(priorBody) == "" {
+	prior := splitLines(priorBody)
+	rendered := splitLines(renderedBody)
+	if len(prior) == 0 {
 		return nil
 	}
-	rendered := indexBySection(renderedBody)
+	keep := lcsMask(prior, rendered)
+
+	// A regenerated stamp is not a loss: if the deck's removed line and one of the render's added
+	// lines are both stamps, they are the same line rewritten.
+	addedStamp := false
+	for _, l := range rendered {
+		if strings.HasPrefix(strings.TrimSpace(l), syncedPrefix) {
+			addedStamp = true
+			break
+		}
+	}
+
 	type group struct {
 		heading string
 		lines   int
@@ -212,28 +228,22 @@ func droppedContent(priorBody, renderedBody string) []string {
 	var groups []group
 	idx := map[string]int{}
 	current := headerSection
-	for _, l := range strings.Split(priorBody, "\n") {
-		t := strings.TrimSpace(l)
+	stampSkipped := false
+	for i, l := range prior {
 		if h := heading(l); h != "" {
 			current = h
 		}
-		if t == "" {
+		if keep[i] || strings.TrimSpace(l) == "" {
 			continue
 		}
-		// The synced stamp is regenerated every render by design, so the deck's old one is not a
-		// loss. But skipping the prefix ANYWHERE would let genuine project prose that happens to
-		// begin with it vanish unreported. Structural test: skip only where the render has a stamp
-		// in this same section — i.e. where one really was regenerated.
-		if strings.HasPrefix(t, syncedPrefix) && sectionHasStamp(rendered[current]) {
+		if addedStamp && !stampSkipped && strings.HasPrefix(strings.TrimSpace(l), syncedPrefix) {
+			// Exactly ONE stamp is forgiven — the one that was regenerated. A second
+			// stamp-prefixed line is genuine project prose and is reported.
+			stampSkipped = true
 			continue
 		}
-		key := lineKey(l)
-		if counts, ok := rendered[current]; ok && counts[key] > 0 {
-			counts[key]--
-			continue
-		}
-		if i, ok := idx[current]; ok {
-			groups[i].lines++
+		if j, ok := idx[current]; ok {
+			groups[j].lines++
 			continue
 		}
 		idx[current] = len(groups)
@@ -252,44 +262,60 @@ func droppedContent(priorBody, renderedBody string) []string {
 
 const headerSection = "(document header)"
 
-// sectionHasStamp reports whether a rendered section contains a regenerated synced stamp.
-func sectionHasStamp(counts map[string]int) bool {
-	for line, n := range counts {
-		if n > 0 && strings.HasPrefix(strings.TrimSpace(line), syncedPrefix) {
-			return true
-		}
+// splitLines splits on newlines and strips only the CR of a CRLF pair. Nothing else is normalized:
+// trailing spaces are a Markdown hard line break, and leading spaces make a code block.
+func splitLines(s string) []string {
+	if s == "" {
+		return nil
 	}
-	return false
-}
-
-// lineKey is the comparison form of a line: trailing whitespace is noise, LEADING whitespace is
-// not — four spaces make a Markdown code block, and TrimSpace made an indented code line and its
-// unindented prose twin compare equal, so a meaning-changing edit passed as "carried forward".
-func lineKey(line string) string { return strings.TrimRight(line, " \t") }
-
-// indexBySection maps each section heading to the multiset of lines beneath it.
-func indexBySection(body string) map[string]map[string]int {
-	out := map[string]map[string]int{}
-	current := headerSection
-	for _, l := range strings.Split(body, "\n") {
-		t := strings.TrimSpace(l)
-		if h := heading(l); h != "" {
-			current = h
-		}
-		if t == "" {
-			continue
-		}
-		if out[current] == nil {
-			out[current] = map[string]int{}
-		}
-		out[current][lineKey(l)]++
+	out := strings.Split(s, "\n")
+	for i := range out {
+		out[i] = strings.TrimSuffix(out[i], "\r")
 	}
 	return out
 }
 
-// heading recognizes ANY ATX heading level. Recognizing only ## and ### meant a #### subsection
-// was not a section boundary, so content lost from it was attributed to — and masked by — its
-// parent section.
+// lcsMask returns, for each line of a, whether it belongs to a longest common subsequence with b —
+// i.e. whether the render still carries it, in order.
+func lcsMask(a, b []string) []bool {
+	n, m := len(a), len(b)
+	keep := make([]bool, n)
+	if n == 0 || m == 0 {
+		return keep
+	}
+	// Classic LCS table. Documents here are ~1-2k lines, so the quadratic table is a few MB and
+	// runs in milliseconds; clarity beats cleverness for a correctness-critical report.
+	table := make([][]int32, n+1)
+	for i := range table {
+		table[i] = make([]int32, m+1)
+	}
+	for i := n - 1; i >= 0; i-- {
+		for j := m - 1; j >= 0; j-- {
+			if a[i] == b[j] {
+				table[i][j] = table[i+1][j+1] + 1
+			} else if table[i+1][j] >= table[i][j+1] {
+				table[i][j] = table[i+1][j]
+			} else {
+				table[i][j] = table[i][j+1]
+			}
+		}
+	}
+	i, j := 0, 0
+	for i < n && j < m {
+		switch {
+		case a[i] == b[j]:
+			keep[i] = true
+			i++
+			j++
+		case table[i+1][j] >= table[i][j+1]:
+			i++
+		default:
+			j++
+		}
+	}
+	return keep
+}
+
 func heading(line string) string {
 	t := strings.TrimRight(line, " \t")
 	for _, p := range []string{"# ", "## ", "### ", "#### ", "##### ", "###### "} {
