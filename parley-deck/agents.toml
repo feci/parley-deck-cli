@@ -4,18 +4,12 @@
 [agents.codex]
 sandbox_mode = "workspace-write"
 approval_policy = "never"
-model = "gpt-5.6-sol"        # pinned 2026-07-28; matches ~/.codex/config.toml
-reasoning = "xhigh"          # highest codex effort; matches config model_reasoning_effort
 profile = "cli-default"
-speed = "balanced"
 timeout_ms = 1800000
 external_backend = "hosted"
 
 [agents.claude]
-model = "claude-opus-5[1m]"  # pinned 2026-07-28; exact id, NOT the 'opus' alias
-reasoning = "max"
 profile = "cli-default"
-speed = "balanced"
 timeout_ms = 1800000
 external_backend = "hosted"
 
@@ -37,11 +31,8 @@ external_backend = "hosted"
 # the built-in exactly, and a redundant override is how a declared autonomous flag
 # gets silently stripped (see the hermes entry above, which had lost --yolo that way).
 [agents.kimi]
-model = "kimi-code/k3"
-reasoning = "max"            # from ~/.kimi-code/config.toml [thinking].effort; the
                              # MODEL's own default_effort is "high", this overrides it
 profile = "cli-default"
-speed = "deep"
 timeout_ms = 2400000         # kimi is the slowest participant (~20 min/round)
 external_backend = "hosted"
 
@@ -49,23 +40,16 @@ external_backend = "hosted"
 # 2026-07-21): the 4th roster slot is kimi-1. Kept so historical artifacts resolve.
 # agy 1.0.5 exposes `--model`; use the best available Gemini model if reactivated.
 [agents.agy]
-model = "Gemini 3.6 Flash (High)"
-reasoning = "cli-default"
 profile = "cli-default"
-speed = "deep"
 timeout_ms = 1800000
 external_backend = "hosted"
 approval_policy = "dangerously-skip-permissions"
 notes = "Antigravity CLI; headless `agy --print-timeout 30m --dangerously-skip-permissions --model \"Gemini 3.6 Flash (High)\" -p <prompt>`. Models: agy models (Gemini 3.6/3.5 Flash Low/Med/High, Gemini 3.1 Pro Low/High)."
 
 [agents.hermes]
-model = "glm-5p2"
 # Override the built-in headless args (which hardcode --model xai/grok-4.3) so the
 # actual invocation runs GLM 5.2. Keep {prompt} (runner-substituted) and --accept-hooks.
-headless_args = ["--yolo", "--oneshot", "{prompt}", "--model", "glm-5p2", "--accept-hooks"]
-reasoning = "high"           # enforced in ~/.hermes/config.yaml (agent.reasoning_effort=high)
 profile = "cli-default"
-speed = "balanced"
 timeout_ms = 1800000
 isolate_home = true
 external_backend = "hosted"
@@ -74,9 +58,10 @@ approval_policy = "accept-hooks"
 [agents.hermes.isolated_home_env]
 HERMES_HOME = "{tempdir}"
 
-# Roster membership, migrated from the §2 table of COOPERATION.md on 2026-08-06.
-# §2 is now a generated, non-authoritative view; this file is the deck's roster authority.
-# Retired agents are kept with active = false rather than deleted, so past ideas stay readable.
+# Roster: the five standard participants. Adapter only — model, effort and
+# speed are inherited from the global roster (~/.parley/agents.toml), so this deck
+# follows the machine default instead of pinning its own copy that goes stale.
+# Normalized 2026-08-07.
 
 [roster.claude-1]
 adapter = "claude"
@@ -89,3 +74,7 @@ adapter = "hermes"
 
 [roster.kimi-1]
 adapter = "kimi"
+
+[roster.opencode-1]
+adapter = "opencode"
+
