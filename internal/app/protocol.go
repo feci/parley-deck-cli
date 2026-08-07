@@ -197,11 +197,14 @@ func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int
 			fmt.Fprintf(w, "preserved from this deck: %s\n", strings.Join(res.Preserved, ", "))
 		}
 		if len(res.Removed) > 0 {
-			fmt.Fprintf(w, "deck content NOT carried forward by core %s:\n", rel.Version)
+			fmt.Fprintf(w, "deck content NOT carried forward by core %s (review before applying):\n", rel.Version)
 			for _, h := range res.Removed {
 				fmt.Fprintf(w, "  - %s\n", h)
 			}
 			fmt.Fprintln(w, "  (project-local content; the overlay that will carry it is ratified but not shipped)")
+			fmt.Fprintln(w, "  This report is a line-level diff, not a Markdown semantic analysis: it tells you WHAT")
+			fmt.Fprintln(w, "  changes so you can judge. Read the diff before --yes; do not treat an empty report as")
+			fmt.Fprintln(w, "  a proof that nothing of meaning was lost.")
 		}
 	}
 

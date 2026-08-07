@@ -202,8 +202,18 @@ func tableRows(body, marker string) []string {
 // changed line, and whitespace is compared as written.
 //
 // What it reports, precisely: lines present in the deck that the render does not contain at that
-// position. It does NOT interpret Markdown semantics — it tells the operator what regeneration
-// will change so a human can judge, which is what G1 asks for.
+// position. It does NOT interpret Markdown semantics.
+//
+// KNOWN LIMITS, stated rather than implied. This function was wrong in nine distinct ways across
+// nine review cycles, so the honest posture is that it is a line-level diff and nothing more:
+//   - a construct whose meaning depends on lines it does not span (a fenced block whose fence
+//     survives while its content moves, a reference-style link whose definition moves) can change
+//     meaning with every individual line still matched somewhere;
+//   - attribution to a section is by the nearest preceding ATX heading, so a setext heading
+//     (underlined with === or ---) is not a boundary;
+//   - an empty report means "no line disappeared", NOT "no meaning was lost".
+//
+// The operator reads the diff; this report tells them where to look.
 func droppedContent(priorBody, renderedBody string) []string {
 	prior := splitLines(priorBody)
 	rendered := splitLines(renderedBody)

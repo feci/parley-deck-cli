@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-global-core-protocol
-status: fix-up-cycle-9
+status: complete
 implementer: claude-1
 started: 2026-08-07
 completed: 2026-08-07
@@ -390,3 +390,37 @@ experiment and needs the same scepticism as the code.
 ### Verification
 
 go build, GOOS=windows, GOOS=linux, go vet, go test — all clean. 36 protocol/diff tests.
+
+## Phase 8 — closed by user decision, with limits recorded
+
+status: complete
+completed: 2026-08-07
+
+Nine review rounds and nine fix-up cycles. The user was given the state and the choice, and chose
+to ship now with the limits written down rather than continue iterating.
+
+**What is closed and tested.** The core release store (write-once per release, `O_EXCL|O_NOFOLLOW`,
+symlinked components refused on read and write, validated version strings), `parley protocol
+status|render|check|publish`, the attended TTY-gated publisher, the deck lock that blocks rather
+than substituting, and the §7 blast-radius clause in all three protocol copies. Every one of these
+has an end-to-end test through the real command entry point, and each fix has been verified by
+reverting it and confirming the test goes red.
+
+**What is NOT closed, and is now said plainly instead of implied.** The loss report is a line-level
+diff. It was wrong in nine distinct ways across nine cycles — heading comparison, flat multiset, a
+per-section claim that was not per-section, `TrimSpace` equating an indented code block with prose,
+order-blindness, unbounded LCS memory, and four successive rules for one stamp exemption. It is now
+a Hirschberg LCS over exact lines, verified against an independent full-DP implementation on
+randomized inputs. Its documented claim is narrowed to what it can support: **an empty report means
+no line disappeared, not that no meaning was lost.** The CLI says so at the point of use, and the
+known limits (constructs spanning lines, setext headings) are listed in the source.
+
+**Deferred, ratified, not built:** per-idea protocol pinning (rank 2), the overlay (rank 3), the OS
+sandbox (DF-1), fleet migration of the 36 decks (DF-2), and opencode-1's fitness as a quorum member
+(DF-3). None of them is claimed anywhere as present.
+
+**Reviewer participation.** codex-1 reviewed rounds 1-2 and 5-9 (declining 3-4 over prompt wording
+its policy filter read as offensive security work — a badly-worded request on my part). hermes-1
+and kimi-1 reviewed rounds 1-5 and 7; several of their round 6, 8 and 9 runs were interrupted by
+the harness before writing. Two rounds closed CLEAN from hermes-1 and kimi-1 (round 5). opencode-1
+never participated and is recorded absent, not agreeing.
