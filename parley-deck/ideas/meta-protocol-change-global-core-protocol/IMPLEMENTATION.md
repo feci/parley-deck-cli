@@ -424,3 +424,56 @@ its policy filter read as offensive security work — a badly-worded request on 
 and kimi-1 reviewed rounds 1-5 and 7; several of their round 6, 8 and 9 runs were interrupted by
 the harness before writing. Two rounds closed CLEAN from hermes-1 and kimi-1 (round 5). opencode-1
 never participated and is recorded absent, not agreeing.
+
+## Post-completion operations — 2026-08-07
+
+Recorded after `status: complete`. No code changed; this is operational follow-through plus one
+finding that constrains DF-2.
+
+### DF-4 closed, and its scope was larger than reported
+
+DF-4 named one deck (`librade-algoTrader`). Scanning every git-tracked deck in the workspace for the
+same signature found **four** damaged by the 2026-08-06 `scratchpad/protosync.py` run:
+
+| Deck | Local content erased |
+| --- | --- |
+| `librade-algoTrader` | `## Project-specific packaged-reference drift` section; 3 header provenance lines; 3 roster footnotes — including the `(†)` definition, leaving a **dangling footnote marker** in the roster table |
+| `auftra` | 10-line HTML-comment roster block carrying the user's 2026-07-30 directive that `agy` is REMOVED, not inactive |
+| `ldx-wt-mail-fixups` | 4-line HTML-comment roster bootstrap + the 2026-07-21 `agy` -> `kimi` swap |
+| `servers` | `Transport:` silently flipped `github-pr` -> `local-dir` |
+
+All four are repaired in the working tree (uncommitted, as the damage was). Restored text was
+**extracted from `git show HEAD:`**, never retyped. Every remaining deletion in all four decks was
+then audited individually and confirmed to be either a legitimate protocol replacement (it has a
+matching `+` line) or a **move** — the session-start checklist, the severity tags, the `MONITORING.md`
+line and the directory tree all survive elsewhere in the file and only appear as deletions because a
+line-level diff cannot see relocation.
+
+`servers` was a special case: the deck contradicted itself before the sync (header `github-pr`, a
+second declaration in the body `local-dir`). `local-dir` was kept because it is the only operable
+value — the repository has **no git remote**, so §11.B was never usable there. The transport change
+was left in place but is now recorded in an HTML comment rather than silent, because §0 makes
+transport sticky and §7 makes changing it an idea, not an edit.
+
+### DF-2 is blocked by the overlay, and running it now would repeat the damage
+
+The adoption flow was rehearsed end-to-end in an isolated `PARLEY_HOME` against a copy of a real
+deck: publish a release, pin it, `render --dry-run`, `render --yes`, `check`. It behaves as
+designed — a deck with no lock refuses to guess a version (exit 1), and `check` detects a hand-edit
+(exit 1) and attributes it to its heading.
+
+The finding that matters: rendering `auftra` onto core 1.0.0 reported **13 lines in §2 not carried
+forward**, and applying it dropped exactly the roster-provenance comment repaired above. So the
+tooling **names** the loss the fleet sync caused silently — a real improvement — but it does not yet
+**prevent** it. The overlay (rank 3) is what carries project-local content across a render, and it is
+not shipped.
+
+**Therefore DF-2 must not run until the overlay ships.** A fleet migration today would re-inflict the
+2026-08-06 damage on every deck holding local content; the only difference is that it would be
+announced instead of silent.
+
+### The core store is still empty
+
+`~/.parley/protocol/core` has no release, so the shipped feature is inert everywhere. Publishing is
+attended-only by construction (the user's binding constraint: an agent may not change the global
+core), so it is the user's single command, not a step an agent can complete.

@@ -20,6 +20,8 @@ const protocolUsage = `usage:
   parley protocol render  [--dir DIR] [--dry-run] [--yes]
   parley protocol check   [--dir DIR] [--json]
   parley protocol publish --version V --from FILE            (attended; requires a TTY)
+  parley protocol overlay show   [--dir DIR] [--json]
+  parley protocol overlay validate [--dir DIR]
 
   The deck's COOPERATION.md is a GENERATED VIEW of the global core in
   ~/.parley/protocol/core/<version>/. Do not hand-edit it — ` + "`protocol check`" + ` reports edits
@@ -63,8 +65,10 @@ func runProtocol(args []string, stdout, stderr io.Writer) int {
 		return protocolCheck(root, *jsonOut, stdout, stderr)
 	case "publish":
 		return protocolPublish(*version, *from, stdout, stderr)
+	case "overlay":
+		return protocolOverlay(root, fs.Args(), *jsonOut, stdout, stderr)
 	default:
-		fmt.Fprintf(stderr, "protocol: unknown subcommand %q (want status|render|check|publish)\n", sub)
+		fmt.Fprintf(stderr, "protocol: unknown subcommand %q (want status|render|check|publish|overlay)\n", sub)
 		return 2
 	}
 }
@@ -78,23 +82,83 @@ func coreStore() (protocolcore.Store, error) {
 	return protocolcore.StoreAt(home), nil
 }
 
-// pinnedVersion reads the deck's pinned core version. Absent means the deck has not adopted a
-// core yet, which is a state to report, never one to guess around: substituting "the newest
-// installed" is exactly what D8 forbids.
-func pinnedVersion(root string) (string, error) {
+// loadLock reads the deck lock. A missing lock is not an error — the deck simply pins nothing yet —
+// but a malformed one is, because "could not understand the lock" must never degrade into "render
+// as though it said nothing".
+func loadLock(root string) (*protocolcore.Lock, error) {
 	b, err := os.ReadFile(deckLockPath(root))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
+			return nil, nil
 		}
+		return nil, err
+	}
+	l, err := protocolcore.ParseLock(string(b))
+	if err != nil {
+		return nil, err
+	}
+	return &l, nil
+}
+
+func pinnedVersion(root string) (string, error) {
+	l, err := loadLock(root)
+	if err != nil || l == nil {
 		return "", err
 	}
-	for _, l := range strings.Split(string(b), "\n") {
-		if v, ok := strings.CutPrefix(strings.TrimSpace(l), "core-version:"); ok {
-			return strings.TrimSpace(v), nil
-		}
+	return l.CoreVersion, nil
+}
+
+func deckOverlayPath(root string) string {
+	return filepath.Join(root, protocol.DeckDir, protocolcore.OverlayFileName)
+}
+
+// resolveOverlay reconciles what the lock attests about the overlay with what is on disk.
+//
+// Every mismatch blocks before composition. Rendering "what we could resolve" is the 2026-08-06
+// silent-erasure incident with a version number attached.
+func resolveOverlay(root string, lock *protocolcore.Lock) (*protocolcore.Overlay, error) {
+	if lock == nil {
+		return nil, nil
 	}
-	return "", nil
+	path := deckOverlayPath(root)
+	b, err := os.ReadFile(path)
+	switch {
+	case err == nil:
+		return protocolcore.ReconcileOverlay(*lock, true, string(b), nil)
+	case errors.Is(err, os.ErrNotExist):
+		return protocolcore.ReconcileOverlay(*lock, false, "", nil)
+	default:
+		// Unreadable is NOT absent. Collapsing the two would let a permissions problem silently
+		// erase a deck's local content from the rendered output.
+		return protocolcore.ReconcileOverlay(*lock, true, "", err)
+	}
+}
+
+// resolveDeck is the single entry point for "what should this deck render as": the pinned release,
+// its lock, and the reconciled overlay.
+func resolveDeck(root string) (protocolcore.Release, *protocolcore.Lock, *protocolcore.Overlay, string, error) {
+	lock, err := loadLock(root)
+	if err != nil {
+		return protocolcore.Release{}, nil, nil, "", err
+	}
+	rel, version, err := resolveRelease(root)
+	if err != nil {
+		return protocolcore.Release{}, nil, nil, "", err
+	}
+	// The lock attests the core's BYTES, not just its version label. Without this comparison the
+	// `body-sha256` field would be decoration: a release republished under the same version, or a
+	// store swapped underneath the deck, would render silently. A field the schema demands and
+	// nothing checks is the "documented but not wired" failure the previous cycle was blocked over.
+	if lock != nil && lock.CoreBodySHA256 != rel.SHA256 {
+		return protocolcore.Release{}, nil, nil, "", fmt.Errorf(
+			"lock attests core %s body %s but the installed release hashes %s; refusing to render a core the lock does not vouch for",
+			lock.CoreVersion, protocolcore.ShortHash(lock.CoreBodySHA256), protocolcore.ShortHash(rel.SHA256))
+	}
+	ov, err := resolveOverlay(root, lock)
+	if err != nil {
+		return protocolcore.Release{}, nil, nil, "", err
+	}
+	return rel, lock, ov, version, nil
 }
 
 func deckLockPath(root string) string {
@@ -123,8 +187,10 @@ func resolveRelease(root string) (protocolcore.Release, string, error) {
 		}
 		return protocolcore.Release{}, "", fmt.Errorf(
 			"this deck pins no core version. Installed: %s.\n"+
-				"Adopt one explicitly by writing `core-version: <v>` into %s — a version is never guessed",
-			strings.Join(versions, ", "), deckLockPath(root))
+				"Adopt one explicitly by writing a %s lock into %s — a version is never guessed:\n"+
+				"  schema: %s\n  core:\n    version: <v>\n    body-sha256: <64 hex>\n  overlay: none\n  resolver-version: %s",
+			strings.Join(versions, ", "), protocolcore.LockSchemaV2, deckLockPath(root),
+			protocolcore.LockSchemaV2, protocolcore.ResolverV1)
 	}
 	rel, err := store.Load(v)
 	return rel, v, err
@@ -178,7 +244,7 @@ func protocolStatus(root string, jsonOut bool, stdout, stderr io.Writer) int {
 }
 
 func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int {
-	rel, _, err := resolveRelease(root)
+	rel, _, ov, _, err := resolveDeck(root)
 	if err != nil {
 		fmt.Fprintf(stderr, "protocol render: %v\n", err)
 		return 1
@@ -191,7 +257,7 @@ func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int
 		fmt.Fprintf(stderr, "protocol render: %v\n", readErr)
 		return 1
 	}
-	res, err := protocolcore.Render(rel, string(prior))
+	res, err := protocolcore.Render(rel, string(prior), ov)
 	if err != nil {
 		fmt.Fprintf(stderr, "protocol render: %v\n", err)
 		return 1
@@ -208,7 +274,6 @@ func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int
 			for _, h := range res.Removed {
 				fmt.Fprintf(w, "  - %s\n", h)
 			}
-			fmt.Fprintln(w, "  (project-local content; the overlay that will carry it is ratified but not shipped)")
 			fmt.Fprintln(w, "  This report is a line-level diff, not a Markdown semantic analysis: it tells you WHAT")
 			fmt.Fprintln(w, "  changes so you can judge. Read the diff before --yes; do not treat an empty report as")
 			fmt.Fprintln(w, "  a proof that nothing of meaning was lost.")
@@ -239,7 +304,7 @@ func protocolRender(root string, dryRun, yes bool, stdout, stderr io.Writer) int
 }
 
 func protocolCheck(root string, jsonOut bool, stdout, stderr io.Writer) int {
-	rel, version, err := resolveRelease(root)
+	rel, _, ov, version, err := resolveDeck(root)
 	if err != nil {
 		fmt.Fprintf(stderr, "protocol check: %v\n", err)
 		return 1
@@ -250,7 +315,7 @@ func protocolCheck(root string, jsonOut bool, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "protocol check: %v\n", readErr)
 		return 1
 	}
-	res, err := protocolcore.Render(rel, string(prior))
+	res, err := protocolcore.Render(rel, string(prior), ov)
 	if err != nil {
 		fmt.Fprintf(stderr, "protocol check: %v\n", err)
 		return 1
@@ -327,5 +392,116 @@ func protocolPublish(version, from string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	fmt.Fprintf(stdout, "Published core %s (%s) to %s\n", rel.Version, protocolcore.ShortHash(rel.SHA256), store.ReleaseDir(version))
+	return 0
+}
+
+// protocolOverlay implements `parley protocol overlay show|validate`.
+//
+// Read-only by design. v1 ships no mutation verbs: the overlay is human-authored through a normal
+// deck idea, so that the prose a deck adds gets the same review as any other protocol change. An
+// `overlay set` would let an agent author local protocol text in one step, which is the thing the
+// whole design exists to prevent.
+func protocolOverlay(root string, args []string, jsonOut bool, stdout, stderr io.Writer) int {
+	sub := "show"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+	switch sub {
+	case "show", "validate":
+	default:
+		fmt.Fprintf(stderr, "protocol overlay: unknown subcommand %q (want show|validate)\n", sub)
+		return 2
+	}
+
+	path := deckOverlayPath(root)
+	lock, lockErr := loadLock(root)
+	if lockErr != nil {
+		fmt.Fprintf(stderr, "protocol overlay: %v\n", lockErr)
+		return 1
+	}
+
+	raw, readErr := os.ReadFile(path)
+	present := readErr == nil
+	if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
+		fmt.Fprintf(stderr, "protocol overlay: %s is unreadable: %v\n", path, readErr)
+		return 1
+	}
+
+	if !present {
+		// Absence is the canonical "no customization" state and is never an error by itself. It only
+		// becomes one when the lock attests an overlay, which the reconciliation below reports.
+		if lock != nil {
+			if _, err := protocolcore.ReconcileOverlay(*lock, false, "", nil); err != nil {
+				fmt.Fprintf(stderr, "protocol overlay: %v\n", err)
+				return 1
+			}
+		}
+		if jsonOut {
+			return writeJSON(stdout, stderr, map[string]any{"path": path, "present": false, "operations": []any{}})
+		}
+		fmt.Fprintf(stdout, "overlay    : %s\n", path)
+		fmt.Fprintln(stdout, "state      : absent (no local customization — this is a valid state)")
+		return 0
+	}
+
+	ov, parseErr := protocolcore.ParseOverlay(string(raw))
+	if parseErr != nil {
+		fmt.Fprintf(stderr, "protocol overlay: %v\n", parseErr)
+		return 1
+	}
+
+	// A valid file is not yet an adopted one: the lock must attest this exact overlay, or the deck
+	// would render content the lock never vouched for.
+	lockState := "no lock"
+	var lockErr2 error
+	if lock != nil {
+		_, lockErr2 = protocolcore.ReconcileOverlay(*lock, true, string(raw), nil)
+		if lockErr2 == nil {
+			lockState = "matches lock"
+		} else {
+			lockState = "DOES NOT match lock"
+		}
+	}
+
+	if jsonOut {
+		ops := make([]map[string]any, 0, len(ov.Operations))
+		for _, o := range ov.Operations {
+			ops = append(ops, map[string]any{
+				"id": o.ID, "kind": o.Kind, "rationale": o.Rationale,
+				"core_sha256": o.CoreSHA256, "payload_sha256": o.PayloadSHA256,
+				"payload_lines": len(strings.Split(strings.TrimRight(o.Markdown, "\n"), "\n")),
+			})
+		}
+		payload := map[string]any{
+			"path": path, "present": true, "sha256": ov.SHA256,
+			"lock_state": lockState, "operations": ops,
+		}
+		if lockErr2 != nil {
+			payload["lock_error"] = lockErr2.Error()
+		}
+		code := 0
+		if lockErr2 != nil {
+			code = 1
+		}
+		_ = writeJSON(stdout, stderr, payload)
+		return code
+	}
+
+	fmt.Fprintf(stdout, "overlay    : %s\n", path)
+	fmt.Fprintf(stdout, "sha256     : %s  (this is what the lock's `overlay:` field must hold)\n", ov.SHA256)
+	fmt.Fprintf(stdout, "lock       : %s\n", lockState)
+	for _, o := range ov.Operations {
+		lines := len(strings.Split(strings.TrimRight(o.Markdown, "\n"), "\n"))
+		fmt.Fprintf(stdout, "operation  : %s (%s), %d payload lines\n", o.ID, o.Kind, lines)
+		fmt.Fprintf(stdout, "  rationale: %s\n", o.Rationale)
+		fmt.Fprintf(stdout, "  written against core %s\n", protocolcore.ShortHash(o.CoreSHA256))
+	}
+	if lockErr2 != nil {
+		fmt.Fprintf(stderr, "protocol overlay: %v\n", lockErr2)
+		return 1
+	}
+	if sub == "validate" {
+		fmt.Fprintln(stdout, "valid.")
+	}
 	return 0
 }

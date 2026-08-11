@@ -1,5 +1,62 @@
 # Changelog
 
+## 1.43.0 — 2026-08-11
+
+### Why
+
+A measured investigation into why Parley Deck felt slower over recent versions
+(`ideas/protocol-read-cost-regression`, 2 design rounds + 3 review rounds + 3 fix-up cycles).
+
+**It is not the CLI** — every command runs under a second. It is the cost of a round multiplied by
+the number of rounds, and both grew:
+
+- reading `COOPERATION.md` in full costs **3.3x** median wall clock (n=3/arm, same agent, same task);
+- the protocol grew **720 -> 1,359 lines** in ten weeks, monotonic, with `MUST` 15 -> 37;
+- across 76 ideas split at 2026-07-01, **review rounds 1.6 -> 5.1** (max 24) and **review bytes
+  20,237 -> 146,290 (7.2x)**, while design rounds stayed flat.
+
+Both quadratic context paths were located: `gatherPriorRounds` and `gatherReviewContext` each
+re-send every prior artifact, and **the protocol never required that** — §4 Phase 2 asks only that
+every active participant be addressed. The CLI was stricter than the protocol it implements.
+
+### Added
+
+- Frontier context selection (`internal/runner/frontier.go`) with a participant-authored
+  carry-forward ledger contract, its fallback, and tests.
+- `parley protocol overlay show|validate`; the deck overlay parser and the
+  `parley.protocol-lock/v2` lock (`internal/protocolcore/overlay.go`, `lock.go`).
+
+### Changed
+
+- The cross-review prompt now **describes its own contents truthfully**, derived from the same
+  constant that controls the behaviour so the two cannot drift apart.
+- `_ledger.md` is excluded by every artifact walker, so it is never handed to an agent as if a
+  participant had written it. **This is an active input change**, not a no-op.
+- The deck lock verifies the core's bytes, not just its version label.
+
+### NOT shipped — stated plainly
+
+**No speedup ships.** `compactionEnabled` is a **constant set to false**: no file, environment
+variable or configuration can enable compaction. The mechanism that produces the speedup could not
+be shown safe across three review rounds — a marker-derived ledger was fail-open, and an objection
+that silently leaves the context becomes recorded consent under Phase 2's "Silence = implicit
+agreement".
+
+It may be enabled only once `protocol-ledger-validator` is **implemented** and the enabled path has
+**end-to-end and mutation coverage for G3, G5 and G6**. A placeholder follow-up does not satisfy
+that gate. Flipping the constant is a source change that goes through review.
+
+The overlay is **partially implemented**: the roster-annotation identity slot (B6) and the removal
+of prose-matched zone addressing (H9) are absent. The protocol text in all three copies now says so
+instead of promising a future.
+
+### Known dissent
+
+@codex-1 signed the review consensus **RESERVED**, objecting to carrying unreachable machinery
+behind a constant: "compiled" is not "verified", and whoever flips that constant will be flipping
+code no test has run end-to-end. That objection is unwithdrawn and recorded in
+`review/consensus.md`; @hermes-1 and @kimi-1 signed OK.
+
 ## 1.42.1 — 2026-08-07
 
 Two defects found by the independent deploy verification of 1.42.0, which is exactly what that

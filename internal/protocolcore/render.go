@@ -36,6 +36,35 @@ type RenderResult struct {
 	Body      string
 	Removed   []string
 	Preserved []string
+	// Events is the typed, source-attributed change report required by the overlay design.
+	//
+	// Removed/Preserved are kept because they are what the existing CLI output and tests read, but
+	// they cannot express a second content source: an overlay that injects a whole section produced
+	// an EMPTY report, because the old shape had no way to say "added". A second content source with
+	// no way to report its own contribution is the silent-erasure class wearing a different hat.
+	Events []ChangeEvent
+}
+
+// Change event kinds and sources.
+const (
+	EventRemoved   = "removed"
+	EventRelocated = "relocated"
+	EventAdded     = "added"
+	EventPreserved = "preserved"
+
+	SourceCore     = "core"
+	SourceIdentity = "identity"
+	SourceOverlay  = "overlay"
+)
+
+// ChangeEvent is one attributed change in a render.
+type ChangeEvent struct {
+	Kind   string
+	Source string
+	Detail string
+	// OpID is the overlay operation this event is attributed to, when Source is SourceOverlay.
+	OpID  string
+	Lines int
 }
 
 // Render materializes a deck's COOPERATION.md from a core release plus the deck's identity slots.
@@ -43,7 +72,9 @@ type RenderResult struct {
 // Deliberately a pure function of (release, prior deck body): no filesystem, no clock. The
 // synced-stamp is derived from the release, so two machines holding the same release render
 // byte-identical output — which is what makes G1's idempotence testable at all.
-func Render(rel Release, priorDeckBody string) (RenderResult, error) {
+// ov may be nil, which is the canonical "this deck has no local customization" state. It is passed
+// in rather than read here so that Render stays pure — the caller owns the filesystem.
+func Render(rel Release, priorDeckBody string, ov *Overlay) (RenderResult, error) {
 	if strings.TrimSpace(rel.Body) == "" {
 		return RenderResult{}, fmt.Errorf("protocolcore: release %s has an empty body", rel.Version)
 	}
@@ -96,12 +127,146 @@ func Render(rel Release, priorDeckBody string) (RenderResult, error) {
 	if created := findLine(body, createdPrefix); created != "" {
 		body = strings.Replace(body, created, created+"\n"+stamp, 1)
 	}
-	res.Removed = droppedContent(priorDeckBody, body)
+	// ext-1 — the terminal core/overlay boundary. Its position is the END of the normalized core
+	// body BY DEFINITION rather than by lookup, which is why v1 places it without a registry and why
+	// it survives a core that grows new sections: new core content lands before the boundary, so the
+	// deck's own content does not move relative to it.
+	if ov != nil {
+		for _, op := range ov.Operations {
+			body = strings.TrimRight(body, "\n") + "\n\n" + strings.TrimRight(op.Markdown, "\n") + "\n"
+			res.Events = append(res.Events, ChangeEvent{
+				Kind:   EventAdded,
+				Source: SourceOverlay,
+				OpID:   op.ID,
+				Detail: "payload rendered at the terminal core/overlay boundary",
+				Lines:  len(splitLines(strings.TrimRight(op.Markdown, "\n"))),
+			})
+		}
+	}
+
+	removed, events := changeReport(priorDeckBody, body, ov)
+	res.Removed = removed
+	res.Events = append(res.Events, events...)
+	for _, p := range res.Preserved {
+		res.Events = append(res.Events, ChangeEvent{Kind: EventPreserved, Source: SourceIdentity, Detail: p})
+	}
 	if crlf {
 		body = strings.ReplaceAll(body, "\n", "\r\n")
 	}
 	res.Body = body
 	return res, nil
+}
+
+// changeReport is droppedContent plus the relocation witness.
+//
+// A block the overlay now carries has usually MOVED — it sat mid-document in the deck and is
+// rendered at the terminal boundary. Reporting that as a loss trains operators to ignore the report,
+// which is worse than not having one. But the exemption has to be a PROOF of relocation, not a
+// similarity heuristic: revision 2 of the consensus rejected the loose "its lines reappear
+// somewhere" formulation precisely because the diff was deliberately made order-sensitive.
+//
+// A removed run is reclassified `relocated` only when all four hold, after LF normalization:
+//  1. it is byte-identical to exactly one complete overlay payload;
+//  2. those bytes occur exactly once in the prior deck;
+//  3. those bytes occur exactly once in the composed output;
+//  4. the output occurrence is attributed to that same operation.
+//
+// Anything duplicated, partial, edited or interleaved stays `removed`. The invariant is unchanged:
+// an empty report means no line disappeared; it does NOT mean no meaning was lost.
+func changeReport(priorBody, renderedBody string, ov *Overlay) ([]string, []ChangeEvent) {
+	prior := splitLines(priorBody)
+	rendered := splitLines(renderedBody)
+	if len(prior) == 0 {
+		return nil, nil
+	}
+	keep := lcsMask(prior, rendered)
+
+	renderStamp := headerStamp(rendered)
+	deckStamp := headerStamp(prior)
+	forgive := renderStamp != "" && deckStamp != "" && !containsLine(prior, renderStamp)
+
+	// Mark the one forgiven stamp line as kept so it neither counts as a loss nor breaks a run.
+	if forgive {
+		for i, l := range prior {
+			if !keep[i] && l == deckStamp {
+				keep[i] = true
+				break
+			}
+		}
+	}
+
+	var events []ChangeEvent
+	// A run is relocated only as a whole. Walk contiguous non-kept runs and test each against the
+	// payloads; a matched run is marked kept so it drops out of the loss grouping entirely.
+	for i := 0; i < len(prior); {
+		if keep[i] {
+			i++
+			continue
+		}
+		j := i
+		for j < len(prior) && !keep[j] {
+			j++
+		}
+		// Blank-line padding at the run's edges is excluded before matching.
+		//
+		// This is a deliberate, narrow relaxation of "the run is byte-identical to one payload", and
+		// it is recorded as such. Without it the witness essentially never fires: a block sitting
+		// mid-document is bounded by blank lines that belong to the SURROUNDING sections, so the
+		// contiguous non-kept run is almost always payload-plus-padding and never byte-equal to the
+		// payload. A rule that cannot fire would silently demote the design back to the noisy report
+		// that consensus rejected.
+		//
+		// What is NOT relaxed: the payload bytes themselves are still compared byte for byte, the
+		// match must still be to exactly one complete payload, and it must still occur exactly once
+		// on each side. Only blank lines — which carry no content — are allowed at the edges.
+		lo, hi := trimBlankEdges(prior, i, j)
+		run := strings.Join(prior[lo:hi], "\n")
+		if op := relocationWitness(run, priorBody, renderedBody, ov); op != nil {
+			for k := i; k < j; k++ {
+				keep[k] = true
+			}
+			events = append(events, ChangeEvent{
+				Kind:   EventRelocated,
+				Source: SourceOverlay,
+				OpID:   op.ID,
+				Detail: "moved from its position in the deck to the terminal boundary; bytes identical",
+				Lines:  j - i,
+			})
+		}
+		i = j
+	}
+
+	removed := groupLosses(prior, keep)
+	for _, r := range removed {
+		events = append(events, ChangeEvent{Kind: EventRemoved, Source: SourceCore, Detail: r})
+	}
+	return removed, events
+}
+
+// relocationWitness returns the operation a removed run is proven to have moved into, or nil.
+func relocationWitness(run, priorBody, renderedBody string, ov *Overlay) *Operation {
+	if ov == nil || strings.TrimSpace(run) == "" {
+		return nil
+	}
+	var match *Operation
+	for i := range ov.Operations {
+		payload := strings.TrimRight(ov.Operations[i].Markdown, "\n")
+		if payload != strings.TrimRight(run, "\n") {
+			continue
+		}
+		if match != nil {
+			return nil // identical to more than one payload: not "exactly one"
+		}
+		match = &ov.Operations[i]
+	}
+	if match == nil {
+		return nil
+	}
+	body := strings.TrimRight(match.Markdown, "\n")
+	if strings.Count(normalizeLF(priorBody), body) != 1 || strings.Count(normalizeLF(renderedBody), body) != 1 {
+		return nil // duplicated on either side: the move cannot be attributed uniquely
+	}
+	return match
 }
 
 // substituteSlot replaces an identity line with the deck's own value.
@@ -214,26 +379,15 @@ func tableRows(body, marker string) []string {
 //   - an empty report means "no line disappeared", NOT "no meaning was lost".
 //
 // The operator reads the diff; this report tells them where to look.
-func droppedContent(priorBody, renderedBody string) []string {
-	prior := splitLines(priorBody)
-	rendered := splitLines(renderedBody)
-	if len(prior) == 0 {
-		return nil
-	}
-	keep := lcsMask(prior, rendered)
-
-	// A regenerated stamp is not a loss — but the exemption must apply to the ONE line that was
-	// actually replaced, and to nothing else. Two earlier rules failed: "first unmatched
-	// stamp-prefixed line" let genuine prose inherit the forgiveness when the deck already carried
-	// the current stamp, and "the line after **Created:**" did the same when the prose sat in that
-	// slot.
-	//
-	// The rule that holds: if the render's generated stamp is ALREADY in the deck, nothing was
-	// replaced, so nothing is forgiven. Otherwise forgive exactly the deck's own stamp slot line.
-	renderStamp := headerStamp(rendered)
-	deckStamp := headerStamp(prior)
-	forgive := renderStamp != "" && deckStamp != "" && !containsLine(prior, renderStamp)
-
+// groupLosses turns a per-line "the render still carries this" mask into the per-heading report.
+//
+// The stamp exemption and the relocation witness are applied by the caller, which marks the
+// exempted lines as kept. Keeping that OUT of here matters: two earlier stamp rules were wrong in
+// ways that only showed up because the exemption logic and the grouping logic were entangled —
+// "first unmatched stamp-prefixed line" let genuine prose inherit the forgiveness when the deck
+// already carried the current stamp, and "the line after **Created:**" did the same when prose sat
+// in that slot.
+func groupLosses(prior []string, keep []bool) []string {
 	type group struct {
 		heading string
 		lines   int
@@ -241,16 +395,11 @@ func droppedContent(priorBody, renderedBody string) []string {
 	var groups []group
 	idx := map[string]int{}
 	current := headerSection
-	stampSkipped := false
 	for i, l := range prior {
 		if h := heading(l); h != "" {
 			current = h
 		}
 		if keep[i] {
-			continue
-		}
-		if forgive && !stampSkipped && l == deckStamp {
-			stampSkipped = true
 			continue
 		}
 		if j, ok := idx[current]; ok {
@@ -420,3 +569,17 @@ func heading(line string) string {
 // and a linear-space rewrite is exactly where an off-by-one hides, so it is verified against an
 // independent full-DP implementation rather than only through the command surface.
 func LCSMaskForTest(a, b []string) []bool { return lcsMask(a, b) }
+
+// trimBlankEdges narrows [i,j) to exclude leading and trailing blank lines.
+//
+// "Blank" is a line that is empty or whitespace only. Nothing inside the range is touched: an
+// interior blank line is part of the content and must match.
+func trimBlankEdges(lines []string, i, j int) (int, int) {
+	for i < j && strings.TrimSpace(lines[i]) == "" {
+		i++
+	}
+	for j > i && strings.TrimSpace(lines[j-1]) == "" {
+		j--
+	}
+	return i, j
+}

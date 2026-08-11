@@ -275,7 +275,10 @@ Context (FINAL.md, IMPLEMENTATION.md, prior review rounds):
 
 // gatherReviewContext concatenates FINAL.md, IMPLEMENTATION.md, and any prior
 // review-round artifacts to seed a code-review round.
-func gatherReviewContext(ideaPath string, round int) (string, error) {
+// gatherReviewContextFull is the unabridged walk. It is retained EXACTLY as it was and is
+// now the fallback path, so the degraded behaviour is the previous behaviour rather than a
+// second implementation that could drift from it.
+func gatherReviewContextFull(ideaPath string, round int) (string, error) {
 	var b strings.Builder
 	for _, name := range []string{"FINAL.md", "IMPLEMENTATION.md"} {
 		data, err := os.ReadFile(filepath.Join(ideaPath, name))
@@ -293,7 +296,7 @@ func gatherReviewContext(ideaPath string, round int) (string, error) {
 			return "", err
 		}
 		for _, e := range entries {
-			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" || e.Name() == ledgerFileName {
 				continue
 			}
 			data, err := os.ReadFile(filepath.Join(dir, e.Name()))
@@ -471,4 +474,68 @@ func hasNonEmptySection(content, heading string) bool {
 		return false
 	}
 	return false
+}
+
+
+// gatherReviewContext is the frontier-selected review context for a REVIEW round.
+//
+// FIX-UP CYCLE 1, three defects:
+//   - it double-embedded FINAL.md and IMPLEMENTATION.md whenever the fallback fired, because the
+//     fallback walker emits them too;
+//   - it decided whether that had happened by sniffing the rendered string for a banner, so a
+//     reviewer who merely QUOTED the banner in their artifact could strip FINAL.md and
+//     IMPLEMENTATION.md out of a later prompt;
+//   - it was also reached by the review-CONSENSUS phase, compacting the drafter that §15.6 binds.
+//
+// The head is now emitted exactly once here and the frontier's fallback walks rounds only, so
+// there is nothing to sniff and nothing to double. The consensus phase no longer calls this.
+func gatherReviewContext(ideaPath string, round int) (string, error) {
+	head := reviewHead(ideaPath)
+	rounds, err := frontierContext(
+		func(r int) string { return filepath.Join(ideaPath, "review", roundLabel(r)) },
+		round,
+		func() (string, error) { return reviewRoundsOnly(ideaPath, round) },
+	)
+	if err != nil {
+		return "", err
+	}
+	return head + rounds, nil
+}
+
+// reviewHead renders the artifacts every reviewer needs regardless of round.
+func reviewHead(ideaPath string) string {
+	var b strings.Builder
+	for _, name := range []string{"FINAL.md", "IMPLEMENTATION.md"} {
+		data, err := os.ReadFile(filepath.Join(ideaPath, name))
+		if err == nil {
+			fmt.Fprintf(&b, "\n===== %s =====\n%s\n", name, string(data))
+		}
+	}
+	return b.String()
+}
+
+// reviewRoundsOnly is the unabridged walk over review rounds, WITHOUT the head.
+func reviewRoundsOnly(ideaPath string, round int) (string, error) {
+	var b strings.Builder
+	for r := 1; r < round; r++ {
+		dir := filepath.Join(ideaPath, "review", roundLabel(r))
+		entries, err := os.ReadDir(dir)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" || e.Name() == ledgerFileName {
+				continue
+			}
+			data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+			if err != nil {
+				return "", err
+			}
+			fmt.Fprintf(&b, "\n===== review/%s/%s =====\n%s\n", roundLabel(r), e.Name(), string(data))
+		}
+	}
+	return b.String(), nil
 }

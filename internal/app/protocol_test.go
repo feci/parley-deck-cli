@@ -71,10 +71,26 @@ func protocolFixture(t *testing.T, deckBody string) (root string) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(meta, "protocol-lock.yaml"), []byte("core-version: 1.0.0\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(meta, "protocol-lock.yaml"), lockV2("1.0.0", testCore, ""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return root
+}
+
+
+// lockV2 builds a schema-v2 deck lock. The lock attests the core's BYTES, so tests must derive the
+// hash from the same body they published rather than hard-coding one — a hard-coded hash would make
+// every test that changes testCore fail for the wrong reason.
+func lockV2(version, coreBody, overlay string) []byte {
+	if overlay == "" {
+		overlay = protocolcore.OverlayNone
+	}
+	l := protocolcore.Lock{
+		CoreVersion:    version,
+		CoreBodySHA256: protocolcore.Hash(coreBody),
+		Overlay:        overlay,
+	}
+	return []byte(l.Render())
 }
 
 // G1: render is idempotent — a second apply produces byte-identical output and reports nothing to
@@ -210,7 +226,7 @@ func TestProtocolCheckReportsHandEditAndNeverWrites(t *testing.T) {
 func TestProtocolBlocksWhenPinnedReleaseIsMissing(t *testing.T) {
 	root := protocolFixture(t, testDeck)
 	lock := filepath.Join(root, "parley-deck", "meta", "protocol-lock.yaml")
-	if err := os.WriteFile(lock, []byte("core-version: 9.9.9\n"), 0o644); err != nil {
+	if err := os.WriteFile(lock, lockV2("9.9.9", testCore, ""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	var out, errb strings.Builder
@@ -356,7 +372,12 @@ func TestProtocolRejectsPathTraversalInTheLock(t *testing.T) {
 	// ValidVersion, which is correct for a YAML-ish field. Untrimmed input is rejected at the API
 	// level instead; see TestPublishRejectsUnsafeVersions.
 	for _, bad := range []string{"../../../etc", "..", ".", "a/b"} {
-		if err := os.WriteFile(lock, []byte("core-version: "+bad+"\n"), 0o644); err != nil {
+		// Written as a v2 lock: the version still arrives from a COMMITTED file any contributor can
+		// edit, so nesting it changes where it comes from, not whether it must be validated.
+		body := "schema: " + protocolcore.LockSchemaV2 + "\ncore:\n  version: \"" + bad +
+			"\"\n  body-sha256: " + protocolcore.Hash(testCore) + "\noverlay: none\nresolver-version: " +
+			protocolcore.ResolverV1 + "\n"
+		if err := os.WriteFile(lock, []byte(body), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		var out, errb strings.Builder
@@ -364,7 +385,7 @@ func TestProtocolRejectsPathTraversalInTheLock(t *testing.T) {
 		if code == 0 {
 			t.Errorf("accepted unsafe version %q", bad)
 		}
-		if !strings.Contains(errb.String(), "unsafe version") {
+		if !strings.Contains(errb.String(), "unsafe") {
 			t.Errorf("version %q was rejected for the wrong reason: %s", bad, errb.String())
 		}
 	}
@@ -681,7 +702,7 @@ func protocolFixtureWith(t *testing.T, core, deck string) string {
 	if err := os.WriteFile(filepath.Join(root, "parley-deck", "COOPERATION.md"), []byte(deck), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(meta, "protocol-lock.yaml"), []byte("core-version: 1.0.0\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(meta, "protocol-lock.yaml"), lockV2("1.0.0", core, ""), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return root
