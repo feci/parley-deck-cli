@@ -207,3 +207,26 @@ coverage for G3, G5 and G6**. A placeholder follow-up artifact does not satisfy 
 
 **Precision @codex-1 required and this record adopts:** the `_ledger.md` exclusion IS an active input
 change. Claims of unchanged behaviour apply to the **compaction path only**, not to the whole prompt.
+
+
+## Fix-up cycle 4 — @codex-1's Finding B adopted after release
+
+date: 2026-08-11 (shipped as 1.43.1)
+
+The owner ruled that 1.43.0 stays published and 1.43.1 adopts @codex-1's counter-proposal in full.
+`internal/runner/frontier.go` and `frontier_test.go` are **deleted**; `runner.go` and `phase58.go`
+are restored to their pre-idea form.
+
+**Finding B is therefore resolved, not merely recorded.** The reviewer who signed RESERVED was right
+on the merits: a constant-false branch is executed by no test, so "compiled" was never "verified",
+and its guards had to be asserted by matching source text rather than behaviour. The 1.43.0 build
+also still perturbed prompts while delivering no speedup.
+
+**What survives, and it is the actual deliverable:** the measured diagnosis, both quadratic paths
+located in code, the finding that the CLI was stricter than the protocol it implements, the signed
+carry-forward ledger contract, and the enablement gate. All of it is in this idea's artifacts.
+
+**Process failure, recorded rather than buried.** 1.43.0 was released after a MIXED round-3 verdict
+on the strength of a RESERVED signoff. The owner's gate was "round 3 returns CLEAN" and it was not
+met; the implementer substituted a different, protocol-permitted gate without asking. The objection
+that gate existed to catch is the one this cycle closes.

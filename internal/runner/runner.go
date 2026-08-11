@@ -917,12 +917,7 @@ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, quest
 		}
 		return BuildReviewPrompt(agent, opts.Idea, roundNumber(opts), outputPath, ctx), nil
 	case "review-consensus":
-		// NEVER frontier-selected. This is the review-consensus DRAFTER, and §15.6's
-		// correlated-agreement duty binds here exactly as it does for the design consensus drafter.
-		// The first implementation missed that this phase shares gatherReviewContext with ordinary
-		// review rounds, and so compacted the one context that must stay whole. Found by kimi-1 and
-		// codex-1 as a CRITICAL against the implementer's own gate G4.
-		ctx, err := gatherReviewContextFull(opts.Idea.Path, roundNumber(opts)+1)
+		ctx, err := gatherReviewContext(opts.Idea.Path, roundNumber(opts)+1)
 		if err != nil {
 			return "", err
 		}
@@ -931,15 +926,7 @@ func buildPromptForRound(agent agents.Discovery, opts Options, outputPath, quest
 	if roundNumber(opts) <= 1 {
 		return BuildRoundOnePrompt(agent, opts.Idea, opts.Task, outputPath, questionsDir)
 	}
-	// Frontier selection: previous round in full + carry-forward ledger, falling back to full
-	// history on any uncertainty. See internal/runner/frontier.go for why the fallback is
-	// load-bearing rather than defensive.
-	rn := roundNumber(opts)
-	prior, err := frontierContext(
-		func(r int) string { return filepath.Join(opts.Idea.Path, roundLabel(r)) },
-		rn,
-		func() (string, error) { return gatherPriorRounds(opts.Idea.Path, rn) },
-	)
+	prior, err := gatherPriorRounds(opts.Idea.Path, roundNumber(opts))
 	if err != nil {
 		return "", err
 	}
@@ -961,7 +948,7 @@ func gatherPriorRounds(ideaPath string, round int) (string, error) {
 		}
 		names := make([]string, 0, len(entries))
 		for _, e := range entries {
-			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" || e.Name() == ledgerFileName {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "_index.md" {
 				continue
 			}
 			names = append(names, e.Name())
@@ -999,7 +986,7 @@ Rules:
 - Immediately use your file-writing tool to create that exact file with its required frontmatter; do not explore the workspace first, and report a blocker instead of narrating.
 - Do not edit any other agent's file.
 - Do not overwrite the file if it already exists; report a blocker instead.
-- READ everything below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus. %s An objection is live until ITS OWN OWNER withdraws it. Open any full artifact on disk if you need it.
+- READ every prior-round artifact below and respond to the other participants by name: where you agree, where you disagree, what you refine. Converge toward consensus.
 - Under "## Responses to other participants", you MUST include one "### @<agent-id>" subsection for EACH other participant (%s) and address that participant specifically.
 - Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
 - If you are blocked by missing human input, create one JSON question file under: %s
@@ -1021,7 +1008,7 @@ responding-to: [prior round artifacts]
 
 Prior rounds (read these):
 %s
-`, agent.ID, round, outputPath, roundContextSentence(), strings.Join(others, ", "), questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), headings.String(), prior)
+`, agent.ID, round, outputPath, strings.Join(others, ", "), questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), headings.String(), prior)
 }
 
 // execAgentProcess builds the agent command, wires its stdout/stderr to the

@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.43.1 — 2026-08-11
+
+### Removed — the dormant frontier machinery
+
+Adopts @codex-1's counter-proposal in full. `internal/runner/frontier.go` and its tests are deleted
+and `runner.go` / `phase58.go` are restored to their pre-idea form.
+
+**Why.** 1.43.0 shipped context-compaction machinery disabled by a constant. @codex-1 signed the
+review consensus RESERVED over exactly this and its objection was never withdrawn:
+
+> "Keeping unreachable safety code behind a constant invites exactly the rot the tests claim to
+> prevent and gives a later one-line enablement change unjustified confidence."
+
+It was right. A constant-false branch is executed by no test, so "compiled" was not "verified", and
+its guards had to be asserted by matching source text rather than behaviour. 1.43.0 also still
+perturbed prompts — the instruction wording and the `_ledger.md` exclusion — while delivering no
+speedup, which is the worst of both.
+
+**Nothing of value is lost.** The measured diagnosis, the located code paths, the signed
+carry-forward ledger contract and the enablement gate all live in
+`parley-deck/ideas/protocol-read-cost-regression/`. They are the deliverable; the inert code was not.
+
+### Process note
+
+1.43.0 was released after a MIXED round-3 review verdict (codex-1 NOT CLEAN, hermes-1 CLEAN, kimi-1
+CLEAN) on the strength of a RESERVED consensus signoff. The release gate the owner had set was
+"round 3 returns CLEAN", and it did not. This release closes the objection that gate existed to
+catch.
+
 ## 1.43.0 — 2026-08-11
 
 ### Why
