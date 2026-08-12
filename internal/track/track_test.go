@@ -161,15 +161,31 @@ func TestPolicyForStandard(t *testing.T) {
 	}
 }
 
-func TestPolicyForDeliberationIsLegacy(t *testing.T) {
+// Deliberation keeps today's full lifecycle — no reviewer cap, no forced cross-review
+// value — but it is no longer a no-op policy: idea
+// meta-protocol-change-phase-packet-and-fixup-budget makes its two §4.0 budget cells
+// explicit and enforced, because the table printed "unbounded" while the driver silently
+// applied its own defaults.
+func TestPolicyForDeliberationBoundsBothLoopsAndKeepsTheRest(t *testing.T) {
 	p, err := PolicyFor(Deliberation, true, 3, true, true)
 	if err != nil {
 		t.Fatalf("deliberation policy error: %v", err)
 	}
-	if p.ApplyOverrides {
-		t.Error("deliberation must NOT override (it equals today's full lifecycle)")
+	if !p.ApplyOverrides {
+		t.Error("deliberation must apply overrides: its two budget cells are enforced now")
 	}
 	if p.Track != Deliberation {
 		t.Errorf("deliberation track = %q", p.Track)
+	}
+	if p.MaxFixupCycles != 5 {
+		t.Errorf("MaxFixupCycles = %d, want 5", p.MaxFixupCycles)
+	}
+	if p.CapCrossReviewRounds != 3 {
+		t.Errorf("CapCrossReviewRounds = %d, want 3", p.CapCrossReviewRounds)
+	}
+	// The rest of the full lifecycle is untouched: no reviewer cap, no forced value.
+	if p.MaxReviewers != 0 || p.MinReviewers != 0 || p.CrossReviewRounds != -1 {
+		t.Errorf("lifecycle changed: Max=%d Min=%d Cross=%d, want 0/0/-1",
+			p.MaxReviewers, p.MinReviewers, p.CrossReviewRounds)
 	}
 }

@@ -42,6 +42,10 @@ const (
 // Cursor is a rebuildable cache of the deliberation phase. Disk is authoritative:
 // Rebuild derives every field from on-disk artifacts and the persisted Phase is
 // never trusted over disk. Only MaxRounds is config-derived.
+//
+// One field is deliberately NOT rebuildable: FixupCyclesPublished is a safety count that
+// must not be recoverable by editing artifacts, so Advance carries it forward from the
+// persisted cursor instead of deriving it.
 type Cursor struct {
 	Phase        Phase  `json:"phase"`
 	CurrentRound int    `json:"current_round"`
@@ -49,6 +53,15 @@ type Cursor struct {
 	RoundsRun    int    `json:"rounds_run"`
 	MaxRounds    int    `json:"max_rounds"`
 	UpdatedAt    string `json:"updated_at"`
+	// FixupCyclesPublished is the driver's own monotonic count of CHARGED fix-up
+	// attempts — reserved before the code-writing call, so an attempt that errors is
+	// counted too. (The name predates the corrected unit; `.fixup-done` markers are the
+	// record of cycles that actually completed.) It lives in the run directory, NOT in the idea directory, so no
+	// participant artifact can lower it. The budget takes the MAXIMUM of this and the
+	// on-disk `.fixup-done` markers: deleting markers cannot buy a cycle, and forging
+	// one can only raise the count, which escalates sooner. Review round-03 showed the
+	// marker-only count was still editable state — the class had moved, not closed.
+	FixupCyclesPublished int `json:"fixup_cycles_published,omitempty"`
 }
 
 // Save writes the cursor atomically (tmp + rename, same dir) so a crash mid-write

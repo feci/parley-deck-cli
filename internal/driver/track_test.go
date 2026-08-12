@@ -41,14 +41,29 @@ func TestNewExplicitStandardAppliesCaps(t *testing.T) {
 	}
 }
 
-func TestNewDeliberationIsLegacy(t *testing.T) {
+func TestNewDeliberationKeepsTheLifecycleButBoundsBothLoops(t *testing.T) {
 	dir := t.TempDir()
 	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: deliberation\n---\n")
 	// CrossReviewRounds:-1 exercises New's default (→1); deliberation must PRESERVE it.
 	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b"}, CrossReviewRounds: -1}, nil)
-	// deliberation == today's full lifecycle: no reviewer cap, LE-11 min 2, fixup 3, cross-review 1.
-	if d.cfg.MaxReviewers != 0 || d.cfg.MinReviewers != 2 || d.cfg.MaxFixupCycles != 3 || d.cfg.CrossReviewRounds != 1 {
-		t.Errorf("deliberation not legacy: Max=%d Min=%d Fixup=%d Cross=%d", d.cfg.MaxReviewers, d.cfg.MinReviewers, d.cfg.MaxFixupCycles, d.cfg.CrossReviewRounds)
+	// deliberation keeps the full lifecycle — no reviewer cap, LE-11 min 2 — but the two
+	// §4.0 cells that used to print "unbounded" are now explicit: fix-up 5, cross-review
+	// capped at 3 (a configured 1 is below the cap and is preserved).
+	if d.cfg.MaxReviewers != 0 || d.cfg.MinReviewers != 2 || d.cfg.MaxFixupCycles != 5 || d.cfg.CrossReviewRounds != 1 {
+		t.Errorf("deliberation policy: Max=%d Min=%d Fixup=%d Cross=%d, want 0/2/5/1",
+			d.cfg.MaxReviewers, d.cfg.MinReviewers, d.cfg.MaxFixupCycles, d.cfg.CrossReviewRounds)
+	}
+}
+
+// The cross-review cap is a CLAMP, not a default: an idea asking for more than 3 rounds
+// is brought down to 3. Before this idea, deliberation honoured any configured value
+// because the §4.0 cell said "unbounded" and nothing enforced it.
+func TestDeliberationClampsCrossReviewRoundsToThree(t *testing.T) {
+	dir := t.TempDir()
+	writeTrackPrompt(t, dir, "---\nidea: x\ntrack: deliberation\n---\n")
+	d := New(Config{IdeaDir: dir, Participants: []string{"a", "b"}, CrossReviewRounds: 9}, nil)
+	if d.cfg.CrossReviewRounds != 3 {
+		t.Errorf("configured 9 cross-review rounds: got %d, want clamped to 3", d.cfg.CrossReviewRounds)
 	}
 }
 

@@ -2,8 +2,10 @@ package driver
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"parley-deck-cli/internal/consensus"
@@ -21,6 +23,7 @@ type fakeImpl struct {
 	review        ReviewStatus
 	reviewErr     error
 	goalFail      bool
+	fixupErr      bool
 	onOpenReview  func(round int)
 	onDraft       func()
 	onComplete    func()
@@ -67,6 +70,9 @@ func (f *fakeImpl) RequestReviewSignoffs(ctx context.Context, missing []string) 
 }
 func (f *fakeImpl) Fixup(ctx context.Context, cycle int) error {
 	f.calls = append(f.calls, "fixup")
+	if f.fixupErr {
+		return fmt.Errorf("synthetic fix-up failure")
+	}
 	return nil
 }
 func (f *fakeImpl) Complete(ctx context.Context) error {
@@ -89,6 +95,24 @@ func writeImpl(t *testing.T, ideaDir, status string) {
 	body := "---\nidea: demo\nstatus: " + status + "\n---\n\n## Summary of work\nx\n"
 	if err := os.WriteFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// writeImplWithCycles records n already-published fix-up cycles the way the DRIVER does:
+// one `.fixup-done` marker per review round. The §4.0 budget counts driver-CHARGED
+// attempts, deliberately not `## Fix-up cycle` headings in the implementer-owned
+// IMPLEMENTATION.md — see chargedFixupAttempts for why.
+func writeImplWithCycles(t *testing.T, ideaDir, status string, n int) {
+	t.Helper()
+	writeImpl(t, ideaDir, status)
+	for i := 1; i <= n; i++ {
+		rd := filepath.Join(ideaDir, "review", roundLabel(i))
+		if err := os.MkdirAll(rd, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(rd, ".fixup-done"), []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -366,10 +390,10 @@ func TestPhaseReviewMaxFixupCyclesEscalates(t *testing.T) {
 	ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
 	writeFinalValid(t, ideaDir)
 	writeImpl(t, ideaDir, "implemented")
-	// At the cycle ceiling: review/round-03 exists (cycle 3 == MaxFixupCycles).
-	for r := 1; r <= 3; r++ {
-		os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(r)), 0o755)
-	}
+	// PAST the ceiling: the cap is inclusive and counts PUBLISHED cycles, so with
+	// MaxFixupCycles=3 and three cycles already published, the next one must escalate.
+	writeImplWithCycles(t, ideaDir, "implemented", 3)
+	os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(4)), 0o755)
 	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
 	fi := &fakeImpl{roundComplete: true, review: ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
 	d := New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
@@ -425,5 +449,295 @@ func TestPhaseReviewListChecksVetoCompletion(t *testing.T) {
 	}
 	if contains(fi.calls, "complete") {
 		t.Fatalf("Complete must NOT be called when the contract fails; calls=%v", fi.calls)
+	}
+}
+
+// Boundary test for the inclusive fix-up cap (idea
+// meta-protocol-change-phase-packet-and-fixup-budget). The §4.0 table prints "cap N
+// cycles" for every track; before this idea the guard was `cycle >= cap`, which published
+// only N-1 — so `fast` (cap 1) published none at all. The cap is inclusive: cycles 1..N
+// run, and N+1 escalates.
+func TestFixupCapIsInclusive(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		cap       int
+		published int // fix-up cycles ALREADY published; the next one is published+1
+		wantFixup bool
+	}{
+		{"cap 5: the 5th published cycle is allowed", 5, 4, true},
+		{"cap 5: the 6th escalates", 5, 5, false},
+		{"cap 2: the 2nd is allowed", 2, 1, true},
+		{"cap 2: the 3rd escalates", 2, 2, false},
+		{"cap 1: the 1st is allowed", 1, 0, true},
+		{"cap 1: the 2nd escalates", 1, 1, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			parts := []string{"codex", "agy"}
+			ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+			writeFinalValid(t, ideaDir)
+			// Rounds 1..published each carry a driver `.fixup-done` marker; the CURRENT
+			// round (published+1) has none, so this Advance is the one that decides
+			// whether the next cycle may run.
+			writeImplWithCycles(t, ideaDir, "implemented", tc.published)
+			os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(tc.published+1)), 0o755)
+			os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+			fi := &fakeImpl{roundComplete: true, review: ReviewStatus{
+				Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
+			d := New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+				Root: filepath.Dir(filepath.Dir(filepath.Dir(ideaDir))), Events: store.New(runDir),
+				Auto: true, AutoImplement: true, MaxFixupCycles: tc.cap, Impl: fi}, &fakeRunner{})
+			action, _, err := d.Advance(context.Background())
+			ranFixup := contains(fi.calls, "fixup")
+			if ranFixup != tc.wantFixup {
+				t.Fatalf("cap=%d published=%d: ranFixup=%v want %v (action=%s err=%v)",
+					tc.cap, tc.published, ranFixup, tc.wantFixup, action, err)
+			}
+			if !tc.wantFixup && action != ActionEscalated {
+				t.Fatalf("cap=%d published=%d: action=%s want escalated", tc.cap, tc.published, action)
+			}
+		})
+	}
+}
+
+// Review round-01 finding: strict-gate rounds that publish NO fix-up used to consume the
+// budget, because the cycle number came from the review-round ordinal. The ratified unit
+// is published cycles, so rounds that published nothing must not spend any.
+func TestZeroFixRoundsDoNotSpendTheFixupBudget(t *testing.T) {
+	parts := []string{"codex", "agy"}
+	ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+	writeFinalValid(t, ideaDir)
+	// Four review rounds on disk, but NOTHING published yet — e.g. earlier rounds closed
+	// with zero agreed fixes under strict_gate.
+	writeImplWithCycles(t, ideaDir, "implemented", 0)
+	for r := 1; r <= 4; r++ {
+		os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(r)), 0o755)
+	}
+	// No `.fixup-done` anywhere: four rounds ran, none published a fix-up.
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	fi := &fakeImpl{roundComplete: true, checksOK: true, review: ReviewStatus{
+		Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
+	d := New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+		Root: filepath.Dir(filepath.Dir(filepath.Dir(ideaDir))), Events: store.New(runDir),
+		Auto: true, AutoImplement: true, MaxFixupCycles: 2, Impl: fi}, &fakeRunner{})
+	if _, _, err := d.Advance(context.Background()); err != nil && !contains(fi.calls, "fixup") {
+		t.Fatalf("round 4 with cap 2 but zero published cycles must still run cycle 1: %v", err)
+	}
+	if !contains(fi.calls, "fixup") {
+		t.Fatal("the budget was spent by rounds that published no fix-up")
+	}
+}
+
+// Review round-03: every tamper direction on the fix-up budget must be fail-safe.
+// Deleting driver state must not buy a cycle; forging it may only escalate sooner.
+func TestFixupBudgetIsTamperFailSafe(t *testing.T) {
+	setup := func(t *testing.T) (string, string, []string) {
+		parts := []string{"codex", "agy"}
+		ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+		writeFinalValid(t, ideaDir)
+		writeImplWithCycles(t, ideaDir, "implemented", 2) // markers in rounds 1-2
+		os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(3)), 0o755)
+		os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+		return ideaDir, runDir, parts
+	}
+	newD := func(ideaDir, runDir string, parts []string, fi ImplOps, cap int) *Driver {
+		return New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+			Root: filepath.Dir(filepath.Dir(filepath.Dir(ideaDir))), Events: store.New(runDir),
+			Auto: true, AutoImplement: true, MaxFixupCycles: cap, Impl: fi}, &fakeRunner{})
+	}
+
+	t.Run("deleting the markers does not lower the count when the cursor holds it", func(t *testing.T) {
+		ideaDir, runDir, parts := setup(t)
+		fi := &fakeImpl{roundComplete: true, checksOK: true, review: ReviewStatus{
+			Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
+		d := newD(ideaDir, runDir, parts, fi, 2)
+		// The driver's own count says 2 cycles are spent; an agent wipes the markers.
+		for i := 1; i <= 2; i++ {
+			os.Remove(filepath.Join(ideaDir, "review", roundLabel(i), ".fixup-done"))
+		}
+		c := Rebuild(ideaDir, 4)
+		c.FixupCyclesPublished = 2
+		if err := saveCursor(c, d.cursorPath()); err != nil {
+			t.Fatal(err)
+		}
+		action, _, err := d.Advance(context.Background())
+		if action != ActionEscalated || err == nil {
+			t.Fatalf("wiping markers bought a cycle past the cap: action=%s err=%v", action, err)
+		}
+		if contains(fi.calls, "fixup") {
+			t.Fatal("a fix-up ran past the cap after the markers were deleted")
+		}
+	})
+
+	t.Run("a forged marker in the current round cannot drive AF2 past the cap", func(t *testing.T) {
+		ideaDir, runDir, parts := setup(t)
+		// Forge a marker in the CURRENT round: AF2 used to open the next round here
+		// without ever consulting the budget.
+		os.WriteFile(filepath.Join(ideaDir, "review", roundLabel(3), ".fixup-done"), []byte("x\n"), 0o644)
+		fi := &fakeImpl{roundComplete: true, checksOK: true, review: ReviewStatus{
+			Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
+		d := newD(ideaDir, runDir, parts, fi, 2)
+		action, _, err := d.Advance(context.Background())
+		if action != ActionEscalated || err == nil {
+			t.Fatalf("AF2 opened another round past the cap: action=%s err=%v calls=%v", action, err, fi.calls)
+		}
+		if contains(fi.calls, "open-review") {
+			t.Fatal("AF2 opened a review round with the budget exhausted")
+		}
+	})
+}
+
+// Review round-03: an oddly named directory must not be counted as a published cycle.
+func TestOnlyExactRoundDirsCountAsPublishedCycles(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"round-01", "round-02", "round-backup", "round-x", "rounds-03", "round-"} {
+		rd := filepath.Join(dir, "review", name)
+		os.MkdirAll(rd, 0o755)
+		os.WriteFile(filepath.Join(rd, ".fixup-done"), []byte("x\n"), 0o644)
+	}
+	n, err := markedFixupCycles(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 2 {
+		t.Errorf("counted %d published cycles, want 2 — only round-01 and round-02 are real rounds", n)
+	}
+}
+
+// Round-05 found that all three round-04 fixes could be reverted together without a
+// single shipped test going red. These are the permanent equivalents.
+func TestRound4FixesHavePermanentTests(t *testing.T) {
+	base := func(t *testing.T, published int, fixupErr bool) (*Driver, *fakeImpl, string) {
+		parts := []string{"codex", "agy"}
+		ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+		writeFinalValid(t, ideaDir)
+		writeImplWithCycles(t, ideaDir, "implemented", published)
+		os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(published+1)), 0o755)
+		os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+		fi := &fakeImpl{roundComplete: true, checksOK: true, fixupErr: fixupErr, review: ReviewStatus{
+			Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
+		d := New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+			Root: filepath.Dir(filepath.Dir(filepath.Dir(ideaDir))), Events: store.New(runDir),
+			Auto: true, AutoImplement: true, MaxFixupCycles: 1, Impl: fi}, &fakeRunner{})
+		return d, fi, ideaDir
+	}
+
+	// The reservation is taken BEFORE the code-writing call, so a fix-up that errors has
+	// still spent its cycle. Saving after Fixup would hand the budget back on every error.
+	t.Run("an errored fix-up keeps its reservation", func(t *testing.T) {
+		d, fi, _ := base(t, 0, true)
+		if _, _, err := d.Advance(context.Background()); err == nil {
+			t.Fatal("an errored Fixup must escalate")
+		}
+		if !contains(fi.calls, "fixup") {
+			t.Fatal("Fixup was never called")
+		}
+		c, err := LoadCursor(d.cursorPath())
+		if err != nil {
+			t.Fatalf("the reservation must be durable even when the fix-up failed: %v", err)
+		}
+		if c.FixupCyclesPublished != 1 {
+			t.Fatalf("FixupCyclesPublished=%d after an errored cycle, want 1 (the cycle is spent when it runs)", c.FixupCyclesPublished)
+		}
+	})
+
+	// AF2 completes the LAST allowed cycle at equality, and refuses beyond it.
+	t.Run("AF2 finishes the last allowed cycle at equality", func(t *testing.T) {
+		d, fi, ideaDir := base(t, 1, false)
+		// The current round carries the marker: AF2's crash-recovery path.
+		os.WriteFile(filepath.Join(ideaDir, "review", roundLabel(2), ".fixup-done"), []byte("x\n"), 0o644)
+		// spent == 2 > cap 1 → refused. Now make spent == cap by using cap 2.
+		d.cfg.MaxFixupCycles = 2
+		if _, _, err := d.Advance(context.Background()); err != nil {
+			t.Fatalf("AF2 at equality must be allowed to finish the spent cycle: %v", err)
+		}
+		if !contains(fi.calls, "open-review") {
+			t.Fatal("AF2 did not complete the recovery")
+		}
+	})
+
+	t.Run("AF2 refuses beyond the cap", func(t *testing.T) {
+		d, fi, ideaDir := base(t, 1, false)
+		os.WriteFile(filepath.Join(ideaDir, "review", roundLabel(2), ".fixup-done"), []byte("x\n"), 0o644)
+		d.cfg.MaxFixupCycles = 1 // spent 2 > cap 1
+		if _, _, err := d.Advance(context.Background()); err == nil {
+			t.Fatal("AF2 past the cap must escalate")
+		}
+		if contains(fi.calls, "open-review") {
+			t.Fatal("AF2 opened a round past the cap")
+		}
+	})
+
+	// A cursor that exists but cannot be parsed is an UNKNOWN count and must escalate;
+	// an absent cursor is a fresh run and must not.
+	t.Run("a corrupt cursor escalates, an absent one does not", func(t *testing.T) {
+		d, _, _ := base(t, 0, false)
+		os.WriteFile(d.cursorPath(), []byte("{not json"), 0o644)
+		if _, _, err := d.Advance(context.Background()); err == nil {
+			t.Fatal("a corrupt cursor must escalate rather than be read as zero")
+		}
+		os.Remove(d.cursorPath())
+		if _, _, err := d.Advance(context.Background()); err != nil {
+			t.Fatalf("an absent cursor is a fresh run, not an error: %v", err)
+		}
+	})
+}
+
+// kimi-1 F5: a stat error on one round's marker must not read as "no marker" — that
+// direction lowers the safety count. It must propagate so the caller escalates.
+func TestUnreadableMarkerEscalatesInsteadOfLoweringTheCount(t *testing.T) {
+	dir := t.TempDir()
+	good := filepath.Join(dir, "review", "round-01")
+	bad := filepath.Join(dir, "review", "round-02")
+	os.MkdirAll(good, 0o755)
+	os.MkdirAll(bad, 0o755)
+	os.WriteFile(filepath.Join(good, ".fixup-done"), []byte("x\n"), 0o644)
+	os.WriteFile(filepath.Join(bad, ".fixup-done"), []byte("x\n"), 0o644)
+	if err := os.Chmod(bad, 0o000); err != nil {
+		t.Skipf("cannot make a directory unreadable here: %v", err)
+	}
+	t.Cleanup(func() { os.Chmod(bad, 0o755) })
+
+	n, err := markedFixupCycles(dir)
+	if err == nil {
+		t.Fatalf("an unreadable round must escalate, got count=%d and no error", n)
+	}
+}
+
+// Round-07: the escalation must report the count that was actually CHARGED, not the
+// refused ordinal, and must not call a charged attempt a completed cycle. @codex-1's
+// counterexample: one errored attempt, zero completed cycles, and the message said
+// "after 1 cycle(s)".
+func TestOverCapEscalationReportsChargedAttemptsNotCycles(t *testing.T) {
+	parts := []string{"codex", "agy"}
+	ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+	writeFinalValid(t, ideaDir)
+	writeImpl(t, ideaDir, "implemented")
+	os.MkdirAll(filepath.Join(ideaDir, "review", roundLabel(1)), 0o755)
+	os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644)
+	fi := &fakeImpl{roundComplete: true, checksOK: true, review: ReviewStatus{
+		Summary: consensus.Summary{Triage: consensus.TriageReady}, OutstandingAgreedFixes: 1}}
+	d := New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+		Root: filepath.Dir(filepath.Dir(filepath.Dir(ideaDir))), Events: store.New(runDir),
+		Auto: true, AutoImplement: true, MaxFixupCycles: 1, Impl: fi}, &fakeRunner{})
+
+	// One attempt charged, NO `.fixup-done` marker: the reservation-only state.
+	c := Rebuild(ideaDir, 4)
+	c.FixupCyclesPublished = 1
+	if err := saveCursor(c, d.cursorPath()); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := d.Advance(context.Background())
+	if err == nil {
+		t.Fatal("one charged attempt against cap 1 must refuse the next")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "after 1 charged attempt(s)") {
+		t.Errorf("the escalation must report the CHARGED count (1), got: %s", msg)
+	}
+	if !strings.Contains(msg, "attempt 2 would exceed") {
+		t.Errorf("the escalation must name the refused ordinal separately, got: %s", msg)
+	}
+	if strings.Contains(msg, "cycle(s)") {
+		t.Errorf("a charged attempt is not a completed cycle; zero cycles completed here: %s", msg)
 	}
 }

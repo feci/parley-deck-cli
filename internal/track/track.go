@@ -112,7 +112,7 @@ func Classify(in Inputs) (Track, string) {
 //   - MaxFixupCycles 0      → leave the driver default
 type Policy struct {
 	Track                Track
-	ApplyOverrides       bool // false = reproduce today's behaviour (absent/deliberation)
+	ApplyOverrides       bool // false = reproduce today's behaviour (absent/unknown track only)
 	MaxReviewers         int
 	MinReviewers         int
 	CrossReviewRounds    int // exact value to set; -1 = leave as configured
@@ -150,7 +150,20 @@ func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, str
 	case Deliberation:
 		// Deliberation == today's full lifecycle (backward-compat constraint), but
 		// still subject to the non-solo floor checked above.
-		return Policy{Track: Deliberation, ApplyOverrides: false, CrossReviewRounds: -1}, nil
+		//
+		// Idea meta-protocol-change-phase-packet-and-fixup-budget: the §4.0 cells for
+		// deliberation used to print "unbounded" while the driver silently applied its
+		// own defaults (3 fix-up cycles, 1 cross-review round) — the text and the tool
+		// disagreed and the text lost. Both cells are now explicit and enforced here.
+		// MaxReviewers stays 0 ("all non-implementers") and MinReviewers stays unset so
+		// the LE-11 floor of 2 still applies; only the two budget cells change.
+		return Policy{
+			Track:                Deliberation,
+			ApplyOverrides:       true,
+			CrossReviewRounds:    -1, // keep whatever the idea configured…
+			CapCrossReviewRounds: 3,  // …but never above 3 rounds after round 1
+			MaxFixupCycles:       5,
+		}, nil
 	default: // explicit Standard
 		min := 2
 		if availableReviewers <= 1 { // §4.0 two-participant degradation

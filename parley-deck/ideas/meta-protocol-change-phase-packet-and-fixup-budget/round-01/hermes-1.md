@@ -1,0 +1,323 @@
+---
+agent: hermes-1
+idea: meta-protocol-change-phase-packet-and-fixup-budget
+round: 1
+date: 2026-08-11
+---
+
+## Summary
+
+The phase packet must be a generated artifact that extracts named sections from
+COOPERATION.md by stable anchor, embeds them verbatim into the per-phase agent
+prompt, and appends an explicit "omitted sections" manifest the agent must
+acknowledge. The instruction change lives in three places: the runner's prompt
+builders (internal/runner/runner.go and phase58.go), the skill's standing line,
+and §9's session-start checklist. The fix-up budget for deliberation should be
+set to an explicit finite cap (I propose 8) with mandatory escalation at the
+cap — never auto-close. The hardest problem is omission detection: I can make it
+detectable but not preventable, and I say so plainly below.
+
+## Proposed approach
+
+### Q1 — Which sections does each phase actually need?
+
+I mapped every phase against COOPERATION.md (PRIMARY: `parley-deck/COOPERATION.md`,
+1372 lines, section anchors verified by `grep -n '^## [0-9]\|^### Phase\|^#### '`
+against the file). The mapping below uses section numbers, not line numbers,
+because line numbers shift with edits while section anchors are stable and
+already asserted by the drift guard (`internal/protocol/drift_test.go:135`).
+
+| Phase | Load-bearing (embed in packet) | Reference-only (name, do not embed) |
+|-------|-------------------------------|-------------------------------------|
+| 1 — Round 1 | §4 Phase 1 (the round-1 rule + independence), §15 (verdicts, provenance, no-self-verdict — the phase header at line 308 says "Verification verdicts... follow §15"), §6 rule 3 (never edit another agent's file) | §0 transport, §2 roster, §4.0 track table, §3 layout, §5 quorum, §7–§14, §9 checklist |
+| 2 — Cross-review | §4 Phase 2 (rules: address every agent, silence=agreement, counter-proposal required), §15 (same as above — line 328 carries the same §15 pointer), §6 rule 3 | §4.0 track table (for the cap rule), §5 quorum/deadline, §3 layout |
+| 3 — Consensus | §4 Phase 3 (signoff rules, ✅/🟡/❌ semantics, silence=✅-if-pinged), §15.5 (drafter position changes — line 357 calls it out explicitly), §15.6 (correlated agreement — binds on deliberation/standard), §15.3 (DISPUTED claims block), §6 rule 2 (append-only signoffs) | §4.0 track table, §5 quorum, §7 |
+| 5 — Implementation | §4 Phase 5 (implement to FINAL, deviations logged, IMPLEMENTATION.md shape), §6 rule 4 (copy external snippets), §12 (if pipeline/action — only if `pipeline.yaml` exists) | §4.0, §7, §14 |
+| 6 — Code review | §4 Phase 6 (refutation-default LE-1, severity tags, no-suppression rule at line 537), §15 (verdicts on findings — line 503 points to §15), §6 rule 3, §4.0.1 LE-1/LE-3 definitions | §4.0 track table, §12 |
+| 7 — Review consensus | §4 Phase 7 (signoff rules, zero-agreed-fixes gate), §15.5 (drafter position changes if facilitator drafts), §15.3 (DISPUTED findings), §6 rule 2 | §4.0, §5 |
+| 8 — Fix-up | §4 Phase 8 (fix-up cycle shape, stopping judgment at line 646, strict gate at line 609), §4.0.1 LE-5/LE-7/LE-11, §4.0 track table (fix-up cap per track — this is where the budget lives) | §12, §14 |
+
+Phase 0 (kickoff) is facilitator-only and not listed — the facilitator creating
+`00-prompt.md` needs §4.0 (track classifier) and §4 Phase 0, but Phase 0 does
+not invoke participants.
+
+**The four bought-with-a-failure sections:**
+
+- **§15** — load-bearing in Phases 1, 2, 3, 6, 7. Every one of these phase
+  headers in COOPERATION.md carries the pointer "Verification verdicts, their
+  provenance, and verdict conflicts follow §15" (lines 308, 328, 356, 503). An
+  agent that does not see §15 in a review round cannot tag a finding PRIMARY,
+  cannot recognize a DISPUTED claim, and under Phase 2 rule 1 its silence reads
+  as agreement. Reachable-on-demand is not safe here: the agent does not know to
+  reach for it.
+- **§7** — reference-only in every phase except when the idea IS a
+  meta-protocol-change. For this idea (track: deliberation, it changes §7 text),
+  §7 is load-bearing in Phases 1–4 because the participants are deliberating
+  about §7 itself. For a normal idea, naming §7 ("if you want to change the
+  protocol, open a meta idea — §7") is sufficient.
+- **§6 rule 3** (never edit another agent's file) — load-bearing in Phases 1, 2,
+  3, 6, 7, 8. This is the collision-avoidance primitive. If omitted from a
+  cross-review packet, an agent might edit another's file; the protocol has no
+  mechanical enforcement (§11.A says "no enforcement beyond agent discipline").
+- **§14** (automated outer loop / human brake) — reference-only for all
+  participant-facing phases. §14 binds automated loops, not participant agents.
+  Naming it ("§14 governs automated loops — if you are a scheduled tick, you may
+  not promote this idea") is sufficient. An agent writing a round file is not an
+  automated loop.
+
+### Q2 — How is the packet produced and kept honest?
+
+The packet is generated by a new function in the runner that:
+
+1. Reads COOPERATION.md from the protocol package's embedded default
+   (`internal/protocol/defaults/COOPERATION.md`, the same source the drift guard
+   already compares against `parley-deck/COOPERATION.md`). The runner does NOT
+   read `parley-deck/COOPERATION.md` directly (PRIMARY: `grep -rn 'COOPERATION'
+   internal/runner/runner.go internal/runner/phase58.go` returns zero file-read
+   references — confirmed, the structural constraint in the prompt holds). The
+   embedded default is the version-controlled source the drift guard keeps
+   byte-identical to the live deck.
+
+2. Extracts sections by their heading anchors (e.g. `## 4. Protocol — phases of
+   an idea` → `### Phase 1 — Round 1`, `## 15. Verification integrity` →
+   `### 15.2 Provenance`). The drift guard already asserts these anchors appear
+   exactly once (`internal/protocol/drift_test.go:135`, `assertExactLineOnce`),
+   so anchor-based extraction is reliable.
+
+3. Concatenates the extracted sections into the agent prompt as a
+   `## Protocol sections for this phase` block, embedded verbatim — no
+   paraphrase, no summary.
+
+4. Appends an `## Omitted sections` manifest listing every top-level section NOT
+   included, by number and title. The agent prompt includes this line:
+
+   > "The following protocol sections were omitted from this packet: §0, §2, §3,
+   > §4.0, §5, §7, §8, §9, §10, §11, §12, §13, §14. If your work in this phase
+   > requires a rule from any omitted section, state which section you need and
+   > why in your artifact under '## Concerns / open questions'."
+
+This makes omission visible: the agent sees what it did NOT get, and if it
+needs a rule from an omitted section, the absence is recorded in its artifact
+rather than silently absorbed.
+
+**What reports what a packet omits:** the `## Omitted sections` block itself,
+which is generated from the difference between the full section list and the
+included set. This is deterministic — no judgment, no selection logic, no
+frontier machinery. The inclusion set is a static map keyed by phase number,
+defined in code. The drift guard already catches a section-anchor disappearing
+(fails closed), so a packet generator that looks up a missing anchor will fail
+loudly rather than silently dropping a section.
+
+**Why this is not a fourth copy of the protocol:** the packet is not a stored
+file. It is a prompt fragment generated at invocation time from the embedded
+default, used once, and discarded. There is no second copy to go stale. The
+three existing copies (embedded default, live deck, bundled skill snapshot) are
+already guarded by `TestEmbeddedDefaultMatchesLiveDeck` and the four-surface
+contradiction check in `drift_test.go:270`.
+
+### Q3 — Where does the instruction change?
+
+Three instruction paths, three changes:
+
+1. **The runner's prompt builders** (internal/runner/runner.go:821
+   `BuildRoundOnePrompt`, :971 `BuildRoundPrompt`, phase58.go:202
+   `BuildImplementationPrompt`, :235 `BuildReviewPrompt`, :339
+   `BuildReviewConsensusPrompt`, :187 `BuildFixupPrompt`). Each currently embeds
+   only `00-prompt.md` content (round 1) or prior round artifacts (cross-review)
+   or FINAL.md/IMPLEMENTATION.md (review). The change: each builder calls the
+   packet generator for its phase and embeds the result as a
+   `## Protocol sections for this phase` block. This is the ONLY path that
+   matters for headless agents — they never see the skill or §9.
+
+2. **The skill's standing line** (SKILL.md:12 — "Always read
+   `parley-deck/COOPERATION.md` first"). This line is for the facilitator agent
+   (the one running the skill), not for headless participants. The change:
+   replace with "Load the phase-appropriate protocol packet (generated by the
+   runner) for participant invocations; read the full `COOPERATION.md` yourself
+   for facilitator duties (kickoff, consensus drafting, transport mechanics)."
+   The facilitator still needs the full protocol because it runs Phase 0, drafts
+   consensus, and handles transport — but participants get the packet.
+
+3. **§9's session-start checklist** (COOPERATION.md:869, item 1 — "Read
+   `parley-deck/COOPERATION.md`"). This is the human/interactive-agent checklist.
+   The change: "Read the phase-appropriate protocol packet (if you are a
+   participant in an active idea) or the full `COOPERATION.md` (if you are the
+   facilitator or at session start)." The §9 checklist runs at session start,
+   before any phase is active, so the full read stays for the facilitator and
+   for the pre-idea state; the packet applies once a phase is entered.
+
+**What stops a hand-written prompt from silently reverting to "read
+everything":** the runner's prompt builders are the mechanical gate. A
+hand-written facilitator prompt (the third path, used in manual facilitation)
+can still say "read COOPERATION.md" — but if the runner is driving, the
+participant only sees the packet the runner built. The risk is in manual
+facilitation, where the facilitator assembles the prompt by hand. The mitigation
+is that the skill's prompt templates (Round 1, Cross-Review, Review sections of
+SKILL.md) are the canonical hand-rolled prompt shapes, and they change to
+reference the packet. A facilitator who deviates from the template is already
+deviating from the skill — that is not a new failure mode.
+
+### Q4 — The fix-up budget
+
+**Current state (PRIMARY):** `internal/track/track.go:153` returns
+`Policy{Track: Deliberation, ApplyOverrides: false, CrossReviewRounds: -1}` —
+`MaxFixupCycles` is zero (unset), so `ApplyOverrides: false` means the driver
+default of 3 applies (`internal/driver/driver.go:103-104`: `if cfg.MaxFixupCycles
+<= 0 { cfg.MaxFixupCycles = 3 }`). The §4.0 table at COOPERATION.md:229 says
+"unbounded" for deliberation fix-up, but the code does not implement unbounded —
+it implements a default of 3 with no explicit deliberation override. This is a
+discrepancy between the protocol text and the code, but the prompt says the
+budget is "unbounded" and asks for a cap, so I take the text as the intent.
+
+**Proposed caps:**
+
+| Track | Fix-up cap | At the cap |
+|-------|-----------|------------|
+| fast | 1 (unchanged) | Escalate to user — already implemented |
+| standard | 2 (unchanged) | Escalate to user — already implemented |
+| deliberation | **8** | Escalate: stop, write a trajectory summary to inbox, require human review |
+
+**Why 8 for deliberation:** @kimi-1 measured fresh MAJORs at rounds 19-24 (per
+the prompt's established facts). A cap of 8 is not justified by "late findings
+are trivial" — that premise is false. It is justified by: (a) 8 is high enough
+that a converging idea closes before hitting it (most ideas converge in 2-4
+cycles); (b) 8 is low enough that a churning idea does not burn 24 cycles of
+cost before a human intervenes; (c) the stopping-judgment rule at
+COOPERATION.md:646 already says "If fresh CRITICAL/MAJOR findings keep landing
+on fix-up code... stop and escalate" — the cap is a backstop for when stopping
+judgment fails to fire, not a replacement for it.
+
+**What happens at the cap — MUST escalate, never auto-close:** this is already
+the rule at COOPERATION.md:661-664: "Hitting the budget never marks an
+implementation complete; it requires human review of the trajectory and either a
+new fix-up plan, a recorded operator ruling, or a decision to abandon/defer the
+work." The code at `internal/driver/impl.go:279-280` implements this:
+`return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after
+%d cycle(s) (MaxFixupCycles=%d); escalating", ...)`. The change is to make the
+deliberation cap explicit (8, not the silent default 3) and to record it in the
+§4.0 table text so the protocol and the code agree.
+
+**The implementation change:** `internal/track/track.go:153` changes from
+`Policy{Track: Deliberation, ApplyOverrides: false, CrossReviewRounds: -1}` to
+`Policy{Track: Deliberation, ApplyOverrides: true, CrossReviewRounds: -1,
+MaxFixupCycles: 8}`. The §4.0 table text at COOPERATION.md:229 changes from
+"unbounded" to "cap 8 cycles" for deliberation fix-up.
+
+### Q5 — What must never be cut, and how would we detect it if a packet cut it anyway?
+
+**Must never be cut (from any participant-facing packet):**
+
+1. §6 rule 3 (never edit another agent's file) — the collision-avoidance
+   primitive. Without it, agents can overwrite each other's work.
+2. §15.1–§15.2 (scope/ownership + provenance) — without these, an agent cannot
+   tag a verdict PRIMARY, and under Phase 2 rule 1 its silence reads as
+   agreement. A participant that does not know the provenance rules cannot
+   challenge a claim correctly.
+3. §4 Phase 2 rule: "Silence = implicit agreement" (COOPERATION.md:351) — the
+   rule that makes omission dangerous. If the packet for Phase 2 omits THIS
+   rule, the agent does not know that silence is agreement, and its silence on a
+   missing rule compounds the omission.
+4. §4 Phase 6 no-suppression rule (COOPERATION.md:537) — "Review briefs MUST NOT
+   suppress findings." Without this, a reviewer can be told to not report.
+
+**Detection if a packet cut them anyway:**
+
+The packet generator's inclusion map is static code. The detection mechanism is:
+
+- **At generation time:** the generator asserts that the included-sections set
+  for each phase contains the mandatory sections (§6 rule 3, §15.1–§15.2 for
+  phases that carry the §15 pointer, the silence=agreement rule for Phase 2,
+  no-suppression for Phase 6). If a mandatory section's anchor is missing from
+  the source file, the generator fails loud — same fail-closed behavior the
+  drift guard already uses.
+- **At the drift guard level:** a new test asserts that the mandatory-section
+  anchors exist in the embedded default. If a protocol edit removes or renames
+  one, the test fails before the packet generator ever runs.
+
+**What I cannot make detectable:** if a rule is present in the source file but
+the inclusion map does not list it for a phase where it is needed, the generator
+will silently omit it and no test will catch it — because the test checks
+anchor presence, not semantic relevance. The inclusion map is a human-authored
+mapping (the table in Q1), and a mistake in that map is a bug in code, not a
+drift the guard can detect. The only mitigation is review of the inclusion map
+itself, which is why this idea runs on the deliberation track.
+
+## Concerns and open questions
+
+1. **Omission is detectable but not preventable.** I can make the packet report
+   what it omits (the `## Omitted sections` manifest), and I can make the
+   generator fail if a mandatory anchor is missing. But I cannot make the
+   generator know that a rule a phase needs exists in a section the inclusion
+   map did not list. The inclusion map is human-authored; a gap in it is a silent
+   omission. The prompt says "if you cannot make omission detectable, say so
+   plainly." I can make it detectable (the manifest), but the deeper failure —
+   the map being wrong — is only detectable by review of the map itself. This is
+   why the inclusion map should be a named constant in code, reviewed in this
+   idea's consensus, and covered by a test that asserts the mandatory sections
+   for each phase.
+
+2. **The §4.0 table says "unbounded" but the code caps at 3.** This is a
+   pre-existing discrepancy. My proposal (cap at 8) resolves it by making the
+   cap explicit, but the group should decide: is the intent "unbounded" (in
+   which case the code should set MaxFixupCycles to a very high number or -1
+   with special handling), or was "unbounded" an aspiration that the default-3
+   code never matched? I believe the latter, given the stopping-judgment rule
+   already provides the real bound, but this is a question for the group.
+
+3. **The packet increases prompt size for phases that currently embed no
+   protocol text.** Round 1 today embeds only `00-prompt.md`; adding §15 and §6
+   rule 3 adds ~200 lines. The prompt's established data says full
+   COOPERATION.md costs 3.3x median wall clock — but a 200-line packet is ~15%
+   of the 1372-line file, not 100%. The cost should drop, not rise, for phases
+   that currently embed nothing but where agents read the full file because the
+   skill tells them to.
+
+4. **§7 is load-bearing for this idea but reference-only for normal ideas.**
+   The inclusion map needs to be track-aware or idea-aware: a
+   meta-protocol-change idea needs §7 in its packets; a normal idea does not.
+   This is a small addition (check `track:` or the idea slug prefix
+   `meta-protocol-change-`) but it is a non-static input to the inclusion map,
+   which complicates the "static map" claim in Q2.
+
+5. **The facilitator still reads everything.** This proposal does not cut the
+   facilitator's read cost — the facilitator still needs the full protocol for
+   Phase 0, consensus drafting, and transport. The cost reduction targets
+   participant agents, which the data identifies as the larger population (more
+   participants than facilitators per idea).
+
+## Risks
+
+1. **Inclusion map rot.** The phase-to-section mapping is human-authored code.
+   If a new section is added to COOPERATION.md (e.g. §16) and no one updates the
+   inclusion map, every phase packet silently omits §16. The drift guard catches
+   anchor changes in existing sections but not the addition of new ones to the
+   inclusion map. Mitigation: a test that asserts the inclusion map covers every
+   top-level section in the source file (either included or explicitly listed as
+   omitted) — a completeness check, not a relevance check.
+
+2. **Packet size for Phase 6 (review).** Phase 6 already embeds FINAL.md and
+   IMPLEMENTATION.md. Adding §15, §4 Phase 6, §6 rule 3, and the LE-1/LE-3
+   definitions could make the review prompt very large for complex ideas. If
+   this is a problem, the packet for Phase 6 could embed only §15.1–§15.2 (not
+   all of §15) and §4 Phase 6's refutation-default paragraph (not all of §4
+   Phase 6). But sub-section extraction is more fragile than section extraction.
+
+3. **The deliberation cap of 8 is a judgment call, not a measurement.** I
+   derived it from the kimi-1 finding (fresh MAJORs at 19-24) and the typical
+   convergence point (2-4), but it is not backed by data on how many
+   deliberation fix-up cycles actually run today. If the group has that data, it
+   should override my number. The mechanism (escalate, never auto-close) is more
+   important than the exact cap.
+
+4. **Manual facilitation can bypass the packet.** A facilitator hand-rolling a
+   prompt can still paste "read COOPERATION.md." The runner's prompt builders
+   are the gate for headless agents, but manual facilitation is a real path
+   (SKILL.md describes it as branch A of the "Generic CLI Invocation Contract").
+   The skill template change mitigates this, but it is not a mechanical gate.
+
+5. **The embedded default and the live deck could diverge if the drift guard is
+   not run.** The packet generator reads the embedded default, not the live
+   deck. If someone edits `parley-deck/COOPERATION.md` without running
+   `go test ./internal/protocol/`, the packet uses the stale embedded version.
+   This is the same risk the drift guard already addresses — it just needs to
+   be a CI gate, not only a local test.

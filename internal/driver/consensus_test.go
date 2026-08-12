@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"parley-deck-cli/internal/consensus"
@@ -346,5 +347,88 @@ func TestFinalScaffoldReason(t *testing.T) {
 	// not treated as a scaffold placeholder (false positive found in the live run).
 	if r := finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\nReword the error to `Unknown option '<option>'` and point users at --help for the path `<path>`.\nKeep the change to wording only and verify the help output renders.\nThis line pads the section beyond the length threshold for the scaffold check comfortably.\n")); r != "" {
 		t.Fatalf("legitimate <option>/<path> content rejected: %s", r)
+	}
+}
+
+// Review round-01 CRITICAL: the §4.0 cross-review cap was clamped only on the initially
+// scheduled budget, so a BLOCKed consensus reopened rounds under MaxRounds alone and
+// walked past the printed cap. With HardCrossReviewCap=3, round 5 must escalate and no
+// round-05 runner call may happen.
+func TestBlockedConsensusRespectsTheHardCrossReviewCap(t *testing.T) {
+	dir := t.TempDir()
+	ideaDir := filepath.Join(dir, "parley-deck", "ideas", "demo")
+	runDir := filepath.Join(dir, "runs", "r1")
+	os.MkdirAll(runDir, 0o755)
+	for r := 1; r <= 4; r++ {
+		os.MkdirAll(filepath.Join(ideaDir, roundLabel(r)), 0o755)
+	}
+	os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: demo\ntrack: deliberation\n---\n"), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "consensus.md"), []byte("x"), 0o644)
+
+	fr := &fakeRunner{}
+	d := New(Config{
+		IdeaDir: ideaDir, IdeaSlug: "demo", Participants: []string{"a", "b"}, RunDir: runDir,
+		Root: dir, Events: store.New(runDir), Auto: true,
+		MaxRounds: 4, HardCrossReviewCap: 3,
+		Consensus: &fakeConsensus{statusSeq: []string{consensus.TriageBlocked}},
+	}, fr)
+
+	action, _, err := d.advanceConsensus(context.Background(), Cursor{Phase: PhaseConsensus})
+	if action != ActionEscalated || err == nil {
+		t.Fatalf("action=%s err=%v — want escalated at the §4.0 cap", action, err)
+	}
+	if !strings.Contains(err.Error(), "§4.0 cap of 3") || !strings.Contains(err.Error(), "after 3 cross-review round(s)") {
+		t.Errorf("escalation must name the cap it enforced, got: %v", err)
+	}
+	if len(fr.calls) != 0 {
+		t.Fatalf("a 4th cross-review round was opened past the cap: rounds run = %v", fr.calls)
+	}
+}
+
+// Round-06: the guard above was only ever tested with HardCrossReviewCap injected by
+// hand, so deleting the one line in New that wires Policy.CapCrossReviewRounds into the
+// config left every test green while the BLOCK back-edge walked past the printed cap.
+// This drives the whole seam: a real 00-prompt track → New → a blocked consensus.
+func TestTrackWiresTheHardCrossReviewCapThroughNew(t *testing.T) {
+	for _, tc := range []struct {
+		track   string
+		cap     int
+		atRound int // rounds already on disk; opening atRound+1 must be refused
+	}{
+		{"deliberation", 3, 4},
+		{"standard", 2, 3},
+	} {
+		t.Run(tc.track, func(t *testing.T) {
+			dir := t.TempDir()
+			ideaDir := filepath.Join(dir, "parley-deck", "ideas", "demo")
+			runDir := filepath.Join(dir, "runs", "r1")
+			os.MkdirAll(runDir, 0o755)
+			for r := 1; r <= tc.atRound; r++ {
+				os.MkdirAll(filepath.Join(ideaDir, roundLabel(r)), 0o755)
+			}
+			os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"),
+				[]byte("---\nidea: demo\ntrack: "+tc.track+"\n---\n"), 0o644)
+			os.WriteFile(filepath.Join(ideaDir, "consensus.md"), []byte("x"), 0o644)
+
+			fr := &fakeRunner{}
+			d := New(Config{
+				IdeaDir: ideaDir, IdeaSlug: "demo", Participants: []string{"a", "b", "c"},
+				RunDir: runDir, Root: dir, Events: store.New(runDir), Auto: true,
+				MaxRounds: 9, // deliberately generous: only the §4.0 cap may stop this
+				Consensus: &fakeConsensus{statusSeq: []string{consensus.TriageBlocked}},
+			}, fr)
+
+			if d.cfg.HardCrossReviewCap != tc.cap {
+				t.Fatalf("track %s: HardCrossReviewCap=%d, want %d — the policy is not wired into the driver",
+					tc.track, d.cfg.HardCrossReviewCap, tc.cap)
+			}
+			action, _, err := d.advanceConsensus(context.Background(), Cursor{Phase: PhaseConsensus})
+			if action != ActionEscalated || err == nil {
+				t.Fatalf("track %s: action=%s err=%v — a BLOCK past the §4.0 cap must escalate", tc.track, action, err)
+			}
+			if len(fr.calls) != 0 {
+				t.Fatalf("track %s: opened another cross-review round past the cap: %v", tc.track, fr.calls)
+			}
+		})
 	}
 }

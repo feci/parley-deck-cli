@@ -1,5 +1,98 @@
 # Changelog
 
+## 1.44.0 — 2026-08-12
+
+### Fixed — the fix-up budget was counted in the wrong unit, and off by one
+
+Two defects in the same guard, both found by review of this release candidate.
+
+**Off by one.** `internal/driver/impl.go` bounded the loop with `cycle >= MaxFixupCycles`, so the
+last allowed cycle never ran: `standard` published 1 cycle where its §4.0 cell prints "cap 2", and
+`deliberation` published 2 against a silent driver default of 3. The bound is now inclusive —
+`MaxFixupCycles = N` permits attempts 1..N and escalates when N+1 would start.
+
+**Wrong unit, and then a wrong source.** The cycle number came from the review-round ordinal, but a
+strict-gate round with zero agreed fixes opens the next review round without publishing a fix-up —
+so rounds that produced nothing spent budget. **The unit is now a reserved fix-up attempt**: a cycle
+is charged when it is reserved, before the code-writing call, so an attempt that errors or is
+interrupted has still spent it. It is deliberately not "a completed cycle" — that definition let a
+failing fix-up loop forever against a cap that never depleted.
+
+Getting the *source* right took two further review rounds. Counting `## Fix-up cycle N` headings in
+`IMPLEMENTATION.md` was fail-open in four ways at once (a missing file restored the whole budget; a
+heading inside a code fence counted; malformed and duplicate ordinals counted; renaming one past
+heading bought a cycle) — and that file is owned by the implementer the cap constrains. Counting the
+driver's own `.fixup-done` markers alone only moved the editable state.
+
+The budget is now the **maximum of two driver-authored records**: a monotonic counter in the run
+cursor, carried across rebuilds, and the `.fixup-done` markers. **The cycle is reserved before the
+code-writing call**, so a fix-up that errors or crashes mid-flight cannot get its cycle back — a
+fix-up that breaks the build is exactly the churn the cap exists to interrupt. Once both records exist, losing
+either one does not lower the count; forging either can only raise it (escalating sooner); an
+unreadable cursor escalates instead of counting as zero; and the crash-recovery path consults the cap
+before opening another round, while still being allowed to *finish* the last allowed cycle.
+
+**There is one window with a single record.** Between reserving a cycle and the marker being written
+— which includes every attempt that errored — the cursor is the only record, and losing it there
+loses that count.
+
+**What this is not.** These are ordinary files in the repository. The budget is robust against a
+stale or deleted single record once both exist, and against an errored or crashed fix-up losing its
+reservation. It is **not** a
+security boundary: a participant with workspace write, a deleted run directory, a repository
+rollback, or two concurrent runs of the same idea can still reduce or duplicate the count. Making
+the ceiling idea-scoped, serialized across runs and anchored outside the participant-writable tree
+is a named follow-up, not something this release claims.
+
+### Added — the two `deliberation` budget cells are explicit and enforced
+
+Ratified by `meta-protocol-change-phase-packet-and-fixup-budget` (§7, four cross-review rounds,
+accepted by codex-1, hermes-1 and kimi-1).
+
+- **Fix-up (Phase 8): 5 inclusive reserved cycles**, was the printed word "unbounded" against a
+  silent driver default of 3.
+- **Cross-review (Phase 2): capped at 3 rounds after round 1**, was "unbounded" against a silent
+  default of 1.
+
+Both are escalation thresholds. **Hitting one never marks work complete.** There is no severity
+floor: the deck's two worst ideas produced fresh MAJORs at rounds 19–24, so "late findings are
+trivial" is false here.
+
+**The cross-review cap binds every path that opens a round**, including the consensus-BLOCK
+back-edge. This also bounds `standard`'s back-edge at its own printed cap of 2, which it previously
+ignored — the two tracks share the mechanism, and leaving one unbounded while bounding the other
+would be incoherent. Clamping only the initially scheduled budget left that back-edge governed by `MaxRounds`
+alone, so a deliberation idea capped at 3 could still run a 4th cross-review round — a cap one code
+path ignores is exactly the class this release exists to close.
+
+**Why 5.** Counting `## Fix-up cycle` headings across all 69 ideas gives
+`0×17, 1×34, 2×7, 3×2, 4×3, 5×2, then 9, 14, 15, 25`. Every value above 5 is in {9, 14, 15, 25} —
+nothing has ever closed in the 6–8 band, so 5, 6, 7 and 8 escalate an identical set. No evidence
+separates them, so the choice fell to error asymmetry: a too-low cap costs one recorded escalation a
+human can grant; a too-high cap costs another cycle of the pathology the cap exists to interrupt.
+
+### Changed — protocol text, all three copies
+
+`parley-deck/COOPERATION.md`, `internal/protocol/defaults/COOPERATION.md` and the
+`parley-deck-skill` bundled snapshot now print `cap 5 cycles` and
+`capped at 3 after round 1, then escalate`. **Text and code land in one patch**: a `standard` idea
+was measured running 15 cycles against a printed cap of 2 with no recorded escalation, because a
+printed cap binds only where enforcement lives.
+
+### Not in this release
+
+- **The phase-scoped protocol packet** — the half of that idea that reduces read cost — is **not
+  started**. Its release is gated on a pre-registered experiment whose ship/refute thresholds are
+  already written into the idea's `FINAL.md` and may not be changed after data exists. **This
+  release makes Parley Deck correct, not faster.**
+- **The ratified escalation payload** (trajectory, findings by severity, fresh-vs-relitigated,
+  unresolved fixes, validation status, recommendation) is **not implemented**. Both boundaries
+  escalate and halt with the counts and the cap they enforced; the structured payload is a named
+  remaining piece of the same idea.
+- **`fast` Phase 8 is not exercised by the driver at all** — `fast` forbids idea-level
+  `auto_implement`, so its fix-up route is manual. The inclusive-boundary fix corrects the
+  arithmetic for every cap value, but no claim is made here about end-to-end `fast` behaviour.
+
 ## 1.43.1 — 2026-08-11
 
 ### Removed — the dormant frontier machinery

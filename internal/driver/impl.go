@@ -138,6 +138,19 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	// without re-running Fixup or re-drafting the consensus.
 	fixupMarker := filepath.Join(d.cfg.IdeaDir, "review", roundLabel(round), ".fixup-done")
 	if fileExists(fixupMarker) {
+		// The budget gate binds here too. Review round-03 found that AF2 reached
+		// OpenReviewRound without ever consulting the cap, so a stale — or forged —
+		// marker in the current round drove the loop past the ceiling with no fix-up
+		// and no escalation.
+		if spent, err := d.chargedFixupAttempts(c); err != nil {
+			return ActionEscalated, c, fmt.Errorf("cannot determine how many fix-up attempts have been charged: %w", err)
+		} else if d.cfg.MaxFixupCycles > 0 && spent > d.cfg.MaxFixupCycles {
+			// STRICTLY greater: at equality AF2 is finishing the Nth allowed cycle, whose
+			// budget is already spent — not starting cycle N+1. Rejecting equality would
+			// strand a legitimate crash recovery at the inclusive boundary (round-04).
+			// Starting the next cycle is still refused by the ordinary branch below.
+			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempt(s) against MaxFixupCycles=%d; escalating instead of opening another review round", spent, d.cfg.MaxFixupCycles)
+		}
 		if err := d.archiveReviewConsensus(round); err != nil {
 			return ActionEscalated, c, fmt.Errorf("archive review consensus: %w", err)
 		}
@@ -275,15 +288,38 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 
 	// Outstanding agreed fixes → a fix-up cycle, bounded by MaxFixupCycles.
-	cycle := round
-	if cycle >= d.cfg.MaxFixupCycles {
-		return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after %d cycle(s) (MaxFixupCycles=%d); escalating", rs.OutstandingAgreedFixes, cycle, d.cfg.MaxFixupCycles)
+	//
+	// The bound is INCLUSIVE: MaxFixupCycles=N allows attempts 1..N and escalates when
+	// cycle N+1 would start. The comparison was `>=`, which allowed only N-1 — every
+	// §4.0 cap was one lower than the table printed. Boundary tests:
+	// TestFixupCapIsInclusive.
+	//
+	// The count comes from chargedFixupAttempts (see its doc comment for why it is what
+	// it is), NOT from the review-round ordinal: a strict-gate round with zero agreed
+	// fixes opens the next review round without running a fix-up, so a round-derived
+	// counter spends budget on cycles that never happened.
+	charged, err := d.chargedFixupAttempts(c)
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("cannot determine how many fix-up attempts have been charged; refusing to spend budget on an unknown count: %w", err)
+	}
+	cycle := charged + 1
+	if cycle > d.cfg.MaxFixupCycles {
+		return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after %d charged attempt(s); attempt %d would exceed MaxFixupCycles=%d; escalating", rs.OutstandingAgreedFixes, charged, cycle, d.cfg.MaxFixupCycles)
 	}
 	if !d.cfg.AutoImplement {
 		return ActionEscalated, c, fmt.Errorf("review has agreed fixes but auto_implement (code-writing) is not enabled; escalating")
 	}
 	if !gitTreeClean(d.cfg.Root) {
 		return ActionEscalated, c, fmt.Errorf("git working tree is dirty; refusing to run a fix-up")
+	}
+	// RESERVE the attempt before the code-writing call, not after it. Round-04 showed that
+	// spending it afterwards leaves two ways to get it back for free: a Fixup that
+	// returns an error, and a crash in the window between Fixup returning and the cursor
+	// being written. A crash before Fixup is confirmed conservatively spends the
+	// reservation — erring toward one lost cycle rather than an unbounded loop.
+	c.FixupCyclesPublished = cycle
+	if err := saveCursor(c, d.cursorPath()); err != nil {
+		return ActionEscalated, c, fmt.Errorf("reserve fix-up cycle %d: %w", cycle, err)
 	}
 	if err := d.cfg.Impl.Fixup(ctx, cycle); err != nil {
 		return ActionEscalated, c, fmt.Errorf("fix-up cycle %d: %w", cycle, err)
@@ -469,4 +505,90 @@ func gitTreeClean(root string) bool {
 		return false // inside a repo but the status probe failed → assume unsafe
 	}
 	return strings.TrimSpace(string(out)) == ""
+}
+
+// chargedFixupAttempts reports how many fix-up attempts have been CHARGED — reserved, not
+// necessarily completed: an attempt that errored has still spent one. It is the
+// MAXIMUM of two driver-authored records:
+//
+//   - the run cursor's monotonic FixupCyclesPublished, which lives in the RUN directory
+//     and is written inside the fix-up transaction;
+//   - the `.fixup-done` markers under the idea's review rounds.
+//
+// Taking the maximum is what makes it safe ONCE BOTH RECORDS EXIST: deleting markers
+// cannot lower the count because the cursor holds it, deleting the cursor cannot lower it
+// because the markers remain, and forging either can only raise it, which escalates
+// sooner. Between the reservation and the marker — which includes every attempt that
+// errored — the cursor is the ONLY record, and losing it there loses that count. That
+// window is a documented limit, not a claim; closing it needs the trust anchor deferred
+// to `fixup-budget-trust-anchor`.
+//
+// NOTE ON NAMES: the persisted cursor field stays FixupCyclesPublished for on-disk
+// compatibility; every unexported name here says "charged attempt", which is what it is.
+//
+// Two earlier designs were rejected by review for being fail-open in the other
+// direction: counting `## Fix-up cycle N` headings out of the implementer-owned
+// IMPLEMENTATION.md (round-02), and counting the markers alone (round-03). A number that
+// is a safety boundary must not be authored by the party it constrains.
+//
+// A read error is returned, never swallowed: an unknown count must escalate, not restart
+// the budget at zero.
+func (d *Driver) chargedFixupAttempts(c Cursor) (int, error) {
+	n, err := markedFixupCycles(d.cfg.IdeaDir)
+	if err != nil {
+		return 0, err
+	}
+	if c.FixupCyclesPublished > n {
+		return c.FixupCyclesPublished, nil
+	}
+	return n, nil
+}
+
+// markedFixupCycles counts the driver's `.fixup-done` markers, one per review round.
+func markedFixupCycles(ideaDir string) (int, error) {
+	reviewDir := filepath.Join(ideaDir, "review")
+	entries, err := os.ReadDir(reviewDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil // no review directory yet: nothing has been published
+		}
+		return 0, err
+	}
+	n := 0
+	for _, e := range entries {
+		if !e.IsDir() || !isRoundDirName(e.Name()) {
+			continue
+		}
+		// A stat error on one round must not read as "no marker": that direction
+		// LOWERS the count. Propagate it so an unknown count escalates (kimi-1 F5).
+		switch _, err := os.Stat(filepath.Join(reviewDir, e.Name(), ".fixup-done")); {
+		case err == nil:
+			n++
+		case os.IsNotExist(err):
+			// genuinely absent: this round published no fix-up
+		default:
+			return 0, fmt.Errorf("stat fix-up marker in %s: %w", e.Name(), err)
+		}
+	}
+	return n, nil
+}
+
+// isRoundDirName accepts only the exact `round-NN` shape the driver writes. Review
+// round-03 found that a `strings.HasPrefix(name, "round-")` test counted arbitrary
+// directories such as `round-backup` or `round-x`.
+func isRoundDirName(name string) bool {
+	const prefix = "round-"
+	if !strings.HasPrefix(name, prefix) {
+		return false
+	}
+	digits := name[len(prefix):]
+	if digits == "" {
+		return false
+	}
+	for _, r := range digits {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
 }

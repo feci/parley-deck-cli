@@ -61,6 +61,16 @@ type Config struct {
 	AutoImplement bool
 	// MaxFixupCycles bounds the review→fix-up loop (default 3).
 	MaxFixupCycles int
+	// HardCrossReviewCap is the §4.0 per-track ceiling on cross-review rounds AFTER
+	// round 1. Unlike CrossReviewRounds — which is only the initially scheduled budget
+	// — this bounds EVERY path that can open another Phase-2 round, including the
+	// consensus-BLOCK back-edge. 0 = no ceiling.
+	//
+	// Review round-01 of meta-protocol-change-phase-packet-and-fixup-budget found that
+	// clamping the initial budget alone left the BLOCK back-edge governed only by
+	// MaxRounds, so a deliberation idea capped at 3 could still run a 4th cross-review
+	// round. A cap that one code path ignores is the class this idea exists to close.
+	HardCrossReviewCap int
 	// StrictGate (LE-2), when set, requires a fresh full-scope closing review round
 	// certified clean (drafter strict_gate_clean + deterministic finding-scan veto)
 	// before Complete(), not merely outstanding_agreed_fixes == 0. Read per idea from
@@ -107,8 +117,9 @@ func New(cfg Config, r RoundRunner) *Driver {
 		cfg.Out = io.Discard
 	}
 	// Track-aware derivation (idea track-aware-driver): an EXPLICIT 00-prompt
-	// `track:` opts into §4.0 reduced ceremony; absent/deliberation preserve
-	// today's behaviour byte-for-byte. A §4.0 contradiction (fast + auto_implement
+	// `track:` opts into §4.0 reduced ceremony; only an absent or unknown track
+	// preserves today's behaviour byte-for-byte. Explicit `deliberation` now applies
+	// overrides too — its two budget cells are enforced. A §4.0 contradiction (fast + auto_implement
 	// / strict_gate) or a non-solo violation is recorded and escalated on the first
 	// Advance rather than silently applied.
 	var trackErr error
@@ -129,8 +140,11 @@ func New(cfg Config, r RoundRunner) *Driver {
 				if pol.CrossReviewRounds >= 0 {
 					cfg.CrossReviewRounds = pol.CrossReviewRounds
 				}
-				if pol.CapCrossReviewRounds > 0 && cfg.CrossReviewRounds > pol.CapCrossReviewRounds {
-					cfg.CrossReviewRounds = pol.CapCrossReviewRounds
+				if pol.CapCrossReviewRounds > 0 {
+					cfg.HardCrossReviewCap = pol.CapCrossReviewRounds
+					if cfg.CrossReviewRounds > pol.CapCrossReviewRounds {
+						cfg.CrossReviewRounds = pol.CapCrossReviewRounds
+					}
 				}
 				if pol.MaxFixupCycles > 0 {
 					cfg.MaxFixupCycles = pol.MaxFixupCycles
@@ -215,6 +229,23 @@ func (d *Driver) autoDriveEnabled() bool {
 // cannot double-produce.
 func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	c := Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds)
+	// Rebuild derives the cursor from idea artifacts, which is right for phase and round
+	// — but the fix-up budget is a SAFETY count and must not be recoverable by editing
+	// artifacts. Carry the persisted value forward monotonically: it can only ever rise.
+	prev, err := LoadCursor(d.cursorPath())
+	switch {
+	case err == nil:
+		if prev.FixupCyclesPublished > c.FixupCyclesPublished {
+			c.FixupCyclesPublished = prev.FixupCyclesPublished
+		}
+	case os.IsNotExist(err):
+		// No cursor yet: a fresh run. The markers remain the only source, which is
+		// correct — nothing has been spent that this run could forget.
+	default:
+		// A cursor that exists but cannot be read is an UNKNOWN safety count, and an
+		// unknown count must never be treated as zero (round-04).
+		return ActionEscalated, c, fmt.Errorf("cannot read the driver cursor at %s; refusing to act on an unknown fix-up budget: %w", d.cursorPath(), err)
+	}
 
 	// Track-aware hard gate (idea track-aware-driver): a §4.0 contradiction
 	// (fast + auto_implement / strict_gate) or a non-solo violation escalates

@@ -230,3 +230,62 @@ carry-forward ledger contract, and the enablement gate. All of it is in this ide
 on the strength of a RESERVED signoff. The owner's gate was "round 3 returns CLEAN" and it was not
 met; the implementer substituted a different, protocol-permitted gate without asking. The objection
 that gate existed to catch is the one this cycle closes.
+
+## Self-correction — the "Phase 2 rule 1" locator at line 98
+
+date: 2026-08-11
+raised-by: kimi-1 (review cycle 4, fourth pass); disposition required by codex-1 (fifth pass)
+
+Line 98 of this file cites **"Phase 2 rule 1"** for the silence clause. That address is off by one.
+
+PRIMARY — `parley-deck/COOPERATION.md`:
+
+```
+349:- **Never edit another agent's file.** React in your own file in the next round.
+350:- **Address every other active agent explicitly.** Silence = implicit agreement.
+```
+
+The silence clause is the **second** Phase 2 bullet, `COOPERATION.md:350`. The first bullet, `:349`,
+is the never-edit rule. Every "Phase 2 rule 1" in this idea's artifacts means `:350`.
+
+Line 98 is left as written — it is the historical text of fix-up cycle 1 and the argument it makes
+is unaffected: the protocol does convert an unaddressed omission into consent, which is why a
+dropped objection is agreement that was never given. Only the citation was wrong.
+
+This note exists because this file is **owned by the drafter and still open** (`status:
+ready-for-review`), so neither reason given in `review/consensus.md` Correction 4 for not repairing
+in place — a closed `FINAL.md`, another author's round file — applies to it.
+
+## Review cycle 4 — complete
+
+date: 2026-08-11
+scope: post-release verification of the shipped v1.43.1
+
+Opened to give the released artifact the verdict the gate bypassed at 1.43.0 was meant to obtain.
+
+**Round-4 verdicts: CLEAN from @hermes-1, @codex-1 and @kimi-1**, each verified independently rather
+than inheriting the claim. @codex-1 and @kimi-1 confirmed restoration by diff, not inspection —
+`git diff d4256a2 v1.43.1 -- internal/runner/` is empty, so the whole package including its tests is
+byte-identical to the last pre-idea release. @codex-1's Finding B is **closed by deletion, not
+relocated**, in its own words. The two reviewers who signed CLEAN on that finding in round 3 both
+recorded that the stricter reading won over theirs.
+
+**Consensus: OK from @codex-1 and @kimi-1** after five drafter corrections. @hermes-1 was unreachable
+(12 invocations, upstream 503/504); its absence is recorded as an outage and explicitly **not** read
+as consent. Full record in `review/consensus.md`, section "Cycle 4 — closed".
+
+**Zero agreed fixes. No code, test, protocol or release change.** Seven BLOCK signoffs were filed and
+every one of them was against the consensus text written by the drafter, not against the artifact.
+
+**What this cycle cost and why**, recorded because it is the reusable part: each BLOCK named a
+checkable false claim in text the drafter had **retyped by hand** — an abbreviated path inside a
+quoted command, five output lines reflowed into one, an inventory copied from a truncated view, a
+header written before its body. Correction 5 wrote command output directly into the file at run time
+instead of transcribing it, and passed on the first pass. **"This satisfies the standard" is itself a
+factual claim and must be checked with a command like any other**; two reviewers refuted that claim
+twice with one grep each, and the drafter had never run it.
+
+**Deferred to the moment this cycle closed:** all seven installed runtime skill snapshots are 2.6.0
+against a 2.7.0 installer, and their bundled protocol fallback says the overlay has not shipped —
+the opposite of what shipped. A local install defect, not a release defect; fixed by
+`parley-deck-skill install --target all --force`.
