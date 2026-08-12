@@ -459,3 +459,321 @@ Yes. The release is not fully consistent across channels:
 2. **Project runtime metadata is stale:** all seven runtime snapshots are valid 2.8.0, but `parley-deck/meta/version.json` remains at 2.6.0 and status reports both metadata and protocol drift warnings; the live protocol header still names skill 2.5.1 / CLI 1.41.0.
 
 No version or hash disagreement was found among the git tags, GitHub release assets, npm package, Homebrew formulae, installed Homebrew versions, the seven installed runtime snapshots, or the installed `parley` binary.
+
+## Re-verification after fixes
+
+verdict: PROBLEMS REMAIN
+
+Verifier: `codex-1`
+
+Scope: independent re-verification of the two reported repairs for `parley-deck-cli` v1.44.0 and `parley-deck-skill` v2.8.0. I used read-only git and filesystem checks plus fresh remote GitHub/HTTP reads. I did not rely on the implementer's before/after hash, run a git write command, push, publish, or modify any file except this append-only section.
+
+Every verdict below is `[PRIMARY]`: each cites the command or remote endpoint I consulted and quotes the relevant output, per §15.2.
+
+### Answers
+
+| Question | Answer |
+| --- | --- |
+| Q1 | **YES for the stated fix.** Both locale manifests at the current remote PR head use v1.44.0/v2.8.0, both release-note pages returned HTTP 200, and the current PR head is the pushed fix commit. The PR is still open and unmerged. |
+| Q2 | **NO other stale winget value found.** All six manifests carry the correct identities and versions; installer URLs and GitHub asset digests agree; no old version token remains; Moniker is absent both before and after; Tags are unchanged from the preceding versions. |
+| Q3 | **Metadata YES; zero warnings NO.** `deckVersion`, `source`, and all four recorded hashes are correct, and all seven runtime installs are valid 2.8.0. However, `status --target all` still reports `compatibility: warning` / `project-protocol-differs-from-packaged-reference`. |
+| Q4 | **YES.** Git proves the sync commit used the identical `COOPERATION.md` blob before and after; its diff contains no protocol-file change. |
+| Q5 | **YES, problems remain.** Winget is not live because PR 416445 remains open/unmerged. The runtime/project metadata repair is valid, but the status channel is not warning-free and the deck header still names skill 2.5.1 / CLI 1.41.0. No new mismatch was found in git tags, GitHub releases, npm, Homebrew, installed binaries, or the seven runtime installs. |
+
+### Q1 — locale fix, HTTP responses, and pushed PR head: VERIFIED `[PRIMARY]`
+
+The clean local winget checkout and its fetched fork branch resolve to the same commit:
+
+```text
+$ git -C ../winget-pkgs rev-parse HEAD refs/remotes/origin/feci-1.44.0-skill-2.8.0
+c0081351c137fea66925a6f59a1f6e7de7ef6721
+c0081351c137fea66925a6f59a1f6e7de7ef6721
+
+$ git -C ../winget-pkgs status --porcelain=v1 --untracked-files=all
+(no output)
+```
+
+I then queried the authoritative PR and fork commit endpoints through the isolated browser, not the local remote-tracking ref:
+
+```text
+$ ego-browser nodejs
+GET https://api.github.com/repos/microsoft/winget-pkgs/pulls/416445
+state: open
+merged: false
+head.label: feci:feci-1.44.0-skill-2.8.0
+head.repo.full_name: feci/winget-pkgs
+head.ref: feci-1.44.0-skill-2.8.0
+head.sha: c0081351c137fea66925a6f59a1f6e7de7ef6721
+base.ref: master
+
+GET https://api.github.com/repos/feci/winget-pkgs/commits/c0081351c137fea66925a6f59a1f6e7de7ef6721
+sha: c0081351c137fea66925a6f59a1f6e7de7ef6721
+message: Fix stale ReleaseNotesUrl in both locale manifests
+parent: 95fcc7a7a7912b62fffa4cce7e281891184371b1
+```
+
+The two locale files were fetched from `feci/winget-pkgs` at that exact remote SHA. Their relevant fields are:
+
+```text
+manifests/f/Feci/ParleyDeckCli/1.44.0/Feci.ParleyDeckCli.locale.en-US.yaml
+git blob: 628c03fa3beec068f36481919a74dac3f8977593
+sha256: 52ddda4d65a7b663f357d284ca04540c3010c0d1896cef40fb849b8943e571d9
+PackageVersion: 1.44.0
+ReleaseNotesUrl: https://github.com/feci/parley-deck-cli/releases/tag/v1.44.0
+
+manifests/f/Feci/ParleyDeckSkill/2.8.0/Feci.ParleyDeckSkill.locale.en-US.yaml
+git blob: a73bfd6c1e782b312e562ce6ff4c523a0f6f55e3
+sha256: f0006e3cb301452da916f0ad08f509851abf687653f8b4a46a7b0cb46d0e3e08
+PackageVersion: 2.8.0
+ReleaseNotesUrl: https://github.com/feci/parley-deck-skill/releases/tag/v2.8.0
+```
+
+I navigated Chromium to both declared URLs and read the navigation response status rather than inferring success from page text:
+
+```text
+$ ego-browser nodejs
+gotoAndWait("https://github.com/feci/parley-deck-cli/releases/tag/v1.44.0")
+pageUrl: https://github.com/feci/parley-deck-cli/releases/tag/v1.44.0
+responseStatus: 200
+contentType: text/html
+title: Release v1.44.0 — enforce the two deliberation budget cells · feci/parley-deck-cli · GitHub
+
+gotoAndWait("https://github.com/feci/parley-deck-skill/releases/tag/v2.8.0")
+pageUrl: https://github.com/feci/parley-deck-skill/releases/tag/v2.8.0
+responseStatus: 200
+contentType: text/html
+title: Release v2.8.0 — bundled protocol: the two deliberation budget cells · feci/parley-deck-skill · GitHub
+```
+
+Therefore the locale repair is present locally and, independently, on the exact pushed PR head. Both target pages return 200.
+
+### Q2 — complete manifest stale-value audit: VERIFIED `[PRIMARY]`
+
+The PR files endpoint lists exactly the three expected manifests for each package. I fetched all six contents at the remote PR SHA and compared their byte hashes with the local checkout:
+
+```text
+remote PR head: c0081351c137fea66925a6f59a1f6e7de7ef6721
+
+CLI installer:  f2ab2ad743cf95a29076e43f5d609eec4656f9997804537b1bd2fd38fae73166
+CLI locale:     52ddda4d65a7b663f357d284ca04540c3010c0d1896cef40fb849b8943e571d9
+CLI version:    33327720e372ad50439fb2fe9329f26935807eeb348b001e9a3018824b235cc3
+Skill installer: 7a1c27e290c8664fa166c2f138ace49c897617ad287f534faef6f9e95f67447d
+Skill locale:    f0006e3cb301452da916f0ad08f509851abf687653f8b4a46a7b0cb46d0e3e08
+Skill version:   bb69a6635bf25e94f9090b028ec4825d1ab05e850d0f7d3c7c8d507c2fab744a
+
+$ shasum -a 256 ../winget-pkgs/manifests/f/Feci/ParleyDeckCli/1.44.0/*.yaml ../winget-pkgs/manifests/f/Feci/ParleyDeckSkill/2.8.0/*.yaml
+(the same six sha256 values; remote and local contents match byte-for-byte)
+```
+
+All six identical local files parsed successfully with Ruby/Psych. A field audit returned:
+
+```text
+$ ruby -ryaml -rjson <manifest-field-audit> <the six manifest paths>
+Feci.ParleyDeckCli:
+  file_count: 3
+  identifiers: [Feci.ParleyDeckCli]
+  versions: [1.44.0]
+  manifest_types: [defaultLocale, installer, version]
+  locales: en-US / en-US
+  command: [parley]
+  architectures: [arm64, x64]
+  identity_version_ok: true
+
+Feci.ParleyDeckSkill:
+  file_count: 3
+  identifiers: [Feci.ParleyDeckSkill]
+  versions: [2.8.0]
+  manifest_types: [defaultLocale, installer, version]
+  locales: en-US / en-US
+  command: [parley-deck-skill]
+  architectures: [arm64, x64]
+  identity_version_ok: true
+```
+
+The current GitHub release API supplied a live `digest` for every Windows asset. Comparing those authoritative digests and download URLs with the remote PR-head installer manifests produced four matches:
+
+```text
+CLI x64:
+  URL: https://github.com/feci/parley-deck-cli/releases/download/v1.44.0/parley-v1.44.0-windows-x64.exe
+  manifest sha256: 85013DD73B15417F25F8C1ED4C76B008E278D2966E1CAEC54F588BCB77900E47
+  GitHub digest: sha256:85013dd73b15417f25f8c1ed4c76b008e278d2966e1caec54f588bcb77900e47
+  urlMatchesReleaseAsset=true hashMatchesGitHubDigest=true
+
+CLI arm64:
+  URL: https://github.com/feci/parley-deck-cli/releases/download/v1.44.0/parley-v1.44.0-windows-arm64.exe
+  manifest sha256: FDB347A709894C5068E1DF40E2A08BBEB0C83CC6E0A176A17F829370CEB29B71
+  GitHub digest: sha256:fdb347a709894c5068e1df40e2a08bbeb0c83cc6e0a176a17f829370ceb29b71
+  urlMatchesReleaseAsset=true hashMatchesGitHubDigest=true
+
+Skill x64:
+  URL: https://github.com/feci/parley-deck-skill/releases/download/v2.8.0/parley-deck-skill-v2.8.0-windows-x64.exe
+  manifest sha256: 7AF28F2FC39270143C3CB586EC941E4743FB5CF606C51108CEE4852A23AB52AD
+  GitHub digest: sha256:7af28f2fc39270143c3cb586ec941e4743fb5cf606c51108cee4852a23ab52ad
+  urlMatchesReleaseAsset=true hashMatchesGitHubDigest=true
+
+Skill arm64:
+  URL: https://github.com/feci/parley-deck-skill/releases/download/v2.8.0/parley-deck-skill-v2.8.0-windows-arm64.exe
+  manifest sha256: 66F7D4EA595EE1475EA2FA82E8AEBE44A9A60D7BEBAEBAFE75F659A5FD876E1A
+  GitHub digest: sha256:66f7d4ea595ee1475ea2fa82e8aebe44a9a60d7bebaebafe75f659a5fd876e1a
+  urlMatchesReleaseAsset=true hashMatchesGitHubDigest=true
+```
+
+The case difference in the displayed hexadecimal strings is immaterial. The final skill-arm64 digest above is the same 64 hexadecimal digits case-insensitively.
+
+I also scanned for the known old release/project versions and enumerated every semantic-version token:
+
+```text
+$ rg -n '1\.43\.1|2\.5\.1|2\.6\.0|1\.41\.0' ../winget-pkgs/manifests/f/Feci/ParleyDeckCli/1.44.0 ../winget-pkgs/manifests/f/Feci/ParleyDeckSkill/2.8.0
+(no output)
+
+$ rg -o --no-filename '[vV]?[0-9]+\.[0-9]+\.[0-9]+' <the same two directories> | sort | uniq -c
+  12 1.12.0
+   4 1.44.0
+   4 2.8.0
+   6 v1.44.0
+   5 v2.8.0
+```
+
+`1.12.0` is the manifest schema version. `1.44.0` also legitimately appears in the skill description because skill 2.8.0 packages the CLI 1.44.0 protocol.
+
+The remote PR-head locale comparison against the immediately preceding published manifests returned:
+
+```text
+Feci.ParleyDeckCli:
+  monikerCurrent=null monikerPrevious=null
+  tagsEqualPrevious=true
+  tags=[ai, agents, automation, cli, codex, consensus, loop, multi-agent, orchestration, preflight, roster, tui]
+  staleOldVersionPresent=false
+
+Feci.ParleyDeckSkill:
+  monikerCurrent=null monikerPrevious=null
+  tagsEqualPrevious=true
+  tags=[ai, agents, agy, antigravity, cli, codex, claude, gemini, kimi, multi-agent, skill]
+  staleOldVersionPresent=false
+```
+
+There is no other stale version string, URL, hash, Moniker, or Tag in these manifests. `Moniker` is optional and remains absent exactly as in the preceding versions; it was not dropped or left stale.
+
+### Q3 — project metadata fixed, but zero-warning check fails `[PRIMARY]`
+
+The current status projection confirms the intended metadata repair and all seven runtime versions:
+
+```text
+$ parley-deck-skill status --target all --project . --json | jq '{ok, project:{metadataDeckVersion:.project.metadata.deckVersion,metadataSource:.project.metadata.source,metadataStatus:.project.metadataStatus,metadataMatchesProtocol:.project.metadataMatchesProtocol,protocolMatchesPackaged:.project.protocolMatchesPackaged}, runtime:[.runtimeInstalls[]|{target,status,version,versionMatchesInstaller}], compatibility}'
+ok: true
+project:
+  metadataDeckVersion: 2.8.0
+  metadataSource: npm:parley-deck-skill@2.8.0
+  metadataStatus: valid
+  metadataMatchesProtocol: true
+  protocolMatchesPackaged: false
+runtime:
+  codex:    valid 2.8.0 versionMatchesInstaller=true
+  claude:   valid 2.8.0 versionMatchesInstaller=true
+  agy:      valid 2.8.0 versionMatchesInstaller=true
+  gemini:   valid 2.8.0 versionMatchesInstaller=true
+  hermes:   valid 2.8.0 versionMatchesInstaller=true
+  kimi:     valid 2.8.0 versionMatchesInstaller=true
+  opencode: valid 2.8.0 versionMatchesInstaller=true
+compatibility:
+  status: warning
+  reasons: [project-protocol-differs-from-packaged-reference]
+```
+
+I did not accept the metadata's recorded hashes without recomputing them. Every recorded value matches its actual file:
+
+```text
+$ shasum -a 256 <each file named below>
+field                          recorded                                                          actual                                                            result
+protocolSha256                 b2242c9a37851f171a1c26722aa1c9d306f7226ff3cbe30f6d82833c34865f6e  b2242c9a37851f171a1c26722aa1c9d306f7226ff3cbe30f6d82833c34865f6e  MATCH
+skillSha256                    929d0a38299c01b88c56947ce9240df8cd20b9122124a04c65c6a40e61c21c35  929d0a38299c01b88c56947ce9240df8cd20b9122124a04c65c6a40e61c21c35  MATCH
+packagedProtocolSha256         254521eb4e9a149152793f2353ad5748a244a446fdf51e83579565c73d9883a8  254521eb4e9a149152793f2353ad5748a244a446fdf51e83579565c73d9883a8  MATCH
+compatibilityManifestSha256    7311a1dcb31b1728cee526c2aace19441accbef1231795ec2574d855970ad42e  7311a1dcb31b1728cee526c2aace19441accbef1231795ec2574d855970ad42e  MATCH
+```
+
+The actual files were, respectively, this deck's `parley-deck/COOPERATION.md`, the installed 2.8.0 package's `skills/parley-deck/SKILL.md`, its `references/COOPERATION.md`, and its `references/compatibility.json`.
+
+The non-JSON command makes the failed zero-warning condition explicit:
+
+```text
+$ parley-deck-skill status --target all --project .
+installer: 2.8.0 (npm:parley-deck-skill@2.8.0)
+compatibility: warning
+project metadata: valid
+...
+action: Review the local COOPERATION.md changes before adopting packaged protocol updates.
+```
+
+A full diff of the packaged snapshot against the live deck shows only the deck-specific header values, the four roster rows, and the four host-handle rows; there is no additional normative protocol-text delta. That explains the exact-hash warning but does not make the command warning-free. The live header itself also remains stale:
+
+```text
+$ rg -n '^\*\*Protocol synced:' parley-deck/COOPERATION.md
+7:**Protocol synced:** 2026-08-06 — parley-deck-skill 2.5.1 / parley-deck-cli 1.41.0
+```
+
+Thus the `project-metadata-stale` defect is fixed, and the metadata is internally correct, but the literal requirement that `status --target all` report zero warnings is not met.
+
+### Q4 — independent git proof that sync did not modify the protocol: VERIFIED `[PRIMARY]`
+
+The relevant commit is `af2685d12cc566788349000cf395b91410b7a937` (`deck: sync project metadata to skill 2.8.0`). Its tree delta is:
+
+```text
+$ git diff-tree --no-commit-id --name-status -r af2685d12cc566788349000cf395b91410b7a937
+A  parley-deck/ideas/meta-protocol-change-phase-packet-and-fixup-budget/release-verification.md
+M  parley-deck/meta/version.json
+```
+
+`COOPERATION.md` is absent. More strongly, git resolves the protocol path to the same blob on both sides of the commit:
+
+```text
+$ git rev-parse 'af2685d^:parley-deck/COOPERATION.md' 'af2685d:parley-deck/COOPERATION.md'
+eb5242ec6575dd5c22c687fcca19cb786f396c43
+eb5242ec6575dd5c22c687fcca19cb786f396c43
+
+$ git diff --exit-code af2685d^ af2685d -- parley-deck/COOPERATION.md
+(no output)
+exit: 0
+```
+
+This is independent repository-history evidence; it does not use the implementer's captured before/after working-tree hash. The sync commit did not modify the committed protocol.
+
+### Q5 — current channel consistency: PROBLEMS REMAIN `[PRIMARY]`
+
+Fresh remote/local projections show the other release pointers remain aligned:
+
+```text
+GitHub Git Data API:
+  feci/parley-deck-cli v1.44.0 annotated tag peels to 059f7e7793979ddbcd856795e4c95209aec4cae8
+  feci/parley-deck-cli main is af2685d12cc566788349000cf395b91410b7a937
+  feci/parley-deck-skill v2.8.0 annotated tag peels to 4412a8ae8498575b946450f01495f05ef6191ae0
+  feci/parley-deck-skill main is 4412a8ae8498575b946450f01495f05ef6191ae0
+
+GitHub release API:
+  CLI tag_name=v1.44.0 draft=false prerelease=false
+  Skill tag_name=v2.8.0 draft=false prerelease=false
+
+npm registry:
+  latest=2.8.0
+  hasVersion2.8.0=true
+
+remote feci/homebrew-parley main 592e032a0054fc573e4b3a5e0359823da64d3635:
+  CLI formula URL contains v1.44.0
+  Skill formula URL contains v2.8.0
+
+$ parley --version
+parley 1.44.0
+$ parley-deck-skill --version
+2.8.0
+$ brew list --versions parley-deck-cli parley-deck-skill
+parley-deck-cli 1.44.0
+parley-deck-skill 2.8.0
+```
+
+The CLI `main` branch advancing one post-release commit to record this deck's metadata/report does not move or invalidate the v1.44.0 tag.
+
+Two channel-level conditions still prevent `ALL VERIFIED`:
+
+1. **Winget remains unpublished:** the authoritative PR response is still `state: open`, `merged: false`. The pushed manifests are now correct, but they are not yet in the winget community index under the same criterion used in the original report.
+2. **Runtime/project status remains non-clean:** project metadata is correctly repaired, but the command still reports a compatibility warning, and the live `Protocol synced:` header is stale at skill 2.5.1 / CLI 1.41.0.
+
+No other broken, stale, or cross-channel version/hash inconsistency was found.
