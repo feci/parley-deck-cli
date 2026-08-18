@@ -379,6 +379,40 @@ func defaultBuiltinSpecs() []Spec {
 			// Scope EMPTY: --auto is a permission grant, not an enforced sandbox.
 			AutonomousWrite: AutonomousWrite{Mode: "auto", Args: []string{"--auto"}, Scope: ""},
 		}),
+		withBuiltinSources(Spec{
+			ID:           "zcode",
+			Commands:     []string{"zcode"},
+			VersionArgs:  []string{"--version"},
+			LaunchMode:   LaunchHeadless,
+			HeadlessMode: "zcode --prompt <text> --mode yolo --cwd <root>",
+			// `--mode yolo` is passed EXPLICITLY even though `zcode --help` documents it as the
+			// default for `--prompt`: ~/.zcode/cli/config.json stores permission.mode = "build",
+			// so the documented default and the stored config disagree. The effective launch argv
+			// is the source of truth, and this keeps AutonomousWrite.Args a subset of HeadlessArgs.
+			HeadlessArgs:          []string{"--prompt", "{prompt}", "--mode", "yolo", "--cwd", "{root}"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptArg,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "yolo",
+			// NO {model} or effort placeholder, deliberately. zcode has no model flag at all:
+			// --model is absent from `zcode --help` and passing it exits 1. The model resolves from
+			// ~/.zcode/cli/config.json -> model.main, and `--json` reports sessionId/traceId/
+			// turnId/usage but no model id, so the running model is not observable from outside.
+			// MODEL and EFFORT therefore stay unknown rather than displaying a value this launch
+			// cannot carry (roster contract: internal/app/roster.go).
+			Model:           CLIDefault,
+			Reasoning:       CLIDefault,
+			Profile:         CLIDefault,
+			Speed:           DefaultSpeed,
+			TimeoutMS:       DefaultTimeoutMS,
+			ExternalBackend: ExternalHosted,
+			Telemetry:       "final text on stdout; --json adds sessionId/traceId/turnId/usage but no model id",
+			Notes:           "ZCode (Z.AI). Headless is `zcode --prompt <text> --mode yolo --cwd <root>`; the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.",
+			// Scope EMPTY: --cwd is a working directory, not an enforced sandbox.
+			AutonomousWrite: AutonomousWrite{Mode: "yolo", Args: []string{"--mode", "yolo"}, Scope: ""},
+		}),
 	}
 }
 

@@ -131,7 +131,7 @@ func TestMachineFamilyCatalogHasBuiltins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, fam := range []string{"claude", "codex", "hermes", "agy"} {
+	for _, fam := range []string{"claude", "codex", "hermes", "agy", "zcode"} {
 		if !cat[fam] {
 			t.Errorf("machine family catalog missing built-in %q", fam)
 		}

@@ -202,7 +202,28 @@ func rosterExplain(root, agent string, opts rosterViewOpts, stdout, stderr io.Wr
 	if row.Note != "" {
 		fmt.Fprintf(stdout, "note: %s\n", row.Note)
 	}
+	if trailer := modelSourceTrailer(row.Adapter); trailer != "" {
+		fmt.Fprintf(stdout, "%s\n", trailer)
+	}
 	return 0
+}
+
+// modelSourceTrailer explains a `model unknown` that is unknown BY CONSTRUCTION rather than
+// by misconfiguration: some CLIs have no model flag, so no config layer can bind one and the
+// effective cell must stay unknown (roster contract). An operator reading `unknown` otherwise
+// has no way to learn where the model actually comes from.
+//
+// The trailer is deliberately STATIC — it names the source, it does not read its current
+// value. Printing the live value would answer "which model will deliberate?" with a snapshot
+// that can change before launch, one command away from the column that refuses exactly that
+// staleness (idea zcode-adapter, D2; @codex-1 dissented in favour of a labelled live read).
+func modelSourceTrailer(adapter string) string {
+	switch adapter {
+	case "zcode":
+		return "model source: ~/.zcode/cli/config.json -> model.main, read by zcode at launch and never passed by parley (zcode has no --model flag), so the effective model cannot be bound or observed from here"
+	default:
+		return ""
+	}
 }
 
 func orDeck(s string) string {

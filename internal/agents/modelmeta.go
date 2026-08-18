@@ -41,6 +41,8 @@ var producers = map[string]string{
 	"kimi-code": "Moonshot AI",
 	"zhipu":     "Zhipu AI",
 	"z-ai":      "Zhipu AI",
+	// zcode emits ids as `zai/<model>` (no hyphen) - ~/.zcode/cli/config.json model.main.
+	"zai": "Zhipu AI",
 }
 
 // prefixRule maps an unqualified model-id prefix to its family and company. Order

@@ -69,3 +69,15 @@ func TestDeriveModelMetaCoversBuiltinDefaults(t *testing.T) {
 		}
 	}
 }
+
+// zcode emits model ids as `zai/<model>` (no hyphen), which the z-ai/zhipu producers did
+// not cover — roster show reported metadata-unknown for it (idea zcode-adapter).
+func TestDeriveModelMetaResolvesZaiNamespace(t *testing.T) {
+	meta := DeriveModelMeta("zai/glm-5.3")
+	if !meta.Known {
+		t.Fatal("zai/glm-5.3 did not resolve")
+	}
+	if meta.Family != "GLM" || meta.Company != "Zhipu AI" {
+		t.Fatalf("zai/glm-5.3 -> family=%q company=%q, want GLM / Zhipu AI", meta.Family, meta.Company)
+	}
+}

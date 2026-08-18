@@ -97,3 +97,44 @@ func TestAutonomousEffectiveUsesResolvedArgs(t *testing.T) {
 		t.Fatal("declared mode whose enabling args are absent must report AUTO=no")
 	}
 }
+
+// FIX-PROVING (idea zcode-adapter). zcode has NO model flag: `--model` is absent from
+// `zcode --help` and passing it exits 1. Its argv must therefore carry no model or effort
+// placeholder at all — a future edit that adds one would make config appear to bind a value
+// the process can never receive, which is the exact defect TestBuiltinSpecsCarryNoModelLiteralInArgs
+// guards against in the opposite direction. The exact argv is locked so a spec change cannot
+// silently append an option zcode rejects.
+func TestZcodeSpecCarriesNoModelOrEffortPlaceholder(t *testing.T) {
+	var zcode Spec
+	for _, s := range DefaultSpecs() {
+		if s.ID == "zcode" {
+			zcode = s
+			break
+		}
+	}
+	if zcode.ID == "" {
+		t.Fatal("built-in spec zcode is missing")
+	}
+	for _, a := range zcode.HeadlessArgs {
+		if a == ModelPlaceholder {
+			t.Errorf("zcode HeadlessArgs carries %s; zcode has no model flag, so nothing can bind it", ModelPlaceholder)
+		}
+		if a == EffortPlaceholder {
+			t.Errorf("zcode HeadlessArgs carries %s; zcode has no effort flag, so nothing can bind it", EffortPlaceholder)
+		}
+		if a == "--model" || a == "-m" {
+			t.Errorf("zcode HeadlessArgs carries %q; `zcode --model` exits 1", a)
+		}
+	}
+	if got, want := strings.Join(zcode.HeadlessArgs, " "), "--prompt {prompt} --mode yolo --cwd {root}"; got != want {
+		t.Fatalf("zcode argv=%q want %q", got, want)
+	}
+	// The autonomous-write flag must be present in the argv it claims to be enabled by.
+	if missing := zcode.AutonomousWrite.MissingFrom(zcode.HeadlessArgs); len(missing) > 0 {
+		t.Fatalf("zcode declares mode %q but its argv is missing %v", zcode.AutonomousWrite.Mode, missing)
+	}
+	// --cwd is a working directory, not an enforced sandbox: Scope must stay empty.
+	if zcode.AutonomousWrite.Confined() {
+		t.Error("zcode claims workspace confinement; --cwd is a cwd, not a sandbox")
+	}
+}
