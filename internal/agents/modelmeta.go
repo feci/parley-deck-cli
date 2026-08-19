@@ -28,6 +28,8 @@ const Unknown = "unknown"
 var gateways = map[string]string{
 	"litellm":    "LiteLLM",
 	"openrouter": "OpenRouter",
+	// Fireworks hosts other companies' open-weight models; it is a route, never the producer.
+	"fireworks": "Fireworks",
 }
 
 // producers maps an explicit vendor namespace (the segment before the model id in a
@@ -63,6 +65,8 @@ var prefixRules = []prefixRule{
 	{"o4", "OpenAI o-series", "OpenAI"},
 	{"gemini", "Gemini", "Google"},
 	{"glm", "GLM", "Zhipu AI"},
+	// Inkling: open-weight MoE from Thinking Machines Lab, served here through a gateway.
+	{"inkling", "Inkling", "Thinking Machines Lab"},
 	{"grok", "Grok", "xAI"},
 	{"kimi", "Kimi", "Moonshot AI"},
 	// Bare Kimi codenames are k<digit> (k2, k3) — matched by kimiCodename below rather

@@ -299,12 +299,16 @@ func defaultBuiltinSpecs() []Spec {
 			Notes:                 "DEPRECATED legacy Gemini CLI support; prefer agy. Uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang",
 		}),
 		withBuiltinSources(Spec{
-			ID:                    "hermes",
-			Commands:              []string{"hermes", "hermes-agent", "hermesagent"},
-			VersionArgs:           []string{"--version"},
-			LaunchMode:            LaunchHeadless,
-			HeadlessMode:          "hermes --yolo --oneshot",
-			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "{model}", "--accept-hooks"},
+			ID:           "hermes",
+			Commands:     []string{"hermes", "hermes-agent", "hermesagent"},
+			VersionArgs:  []string{"--version"},
+			LaunchMode:   LaunchHeadless,
+			HeadlessMode: "hermes --yolo --oneshot",
+			// `--reasoning {effort}` added 2026-08-19: hermes documents the level
+			// (none|minimal|low|medium|high|xhigh|max|ultra) but the argv never carried it, so every
+			// deck reported effort-unknown while the real level came silently from config.yaml.
+			// ResolveLaunchArgs drops the flag when no level is configured, so this is inert until set.
+			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "{model}", "--reasoning", "{effort}", "--accept-hooks"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,

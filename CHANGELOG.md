@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.45.0 — 2026-08-19
+
+### Added — the `zcode` adapter
+
+`zcode` is a full roster adapter. Headless launch is
+`zcode --prompt=<text> --mode yolo --cwd <root>`, verified against the real binary
+(`zcode-app-cli 3.7.7-13` / `zcode-runtime 0.16.3`) by `parley agents verify --full`.
+
+Two shapes in that command line are not stylistic:
+
+- **The equals form is required.** `zcode --prompt "-leading dash"` fails with *"Option '--prompt'
+  argument is ambiguous"*, so any prompt whose first character is a dash would be lost. Placeholder
+  substitution happens inside the argv element, with no shell involved, so a prompt containing
+  quotes, newlines or flag-lookalikes still arrives as exactly one argument.
+- **`--mode yolo` is the autonomous-write mode**, and it is *not* a sandbox. `--cwd` is a working
+  directory, not an enforced boundary, so the adapter declares an empty `Scope` rather than
+  claiming `workspace`.
+
+**zcode has no `--model` and no effort flag** (`--model`, `--settings` and `--max-turns` all exit
+1). A new `NoModelBinding` spec bit makes that fail-closed **at the source**: `ResolveLaunchArgs`
+strips a config-supplied `--model`/effort flag for such adapters, so `roster show`, `agents list`
+and the resolved argv cannot disagree, and a flag the CLI rejects can never reach the launch.
+
+### Added — `MODEL`/`EFFORT` read from the agent's own config
+
+Three roster rows reported `unknown` for the same structural reason: the CLI has no flag for the
+value, so no parley layer can bind one and the process reads its **own** config instead. Those
+rows now report what that file says, under two new `STATUS` terms — `model-from-config` and
+`effort-from-config`, never plain `ok`.
+
+| Adapter | Read from | Resolves |
+| --- | --- | --- |
+| `zcode` | `~/.zcode/cli/config.json` → `model.main`; `~/.zcode/v2/config.json` → `reasoning.defaultVariant` | model + effort |
+| `kimi` | `~/.kimi-code/config.toml` → `[thinking] effort` (only when enabled) | effort |
+| `opencode` | `opencode.jsonc` → `provider.*.models.<bound-model>.options.reasoningEffort` | effort |
+
+**This is not a loosening of the roster contract.** That contract stops a *parley-side*
+declaration being shown as if the argv carried it; this reads the file the agent itself reads at
+launch, which is a different source and the actual one. A `model =` written into `agents.toml` for
+an adapter that cannot carry it still never reaches the cell — pinned by test. `--explain` names
+the file it read and states the limitation: the file can change before launch and none of these
+CLIs echo the model back, so the value is not confirmable after a run.
+
+`kimi` and `opencode` bind their model in argv, so the resolver deliberately returns no model for
+them — a config `default_model` the launch overrides must not appear.
+
+### Fixed — three `unknown` cells that were not unknowable
+
+- **`hermes` effort was never passed.** It is now bound in argv (`--reasoning {effort}`) instead of
+  inherited silently from `config.yaml`.
+- **codex effort read as `unknown`.** `EffectiveEffort` did not recognise codex's own
+  `-c model_reasoning_effort=<level>` form.
+- **Model metadata gaps**: `fireworks` as a gateway prefix, `inkling` as Thinking Machines Lab.
+
 ## 1.44.0 — 2026-08-12
 
 ### Fixed — the fix-up budget was counted in the wrong unit, and off by one

@@ -141,6 +141,12 @@ func (s Spec) EffectiveEffort() (string, bool) {
 		if (a == "--effort" || a == "--reasoning" || a == "--variant") && i+1 < len(args) {
 			return args[i+1], true
 		}
+		// codex carries its level as a config assignment rather than a flag pair:
+		// `-c model_reasoning_effort=max`. The value IS in the argv, so reporting it is the
+		// contract working, not a display of something the launch does not carry.
+		if v, ok := strings.CutPrefix(a, "model_reasoning_effort="); ok {
+			return strings.Trim(v, `"'`), true
+		}
 	}
 	return "", false
 }

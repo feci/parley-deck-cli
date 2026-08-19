@@ -92,27 +92,40 @@ func TestZcodeFullVerifyAcceptsHonestLaunch(t *testing.T) {
 	}
 }
 
-// The `--explain` trailer must name the model SOURCE without reading its current value:
-// a live read would answer "which model will deliberate?" with a snapshot that can change
-// before launch, one command away from the column that refuses exactly that staleness.
-func TestZcodeExplainTrailerIsStatic(t *testing.T) {
+// The `--explain` trailer must name where the model and effort were READ FROM, and must keep
+// the staleness caveat visible.
+//
+// This REVERSES idea zcode-adapter decision D2 (a static trailer, no live read) on the owner's
+// instruction that what zcode's own config says is what the launch will use. @codex-1's recorded
+// dissent — a labelled live read — is the position that now stands. The caveat D2 protected is
+// kept as a stated limitation instead of as a refusal to answer, so the test still fails if a
+// future edit drops it.
+func TestZcodeExplainTrailerNamesLiveSourceAndKeepsCaveat(t *testing.T) {
 	trailer := modelSourceTrailer("zcode")
 	if trailer == "" {
-		t.Fatal("zcode has no model-source trailer; an operator reading `model unknown` has no way to learn where the model comes from")
+		t.Fatal("zcode has no model-source trailer; an operator has no way to learn where the model comes from")
 	}
-	for _, want := range []string{"~/.zcode/cli/config.json", "model.main", "never passed by parley"} {
+	for _, want := range []string{"~/.zcode/cli/config.json", "model.main", "defaultVariant"} {
 		if !strings.Contains(trailer, want) {
 			t.Errorf("trailer missing %q: %s", want, trailer)
 		}
 	}
-	// Must not carry a concrete model id — that would be the live value the design rejects.
-	for _, forbidden := range []string{"glm-5.3", "zai/glm", "glm-5-turbo"} {
+	// The value is read, not bound, and cannot be confirmed afterwards. Dropping either half
+	// turns a qualified answer into an unqualified one.
+	for _, want := range []string{"no --model", "cannot be confirmed"} {
+		if !strings.Contains(trailer, want) {
+			t.Errorf("trailer dropped the caveat %q: %s", want, trailer)
+		}
+	}
+	// The trailer names sources; the live values belong in the MODEL/EFFORT cells, which carry
+	// the model-from-config status. A hardcoded id here would go stale silently.
+	for _, forbidden := range []string{"glm-5.3", "zai/glm"} {
 		if strings.Contains(trailer, forbidden) {
-			t.Errorf("trailer carries live model value %q; it must name the source only", forbidden)
+			t.Errorf("trailer hardcodes a model id %q; it must name the source: %s", forbidden, trailer)
 		}
 	}
 	if modelSourceTrailer("claude") != "" {
-		t.Error("adapters that can bind a model must not get a source trailer")
+		t.Error("adapters that bind their own model must not get a source trailer")
 	}
 }
 

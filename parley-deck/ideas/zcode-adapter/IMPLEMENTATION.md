@@ -164,3 +164,69 @@ current head; audit-document cleanup, outside the fix-only surface.
 
 `kimi-1`'s review-round-2 process was killed before writing its artifact. Recorded as incomplete,
 not consent. `standard` requires 2 reviewers; @codex-1 and @hermes-1 completed.
+
+## Post-consensus change — D2 reversed by the owner
+
+status: complete
+completed: 2026-08-19
+
+**This reverses a ratified FINAL decision on the owner's explicit instruction, not by re-argument.**
+Recorded here rather than folded silently into the release.
+
+### What FINAL decided, and what changed
+
+D2 chose @kimi-1's **static trailer** over @codex-1's **labelled live read**: `roster show` would
+report `model unknown` for zcode and print a trailer naming the config file without reading it,
+because a read value can change before launch and would sit one column away from a contract that
+refuses exactly that staleness. @codex-1 dissented, and the dissent was recorded as a reservation.
+
+The owner instructed: *"mozno by stacilo zobrat to co je default v configu a pocitat s tym, ze to sa
+pouzije, ked ho zavolas"* — read the agent's own config and treat that as what the call will use.
+**@codex-1's dissenting position is now the one that stands.**
+
+### Why this is not a hole in the roster contract
+
+The contract exists to stop a **parley-side** declaration being displayed as if the launch enforced
+it. Reading `~/.zcode/cli/config.json` is a different source: it is the file the zcode process
+itself reads at launch, so no parley layer is being echoed back. The two claims are kept apart
+rather than merged — new `STATUS` terms `model-from-config` / `effort-from-config`, never `ok`.
+`TestDeckDeclaredModelNeverOverridesAgentConfigForUnbindableAdapter` pins the part that did not
+change: a `model =` written into `agents.toml` for zcode still never reaches the cell.
+
+The staleness caveat D2 was protecting is **kept as a stated limitation** — `--explain` says the
+file can change before launch and that `zcode --json` carries no model id, so the value is not
+confirmable after a run. `TestZcodeExplainTrailerNamesLiveSourceAndKeepsCaveat` fails if either
+half of that caveat is dropped.
+
+### Scope beyond zcode
+
+The same pattern resolved two other rows that were `unknown` for the same structural reason — no
+flag exists, so the CLI reads its own config:
+
+| Adapter | Read from | Resolves |
+| --- | --- | --- |
+| `zcode` | `~/.zcode/cli/config.json` → `model.main`; `~/.zcode/v2/config.json` → `provider/*/models/<id>/reasoning.defaultVariant` | model + effort |
+| `kimi` | `~/.kimi-code/config.toml` → `[thinking] effort` (only when `enabled`) | effort |
+| `opencode` | `opencode.jsonc` → `provider.*.models.<bound-model>.options.reasoningEffort` | effort |
+
+`kimi` and `opencode` bind their model in argv, so the resolver deliberately returns no model for
+them (`TestKimiResolverReportsNoModel`) — a config `default_model` the launch overrides must not
+reach the cell.
+
+### Also in this change
+
+- **`opencode-1` restored to the machine roster on `litellm/xai/grok-4.6`.** The earlier failure was
+  not the gateway: the model was not declared in `~/.config/opencode/opencode.jsonc`. Declared, and
+  **verified live** — `opencode run -m litellm/xai/grok-4.6` exits 0, returns the requested token,
+  and its own stderr reports `build · xai/grok-4.6`.
+- **`hermes-1` effort bound in argv** (`--reasoning {effort}`) instead of inherited silently.
+- **`EffectiveEffort` learned codex's `-c model_reasoning_effort=` form**, which it had been
+  reporting as `effort-unknown`.
+- **Model metadata for `fireworks` (gateway) and `inkling` (Thinking Machines Lab).**
+
+Result: `parley roster show --scope machine` reports zero `unknown` cells across all six rows.
+
+### Gates
+
+`go build ./...`, `go vet ./...`, `go test ./...` green (26 packages); `npm test` exit 0 with all
+six add-on manifests validating.
