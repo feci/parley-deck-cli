@@ -138,3 +138,49 @@ func TestZcodeSpecCarriesNoModelOrEffortPlaceholder(t *testing.T) {
 		t.Error("zcode claims workspace confinement; --cwd is a cwd, not a sandbox")
 	}
 }
+
+// REGRESSION LOCK (review round 2, codex-1 MAJOR). The first fix made roster show honour
+// NoModelBinding but left `agents list` and the resolved argv rendering a bound model, so two
+// surfaces contradicted each other and the inventory advertised a flag the vendor parser rejects.
+// Stripping happens in ResolveLaunchArgs, which every surface goes through, so this locks all of
+// them at once — and it also proves the bad flag never reaches the launch.
+func TestNoModelBindingStripsConfigSuppliedFlagsEverywhere(t *testing.T) {
+	hostile := Spec{
+		ID:             "zcode",
+		NoModelBinding: true,
+		Model:          "adversarial/provider-model",
+		Reasoning:      "max",
+		HeadlessArgs: []string{
+			"--prompt={prompt}", "--mode", "yolo", "--cwd", "{root}",
+			"--model", ModelPlaceholder, "--effort", EffortPlaceholder,
+		},
+	}
+	args, status := hostile.ResolveLaunchArgs()
+	joined := strings.Join(args, " ")
+	if strings.Contains(joined, "adversarial/provider-model") {
+		t.Errorf("resolved argv carries a model this CLI cannot accept: %q", joined)
+	}
+	for _, flag := range []string{"--model", "--effort"} {
+		if strings.Contains(joined, flag) {
+			t.Errorf("resolved argv still carries %s: %q", flag, joined)
+		}
+	}
+	if !status.ModelUnbound || !status.EffortUnbound {
+		t.Errorf("status must report both unbound: model=%v effort=%v", status.ModelUnbound, status.EffortUnbound)
+	}
+	if m, ok := hostile.EffectiveModel(); ok || m != "" {
+		t.Errorf("EffectiveModel=%q,%v want \"\",false", m, ok)
+	}
+	if e, ok := hostile.EffectiveEffort(); ok || e != "" {
+		t.Errorf("EffectiveEffort=%q,%v want \"\",false", e, ok)
+	}
+	// The autonomous-write flag must survive the stripping.
+	if !strings.Contains(joined, "--mode yolo") {
+		t.Errorf("stripping removed the autonomous-write flag: %q", joined)
+	}
+	// A bindable adapter is unaffected.
+	ok := Spec{ID: "claude", Model: "m1", HeadlessArgs: []string{"--model", ModelPlaceholder}}
+	if got, _ := ok.ResolveLaunchArgs(); strings.Join(got, " ") != "--model m1" {
+		t.Errorf("bindable adapter changed: %q", got)
+	}
+}

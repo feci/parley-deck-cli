@@ -60,6 +60,17 @@ func (s Spec) ResolveLaunchArgs() ([]string, LaunchArgsStatus) {
 	for _, arg := range s.HeadlessArgs {
 		switch arg {
 		case ModelPlaceholder:
+			// NoModelBinding is stripped HERE, at the source, not only where the roster reports
+			// it. A config layer may append `--model {model}` to headless_args for a CLI that has
+			// no such flag; resolving it would (a) make the inventory contradict the roster and
+			// (b) actually launch a flag the vendor parser rejects. Dropping it keeps every
+			// surface consistent AND keeps the launch valid. (review round 2, codex-1 MAJOR:
+			// the first fix reached roster show but not `agents list`.)
+			if s.NoModelBinding {
+				status.ModelUnbound = true
+				out = dropIntroducingFlag(out)
+				continue
+			}
 			if bindable(s.Model) {
 				out = append(out, s.Model)
 				continue
@@ -67,6 +78,11 @@ func (s Spec) ResolveLaunchArgs() ([]string, LaunchArgsStatus) {
 			status.ModelUnbound = true
 			out = dropIntroducingFlag(out)
 		case EffortPlaceholder:
+			if s.NoModelBinding {
+				status.EffortUnbound = true
+				out = dropIntroducingFlag(out)
+				continue
+			}
 			if bindable(s.Reasoning) {
 				out = append(out, s.Reasoning)
 				continue

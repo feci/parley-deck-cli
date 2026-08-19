@@ -133,3 +133,34 @@ completed: 2026-08-19
 still reviewing; @kimi-1 detected it, pinned both trees by mtime, re-ran the suites and filed an
 addendum. That is the facilitator's error against the standing rule that the tree does not move
 during an open review round.
+
+## Fix-up cycle 3
+status: complete
+completed: 2026-08-19
+
+**Budget exception:** the `standard` cap is 2 cycles. A third was applied under the owner's standing
+autonomous authorisation and is recorded in
+`inbox/claude-1-to-user_zcode-adapter_fixup-budget-exception.md`.
+
+### Fixes applied
+
+- **@codex-1 MAJOR — `NoModelBinding` was roster-only.** Cycle 1 fixed `roster show` but left
+  `agents list` and the resolved argv rendering a config-supplied model, so the two surfaces
+  contradicted each other and the inventory advertised a flag zcode rejects. Stripping moved into
+  `ResolveLaunchArgs`, which every surface goes through: all three now agree and the bad flag never
+  reaches the launch. Verified against @codex-1's exact attack.
+- **@codex-1 MAJOR — no regression lock.** Added
+  `TestNoModelBindingStripsConfigSuppliedFlagsEverywhere`: asserts the model value and both flags
+  are absent from the resolved argv, both status bits are set, `EffectiveModel`/`EffectiveEffort`
+  report unbound, the autonomous-write flag survives the stripping, and a bindable adapter is
+  unaffected.
+
+### Deferred follow-up (@codex-1, agreed)
+
+`IMPLEMENTATION.md` frontmatter still records the first implementation commit rather than the
+current head; audit-document cleanup, outside the fix-only surface.
+
+### Incomplete participation
+
+`kimi-1`'s review-round-2 process was killed before writing its artifact. Recorded as incomplete,
+not consent. `standard` requires 2 reviewers; @codex-1 and @hermes-1 completed.
