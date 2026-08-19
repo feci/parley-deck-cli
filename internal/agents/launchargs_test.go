@@ -116,17 +116,17 @@ func TestZcodeSpecCarriesNoModelOrEffortPlaceholder(t *testing.T) {
 		t.Fatal("built-in spec zcode is missing")
 	}
 	for _, a := range zcode.HeadlessArgs {
-		if a == ModelPlaceholder {
+		if strings.Contains(a, ModelPlaceholder) {
 			t.Errorf("zcode HeadlessArgs carries %s; zcode has no model flag, so nothing can bind it", ModelPlaceholder)
 		}
-		if a == EffortPlaceholder {
+		if strings.Contains(a, EffortPlaceholder) {
 			t.Errorf("zcode HeadlessArgs carries %s; zcode has no effort flag, so nothing can bind it", EffortPlaceholder)
 		}
 		if a == "--model" || a == "-m" {
 			t.Errorf("zcode HeadlessArgs carries %q; `zcode --model` exits 1", a)
 		}
 	}
-	if got, want := strings.Join(zcode.HeadlessArgs, " "), "--prompt {prompt} --mode yolo --cwd {root}"; got != want {
+	if got, want := strings.Join(zcode.HeadlessArgs, " "), "--prompt={prompt} --mode yolo --cwd {root}"; got != want {
 		t.Fatalf("zcode argv=%q want %q", got, want)
 	}
 	// The autonomous-write flag must be present in the argv it claims to be enabled by.

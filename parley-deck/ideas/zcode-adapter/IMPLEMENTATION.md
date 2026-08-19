@@ -75,3 +75,61 @@ target extends the check instead of breaking an arithmetic assertion nothing kee
   `model-unbound`. That is the contract working — the roster reports what the *launch* carries.
 - Not done, deferred by FINAL: the `zcode app-server` (ZCode Protocol) binding route, and generic
   exit-0-with-no-artifact diagnosis.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-08-19
+
+### Fixes applied
+
+- **@codex-1 CRITICAL — a config override could make zcode model-bound.** A wholesale
+  `headless_args` override appending `--model {model}` made `roster show` display a model, drop
+  `model-unbound`, and print the trailer's "never passed by parley" beside it. Fixed by making
+  bindability an **adapter capability**: new `Spec.NoModelBinding`, set for zcode, and
+  `EffectiveModel`/`EffectiveEffort` fail closed on it regardless of argv. Reproduced @codex-1's
+  scratch attack and @kimi-1's variant against the fix: both now report `unknown` /
+  `model-unbound`, and the trailer is true in that state. This also closes @kimi-1's MINOR-1.
+- **@codex-1 MAJOR — the separate-token prompt form is rejected by zcode.**
+  `zcode --prompt "-leading dash"` exits 1 with "Option '--prompt' argument is ambiguous";
+  `--prompt=<value>` is accepted (measured on the real binary). The spec now ships
+  `--prompt={prompt}`, and `buildAgentInvocation` substitutes placeholders **inside** an argv
+  element without a shell. New `TestZcodeArgvSurvivesHostilePromptAndRoot` covers a leading dash,
+  newlines, double and single quotes, a flag-lookalike prompt, and a root containing spaces.
+- **@codex-1 MAJOR — D-2's derived count was circular, and my first fix was circular too.**
+  Deriving from `result.actions` let a dropped target shrink both sides. Deriving from
+  `installer.TARGETS` failed the same way one level up — proved by removing the zcode target in an
+  isolated copy and watching the test stay green. **A target that disappears cannot be detected
+  from inside the registry that lost it**, so the external constant is restored as
+  `EXPECTED_TARGETS = 15` with the reasoning recorded. The reversion check now fails as it must.
+
+### Fixes applied — cycle 2
+
+- **@kimi-1 MINOR — nothing pinned zcode's installer destination.** New test asserts the registry
+  entry, `skillDir === .zcode/skills`, and that a real install lands the core in
+  `<home>/.zcode/skills/parley-deck` with its `SKILL.md`.
+- **@kimi-1 NIT — the spec Notes now state why the equals form is required**, with the measured
+  error text.
+
+### Deviations from agreed fixes
+
+- **@kimi-1 NIT (accepted, not actioned):** FINAL named `internal/app/app_test.go` as the home for
+  the two fake-zcode cases; they live in a new `internal/app/zcode_verify_test.go`. Moving them
+  would be churn with no behavioural difference; recorded rather than silently ignored.
+- **@hermes-1's MAJOR findings are refuted, with measurements.** (1) "verify fails with unknown
+  agent zcode" — @hermes-1 ran the *installed* `parley 1.44.0`, which predates this adapter; the
+  branch build passes. That is also a facilitator error: the review brief did not say to build the
+  branch. (2) "argv injection via `{prompt}`" — `args = append(args, prompt)` appends one element
+  and Go `exec` does no shell parsing, so a prompt containing flags or newlines cannot split argv;
+  measured with an argv spy (6 elements, prompt intact). Its `.zcode/skills` MINOR and both NITs
+  stand.
+- **@kimi-1 independently upgraded D-1's evidence**: `.zcode/skills` is documented as the user
+  skill root by the vendor's own bundled guide inside `zcode-app-cli`
+  (`vendor/packages/zcode-guide-plugin/skills/zcode-configuration-guide/SKILL.md`), not merely a
+  string literal.
+
+### Process error, recorded
+
+**The tree moved while review round 1 was open.** Fix-up cycle 1 was applied while @kimi-1 was
+still reviewing; @kimi-1 detected it, pinned both trees by mtime, re-ran the suites and filed an
+addendum. That is the facilitator's error against the standing rule that the tree does not move
+during an open review round.

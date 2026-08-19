@@ -1107,6 +1107,18 @@ func buildAgentInvocation(root string, agent agents.Discovery, prompt string) (p
 		case "{prompt}":
 			args = append(args, prompt)
 		default:
+			// EMBEDDED placeholders, for CLIs whose option parser rejects a separate value
+			// token. zcode is the case that forced this: `zcode --prompt "-leading dash"`
+			// fails with "Option '--prompt' argument is ambiguous", while
+			// `--prompt=-leading dash` is accepted (measured 2026-08-19, review round 1,
+			// codex-1 MAJOR). Substitution stays inside ONE argv element and never invokes a
+			// shell, so a prompt containing flags, quotes or newlines cannot split argv.
+			if strings.Contains(arg, "{prompt}") || strings.Contains(arg, "{root}") {
+				a := strings.ReplaceAll(arg, "{root}", root)
+				a = strings.ReplaceAll(a, "{prompt}", prompt)
+				args = append(args, a)
+				continue
+			}
 			args = append(args, arg)
 		}
 	}

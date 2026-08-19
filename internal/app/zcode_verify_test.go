@@ -29,7 +29,7 @@ func zcodeSpec(t *testing.T) agents.Spec {
 //	"help-exit0" — prints top-level help and exits 0 without writing anything. This is the
 //	               shape a rejected-flag or degraded launch would take, and full verification
 //	               MUST NOT accept it.
-//	"honest"     — accepts exactly `--prompt <text> --mode yolo --cwd <root>`, extracts the
+//	"honest"     — accepts exactly `--prompt=<text> --mode yolo --cwd <root>`, extracts the
 //	               output path and sentinel from the probe prompt, and writes the file.
 func writeFakeZcode(t *testing.T, dir, mode string) string {
 	t.Helper()
@@ -37,15 +37,18 @@ func writeFakeZcode(t *testing.T, dir, mode string) string {
 	body := `#!/bin/sh
 if [ "$1" = "--version" ]; then echo 'zcode-app-cli 0.0.0-test'; exit 0; fi
 
-# Assert the exact token order the built-in spec promises. A spec that appends or reorders
-# an option zcode does not accept must fail here rather than in production.
-[ "$1" = "--prompt" ] || { echo "arg1=$1 want --prompt" >&2; exit 64; }
-PROMPT="$2"
-[ "$3" = "--mode" ] || { echo "arg3=$3 want --mode" >&2; exit 64; }
-[ "$4" = "yolo" ]   || { echo "arg4=$4 want yolo" >&2; exit 64; }
-[ "$5" = "--cwd" ]  || { echo "arg5=$5 want --cwd" >&2; exit 64; }
-[ -n "$6" ]         || { echo "arg6 (root) empty" >&2; exit 64; }
-[ "$#" -eq 6 ]      || { echo "argc=$# want 6" >&2; exit 64; }
+# EQUALS FORM. zcode's own parser rejects the separate-token form when the value starts with a dash
+# ("Option '--prompt' argument is ambiguous"), so the spec ships --prompt=<value> as ONE token
+# and this stub must parse it that way (review round 1, codex-1 MAJOR).
+case "$1" in
+  --prompt=*) PROMPT="${1#--prompt=}" ;;
+  *) echo "arg1=$1 want --prompt=<value>" >&2; exit 64 ;;
+esac
+[ "$2" = "--mode" ] || { echo "arg2=$2 want --mode" >&2; exit 64; }
+[ "$3" = "yolo" ]   || { echo "arg3=$3 want yolo" >&2; exit 64; }
+[ "$4" = "--cwd" ]  || { echo "arg4=$4 want --cwd" >&2; exit 64; }
+[ -n "$5" ]         || { echo "arg5 (root) empty" >&2; exit 64; }
+[ "$#" -eq 5 ]      || { echo "argc=$# want 5" >&2; exit 64; }
 
 if [ "MODE_PLACEHOLDER" = "help-exit0" ]; then
   echo "Usage: zcode [options]"
@@ -111,4 +114,58 @@ func TestZcodeExplainTrailerIsStatic(t *testing.T) {
 	if modelSourceTrailer("claude") != "" {
 		t.Error("adapters that can bind a model must not get a source trailer")
 	}
+}
+
+// The equals form exists so a prompt whose first character is a dash still reaches zcode.
+// The separate-token form fails against the real CLI with "Option '--prompt' argument is
+// ambiguous" (measured 2026-08-19). Substitution must also survive newlines, quotes and a
+// root containing spaces, and must never split argv (Go exec does no shell parsing).
+func TestZcodeArgvSurvivesHostilePromptAndRoot(t *testing.T) {
+	spec := zcodeSpec(t)
+	for _, tc := range []struct{ name, prompt, root string }{
+		{"leading dash", "-leading-dash and more", "/tmp/plain"},
+		{"newlines", "line one\nline two\nline three", "/tmp/plain"},
+		{"double quotes", `say "hello" now`, "/tmp/plain"},
+		{"single quotes", "it's fine", "/tmp/plain"},
+		{"flag lookalike", "--mode build --cwd /etc", "/tmp/plain"},
+		{"root with spaces", "ordinary", "/tmp/dir with spaces"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := substituteForTest(spec.HeadlessArgs, tc.prompt, tc.root)
+			if len(args) != 5 {
+				t.Fatalf("argv split into %d elements (want 5): %q", len(args), args)
+			}
+			if got, want := args[0], "--prompt="+tc.prompt; got != want {
+				t.Errorf("argv[0]=%q want %q", got, want)
+			}
+			if args[1] != "--mode" || args[2] != "yolo" {
+				t.Errorf("autonomous-write flag lost: %q", args)
+			}
+			if args[3] != "--cwd" || args[4] != tc.root {
+				t.Errorf("root not passed intact: %q", args)
+			}
+		})
+	}
+}
+
+// substituteForTest mirrors the runner's placeholder pass, including embedded placeholders.
+func substituteForTest(in []string, prompt, root string) []string {
+	out := make([]string, 0, len(in))
+	for _, a := range in {
+		switch a {
+		case "{root}":
+			out = append(out, root)
+		case "{prompt}":
+			out = append(out, prompt)
+		default:
+			if strings.Contains(a, "{prompt}") || strings.Contains(a, "{root}") {
+				v := strings.ReplaceAll(a, "{root}", root)
+				v = strings.ReplaceAll(v, "{prompt}", prompt)
+				out = append(out, v)
+				continue
+			}
+			out = append(out, a)
+		}
+	}
+	return out
 }

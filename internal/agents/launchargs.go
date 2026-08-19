@@ -95,6 +95,11 @@ func dropIntroducingFlag(args []string) []string {
 // without a model argument: the vendor CLI reads its own config, and the roster must NOT
 // claim the declared value as effective.
 func (s Spec) EffectiveModel() (string, bool) {
+	// Adapter capability beats argv: a config layer may append a model flag this CLI cannot
+	// accept, and reporting it would present confidence the process cannot honour.
+	if s.NoModelBinding {
+		return "", false
+	}
 	args, status := s.ResolveLaunchArgs()
 	if status.ModelUnbound {
 		return "", false
@@ -109,6 +114,9 @@ func (s Spec) EffectiveModel() (string, bool) {
 
 // EffectiveEffort mirrors EffectiveModel for the reasoning/effort axis.
 func (s Spec) EffectiveEffort() (string, bool) {
+	if s.NoModelBinding {
+		return "", false
+	}
 	args, status := s.ResolveLaunchArgs()
 	if status.EffortUnbound {
 		return "", false
