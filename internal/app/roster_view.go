@@ -181,10 +181,25 @@ func rosterExplain(root, agent string, opts rosterViewOpts, stdout, stderr io.Wr
 	if scope.Source != "" {
 		layers["active"] = scope.Source
 	}
+	// A value read out of the agent's own config was set by that file, not by any parley
+	// layer. Falling through to "built-in default" here would name a layer that did not
+	// supply it — the same misattribution the specSources fallback above exists to avoid.
+	cfgSource := map[string]string{}
+	for _, st := range row.Status {
+		switch st {
+		case "model-from-config":
+			cfgSource["model"] = agentConfigSource(row.Adapter)
+		case "effort-from-config":
+			cfgSource["effort"] = agentConfigSource(row.Adapter)
+		}
+	}
 	show := func(field, effective string) {
 		src := layers[field]
 		if src == "" {
 			src = specSources[field]
+		}
+		if s := cfgSource[field]; s != "" {
+			src = s
 		}
 		if src == "" {
 			src = "built-in default"
@@ -202,7 +217,47 @@ func rosterExplain(root, agent string, opts rosterViewOpts, stdout, stderr io.Wr
 	if row.Note != "" {
 		fmt.Fprintf(stdout, "note: %s\n", row.Note)
 	}
+	if trailer := modelSourceTrailer(row.Adapter); trailer != "" {
+		fmt.Fprintf(stdout, "%s\n", trailer)
+	}
 	return 0
+}
+
+// modelSourceTrailer names where a model came from when parley did not bind it, so an
+// operator can see that the value in the MODEL cell was read out of the agent's own config
+// rather than passed on the command line.
+//
+// This supersedes idea zcode-adapter decision D2 (a static trailer over a live read) on the
+// owner's instruction: what the agent's own config says IS what the launch will use, because
+// that file is what the process reads. @codex-1's dissent in favour of a labelled live read
+// is the position that now stands. The staleness caveat D2 was protecting against is kept —
+// it is stated rather than avoided by refusing to answer.
+func modelSourceTrailer(adapter string) string {
+	switch adapter {
+	case "zcode":
+		return "model/effort source: read live from ~/.zcode/cli/config.json -> model.main and ~/.zcode/v2/config.json -> provider/*/models/<id>/reasoning.defaultVariant — zcode has no --model or --effort flag, so parley passes neither and zcode reads these files itself at launch. A `/model` change inside zcode rewrites them, and zcode --json carries no model id, so the value cannot be confirmed after a run."
+	case "kimi":
+		return "effort source: read live from ~/.kimi-code/config.toml -> [thinking] effort — kimi has no per-invocation effort flag, so parley passes none and kimi reads this file itself at launch."
+	case "opencode":
+		return "effort source: read live from opencode.jsonc -> provider.*.models.<model>.options.reasoningEffort for the bound model — parley does not pass --variant, so opencode applies its own per-model declaration."
+	default:
+		return ""
+	}
+}
+
+// agentConfigSource names the agent's own configuration as a provenance layer, for fields
+// parley reads out of it rather than binding.
+func agentConfigSource(adapter string) string {
+	switch adapter {
+	case "zcode":
+		return "~/.zcode config (agent's own, read at launch)"
+	case "kimi":
+		return "~/.kimi-code/config.toml (agent's own, read at launch)"
+	case "opencode":
+		return "opencode.jsonc (agent's own, read at launch)"
+	default:
+		return "agent's own config"
+	}
 }
 
 func orDeck(s string) string {

@@ -97,3 +97,90 @@ func TestAutonomousEffectiveUsesResolvedArgs(t *testing.T) {
 		t.Fatal("declared mode whose enabling args are absent must report AUTO=no")
 	}
 }
+
+// FIX-PROVING (idea zcode-adapter). zcode has NO model flag: `--model` is absent from
+// `zcode --help` and passing it exits 1. Its argv must therefore carry no model or effort
+// placeholder at all — a future edit that adds one would make config appear to bind a value
+// the process can never receive, which is the exact defect TestBuiltinSpecsCarryNoModelLiteralInArgs
+// guards against in the opposite direction. The exact argv is locked so a spec change cannot
+// silently append an option zcode rejects.
+func TestZcodeSpecCarriesNoModelOrEffortPlaceholder(t *testing.T) {
+	var zcode Spec
+	for _, s := range DefaultSpecs() {
+		if s.ID == "zcode" {
+			zcode = s
+			break
+		}
+	}
+	if zcode.ID == "" {
+		t.Fatal("built-in spec zcode is missing")
+	}
+	for _, a := range zcode.HeadlessArgs {
+		if strings.Contains(a, ModelPlaceholder) {
+			t.Errorf("zcode HeadlessArgs carries %s; zcode has no model flag, so nothing can bind it", ModelPlaceholder)
+		}
+		if strings.Contains(a, EffortPlaceholder) {
+			t.Errorf("zcode HeadlessArgs carries %s; zcode has no effort flag, so nothing can bind it", EffortPlaceholder)
+		}
+		if a == "--model" || a == "-m" {
+			t.Errorf("zcode HeadlessArgs carries %q; `zcode --model` exits 1", a)
+		}
+	}
+	if got, want := strings.Join(zcode.HeadlessArgs, " "), "--prompt={prompt} --mode yolo --cwd {root}"; got != want {
+		t.Fatalf("zcode argv=%q want %q", got, want)
+	}
+	// The autonomous-write flag must be present in the argv it claims to be enabled by.
+	if missing := zcode.AutonomousWrite.MissingFrom(zcode.HeadlessArgs); len(missing) > 0 {
+		t.Fatalf("zcode declares mode %q but its argv is missing %v", zcode.AutonomousWrite.Mode, missing)
+	}
+	// --cwd is a working directory, not an enforced sandbox: Scope must stay empty.
+	if zcode.AutonomousWrite.Confined() {
+		t.Error("zcode claims workspace confinement; --cwd is a cwd, not a sandbox")
+	}
+}
+
+// REGRESSION LOCK (review round 2, codex-1 MAJOR). The first fix made roster show honour
+// NoModelBinding but left `agents list` and the resolved argv rendering a bound model, so two
+// surfaces contradicted each other and the inventory advertised a flag the vendor parser rejects.
+// Stripping happens in ResolveLaunchArgs, which every surface goes through, so this locks all of
+// them at once — and it also proves the bad flag never reaches the launch.
+func TestNoModelBindingStripsConfigSuppliedFlagsEverywhere(t *testing.T) {
+	hostile := Spec{
+		ID:             "zcode",
+		NoModelBinding: true,
+		Model:          "adversarial/provider-model",
+		Reasoning:      "max",
+		HeadlessArgs: []string{
+			"--prompt={prompt}", "--mode", "yolo", "--cwd", "{root}",
+			"--model", ModelPlaceholder, "--effort", EffortPlaceholder,
+		},
+	}
+	args, status := hostile.ResolveLaunchArgs()
+	joined := strings.Join(args, " ")
+	if strings.Contains(joined, "adversarial/provider-model") {
+		t.Errorf("resolved argv carries a model this CLI cannot accept: %q", joined)
+	}
+	for _, flag := range []string{"--model", "--effort"} {
+		if strings.Contains(joined, flag) {
+			t.Errorf("resolved argv still carries %s: %q", flag, joined)
+		}
+	}
+	if !status.ModelUnbound || !status.EffortUnbound {
+		t.Errorf("status must report both unbound: model=%v effort=%v", status.ModelUnbound, status.EffortUnbound)
+	}
+	if m, ok := hostile.EffectiveModel(); ok || m != "" {
+		t.Errorf("EffectiveModel=%q,%v want \"\",false", m, ok)
+	}
+	if e, ok := hostile.EffectiveEffort(); ok || e != "" {
+		t.Errorf("EffectiveEffort=%q,%v want \"\",false", e, ok)
+	}
+	// The autonomous-write flag must survive the stripping.
+	if !strings.Contains(joined, "--mode yolo") {
+		t.Errorf("stripping removed the autonomous-write flag: %q", joined)
+	}
+	// A bindable adapter is unaffected.
+	ok := Spec{ID: "claude", Model: "m1", HeadlessArgs: []string{"--model", ModelPlaceholder}}
+	if got, _ := ok.ResolveLaunchArgs(); strings.Join(got, " ") != "--model m1" {
+		t.Errorf("bindable adapter changed: %q", got)
+	}
+}

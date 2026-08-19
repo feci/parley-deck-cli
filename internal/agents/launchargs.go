@@ -60,6 +60,17 @@ func (s Spec) ResolveLaunchArgs() ([]string, LaunchArgsStatus) {
 	for _, arg := range s.HeadlessArgs {
 		switch arg {
 		case ModelPlaceholder:
+			// NoModelBinding is stripped HERE, at the source, not only where the roster reports
+			// it. A config layer may append `--model {model}` to headless_args for a CLI that has
+			// no such flag; resolving it would (a) make the inventory contradict the roster and
+			// (b) actually launch a flag the vendor parser rejects. Dropping it keeps every
+			// surface consistent AND keeps the launch valid. (review round 2, codex-1 MAJOR:
+			// the first fix reached roster show but not `agents list`.)
+			if s.NoModelBinding {
+				status.ModelUnbound = true
+				out = dropIntroducingFlag(out)
+				continue
+			}
 			if bindable(s.Model) {
 				out = append(out, s.Model)
 				continue
@@ -67,6 +78,11 @@ func (s Spec) ResolveLaunchArgs() ([]string, LaunchArgsStatus) {
 			status.ModelUnbound = true
 			out = dropIntroducingFlag(out)
 		case EffortPlaceholder:
+			if s.NoModelBinding {
+				status.EffortUnbound = true
+				out = dropIntroducingFlag(out)
+				continue
+			}
 			if bindable(s.Reasoning) {
 				out = append(out, s.Reasoning)
 				continue
@@ -95,6 +111,11 @@ func dropIntroducingFlag(args []string) []string {
 // without a model argument: the vendor CLI reads its own config, and the roster must NOT
 // claim the declared value as effective.
 func (s Spec) EffectiveModel() (string, bool) {
+	// Adapter capability beats argv: a config layer may append a model flag this CLI cannot
+	// accept, and reporting it would present confidence the process cannot honour.
+	if s.NoModelBinding {
+		return "", false
+	}
 	args, status := s.ResolveLaunchArgs()
 	if status.ModelUnbound {
 		return "", false
@@ -109,6 +130,9 @@ func (s Spec) EffectiveModel() (string, bool) {
 
 // EffectiveEffort mirrors EffectiveModel for the reasoning/effort axis.
 func (s Spec) EffectiveEffort() (string, bool) {
+	if s.NoModelBinding {
+		return "", false
+	}
 	args, status := s.ResolveLaunchArgs()
 	if status.EffortUnbound {
 		return "", false
@@ -116,6 +140,12 @@ func (s Spec) EffectiveEffort() (string, bool) {
 	for i, a := range args {
 		if (a == "--effort" || a == "--reasoning" || a == "--variant") && i+1 < len(args) {
 			return args[i+1], true
+		}
+		// codex carries its level as a config assignment rather than a flag pair:
+		// `-c model_reasoning_effort=max`. The value IS in the argv, so reporting it is the
+		// contract working, not a display of something the launch does not carry.
+		if v, ok := strings.CutPrefix(a, "model_reasoning_effort="); ok {
+			return strings.Trim(v, `"'`), true
 		}
 	}
 	return "", false

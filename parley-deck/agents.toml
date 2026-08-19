@@ -75,6 +75,7 @@ adapter = "hermes"
 [roster.kimi-1]
 adapter = "kimi"
 
-[roster.opencode-1]
-adapter = "opencode"
+# [roster.opencode-1] REMOVED 2026-08-18 by user instruction ("vynechaj opencode"). Its model
+# (inkling) moved to hermes-1 in the machine roster; the adapter is dropped, the binary is left
+# installed. Do not re-add without the user saying so.
 

@@ -64,7 +64,7 @@ func TestDefaultSpecsMergesACPCatalog(t *testing.T) {
 	for _, spec := range DefaultSpecs() {
 		ids[spec.ID]++
 	}
-	for _, required := range []string{"codex", "claude", "agy", "gemini", "hermes", "goose", "qwen", "opencode"} {
+	for _, required := range []string{"codex", "claude", "agy", "gemini", "hermes", "goose", "qwen", "opencode", "zcode"} {
 		if ids[required] == 0 {
 			t.Errorf("DefaultSpecs missing %q", required)
 		}

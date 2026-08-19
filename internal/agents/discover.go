@@ -65,7 +65,16 @@ type Spec struct {
 	// ONLY where a real sandbox is enforced (honesty rule); Declared() reports the
 	// mode, Confined() the sandbox. Secret redaction is orthogonal.
 	AutonomousWrite AutonomousWrite
-	Sources         map[string]string
+
+	// NoModelBinding declares that this CLI has NO way to accept a model (or effort) on the
+	// command line, so no configuration layer can ever bind one. It is a property of the
+	// vendor CLI, not of the argv we happen to ship: without it, a wholesale `headless_args`
+	// override that appends `--model {model}` makes the roster display a model the real
+	// parser rejects, while the `--explain` trailer simultaneously says the model is never
+	// passed. (review round 1, codex-1 CRITICAL — reproduced in a scratch PARLEY_HOME.)
+	// Fail-closed: when set, EffectiveModel/EffectiveEffort report unbound regardless of argv.
+	NoModelBinding bool
+	Sources        map[string]string
 	// ACPArgs are the launch flags that put an ACP-capable CLI into ACP mode
 	// (e.g. ["--experimental-acp"] for claude, ["acp"] for goose, ["--acp"] for qwen).
 	// When LaunchMode == LaunchACP, the runner spawns Commands[0] with ACPArgs
@@ -290,12 +299,16 @@ func defaultBuiltinSpecs() []Spec {
 			Notes:                 "DEPRECATED legacy Gemini CLI support; prefer agy. Uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang",
 		}),
 		withBuiltinSources(Spec{
-			ID:                    "hermes",
-			Commands:              []string{"hermes", "hermes-agent", "hermesagent"},
-			VersionArgs:           []string{"--version"},
-			LaunchMode:            LaunchHeadless,
-			HeadlessMode:          "hermes --yolo --oneshot",
-			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "{model}", "--accept-hooks"},
+			ID:           "hermes",
+			Commands:     []string{"hermes", "hermes-agent", "hermesagent"},
+			VersionArgs:  []string{"--version"},
+			LaunchMode:   LaunchHeadless,
+			HeadlessMode: "hermes --yolo --oneshot",
+			// `--reasoning {effort}` added 2026-08-19: hermes documents the level
+			// (none|minimal|low|medium|high|xhigh|max|ultra) but the argv never carried it, so every
+			// deck reported effort-unknown while the real level came silently from config.yaml.
+			// ResolveLaunchArgs drops the flag when no level is configured, so this is inert until set.
+			HeadlessArgs:          []string{"--yolo", "--oneshot", "{prompt}", "--model", "{model}", "--reasoning", "{effort}", "--accept-hooks"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -378,6 +391,45 @@ func defaultBuiltinSpecs() []Spec {
 			Notes:           "OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.",
 			// Scope EMPTY: --auto is a permission grant, not an enforced sandbox.
 			AutonomousWrite: AutonomousWrite{Mode: "auto", Args: []string{"--auto"}, Scope: ""},
+		}),
+		withBuiltinSources(Spec{
+			ID:           "zcode",
+			Commands:     []string{"zcode"},
+			VersionArgs:  []string{"--version"},
+			LaunchMode:   LaunchHeadless,
+			HeadlessMode: "zcode --prompt <text> --mode yolo --cwd <root>",
+			// `--mode yolo` is passed EXPLICITLY even though `zcode --help` documents it as the
+			// default for `--prompt`: ~/.zcode/cli/config.json stores permission.mode = "build",
+			// so the documented default and the stored config disagree. The effective launch argv
+			// is the source of truth, and this keeps AutonomousWrite.Args a subset of HeadlessArgs.
+			// EQUALS FORM, required: `zcode --prompt "-leading dash"` fails with "Option '--prompt'
+			// argument is ambiguous"; `--prompt=<value>` is accepted (measured 2026-08-19).
+			HeadlessArgs:          []string{"--prompt={prompt}", "--mode", "yolo", "--cwd", "{root}"},
+			InteractivePromptMode: InteractivePromptNone,
+			InteractiveInvoke:     InteractiveInvokePrintOnly,
+			InteractivePollMS:     DefaultInteractivePollMS,
+			PromptMode:            PromptArg,
+			SandboxMode:           CLIDefault,
+			ApprovalPolicy:        "yolo",
+			// NO {model} or effort placeholder, deliberately. zcode has no model flag at all:
+			// --model is absent from `zcode --help` and passing it exits 1. The model resolves from
+			// ~/.zcode/cli/config.json -> model.main, and `--json` reports sessionId/traceId/
+			// turnId/usage but no model id, so the running model is not observable from outside.
+			// MODEL and EFFORT therefore stay unknown rather than displaying a value this launch
+			// cannot carry (roster contract: internal/app/roster.go).
+			Model:           CLIDefault,
+			Reasoning:       CLIDefault,
+			Profile:         CLIDefault,
+			Speed:           DefaultSpeed,
+			TimeoutMS:       DefaultTimeoutMS,
+			ExternalBackend: ExternalHosted,
+			Telemetry:       "final text on stdout; --json adds sessionId/traceId/turnId/usage but no model id",
+			Notes:           "ZCode (Z.AI). Headless is `zcode --prompt=<text> --mode yolo --cwd <root>` - the EQUALS form is required: the separate-token form is rejected when the prompt starts with a dash (\"Option '--prompt' argument is ambiguous\", exit 1, measured 2026-08-19); the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.",
+			// Scope EMPTY: --cwd is a working directory, not an enforced sandbox.
+			AutonomousWrite: AutonomousWrite{Mode: "yolo", Args: []string{"--mode", "yolo"}, Scope: ""},
+			// zcode has no --model/--effort flag at all; passing one exits 1. Declared so a
+			// config override cannot manufacture a binding the CLI cannot honour.
+			NoModelBinding: true,
 		}),
 	}
 }

@@ -368,17 +368,33 @@ func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterView
 		}
 		// MODEL and EFFORT are the values the launch passes, or unknown. A configured
 		// value the argv never carries is NOT effective and must not fill the cell.
-		if model, ok := spec.EffectiveModel(); ok {
-			row.Model = model
-			if declared := strings.TrimSpace(spec.Model); declared != "" && declared != agents.CLIDefault && declared != model {
+		//
+		// One exception, and it is not a loosening of that rule: when the CLI has no model
+		// flag at all, no parley layer can bind one, so the process reads its OWN config
+		// instead. Reading that same file answers "what will this agent run?" from the
+		// source the process itself consults — a different and stronger claim than echoing
+		// a parley-side declaration back, which is what the rule forbids. It is reported
+		// under its own STATUS terms so the two are never confused.
+		boundModel, boundOK := spec.EffectiveModel()
+		cfgModel, cfgEffort, _ := agents.ConfigResolvedModel(family, boundModel)
+		switch {
+		case boundOK:
+			row.Model = boundModel
+			if declared := strings.TrimSpace(spec.Model); declared != "" && declared != agents.CLIDefault && declared != boundModel {
 				row.addStatus("model-drift")
 			}
-		} else {
+		case cfgModel != "":
+			row.Model = cfgModel
+			row.addStatus("model-from-config")
+		default:
 			row.Model = agents.Unknown
 			row.addStatus("model-unbound")
 		}
 		if effort, ok := spec.EffectiveEffort(); ok {
 			row.Effort = effort
+		} else if cfgEffort != "" {
+			row.Effort = cfgEffort
+			row.addStatus("effort-from-config")
 		} else {
 			row.Effort = agents.Unknown
 			row.addStatus("effort-unknown")
