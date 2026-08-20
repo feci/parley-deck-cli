@@ -204,7 +204,7 @@ func TestReservedFinalizeSucceedsWithOpenItems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated := strings.Replace(string(data), "## Open items deferred to implementation\n\n## Signoffs", "## Open items deferred to implementation\n\n- Carry this reservation into implementation.\n\n## Signoffs", 1)
+	updated := strings.Replace(string(data), "## Open items deferred to implementation\n\n## Signoffs", "## Open items deferred to implementation\n\n- codex: carry this reservation into implementation.\n\n## Signoffs", 1)
 	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
 		t.Fatal(err)
 	}

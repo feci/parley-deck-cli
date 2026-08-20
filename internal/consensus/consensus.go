@@ -205,6 +205,12 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 	if idea.Status == "final" {
 		return "", Summary{}, fmt.Errorf("idea %s is already final", idea.Slug)
 	}
+	// FINAL.md records who drafted it, and Phase 4 says the drafter is the initiator or an agreed
+	// participant. `--by` was written into the artifact unchecked, so an idea could be closed in
+	// the name of an agent that never took part (audit finding codex-1/F4).
+	if by := strings.TrimSpace(opts.By); by != "" && len(idea.Participants) > 0 && !containsID(idea.Participants, by) {
+		return "", Summary{}, fmt.Errorf("--by %q is not a participant of %s (participants: %s)", by, idea.Slug, strings.Join(idea.Participants, ", "))
+	}
 	summary, err := Status(root, ideaSlug, false)
 	if err != nil {
 		return "", Summary{}, err
@@ -218,6 +224,14 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 		}
 		if !hasSectionContent(doc.Raw, "## Open items deferred to implementation") {
 			return "", Summary{}, errors.New("reserved consensus requires open items deferred to implementation before finalize")
+		}
+		// Any filler satisfied the section, so a reservation could be carried past finalize
+		// without ever being written down (audit finding codex-1/F9). A reservation belongs to an
+		// agent; the deferred items must name it, or nobody can tell which reservation was
+		// deferred or whether it was addressed.
+		if unlogged := unloggedReservations(doc); len(unlogged) > 0 {
+			return "", Summary{}, fmt.Errorf("reserved consensus: %s reserved but %s not named in '## Open items deferred to implementation'",
+				strings.Join(unlogged, ", "), plural(len(unlogged), "is", "are"))
 		}
 	default:
 		return "", Summary{}, fmt.Errorf("cannot finalize consensus with triage=%s", summary.Triage)
@@ -867,4 +881,58 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func containsID(list []string, want string) bool {
+	for _, item := range list {
+		if strings.EqualFold(strings.TrimSpace(item), strings.TrimSpace(want)) {
+			return true
+		}
+	}
+	return false
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
+}
+
+// unloggedReservations returns the agents that filed a reservation and are not named anywhere in
+// the deferred-items section.
+func unloggedReservations(doc document) []string {
+	section := sectionBody(doc.Raw, "## Open items deferred to implementation")
+	if section == "" {
+		return nil
+	}
+	lower := strings.ToLower(section)
+	var unlogged []string
+	for _, s := range doc.Signoffs {
+		if !isReserveStatus(s.Status) {
+			continue
+		}
+		if !strings.Contains(lower, strings.ToLower(s.Agent)) {
+			unlogged = append(unlogged, s.Agent)
+		}
+	}
+	return unlogged
+}
+
+func isReserveStatus(status string) bool {
+	l := strings.ToLower(status)
+	return strings.Contains(l, "reserve") || strings.Contains(l, "🟡")
+}
+
+// sectionBody returns the text under a heading, up to the next `## ` heading.
+func sectionBody(raw, heading string) string {
+	idx := strings.Index(raw, heading)
+	if idx < 0 {
+		return ""
+	}
+	rest := raw[idx+len(heading):]
+	if next := strings.Index(rest, "\n## "); next >= 0 {
+		rest = rest[:next]
+	}
+	return rest
 }

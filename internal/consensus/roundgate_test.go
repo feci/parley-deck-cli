@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func writeF(t *testing.T, path, body string) {
@@ -157,5 +158,45 @@ func TestSignoffsUnderLaterHeadingsStillCount(t *testing.T) {
 	}
 	if len(doc.Signoffs) != 2 {
 		t.Fatalf("want both signoffs, got %d: %+v", len(doc.Signoffs), doc.Signoffs)
+	}
+}
+
+// codex-1/F4: --by was written into FINAL.md unchecked, so an idea could be closed in the name of
+// an agent that never took part.
+func TestFinalizeRejectsANonParticipantDrafter(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"codex"})
+	writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "codex", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "codex", Status: "accept", Notes: "ok", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "stranger", Now: now}); err == nil {
+		t.Fatal("a non-participant was allowed to close the idea")
+	} else if !strings.Contains(err.Error(), "not a participant") {
+		t.Fatalf("refusal does not name the cause: %v", err)
+	}
+}
+
+// codex-1/F9: any filler satisfied the deferred-items section, so a reservation could be carried
+// past finalize without being written down.
+func TestReservationMustBeNamedInDeferredItems(t *testing.T) {
+	doc := document{
+		Raw: "## Open items deferred to implementation\n\n- something generic\n\n## Signoffs\n",
+		Signoffs: []Signoff{
+			{Agent: "codex", Status: "🟡 RESERVE"},
+			{Agent: "kimi", Status: "✅ ACCEPT"},
+		},
+	}
+	got := unloggedReservations(doc)
+	if len(got) != 1 || got[0] != "codex" {
+		t.Fatalf("want codex reported as unlogged, got %v", got)
+	}
+
+	doc.Raw = "## Open items deferred to implementation\n\n- codex: carry the sandbox question\n\n## Signoffs\n"
+	if got := unloggedReservations(doc); len(got) != 0 {
+		t.Fatalf("a named reservation must count as logged, got %v", got)
 	}
 }
