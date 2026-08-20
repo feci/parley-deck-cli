@@ -54,7 +54,42 @@ carries `plugin.json`, `gemini-extension.json`, `README.md` and `LICENSE` from t
 Verifying the installed tree against that manifest reports those four as `unexpected`. Needs a
 payload manifest describing the installed shape. Attempt reverted rather than shipped half-working.
 
-**Still open:** codex-1/F3, F6, F7, F8, F10, F11, F13; zcode-1/F1, F14.
+**codex-1/F6** — a standard-track unanimous judgment closes without §15.6's adversarial
+alternative. Neither manual finalize nor the driver's FINAL validator checks §15.6, so a mandatory
+verification-integrity close condition is decorative. NOT fixed: §15.6 asks for an *adversarial
+alternative to a unanimous judgment*, which is a semantic property of prose. A mechanical gate
+would have to detect "is this a judgment call" and "is this text adversarial" — the same
+substring-matching trap that produced several of the defects in this very audit. It needs a
+designed signal (an explicit frontmatter field, or a required section) rather than a heuristic.
+
+**codex-1/F8** — the fast route should collapse consensus and FINAL into one artifact with
+embedded signoffs; both the planner and the auto-driver always enter the ordinary consensus phase
+and contain no collapsed-final branch. NOT fixed: this is a missing feature of the fast route, not
+a wrong turn in existing logic, and building it is a change to how a whole track closes.
+
+**kimi-1/F5** — the installer's comment calls a schema-2 marker without a `manifest` field
+malformed while the core's own marker is exactly that. Folded into kimi-1/F1: the core marker
+cannot honestly carry a manifest anchor until the core has a manifest describing its INSTALLED
+shape. Both stand or fall together.
+
+## Second batch — fixed after the first review draft
+
+| Finding | Was | Now |
+| --- | --- | --- |
+| **codex-1/F3** | a review consensus demanded the implementer's signoff, which §6 forbids it from giving, so a standard-track review consensus stayed `partial` forever | the resolved implementer is excluded at close too |
+| **codex-1/F7** | the planner told a `fast` idea to open the cross-review round §4.0 skips | `track: fast` short-circuits it |
+| **codex-1/F10** | the review-consensus template wrote `cycle:` (schema says `review-cycle:`) and omitted `outstanding_agreed_fixes` and `blocked`, which its own auto-driver requires | schema-correct; the count is a placeholder the drafter must replace, never a silent `0` |
+| **codex-1/F11** | "open round-02" printed `parley run …`, which CREATES a new idea | `parley continue` |
+| **codex-1/F13** | `classify` refused an under-tiered `standard` while the driver ran it anyway | `PolicyFor` refuses it too |
+| **zcode-1/F1** | §2 documented two authority states; the `inherited-roster` state this deck is IN appeared nowhere | all three, in resolution order, plus the trap that a §2 row IS a declaration |
+| **zcode-1/F14** | 20 closed ideas declared a non-terminal `status:`, feeding §6 rule 5 false data | repaired |
+
+**Correction against myself on zcode-1/F14:** I earlier wrote that its 27% figure was in doubt
+because my own count found 1 of 78. My check looked only for the literal string `open`; @zcode-1
+counted every non-terminal value, which is the right population. **Its number stands and my
+objection was too narrow.**
+
+**Still open:** codex-1/F6, F8, F14; kimi-1/F1, F5 — each with its reason recorded above.
 
 ## Mistakes made and caught, recorded because they shaped the work
 
