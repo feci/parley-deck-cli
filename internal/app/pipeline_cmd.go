@@ -733,8 +733,20 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
 		fmt.Fprintf(stdout, "auto: block %q consensus triage=%s (not finalizable); resolve reservations/blocks then re-run auto.\n", block.ID, summary.Triage)
 		return 1
 	}
-	if _, _, err := consensus.Finalize(root, blockIdeaSlug, consensus.FinalizeOptions{By: by}); err != nil {
-		fmt.Fprintf(stderr, "auto: finalize failed: %v\n", err)
+	// `Finalize` is two steps since codex-1/F5: the first writes the FINAL.md scaffold and
+	// deliberately leaves the idea OPEN. This caller took the first step and announced the block
+	// "finalized", so the pipeline treated an empty outline as a completed block (review round 1,
+	// @codex-1 and @kimi-1, both MAJOR).
+	//
+	// A pipeline cannot write the specification itself, so it stops here and says what is owed
+	// instead of claiming a closure that did not happen.
+	_, finalSummary, ferr := consensus.Finalize(root, blockIdeaSlug, consensus.FinalizeOptions{By: by})
+	if ferr != nil {
+		fmt.Fprintf(stderr, "auto: finalize failed: %v\n", ferr)
+		return 1
+	}
+	if finalSummary.Scaffolded {
+		fmt.Fprintf(stdout, "auto: block %q — FINAL.md scaffold written; the block is NOT complete. Write the specification, then re-run auto to close it.\n", block.ID)
 		return 1
 	}
 	fmt.Fprintf(stdout, "auto: block %q finalized.\n", block.ID)
@@ -1320,13 +1332,25 @@ func implementationComplete(content string) bool {
 	return false
 }
 
+// isFinalized reports whether an artifact is a WRITTEN final, not merely one declaring itself one.
+//
+// The scaffold `consensus finalize` writes carries `status: final` in its frontmatter from the
+// first step, so a frontmatter-only test called an empty outline a completed block and the
+// pipeline advanced past it (review round 1, @codex-1 MAJOR). `status: final` is the artifact's
+// claim about itself; whether it was written is a different question, and protocol.FinalIsScaffold
+// is the same check the FINAL gate applies.
 func isFinalized(content string) bool {
+	declared := false
 	for _, line := range strings.Split(content, "\n") {
 		if strings.TrimSpace(line) == "status: final" {
-			return true
+			declared = true
+			break
 		}
 	}
-	return false
+	if !declared {
+		return false
+	}
+	return protocol.FinalIsScaffold(content) == ""
 }
 
 func valueOrDash(s string) string {

@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"parley-deck-cli/internal/protocol"
+
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
@@ -128,16 +130,38 @@ idea's 00-prompt.md, and NOTHING else under that heading (the agents append thei
 report only the path.`, ideaDir, path)
 }
 
+// buildFinalDraftPrompt tells the drafter exactly what the gate will require.
+//
+// The prompt asked for ONE section while `finalScaffoldReason` requires all seven from
+// COOPERATION.md Phase 4, and it never mentioned the `idea:` frontmatter the slug check reads. So
+// the driver instructed its own drafter to produce an artifact its own gate rejects (review round
+// 1, @codex-1 MAJOR) — the same defect class this audit is about, committed while fixing it.
+//
+// The section list is generated from protocol.RequiredFinalSections rather than retyped, so the
+// prompt cannot drift from the gate.
 func buildFinalDraftPrompt(ideaDir, path string) string {
+	var sections strings.Builder
+	for _, section := range protocol.RequiredFinalSections {
+		sections.WriteString(section)
+		sections.WriteString("\n")
+	}
+	slug := filepath.Base(ideaDir)
 	return fmt.Sprintf(`You are the Parley Deck facilitator drafting FINAL.md.
 
 Read %s/consensus.md (the accepted consensus + signoffs) and the round artifacts.
-WRITE (create or overwrite) %s with the final specification, keeping YAML
-frontmatter that includes "status: final", and a populated section:
+WRITE (create or overwrite) %s.
 
-## Final plan / specification
+YAML frontmatter MUST include:
+  idea: %s
+  status: final
 
-with at least several concrete lines describing the agreed design (no placeholders,
-no unexpanded <...> tokens). Be concrete. English only. Write the file now and report
-only the path.`, ideaDir, path)
+The body MUST contain ALL of these headings, in this order:
+
+%s
+"## Final plan / specification" needs at least three concrete lines describing the agreed design.
+The other sections may be "N/A" when the idea is trivial or design-only, but the HEADING must be
+present — a heading that is absent cannot be answered N/A deliberately.
+
+No placeholders, no unexpanded <...> tokens. Be concrete. English only. Write the file now and
+report only the path.`, ideaDir, path, slug, sections.String())
 }
