@@ -200,3 +200,30 @@ func TestReservationMustBeNamedInDeferredItems(t *testing.T) {
 		t.Fatalf("a named reservation must count as logged, got %v", got)
 	}
 }
+
+// codex-1/F21: a consensus.md whose frontmatter named a different idea was read as this idea's
+// consensus, so a document copied between ideas carried its signoffs with it.
+func TestConsensusDeclaringAnotherIdeaIsReported(t *testing.T) {
+	doc := document{
+		Path: "consensus.md",
+		Raw:  "---\nidea: some-other-idea\n---\n\n## Signoffs\n",
+	}
+	summary := validateDocument("this-idea", []string{"a"}, false, doc)
+	var found bool
+	for _, e := range summary.Errors {
+		if strings.Contains(e, "some-other-idea") && strings.Contains(e, "this-idea") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("slug mismatch not reported: %v", summary.Errors)
+	}
+
+	// The matching case must not complain.
+	ok := document{Path: "consensus.md", Raw: "---\nidea: this-idea\n---\n\n## Signoffs\n"}
+	for _, e := range validateDocument("this-idea", []string{"a"}, false, ok).Errors {
+		if strings.Contains(e, "frontmatter idea") {
+			t.Fatalf("matching slug reported as an error: %v", e)
+		}
+	}
+}

@@ -433,6 +433,13 @@ func validateDocument(ideaSlug string, participants []string, review bool, doc d
 		Participants: append([]string(nil), participants...),
 		Signoffs:     append([]Signoff(nil), doc.Signoffs...),
 	}
+	// The consensus document declares which idea it belongs to, and nothing checked it — a
+	// consensus.md whose frontmatter named a DIFFERENT idea was read as this idea's consensus
+	// (audit finding codex-1/F21). Copying a consensus between ideas is exactly how a signoff
+	// for one decision silently becomes approval of another.
+	if declared := strings.Trim(strings.TrimSpace(frontmatterField(doc.Raw, "idea")), `"'`); declared != "" && declared != ideaSlug {
+		summary.Errors = append(summary.Errors, fmt.Sprintf("frontmatter idea=%q but this is the consensus for %q", declared, ideaSlug))
+	}
 	signed := map[string]bool{}
 	hasReservations := false
 	hasBlock := false
@@ -935,4 +942,22 @@ func sectionBody(raw, heading string) string {
 		rest = rest[:next]
 	}
 	return rest
+}
+
+// frontmatterField reads a single scalar from a leading YAML frontmatter block.
+func frontmatterField(raw, key string) string {
+	if !strings.HasPrefix(raw, "---") {
+		return ""
+	}
+	rest := strings.TrimPrefix(raw, "---")
+	end := strings.Index(rest, "\n---")
+	if end < 0 {
+		return ""
+	}
+	for _, line := range strings.Split(rest[:end], "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), key+":"); ok {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
