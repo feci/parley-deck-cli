@@ -227,3 +227,33 @@ func TestConsensusDeclaringAnotherIdeaIsReported(t *testing.T) {
 		}
 	}
 }
+
+// codex-1/F3: a review consensus demanded the implementer's signoff, which §6 forbids it from
+// giving, so a standard-track review consensus stayed `partial` however many reviewers accepted.
+func TestReviewConsensusDoesNotAwaitTheImplementersSignoff(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, Now: now}); err != nil {
+		t.Fatalf("review draft rejected: %v", err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "rev-a", Status: "accept", Notes: "ok", Review: true, Now: now}); err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err := Status(root, "sample", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range summary.Missing {
+		if strings.Contains(m, "impl") {
+			t.Fatalf("review consensus waits on the implementer: missing=%v", summary.Missing)
+		}
+	}
+	if summary.Triage != TriageReady {
+		t.Fatalf("triage=%s, want ready once every reviewer accepted (missing=%v errors=%v)", summary.Triage, summary.Missing, summary.Errors)
+	}
+}

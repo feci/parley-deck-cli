@@ -102,7 +102,15 @@ func Status(root, ideaSlug string, review bool) (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
-	return validateDocument(idea.Slug, idea.Participants, review, doc), nil
+	// A REVIEW consensus is signed by the agents who reviewed, not by every participant: §6
+	// forbids the implementer reviewing its own work, so demanding its signoff left every
+	// standard-track review consensus permanently `partial` no matter how many reviewers accepted
+	// (audit finding codex-1/F3). The auto-driver calls this same validator, so the quorum
+	// override did not bind at the close gate either.
+	//
+	// Same rule as the round gate (codex-1/F2), applied at close: exclude the resolved
+	// implementer, and fail closed to the full list when it cannot be resolved.
+	return validateDocument(idea.Slug, expectedRoundParticipants(idea.Path, idea.Participants, review), review, doc), nil
 }
 
 func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {

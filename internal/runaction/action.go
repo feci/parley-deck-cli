@@ -47,10 +47,16 @@ func Command(action NextAction, fallbackRunID, fallbackIdeaSlug string) string {
 		if idea == "" {
 			return ""
 		}
-		// Visibility only: the next cross-review round is opened automatically by
-		// internal/driver under `parley run --auto` (local-dir). The surfaced
-		// command re-runs the task to advance the idea.
-		return fmt.Sprintf("parley run --auto --dir . \"continue %s\"", idea)
+		// `parley run "<task>"` CREATES A NEW timestamped idea and starts round-01 — its own help
+		// says so and CreateIdeaFull implements exactly that. Surfacing it as the way to open
+		// round-02 of an existing idea told the operator to fork an unrelated idea, leaving the
+		// original stalled and writing a false audit trail (audit finding codex-1/F11).
+		//
+		// `parley continue` is the verb that advances an existing run or idea.
+		if runID != "" {
+			return fmt.Sprintf("parley continue %s", runID)
+		}
+		return fmt.Sprintf("parley continue %s", idea)
 	case KindDraftConsensus:
 		if idea == "" {
 			return ""
