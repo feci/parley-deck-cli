@@ -8,7 +8,7 @@ roles:
   claude-1: facilitation + config-layering coherence
   codex-1: Go config internals (LoadAgentSpecs layering)
   hermes-1: UX of preset selection + failure modes
-status: round-01
+status: final
 ---
 
 ## Problem / idea

@@ -10,7 +10,7 @@ roles:
   hermes: filesystem/edge-case correctness — virtio-fs/NFS/SMB coherence, ENOENT/ENOTDIR/EEXIST handling, races
 transport: local-dir
 cross_review_rounds: 1
-status: kickoff
+status: final
 ---
 
 ## Problem (owner's words, verified by facilitator)

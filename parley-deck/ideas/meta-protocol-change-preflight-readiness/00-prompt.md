@@ -3,7 +3,7 @@ idea: meta-protocol-change-preflight-readiness
 title: "Pre-idea readiness check: protocol auto-freshness + roster liveness ping with user-confirmed roster gates"
 kind: meta-protocol-change + tooling
 author: claude-1
-status: round-01
+status: final
 transport: github-pr
 participants: [claude-1, codex-1, hermes-1, antigravity-1]
 roles:

@@ -9,7 +9,7 @@ roles:
   codex-1: driver/Go internals + failure modes
   hermes-1: protocol minimalism + backward compatibility
   antigravity-1: consumer-deck / DevX perspective
-status: round-01
+status: final
 ---
 
 ## Problem / idea

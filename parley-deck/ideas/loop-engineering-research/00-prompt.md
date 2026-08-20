@@ -8,7 +8,7 @@ roles:
   codex-1: CLI/engine lens — outer-loop driver, automations/triggers, stopping conditions (max iter/cost/duration), durable goal-state across runs
   hermes-1: maker/checker & verification lens — Phase 5/6 mapping, refutation-mode verifier, self-grading risk, conditional rigor
   antigravity-1: risk & guardrail lens — runaway cost, HITL fatigue, cognitive surrender, comprehension debt; what NOT to adopt
-status: round-01
+status: final
 ---
 
 ## Problem / idea

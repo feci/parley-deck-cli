@@ -3,7 +3,7 @@ idea: meta-protocol-change-global-core-protocol
 author: user
 created: 2026-08-07
 participants: [claude-1, codex-1, hermes-1, kimi-1, opencode-1]
-status: round-01
+status: final
 track: deliberation
 ---
 

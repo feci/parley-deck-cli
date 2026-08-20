@@ -2,7 +2,7 @@
 idea: sync-skill-protocol-fallback
 author: claude-1
 created: 2026-06-24
-status: round-01
+status: final
 participants: [claude-1, codex-1, hermes-1, antigravity-1]
 ---
 

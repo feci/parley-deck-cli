@@ -8,7 +8,7 @@ roles:
   codex-1: worktrees — mechanics, pitfalls, exact commands for our case
   hermes-1: ticketing — three-audience writing (business / technical / AI)
   antigravity-1: standards & prior-art for both (INVEST/Gherkin/DoD; worktree patterns)
-status: round-01
+status: final
 ---
 
 ## Problem / idea

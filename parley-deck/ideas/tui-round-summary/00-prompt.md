@@ -8,7 +8,7 @@ roles:
   claude-1: facilitation + TUI architecture fit (live.go patterns)
   codex-1: event/state correctness (round completion detection)
   hermes-1: information design — what belongs in a digest
-status: round-01
+status: final
 ---
 
 ## Problem / idea

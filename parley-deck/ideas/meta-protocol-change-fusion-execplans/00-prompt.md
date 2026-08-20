@@ -2,7 +2,7 @@
 idea: meta-protocol-change-fusion-execplans
 title: "Inspiration from OpenRouter Fusion + OpenAI ExecPlans for the parley-deck protocol"
 kind: meta-protocol-change
-status: open
+status: final
 phase: 1-independent-analysis
 transport: github-pr
 initiator: claude

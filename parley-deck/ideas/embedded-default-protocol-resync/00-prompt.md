@@ -8,7 +8,7 @@ roles:
   codex: build/test-guard + Go-consumer lens
   agy: protocol-content + genericization lens
   hermes: bootstrap-UX + portability lens
-status: round-01
+status: final
 ---
 
 ## Problem / idea

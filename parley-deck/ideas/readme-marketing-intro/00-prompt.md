@@ -8,7 +8,7 @@ roles:
   codex-1: technical accuracy (features must map to real protocol sections)
   hermes-1: positioning & differentiation (why this vs. ad-hoc multi-agent)
   antigravity-1: inspirations & attribution (credit the prior art faithfully)
-status: round-01
+status: final
 ---
 
 ## Problem / idea

@@ -8,7 +8,7 @@ roles:
   codex: tooling / Go-implementation feasibility lens
   agy: protocol-semantics / safety-gate lens
   hermes: risk / adversarial / self-preference-bias lens
-status: round-01
+status: final
 design_only: true
 cross_review_rounds: 1
 ---

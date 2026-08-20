@@ -7,7 +7,7 @@ participants: [claude-1, codex-1]
 roles:
   claude-1: implementer
   codex-1: refutation-default reviewer (model-diverse)
-status: round-01
+status: final
 ---
 
 ## Problem / idea

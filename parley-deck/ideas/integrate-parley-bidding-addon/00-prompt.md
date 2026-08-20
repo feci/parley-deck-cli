@@ -7,7 +7,7 @@ strict_gate: true
 participants: [claude-1, codex-1, hermes-1, kimi-1]
 target-repo: parley-deck-skill
 source: /Volumes/My Shared Files/AI_WORKSPACE/BYTE/software-bidding  (READ-ONLY)
-status: round-01
+status: final
 blocked-by: skills-cli-install-path   # same file set; see B1
 ---
 

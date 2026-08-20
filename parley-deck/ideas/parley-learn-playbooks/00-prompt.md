@@ -9,7 +9,7 @@ roles:
   codex-1: CLI/Go implementation shape
   hermes-1: protocol minimalism — smallest §13 extension that works
   antigravity-1: consumer-deck adoption — are playbooks useful outside this repo?
-status: round-01
+status: final
 ---
 
 ## Problem / idea
