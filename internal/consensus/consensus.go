@@ -119,7 +119,8 @@ func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
 	if err != nil {
 		return Summary{}, err
 	}
-	if missing := missingRoundArtifacts(filepath.Join(roundBaseDir(idea.Path, opts.Review), roundLabel), idea.Participants); len(missing) > 0 {
+	expected := expectedRoundParticipants(idea.Path, idea.Participants, opts.Review)
+	if missing := missingRoundArtifacts(filepath.Join(roundBaseDir(idea.Path, opts.Review), roundLabel), expected); len(missing) > 0 {
 		return Summary{}, fmt.Errorf("%s is incomplete; missing %s", roundRel, strings.Join(missing, ", "))
 	}
 
@@ -483,14 +484,129 @@ func roundRel(review bool, label string) string {
 	return label
 }
 
+// missingRoundArtifacts reports the expected round files that do not count as a filed artifact.
+//
+// It used to ask only whether the pathname existed, so a file containing a single newline
+// satisfied a round and `consensus draft` would advance an idea with no participant analysis in
+// it at all (audit finding codex-1/F1). Existence is not filing: the protocol requires
+// frontmatter and named sections, and the cheapest honest floor is a body that is not blank and
+// carries at least one heading.
+//
+// The reason is reported per file rather than collapsed into "missing", because a blank file and
+// an absent one call for different actions by whoever reads the error — and this deck has spent a
+// day on messages that were true about the wrong thing.
+//
+// Measured before changing the floor: of 1027 round artifacts in this deck, 0 are blank and 9
+// carry no heading, all in closed ideas. Nothing currently draftable is rejected by this.
 func missingRoundArtifacts(roundDir string, participants []string) []string {
-	var missing []string
+	var problems []string
 	for _, participant := range participants {
-		if _, err := os.Stat(filepath.Join(roundDir, participant+".md")); errors.Is(err, os.ErrNotExist) {
-			missing = append(missing, participant+".md")
+		name := participant + ".md"
+		data, err := os.ReadFile(filepath.Join(roundDir, name))
+		if errors.Is(err, os.ErrNotExist) {
+			problems = append(problems, name)
+			continue
+		}
+		if err != nil {
+			problems = append(problems, name+" (unreadable)")
+			continue
+		}
+		body := stripFrontmatter(string(data))
+		if strings.TrimSpace(body) == "" {
+			problems = append(problems, name+" (blank)")
+			continue
+		}
+		if !hasHeading(body) {
+			problems = append(problems, name+" (no section headings)")
 		}
 	}
-	return missing
+	return problems
+}
+
+// stripFrontmatter removes a leading YAML frontmatter block, if present.
+func stripFrontmatter(s string) string {
+	if !strings.HasPrefix(s, "---") {
+		return s
+	}
+	rest := strings.TrimPrefix(s, "---")
+	if i := strings.Index(rest, "\n---"); i >= 0 {
+		return rest[i+len("\n---"):]
+	}
+	return rest
+}
+
+// hasHeading accepts any Markdown heading level. The floor being enforced is "this file has
+// structure", not a house style: requiring exactly `## ` rejected a `# Title` artifact, which is
+// a heading by any reading and was never the defect being fixed.
+func hasHeading(body string) bool {
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "#") {
+			continue
+		}
+		if i := strings.IndexFunc(line, func(r rune) bool { return r != '#' }); i > 0 && strings.TrimSpace(line[i:]) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// expectedRoundParticipants is who must have filed for a round to be complete.
+//
+// For a REVIEW round that is not every participant: §6 forbids the implementer from reviewing its
+// own work, so requiring its file made a protocol-compliant Phase 6 unreachable without
+// fabricating the one artifact the protocol prohibits (audit finding codex-1/F2). When the
+// implementer cannot be resolved the full list is used, which fails closed toward asking for more
+// rather than silently accepting a short round.
+func expectedRoundParticipants(ideaDir string, participants []string, review bool) []string {
+	if !review {
+		return participants
+	}
+	implementer := resolveImplementer(ideaDir, participants)
+	if implementer == "" {
+		return participants
+	}
+	out := make([]string, 0, len(participants))
+	for _, p := range participants {
+		if p != implementer {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return participants
+	}
+	return out
+}
+
+// resolveImplementer reads the implementer from IMPLEMENTATION.md, else the FINAL drafter.
+func resolveImplementer(ideaDir string, participants []string) string {
+	isParticipant := func(id string) bool {
+		for _, p := range participants {
+			if p == id {
+				return true
+			}
+		}
+		return false
+	}
+	for _, src := range []struct {
+		file string
+		keys []string
+	}{
+		{"IMPLEMENTATION.md", []string{"implementer"}},
+		{"FINAL.md", []string{"implementer", "drafted-by"}},
+	} {
+		meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, src.file))
+		if err != nil {
+			continue
+		}
+		for _, k := range src.keys {
+			id := strings.Trim(strings.TrimSpace(meta[k]), `"'`)
+			if id != "" && isParticipant(id) {
+				return id
+			}
+		}
+	}
+	return ""
 }
 
 func draftTemplate(idea protocol.IdeaStatus, opts DraftOptions, roundLabel, roundRel string) string {
