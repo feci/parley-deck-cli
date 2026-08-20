@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-rho-retrospective-optimization
-status: final-design-for-review
+status: final
 drafted-by: claude
 date: 2026-06-16
 participants: [claude, codex, agy, hermes]

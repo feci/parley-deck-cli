@@ -2,7 +2,7 @@
 idea: tui-action-execution
 finalized-by: codex
 date: 2026-05-25
-status: accepted
+status: final
 ---
 
 ## Decision
