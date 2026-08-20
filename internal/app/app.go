@@ -2112,9 +2112,26 @@ func selectDiscoveries(results []agents.Discovery, agentID string) ([]agents.Dis
 	return nil, fmt.Errorf("unknown agent %s", agentID)
 }
 
+// probeDirFor resolves the runtime-probe directory to an ABSOLUTE path.
+//
+// The probe prompt hands this path to the agent, and an agent is not obliged to run in parley's
+// working directory. hermes resolves relative paths against $HOME whatever the process cwd is, and
+// neither `--in` nor `--no-restore-cwd` changes it (measured, Hermes Agent v0.20.4). A relative
+// probe path therefore wrote the file to ~/parley-deck/... while `agents verify --full` looked in
+// the repository and reported "did not create <path>" — literally true, materially wrong, and it
+// cost three rounds of misdiagnosis before the stray tree was found. Telling every adapter exactly
+// where to write is cheaper than assuming each one is already there.
+func probeDirFor(root, runID string) string {
+	dir := filepath.Join(root, protocol.DeckDir, "meta", "runtime-probes", runID)
+	if abs, err := filepath.Abs(dir); err == nil {
+		return abs
+	}
+	return dir
+}
+
 func runFullVerification(ctx context.Context, root string, selected []agents.Discovery, stdout io.Writer) error {
 	runID := store.NewRunID(time.Now())
-	probeDir := filepath.Join(root, protocol.DeckDir, "meta", "runtime-probes", runID)
+	probeDir := probeDirFor(root, runID)
 	if err := os.MkdirAll(probeDir, 0o755); err != nil {
 		return err
 	}
