@@ -291,3 +291,44 @@ func TestReviewConsensusTemplateMatchesTheDriverSchema(t *testing.T) {
 		t.Error("template pre-answers outstanding_agreed_fixes as 0")
 	}
 }
+
+// Review round 1, @kimi-1 MAJOR: excluding the implementer from the participant list made its OWN
+// signoff an "unknown participant", and malformed outranks every other triage — nine review
+// consensuses in this deck flipped to malformed, two of them in flight.
+//
+// Who is AWAITED and who may SIGN are different questions.
+func TestTheImplementerMaySignAReviewConsensusEvenThoughItIsNotAwaited(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	for _, agent := range []string{"rev-a", "impl"} {
+		if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: agent, Status: "accept", Notes: "ok", Review: true, Now: now}); err != nil {
+			t.Fatalf("%s could not sign: %v", agent, err)
+		}
+	}
+
+	summary, err := Status(root, "sample", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range summary.Errors {
+		if strings.Contains(e, "unknown participant") {
+			t.Fatalf("the implementer's own signoff was rejected: %v", summary.Errors)
+		}
+	}
+	if summary.Triage != TriageReady {
+		t.Fatalf("triage=%s, want ready; errors=%v missing=%v", summary.Triage, summary.Errors, summary.Missing)
+	}
+	// …and it is still not AWAITED: absent, the consensus is still ready.
+	for _, m := range summary.Missing {
+		if strings.Contains(m, "impl") {
+			t.Fatalf("implementer is awaited again: %v", summary.Missing)
+		}
+	}
+}

@@ -110,7 +110,16 @@ func Status(root, ideaSlug string, review bool) (Summary, error) {
 	//
 	// Same rule as the round gate (codex-1/F2), applied at close: exclude the resolved
 	// implementer, and fail closed to the full list when it cannot be resolved.
-	return validateDocument(idea.Slug, expectedRoundParticipants(idea.Path, idea.Participants, review), review, doc), nil
+	// Two different questions, and collapsing them broke nine review consensuses (review round 1,
+	// @kimi-1 MAJOR):
+	//   - WHO IS AWAITED?  not the implementer — §6 forbids it reviewing its own work (F2/F3).
+	//   - WHO MAY SIGN?    the implementer certainly may, and does: its "fix-up cycle N applied
+	//                      the agreed fixes" report is a signoff this deck writes constantly.
+	// Passing the reduced list to validateDocument answered both with the first, so the
+	// implementer's own signoff became "unknown participant", and malformed outranks every other
+	// triage. Two in-flight ideas flipped to malformed.
+	return validateDocumentAwaiting(idea.Slug, idea.Participants,
+		expectedRoundParticipants(idea.Path, idea.Participants, review), review, doc), nil
 }
 
 func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
@@ -433,12 +442,19 @@ func parseDocument(path string) (document, error) {
 	return doc, nil
 }
 
+// validateDocument keeps its signature for callers that await exactly the participants they list.
 func validateDocument(ideaSlug string, participants []string, review bool, doc document) Summary {
+	return validateDocumentAwaiting(ideaSlug, participants, participants, review, doc)
+}
+
+// validateDocumentAwaiting separates who may SIGN (known) from who is AWAITED (required).
+// A signoff from a known participant is always valid; only `required` drives missing/triage.
+func validateDocumentAwaiting(ideaSlug string, known, required []string, review bool, doc document) Summary {
 	summary := Summary{
 		Idea:         ideaSlug,
 		Path:         doc.Path,
 		Review:       review,
-		Participants: append([]string(nil), participants...),
+		Participants: append([]string(nil), required...),
 		Signoffs:     append([]Signoff(nil), doc.Signoffs...),
 	}
 	// The consensus document declares which idea it belongs to, and nothing checked it — a
@@ -453,7 +469,7 @@ func validateDocument(ideaSlug string, participants []string, review bool, doc d
 	hasBlock := false
 	for _, signoff := range doc.Signoffs {
 		switch {
-		case !contains(participants, signoff.Agent):
+		case !contains(known, signoff.Agent):
 			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: unknown participant %s", signoff.Line, signoff.Agent))
 		case signed[signoff.Agent]:
 			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: duplicate signoff for %s", signoff.Line, signoff.Agent))
@@ -481,7 +497,7 @@ func validateDocument(ideaSlug string, participants []string, review bool, doc d
 			}
 		}
 	}
-	for _, participant := range participants {
+	for _, participant := range required {
 		if !signed[participant] {
 			summary.Missing = append(summary.Missing, participant)
 		}
