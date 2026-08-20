@@ -336,7 +336,31 @@ func parseDocument(path string) (document, error) {
 	}
 	lines := strings.Split(string(data), "\n")
 	doc := document{Path: path, Raw: string(data)}
+	// Signoffs count only from the `## Signoffs` heading onward.
+	//
+	// The parser used to scan every line with no idea which section it was in, so a
+	// `### Signoff:` block quoted as an example under an earlier section counted as real
+	// append-only approval and could carry the consensus gate on its own (audit finding
+	// codex-1/F20).
+	//
+	// A stricter "must be inside the Signoffs section" rule was measured and rejected: 32 of this
+	// deck's 405 signoffs legitimately sit under later headings such as
+	// "Cycle 2 (review/round-02 → complete)". Position is the property that separates the two —
+	// measured across every consensus.md and review/consensus.md in the deck, 405 of 405 real
+	// signoffs appear at or after the heading and none before it.
+	signoffsFrom := len(lines)
+	for i, line := range lines {
+		if rest, ok := strings.CutPrefix(strings.TrimSpace(line), "## "); ok {
+			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(rest)), "signoff") {
+				signoffsFrom = i
+				break
+			}
+		}
+	}
 	for i := 0; i < len(lines); i++ {
+		if i < signoffsFrom {
+			continue
+		}
 		match := signoffHeader.FindStringSubmatch(strings.TrimSpace(lines[i]))
 		if len(match) != 3 {
 			continue

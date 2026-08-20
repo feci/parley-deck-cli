@@ -115,3 +115,47 @@ func TestFinalDrafterIsTheFallbackImplementer(t *testing.T) {
 		t.Fatalf("want only eve, got %v", got)
 	}
 }
+
+// codex-1/F20: signoff-shaped headings anywhere in the document used to satisfy the consensus
+// gate, so example or quoted text under an earlier section counted as real approval.
+func TestSignoffsBeforeTheSignoffsHeadingDoNotCount(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "consensus.md")
+	writeF(t, path, strings.Join([]string{
+		"---", "idea: x", "---", "",
+		"## Agreed decisions", "",
+		"### Signoff: alice — 2026-01-01", "Status: accept", "",
+		"### Signoff: bob — 2026-01-01", "Status: accept", "",
+		"## Signoffs", "",
+		"_nobody has signed here_", "",
+	}, "\n"))
+
+	doc, err := parseDocument(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Signoffs) != 0 {
+		t.Fatalf("example signoffs above the heading were counted as approval: %+v", doc.Signoffs)
+	}
+}
+
+// The 32 real signoffs that sit under later headings such as "Cycle 2 (…)" must keep counting;
+// a stricter "inside the Signoffs section only" rule would have dropped them.
+func TestSignoffsUnderLaterHeadingsStillCount(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "consensus.md")
+	writeF(t, path, strings.Join([]string{
+		"## Signoffs", "",
+		"### Signoff: alice — 2026-01-01", "Status: accept", "",
+		"## Cycle 2 (review/round-02 → complete)", "",
+		"### Signoff: bob — 2026-01-02", "Status: accept", "",
+	}, "\n"))
+
+	doc, err := parseDocument(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Signoffs) != 2 {
+		t.Fatalf("want both signoffs, got %d: %+v", len(doc.Signoffs), doc.Signoffs)
+	}
+}
