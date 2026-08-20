@@ -88,12 +88,25 @@ func TestValidateImplementationAndReviewArtifacts(t *testing.T) {
 		t.Fatal("wrong idea slug must fail")
 	}
 	rev := filepath.Join(dir, "rev.md")
-	mustWrite(t, rev, "---\nagent: rev1\nidea: demo\nreview-round: 2\n---\n\n## Refutation attempts\ntried to break it; held\n\n## Findings\nnone\n")
+	mustWrite(t, rev, "---\nagent: rev1\nidea: demo\nreview-round: 2\nreviewed-commit: abc1234\n---\n\n## Refutation attempts\ntried to break it; held\n\n## Findings\nnone\n")
 	if err := ValidateReviewArtifact(rev, "rev1", "demo", 2); err != nil {
 		t.Fatalf("valid review rejected: %v", err)
 	}
 	if err := ValidateReviewArtifact(rev, "rev1", "demo", 1); err == nil {
 		t.Fatal("wrong review-round must fail")
+	}
+
+	// codex-1/F18: a review must name the tree it reviewed, or a stale review is
+	// indistinguishable from a current one.
+	noCommit := filepath.Join(dir, "rev-nocommit.md")
+	mustWrite(t, noCommit, "---\nagent: rev1\nidea: demo\nreview-round: 2\n---\n\n## Refutation attempts\ntried\n\n## Findings\nnone\n")
+	if err := ValidateReviewArtifact(noCommit, "rev1", "demo", 2); err == nil {
+		t.Fatal("a review without reviewed-commit must fail")
+	}
+	emptyCommit := filepath.Join(dir, "rev-emptycommit.md")
+	mustWrite(t, emptyCommit, "---\nagent: rev1\nidea: demo\nreview-round: 2\nreviewed-commit:\n---\n\n## Refutation attempts\ntried\n\n## Findings\nnone\n")
+	if err := ValidateReviewArtifact(emptyCommit, "rev1", "demo", 2); err == nil {
+		t.Fatal("an empty reviewed-commit must fail")
 	}
 }
 
@@ -125,7 +138,9 @@ func TestFakeReviewHelper(t *testing.T) {
 	if len(out) != 2 || len(idea) != 2 || len(round) != 2 {
 		t.Fatalf("review prompt missing path/idea/round:\n%s", string(input))
 	}
-	body := "---\nagent: rev1\nidea: " + idea[1] + "\nreview-round: " + round[1] + "\n---\n\n## Summary\nlgtm\n\n## Refutation attempts\ntried to break each criterion; held\n\n## Findings\n### [NIT] tiny\nnit.\n\n## Open questions\nnone\n"
+	// The prompt asks the reviewer to name the tree it reviewed (codex-1/F18); a fake reviewer
+	// that ignores that instruction would not be exercising the real contract.
+	body := "---\nagent: rev1\nidea: " + idea[1] + "\nreview-round: " + round[1] + "\nreviewed-commit: deadbee\n---\n\n## Summary\nlgtm\n\n## Refutation attempts\ntried to break each criterion; held\n\n## Findings\n### [NIT] tiny\nnit.\n\n## Open questions\nnone\n"
 	if err := os.WriteFile(out[1], []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}

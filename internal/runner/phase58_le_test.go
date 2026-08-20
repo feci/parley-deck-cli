@@ -47,7 +47,7 @@ func TestValidateReviewArtifactRequiresRefutation(t *testing.T) {
 		t.Fatal("an empty '## Refutation attempts' section must be rejected (F5)")
 	}
 	// A real heading with content validates.
-	if err := os.WriteFile(p, []byte("---\nagent: rev\nidea: demo\nreview-round: 1\n---\n\n## Refutation attempts\ntried X; held\n\n## Findings\nnone\n"), 0o644); err != nil {
+	if err := os.WriteFile(p, []byte("---\nagent: rev\nidea: demo\nreview-round: 1\nreviewed-commit: cafe123\n---\n\n## Refutation attempts\ntried X; held\n\n## Findings\nnone\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := ValidateReviewArtifact(p, "rev", "demo", 1); err != nil {

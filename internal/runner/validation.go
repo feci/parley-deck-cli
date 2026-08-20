@@ -33,10 +33,31 @@ func ValidateRoundArtifact(path, agentID, ideaSlug string, round int) error {
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(string(data), "## ") {
+	body := string(data)
+	if !strings.Contains(body, "## ") {
 		return fmt.Errorf("%s has no section headings", path)
 	}
+	// Later rounds have no fixed section list, so the floor is that at least one section says
+	// something — same defect as codex-1/F17, one level looser.
+	if !anySectionHasContent(body) {
+		return fmt.Errorf("%s has section headings but no content under any of them", path)
+	}
 	return nil
+}
+
+func anySectionHasContent(body string) bool {
+	for _, part := range strings.Split(body, "\n## ")[1:] {
+		if i := strings.Index(part, "\n"); i >= 0 {
+			for _, line := range strings.Split(part[i:], "\n") {
+				trimmed := strings.TrimSpace(line)
+				if trimmed == "" || strings.HasPrefix(trimmed, "<!--") {
+					continue
+				}
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
@@ -67,8 +88,36 @@ func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
 		if !strings.Contains(body, section) {
 			return fmt.Errorf("%s missing required section %q", path, section)
 		}
+		// A heading is not an answer. The validator used to check only that the four headings
+		// existed, so an artifact with every required section EMPTY completed round 1 and the
+		// auto-driver advanced on it (audit finding codex-1/F17). Measured before enforcing:
+		// of 211 round-01 artifacts carrying all four sections, 0 have an empty one.
+		if !sectionHasContent(body, section) {
+			return fmt.Errorf("%s has an empty required section %q", path, section)
+		}
 	}
 	return nil
+}
+
+// sectionHasContent reports whether the named heading is followed by anything but blank lines
+// and HTML comments, up to the next `## ` heading.
+func sectionHasContent(body, section string) bool {
+	idx := strings.Index(body, section)
+	if idx < 0 {
+		return false
+	}
+	rest := body[idx+len(section):]
+	if next := strings.Index(rest, "\n## "); next >= 0 {
+		rest = rest[:next]
+	}
+	for _, line := range strings.Split(rest, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "<!--") {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func readRoundOneFrontmatter(path string) (map[string]string, error) {

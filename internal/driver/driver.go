@@ -463,9 +463,27 @@ func (d *Driver) emitRoundDigest(round int, next string) {
 	})
 }
 
+// hasRespondingTo requires the key to carry actual names.
+//
+// It used to accept the key's mere presence, so `responding-to: []` — or the bare key — satisfied
+// the cross-review gate while naming nobody (audit finding codex-1/F16). The gate exists to prove
+// a reviewer read its peers; an empty list proves the opposite.
+//
+// Measured before enforcing: of 162 design artifacts carrying the key, 162 carry names.
 func hasRespondingTo(path string) bool {
-	_, ok := readFrontmatterField(path, "responding-to")
-	return ok
+	value, ok := readFrontmatterField(path, "responding-to")
+	if !ok {
+		return false
+	}
+	trimmed := strings.TrimSpace(value)
+	trimmed = strings.TrimPrefix(trimmed, "[")
+	trimmed = strings.TrimSuffix(trimmed, "]")
+	for _, entry := range strings.Split(trimmed, ",") {
+		if strings.TrimSpace(entry) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // validateCrossReviewBody enforces the D4 cross-review evidence: the artifact must

@@ -249,6 +249,8 @@ Rules:
 - Each finding states what is wrong, why it matters, and the concrete fix.
 - Under "## Refutation attempts", record the criteria/cases you tried to break and the result; an empty "## Findings" is only credible when refutation attempts are recorded.
 - The first line of the file must be exactly "---".
+- Record the exact tree you reviewed in "reviewed-commit:" — run 'git rev-parse HEAD' and paste it.
+  A review that does not name its tree cannot be told apart from a stale one later.
 - Return only a short confirmation with the path written.
 
 Required file shape:
@@ -256,6 +258,7 @@ Required file shape:
 agent: %s
 idea: %s
 review-round: %d
+reviewed-commit: <output of 'git rev-parse HEAD'>
 date: %s
 ---
 
@@ -436,6 +439,15 @@ func ValidateReviewArtifact(path, agentID, ideaSlug string, round int) error {
 	// content — a substring mention or an empty section is a rubber-stamp, not work shown.
 	if !hasNonEmptySection(content, "## Refutation attempts") {
 		return fmt.Errorf("%s missing a non-empty '## Refutation attempts' section (refutation-default: a review must record what it tried to break)", path)
+	}
+	// A review is a statement about a specific tree. Without `reviewed-commit` nobody can tell
+	// which one, so a stale review is indistinguishable from a current one and "the tree does not
+	// move while a review round is open" becomes unverifiable after the fact (codex-1/F18).
+	//
+	// Measured before enforcing: 348 of 539 review artifacts already carry it. The 191 that do not
+	// are historical and are not revalidated; this binds new reviews.
+	if commit := strings.Trim(strings.TrimSpace(meta["reviewed-commit"]), `"'`); commit == "" {
+		return fmt.Errorf("%s frontmatter has no reviewed-commit: a review must name the tree it reviewed", path)
 	}
 	return nil
 }
