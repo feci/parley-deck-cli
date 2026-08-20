@@ -64,8 +64,10 @@ type gateKind string
 
 const (
 	gateBreakingFreshness gateKind = "breaking-freshness"
-	gateUnknownRole       gateKind = "unknown-role"
-	gateExcludeAgent      gateKind = "exclude-agent"
+	// gateUnknownFreshness fires when there is no hash to compare, so "in sync" cannot be claimed.
+	gateUnknownFreshness gateKind = "unknown-freshness"
+	gateUnknownRole      gateKind = "unknown-role"
+	gateExcludeAgent     gateKind = "exclude-agent"
 )
 
 // gate is a pending readiness gate that requires explicit user confirmation. A
@@ -416,6 +418,20 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 	}
 
 	// Consumer path.
+	//
+	// Two MISSING hashes compare equal, so a fresh deck whose version.json records neither hash
+	// was reported "in sync" no matter what the protocol actually said — including an altered one
+	// (audit finding codex-1/F24). An equality test is only evidence when both sides exist; with
+	// nothing to compare, the honest answer is that freshness is unknown.
+	if meta.ProtocolSha256 == "" || meta.PackagedProtocolSha256 == "" {
+		fr.Classification = "unknown-freshness"
+		fr.Summary = "consumer — cannot compare protocol hashes (deck and/or packaged hash is absent); freshness unknown"
+		return fr, []gate{{
+			Kind:    gateUnknownFreshness,
+			Detail:  "meta/version.json has no protocol hash to compare; confirm the deck protocol before relying on freshness",
+			Confirm: confirmCommand(opts.Root),
+		}}, nil
+	}
 	if meta.ProtocolSha256 == meta.PackagedProtocolSha256 {
 		fr.Classification = "in-sync"
 		fr.Summary = "consumer — protocol matches packaged skill (in sync)"
