@@ -12,6 +12,7 @@ import (
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runaction"
+	"parley-deck-cli/internal/track"
 )
 
 const (
@@ -231,11 +232,31 @@ func currentRound(input Input) string {
 // round; the policy adds N cross-review rounds, so the last deliberation round is
 // 1+cross_review_rounds.
 func nextCrossReviewRound(ideaDir, completedRound string) string {
+	// §4.0's per-track table is the authoritative gate and it SKIPS cross-review on `fast`. The
+	// planner consulted only `cross_review_rounds:` (defaulting it to 1) and never looked at
+	// `track:`, so it told a fast-track idea to open the very round its track skips — driving the
+	// operator into a phase the binding route excludes (audit finding codex-1/F7).
+	if t, present, err := readIdeaTrack(ideaDir); err == nil && present && t == track.Fast {
+		return ""
+	}
 	n := roundOrdinal(completedRound)
 	if n < 1 || n >= 1+readCrossReviewRounds(ideaDir) {
 		return ""
 	}
 	return fmt.Sprintf("round-%02d", n+1)
+}
+
+// readIdeaTrack reads §4.0's `track:` from an idea's 00-prompt.md.
+func readIdeaTrack(ideaDir string) (track.Track, bool, error) {
+	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
+	if err != nil {
+		return track.Standard, false, err
+	}
+	raw, ok := meta["track"]
+	if !ok {
+		return track.Standard, false, nil
+	}
+	return track.NormalizeStrict(raw)
 }
 
 func roundOrdinal(label string) int {
