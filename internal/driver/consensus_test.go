@@ -61,7 +61,7 @@ func (f *fakeConsensus) Reopen(ctx context.Context, reason string) error {
 	return nil
 }
 
-const validFinal = "---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\nThe driver advances the deliberation through a disk-derived cursor and an\nordered switch over the round and consensus phases, gated by transport.\nThe consensus gate drafts, collects signoffs, and finalizes autonomously.\nThis paragraph is padded well beyond two hundred and fifty bytes so the\nnon-scaffold length check passes comfortably during the unit test run.\n"
+const validFinal = "---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\nThe driver advances the deliberation through a disk-derived cursor and an\nordered switch over the round and consensus phases, gated by transport.\nThe consensus gate drafts, collects signoffs, and finalizes autonomously.\nThis paragraph is padded well beyond two hundred and fifty bytes so the\nnon-scaffold length check passes comfortably during the unit test run.\n\n\n## Purpose / user-visible outcome\nN/A\n\n## Context & orientation\nN/A\n\n## Observable acceptance criteria\nN/A\n\n## Idempotence & recovery\nN/A\n\n## Known risks / de-risking\nN/A\n\n## References\nN/A\n"
 
 func writeConsensusDoc(t *testing.T, ideaDir, body string) {
 	t.Helper()
@@ -140,7 +140,7 @@ func TestConsensusReadyButFinalScaffoldEscalates(t *testing.T) {
 	parts := []string{"codex", "claude"}
 	ideaDir, runDir := setupIdea(t, parts, "")
 	writeConsensusDoc(t, ideaDir, "consensus")
-	scaffold := "---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<fill in the agreed plan here>\n"
+	scaffold := "---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<fill in the agreed plan here>\n\n\n## Purpose / user-visible outcome\nN/A\n\n## Context & orientation\nN/A\n\n## Observable acceptance criteria\nN/A\n\n## Idempotence & recovery\nN/A\n\n## Known risks / de-risking\nN/A\n\n## References\nN/A\n"
 	fc := &fakeConsensus{
 		statusSeq:    []string{consensus.TriageReady},
 		onDraftFinal: func() { os.WriteFile(filepath.Join(ideaDir, "FINAL.md"), []byte(scaffold), 0o644) },
@@ -168,7 +168,7 @@ func TestConsensusReadyRevalidatesExistingScaffoldFinal(t *testing.T) {
 	ideaDir, runDir := setupIdea(t, parts, "")
 	writeConsensusDoc(t, ideaDir, "consensus")
 	if err := os.WriteFile(filepath.Join(ideaDir, "FINAL.md"),
-		[]byte("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<todo>\n"), 0o644); err != nil {
+		[]byte("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<todo>\n\n\n## Purpose / user-visible outcome\nN/A\n\n## Context & orientation\nN/A\n\n## Observable acceptance criteria\nN/A\n\n## Idempotence & recovery\nN/A\n\n## Known risks / de-risking\nN/A\n\n## References\nN/A\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	fc := &fakeConsensus{
@@ -323,7 +323,12 @@ func TestConsensusGateUnwiredStopsAtBoundary(t *testing.T) {
 }
 
 func TestFinalScaffoldReason(t *testing.T) {
-	dir := t.TempDir()
+	// FINAL.md lives at ideas/<slug>/FINAL.md in production, and the gate now checks that the
+	// frontmatter slug matches the directory it closes, so the fixture directory must be the slug.
+	dir := filepath.Join(t.TempDir(), "demo")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	write := func(body string) string {
 		p := filepath.Join(dir, "FINAL.md")
 		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
@@ -337,15 +342,15 @@ func TestFinalScaffoldReason(t *testing.T) {
 	if finalScaffoldReason(write("too short")) == "" {
 		t.Fatal("short FINAL.md should be rejected")
 	}
-	if finalScaffoldReason(write("---\nidea: demo\nstatus: draft\n---\n\n## Final plan / specification\nplenty of words here to exceed the length threshold for the scaffold check, padding padding padding padding padding padding padding.\nline two\nline three\n")) == "" {
+	if finalScaffoldReason(write("---\nidea: demo\nstatus: draft\n---\n\n## Final plan / specification\nplenty of words here to exceed the length threshold for the scaffold check, padding padding padding padding padding padding padding.\nline two\nline three\n\n\n## Purpose / user-visible outcome\nN/A\n\n## Context & orientation\nN/A\n\n## Observable acceptance criteria\nN/A\n\n## Idempotence & recovery\nN/A\n\n## Known risks / de-risking\nN/A\n\n## References\nN/A\n")) == "" {
 		t.Fatal("non-final status should be rejected")
 	}
-	if finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<...> padding padding padding padding padding padding padding padding padding padding padding padding padding padding padding.\nline two\nline three\n")) == "" {
+	if finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\n<...> padding padding padding padding padding padding padding padding padding padding padding padding padding padding padding.\nline two\nline three\n\n\n## Purpose / user-visible outcome\nN/A\n\n## Context & orientation\nN/A\n\n## Observable acceptance criteria\nN/A\n\n## Idempotence & recovery\nN/A\n\n## Known risks / de-risking\nN/A\n\n## References\nN/A\n")) == "" {
 		t.Fatal("unexpanded <...> placeholder should be rejected")
 	}
 	// Legitimate angle-bracket content (e.g. a help-text example) must be allowed,
 	// not treated as a scaffold placeholder (false positive found in the live run).
-	if r := finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\nReword the error to `Unknown option '<option>'` and point users at --help for the path `<path>`.\nKeep the change to wording only and verify the help output renders.\nThis line pads the section beyond the length threshold for the scaffold check comfortably.\n")); r != "" {
+	if r := finalScaffoldReason(write("---\nidea: demo\nstatus: final\n---\n\n## Final plan / specification\nReword the error to `Unknown option '<option>'` and point users at --help for the path `<path>`.\nKeep the change to wording only and verify the help output renders.\nThis line pads the section beyond the length threshold for the scaffold check comfortably.\n\n\n## Purpose / user-visible outcome\nN/A\n\n## Context & orientation\nN/A\n\n## Observable acceptance criteria\nN/A\n\n## Idempotence & recovery\nN/A\n\n## Known risks / de-risking\nN/A\n\n## References\nN/A\n")); r != "" {
 		t.Fatalf("legitimate <option>/<path> content rejected: %s", r)
 	}
 }

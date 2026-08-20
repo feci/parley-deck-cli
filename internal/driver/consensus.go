@@ -161,6 +161,43 @@ func (d *Driver) invalidateStale() error {
 
 // finalScaffoldReason returns a non-empty reason when FINAL.md is still a scaffold
 // or otherwise unacceptable (consensus D7), or "" when it is acceptable content.
+// requiredFinalSections is the FINAL.md template from COOPERATION.md Phase 4. Content may be
+// `N/A`; the heading may not be absent.
+var requiredFinalSections = []string{
+	"## Final plan / specification",
+	"## Purpose / user-visible outcome",
+	"## Context & orientation",
+	"## Observable acceptance criteria",
+	"## Idempotence & recovery",
+	"## Known risks / de-risking",
+	"## References",
+}
+
+func missingFinalSections(body string) []string {
+	var missing []string
+	for _, section := range requiredFinalSections {
+		if !strings.Contains(body, section) {
+			missing = append(missing, strings.TrimPrefix(section, "## "))
+		}
+	}
+	return missing
+}
+
+// finalSlugMismatch reports a FINAL.md whose frontmatter names a different idea than the
+// directory it closes. codex-1/F22's fixture declared the wrong slug and the gate never looked;
+// measured across this deck, 0 of 78 FINAL.md files mismatch, so this costs nothing to enforce.
+func finalSlugMismatch(path string) string {
+	slug, _ := readFrontmatterField(path, "idea")
+	slug = strings.Trim(strings.TrimSpace(slug), `"'`)
+	if slug == "" {
+		return "FINAL.md frontmatter has no idea slug"
+	}
+	if dir := filepath.Base(filepath.Dir(path)); slug != dir {
+		return fmt.Sprintf("FINAL.md frontmatter idea=%q but it closes idea %q", slug, dir)
+	}
+	return ""
+}
+
 func finalScaffoldReason(path string) string {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -171,6 +208,9 @@ func finalScaffoldReason(path string) string {
 	}
 	if status, _ := readFrontmatterField(path, "status"); status != "final" {
 		return fmt.Sprintf("FINAL.md frontmatter status=%q, want final", status)
+	}
+	if reason := finalSlugMismatch(path); reason != "" {
+		return reason
 	}
 	body := string(data)
 	const section = "## Final plan / specification"
@@ -199,6 +239,18 @@ func finalScaffoldReason(path string) string {
 			}
 		}
 		content++
+	}
+	// The protocol's FINAL.md template (COOPERATION.md, Phase 4) names seven sections, and says
+	// their CONTENT may be `N/A` for trivial or design-only ideas — not that the sections may be
+	// absent. The gate never checked for them, so a FINAL carrying one generic heading and three
+	// padded lines passed as a complete specification (audit finding codex-1/F22).
+	//
+	// Measured before enforcing: of 78 FINAL.md files in this deck, 4 carry all seven sections and
+	// 31 carry even the specification heading this gate already required. That is not a reason to
+	// keep accepting scaffolds — it is the evidence that this gate has never bound. Historical
+	// files are unaffected; the check runs when a NEW final is gated.
+	if missing := missingFinalSections(body); len(missing) > 0 {
+		return "FINAL.md is missing required section(s): " + strings.Join(missing, ", ")
 	}
 	if content < 3 {
 		return "FINAL.md '## Final plan / specification' has fewer than 3 content lines (scaffold)"
