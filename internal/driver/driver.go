@@ -124,13 +124,21 @@ func New(cfg Config, r RoundRunner) *Driver {
 	// Advance rather than silently applied.
 	var trackErr error
 	if cfg.IdeaDir != "" {
-		t, present := ReadTrack(cfg.IdeaDir)
+		t, present, tErr := ReadTrackStrict(cfg.IdeaDir)
 		avail := distinctNonImplementers(cfg.Participants)
+		// A declared-but-unknown track is refused, not silently defaulted (codex-1/F15).
+		if tErr != nil {
+			trackErr = tErr
+			cfg.Track = string(t)
+		}
 		// The §4.0 contradiction check uses the IDEA-LEVEL auto_implement / strict_gate
 		// (review-01 fix), not cfg.AutoImplement — the latter is masked to false by the
 		// runtime --no-implement brake, which would otherwise let fast + auto_implement
 		// slip past the contradiction gate.
 		pol, err := track.PolicyFor(t, present, avail, ReadAutoImplement(cfg.IdeaDir), ReadStrictGate(cfg.IdeaDir))
+		if tErr != nil {
+			err = tErr
+		}
 		if err != nil {
 			trackErr = err
 			cfg.Track = string(t)

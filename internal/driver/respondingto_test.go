@@ -35,3 +35,33 @@ func TestRespondingToMustNameSomebody(t *testing.T) {
 		})
 	}
 }
+
+// codex-1/F15: a misspelled track was indistinguishable from an absent one, and "absent" means
+// "apply nothing" — so a typo silently switched off every standard-track cap.
+func TestMisspelledTrackIsRefusedNotDefaulted(t *testing.T) {
+	dir := t.TempDir()
+	write := func(v string) {
+		body := "---\nidea: demo\ntrack: " + v + "\n---\n\n## Prompt\n\nx\n"
+		if err := os.WriteFile(filepath.Join(dir, "00-prompt.md"), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write("standrd")
+	if _, _, err := ReadTrackStrict(dir); err == nil {
+		t.Fatal("a misspelled track must be reported, not silently defaulted")
+	}
+
+	write("deliberation")
+	tr, present, err := ReadTrackStrict(dir)
+	if err != nil || !present || string(tr) != "deliberation" {
+		t.Fatalf("valid track mis-read: %v %v %v", tr, present, err)
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, "00-prompt.md"), []byte("---\nidea: demo\n---\n\n## Prompt\n\nx\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, present, err := ReadTrackStrict(dir); err != nil || present {
+		t.Fatalf("an absent track is not an error: present=%v err=%v", present, err)
+	}
+}

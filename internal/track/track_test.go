@@ -102,16 +102,34 @@ func TestPolicyForStandardCapsCrossReview(t *testing.T) {
 	}
 }
 
+// codex-1/F14 is deferred, not fixed: see the comment in PolicyFor. This still pins today's
+// behaviour so the deferral is explicit rather than forgotten.
 func TestPolicyForAbsentIsLegacy(t *testing.T) {
 	p, err := PolicyFor(Standard, false, 3, false, false)
 	if err != nil {
 		t.Fatalf("absent track error: %v", err)
 	}
 	if p.ApplyOverrides {
-		t.Error("absent track must NOT apply overrides (legacy behaviour)")
+		t.Error("absent track must NOT apply overrides (legacy behaviour; F14 deferred)")
 	}
 	if p.CrossReviewRounds != -1 || p.MaxReviewers != 0 || p.MinReviewers != 0 || p.MaxFixupCycles != 0 {
 		t.Errorf("absent track must leave all knobs untouched, got %+v", p)
+	}
+}
+
+// codex-1/F15: a declared-but-unknown track used to be indistinguishable from an absent one, so a
+// typo silently disabled every cap while looking like a declaration.
+func TestInvalidTrackIsAnErrorNotASilentDefault(t *testing.T) {
+	if _, _, err := NormalizeStrict("standrd"); err == nil {
+		t.Fatal("a misspelled track must be an error, not a silent fallback")
+	}
+	if _, present, err := NormalizeStrict(""); err != nil || present {
+		t.Fatalf("an absent track is not an error: present=%v err=%v", present, err)
+	}
+	for _, valid := range []string{"fast", "Standard", " deliberation "} {
+		if _, present, err := NormalizeStrict(valid); err != nil || !present {
+			t.Errorf("NormalizeStrict(%q): present=%v err=%v", valid, present, err)
+		}
 	}
 }
 

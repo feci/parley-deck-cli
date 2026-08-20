@@ -33,17 +33,40 @@ const (
 // for a recognized value and (Standard, false) for absent/empty/unknown — so an
 // unrecognized or missing track fails safe to standard AND is reported as
 // "not explicitly declared" (the caller uses that to preserve legacy behaviour).
+// Normalize keeps its original contract for existing callers: (track, recognized). An
+// unrecognized value reports false exactly as before. Callers that must tell a TYPO from an
+// ABSENT track — and refuse the typo rather than silently defaulting — use NormalizeStrict.
 func Normalize(raw string) (Track, bool) {
-	v := strings.ToLower(strings.Trim(strings.TrimSpace(raw), "`'\"* "))
-	switch v {
-	case string(Fast):
-		return Fast, true
-	case string(Standard):
-		return Standard, true
-	case string(Deliberation):
-		return Deliberation, true
-	default:
+	t, present, err := NormalizeStrict(raw)
+	if err != nil {
 		return Standard, false
+	}
+	return t, present
+}
+
+// NormalizeStrict separates the three cases Normalize used to collapse into two.
+//
+// An ABSENT track and an INVALID one had the same result — (Standard, false) — and the caller
+// read `false` as "legacy idea, apply nothing". So `track: standrd` silently disabled every
+// standard-track cap while looking like a declaration (audit finding codex-1/F15). A typo must
+// not be a quieter way to opt out of the caps than deleting the line.
+//
+// Returns: the track, whether one was DECLARED at all, and an error for a declared-but-unknown
+// value.
+func NormalizeStrict(raw string) (Track, bool, error) {
+	trimmed := strings.Trim(strings.TrimSpace(raw), "`'\"* ")
+	if trimmed == "" {
+		return Standard, false, nil
+	}
+	switch strings.ToLower(trimmed) {
+	case string(Fast):
+		return Fast, true, nil
+	case string(Standard):
+		return Standard, true, nil
+	case string(Deliberation):
+		return Deliberation, true, nil
+	default:
+		return Standard, true, fmt.Errorf("track: %q is not a valid track (want fast, standard or deliberation)", trimmed)
 	}
 }
 
@@ -130,6 +153,16 @@ func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, str
 	// Absent track → legacy behaviour, nothing overridden. (The non-solo floor for
 	// legacy ideas is enforced at the app/preflight layer; this path preserves
 	// today's driver behaviour byte-for-byte.)
+	// codex-1/F14 (§4.0 says the default is `standard`, but an absent track applies none of
+	// standard's caps) is REAL and is NOT fixed here. Attempting it revealed that the finding is
+	// not a one-line default: `ApplyOverrides: true` does not supply a default, it OVERRIDES an
+	// idea's own configuration. Applying standard's policy to an absent track stomped explicitly
+	// configured caps — a fixture with MaxFixupCycles=5 was forced to 2 — which is a different and
+	// worse bug than the one being fixed.
+	//
+	// Fixing it properly means deciding what a "default" means against a configured value, per
+	// knob, and that is a design decision this fix batch is not the place for. Deferred with the
+	// reason recorded rather than shipped half-right; see the audit's fix notes.
 	if !present {
 		return Policy{Track: Standard, ApplyOverrides: false, CrossReviewRounds: -1}, nil
 	}

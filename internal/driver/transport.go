@@ -76,10 +76,21 @@ func ReadRequireModelDiversity(ideaDir string) bool {
 // today's behaviour, while an explicit fast|standard|deliberation yields (…, true)
 // and opts into the §4.0 per-track ceremony (idea track-aware-driver).
 func ReadTrack(ideaDir string) (track.Track, bool) {
+	t, present, _ := ReadTrackStrict(ideaDir)
+	return t, present
+}
+
+// ReadTrackStrict additionally reports a DECLARED-BUT-UNKNOWN track as an error.
+//
+// `track: standrd` used to be indistinguishable from writing no track at all, and the caller
+// reads "no track" as "legacy idea, apply nothing" — so a typo silently switched off every
+// standard-track cap while looking on the page like a declaration (audit finding codex-1/F15).
+// A misspelling must not be a quieter way to opt out than deleting the line.
+func ReadTrackStrict(ideaDir string) (track.Track, bool, error) {
 	if v, ok := readFrontmatterField(filepath.Join(ideaDir, "00-prompt.md"), "track"); ok {
-		return track.Normalize(v)
+		return track.NormalizeStrict(v)
 	}
-	return track.Standard, false
+	return track.Standard, false, nil
 }
 
 func normalizeTransport(raw string) string {
