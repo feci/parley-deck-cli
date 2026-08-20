@@ -67,7 +67,7 @@ func InitWorkspaceWithTransport(root, transport string) error {
 		return err
 	}
 
-	return os.WriteFile(cooperation, []byte(cooperationForInit(transport)), 0o644)
+	return os.WriteFile(cooperation, []byte(cooperationForInitAt(transport, root, time.Now())), 0o644)
 }
 
 // writeInitVersionMeta writes meta/version.json with protocolRole:"consumer" so a
@@ -89,14 +89,31 @@ func writeInitVersionMeta(deck string) error {
 	return os.WriteFile(path, []byte(meta), 0o644)
 }
 
+// defaultCooperationForInit is the STATIC bootstrap template: transport swapped, every other
+// placeholder deliberately intact. The drift guard pins it, and the skill ships the same shape as
+// a vendor-neutral reference, so it must not acquire this machine's date or directory name.
 func defaultCooperationForInit() string {
-	return cooperationForInit("")
+	target := "local-dir"
+	return strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `"+target+"`", 1)
 }
 
 // cooperationForInit returns the embedded default protocol with its transport
 // line set to the requested transport. Empty or unknown transports default to
 // local-dir.
 func cooperationForInit(transport string) string {
+	return cooperationForInitAt(transport, "", time.Now())
+}
+
+// cooperationForInitAt fills the embedded template's placeholders.
+//
+// `init` used to substitute the transport and nothing else, so every CLI-created deck started
+// with `**Workspace:** <workspace-name>` and `**Created:** <date> — created by parley init`
+// still literally in the header — false provenance on the protocol's own first lines, while the
+// command reported initialization complete (audit finding codex-1/F19).
+//
+// The workspace name is the deck root's directory name, which is what a human would write there;
+// an empty or unusable root leaves the placeholder rather than inventing an identity.
+func cooperationForInitAt(transport, root string, now time.Time) string {
 	target := "local-dir"
 	switch transport {
 	case "github-pr":
@@ -104,7 +121,25 @@ func cooperationForInit(transport string) string {
 	case "gitlab-mr":
 		target = "gitlab-mr"
 	}
-	return strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `"+target+"`", 1)
+	out := strings.Replace(defaultCooperation, "**Transport:** `github-pr`", "**Transport:** `"+target+"`", 1)
+	out = strings.Replace(out, "**Created:** `<date> — created by parley init`",
+		"**Created:** `"+now.Format("2006-01-02")+" — created by parley init`", 1)
+	if name := workspaceName(root); name != "" {
+		out = strings.Replace(out, "**Workspace:** `<workspace-name>`", "**Workspace:** `"+name+"`", 1)
+	}
+	return out
+}
+
+func workspaceName(root string) string {
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return ""
+	}
+	name := filepath.Base(abs)
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		return ""
+	}
+	return name
 }
 
 func CreateIdea(root, task string, participants []string) (IdeaStatus, error) {
