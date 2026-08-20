@@ -934,14 +934,42 @@ func TestConsensusCLIWorkflowAndIdeaStatus(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
+	// finalize is two steps since codex-1/F5: the first writes the scaffold and says the idea is
+	// NOT closed; the second closes it once the scaffold has been written up.
 	code = Run([]string{"consensus", "finalize", "--dir", root, "--by", "codex", "sample"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("finalize code=%d stderr=%s", code, stderr.String())
 	}
-	if _, err := os.Stat(filepath.Join(ideaDir, "FINAL.md")); err != nil {
+	if !strings.Contains(stdout.String(), "NOT closed") {
+		t.Fatalf("scaffold step must not read as a closure:\n%s", stdout.String())
+	}
+	finalPath := filepath.Join(ideaDir, "FINAL.md")
+	if _, err := os.Stat(finalPath); err != nil {
 		t.Fatal(err)
 	}
 	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meta["status"] == "final" {
+		t.Fatal("the idea was closed around an unwritten scaffold")
+	}
+
+	var written strings.Builder
+	written.WriteString("---\nidea: sample\nstatus: final\nauthor: codex\n---\n\n")
+	for _, section := range protocol.RequiredFinalSections {
+		written.WriteString(section + "\n\nReal content.\nSecond line.\nThird line.\n\n")
+	}
+	if err := os.WriteFile(finalPath, []byte(written.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code = Run([]string{"consensus", "finalize", "--dir", root, "--by", "codex", "sample"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("second finalize code=%d stderr=%s", code, stderr.String())
+	}
+	meta, err = protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -63,6 +63,9 @@ type Summary struct {
 	Signoffs     []Signoff `json:"signoffs"`
 	Missing      []string  `json:"missing,omitempty"`
 	Errors       []string  `json:"errors,omitempty"`
+	// Scaffolded is true when finalize WROTE the FINAL.md template and deliberately left the idea
+	// open. It is not an error and not a closure; the drafter fills the scaffold in and re-runs.
+	Scaffolded bool `json:"scaffolded,omitempty"`
 }
 
 type Signoff struct {
@@ -220,20 +223,36 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 		return "", Summary{}, fmt.Errorf("cannot finalize consensus with triage=%s", summary.Triage)
 	}
 
+	// `finalize` used to write the FINAL.md scaffold and set `status: final` in the same breath,
+	// so an idea was permanently closed around an empty outline while the command printed success
+	// (audit finding codex-1/F5). FINAL.md is the single source of truth; closing an idea around a
+	// template makes that statement false.
+	//
+	// It is now two truthful steps, and re-running it is how you take the second:
+	//   1. no FINAL.md          → write the scaffold, leave the idea OPEN, say so
+	//   2. FINAL.md written     → close the idea
+	//   2'. FINAL.md still a scaffold → refuse, and name exactly what is missing
 	path := filepath.Join(idea.Path, "FINAL.md")
-	if _, err := os.Stat(path); err == nil {
-		return "", Summary{}, fmt.Errorf("%s already exists", path)
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return "", Summary{}, err
+	existing, statErr := os.ReadFile(path)
+	switch {
+	case statErr == nil:
+		if reason := protocol.FinalIsScaffold(string(existing)); reason != "" {
+			return "", Summary{}, fmt.Errorf("%s is still a scaffold: %s — write it, then re-run finalize to close the idea", path, reason)
+		}
+	case errors.Is(statErr, os.ErrNotExist):
+		now := opts.Now
+		if now.IsZero() {
+			now = time.Now()
+		}
+		if err := writeFileAtomic(path, []byte(finalTemplate(idea, opts.By, now)), 0o644); err != nil {
+			return "", Summary{}, err
+		}
+		summary.Scaffolded = true
+		return path, summary, nil
+	default:
+		return "", Summary{}, statErr
 	}
 
-	now := opts.Now
-	if now.IsZero() {
-		now = time.Now()
-	}
-	if err := writeFileAtomic(path, []byte(finalTemplate(idea, opts.By, now)), 0o644); err != nil {
-		return "", Summary{}, err
-	}
 	if err := updateIdeaStatus(idea.Path, "final"); err != nil {
 		return "", Summary{}, err
 	}
@@ -686,8 +705,19 @@ date: %s
 `, idea.Slug, by, now.Format("2006-01-02"), roundRel)
 }
 
+// finalTemplate emits the FINAL.md scaffold.
+//
+// It used to emit `### Goal / Scope / Implementation details / Tests / Non-goals / Verification`
+// under a single `## Final plan / specification` heading — a shape the protocol's Phase 4 template
+// does not describe. That is why only 4 of this deck's 78 FINAL.md files carry the seven sections
+// the protocol requires: the tool wrote different ones, and no gate compared them.
+//
+// The scaffold now carries the protocol's headings with explicit `<fill …>` placeholders, so
+// `protocol.FinalIsScaffold` can tell an unwritten FINAL from a written one, and
+// `consensus finalize` refuses to close an idea around it.
 func finalTemplate(idea protocol.IdeaStatus, by string, now time.Time) string {
-	return fmt.Sprintf(`---
+	var b strings.Builder
+	fmt.Fprintf(&b, `---
 idea: %s
 status: final
 author: %s
@@ -695,25 +725,20 @@ consensus-date: %s
 participants: [%s]
 ---
 
-## Final plan / specification
-
-### Goal
-
-### Scope
-
-### Implementation details
-
-### Tests
-
-### Non-goals
-
-### Verification
-
-## References
-
-- Consensus: ./consensus.md
-- Rounds: ./round-01/
 `, idea.Slug, firstNonEmpty(by, "user"), now.Format("2006-01-02"), strings.Join(idea.Participants, ", "))
+
+	for _, section := range protocol.RequiredFinalSections {
+		fmt.Fprintf(&b, "%s\n\n", section)
+		switch section {
+		case "## Final plan / specification":
+			b.WriteString("<fill in the agreed plan: goal, scope, implementation details, tests, non-goals, verification>\n\n")
+		case "## References":
+			b.WriteString("- Consensus: ./consensus.md\n- Rounds: ./round-01/\n\n")
+		default:
+			b.WriteString("<fill in, or write N/A if this idea is trivial or design-only>\n\n")
+		}
+	}
+	return b.String()
 }
 
 func signoffBlock(agent, date, status, notes, counter string) string {

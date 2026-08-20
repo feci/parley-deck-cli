@@ -124,26 +124,56 @@ func TestFinalizeCreatesFinalAndUpdatesStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Step 1: the scaffold is written and the idea stays OPEN. Closing an idea around an empty
+	// outline is what codex-1/F5 caught.
 	finalPath, summary, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now})
 	if err != nil {
 		t.Fatal(err)
 	}
+	if !summary.Scaffolded {
+		t.Fatalf("first finalize should report a scaffold, got %+v", summary)
+	}
 	if summary.Triage != TriageReady {
 		t.Fatalf("summary=%+v", summary)
-	}
-	if _, err := os.Stat(finalPath); err != nil {
-		t.Fatal(err)
 	}
 	finalData, err := os.ReadFile(finalPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"### Goal", "### Scope", "### Implementation details", "### Tests", "### Non-goals", "### Verification"} {
+	for _, want := range protocol.RequiredFinalSections {
 		if !strings.Contains(string(finalData), want) {
-			t.Fatalf("FINAL.md missing %q:\n%s", want, finalData)
+			t.Fatalf("scaffold missing the protocol section %q:\n%s", want, finalData)
 		}
 	}
+	assertPromptStatus(t, root, "sample", "consensus")
+
+	// Step 1': re-running while it is still a scaffold must refuse and say why.
+	if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err == nil {
+		t.Fatal("finalize closed the idea around an unwritten scaffold")
+	} else if !strings.Contains(err.Error(), "scaffold") {
+		t.Fatalf("refusal does not name the cause: %v", err)
+	}
+	assertPromptStatus(t, root, "sample", "consensus")
+
+	// Step 2: once written, finalize closes the idea.
+	writeFile(t, finalPath, writtenFinal("sample"))
+	if _, summary, err = Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	if summary.Scaffolded {
+		t.Fatal("a written FINAL.md must close the idea, not report a scaffold")
+	}
 	assertPromptStatus(t, root, "sample", "final")
+}
+
+// writtenFinal is a FINAL.md with every protocol section filled in.
+func writtenFinal(slug string) string {
+	var b strings.Builder
+	b.WriteString("---\nidea: " + slug + "\nstatus: final\nauthor: codex\n---\n\n")
+	for _, section := range protocol.RequiredFinalSections {
+		b.WriteString(section + "\n\nReal content for this section.\nA second line of detail.\nA third line of detail.\n\n")
+	}
+	return b.String()
 }
 
 func TestReservedFinalizeRequiresOpenItems(t *testing.T) {
@@ -182,6 +212,17 @@ func TestReservedFinalizeSucceedsWithOpenItems(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Two steps since codex-1/F5: scaffold first, close once it is written.
+	finalPath, summary, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !summary.Scaffolded {
+		t.Fatalf("first finalize should report a scaffold, got %+v", summary)
+	}
+	assertPromptStatus(t, root, "sample", "consensus")
+
+	writeFile(t, finalPath, writtenFinal("sample"))
 	if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err != nil {
 		t.Fatal(err)
 	}

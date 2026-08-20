@@ -641,7 +641,15 @@ func runConsensusFinalize(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "consensus finalize failed: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "Finalized consensus and created %s\n", path)
+	// Two outcomes, and they must not print the same sentence. Writing the scaffold is a step;
+	// closing the idea is the step after it (audit finding codex-1/F5).
+	if summary.Scaffolded {
+		fmt.Fprintf(stdout, "Wrote the FINAL.md scaffold at %s\n", path)
+		fmt.Fprintln(stdout, "The idea is NOT closed. Fill in the sections, then re-run `consensus finalize` to close it.")
+		printConsensusSummary(stdout, summary)
+		return 0
+	}
+	fmt.Fprintf(stdout, "Finalized consensus and closed the idea using %s\n", path)
 	printConsensusSummary(stdout, summary)
 	return 0
 }
