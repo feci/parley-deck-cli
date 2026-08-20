@@ -207,3 +207,23 @@ func TestPolicyForDeliberationBoundsBothLoopsAndKeepsTheRest(t *testing.T) {
 			p.MaxReviewers, p.MinReviewers, p.CrossReviewRounds)
 	}
 }
+
+// codex-1/F13: `parley classify` refused an explicit `standard` as under-tiered when
+// auto_implement or strict_gate was set, while the driver's own policy accepted the same
+// declaration and applied standard's smaller caps. The advisory command and the executing one
+// must not disagree about whether a run is safe.
+func TestExplicitStandardIsRefusedUnderDeliberationTriggers(t *testing.T) {
+	if _, err := PolicyFor(Standard, true, 3, true, false); err == nil {
+		t.Error("standard + auto_implement must be refused (§4.0 deliberation trigger)")
+	}
+	if _, err := PolicyFor(Standard, true, 3, false, true); err == nil {
+		t.Error("standard + strict_gate must be refused (§4.0 deliberation trigger)")
+	}
+	if _, err := PolicyFor(Standard, true, 3, false, false); err != nil {
+		t.Errorf("plain standard must still be accepted: %v", err)
+	}
+	// deliberation is the escape hatch and must keep working with both triggers.
+	if _, err := PolicyFor(Deliberation, true, 3, true, true); err != nil {
+		t.Errorf("deliberation must accept both triggers: %v", err)
+	}
+}

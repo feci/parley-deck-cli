@@ -198,6 +198,18 @@ func PolicyFor(t Track, present bool, availableReviewers int, autoImplement, str
 			MaxFixupCycles:       5,
 		}, nil
 	default: // explicit Standard
+		// §4.0's classifier ordering is normative and fail-safe: `auto_implement` and
+		// `strict_gate` are deliberation triggers, and an explicitly declared `standard` used to
+		// be accepted anyway — so `parley classify` correctly refused the declaration as
+		// under-tiered while the driver went ahead and applied standard's smaller reviewer and
+		// fix-up caps to the same idea (audit finding codex-1/F13). The advisory command and the
+		// executing one must not disagree about whether a run is safe.
+		if autoImplement {
+			return Policy{}, fmt.Errorf("track: standard is under-tiered with auto_implement — auto_implement is a §4.0 deliberation trigger; use track: deliberation or remove auto_implement")
+		}
+		if strictGate {
+			return Policy{}, fmt.Errorf("track: standard is under-tiered with strict_gate — strict_gate is a §4.0 deliberation trigger; use track: deliberation or remove strict_gate")
+		}
 		min := 2
 		if availableReviewers <= 1 { // §4.0 two-participant degradation
 			min = 1
