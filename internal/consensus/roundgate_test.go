@@ -257,3 +257,37 @@ func TestReviewConsensusDoesNotAwaitTheImplementersSignoff(t *testing.T) {
 		t.Fatalf("triage=%s, want ready once every reviewer accepted (missing=%v errors=%v)", summary.Triage, summary.Missing, summary.Errors)
 	}
 }
+
+// codex-1/F10: the review-consensus generator wrote `cycle:` where the protocol requires
+// `review-cycle:`, and emitted neither `outstanding_agreed_fixes` nor `blocked` — which the
+// auto-driver requires. The manual command produced an artifact its own automation rejects.
+func TestReviewConsensusTemplateMatchesTheDriverSchema(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	summary, err := Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, ReviewedCommit: "abc1234", Now: time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(summary.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(data)
+
+	for _, want := range []string{"review-cycle:", "outstanding_agreed_fixes:", "blocked:"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("review consensus template is missing %q:\n%s", want, body)
+		}
+	}
+	if strings.Contains(body, "\ncycle:") {
+		t.Errorf("template still writes the non-schema `cycle:` key:\n%s", body)
+	}
+	// The count must be a placeholder the drafter replaces, never a silent 0 — asserting
+	// "nothing outstanding" on the drafter's behalf is the claim the gate exists to check.
+	if strings.Contains(body, "outstanding_agreed_fixes: 0") {
+		t.Error("template pre-answers outstanding_agreed_fixes as 0")
+	}
+}

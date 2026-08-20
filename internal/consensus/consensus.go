@@ -693,9 +693,18 @@ func draftTemplate(idea protocol.IdeaStatus, opts DraftOptions, roundLabel, roun
 		if cycle == "" {
 			cycle = "1"
 		}
+		// The generator wrote `cycle:` while the protocol requires `review-cycle:`, and emitted
+		// neither `outstanding_agreed_fixes` nor `blocked` — which the auto-driver requires as a
+		// non-negative integer. So the manual command produced an artifact that violated the
+		// documented schema and could not be consumed by this tool's own Phase 7/8 gate
+		// (audit finding codex-1/F10). `outstanding_agreed_fixes` is seeded as a placeholder the
+		// drafter must replace, not as 0: defaulting it to zero would assert "nothing outstanding"
+		// on the drafter's behalf, which is the claim the gate exists to check.
 		return fmt.Sprintf(`---
 idea: %s
-cycle: %s
+review-cycle: %s
+outstanding_agreed_fixes: <count the agreed fixes below and replace this>
+blocked: false
 drafted-by: %s
 date: %s
 reviewed-commit: %s
