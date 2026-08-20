@@ -142,6 +142,8 @@ Usage:
   %s consult [--dir DIR] [--timeout D] AGENT [QUESTION]
   %s consults list [--dir DIR]
   %s retro <scan|select|diagnose|propose> [--dir DIR] [--k N] [--json] [--slug SLUG]
+  %s learn [--dir DIR] [--json] IDEA
+  %s preset list [--dir DIR] [--json]
   %s preflight [--dir DIR] [--json] [--yes] [--ping-timeout D] [--no-ping]
   %s run [--no-tui] [--no-auto] [--no-preflight] [--no-ping] [--participants AGENTS] [--yes] TASK
   %s continue [--dir DIR] [--json] RUN_OR_IDEA
@@ -325,6 +327,8 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
+		appName,
 		appName,
 		appName,
 		appName,
