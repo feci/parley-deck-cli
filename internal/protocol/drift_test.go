@@ -217,11 +217,11 @@ func TestDefaultCooperationForInit(t *testing.T) {
 	out := defaultCooperationForInit()
 
 	mustContain := []string{
-		"**Transport:** `local-dir`",                                  // the swap happened
-		"## 12. Pipeline blocks & action stages",                      // §12 carried
-		"ratified by idea `meta-protocol-change-end-to-end-pipeline`", // §12 provenance kept
-		"**Workspace:** `<workspace-name>`",                           // static placeholder
-		"created by parley init",                                      // created-date placeholder
+		"**Transport:** `local-dir`",                              // the swap happened
+		"## 12. Pipeline blocks & action stages",                  // §12 carried
+		"ratified by idea `2026-06-02T12-07-14-meta-protocol-ch`", // §12 provenance kept (zcode-1/F6: the old slug named no idea that ever existed)
+		"**Workspace:** `<workspace-name>`",                       // static placeholder
+		"created by parley init",                                  // created-date placeholder
 	}
 	for _, s := range mustContain {
 		if !strings.Contains(out, s) {
