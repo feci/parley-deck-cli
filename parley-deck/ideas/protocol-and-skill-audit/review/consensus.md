@@ -5,7 +5,7 @@ outstanding_agreed_fixes: 0
 blocked: false
 drafted-by: claude-1
 date: 2026-08-21
-reviewed-commit: 1f3d971e8dea20d52cfd3b5cd9b43b51201aedc3
+reviewed-commit: 745ead5b3cae8436aac3de1bf2b8dd0f046bdb5b
 ---
 
 # Review consensus — cycle 1, amended through fix-up cycle 3
@@ -29,7 +29,9 @@ by splitting `known` from `required`.
 
 **CORRECTION (cycle 3).** This paragraph previously read *"6 flips, all `partial → ready`, zero
 regressions"*. @codex-1 refuted it and was right on both counts; the claim was measured on one
-class of change only. The three-way sweep over all 66 review consensuses in this deck
+class of change only. The three-way sweep over all 66 review consensuses in this deck (65 resolvable —
+`launch-orphan-hardening` carries a `review/consensus.md` with no `00-prompt.md` and errors
+identically under all three binaries; @kimi-1 caught the loose wording)
 (`consensus status --review --json`, base `a1926ae` → reviewed `0bb9903` → HEAD):
 
 | binary | flips vs base | shape |
@@ -125,6 +127,18 @@ reports "in sync" without a packaged hash to compare against. `parley init` addi
 the hash of the COOPERATION.md it just wrote, and deliberately does **not** invent a packaged hash
 it never computed — that would recreate F24 with a fabricated value instead of an absent one.
 
+## Known limits of these fixes, stated rather than discovered later
+
+- **`preflight --yes` clears the freshness gate per confirmation, not permanently**, on a deck
+  whose installed skill exposes no packaged protocol body: with no packaged hash to persist, the
+  next plain `preflight` raises `unknown-freshness` again. That is the deliberate consequence of
+  refusing to invent a packaged hash — the alternative recreates F24 with a fabricated value
+  instead of an absent one. @kimi-1 raised it; it is a limit, not a defect, and a reader should
+  know it. A permanent clear requires the packaged side to exist.
+- **The `reviewed-commit` gate binds new drafts only.** Rounds whose consensus already exists are
+  never revalidated — `Draft` refuses outright when `consensus.md` is present. @hermes-1's Q2
+  measured how much of this deck's own record predates the rule.
+
 ## Clean results, recorded because they are evidence
 
 **@opencode-1 — no existing test was weakened.** Its whole slice was the question I could not
@@ -183,4 +197,51 @@ previously undispositioned MAJORs are a new section. Nothing already agreed was 
 Signoffs on this amended document are `signoff3-<agent>.md`; the cycle-2 blocks are preserved as
 `signoff2-<agent>.md` and are not overwritten.
 
+## Cycle 3 — a fifth finding, found by chasing a false claim
+
+Four reviewers converged, independently, on one hole none of the cycle-3 fixes had closed:
+**reverting only `consensus.Finalize`'s `protocol.ValidateFinal(body, idea.Slug)` back to the
+content-only `protocol.FinalIsScaffold(body)` left the whole Go suite green.** The gate was pinned
+through the driver; the manual binding — the exact entry point @codex-1's MAJOR described — was
+not. The fix was real and working; the pin was missing.
+
+@codex-1 blocked on it with a precise counter-proposal. @zcode-1 recorded it as the single
+reservation keeping it from an unqualified ✅. @kimi-1 reached it in its own analysis. @hermes-1
+named the mutation — and named the **wrong test** for it, tagging PRIMARY a claim that
+`TestAFinalBuiltFromThePromptSatisfiesTheProductionGate` would fail. It does not; the mutation was
+run and that test passes. **The claim was false and the hole it pointed at was real.**
+
+Closed by `745ead5`: `TestFinalizeRejectsASubstantiveFinalWithTheWrongSlugOrStatus`, three
+subtests (another idea's FINAL / non-final status / no slug at all), each driving the production
+`Finalize` with a fully substantive seven-section FINAL. @codex-1 re-ran its exact mutation against
+the landed commit: all three subtests fail, `go test ./...` exits 1. Unmutated: exit 0.
+
+**§15 note, second occurrence.** @hermes-1 filed a PRIMARY-tagged claim that does not survive
+execution — after an earlier round of this same idea discarded seven of its tie-break verdicts for
+fabricated PRIMARY evidence. Its cycle-3 verdict is recorded as filed, but this consensus does not
+rest on any @hermes-1 claim that was not independently reproduced. Its value this round was
+adversarial by accident: a wrong answer aimed at a real question.
+
+**Disclosure — the tree moved mid-round.** The test above was written after @hermes-1's signoff and
+before @kimi-1's and @codex-1's, and sat uncommitted in the shared working tree while they ran.
+@zcode-1 saw it there, applied the diff in its own clone, and said so in its signoff. @kimi-1 and
+@codex-1 reviewed the committed tree at `39dbc77` and did not see it. It landed as `745ead5` after
+four of five signoffs, and @codex-1 re-verified against that commit. Nothing else moved.
+
 ## Signoffs
+
+Cycle 3, at `745ead5` (@codex-1 re-verified there; the other four at `39dbc77`, which differs only
+by this one test file):
+
+| Agent | Verdict |
+| --- | --- |
+| @codex-1 | ✅ ACCEPT — block flipped after re-checking its one remaining condition |
+| @kimi-1 | ✅ ACCEPT — block flipped; two non-blocking observations, both recorded above |
+| @opencode-1 | ✅ ACCEPT |
+| @zcode-1 | 🟡 ACCEPT WITH RESERVATIONS — block flipped; its stated reservation is discharged by `745ead5`, in its own words |
+| @hermes-1 | ✅ ACCEPT — recorded as filed; see the §15 note above |
+
+Signoff files: `signoff3-<agent>.md`. Cycle-2 blocks are preserved as `signoff2-<agent>.md` and
+were not overwritten.
+
+**Outstanding agreed fixes: 0.**

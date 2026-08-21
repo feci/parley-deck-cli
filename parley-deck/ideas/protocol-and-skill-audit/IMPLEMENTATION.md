@@ -161,3 +161,32 @@ review consensuses: reviewed `0bb9903` had **30** flips vs base (24 of them `→
 - `parley init` writes a real workspace name and date; verified end to end.
 - Reversion checks in isolated copies for the probe path, F20, F22, F5 and F24 — each fails
   without its fix.
+
+## Fix-up cycle 3 — closed
+
+`745ead5`. **Outstanding agreed fixes: 0.** All five non-implementers signed: @codex-1, @kimi-1,
+@opencode-1 and @hermes-1 ✅ ACCEPT; @zcode-1 🟡 ACCEPT WITH RESERVATIONS, its single reservation
+discharged by `745ead5` in its own words. Every cycle-2 block flipped.
+
+A fifth defect surfaced during the cycle-3 round itself and is fixed in `745ead5`: reverting only
+`consensus.Finalize`'s `protocol.ValidateFinal(body, idea.Slug)` to the content-only
+`protocol.FinalIsScaffold(body)` left the entire suite green — the manual binding was unpinned even
+though the fix behind it worked. @codex-1 blocked on it, @zcode-1 reserved on it, @kimi-1 reached
+it independently, and @hermes-1 pointed at it with a false PRIMARY claim about which test caught
+it. Four different routes to one hole.
+
+**Verification at `745ead5`:**
+- `go test ./...` — 27 packages, exit 0, foreground, exit code read from the test process.
+- `npm test` (`parley-deck-skill`) — 388 pass / 0 fail, exit 0, read the same way.
+- @codex-1 re-ran the exact mutation against the landed commit: three subtests fail,
+  `go test ./...` exits 1; unmutated, exit 0.
+- @zcode-1 and @kimi-1 each ran their own three-binary sweep over the deck's review consensuses
+  and reproduced the corrected 30-vs-5 flip counts exactly.
+
+**Known limits, stated rather than left to be discovered:** `preflight --yes` clears the freshness
+gate *per confirmation* on a deck whose installed skill exposes no packaged protocol body — the
+deliberate price of not inventing a packaged hash. The `reviewed-commit` gate binds new drafts
+only. Both are in `review/consensus.md`.
+
+**Still deferred:** codex-1/F6, F8, F14; kimi-1/F1, F5 — reasons above, upheld by @codex-1 in
+cycle 2.
