@@ -1,5 +1,95 @@
 # Changelog
 
+## 1.46.0 — 2026-08-21
+
+A protocol-and-skill audit by six agents, and the fix-up cycles it took to close. 37 findings were
+confirmed; 33 are fixed here, 4 remain deferred with recorded reasons. Nothing in this release is
+a feature — it is enforcement catching up with what the protocol already said.
+
+### The defect class this release is mostly about
+
+**A printed rule binds only where enforcement lives.** Nine of the fixes below are the same shape:
+a rule stated in `COOPERATION.md` or in a prompt, enforced on one of two entry points, silently
+absent from the other. The audit found it, then committed it twice more while fixing it.
+
+### Fixed — gates that accepted emptiness
+
+- `consensus draft` accepted a blank round artifact, or one with no headings, as a filed round.
+- `consensus finalize` closed an idea around an unwritten `FINAL.md` scaffold, and — through the
+  manual path only — around a **substantive FINAL belonging to a different idea, or one whose
+  `status:` was not `final`**. `protocol.ValidateFinal` is now the single gate for both the manual
+  command and the driver; `internal/driver`'s second section list and second section checker are
+  deleted.
+- `consensus draft --review` accepted review artifacts with **no `reviewed-commit`** and no
+  `## Refutation attempts`. The driver had validated these since the rule was introduced; the
+  manual command never did. `ValidateReviewArtifact` moved to `internal/protocol` and now binds
+  both.
+- The implementation gate accepted **any non-empty status** — `status: banana` validated — and
+  matched `## Summary of work` as a substring, so a bare heading and a prose mention both passed.
+  Now a closed vocabulary and a non-empty-section check. Measured before enforcing: zero live
+  artifacts in this deck are newly rejected.
+- The pipeline treated the first-step FINAL scaffold as a completed block, because the scaffold
+  carries `status: final` from step one.
+
+### Fixed — quorum and roster
+
+- **The deliberation review quorum silently dropped the implementer's required signoff.** §6 forbids
+  the implementer *authoring* a review; §4.0 requires *all participants* to sign on the
+  deliberation track. One list answered both questions. `reviewConsensusVoters` now splits them.
+- **The implementer's own signoff made every review consensus it appeared in `malformed`** —
+  measured across this deck: 24 consensuses flipped, two of them in flight.
+- **Standalone `parley preflight` probed every installed adapter family instead of the roster.** On
+  this deck it reported on seven adapter families including `agy`, which is not in the roster, and
+  printed "Ready: no pending gates". `parley run` was already correct. §9.0 requires probing every
+  rostered participant.
+
+### Fixed — freshness and metadata
+
+- **Two missing hashes compared equal**, so a fresh deck was reported "in sync" whatever its
+  protocol said — including an altered one. An equality test is evidence only when both sides exist.
+- The gate that fix introduced **could not be cleared**: its own displayed `--yes` remedy had no
+  branch for it, so a freshly initialized deck could never be reported ready. `--yes` now hashes the
+  live protocol (and the packaged body when the installed skill exposes one), persists both, and
+  states exactly what it compared. It never claims "in sync" without a packaged hash.
+- `parley init` records the hash of the `COOPERATION.md` it just wrote, and deliberately does not
+  invent a packaged hash it never computed.
+- `parley init` used to leave `**Workspace:** <workspace-name>` and `**Created:** <date>` literally
+  in the header — false provenance on the protocol's own first lines.
+
+### Fixed — things the protocol told you to do that did not work
+
+- **`parley roster render`, which `COOPERATION.md` instructs the bootstrap to run, broke the repo's
+  own drift guard.** The generated §2 table does not reproduce the anchor's hand-typed column
+  padding and adds a `State` column. The anchors now match on column signature.
+- **`masked-by-env` was in the closed STATUS vocabulary with nothing able to emit it.** `roster set`
+  printed it once to stderr after a write; `roster show` had no path to it at all. A status nobody
+  can observe is documentation of a behaviour that does not exist.
+- The driver instructed its own FINAL drafter to produce an artifact its own gate rejects. The
+  prompt is now generated from `protocol.RequiredFinalSections`, and a contract test builds a FINAL
+  from nothing but the prompt's own text and feeds it to the gate.
+
+### Fixed — protocol text
+
+`COOPERATION.md` §2 now documents all three roster-authority states; §12.12's dangling slug, the
+Quickstart's missing §15/§10, §3's layout omissions and §11.B's self-contradicting branch-protection
+advice are corrected. `learn` and `preset list` are visible in `--help`. 20 closed ideas carried a
+stale non-terminal `status:`.
+
+### Deferred, with reasons
+
+`codex-1/F6` (needs a designed semantic signal for an adversarial alternative — substring inference
+would not safely enforce §15.6), `codex-1/F8` (a missing collapsed fast-track close path),
+`codex-1/F14` (needs per-knob precedence; applying standard defaults blindly would overwrite
+explicit idea configuration), `kimi-1/F1` (needs a manifest describing the *installed* core shape,
+which includes payload absent from the source add-on manifest).
+
+### Known environment limitation
+
+`go test ./...` exits 0 on an unsandboxed macOS host and 1 inside a Codex Seatbelt sandbox, failing
+only `TestDurableKillEndToEndRealProcess`: seatbelt denies `sysctl kern.boottime`, so `procctl`
+cannot verify process identity and correctly refuses to kill. Shim the sysctl or run with
+`-skip TestDurableKillEndToEndRealProcess`.
+
 ## 1.45.0 — 2026-08-19
 
 ### Added — the `zcode` adapter
