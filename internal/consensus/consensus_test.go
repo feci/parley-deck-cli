@@ -387,3 +387,61 @@ func assertPromptStatus(t *testing.T, root, slug, want string) {
 		t.Fatalf("status=%q, want %q", got, want)
 	}
 }
+
+// codex-1's filed MAJOR was narrower than the scaffold check that got written for it: manual
+// `consensus finalize` accepted a SUBSTANTIVE FINAL whose `idea:` named a different idea and whose
+// `status:` was not `final` — the two things the driver checked and the manual path did not.
+//
+// This exists because reducing protocol.ValidateFinal back to protocol.FinalIsScaffold left the
+// whole consensus package green: every finalize test used a well-formed slug and status, so the
+// half of the fix that closes codex-1's actual finding was untested. Found by chasing a false
+// claim in @hermes-1's cycle-3 signoff, which named this mutation and the wrong test for it.
+func TestFinalizeRejectsASubstantiveFinalWithTheWrongSlugOrStatus(t *testing.T) {
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	for _, tc := range []struct {
+		name   string
+		body   string
+		reason string
+	}{
+		{
+			name:   "another idea's FINAL",
+			body:   writtenFinal("some-other-idea"),
+			reason: "some-other-idea",
+		},
+		{
+			name:   "status is not final",
+			body:   strings.Replace(writtenFinal("sample"), "status: final", "status: final-design-for-review", 1),
+			reason: "status",
+		},
+		{
+			name:   "no idea slug at all",
+			body:   strings.Replace(writtenFinal("sample"), "idea: sample\n", "", 1),
+			reason: "slug",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := setupIdea(t, "sample", []string{"codex"})
+			writeRoundFiles(t, root, "sample", false, "round-01", []string{"codex"})
+			if _, err := Draft(root, "sample", DraftOptions{By: "codex", Now: now}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "codex", Status: "accept", Notes: "Accept.", Now: now}); err != nil {
+				t.Fatal(err)
+			}
+			finalPath, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now})
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Replace the scaffold with a fully substantive FINAL that is nonetheless not this
+			// idea's, or not final. The scaffold check alone cannot see either defect.
+			writeFile(t, finalPath, tc.body)
+
+			if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err == nil {
+				t.Fatal("finalize closed the idea around a FINAL that is not this idea's final artifact")
+			} else if !strings.Contains(err.Error(), tc.reason) {
+				t.Fatalf("refusal does not name the cause %q: %v", tc.reason, err)
+			}
+			assertPromptStatus(t, root, "sample", "consensus")
+		})
+	}
+}
