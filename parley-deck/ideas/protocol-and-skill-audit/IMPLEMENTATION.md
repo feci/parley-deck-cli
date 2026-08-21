@@ -190,3 +190,31 @@ only. Both are in `review/consensus.md`.
 
 **Still deferred:** codex-1/F6, F8, F14; kimi-1/F1, F5 — reasons above, upheld by @codex-1 in
 cycle 2.
+
+## Post-consensus fix-up — the design signoff round
+
+The DESIGN consensus (`consensus.md`) had never been signed. When it went to signoff, @codex-1 and
+@kimi-1 blocked and @opencode-1 and @zcode-1 reserved — all four on the ledger rather than the
+substance. Their findings, and the code fixes they produced, are dispositioned in
+`consensus.md` → "Dispositions added after the design signoff round".
+
+| Finding | Fix | Commit |
+| --- | --- | --- |
+| @codex-1 round-02 addendum — standalone `preflight` probed adapter families, not the roster (and included retired `agy`) | `rosterParticipants()`; falls back to installed agents only when no roster exists | `930c268` |
+| @claude-1/F2 — `parley roster render`, which the protocol instructs, broke the drift guard | drift anchors match on column signature, not hand-typed padding | `930c268` |
+| @claude-1/F3 — `masked-by-env` in the STATUS vocabulary with nothing able to emit it | `config.RosterMaskedFields` + `roster show` | `930c268` |
+| @codex-1/F23 — implementation gate accepted `status: banana` and an empty Summary | closed status vocabulary + non-empty-section rule | `815c93a` |
+| @kimi-1/F4 — `status` told a `source` deck to adopt the older packaged protocol | `recommendedActions` branches on `protocolRole` | `815c93a` |
+| this deck's `meta/version.json` never declared `protocolRole` | set to `source`; preflight now reports `source-advisory`, no gates | `815c93a` |
+| @codex-1/F20 — fixed in code and tests, missing from every Fixed table | recorded here; no code change needed | — |
+| @kimi-1/F5 — listed as *deferred* though §3 records it contested | re-recorded as **dismissed**; a contested finding is not a backlog item | — |
+
+**Verification:** `go test ./...` 27 packages exit 0; `npm test` 391 pass / 0 fail exit 0. Both
+foreground, exit code read from the process. Each fix mutation-checked individually.
+
+**Still deferred:** @codex-1/F6, F8, F14; @kimi-1/F1.
+
+**Open protocol follow-up:** the IMPLEMENTATION.md status vocabulary documented at
+`COOPERATION.md:454` (`implemented | fix-up-cycle-N | complete`) does not include
+`ready-for-review` or `in-progress`, which 5 live files use. The gate accepts all five so it
+rejects no existing work; reconciling the two needs its own idea.
