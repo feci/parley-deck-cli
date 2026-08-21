@@ -5,13 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"parley-deck-cli/internal/protocol"
 )
 
 // fullFinal is a FINAL.md that satisfies the protocol template.
 func fullFinal(slug string) string {
 	var b strings.Builder
 	b.WriteString("---\nidea: " + slug + "\nstatus: final\nauthor: a\n---\n\n")
-	for _, s := range requiredFinalSections {
+	for _, s := range protocol.RequiredFinalSections {
 		b.WriteString(s + "\n\nSubstantive content for this section, stated plainly.\nA second line of real detail.\nA third line of real detail.\n\n")
 	}
 	return b.String()
@@ -74,8 +76,8 @@ func TestCompleteFinalIsAccepted(t *testing.T) {
 func TestSectionsMayBeNA(t *testing.T) {
 	var b strings.Builder
 	b.WriteString("---\nidea: demo\nstatus: final\n---\n\n")
-	b.WriteString(requiredFinalSections[0] + "\n\nThe real specification lives here.\nSecond line.\nThird line.\n\n")
-	for _, s := range requiredFinalSections[1:] {
+	b.WriteString(protocol.RequiredFinalSections[0] + "\n\nThe real specification lives here.\nSecond line.\nThird line.\n\n")
+	for _, s := range protocol.RequiredFinalSections[1:] {
 		b.WriteString(s + "\n\nN/A\n\n")
 	}
 	if reason := finalScaffoldReason(writeFinal(t, "demo", b.String())); reason != "" {

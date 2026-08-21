@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"bufio"
+	"crypto/sha256"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -56,36 +57,49 @@ func InitWorkspaceWithTransport(root, transport string) error {
 		}
 	}
 
-	if err := writeInitVersionMeta(deck); err != nil {
-		return err
-	}
-
 	cooperation := filepath.Join(deck, "COOPERATION.md")
-	if _, err := os.Stat(cooperation); err == nil {
-		return nil
-	} else if !errors.Is(err, os.ErrNotExist) {
+	switch _, err := os.Stat(cooperation); {
+	case err == nil:
+		// Pre-existing protocol: still record metadata, but never clobber the file.
+	case errors.Is(err, os.ErrNotExist):
+		body := cooperationForInitAt(transport, root, time.Now())
+		if werr := os.WriteFile(cooperation, []byte(body), 0o644); werr != nil {
+			return werr
+		}
+	default:
 		return err
 	}
 
-	return os.WriteFile(cooperation, []byte(cooperationForInitAt(transport, root, time.Now())), 0o644)
+	return writeInitVersionMeta(deck, cooperation)
 }
 
 // writeInitVersionMeta writes meta/version.json with protocolRole:"consumer" so a
 // fresh workspace enters the consumer freshness path (preflight §9.0) instead of
 // failing open on absent metadata. It never clobbers an existing version.json.
-func writeInitVersionMeta(deck string) error {
+//
+// It records `protocolSha256` for the COOPERATION.md the deck actually starts with, so the
+// metadata describes this deck from its first minute. `packagedProtocolSha256` is deliberately
+// NOT written: `init` does not read the installed skill, and the deck's protocol is not
+// guaranteed to be byte-identical to the packaged one. Writing a guess there would make preflight
+// report "in sync" on the strength of a hash nobody computed.
+func writeInitVersionMeta(deck, cooperation string) error {
 	path := filepath.Join(deck, "meta", "version.json")
 	if _, err := os.Stat(path); err == nil {
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
+	sum := ""
+	if body, err := os.ReadFile(cooperation); err == nil {
+		sum = fmt.Sprintf("%x", sha256.Sum256(body))
+	}
 	meta := fmt.Sprintf(`{
   "protocolRole": "consumer",
   "deckVersion": "",
+  "protocolSha256": "%s",
   "created": "%s"
 }
-`, time.Now().Format("2006-01-02"))
+`, sum, time.Now().Format("2006-01-02"))
 	return os.WriteFile(path, []byte(meta), 0o644)
 }
 

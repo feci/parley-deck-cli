@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/track"
 )
 
 const (
@@ -119,7 +120,40 @@ func Status(root, ideaSlug string, review bool) (Summary, error) {
 	// implementer's own signoff became "unknown participant", and malformed outranks every other
 	// triage. Two in-flight ideas flipped to malformed.
 	return validateDocumentAwaiting(idea.Slug, idea.Participants,
-		expectedRoundParticipants(idea.Path, idea.Participants, review), review, doc), nil
+		reviewConsensusVoters(idea.Path, idea.Participants, review), review, doc), nil
+}
+
+// reviewConsensusVoters is who must SIGN a consensus — a different rule from who may AUTHOR a
+// review round.
+//
+// Phase 6 authorship and Phase 7 approval are separate: §6 forbids the implementer reviewing its
+// own work, while `deliberation`'s §4.0 row requires **all participants** to sign off. Reusing the
+// round-author list for the signoff quorum dropped the implementer's REQUIRED signature on
+// deliberation ideas, so a deliberation review consensus read `ready` while a mandatory signoff
+// was missing (review round 1, @codex-1 MAJOR).
+//
+// fast/standard: the reviewers who reviewed. deliberation: everyone.
+func reviewConsensusVoters(ideaDir string, participants []string, review bool) []string {
+	if !review {
+		return participants
+	}
+	if t, present, err := readIdeaTrack(ideaDir); err == nil && present && t == track.Deliberation {
+		return participants
+	}
+	return expectedRoundParticipants(ideaDir, participants, review)
+}
+
+// readIdeaTrack reads §4.0's `track:` from an idea's 00-prompt.md.
+func readIdeaTrack(ideaDir string) (track.Track, bool, error) {
+	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
+	if err != nil {
+		return track.Standard, false, err
+	}
+	raw, ok := meta["track"]
+	if !ok {
+		return track.Standard, false, nil
+	}
+	return track.NormalizeStrict(raw)
 }
 
 func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
@@ -140,8 +174,14 @@ func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
 		return Summary{}, err
 	}
 	expected := expectedRoundParticipants(idea.Path, idea.Participants, opts.Review)
-	if missing := missingRoundArtifacts(filepath.Join(roundBaseDir(idea.Path, opts.Review), roundLabel), expected); len(missing) > 0 {
+	roundDir := filepath.Join(roundBaseDir(idea.Path, opts.Review), roundLabel)
+	if missing := missingRoundArtifacts(roundDir, expected); len(missing) > 0 {
 		return Summary{}, fmt.Errorf("%s is incomplete; missing %s", roundRel, strings.Join(missing, ", "))
+	}
+	if opts.Review {
+		if err := validateReviewRound(roundDir, roundLabel, roundRel, idea.Slug, expected); err != nil {
+			return Summary{}, err
+		}
 	}
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -156,6 +196,36 @@ func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
 		}
 	}
 	return Status(root, ideaSlug, opts.Review)
+}
+
+// validateReviewRound applies the review-artifact contract to every expected file before a review
+// consensus may be drafted.
+//
+// The driver validated each artifact as its agent wrote it; `parley consensus draft --review` did
+// not, so the manual path accepted review files with no `reviewed-commit` and no
+// `## Refutation attempts`. That is this deck's recurring defect class — a printed rule binds only
+// where enforcement lives — applied to the rule that makes a review attributable to a tree
+// (codex-1, MAJOR, review round-02).
+//
+// The check binds what is being drafted now. Historical rounds whose consensus already exists are
+// never revalidated: Draft refuses outright when consensus.md is present.
+func validateReviewRound(roundDir, roundLabel, roundRel, ideaSlug string, expected []string) error {
+	number, err := strconv.Atoi(strings.TrimPrefix(roundLabel, "round-"))
+	if err != nil {
+		return fmt.Errorf("cannot read a round number from %q: %v", roundLabel, err)
+	}
+	var problems []string
+	for _, participant := range expected {
+		path := filepath.Join(roundDir, participant+".md")
+		if err := protocol.ValidateReviewArtifact(path, participant, ideaSlug, number); err != nil {
+			problems = append(problems, err.Error())
+		}
+	}
+	if len(problems) > 0 {
+		return fmt.Errorf("%s cannot be drafted; %d review artifact(s) do not meet the review contract:\n  %s",
+			roundRel, len(problems), strings.Join(problems, "\n  "))
+	}
+	return nil
 }
 
 func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) {
@@ -267,8 +337,11 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 	existing, statErr := os.ReadFile(path)
 	switch {
 	case statErr == nil:
-		if reason := protocol.FinalIsScaffold(string(existing)); reason != "" {
-			return "", Summary{}, fmt.Errorf("%s is still a scaffold: %s — write it, then re-run finalize to close the idea", path, reason)
+		// The same gate the driver applies — slug and status included. Checking content only let
+		// the manual path close an idea around an artifact declaring a different idea and a
+		// non-final status (review round 1, @codex-1 MAJOR).
+		if reason := protocol.ValidateFinal(string(existing), idea.Slug); reason != "" {
+			return "", Summary{}, fmt.Errorf("%s cannot close this idea: %s", path, reason)
 		}
 	case errors.Is(statErr, os.ErrNotExist):
 		now := opts.Now

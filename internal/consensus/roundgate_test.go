@@ -230,8 +230,13 @@ func TestConsensusDeclaringAnotherIdeaIsReported(t *testing.T) {
 
 // codex-1/F3: a review consensus demanded the implementer's signoff, which §6 forbids it from
 // giving, so a standard-track review consensus stayed `partial` however many reviewers accepted.
-func TestReviewConsensusDoesNotAwaitTheImplementersSignoff(t *testing.T) {
-	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+//
+// Scope: this is the STANDARD track, declared explicitly. The first version of this test declared
+// no track at all and then generalized its result to every track — which is exactly how the
+// deliberation quorum got weakened without a failing test (codex-1, MAJOR, review round-02). The
+// deliberation case is the separate test below, and the absent-track case is a third.
+func TestStandardReviewConsensusDoesNotAwaitTheImplementersSignoff(t *testing.T) {
+	root := setupIdeaWithTrack(t, "sample", []string{"impl", "rev-a"}, "standard")
 	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
 	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
 	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
@@ -330,5 +335,134 @@ func TestTheImplementerMaySignAReviewConsensusEvenThoughItIsNotAwaited(t *testin
 		if strings.Contains(m, "impl") {
 			t.Fatalf("implementer is awaited again: %v", summary.Missing)
 		}
+	}
+}
+
+// codex-1, MAJOR (review round-02): the driver validated review artifacts as agents wrote them,
+// but `parley consensus draft --review` did not — so the manual path drafted a review consensus
+// over files with no `reviewed-commit`, leaving the reviewed tree unnameable after the fact.
+func TestManualReviewDraftRejectsAnArtifactWithNoReviewedCommit(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	// Strip exactly one line — everything else about the artifact stays valid.
+	path := filepath.Join(ideaDir, "review", "round-01", "rev-a.md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stripped := strings.Replace(string(data), "reviewed-commit: abc1234\n", "", 1)
+	if stripped == string(data) {
+		t.Fatal("fixture no longer carries reviewed-commit; this test would prove nothing")
+	}
+	if err := os.WriteFile(path, []byte(stripped), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, Now: time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)})
+	if err == nil {
+		t.Fatal("manual review draft accepted a review with no reviewed-commit")
+	}
+	if !strings.Contains(err.Error(), "reviewed-commit") {
+		t.Fatalf("refusal does not name the cause: %v", err)
+	}
+	// The refusal must not have left a half-written consensus behind.
+	if _, statErr := os.Stat(filepath.Join(ideaDir, "review", "consensus.md")); !os.IsNotExist(statErr) {
+		t.Fatal("a rejected draft still wrote review/consensus.md")
+	}
+}
+
+// The same gate must not reject a review that only lacks the refutation section for a good
+// reason — it must reject it too. Both halves of the contract bind at the manual entry point.
+func TestManualReviewDraftRejectsAnArtifactWithNoRefutationSection(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	path := filepath.Join(ideaDir, "review", "round-01", "rev-a.md")
+	writeF(t, path, "---\nagent: rev-a\nidea: sample\nreview-round: 1\nreviewed-commit: abc1234\n---\n\n## Findings\n\nNone.\n")
+
+	_, err := Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, Now: time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)})
+	if err == nil {
+		t.Fatal("manual review draft accepted a review with no Refutation attempts section")
+	}
+	if !strings.Contains(err.Error(), "Refutation attempts") {
+		t.Fatalf("refusal does not name the cause: %v", err)
+	}
+}
+
+// The deliberation counterpart. §4.0's deliberation row requires ALL participants to sign off, so
+// excluding the implementer from the signoff quorum silently lowers the bar on exactly the track
+// that asked for the highest one. §6 still forbids it AUTHORING a review — the two rules are about
+// different acts, and conflating them is what produced the defect.
+func TestDeliberationReviewConsensusStillAwaitsTheImplementersSignoff(t *testing.T) {
+	root := setupIdeaWithTrack(t, "sample", []string{"impl", "rev-a"}, "deliberation")
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	// The implementer files no review — §6 forbids it — and the draft must still be allowed.
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, Now: now}); err != nil {
+		t.Fatalf("review draft rejected on the deliberation track: %v", err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "rev-a", Status: "accept", Notes: "ok", Review: true, Now: now}); err != nil {
+		t.Fatal(err)
+	}
+
+	summary, err := Status(root, "sample", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var awaited bool
+	for _, m := range summary.Missing {
+		if strings.Contains(m, "impl") {
+			awaited = true
+		}
+	}
+	if !awaited {
+		t.Fatalf("deliberation review consensus does not await the implementer: missing=%v triage=%s", summary.Missing, summary.Triage)
+	}
+	if summary.Triage == TriageReady {
+		t.Fatalf("triage=ready while a required deliberation signoff is missing: missing=%v", summary.Missing)
+	}
+
+	// Once it signs, the quorum is complete.
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "impl", Status: "accept", Notes: "ok", Review: true, Now: now}); err != nil {
+		t.Fatalf("the implementer could not sign: %v", err)
+	}
+	summary, err = Status(root, "sample", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriageReady {
+		t.Fatalf("triage=%s after every participant signed (missing=%v errors=%v)", summary.Triage, summary.Missing, summary.Errors)
+	}
+}
+
+// An idea with no `track:` key is not a deliberation idea. It keeps the standard quorum — pinned
+// so a later change cannot quietly make "absent" mean "deliberation" (or the reverse).
+func TestAbsentTrackReviewConsensusUsesTheStandardQuorum(t *testing.T) {
+	root := setupIdea(t, "sample", []string{"impl", "rev-a"})
+	ideaDir := filepath.Join(root, "parley-deck", "ideas", "sample")
+	writeF(t, filepath.Join(ideaDir, "IMPLEMENTATION.md"), "---\nidea: sample\nimplementer: impl\n---\n\n## Summary of work\nok\n")
+	writeRoundFiles(t, root, "sample", true, "round-01", []string{"rev-a"})
+
+	now := time.Date(2026, 5, 12, 0, 0, 0, 0, time.UTC)
+	if _, err := Draft(root, "sample", DraftOptions{By: "rev-a", Review: true, Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := AppendSignoff(root, "sample", SignoffOptions{Agent: "rev-a", Status: "accept", Notes: "ok", Review: true, Now: now}); err != nil {
+		t.Fatal(err)
+	}
+	summary, err := Status(root, "sample", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Triage != TriageReady {
+		t.Fatalf("triage=%s, want ready: an absent track must not adopt the deliberation quorum (missing=%v)", summary.Triage, summary.Missing)
 	}
 }

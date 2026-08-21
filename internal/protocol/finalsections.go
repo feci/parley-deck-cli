@@ -1,6 +1,9 @@
 package protocol
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // RequiredFinalSections is the FINAL.md template from COOPERATION.md Phase 4.
 //
@@ -76,4 +79,46 @@ func specContentLines(body string) int {
 		n++
 	}
 	return n
+}
+
+// ValidateFinal is the ONE gate for a FINAL.md, used by manual finalization and by the driver.
+//
+// They used to differ: the driver checked the idea slug and `status: final` while manual
+// `consensus finalize` checked content only, so the manual path closed an idea around an artifact
+// declaring a DIFFERENT idea and a non-final status (review round 1, @codex-1 MAJOR). A final
+// status that can authenticate the wrong artifact is worse than none.
+//
+// wantSlug is the idea the artifact must claim; pass "" to skip that check.
+func ValidateFinal(body, wantSlug string) string {
+	if status := frontmatterValue(body, "status"); status != "final" {
+		return fmt.Sprintf("frontmatter status=%q, want final", status)
+	}
+	if wantSlug != "" {
+		declared := frontmatterValue(body, "idea")
+		if declared == "" {
+			return "frontmatter has no idea slug"
+		}
+		if declared != wantSlug {
+			return fmt.Sprintf("frontmatter idea=%q but it closes idea %q", declared, wantSlug)
+		}
+	}
+	return FinalIsScaffold(body)
+}
+
+// frontmatterValue reads one scalar from a leading YAML frontmatter block.
+func frontmatterValue(body, key string) string {
+	if !strings.HasPrefix(body, "---") {
+		return ""
+	}
+	rest := strings.TrimPrefix(body, "---")
+	end := strings.Index(rest, "\n---")
+	if end < 0 {
+		return ""
+	}
+	for _, line := range strings.Split(rest[:end], "\n") {
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), key+":"); ok {
+			return strings.Trim(strings.TrimSpace(v), `"'`)
+		}
+	}
+	return ""
 }

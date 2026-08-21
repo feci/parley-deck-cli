@@ -150,7 +150,7 @@ func TestFinalizeCreatesFinalAndUpdatesStatus(t *testing.T) {
 	// Step 1': re-running while it is still a scaffold must refuse and say why.
 	if _, _, err := Finalize(root, "sample", FinalizeOptions{By: "codex", Now: now}); err == nil {
 		t.Fatal("finalize closed the idea around an unwritten scaffold")
-	} else if !strings.Contains(err.Error(), "scaffold") {
+	} else if !strings.Contains(err.Error(), "placeholder") && !strings.Contains(err.Error(), "scaffold") {
 		t.Fatalf("refusal does not name the cause: %v", err)
 	}
 	assertPromptStatus(t, root, "sample", "consensus")
@@ -311,6 +311,14 @@ func TestDraftSelectsLatestRoundNumerically(t *testing.T) {
 
 func setupIdea(t *testing.T, slug string, participants []string) string {
 	t.Helper()
+	return setupIdeaWithTrack(t, slug, participants, "")
+}
+
+// setupIdeaWithTrack seeds an idea whose 00-prompt.md declares an explicit §4.0 track. An empty
+// track writes no `track:` key at all — the absent-track shape, which is NOT the same thing as
+// `track: standard` and must be exercised separately.
+func setupIdeaWithTrack(t *testing.T, slug string, participants []string, trackName string) string {
+	t.Helper()
 	root := t.TempDir()
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
@@ -319,12 +327,16 @@ func setupIdea(t *testing.T, slug string, participants []string) string {
 	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+	trackLine := ""
+	if trackName != "" {
+		trackLine = "track: " + trackName + "\n"
+	}
 	writeFile(t, filepath.Join(ideaDir, "00-prompt.md"), `---
 idea: `+slug+`
 author: codex
 created: 2026-05-12
 participants: [`+strings.Join(participants, ", ")+`]
-status: round-01
+`+trackLine+`status: round-01
 ---
 `)
 	return root
@@ -341,6 +353,16 @@ func writeRoundFiles(t *testing.T, root, slug string, review bool, round string,
 		t.Fatal(err)
 	}
 	for _, participant := range participants {
+		if review {
+			// A review artifact must satisfy the review contract, or the fixture is testing a
+			// file the protocol would never accept.
+			number := strings.TrimPrefix(round, "round-0")
+			writeFile(t, filepath.Join(roundDir, participant+".md"),
+				"---\nagent: "+participant+"\nidea: "+slug+"\nreview-round: "+number+
+					"\nreviewed-commit: abc1234\n---\n\n## Findings\n\nNo blocking findings.\n\n"+
+					"## Refutation attempts\n\nRe-ran the suite against the reviewed tree.\n")
+			continue
+		}
 		writeFile(t, filepath.Join(roundDir, participant+".md"), "# "+participant+"\n")
 	}
 }

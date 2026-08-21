@@ -86,7 +86,8 @@ type freshness struct {
 	PackagedSha  string `json:"packagedProtocolSha256"`
 	SkillVersion string `json:"skillVersion,omitempty"`
 	// Classification: "source-advisory" | "in-sync" | "additive" | "breaking" |
-	// "unknown-role" | "no-version-json".
+	// "unknown-role" | "no-version-json" | "unknown-freshness" | "freshness-confirmed" |
+	// "role-backfilled".
 	Classification string `json:"classification"`
 	Summary        string `json:"summary"`
 	// Synced is set when an additive consumer sync was written.
@@ -424,6 +425,13 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 	// (audit finding codex-1/F24). An equality test is only evidence when both sides exist; with
 	// nothing to compare, the honest answer is that freshness is unknown.
 	if meta.ProtocolSha256 == "" || meta.PackagedProtocolSha256 == "" {
+		// With --yes the confirmation is EXPLICIT, and it has to be able to succeed. A freshly
+		// initialized deck records neither hash, so this gate asked for a confirmation that no
+		// flag could give and `parley preflight --yes` could never report a new deck ready
+		// (codex-1, MAJOR, review round-02 — a regression introduced by the F24 fix itself).
+		if opts.Yes {
+			return confirmProtocolHashes(root, meta, skillStatus)
+		}
 		fr.Classification = "unknown-freshness"
 		fr.Summary = "consumer — cannot compare protocol hashes (deck and/or packaged hash is absent); freshness unknown"
 		return fr, []gate{{
@@ -458,6 +466,80 @@ func classifyAndSyncFreshness(ctx context.Context, opts preflightOptions) (fresh
 	fr.Synced = synced
 	fr.Summary = summary
 	return fr, nil, nil
+}
+
+// confirmProtocolHashes is the `--yes` recovery for the unknown-freshness gate.
+//
+// It hashes what is actually on disk — the deck's live COOPERATION.md, and the packaged protocol
+// body when the installed skill exposes one — persists both into meta/version.json, and reports
+// what the recorded hashes now mean. This is the confirmation the gate asks for, made performable.
+//
+// It never asserts "in sync" on the user's behalf. When no packaged body is available the packaged
+// hash stays absent and the summary says so; when the two differ, that is stated plainly and the
+// next preflight classifies the drift through the normal bump path.
+func confirmProtocolHashes(root string, meta versionMeta, skillStatus map[string]any) (freshness, []gate, error) {
+	fr := freshness{
+		Role:         "consumer",
+		DeckVersion:  meta.DeckVersion,
+		SkillVersion: skillStatusVersion(skillStatus),
+	}
+
+	body, err := os.ReadFile(filepath.Join(root, protocol.DeckDir, "COOPERATION.md"))
+	if err != nil {
+		return fr, nil, fmt.Errorf("cannot confirm protocol freshness: %w", err)
+	}
+	live := sha256Hex(string(body))
+
+	packaged := strings.TrimSpace(meta.PackagedProtocolSha256)
+	if packaged == "" {
+		if packagedBody, ok := skillStatusPackagedProtocol(skillStatus); ok && strings.TrimSpace(packagedBody) != "" {
+			packaged = sha256Hex(packagedBody)
+		}
+	}
+
+	if err := writeProtocolHashes(root, live, packaged); err != nil {
+		return fr, nil, err
+	}
+	fr.LiveSha = live
+	fr.PackagedSha = packaged
+	fr.Classification = "freshness-confirmed"
+	switch {
+	case packaged == "":
+		fr.Summary = "consumer — no packaged protocol available to compare against; recorded the live deck protocol hash as confirmed (--yes)"
+	case packaged == live:
+		fr.Summary = "consumer — confirmed: the deck protocol matches the packaged skill; both hashes recorded (--yes)"
+	default:
+		fr.Summary = "consumer — confirmed and recorded: the deck protocol DIFFERS from the packaged skill; the next preflight classifies that drift"
+	}
+	return fr, nil, nil
+}
+
+// writeProtocolHashes persists the protocol hashes into meta/version.json, preserving every other
+// key in the file. An empty packaged hash is written as absent rather than as an empty string, so
+// "we have no packaged hash" stays distinguishable from "the packaged hash is blank".
+func writeProtocolHashes(root, live, packaged string) error {
+	dir := filepath.Join(root, protocol.DeckDir, "meta")
+	path := filepath.Join(dir, "version.json")
+
+	payload := map[string]any{}
+	if data, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(data, &payload) // best-effort: preserve existing keys
+	}
+	payload["protocolSha256"] = live
+	if packaged != "" {
+		payload["packagedProtocolSha256"] = packaged
+	} else {
+		delete(payload, "packagedProtocolSha256")
+	}
+
+	out, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := fsutil.MkdirAllResilient(dir, 0o755); err != nil {
+		return err
+	}
+	return fsutil.WriteFileAtomic(path, append(out, '\n'), 0o644)
 }
 
 type bumpKind int
