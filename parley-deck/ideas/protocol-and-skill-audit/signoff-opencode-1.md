@@ -1,6 +1,6 @@
 ### Signoff: opencode-1 — 2026-08-21
-Status: 🟡 ACCEPT-WITH-RESERVATIONS
-Notes: Read consensus.md against my round-01 skeleton (no findings) and the absent round-02 file; §4's account of my participation is accurate and does not invent findings I never filed. §1's verification-split table and structural asymmetry explanation are a fair account of the round-02 record as written. I accept the confirmed/contested split and the three-surface fix framing as the audit ledger, with reservations that do not overturn the bulk of the document: (1) §2's title and §5 say "33 confirmed" while the agent-finding pairs listed under §2 sum to 34 when hermes-1/Q2 is included, and §5's three-surface arithmetic (21+1+7+1+3) silently drops Q2; (2) claude-1/F3 is on the §5 CLI fix list but has no Fixed/Deferred row in IMPLEMENTATION.md and still has no `addStatus("masked-by-env")` path; (3) codex-1/F20 is confirmed and fixed in code/tests yet omitted from IMPLEMENTATION Fixed tables; (4) IMPLEMENTATION applied codex-1/F15 (PARTIAL-only in §3) and deferred kimi-1/F5 (REFUTED in §3), so the shipped disposition set is not identical to the confirmed set. §5's owner rule that no complete release ships until command defects are fixed remains an owner policy, not a claim I re-adjudicate; review/consensus.md is already unanimous ready with five deferred design items recorded. I am not re-verifying the code in this signoff.
+Status: ✅ ACCEPT
+Notes: Prior reservations (33/34 arithmetic; F3 STATUS path; F20 Fixed omission; F15/F5 disposition mismatch; then the correction-pass 36-vs-37 off-by-one and stale §2 bullets) are all satisfied at HEAD `6cf39f63b613bbaaac5b3f68987e3095d4ff912b` / skill `40ae6f5417dd0275dec8c5384139972ebce46c5e`. Re-derived corpus confirmed = 36; fix list = 37 with Q2 separate; §2 bullets and §5 `24+8+4+1=37` match; claude-1/F1 cites two PARTIAL verifiers; kimi-1/F4 lives in the skill repo at the cited SHA with `recommendedActions` branching on `protocolRole`. Both suites exit 0 unsandboxed.
 
 ## Evidence
 - SECONDARY — `parley-deck/ideas/protocol-and-skill-audit/round-01/opencode-1.md`: frontmatter only; empty Findings / clean / could-not-check sections; zero findings filed.
@@ -94,3 +94,79 @@ Fix is load-bearing. (Also confirmed live tree has `addStatus("masked-by-env")` 
 - **True (checked):** §1 table; all nine REFUTED = @codex-1; ~89%; PARTIAL-only list is two (F12, zcode-1/F4); F14 number-struck doubt RETRACTED; dispositions for F23/F4/F2/F3/F15/F20/F5 and `protocolRole: source`; deferred set without F5.
 
 I do not re-open review/consensus.md. Residual reservation is ledger hygiene on the design consensus only.
+
+## Final round
+
+Status: ✅ ACCEPT
+Notes: Residual 36-vs-37 / stale-bullet reservation is closed. Corpus confirmed and fix-list totals are now stated separately and both re-derive; no open objection remains.
+
+### Own objections vs this amendment
+
+| Prior residual | Now | Evidence |
+| --- | --- | --- |
+| (R1) claimed 36 with components summing to 37; Q2 folded into corpus | **Satisfied** — §2: "36 from the round-02 corpus … Plus @hermes-1/Q2 … fix-list total is **37**"; CORRECTED TWICE names the prior off-by-one | PRIMARY re-derive below; SECONDARY `consensus.md` §2 L42–55 |
+| (R2) §2 bullets still (21)/(3), omitting F15/F23/F4 | **Satisfied** — `@codex-1 (23)` lists F15 and F23; `@kimi-1 (4)` lists F4 | SECONDARY `consensus.md` §2 L60–81 |
+| (R3) §5 surface sum must be 37 | **Satisfied** — `24 + 8 + 4 + 1 = 37` | PRIMARY arithmetic; SECONDARY §5 L139–149 |
+| (new claims this round) claude-1/F1 two-PARTIAL citations; skill@40ae6f5 holds F4; Seatbelt fact | **True** | PRIMARY citations + `git show` + suites below |
+
+### 1. Re-derived figures from `round-02/*.md` (PRIMARY)
+
+```bash
+python3 - <<'PY'
+# verdict on each ### heading; confirmed = ≥1 CONFIRMED and 0 REFUTED across codex/kimi/zcode
+import re, pathlib
+from collections import Counter, defaultdict
+root = pathlib.Path("parley-deck/ideas/protocol-and-skill-audit/round-02")
+for name in ["codex-1","kimi-1","zcode-1"]:
+    text = (root/f"{name}.md").read_text()
+    hits = [re.search(r"\b(CONFIRMED|PARTIAL|REFUTED)\b", m.group(1)).group(1)
+            for m in re.finditer(r"^###\s+(.+)$", text, re.M)
+            if re.search(r"\b(CONFIRMED|PARTIAL|REFUTED)\b", m.group(1))]
+    print(name, len(hits), Counter(hits))
+verdicts = defaultdict(dict)
+for name in ["codex-1","kimi-1","zcode-1"]:
+    for m in re.finditer(r"^###\s+(.+)$", (root/f"{name}.md").read_text(), re.M):
+        line = m.group(1).strip()
+        fm = re.search(r"((?:codex|kimi|zcode|claude)-1/F\d+)", line)
+        vm = re.search(r"\b(CONFIRMED|PARTIAL|REFUTED)\b", line)
+        if fm and vm: verdicts[fm.group(1)][name] = vm.group(1)
+conf = [f for f,vs in verdicts.items() if "CONFIRMED" in vs.values() and "REFUTED" not in vs.values()]
+by = defaultdict(list)
+for f in conf: by[f.split("/")[0]].append(f.split("/")[1])
+print("corpus_confirmed", len(conf), {a: len(by[a]) for a in sorted(by)})
+print("partial_only", [f for f,vs in verdicts.items() if set(vs.values())=={"PARTIAL"} or ( "PARTIAL" in vs.values() and "CONFIRMED" not in vs.values() and "REFUTED" not in vs.values())])
+PY
+```
+
+At HEAD `6cf39f63b613bbaaac5b3f68987e3095d4ff912b`:
+
+| verifier | assessed | CONFIRMED | PARTIAL | REFUTED | UNREPRO |
+| --- | --- | --- | --- | --- | --- |
+| @codex-1 | 23 | 6 | 8 | **9** | 0 |
+| @kimi-1 | 42 | **36** | 6 | 0 | 0 |
+| @zcode-1 | 32 | 30 | 2 | 0 | 0 |
+
+- Corpus confirmed (≥1 CONFIRMED, 0 REFUTED): **codex 23 + zcode 7 + kimi 4 + claude 2 = 36**. Matches §2.
+- PARTIAL-only (no CONFIRMED, no REFUTED): **codex-1/F12, zcode-1/F4** — two, matches §3.
+- Contested with any REFUTED: **9** (claude-1/F1, kimi-1/F5, zcode F2/F3/F5/F9/F10/F12/F13). §3's "11 contested" = those 9 + the 2 PARTIAL-only — framing, not a count error.
+- All nine REFUTED are @codex-1's. 66/74 → **89%**. Matches §1.
+- @hermes-1/Q2: CONFIRMED only in `round-02/claude-1.md:12` (`hermes-1/F-Q2 … CONFIRMED`); **no codex/kimi/zcode assessment** — correctly excluded from the 36 and added as supplemental → fix list **37**.
+- §5: CLI 23+F3=24, protocol 7+F2=8, skill 4, deck Q2=1 → `24+8+4+1=37`. PRIMARY: `python3 -c 'print(24+8+4+1)'` → `37`.
+
+### 2. Newly asserted claims this round (PRIMARY / SECONDARY)
+
+- **claude-1/F1 two PARTIAL citations** — PRIMARY line hits: `round-02/kimi-1.md:295` `### claude-1/F1 — PARTIAL`; `round-02/zcode-1.md:428` `### claude-1/F1 — … — PARTIAL`; codex REFUTED. Matches §3 L97–99.
+- **`parley-deck-skill@40ae6f5` contains kimi-1/F4** — PRIMARY: `git -C ../parley-deck-skill rev-parse HEAD` → `40ae6f5417dd0275dec8c5384139972ebce46c5e`; `git -C ../parley-deck-skill show --stat 40ae6f5` → `lib/installer.js` + `test/source-role-advice.test.js` (+80/−1). Diff shows `protocolRole` resolved in `projectStatus` and `recommendedActions` branching: source decks get "do NOT adopt the packaged protocol" rather than the consumer adopt-after-review string. SECONDARY: consensus L226–239 correctly records the prior false citation of CLI `815c93a`.
+- **Seatbelt / durable-kill fact** — SECONDARY `consensus.md` L205–223. This host is **unsandboxed**: PRIMARY `sysctl kern.boottime` → exit 0 (boot id readable). No skip required.
+
+### 3. Suites (PRIMARY)
+
+- `go test ./...` in `parley-deck-cli` at `6cf39f6` → all packages `ok` or `[no test files]`; `echo "GO_EXIT=$?"` → **`GO_EXIT=0`**. Did not skip `TestDurableKillEndToEndRealProcess` (sysctl permitted).
+- `npm test` in `../parley-deck-skill` at `40ae6f5` → `ℹ pass 391` / `fail 0`, python 54 OK, six addon manifests ok; `echo "NPM_EXIT=$?"` → **`NPM_EXIT=0`**. Includes `a source-role deck is never told to adopt the packaged protocol`.
+
+### 4. What is true / not re-opened
+
+- True: §1 table; 36/37 split; §2 bullets (23)/(7)/(4)/(2)/(1) with F15, F23, F4; §3 two-PARTIAL F1 line; §5 37; dispositions; skill SHA; Seatbelt note; cross-repo citation rule.
+- Not re-opened: review/consensus.md; deferred F6/F8/F14/F1; owner release gate; contested set adjudication.
+
+No open reservation. Flip to ✅ ACCEPT.
