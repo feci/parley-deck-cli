@@ -10,7 +10,12 @@ date: 2026-08-20
 Fixed the confirmed findings from the audit. Every fix has a test that fails without it; where a
 reversion check was run it was run in an **isolated copy**, never the shared tree.
 
-`go test ./...` green (26 packages) after every commit. `npm test` 388 pass / 0 fail.
+`go test ./...` green (27 packages) after every commit. `npm test` 388 pass / 0 fail.
+
+**This line was false between `4903b47` and `7112e03`** and said "26 packages, green" the whole
+time. Three `internal/app` pipeline tests hung to the 10-minute timeout, so the suite could not
+finish at all. @zcode-1 and @kimi-1 both blocked on it. The claim was not re-measured after the
+fix-up that broke it — see "Mistakes made and caught" below.
 
 ## Fixed
 
@@ -90,6 +95,34 @@ counted every non-terminal value, which is the right population. **Its number st
 objection was too narrow.**
 
 **Still open:** codex-1/F6, F8, F14; kimi-1/F1, F5 — each with its reason recorded above.
+In cycle 2 @codex-1 independently rechecked all five deferral reasons and upheld every one.
+
+## Fix-up cycle 3 — the four MAJORs the consensus dropped
+
+@zcode-1 and @codex-1 blocked cycle 1 on the same ground: `review/consensus.md` had no disposition
+for four of @codex-1's six filed MAJORs. Verified all four before fixing; all four were real.
+
+| # | Finding | Fix |
+| --- | --- | --- |
+| 1 | Manual `consensus finalize` closed an idea around another idea's non-final FINAL | `protocol.ValidateFinal` — one gate (status + declared slug + scaffold) called by manual finalize AND the driver |
+| 2 | `consensus draft --review` accepted reviews with no `reviewed-commit` / no refutation section | `ValidateReviewArtifact` moved down to `internal/protocol`; applied to every expected review file before drafting |
+| 3 | Implementer exclusion weakened the **deliberation** signoff quorum | `reviewConsensusVoters` splits "who may author a round" from "who must sign"; deliberation awaits everyone |
+| 4 | A freshly initialized deck was trapped behind a gate `--yes` could not clear | `--yes` hashes the live protocol (and the packaged body when available), persists both, and says what it compared |
+
+Also in this cycle: `internal/driver`'s second `requiredFinalSections` list and second
+`missingFinalSections` implementation are **deleted** — @codex-1 showed PRIMARY that rewiring the
+prompt alone left two authorities standing. `TestAFinalBuiltFromThePromptSatisfiesTheProductionGate`
+now builds a FINAL from nothing but the prompt's own text and feeds it to the gate.
+
+**Each fix was mutation-checked individually** — the fix reverted, the suite run, the specific test
+observed to fail, the fix restored. Not as a batch: a batch reversion proves only that at least one
+test noticed something.
+
+**Live-deck check of @codex-1's counterexample.** `addon-manifest-coverage` (`track: deliberation`,
+implementer `claude-1`, three of four signoffs present) reported `ready` at the reviewed commit and
+reports `partial` again at HEAD — matching the pre-fix binary. Full three-way sweep over all 66
+review consensuses: reviewed `0bb9903` had **30** flips vs base (24 of them `→ malformed`); HEAD has
+**5**, all `partial → ready`.
 
 ## Mistakes made and caught, recorded because they shaped the work
 
@@ -108,10 +141,21 @@ objection was too narrow.**
   first.
 - **My own drift caught by the tool.** Editing `references/COOPERATION.md` without rebuilding the
   payload manifest made the installer refuse to install — working as designed.
+- **Reading the wrong exit code, three times.** I read the status of background `go test` runs,
+  which reports the LAST command in the pipeline (an `echo`), not `go test`. Every "26 packages
+  green" in this document rested on that. @zcode-1 found three hung tests underneath it. Suite
+  results in this document are now foreground runs with the exit code read directly.
+- **Two fixes reverted rather than shipped half-right.** codex-1/F14 (ApplyOverrides would have
+  overridden configured caps) and kimi-1/F1 (the core manifest describes the source shape, not the
+  installed one). Both are recorded as deferred with the reason, not as done.
+- **A regression introduced by one of these fixes.** F24 correctly stopped a fresh deck being
+  reported "in sync" with nothing to compare — and left that deck permanently unreadyable, because
+  the gate's own displayed `--yes` remedy had no branch for it. Fixed in cycle 3.
 
 ## Verification
 
-- `go test ./...` — 26 packages, green.
+- `go test ./...` — **27 packages, exit 0**, run in the foreground at `1f3d971` and read from the
+  process exit code, not from a background task's last-command status.
 - `npm test` — 388 pass, 0 fail.
 - `parley agents verify --full --agent hermes --yes` — passes for the first time.
 - `parley init` writes a real workspace name and date; verified end to end.
