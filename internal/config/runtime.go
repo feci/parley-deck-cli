@@ -1196,3 +1196,53 @@ func RosterStateSourceForTarget(root, target string) (string, error) {
 	}
 	return scope.Source, nil
 }
+
+// RosterMaskedFields reports the roster fields of `id` that a LOWER config layer declares and a
+// HIGHER layer overrides with a different value — i.e. the fields for which someone's written
+// declaration never reaches the launch.
+//
+// claude-1/F3, MAJOR, confirmed by @zcode-1 and @kimi-1 and never dispositioned: `masked-by-env`
+// was in the closed STATUS vocabulary (`docs/cli-reference.md`) and in the docs, but nothing ever
+// put it in a STATUS cell — `roster set` printed it as a one-off stderr warning after a write and
+// `roster show` could not report it at all. A status you cannot observe is not a status.
+//
+// Only fields whose value actually CHANGES are reported. Two layers agreeing is not masking, and
+// reporting it as such is the false-positive that a previous fix already had to undo for
+// machine-scope writes.
+func RosterMaskedFields(root, id string) ([]string, error) {
+	seen := map[string]string{}
+	masked := map[string]bool{}
+	for _, item := range configLayers(root) {
+		_, entries, err := rosterLayer(item.path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return nil, err
+		}
+		ra, ok := entries[id]
+		if !ok {
+			continue
+		}
+		for field, value := range map[string]string{
+			"adapter": strings.TrimSpace(ra.Adapter),
+			"model":   strings.TrimSpace(ra.Model),
+			"effort":  strings.TrimSpace(ra.Effort),
+			"speed":   strings.TrimSpace(ra.Speed),
+		} {
+			if value == "" {
+				continue
+			}
+			if prev, had := seen[field]; had && prev != value {
+				masked[field] = true
+			}
+			seen[field] = value
+		}
+	}
+	out := make([]string, 0, len(masked))
+	for field := range masked {
+		out = append(out, field)
+	}
+	sort.Strings(out)
+	return out, nil
+}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -158,7 +159,7 @@ func runPreflight(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		fmt.Fprintf(stderr, "agent config failed: %v\n", err)
 		return 1
 	}
-	report, code, err := preflight(ctx, opts, selectedParticipants(discovered), stdout, stderr)
+	report, code, err := preflight(ctx, opts, rosterParticipants(opts.Root, discovered), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
 		return 1
@@ -189,6 +190,40 @@ func selectedParticipants(discovered []agents.Discovery) []agents.Discovery {
 		}
 	}
 	return out
+}
+
+// rosterParticipants is the set standalone `parley preflight` must probe: the deck's ACTIVE
+// ROSTER, resolved through the same mapping `parley run` uses.
+//
+// It used to call selectedParticipants — every installed adapter family minus gemini — so the
+// standalone command probed the wrong quorum entirely. On this deck that meant it reported on
+// `codex, claude, agy, hermes, kimi, opencode, zcode` (adapter families, including `agy`, which is
+// NOT in the roster) instead of `claude-1, codex-1, hermes-1, kimi-1, opencode-1, zcode-1`, and
+// could print "Ready: no pending gates" while an actual quorum member was unavailable — §9.0
+// requires probing every ROSTERED participant.
+//
+// `parley run` was already correct (participantDiscoveries). This is the deck's recurring defect
+// class once more: a rule that binds only where one of two entry points lives.
+// (@codex-1, round-02 suggested MAJOR — filed, never adjudicated by the consensus, reproduced live.)
+//
+// With no roster declared at all, fall back to the installed set rather than probing nothing: an
+// empty probe list would silently pass §9.0 instead of failing it.
+func rosterParticipants(root string, discovered []agents.Discovery) []agents.Discovery {
+	entries, err := config.LoadRoster(root)
+	if err != nil || len(entries) == 0 {
+		return selectedParticipants(discovered)
+	}
+	ids := make([]string, 0, len(entries))
+	for id, entry := range entries {
+		if entry.Active {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return selectedParticipants(discovered)
+	}
+	sort.Strings(ids)
+	return participantDiscoveries(discovered, ids, rosterMappingFor(root))
 }
 
 // attendedRun reports whether a `parley run` invocation is attended. A run is

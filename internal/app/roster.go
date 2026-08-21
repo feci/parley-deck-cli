@@ -317,6 +317,17 @@ func resolveRoster(root string, allowedFamilies map[string]bool, opts rosterView
 			row.State = "inactive"
 			row.addStatus("inactive")
 		}
+		// claude-1/F3: `masked-by-env` was in the closed STATUS vocabulary with no path that
+		// could ever put it in a STATUS cell — `roster set` printed it once to stderr after a
+		// write and `roster show` could not report it at all. A row whose model/effort/adapter
+		// is declared at one layer and overridden at a higher one is exactly what the vocabulary
+		// describes, and the operator can only see it here.
+		if fields, err := config.RosterMaskedFields(root, id); err == nil && len(fields) > 0 {
+			row.addStatus("masked-by-env")
+			if row.Note == "" {
+				row.Note = fmt.Sprintf("masked: %s declared at a lower layer and overridden higher up — `parley roster show --explain %s`", strings.Join(fields, ", "), id)
+			}
+		}
 		family, mapped := mapping[id]
 		if !mapped {
 			family = proposeFamily(id, byFamily)

@@ -442,3 +442,103 @@ func TestEnsureCentralDefaultSeedsAndPreserves(t *testing.T) {
 		t.Fatalf("EnsureCentralDefault overwrote an existing central file")
 	}
 }
+
+// claude-1/F3, MAJOR (confirmed by @zcode-1 and @kimi-1, undispositioned by the audit consensus):
+// `masked-by-env` sat in the closed STATUS vocabulary with no path that could put it in a STATUS
+// cell. `roster set` printed it once to stderr after a write; `roster show` could not report it.
+// A status nobody can observe is documentation of a behaviour that does not exist.
+func TestRosterMaskedFieldsReportsAnOverriddenLowerLayer(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+	if err := os.WriteFile(filepath.Join(home, "agents.toml"), []byte(`
+[roster.demo-1]
+adapter = "codex"
+active = true
+model = "machine-model"
+effort = "high"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	// The deck overrides model but AGREES on effort — only the changed field is masked.
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"), []byte(`
+[roster.demo-1]
+adapter = "codex"
+active = true
+model = "deck-model"
+effort = "high"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fields, err := RosterMaskedFields(root, "demo-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fields) != 1 || fields[0] != "model" {
+		t.Fatalf("masked fields = %v, want exactly [model]: effort agrees across layers and adapter is identical", fields)
+	}
+}
+
+// Two layers agreeing is NOT masking. Reporting it as such is the false positive an earlier fix
+// already had to undo for machine-scope writes; it must not come back through this path.
+func TestRosterMaskedFieldsIsSilentWhenLayersAgree(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+	if err := os.WriteFile(filepath.Join(home, "agents.toml"), []byte(`
+[roster.demo-1]
+adapter = "codex"
+active = true
+model = "same-model"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"), []byte(`
+[roster.demo-1]
+adapter = "codex"
+active = true
+model = "same-model"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fields, err := RosterMaskedFields(root, "demo-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fields) != 0 {
+		t.Fatalf("identical values across layers reported as masked: %v", fields)
+	}
+}
+
+// A deck that declares nothing inherits, and inheritance is not masking either.
+func TestRosterMaskedFieldsIsSilentForAnInheritingDeck(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(EnvParleyHome, home)
+	if err := os.WriteFile(filepath.Join(home, "agents.toml"), []byte(`
+[roster.demo-1]
+adapter = "codex"
+active = true
+model = "machine-model"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	fields, err := RosterMaskedFields(root, "demo-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fields) != 0 {
+		t.Fatalf("an inheriting deck reported masked fields: %v", fields)
+	}
+}

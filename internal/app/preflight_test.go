@@ -601,3 +601,59 @@ func TestPreflightJSONPropagatesGateExit3(t *testing.T) {
 		t.Fatalf("printJSON returned %d, want 0", enc)
 	}
 }
+
+// @codex-1 filed this as a suggested MAJOR at the end of round-02 and the audit consensus never
+// adjudicated it. Reproduced live before fixing: on this deck `parley preflight` reported on the
+// adapter families `codex, claude, agy, hermes, kimi, opencode, zcode` — including `agy`, which is
+// NOT in the roster — instead of the six roster IDs, and printed "Ready: no pending gates".
+//
+// §9.0 requires probing every ROSTERED participant. `parley run` already did (participantDiscoveries);
+// the standalone command did not. Same defect class as the cycle-3 fixes: one of two entry points.
+func TestStandalonePreflightProbesTheRosterNotEveryInstalledAdapter(t *testing.T) {
+	root := sourceWorkspace(t)
+	rosterTOML := `
+[roster.claude-1]
+adapter = "claude"
+active = true
+
+[roster.codex-1]
+adapter = "codex"
+active = true
+
+[roster.retired-1]
+adapter = "agy"
+active = false
+`
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"), []byte(rosterTOML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// The machine has MORE adapters installed than the roster declares — including the retired one.
+	discovered := []agents.Discovery{found("claude"), found("codex"), found("agy"), found("hermes")}
+
+	got := rosterParticipants(root, discovered)
+	var ids []string
+	for _, a := range got {
+		ids = append(ids, a.ID)
+	}
+
+	if len(ids) != 2 {
+		t.Fatalf("preflight probes %d agents %v; the active roster declares 2", len(ids), ids)
+	}
+	for _, unwanted := range []string{"agy", "hermes"} {
+		for _, id := range ids {
+			if id == unwanted {
+				t.Errorf("preflight probes %q, which the roster does not declare: %v", unwanted, ids)
+			}
+		}
+	}
+}
+
+// With no roster declared anywhere, fall back to the installed set — probing an EMPTY list would
+// pass the §9.0 non-solo check by vacuity, which is worse than probing too much.
+func TestPreflightWithNoRosterFallsBackToInstalledAgents(t *testing.T) {
+	root := sourceWorkspace(t)
+	discovered := []agents.Discovery{found("claude"), found("codex")}
+	if got := rosterParticipants(root, discovered); len(got) != 2 {
+		t.Fatalf("no-roster fallback probed %d agents, want the 2 installed", len(got))
+	}
+}
