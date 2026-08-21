@@ -398,15 +398,27 @@ func ValidateImplementationArtifact(path, ideaSlug string) error {
 	if got := strings.Trim(strings.TrimSpace(meta["idea"]), `"'`); got != ideaSlug {
 		return fmt.Errorf("%s frontmatter idea=%q, want %q", path, got, ideaSlug)
 	}
-	if strings.TrimSpace(meta["status"]) == "" {
+	// codex-1/F23, MAJOR (confirmed by @zcode-1, dropped from the fix list by a mis-recorded
+	// verdict): this accepted ANY non-empty status, so `status: banana` validated and the
+	// auto-driver could treat a non-reviewable scaffold as a finished Phase 5 artifact.
+	status := strings.TrimSpace(meta["status"])
+	if status == "" {
 		return fmt.Errorf("%s frontmatter missing status", path)
+	}
+	if !protocol.ValidImplementationStatus(status) {
+		return fmt.Errorf("%s frontmatter status=%q is not in the implementation vocabulary (implemented | fix-up-cycle-N | complete | ready-for-review | in-progress)", path, status)
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(string(data), "## Summary of work") {
-		return fmt.Errorf("%s missing '## Summary of work'", path)
+	// The other half of F23: a substring match accepted a bare heading with nothing under it, and
+	// an artifact that merely MENTIONS the phrase in prose. Same rule as the review gate.
+	if !protocol.HasHeadingLine(string(data), "## Summary of work") {
+		return fmt.Errorf("%s missing '## Summary of work' heading", path)
+	}
+	if !protocol.HasNonEmptySection(string(data), "## Summary of work") {
+		return fmt.Errorf("%s has an empty '## Summary of work': a heading is not a summary", path)
 	}
 	return nil
 }

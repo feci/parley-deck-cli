@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -84,3 +85,33 @@ func hasNonEmptySection(content, heading string) bool {
 	}
 	return false
 }
+
+// implementationStatuses is the closed vocabulary for IMPLEMENTATION.md `status:`.
+//
+// COOPERATION.md:454 documents `implemented | fix-up-cycle-N | complete`. The other two are what
+// this deck actually writes: 4 files sit at `ready-for-review` and 1 at `in-progress` (measured
+// across 72 IMPLEMENTATION.md files before enforcing — a gate that rejects live work is a worse
+// defect than the one it fixes). The gap between the documented three and the used five is a
+// PROTOCOL question and is recorded as a follow-up rather than settled here by a validator.
+var implementationStatuses = map[string]bool{
+	"implemented":      true,
+	"complete":         true,
+	"ready-for-review": true,
+	"in-progress":      true,
+}
+
+var fixUpCycleStatus = regexp.MustCompile(`^fix-up-cycle-\d+$`)
+
+// ValidImplementationStatus reports whether s is in the closed vocabulary.
+func ValidImplementationStatus(s string) bool {
+	s = strings.Trim(strings.TrimSpace(s), `"'`)
+	return implementationStatuses[s] || fixUpCycleStatus.MatchString(s)
+}
+
+// HasNonEmptySection reports whether content has the given level-2 heading followed by at least
+// one non-blank line before the next level-2 heading. Exported so the implementation gate applies
+// the same "a heading is not content" rule as the review gate.
+func HasNonEmptySection(content, heading string) bool { return hasNonEmptySection(content, heading) }
+
+// HasHeadingLine reports whether content has a line that is exactly the given heading.
+func HasHeadingLine(content, heading string) bool { return hasHeadingLine(content, heading) }
