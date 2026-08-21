@@ -8,7 +8,7 @@ participants: [claude-1, codex-1, hermes-1, kimi-1, opencode-1, zcode-1]
 rounds: 2
 ---
 
-# Audit consensus — 36 findings confirmed, 11 contested, and the verifiers disagreed about each other
+# Audit consensus — 37 findings confirmed, 11 contested, and the verifiers disagreed about each other
 
 ## 1. The verification split is itself a finding
 
@@ -39,16 +39,28 @@ assess them are the two lenient ones.** @codex-1's 24 findings were checked only
 confirmed **66 of the 74 findings they assessed (~89%)**. That is an asymmetry in the verification design, mine,
 not a property of the findings.
 
-## 2. Confirmed — 36 findings, no refutation from any verifier
+## 2. Confirmed — 37 findings: 36 from the round-02 corpus, plus one supplemental measurement
 
-**CORRECTED (design signoff round).** The header said **33** while the list below enumerated **34**
-items, and the true count under this section's own criterion is **36**: @codex-1 ×23, @zcode-1 ×7,
-@kimi-1 ×4, @claude-1 ×2, plus @hermes-1/Q2, which no round-02 verifier assessed and which
-@claude-1 verified in round 1. The three missing from the old count are @codex-1/F15, @codex-1/F23
-and @kimi-1/F4 — all CONFIRMED by @zcode-1, all mis-recorded in §3 as PARTIAL-only. Re-derived from
-the verdict headings in `round-02/*.md`.
+**36 findings** in the 47-finding round-02 corpus were confirmed by at least one verifier and
+refuted by none: @codex-1 ×23, @zcode-1 ×7, @kimi-1 ×4, @claude-1 ×2.
 
-**@codex-1 (21):** F1–F11, F13, F14, F16–F22, F24 — the consensus/driver enforcement family.
+**Plus @hermes-1/Q2**, which **no round-02 verifier assessed** — it was measured and verified by
+@claude-1 in round 1, so it is a supplemental confirmed measurement rather than a corpus verdict.
+It is on the fix list, so the fix-list total is **37**.
+
+**CORRECTED TWICE.** The header first said **33** while the list enumerated **34**. The first
+correction raised it to 36 but then listed components summing to 37 — the same off-by-one in the
+other direction, because Q2 was folded into a corpus count it does not belong to. @codex-1 caught
+it by re-deriving the ledger itself and blocked again. The two numbers are now stated separately
+and both are re-derived from the verdict headings in `round-02/*.md`, not retyped.
+
+The three findings missing from the original count are @codex-1/F15, @codex-1/F23 and @kimi-1/F4 —
+all CONFIRMED by @zcode-1, all mis-recorded in §3 as PARTIAL-only.
+
+**@codex-1 (23):** F1–F11, F13, F14, F15, F16–F24 — the consensus/driver enforcement family.
+*(F15 and F23 were added by the design-signoff correction: @zcode-1 CONFIRMED both and §3 had
+mis-recorded them as PARTIAL-only. F23 — the implementation gate accepts `status: banana` and an
+empty `## Summary of work` — is the same "the gates accept emptiness" defect as the rest.)*
 Twenty variants of one defect: **the gates accept emptiness.** A blank round passes as complete
 (F1, F17); an empty `FINAL.md` closes an idea (F5); three padded lines pass as a full specification
 (F22); signoff-shaped headings outside `## Signoffs` satisfy the gate (F20); an empty
@@ -61,9 +73,12 @@ Plus track enforcement: an explicit track the classifier rejects is accepted (F1
 `agents.toml` and `runs/`; §11.B contradicts its own branch-protection advice; `learn` and
 `preset list` are invisible in `--help`.
 
-**@kimi-1 (3):** F1 `doctor` does not byte-verify the managed core skill; F2 `sync-project --yes`
+**@kimi-1 (4):** F1 `doctor` does not byte-verify the managed core skill; F2 `sync-project --yes`
 silently deletes `protocolRole`, the field §9.0 gates on, while `status` recommends that command;
-F3 the README says "fourteen named runtimes" in four places and omits `zcode` from `--target`.
+F3 the README says "fourteen named runtimes" in four places and omits `zcode` from `--target`;
+**F4** on a `source` deck `status` recommends adopting the packaged protocol — the direction §9.0
+forbids — because nothing in the skill package reads `protocolRole`.
+*(F4 was added by the design-signoff correction, on the same mis-recorded verdict as F15/F23.)*
 
 **@claude-1 (2):** F2 `COOPERATION.md:57` tells the bootstrap to run `roster render`, which writes a
 §2 shape the repo's own drift guard fails closed on; F3 `masked-by-env` is documented in the closed
@@ -116,14 +131,15 @@ finding. Neither absence is consent and neither is a demonstration of failure.
 
 ## 5. What happens next
 
-The 36 confirmed findings are the fix list. They split into four surfaces that cannot be reviewed
-as one change: **CLI enforcement** (@codex-1's 23 + @claude-1/F3), **protocol text** (@zcode-1's 7 +
-@claude-1/F2), **the skill package** (@kimi-1's 4), and **this deck's own artifacts**
-(@hermes-1/Q2). The owner has ruled that no complete release ships until the command defects are
+The 37 confirmed findings are the fix list (36 corpus + @hermes-1/Q2). They split into four surfaces that cannot be reviewed
+as one change: **CLI enforcement** (@codex-1's 23 + @claude-1/F3 = 24), **protocol text** (@zcode-1's 7 +
+@claude-1/F2 = 8), **the skill package** (@kimi-1's 4), and **this deck's own artifacts**
+(@hermes-1/Q2 = 1). `24 + 8 + 4 + 1 = 37`. The owner has ruled that no complete release ships until the command defects are
 fixed.
 
 **CORRECTED (design signoff round).** The old split read `21 + 1 + 7 + 1 + 3 = 33` and silently
-dropped @hermes-1/Q2, which appears in §2 and belongs to no other surface. It also predates the
+dropped @hermes-1/Q2, which appears in §2 and belongs to no other surface. The surfaces now sum to
+`24 + 8 + 4 + 1 = 37`. It also predates the
 three findings §3 mis-recorded. @codex-1, @opencode-1, @zcode-1 and @kimi-1 all flagged the
 arithmetic.
 
@@ -180,3 +196,23 @@ five values so it rejects no existing work; **which set is correct is a protocol
 needs its own idea.**
 
 **Reviewed commit for this amendment:** `815c93ac3ec8d546e572ddd26d91cf5a29e2ad69`.
+
+## One reproducibility fact this consensus must carry
+
+`go test ./...` exits **0** on an unsandboxed macOS host and exits **1** inside a Codex Seatbelt
+sandbox, failing only `internal/runner.TestDurableKillEndToEndRealProcess` with
+`process verification failed (no recorded boot id); not killed`.
+
+**This is an environment restriction, not a code defect.** The test reads the host boot id through
+`sysctl kern.boottime`, which seatbelt denies (`Operation not permitted`), so `procctl` cannot
+verify the process identity and — correctly, by design — refuses to kill. @codex-1 diagnosed this
+itself in the review cycle, worked around it with a two-command PATH shim, and recorded it; it is
+also documented at `docs/agent-cli-mechanics.md:31-32`.
+
+It is written here because @codex-1 then re-encountered it in the design signoff round without the
+shim and **blocked the consensus on it**, having no reason at read time to connect a red suite to a
+sandbox limitation. A fact that costs a reviewer a whole cycle to rediscover belongs in the
+artifact, not only in a docs file and a previous signoff.
+
+**A reviewer running the suite inside a sandboxed agent must either** supply a `sysctl` shim for
+`kern.boottime`, or run `go test ./... -skip TestDurableKillEndToEndRealProcess` and say so.
