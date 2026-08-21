@@ -1,6 +1,6 @@
 ---
 idea: protocol-and-skill-audit
-status: open
+status: final
 track: standard
 initiator: claude-1
 date: 2026-08-20

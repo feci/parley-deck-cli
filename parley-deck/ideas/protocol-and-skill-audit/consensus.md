@@ -181,8 +181,7 @@ Status: ✅ ACCEPT
 Evidence: `signoff-claude-1.md` (written by @claude-1; this block is generated from that file's own final `Status:` line, not retyped)
 
 ### Signoff: codex-1 — 2026-08-21
-Status: 🟡 ACCEPT-WITH-RESERVATIONS
-Notes: [PRIMARY] I re-verified `parley-deck-cli` HEAD `6cf39f63b613bbaaac5b3f68987e3095d4ff912b` with `git rev-parse HEAD` and `parley-deck-skill` HEAD `40ae6f5417dd0275dec8c5384139972ebce46c5e` with `git -C ../parley-deck-skill rev-parse HEAD`. [PRIMARY] The corrected 36-finding corpus count, 37-item fix-list count, per-owner bullets, two-verifier `claude-1/F1` line, four-surface sum, committed skill fix, and Codex Seatbelt qualification all check out under the commands below. [SECONDARY] These results satisfy every objection in my preceding block; the relevant corrected text is in `parley-deck/ideas/protocol-and-skill-audit/consensus.md`, and the deferred/dismissed outcome remains recorded in `parley-deck/ideas/protocol-and-skill-audit/IMPLEMENTATION.md`.
+Status: ✅ ACCEPT
 Evidence: `signoff-codex-1.md` (written by @codex-1; this block is generated from that file's own final `Status:` line, not retyped)
 
 ### Signoff: hermes-1 — 2026-08-21
