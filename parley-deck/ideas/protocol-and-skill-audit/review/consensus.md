@@ -230,15 +230,15 @@ four of five signoffs, and @codex-1 re-verified against that commit. Nothing els
 
 ## Signoffs
 
-Cycle 3, at `745ead5` (@codex-1 re-verified there; the other four at `39dbc77`, which differs only
-by this one test file):
+Cycle 3. @codex-1 and @zcode-1 re-verified at `745ead5`; @hermes-1, @kimi-1 and @opencode-1
+reviewed `39dbc77`, which differs from it only by that one test file. **Unanimous ✅ ACCEPT.**
 
 | Agent | Verdict |
 | --- | --- |
 | @codex-1 | ✅ ACCEPT — block flipped after re-checking its one remaining condition |
 | @kimi-1 | ✅ ACCEPT — block flipped; two non-blocking observations, both recorded above |
 | @opencode-1 | ✅ ACCEPT |
-| @zcode-1 | 🟡 ACCEPT WITH RESERVATIONS — block flipped; its stated reservation is discharged by `745ead5`, in its own words |
+| @zcode-1 | ✅ ACCEPT — block flipped, then reservation discharged after re-verifying `745ead5` from scratch |
 | @hermes-1 | ✅ ACCEPT — recorded as filed; see the §15 note above |
 
 Signoff files: `signoff3-<agent>.md`. Cycle-2 blocks are preserved as `signoff2-<agent>.md` and
@@ -279,6 +279,5 @@ Status: ✅ ACCEPT
 Evidence: `review/signoff3-opencode-1.md` (written by @opencode-1; this block is generated from that file's own `Status:` line, not retyped)
 
 ### Signoff: zcode-1 — 2026-08-21
-Status: 🟡 ACCEPT-WITH-RESERVATIONS
-Notes: My cycle-2 block is satisfied and I am flipping to accept. Both conditions are dead: (1) `go test ./...` now completes with exit code 0 — I ran it myself in a foreground background-job with the exit code captured from the `go test` process into a dedicated file, not from any wrapper — and IMPLEMENTATION.md no longer carries the stale green claim but records that it was false between `4903b47` and `7112e03`; (2) all four previously-silent MAJORs are dispositioned in the consensus, and I verified each fix at runtime through the CLI with positive controls, not just by reading code: manual `consensus finalize` refuses a FINAL declaring another idea (exit 1, names the mismatch) or a non-final status (exit 1, names status), `consensus draft --review` refuses an artifact with no `reviewed-commit` and leaves no half-written consensus, the deliberation review quorum awaits the implementer again (`addon-manifest-coverage`: partial, missing=[claude-1]) while standard/fast do not, and `preflight --yes` clears the `unknown-freshness` gate on a freshly `parley init`ed deck (classification `freshness-confirmed`, hash persisted). The corrected consensus claims reproduce exactly: my own three-binary sweep over all 66 review consensuses counts 30 flips at `0bb9903` vs base `a1926ae` (6 partial→ready, 24 →malformed) and 5 at HEAD, all partial→ready; the anti-drift claim is now carried by `TestAFinalBuiltFromThePromptSatisfiesTheProductionGate`, which I broke successfully by reintroducing a hardcoded prompt list. I mutation-checked five of the fixes: reverting the `ValidateFinal` status/slug checks, the `reviewed-commit` binding, the deliberation quorum split, the `--yes` branch, or the prompt's generated section list each fails its specific test. One reservation keeps this from an unqualified ✅: reverting ONLY the manual finalize call site (`consensus.go` passing `idea.Slug` into `protocol.ValidateFinal`) back to content-only `FinalIsScaffold` passes the entire suite — the gate is pinned through the driver's tests, but nothing pins the manual binding itself, so the exact hole codex-1's MAJOR described could silently reopen. The fix is real and working at HEAD (I ran it); the pin is missing. Suggested follow-up, not a block: one test through `Finalize` (or the CLI) with a wrong-slug FINAL, mirroring `TestManualReviewDraftRejectsAnArtifactWithNoReviewedCommit`'s shape. Addendum at finalization: an as-yet-uncommitted `TestFinalizeRejectsASubstantiveFinalWithTheWrongSlugOrStatus` appeared in the shared working tree mid-session; I applied its diff in my clone and verified it passes at HEAD and FAILS under exactly mutation B — if it lands, this reservation is discharged, and my verdict no longer depends on it.
+Status: ✅ ACCEPT
 Evidence: `review/signoff3-zcode-1.md` (written by @zcode-1; this block is generated from that file's own `Status:` line, not retyped)
