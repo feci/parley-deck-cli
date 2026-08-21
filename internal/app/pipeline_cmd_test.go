@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"parley-deck-cli/internal/protocol"
 	"testing"
 	"time"
 
@@ -48,7 +50,7 @@ func startAndFinalize(t *testing.T, autonomy string) string {
 	if code := Run([]string{"pipeline", "start", "--dir", ws, manifest}, &out, &errOut); code != 0 {
 		t.Fatalf("start exit=%d err=%s", code, errOut.String())
 	}
-	final := "---\nstatus: final\n---\n\ndone\n"
+	final := writtenFinalBody("")
 	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "auto-demo__b1", "FINAL.md"), final)
 	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "auto-demo__b2", "FINAL.md"), final)
 	return ws
@@ -101,8 +103,8 @@ func TestActionBlockCompleteNeedsSucceededEffectNotJustPlan(t *testing.T) {
 	// A finalized PLAN alone must NOT make an action block complete (otherwise
 	// the DAG/auto could advance past an unexecuted deploy).
 	bw := pipeline.BlockWorkspace(deck, slug, blockID)
-	writeFile(t, filepath.Join(bw, "DEPLOYMENT.md"), "---\nstatus: final\n---\n\nplan\n")
-	writeFile(t, filepath.Join(bw, "FINAL.md"), "---\nstatus: final\n---\n\nplan\n")
+	writeFile(t, filepath.Join(bw, "DEPLOYMENT.md"), writtenFinalBody(""))
+	writeFile(t, filepath.Join(bw, "FINAL.md"), writtenFinalBody(""))
 	if done, err := complete(block); err != nil || done {
 		t.Fatalf("action with finalized plan but no effect must NOT be complete (done=%v err=%v)", done, err)
 	}
@@ -138,7 +140,7 @@ blocks:
 	if code := Run([]string{"pipeline", "start", "--dir", ws, manifest}, &out, &errOut); code != 0 {
 		t.Fatalf("start exit=%d err=%s", code, errOut.String())
 	}
-	final := "---\nstatus: final\n---\n\ndone\n"
+	final := writtenFinalBody("")
 	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "act-demo__spec", "FINAL.md"), final)
 	writeFile(t, filepath.Join(ws, "parley-deck", "ideas", "act-demo__deploy", "FINAL.md"), final)
 
@@ -178,4 +180,27 @@ func TestPipelineAutoPausesAtSupervisedGate(t *testing.T) {
 	if !strings.Contains(statusOut.String(), "blocked_on_gate") {
 		t.Fatalf("status not blocked_on_gate:\n%s", statusOut.String())
 	}
+}
+
+// writtenFinalBody is a FINAL.md that satisfies the FINAL gate.
+//
+// The pipeline fixtures used to write a two-line stub ("status: final" + one word), which the old
+// frontmatter-only isFinalized accepted. Fix 3 (review round 1, @codex-1 MAJOR) made isFinalized
+// also require the artifact to be WRITTEN, so those stubs became scaffolds, planFinalized went
+// false, `pipeline auto` entered the real drive path and launched actual agent subprocesses —
+// three tests hung until the package timeout (@zcode-1, signoff ❌ block).
+//
+// The fixtures encoded the contract fix 3 repealed. Generated from the shared section list so
+// they cannot drift from the gate.
+func writtenFinalBody(slug string) string {
+	var b strings.Builder
+	b.WriteString("---\n")
+	if slug != "" {
+		b.WriteString("idea: " + slug + "\n")
+	}
+	b.WriteString("status: final\n---\n\n")
+	for _, section := range protocol.RequiredFinalSections {
+		b.WriteString(section + "\n\nAgreed content for this section.\nA second line.\nA third line.\n\n")
+	}
+	return b.String()
 }
