@@ -244,4 +244,41 @@ by this one test file):
 Signoff files: `signoff3-<agent>.md`. Cycle-2 blocks are preserved as `signoff2-<agent>.md` and
 were not overwritten.
 
+The blocks below are **generated** from each agent's own `Status:`/`Notes:` lines in its own file,
+not retyped by the drafter — the deck's own rule about derived text. They exist because
+`parley consensus status --review` reads signoffs from `consensus.md` and cannot see a separate
+`signoff-<agent>.md`; without them this consensus reported `partial` with all five participants
+"missing" while every one of them had signed.
+
+**Follow-up (not fixed here).** The drafter's own re-signoff prompt printed the verdict token as
+`🟡 ACCEPT WITH RESERVATIONS`. The protocol's token is `🟡 ACCEPT-WITH-RESERVATIONS` (hyphens —
+`COOPERATION.md:389,593`) and `CanonicalStatus` rejects the spaced form, which turns the whole
+document `malformed` — the triage that outranks every other, as this idea already established. A
+prompt taught the wrong spelling and the parser had no tolerance for it. Two candidate fixes:
+accept the spaced spelling as an alias alongside the existing `reserve`/`reservations` aliases, or
+generate the prompt's status vocabulary from `CanonicalStatus` so it cannot be mistyped. **This is
+the audit's own defect class one more time and it is deliberately NOT fixed in this changeset** —
+nobody reviewed it, and it arrived after the round closed.
+
 **Outstanding agreed fixes: 0.**
+
+### Signoff: codex-1 — 2026-08-21
+Status: ✅ ACCEPT
+Evidence: `review/signoff3-codex-1.md` (written by @codex-1; this block is generated from that file's own `Status:` line, not retyped)
+
+### Signoff: hermes-1 — 2026-08-21
+Status: ✅ ACCEPT
+Evidence: `review/signoff3-hermes-1.md` (written by @hermes-1; this block is generated from that file's own `Status:` line, not retyped)
+
+### Signoff: kimi-1 — 2026-08-21
+Status: ✅ ACCEPT
+Evidence: `review/signoff3-kimi-1.md` (written by @kimi-1; this block is generated from that file's own `Status:` line, not retyped)
+
+### Signoff: opencode-1 — 2026-08-21
+Status: ✅ ACCEPT
+Evidence: `review/signoff3-opencode-1.md` (written by @opencode-1; this block is generated from that file's own `Status:` line, not retyped)
+
+### Signoff: zcode-1 — 2026-08-21
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: My cycle-2 block is satisfied and I am flipping to accept. Both conditions are dead: (1) `go test ./...` now completes with exit code 0 — I ran it myself in a foreground background-job with the exit code captured from the `go test` process into a dedicated file, not from any wrapper — and IMPLEMENTATION.md no longer carries the stale green claim but records that it was false between `4903b47` and `7112e03`; (2) all four previously-silent MAJORs are dispositioned in the consensus, and I verified each fix at runtime through the CLI with positive controls, not just by reading code: manual `consensus finalize` refuses a FINAL declaring another idea (exit 1, names the mismatch) or a non-final status (exit 1, names status), `consensus draft --review` refuses an artifact with no `reviewed-commit` and leaves no half-written consensus, the deliberation review quorum awaits the implementer again (`addon-manifest-coverage`: partial, missing=[claude-1]) while standard/fast do not, and `preflight --yes` clears the `unknown-freshness` gate on a freshly `parley init`ed deck (classification `freshness-confirmed`, hash persisted). The corrected consensus claims reproduce exactly: my own three-binary sweep over all 66 review consensuses counts 30 flips at `0bb9903` vs base `a1926ae` (6 partial→ready, 24 →malformed) and 5 at HEAD, all partial→ready; the anti-drift claim is now carried by `TestAFinalBuiltFromThePromptSatisfiesTheProductionGate`, which I broke successfully by reintroducing a hardcoded prompt list. I mutation-checked five of the fixes: reverting the `ValidateFinal` status/slug checks, the `reviewed-commit` binding, the deliberation quorum split, the `--yes` branch, or the prompt's generated section list each fails its specific test. One reservation keeps this from an unqualified ✅: reverting ONLY the manual finalize call site (`consensus.go` passing `idea.Slug` into `protocol.ValidateFinal`) back to content-only `FinalIsScaffold` passes the entire suite — the gate is pinned through the driver's tests, but nothing pins the manual binding itself, so the exact hole codex-1's MAJOR described could silently reopen. The fix is real and working at HEAD (I ran it); the pin is missing. Suggested follow-up, not a block: one test through `Finalize` (or the CLI) with a wrong-slug FINAL, mirroring `TestManualReviewDraftRejectsAnArtifactWithNoReviewedCommit`'s shape. Addendum at finalization: an as-yet-uncommitted `TestFinalizeRejectsASubstantiveFinalWithTheWrongSlugOrStatus` appeared in the shared working tree mid-session; I applied its diff in my clone and verified it passes at HEAD and FAILS under exactly mutation B — if it lands, this reservation is discharged, and my verdict no longer depends on it.
+Evidence: `review/signoff3-zcode-1.md` (written by @zcode-1; this block is generated from that file's own `Status:` line, not retyped)
