@@ -204,7 +204,7 @@ substance. Their findings, and the code fixes they produced, are dispositioned i
 | @claude-1/F2 — `parley roster render`, which the protocol instructs, broke the drift guard | drift anchors match on column signature, not hand-typed padding | `930c268` |
 | @claude-1/F3 — `masked-by-env` in the STATUS vocabulary with nothing able to emit it | `config.RosterMaskedFields` + `roster show` | `930c268` |
 | @codex-1/F23 — implementation gate accepted `status: banana` and an empty Summary | closed status vocabulary + non-empty-section rule | `815c93a` |
-| @kimi-1/F4 — `status` told a `source` deck to adopt the older packaged protocol | `recommendedActions` branches on `protocolRole` | `815c93a` |
+| @kimi-1/F4 — `status` told a `source` deck to adopt the older packaged protocol | `recommendedActions` branches on `protocolRole` | **`parley-deck-skill@40ae6f5`** (NOT `815c93a` — separate repo; see the consensus note) |
 | this deck's `meta/version.json` never declared `protocolRole` | set to `source`; preflight now reports `source-advisory`, no gates | `815c93a` |
 | @codex-1/F20 — fixed in code and tests, missing from every Fixed table | recorded here; no code change needed | — |
 | @kimi-1/F5 — listed as *deferred* though §3 records it contested | re-recorded as **dismissed**; a contested finding is not a backlog item | — |

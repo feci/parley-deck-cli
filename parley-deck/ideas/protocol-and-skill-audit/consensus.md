@@ -94,8 +94,13 @@ counter-measurement was the error — `grep -rLl` reported the exact inverse.]
 own evidence confirmed them. These need adjudication on evidence, and the drafter will not break
 them by majority.
 
-**@claude-1/F1** (SKILL.md never names `preflight`/`retro`/`loop tick`/…) — PARTIAL from one
-verifier, REFUTED by @codex-1. **This is my finding and I will not adjudicate it.**
+**@claude-1/F1** (SKILL.md never names `preflight`/`retro`/`loop tick`/…) — **PARTIAL from two
+verifiers** (@kimi-1 `round-02/kimi-1.md:295`, @zcode-1 `round-02/zcode-1.md:428`), REFUTED by
+@codex-1. **This is my finding and I will not adjudicate it.**
+
+*(This line said "PARTIAL from one verifier" through the original draft and the first correction
+pass. @kimi-1 named it as an explicit sub-demand of its counter-proposal and it stayed
+byte-identical anyway — a correction pass that misses a correction it was handed.)*
 
 **@kimi-1/F5** — REFUTED by @codex-1 and CONFIRMED by @zcode-1. *(This line previously called it
 "the only refutation not authored by @codex-1". It is @codex-1's own refutation.)*
@@ -174,7 +179,7 @@ that fails when that fix alone is reverted.
 | --- | --- | --- |
 | **@codex-1, round-02 addendum** — standalone `preflight` ignores the canonical roster | **CONFIRMED, FIXED** | It probed every installed adapter family, so on this deck it reported `codex, claude, agy, hermes, kimi, opencode, zcode` — including `agy`, which is **not in the roster** — and printed "Ready: no pending gates". §9.0 requires probing every ROSTERED participant. `parley run` was already correct. `rosterParticipants()` |
 | **@codex-1/F23** — the implementation gate accepts an unknown status and an empty artifact | **CONFIRMED, FIXED** | `status: banana` validated; `## Summary of work` was matched as a substring. Now a closed vocabulary plus the review gate's "a heading is not content" rule. Zero live artifacts newly rejected (measured across 72) |
-| **@kimi-1/F4** — `status` tells a `source` deck to adopt the older packaged protocol | **CONFIRMED, FIXED** | Nothing in the skill package read `protocolRole`. `recommendedActions` now branches on it; consumer and unknown-role advice unchanged |
+| **@kimi-1/F4** — `status` tells a `source` deck to adopt the older packaged protocol | **CONFIRMED, FIXED** (`parley-deck-skill@40ae6f5`) | Nothing in the skill package read `protocolRole`. `recommendedActions` now branches on it; consumer and unknown-role advice unchanged |
 | **@claude-1/F2** — the bootstrap instruction breaks the repo's own drift guard | **CONFIRMED, FIXED** | `COOPERATION.md:59,136,1101` tell you to run `parley roster render`; doing so made `TestEmbeddedDefaultMatchesLiveDeck` fail closed, because the generated §2 table does not reproduce the anchor's hand-typed padding and adds a `State` column. Anchors now match on column signature |
 | **@claude-1/F3** — `masked-by-env` is in the closed STATUS vocabulary and nothing emits it | **CONFIRMED, FIXED** | `roster set` printed it once to stderr; `roster show` had no path to it. `config.RosterMaskedFields` resolves it. Only fields whose value actually changes across layers count |
 | **@codex-1/F15** | **CONFIRMED, ALREADY FIXED** | Applied during implementation even though §3 had excluded it. The disposition was right and the ledger was wrong — recorded here so the two agree |
@@ -216,3 +221,22 @@ artifact, not only in a docs file and a previous signoff.
 
 **A reviewer running the suite inside a sandboxed agent must either** supply a `sysctl` shim for
 `kern.boottime`, or run `go test ./... -skip TestDurableKillEndToEndRealProcess` and say so.
+
+## A ledger error committed while correcting the ledger
+
+`IMPLEMENTATION.md` and the disposition table above first cited **`815c93a`** for the @kimi-1/F4
+fix. That commit is in `parley-deck-cli`. **The fix is in `parley-deck-skill`, which is a separate
+git repository**, so `git add -A` in the CLI repo never touched it: the cited commit did not
+contain the fix it was cited for, and the `npm test` 391-pass result was measured on uncommitted
+working-tree code.
+
+@kimi-1 found this by checking the commit against its contents instead of reading the claim. It is
+the same defect this whole audit is about — **a record that certifies something it does not
+contain** — committed while correcting a ledger for exactly that. It is recorded rather than
+quietly repaired because the correction pass is the part of this idea with the worst track record.
+
+The fix is now `parley-deck-skill@40ae6f5`; `npm test` 391 pass / 0 fail, exit 0, re-run against
+the committed tree.
+
+**Cross-repo rule this deck now owes itself:** a disposition that cites a commit must name the
+repository, and a fix spanning both repos produces **two** commits. Nothing enforces that yet.

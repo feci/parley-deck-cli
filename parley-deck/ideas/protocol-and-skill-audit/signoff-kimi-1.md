@@ -20,3 +20,72 @@ Counter-proposal: Amend `consensus.md` and re-collect signoffs: (1) §1 table �
 - SECONDARY — `parley-deck/ideas/protocol-and-skill-audit/review/consensus.md` — triage `ready`, `outstanding_agreed_fixes: 0`, unanimous ✅ at `745ead5`; the deferred-follow-ups list carries the same five deferrals with no reviewer challenge (codex-1 re-upheld all five in cycle 2); lines 86-87 set the standard this design ledger fails: "silence is not a disposition".
 - SECONDARY — `parley-deck/ideas/protocol-and-skill-audit/round-02/codex-1.md:357` — the standalone-`preflight`/canonical-roster addendum; a full read of `consensus.md` confirms no disposition of it.
 - RECALL — my own authorship of `round-01/kimi-1.md` and `round-02/kimi-1.md` (the verdicts the tally counts are mine); I make no claim about §1's "told to default to REFUTED" wording — no round-02 prompt is stored in this idea directory, so I cannot verify or refute it.
+
+## Re-verification after the ledger correction
+
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: Every substantive objection from my block is resolved and re-verified by me this session, not taken on trust: §1's kimi-1 row now reads my filed 36/6/0/0, all nine REFUTED verdicts are correctly attributed to @codex-1, the leniency figure is the true pooled 66/74 ≈ 89%, §3's PARTIAL-only list is the correct two (codex-1/F12, zcode-1/F4), the three mis-recorded findings are reclassified and every finding that had no disposition now has one I checked, zcode-1/F14's doubt is retracted, kimi-1/F5 is dismissed-not-deferred, codex-1/F20 is recorded, §5 has its fourth surface, and the release-rule reconciliation matches review/signoff2-codex-1.md. I reserve rather than accept cleanly because the corrected ledger still carries three checkable defects — none fabricates a verdict, none drops a finding, none changes a disposition, but each is exactly the class of unchecked entry my block was about: (1) §3 still says claude-1/F1 received "PARTIAL from one verifier" — TWO verifiers returned PARTIAL (round-02/kimi-1.md:295, round-02/zcode-1.md:428), an explicit sub-demand of my counter-proposal left byte-identical between draft a1926ae and HEAD 2a5ea3a; (2) hermes-1/Q2 is still counted neither in nor out consistently: §2's CORRECTED note derives "36" from addends summing to 37 (23+7+4+2+Q2), the §2 bullets still read (21)/(3) and omit codex-1/F15, codex-1/F23 and kimi-1/F4, and §5's four surfaces enumerate 37 slots under "The 36 confirmed findings" (@opencode-1's re-verification found the same independently); (3) the kimi-1/F4 disposition records commit 815c93a, which contains no recommendedActions change — the actual fix and its test are uncommitted working-tree state in parley-deck-skill (M lib/installer.js, ?? test/source-role-advice.test.js), so the ledger certifies a commit that does not contain the fix it lists, and npm test's 391 passes run on uncommitted code. Not a BLOCK because my block's stated standard was errors with consequences — fabricated verdicts, dropped findings — and none of those remain; both suites are green and I mutation-checked the F4 fix myself in my own copy.
+
+### My counter-proposal vs the correction
+
+1. §1 kimi-1 row 37/8/2/1 → 36/6/0/0, "37" prose, leniency restated as pooled 66/74 ≈ 89% — **SATISFIED** (PRIMARY, §1 below; the 44/48-on-codex-findings figure I said stands is no longer claimed, the pooled one is and it is true).
+2. REFUTED attribution: all nine are @codex-1's, kimi-1/F5's refutation included; the only non-codex-1 refutation in the wider record (claude-1's of hermes-1/Q3) sits outside the 47-finding corpus the sentence is scoped to ("in the corpus") — **SATISFIED** (PRIMARY, §1 below).
+3. §3: the three mis-recorded findings struck from PARTIAL-only; the inclusion rule ("no refutation from any verifier") now stated — **SATISFIED** (PRIMARY). Two sub-demands **NOT met**: claude-1/F1 still "PARTIAL from one verifier" (reservation 1) and the count still not reconciled with Q2 in or out (reservation 2).
+4. Dispositions for claude-1/F2, claude-1/F3, codex-1/F23, kimi-1/F4 — **SATISFIED in substance** (all four fixed with tests; PRIMARY checks in §3 and §4 below), with the F4 commit-attribution defect recorded as reservation 3.
+5. Ledger repairs: codex-1/F20 recorded (`IMPLEMENTATION.md:209`), codex-1/F15 recorded as applied-though-unlisted, kimi-1/F5 re-recorded as **dismissed** (`IMPLEMENTATION.md:210`), zcode-1/F14 doubt retracted ("Its number stands", `IMPLEMENTATION.md:94`) — **SATISFIED** (PRIMARY greps).
+6. §5 restated with the fourth surface and the release rule reconciled to the three deferred command defects, each deferral reason recorded and independently upheld by @codex-1 — **SATISFIED** (PRIMARY: `grep -n "F6\|F8\|F14" review/signoff2-codex-1.md` → :33, :45-49; `git merge-base --is-ancestor 745ead5b3cae8436aac3de1bf2b8dd0f046bdb5b HEAD` → ancestor).
+7. Adjudicate codex-1's round-02 addendum — **SATISFIED**: dispositioned CONFIRMED, FIXED (`consensus.md` dispositions table); PRIMARY: a fresh HEAD binary probes exactly the six roster IDs, no agy (§4 below).
+
+### 1. Figures re-derived from `round-02/*.md` (PRIMARY)
+
+Command (run this session, at HEAD `2a5ea3ad781e76a09b3e67bf1cc43144bd02bdfd`):
+
+```bash
+cd parley-deck/ideas/protocol-and-skill-audit/round-02 && for f in *.md; do
+  grep -oE '^### .* — (CONFIRMED|PARTIAL|REFUTED|UNREPRO[A-Z]*)' "$f" \
+  | grep -oE '(CONFIRMED|PARTIAL|REFUTED|UNREPRO[A-Z]*)$' | sort | uniq -c
+done
+```
+
+Result: codex-1 **6/8/9/0** over 23 verdict headings (its 24th `###` heading, `:357`, is the no-verdict preflight addendum — matches "assessed 23"); kimi-1 **36/6/0/0** over 42; zcode-1 **30/2/0/0** over 32. The corrected §1 table matches all three rows exactly.
+
+- PRIMARY — REFUTED authorship: `grep -nE '^### .* — REFUTED' round-02/codex-1.md` → nine headings: zcode-1/F2, F3, F5, F9, F10, F12, F13 (`:39-178`), kimi-1/F5 (`:272`), claude-1/F1 (`:285`). All nine are @codex-1's; kimi-1/F5 also drew zcode-1's CONFIRMED (`round-02/zcode-1.md:417`), so §3's corrected F5 line is accurate.
+- PRIMARY — census: `for f in round-01/*.md; do grep -oE '^#{2,4} (F[0-9]+|Q[0-9]+|F-Q[0-9]+)' "$f"; done` → codex-1 F1–F24, zcode-1 F1–F15, kimi-1 F1–F5, claude-1 F1–F3 = **47** findings; hermes-1's three landed late and were verified by claude-1 (`round-02/claude-1.md:12,40,69`), outside the 47.
+- Derived confirmed set under the document's own criterion: codex-1 24−F12 = 23; zcode-1 15−(7 refuted +F4 PARTIAL-only) = 7; kimi-1 5−F5 = 4; claude-1 3−F1 = 2 → **36 = 47−11** ✓ (contested: 7 + claude-1/F1 + kimi-1/F5 + 2 PARTIAL-only = 11 ✓). Leniency: (36+30)/(42+32) = 66/74 = 89.2% ✓.
+- PRIMARY — PARTIAL-only set: codex-1/F12 (zcode-1.md:185 + kimi-1.md:99, both PARTIAL) and zcode-1/F4 (kimi-1.md:211 + codex-1.md:69, both PARTIAL) — exactly the corrected §3 list of two; codex-1/F15, F23 and kimi-1/F4 all carry zcode-1 CONFIRMEDs (`zcode-1.md:234,329,404`) and no refutation, so their reclassification is correct.
+- PRIMARY — draft comparison: `git show a1926ae:.../consensus.md` confirms the corrected note's account of the old errors (kimi-1 row 37/8/2/1; "Every REFUTED verdict but one"; title "33 confirmed, 14 contested").
+- PRIMARY — the three corrected-count defects: §2's note (`consensus.md:44-49`) derives 36 from addends summing to 37; the §2 bullets (`:51`, `:64`) still enumerate (21)/(3) without F15/F23/F4; §5 (`:119-121`) splits 24+8+4+1 = 37 slots under "The 36 confirmed findings". The number 36 is true for the assessed corpus; the fix list it labels has 37 entries including Q2.
+
+### 2. Test suites (PRIMARY)
+
+- `git archive HEAD | tar -x -C /tmp/kimi-1-verify` (the shared tree is read-only to me; this tests HEAD's exact content), then `GOCACHE=/tmp/kimi1-gocache GOMODCACHE="<repo>/.gomodcache" go test ./... > /tmp/kimi1-gotest.log 2>&1; echo "go-test-exit=$?"` → **go-test-exit=0**, 27 package result lines (26 `ok` + 1 `[no test files]`), 0 `FAIL`. Exit code read from the shell's `$?` of the `go test` process itself, echoed immediately after it in the same shell — not inferred from the log text.
+- `cd ../parley-deck-skill && npm test > /tmp/kimi1-npmtest.log 2>&1; echo "npm-test-exit=$?"` → **npm-test-exit=0**; `node --test` reports `tests 391 / pass 391 / fail 0`, python 54 OK, addon-manifest checks ok. Same `$?` method. Caveat tied to reservation 3: the 391 include the F4 test, which passes because the skill repo's working tree carries the uncommitted fix.
+
+### 3. Mutation check — kimi-1/F4 (PRIMARY, in my own copy)
+
+Setup: `cp -R lib test bin skills package.json /tmp/kimi-1-mutation/` plus a `node_modules` symlink from `../parley-deck-skill`; both shared repos untouched (verified after: `git status --short` in the skill repo still shows exactly `M lib/installer.js` + `?? test/source-role-advice.test.js`, the state I found).
+
+- Control (fix present): `node --test test/source-role-advice.test.js` → `tests 3 / pass 3 / fail 0`, `control-exit=0` (exit read via `${PIPESTATUS[0]}`).
+- Mutated (source reverted, test kept): `git -C ../parley-deck-skill show HEAD:lib/installer.js > /tmp/kimi-1-mutation/lib/installer.js` restores the committed pre-fix source, then the same command → `tests 3 / pass 2 / fail 1`, `mutated-exit=1` — the failing subtest is "a source-role deck is never told to adopt the packaged protocol" (`ERR_ASSERTION`).
+- So the F4 test fails when the F4 fix alone is reverted: the fix is load-bearing, and the "consumer and unknown-role advice unchanged" claim holds — `git diff lib/installer.js` shows the original advice string preserved verbatim in the `else` branch.
+
+### 4. Claims newly asserted by the correction, checked
+
+True under re-verification:
+
+- PRIMARY — `grep -rn "rosterParticipants" internal/app/preflight.go` → `:162,195,211`; a binary built from HEAD (`GOCACHE=/tmp/kimi1-gocache go build -o /tmp/parley-head ./cmd/parley`; the repo-root `./parley` binary predates the fix commits — Aug 21 00:33 vs 10:37 — and still shows the old seven-family probe) run as `/tmp/parley-head preflight` on this deck probes exactly the six roster IDs (claude-1, codex-1, hermes-1, kimi-1, opencode-1, zcode-1), **no agy**, `classification=source-advisory`, one `[exclude-agent] kimi-1 unavailable (unavailable:no-pong)` gate, exit 3. That gate is §9.0 working correctly against an environmentally unavailable roster member (my own CLI's pong fails right now); "preflight reports source-advisory with no gates" holds when all six answer. This deck declares no `[roster.*]` in `parley-deck/agents.toml`; the six come from the central `~/.parley/agents.toml:193-222`.
+- PRIMARY — `cat parley-deck/meta/version.json` → `"protocolRole": "source"`.
+- PRIMARY — `grep -rn "RosterMaskedFields" internal/` → `internal/config/runtime.go:1212`, emitter `internal/app/roster.go:325`, test `internal/config/runtime_test.go:450` (claude-1/F3).
+- PRIMARY — `git show 930c268 -- internal/protocol/drift_test.go` and `-- internal/app/preflight_test.go` → column-signature anchors and the roster-not-adapters test, as the dispositions describe (claude-1/F2, preflight addendum).
+- PRIMARY — `git show 815c93a --stat` → `internal/protocol/reviewartifact.go`, `internal/runner/phase58.go`, `internal/runner/phase58_le_test.go`, `parley-deck/meta/version.json` (codex-1/F23). @opencode-1 independently mutation-checked F23 (`signoff-opencode-1.md:72-87`); I did not duplicate it. "Zero live artifacts newly rejected (measured across 72)" — SECONDARY, `815c93a` commit message; I did not re-measure.
+- PRIMARY — ledger sentences: `grep -n "kimi-1/F5\|codex-1/F20\|Its number stands" IMPLEMENTATION.md` → `:94,209,210`; `grep -n "Still deferred" IMPLEMENTATION.md` → `:215` {codex-1/F6, F8, F14, kimi-1/F1}; `grep -H "^Status:" signoff-*.md` → codex-1 ❌, kimi-1 ❌, opencode-1 🟡, zcode-1 🟡, claude-1/hermes-1 ✅, matching the "blocked by … reserved by …" sentence; `git merge-base --is-ancestor 745ead5b3cae8436aac3de1bf2b8dd0f046bdb5b HEAD` → ancestor; reviewed amendment commit `815c93a` = HEAD~1.
+
+False or stale in the corrected ledger (the three reservations in my Notes):
+
+- PRIMARY — `git show a1926ae:.../consensus.md | grep -n "claude-1/F1"` → `:66`, and `:82` at HEAD: "PARTIAL from one verifier" is unchanged; two verifiers returned PARTIAL (`round-02/kimi-1.md:295`, `round-02/zcode-1.md:428`).
+- PRIMARY — the 36/37 Q2 arithmetic detailed in §1 above (`consensus.md:44-49,51,64,119-121`).
+- PRIMARY — `git show 815c93a --stat` (no `installer.js`; the skill is a separate repository) vs `consensus.md:161` and `IMPLEMENTATION.md:207`, both recording `815c93a` for the `recommendedActions` fix; the fix itself is uncommitted (`git -C ../parley-deck-skill status --short` → `M lib/installer.js`, `?? test/source-role-advice.test.js`).
+
+One observation outside my objection scope, recorded because the ledger should know it: `round-02/hermes-1.md` (in HEAD's tree, added by `d9aa26d`, a commit titled for a different idea) contains seven more verdicts on the contested zcode-1 findings — CONFIRMED on F3, F5, F9, F12, F13 and PARTIAL on F2, F10 (`grep -nE '^### .* — ' round-02/hermes-1.md`) — which §3's "kimi-1 or zcode-1's own evidence confirmed them" does not mention. It changes no classification (all seven stay contested) and §1's "three agents" sentence remains true of the dispatched verification round; I make no reservation over it.
+
+I do not re-open `review/consensus.md` or the implementation phase; this re-verification covers the corrected design ledger and the five fixes only.
