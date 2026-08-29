@@ -834,6 +834,7 @@ Rules:
 - Write the complete file, including YAML frontmatter. The first line of the file must be exactly "---".
 - Return only a short confirmation with the path written.
 - Be concrete, concise, and state trade-offs.
+- "## Existing alternatives" is required and must not be empty (§15.6a). Enumerate the mechanisms your proposal builds BY HAND -- name the components, do not describe them -- and for each name the closest thing the toolchain, stdlib, dependencies or platform ALREADY SHIPS, with a locator (a CLI subcommand, a stdlib function, a dependency already in the tree). Mark each load-bearing element constraint-forced or merely inherited. A null result is legal and must name the sources you consulted; "the hand-built route is correct" is a valid outcome. Do NOT write an open-ended "I considered alternatives" -- an unenumerated search is the form measured not to work.
 - If you are blocked by missing human input, create one JSON question file under: %s
 - Question files use this shape: {"id":"<unique-id>","agent":"%s","prompt":"<question>","details":"<context>","default_answer":"<safe default if any>","risk":"low|normal|high","status":"open","answer":"","created_at":"<RFC3339 time>","answered_at":"0001-01-01T00:00:00Z"}
 - If you choose to wait for an answer, poll your question file until status is answered or auto_answered. Otherwise proceed with an explicit assumption in your artifact.
@@ -859,6 +860,7 @@ date: %s
 
 ## Summary
 ## Proposed approach
+## Existing alternatives
 ## Concerns / open questions
 ## Risks
 `, agent.ID, outputPath, questionsDir, agent.ID,
