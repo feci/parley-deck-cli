@@ -1,83 +1,10 @@
 # Shared Parley Deck agent runtime defaults for this repository.
 # User-local paths and overrides belong in parley-deck/agents.local.toml.
 
-[agents.codex]
-sandbox_mode = "workspace-write"
-approval_policy = "never"
-profile = "cli-default"
-timeout_ms = 1800000
-external_backend = "hosted"
-
-[agents.claude]
-profile = "cli-default"
-timeout_ms = 1800000
-external_backend = "hosted"
-
-# Kimi Code — the active 4th participant since 2026-07-18 (replaced agy per user
-# instruction). Headless is plain `kimi -p "<prompt>"`: `--yolo`/`--auto` ARE mutually
-# exclusive with `-p` (probed 2026-08-06 on 0.33.0: `kimi --auto -p …` exits 1 with
-# "Cannot combine --prompt with --auto"), and `-p` already auto-approves in-workspace
-# writes. Model and effort come from ~/.kimi-code/config.toml; a per-invocation
-# `-m/--model` exists, no effort flag does.
-#
-# 2026-08-06 (idea kimi-opencode-full-adapters): kimi is now a FULL built-in adapter
-# with a declared autonomous-write mode, so it launches headlessly like the others.
-# The previous guidance here — "parley 1.36 treats kimi as an ACP backend (AUTO=no),
-# invoke it manually, do NOT run `parley roster init`" — is REMOVED because it is
-# false on current builds: the warned scenario was reproduced (pre-existing
-# [roster.kimi-1], one id unmapped, real `--yes` write) on both 1.38.0 and the new
-# build, and roster init APPENDED the missing mapping, preserved kimi-1, and did not
-# re-add antigravity-1. `headless_args` is likewise dropped here: it now duplicates
-# the built-in exactly, and a redundant override is how a declared autonomous flag
-# gets silently stripped (see the hermes entry above, which had lost --yolo that way).
 [agents.kimi]
                              # MODEL's own default_effort is "high", this overrides it
-profile = "cli-default"
 timeout_ms = 2400000         # kimi is the slowest participant (~20 min/round)
-external_backend = "hosted"
 
 # Antigravity CLI (agy) — INACTIVE since 2026-07-18 (user instruction, reaffirmed
 # 2026-07-21): the 4th roster slot is kimi-1. Kept so historical artifacts resolve.
 # agy 1.0.5 exposes `--model`; use the best available Gemini model if reactivated.
-[agents.agy]
-profile = "cli-default"
-timeout_ms = 1800000
-external_backend = "hosted"
-approval_policy = "dangerously-skip-permissions"
-notes = "Antigravity CLI; headless `agy --print-timeout 30m --dangerously-skip-permissions --model \"Gemini 3.6 Flash (High)\" -p <prompt>`. Models: agy models (Gemini 3.6/3.5 Flash Low/Med/High, Gemini 3.1 Pro Low/High)."
-
-[agents.hermes]
-# Override the built-in headless args (which hardcode --model xai/grok-4.3) so the
-# actual invocation runs GLM 5.2. Keep {prompt} (runner-substituted) and --accept-hooks.
-profile = "cli-default"
-timeout_ms = 1800000
-isolate_home = true
-external_backend = "hosted"
-approval_policy = "accept-hooks"
-
-[agents.hermes.isolated_home_env]
-HERMES_HOME = "{tempdir}"
-
-# Roster: the five standard participants. Adapter only — model, effort and
-# speed are inherited from the global roster (~/.parley/agents.toml), so this deck
-# follows the machine default instead of pinning its own copy that goes stale.
-# Normalized 2026-08-07.
-
-# ROSTER MEMBERSHIP IS NOT DECLARED HERE — BY OWNER INSTRUCTION (2026-08-19).
-#
-# "lokalne nepretazuj nic, pouzivaj globalny roster" — do not override anything locally, use the
-# global roster. With no [roster.*] block in this file the deck INHERITS ~/.parley/agents.toml at
-# read time, so a change to the machine roster takes effect here immediately. `parley roster show`
-# marks this state INHERITED and every row reports `inherited-roster`.
-#
-# This is deliberately NOT `parley roster sync`: sync COPIES the machine roster into this file,
-# which is still a local declaration and would silently go stale the next time the machine roster
-# changes. Inheritance tracks it.
-#
-# The [agents.*] blocks above are kept. They are launch plumbing, not roster membership — sandbox
-# and approval policy, per-agent timeouts (kimi needs ~20 min/round), hermes's isolated HOME
-# without which it does not run. None of them declares who is in the quorum, and none overrides a
-# model or effort: those already come from ~/.parley/agents.toml.
-#
-# To change the roster, edit the machine file:
-#   parley roster set <id> --scope machine --adapter <family> --yes
