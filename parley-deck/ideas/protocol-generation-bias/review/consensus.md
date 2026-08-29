@@ -1,7 +1,7 @@
 ---
 idea: protocol-generation-bias
 review-cycle: 1
-outstanding_agreed_fixes: <count the agreed fixes below and replace this>
+outstanding_agreed_fixes: 0
 blocked: false
 drafted-by: claude-1
 date: 2026-08-29
@@ -115,9 +115,8 @@ re-scoped out of this change deliberately, not lost.
 | 3 | `protocol-cohort-size-measurement` | The 3-vs-6 participant claim, measured against this deck's 88 ideas with recorded participant counts and outcomes, instead of asserted from a 5-task cell. | `claude-1` |
 | 4 | — | `parley protocol publish --version 2.11.0` — attended-only by design; an agent proposes a core change and does not apply one. | **the owner** |
 
-**AC3, AC4 and AC6 are explicitly re-scoped to follow-up 1**; AC2 is met and verified; AC1 is met
-(§15.6 1,372 B → 1,015 B); AC5 is re-scoped to follow-up 1 because it is coupled to the withheld
-clause.
+**AC3, AC4 and AC5 are explicitly re-scoped to follow-up 1 (`protocol-evidence-exchange`); AC6 — the disposition-contradiction criterion — is re-scoped to follow-up 2 (`protocol-disposition-scanner`), which is where its scanner lives**; AC2 is met and verified; AC1 is met
+(§15.6 1,372 B → 1,015 B). AC5 travels with follow-up 1 because it is coupled to the withheld clause.
 
 ## Dismissed findings
 
@@ -140,3 +139,8 @@ can see. Publishing is attended-only, so it stays that way until the owner runs 
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+
+### Signoff: codex-1 — 2026-08-29
+Status: ❌ BLOCK
+Notes: The redraft satisfies my prior implementation-state condition, but it is not internally final: `outstanding_agreed_fixes` is still a template placeholder, and AC6 (the disposition contradiction/scanner criterion) is re-scoped to `protocol-evidence-exchange` even though the follow-up table assigns that work to `protocol-disposition-scanner`.
+Counter-proposal (required if ❌): Replace the placeholder with the resolved count (`0` if no agreed fixes remain), re-scope AC3–AC5 to `protocol-evidence-exchange` and AC6 to `protocol-disposition-scanner`, then issue a clean redraft for signoff.
