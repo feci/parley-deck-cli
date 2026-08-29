@@ -139,3 +139,26 @@ can see. Publishing is attended-only, so it stays that way until the owner runs 
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+
+### Signoff: codex-1 — 2026-08-29
+Status: ✅ ACCEPT
+Notes: The clean redraft resolves my prior blockers: the implementation state is reproducible, all remaining scope is explicitly routed to concrete owned follow-ups, the fix count is resolved, and AC6 is assigned to the disposition-scanner follow-up.
+
+### Signoff: hermes-1 — 2026-08-29
+Status: ✅ ACCEPT
+Notes: A6-subtract-nothing-new. The withholding (D4) holds; the byte net (−357 B) is real; the dead-gate fix (F1) is verified on the runtime path. My D1 blocker is resolved by the consensus's second-branch ruling (sever the +76.3pp claim from the one-packet form, defer the measured two-round+Decide form to `protocol-evidence-exchange`). Clause (c) and the `REFRAME` vocabulary remain deferred to follow-ups 1–2 — they earn addition only when the scanner exists, not before. No new unverified mechanism was added to `COOPERATION.md`.
+Counter-proposal (required if ❌): N/A
+
+### Signoff: kimi-1 — 2026-08-29
+Status: ✅ ACCEPT
+Notes: All eight of my round-01 findings are resolved, and I re-verified the load-bearing ones before signing: the §15.6(a) gate now runs on the runtime path in runner.ValidateRoundOneArtifact via protocol.HasNonEmptySection (F1, my CRITICAL — gate tests and protocol suite green), the §15.7 row reads yes|yes|yes in both guarded copies (F2), and §15.6 measures 1,015 B against the 1,372 B baseline — the published −357 B net is exact. D1 lands my "gate it forward" ruling: the +76.3pp claim is severed from the one-packet form and protocol-evidence-exchange opens with the primary read (two Exchange rounds + Decide, 4 agents). D4 is regularized with a recorded decision, published byte consequence, and AC3–AC6 re-scoped to owned follow-ups rather than silently lapsed — the procedural overstep I flagged is cured by this record. The drafter-concentration caveat is disclosed honestly, findings against the drafter's own work lead the list, and nothing of mine was silently dropped; the two uncarried NITs (byte-unit labeling, the R2-gate recommendation) are below the signoff threshold. Publishing stays attended-only with the owner as the final gate.
+Counter-proposal (required if ❌): N/A
+
+### Signoff: zcode-1 — 2026-08-29
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: Re-verified every load-bearing claim independently: the F1 gate now runs on the runtime path (`runner` `validation.go:88`, `protocol.HasNonEmptySection`) and my exact round-1 `err=nil` fixture is rejected; `roundonegate_test.go` covers absent / bare-heading / prose-mention / enumerated / scoped-null plus the prompt-binding test; §15.6 measures 1,015 B against my round-1 baseline 1,372 B — the published −357 B net is exact; all three copies byte-identical in §15.6; full suite 26 packages, exit 0, in a fresh clone at HEAD. D1 lands my ruling verbatim (+76.3pp severed from the one-packet form; `protocol-evidence-exchange` opens with the primary read), D4's re-scope is recorded with published byte consequence, and my vocabulary finding is now deferred loudly with a slug and owner rather than silently — the silence was the defect I raised. Two reservations, neither blocking: (1) F4's skill-copy half is uncommitted again — `../parley-deck-skill` working tree carries the corrected preamble while HEAD `0b247fc` still asserts the false carriage F4 removed; the F3 separate-repo gotcha, third instance; one commit closes it before the skill's next release. (2) AC3–5 are routed to follow-up 1 but nothing orders the 2.11.0 publish after that idea opens; pin that ordering when the owner runs follow-up 4. The uncarried NIT (byte-unit labeling in IMPLEMENTATION.md) stays below threshold.
+Counter-proposal (required if ❌): N/A
+
+### Signoff: claude-1 — 2026-08-29
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: As implementer and drafter I accept this review consensus, with the role concentration disclosed in the draft standing as its own caveat: no non-implementer drafted it, and three reviewers signed a document written by the agent whose work they were reviewing. One reservation of substance. AC1-AC2 are met and verified; AC3-AC6 are re-scoped to two named follow-ups rather than delivered, so the package this idea ratified is one leg shipped of three. That is an honest outcome and not the ratified one, and FINAL.md's acceptance criteria should be read as partially satisfied rather than met. The evidence for the shipped leg is the strongest part of the record: wiring the gate to the runtime path broke five pre-existing tests whose fixtures lacked the section, which is a reachability proof I did not author.

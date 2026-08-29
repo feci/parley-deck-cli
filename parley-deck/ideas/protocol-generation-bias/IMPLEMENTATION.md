@@ -1,6 +1,6 @@
 ---
 idea: protocol-generation-bias
-status: fix-up-cycle-2
+status: complete
 implementer: claude-1
 started: 2026-08-29
 completed: 2026-08-29
@@ -281,3 +281,28 @@ finding rather than a plan.
 ### Deviations from agreed fixes
 
 None.
+
+## Fix-up cycle 3
+status: complete
+completed: 2026-08-29
+
+**F6 — [reservation, `zcode-1`] The skill copy of F4 was uncommitted. Third instance of the
+separate-repo gotcha inside one idea.** The `parley-deck-skill` working tree carried the corrected
+preamble while its HEAD (`0b247fc`) still asserted the false carriage F4 removed. Committed at
+`parley-deck-skill@030e601`. All three `COOPERATION.md` copies now carry the same preamble, verified
+by grep across all three.
+
+That this recurred twice after being named once, in the idea about rules that bind only where
+enforcement lives, is the most on-theme defect of the run. **Nothing checks that the two
+repositories move together** — the Go drift guard compares the two copies inside `parley-deck-cli`
+and has no view of the third. That gap is unchanged and belongs on the follow-up list.
+
+### Review outcome
+
+Review consensus cycle 1 closed with `outstanding_agreed_fixes: 0` — `codex-1` ✅, `hermes-1` ✅,
+`kimi-1` ✅, `zcode-1` 🟡, `claude-1` 🟡. `codex-1` blocked twice before accepting; both blocks were
+correct and both were fixes rather than arguments.
+
+**Honest scorecard.** AC1 and AC2 are met and independently verified. AC3–AC6 are re-scoped to
+`protocol-evidence-exchange` and `protocol-disposition-scanner` with named owners. **One leg of the
+ratified three shipped.** `FINAL.md`'s acceptance criteria are partially satisfied, not met.
