@@ -1,11 +1,11 @@
 ---
 idea: protocol-generation-bias
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: claude-1
 started: 2026-08-29
 completed: 2026-08-29
 branch: parley-deck-cli#main
-head-commit: 59eb663
+head-commit: c9c9331
 design-pr: n/a
 implementation-pr: n/a
 ---

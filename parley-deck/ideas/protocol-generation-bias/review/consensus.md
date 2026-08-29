@@ -105,20 +105,19 @@ figure from cycle 1.
 
 ## Deferred follow-ups
 
-1. **Leg 2, the evidence exchange** — ratified, unimplemented, and deliberately absent from the
-   protocol text. Its own idea, opening with the primary read: two Exchange rounds plus a Decide
-   pass, 4 agents.
-2. **Leg 3's disposition scanner** — [MAJOR, `zcode-1`] the duty is prose with no `ALT-` id scanner.
-   Clause (c) is honest about that after F4, but honest-and-unenforced is still unenforced.
-3. **AC5's "transfer unverified" label** — [MAJOR, `hermes-1`] `FINAL.md` requires it in
-   `COOPERATION.md`; it cannot go there while clause (b) is withheld, because the label lived in
-   that clause. **AC5 and D4 are coupled and `FINAL.md` did not anticipate it.** Travels with
-   follow-up 1.
-4. **The deferred vocabulary question** — [MAJOR, `hermes-1`] `round-01/opencode-1.md` arrived after
-   its author's exclusion and proposes a `REFRAME` class with a `## Frames considered` destination.
-   It has been read and is not adopted or rejected here. Travels with follow-up 2.
-5. **The 3-vs-6 participant cohort measurement** — owner still unassigned.
-6. **`parley protocol publish --version 2.11.0`** — attended-only by design; the owner runs it.
+Every item carries a concrete slug and a named owner, per `codex-1`'s counter-proposal. These are
+re-scoped out of this change deliberately, not lost.
+
+| # | Slug | What | Owner |
+|---|---|---|---|
+| 1 | `protocol-evidence-exchange` | Leg 2, ratified and unimplemented. Opens with the primary read — **two Exchange rounds plus one Decide pass, 4 agents** — not with the brief that omitted the round count. Carries AC5's `"transfer unverified"` label, which cannot land in `COOPERATION.md` while clause (b) is withheld. | `claude-1` |
+| 2 | `protocol-disposition-scanner` | Leg 3's `ALT-` id scanner. The duty is prose; clause (c) is now honest about that, but honest-and-unenforced is still unenforced. Carries the deferred finding-class vocabulary question, whose live input is `round-01/opencode-1.md` (`REFRAME` + `## Frames considered`), read and neither adopted nor rejected here. | `claude-1` |
+| 3 | `protocol-cohort-size-measurement` | The 3-vs-6 participant claim, measured against this deck's 88 ideas with recorded participant counts and outcomes, instead of asserted from a 5-task cell. | `claude-1` |
+| 4 | — | `parley protocol publish --version 2.11.0` — attended-only by design; an agent proposes a core change and does not apply one. | **the owner** |
+
+**AC3, AC4 and AC6 are explicitly re-scoped to follow-up 1**; AC2 is met and verified; AC1 is met
+(§15.6 1,372 B → 1,015 B); AC5 is re-scoped to follow-up 1 because it is coupled to the withheld
+clause.
 
 ## Dismissed findings
 
@@ -141,3 +140,8 @@ can see. Publishing is attended-only, so it stays that way until the owner runs 
 ## Signoffs
 
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
+
+### Signoff: codex-1 — 2026-08-29
+Status: ❌ BLOCK
+Notes: F1/F2 are fixed, but the draft defers the two remaining CRITICAL findings—ratified exchange and disposition carriers (AC3–6)—and declares zero fixes while `IMPLEMENTATION.md` still records `59eb663` / fix-up cycle 1 rather than the reviewed `c9c9331` state. That does not satisfy `FINAL.md` or identify the current implementation reproducibly.
+Counter-proposal (required if ❌): Either implement AC3–6 before re-review, or ratify a successor that explicitly re-scopes them, names concrete follow-up slugs and owners, and updates `IMPLEMENTATION.md` to `c9c9331` / fix-up cycle 2 before a new consensus draft.
