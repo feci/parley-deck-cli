@@ -71,7 +71,7 @@ measured against, and the one step that could not be retrofitted.
 
 ## Implementation plan / checklist
 
-- [ ] **Files or areas to change:**
+- [x] **Files or areas changed:**
   - `~/.parley/protocol/core/2.11.0/COOPERATION.md` — new write-once core (publish is
     attended-only; prepared here, published by the owner)
   - `internal/protocol/defaults/COOPERATION.md` — embedded default (drift-guarded)
@@ -80,8 +80,8 @@ measured against, and the one step that could not be retrofitted.
     the Go drift guard**
   - `internal/runner/runner.go` — `BuildRoundOnePrompt`: leg 1 instruction + required file shape
   - `internal/protocol/` — round-01 artifact gate reusing `HasNonEmptySection`
-  - `internal/runner/` — leg 2 exchange stage
-  - `internal/consensus/consensus.go` — leg 3 `## Alternatives disposition` validation
+  - ~~`internal/runner/` — leg 2 exchange stage~~ **withheld, see D4**
+  - `internal/consensus/consensus.go` — leg 3 scanner **not written; open finding**
   - `parley-deck-skill/skills/parley-deck/SKILL.md` — round-1 and consensus templates
 - [x] **Checks run.** `go build ./...` clean. `go test ./...` green, exit 0, no failures. Drift
       guard `TestDriftAnchorsAcceptTheGeneratedRosterTable` passes all 9 subtests.
@@ -259,3 +259,25 @@ None. F1–F3 are exactly what the findings asked for.
   updated in the same edit as the other two. hermes-1 ran with `--cwd parley-deck-cli` and the
   skill is a sibling directory outside that sandbox. A sandbox miss is not evidence of absence —
   the same rule as a grep miss.
+
+## Fix-up cycle 2
+status: complete
+completed: 2026-08-29
+
+### Fixes applied
+
+**F4 — [MAJOR, kimi-1] D4's principle was applied inconsistently.** I withheld clause (b) because
+nothing enforces it, then kept a preamble asserting that every duty in the section "is validated
+there". Clauses (b) and (c) have no scanner, so the sentence promised a gate that does not exist —
+the same defect, one paragraph away from where I diagnosed it. The preamble now names which clause
+is machine-validated and says the others bind by discipline. §15.6 is 1,015 B against the original
+1,372 B; **net −357 B**, still negative, and the earlier −476 B figure is superseded.
+
+**F5 — [NIT, kimi-1] the checklist was left unchecked** while the prose claimed the work was done,
+and it still listed the withheld exchange stage and the unwritten leg-3 scanner as if delivered.
+Regularized: changed items marked, withheld item struck through, unwritten item named as an open
+finding rather than a plan.
+
+### Deviations from agreed fixes
+
+None.
