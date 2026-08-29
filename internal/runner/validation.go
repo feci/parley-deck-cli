@@ -79,6 +79,15 @@ func ValidateRoundOneArtifact(path, agentID, ideaSlug string) error {
 		return err
 	}
 	body := string(data)
+	// §15.6(a): the acquisition duty is checked HERE, on the runtime path, not only in
+	// protocol.ValidateRoundOneArtifact. A validator with no caller is the defect class this
+	// rule exists to prevent, and shipping one inside its own fix is how it recurs.
+	//
+	// This section uses the non-empty check rather than strings.Contains: a substring mention or
+	// a bare heading is a rubber-stamp, not an enumerated search.
+	if !protocol.HasNonEmptySection(body, protocol.RoundOneRequiredSection) {
+		return fmt.Errorf("%s is missing a non-empty %q section (§15.6a)", path, protocol.RoundOneRequiredSection)
+	}
 	for _, section := range []string{
 		"## Summary",
 		"## Proposed approach",

@@ -83,6 +83,9 @@ Summary.
 ## Proposed approach
 Approach.
 
+## Existing alternatives
+Searched the stdlib and the lockfile; nothing ships this. Hand-built route is correct.
+
 ## Concerns / open questions
 None.
 
@@ -449,6 +452,9 @@ Fake artifact for runner test.
 
 ## Proposed approach
 Use the runner contract.
+
+## Existing alternatives
+Searched the stdlib and the lockfile; nothing ships this. Hand-built route is correct.
 
 ## Concerns / open questions
 None.

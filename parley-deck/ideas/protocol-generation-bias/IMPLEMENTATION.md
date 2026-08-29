@@ -1,11 +1,11 @@
 ---
 idea: protocol-generation-bias
-status: implemented
+status: fix-up-cycle-1
 implementer: claude-1
 started: 2026-08-29
 completed: 2026-08-29
 branch: parley-deck-cli#main
-head-commit: 9d4f45c
+head-commit: 59eb663
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -181,3 +181,81 @@ command is handed to the owner.
 5. `round-01/opencode-1.md` arrived after its author was excluded and proposes a `REFRAME` class
    with a `## Frames considered` destination. `FINAL.md` defers the vocabulary question to it. Read
    it before concluding the disposition leg is complete.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-08-29
+
+Applied before review consensus, because two reviewers found the same CRITICAL independently and
+it is not arguable. Recorded here rather than deferred so the review consensus rules on the fixed
+state.
+
+### Fixes applied
+
+**F1 — [CRITICAL, codex-1 + zcode-1] The acquisition gate was dead code.**
+`protocol.ValidateRoundOneArtifact` had **zero non-test callers**. The runtime path uses a
+*different function of the same name* — `runner.ValidateRoundOneArtifact`
+(`internal/runner/validation.go`) — which checked only the four legacy sections with
+`strings.Contains`. zcode-1 fed it a compliant artifact with no `## Existing alternatives` and got
+`err=nil`.
+
+zcode-1's sentence is the finding of this cycle and belongs in the record verbatim:
+
+> "The mutation test the implementer ran proves the function rejects when called; it proves nothing
+> calls it."
+
+This is the deck's own defect class — *a printed rule binds only where enforcement lives* —
+committed inside the fix for it, and the second time this project has recorded
+*"my test passed because it tested the helper, not the call site."*
+
+Fix: the check now runs in `runner.ValidateRoundOneArtifact` on the runtime path, using
+`protocol.HasNonEmptySection` rather than `strings.Contains`, so a bare heading or a prose mention
+does not satisfy it.
+
+**Proof it is now live, and it is not a test I wrote.** Wiring the gate in *broke five pre-existing
+tests* across `internal/runner`, `internal/app` and `internal/driver` whose round-1 fixtures had no
+`## Existing alternatives`. Those tests exercise the real round-1 path; they passed before and fail
+after. A gate that breaks its own callers is reachable. Fixtures updated in
+`runner_test.go` (×2), `acp_test.go`, `hardening_test.go`, `round_test.go`, `app_test.go` and
+`driver_test.go`.
+
+New call-site test: `internal/runner/roundonegate_test.go` —
+`TestRuntimeValidateRoundOneArtifactEnforcesExistingAlternatives` (absent / bare heading / prose
+mention / enumerated / scoped-null) and `TestRoundOnePromptCarriesTheSectionItIsGatedOn`, which
+binds the prompt to the gate so an agent is never failed for a duty it was not told about.
+
+Call-site mutation, run properly: `if !protocol.HasNonEmptySection(...)` → `if len(body) < 0`
+(compiles, never fires) → the call-site test **failed** with *"runtime validator accepted a round-1
+artifact with no Existing alternatives section"*; restored → green.
+
+**F2 — [MAJOR, codex-1] §15.7's per-track table contradicted the new rule.**
+The table still read `| 15.6 correlated agreement | no | yes (…) | yes (…) |`, so a `fast`-track
+idea was exempted from a section the prose calls unconditional. Now
+`| 15.6 alternatives & correlated agreement | yes | yes | yes |` in all three copies.
+
+**F3 — [MAJOR, zcode-1] The skill half of the change was uncommitted.**
+`parley-deck-skill` is a **separate git repository**; `git add -A` in `parley-deck-cli` never
+touched it. `SKILL.md`, `references/COOPERATION.md` and the rebuilt `parley-addon.json` sat dirty
+and undisclosed. Committed in its own repo this cycle. This is the recorded separate-repo gotcha,
+hit again.
+
+### Deviations from agreed fixes
+
+None. F1–F3 are exactly what the findings asked for.
+
+### Still open, for the review consensus to rule on
+
+- **D1** (exchange fidelity: ratified one packet vs the measured two rounds + Decide) — hermes-1
+  blocks and requires either the upgrade or an explicit FINAL re-ratification with corrected
+  effect-size claims. Not fixed here; it is a design decision, not an implementation defect.
+- **[MAJOR, hermes-1]** the `"transfer unverified"` label is absent from `COOPERATION.md`
+  (acceptance criterion 5). It cannot be satisfied while clause (b) is withheld under D4, because
+  the label lived in that clause. AC5 and D4 are coupled and `FINAL.md` did not anticipate it.
+- **[MAJOR, zcode-1]** leg 3 disposition is prose-only with no scanner; §15.6's preamble asserts
+  carriage that does not yet exist for clause (c).
+- **[MAJOR, hermes-1]** claimed the skill's `references/COOPERATION.md` "does not exist in this
+  workspace". **Refuted:** it exists at
+  `parley-deck-skill/skills/parley-deck/references/COOPERATION.md`, carries the new §15.6, and was
+  updated in the same edit as the other two. hermes-1 ran with `--cwd parley-deck-cli` and the
+  skill is a sibling directory outside that sandbox. A sandbox miss is not evidence of absence —
+  the same rule as a grep miss.

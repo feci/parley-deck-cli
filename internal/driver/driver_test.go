@@ -43,7 +43,7 @@ func writeArtifact(t *testing.T, ideaDir, slug string, round int, agent string, 
 	}
 	var body string
 	if round <= 1 {
-		body = fmt.Sprintf("---\nagent: %s\nidea: %s\nround: 1\n---\n\n## Summary\nx\n## Proposed approach\nx\n## Concerns / open questions\nx\n## Risks\nx\n", agent, slug)
+		body = fmt.Sprintf("---\nagent: %s\nidea: %s\nround: 1\n---\n\n## Summary\nx\n## Proposed approach\nx\n## Existing alternatives\nsearched the stdlib; nothing ships this\n## Concerns / open questions\nx\n## Risks\nx\n", agent, slug)
 	} else {
 		var headings strings.Builder
 		for _, other := range participants {

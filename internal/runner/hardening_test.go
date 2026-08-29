@@ -32,7 +32,7 @@ func TestFakeExitAgentHelper(t *testing.T) {
 	if len(match) != 2 || len(ideaMatch) != 2 {
 		os.Exit(7)
 	}
-	body := "---\nagent: fake\nidea: " + ideaMatch[1] + "\nround: 1\ndate: 2026-06-12\n---\n\n## Summary\nx\n\n## Proposed approach\nx\n\n## Concerns / open questions\nx\n\n## Risks\nx\n"
+	body := "---\nagent: fake\nidea: " + ideaMatch[1] + "\nround: 1\ndate: 2026-06-12\n---\n\n## Summary\nx\n\n## Proposed approach\nx\n\n## Existing alternatives\nsearched the stdlib; nothing ships this\n\n## Concerns / open questions\nx\n\n## Risks\nx\n"
 	_ = os.WriteFile(match[1], []byte(body), 0o644)
 	code, _ := strconv.Atoi(os.Getenv("FAKE_AGENT_EXIT"))
 	os.Exit(code)

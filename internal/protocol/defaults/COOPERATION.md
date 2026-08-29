@@ -1362,4 +1362,4 @@ contradiction blocks signoff and escalates to the owner. The scanner never auto-
 | 15.4 exemption claims | yes | yes | yes |
 | 15.5 procedural calls provisional | yes | yes | yes |
 | 15.5 drafter position changes | yes (in collapsed `FINAL.md`) | yes | yes |
-| 15.6 correlated agreement | no | yes (section in an existing round-02 file) | yes (assigned round artifact) |
+| 15.6 alternatives & correlated agreement | yes | yes | yes |

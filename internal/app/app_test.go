@@ -1701,6 +1701,9 @@ Fake artifact.
 ## Proposed approach
 Use the test helper.
 
+## Existing alternatives
+Searched the stdlib and the lockfile; nothing ships this. Hand-built route is correct.
+
 ## Concerns / open questions
 None.
 

@@ -232,7 +232,7 @@ func TestFakeStdoutAgentHelper(t *testing.T) {
 		t.Fatalf("no idea in prompt")
 	}
 	// Print a valid artifact to stdout WITHOUT writing the file.
-	os.Stdout.WriteString("---\nagent: printer\nidea: " + idea[1] + "\nround: 1\ndate: 2026-06-02\n---\n\n## Summary\ns\n\n## Proposed approach\np\n\n## Concerns / open questions\nc\n\n## Risks\nr\n")
+	os.Stdout.WriteString("---\nagent: printer\nidea: " + idea[1] + "\nround: 1\ndate: 2026-06-02\n---\n\n## Summary\ns\n\n## Proposed approach\np\n\n## Existing alternatives\nsearched the stdlib; nothing ships this\n\n## Concerns / open questions\nc\n\n## Risks\nr\n")
 	os.Exit(0)
 }
 
