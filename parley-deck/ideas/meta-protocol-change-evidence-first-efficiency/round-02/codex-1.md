@@ -90,3 +90,10 @@ enforced, fail closed or reserve a documented conservative upper bound. The
 two-confirmed-regression trajectory rule is opt-in and escalates without closure.
 All five priorities, real experiments and the HTML remain required; no slice
 alone completes this umbrella.
+
+Additional PRIMARY inspection: `internal/runner/acp.go:387-396` emits only
+`used`/`size` from ACP usage, and `internal/acp/protocol.go` defines no cost or
+billed-token fields there. Those values describe context utilization, not a
+monetary total. Do not rename that event and pretend it supplies price; preserve
+it as context usage and normalize cost only when the provider actually reports
+an attributable cost. This narrows the ACP migration claim in kimi-1 round 1.

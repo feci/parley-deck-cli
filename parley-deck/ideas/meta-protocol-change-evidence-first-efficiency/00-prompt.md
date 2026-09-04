@@ -9,7 +9,7 @@ roles:
   claude-1: phase-scoped packet and instruction-layer correctness
   hermes-1: liveness, process supervision and false-negative prevention
   kimi-1: independent evidence, completion scope and adversarial testing
-status: round-01
+status: consensus
 ---
 
 # Implement All Five Self-Assessment Priorities
