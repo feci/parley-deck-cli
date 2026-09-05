@@ -1,10 +1,23 @@
 ---
 idea: meta-protocol-change-evidence-first-efficiency
-drafted-by: codex-1
-date: 2026-09-05
+status: final
+author: codex-1
+consensus-date: 2026-09-05
+participants: [codex-1, claude-1, hermes-1, kimi-1]
+track: deliberation
+design-pr: https://github.com/feci/parley-deck-cli/pull/72
 ---
 
-## Agreed Decisions
+# Evidence-First Efficiency
+
+## Final plan / specification
+
+All four participants wrote independent round-01, cross-review round-02 and
+their own accepting signoff. Claude and Kimi accepted with the recorded
+reservations: live experiments and independent verification remain obligations,
+not passed gates. The initial Claude signature attempt failed on a session
+limit; the post-reset attempt wrote his signature without changing model,
+route or quorum. This is design acceptance, not implementation completion.
 
 ### D1. Deliver Every Priority, With Independent Gates
 
@@ -157,139 +170,102 @@ denominators, evidence and limitations. It supports keyboard access, filtering,
 desktop/mobile/low-height and print; charts are nonblank and legible. Verify with
 ego-browser only. A pending result is visually distinct from passed evidence.
 
-## Agreed Trade-Offs
 
-This program is deliberately broader than a single code patch. Disjoint slices
-and independent review reduce collision risk, but integration and live experiments
-remain on the critical path. Telemetry cannot create missing provider data. A
-conservative unknown-cost stop may reduce pilot completion; it must be reported,
-not bypassed. Full-context pilot controls sacrifice potential packet savings to
-avoid confounding the main comparison. Global rollout is separate from source
-implementation and test completion.
+### Packet Never-Cut and Decision-Band Invariants
 
-## Open Items Deferred to Implementation
+Preserve the authoritative protocol; applicable modals, negations, conditions
+and exceptions; Section 4.0 overrides/invariants; current-phase block; non-solo
+and files-canonical close guards; Section 6 rule 3, status re-read, English-only
+and no-secrets; escalation; Section 14; active transport current-phase mechanics;
+applicable close/cap/strict gates; full Section 15 in phases 1,2,3,6,7 and
+Sections 15.1-15.4 plus 15.7 in phases 5,8; Section 7 throughout a protocol-change
+idea; and on-demand raw historical artifacts. Omission classification cannot
+prove its own semantic completeness.
 
-- Exact typed helper signatures and test-report formats, with compatibility tests.
-- Existing configured model routing and launch capability quirks; record every
-  correction without changing operator defaults or fabricating resolved identity.
-- User's asynchronous live-pilot estimated-cost ceiling selection. Infrastructure
-  work continues while that optional preference is pending.
-- Numeric experiment results, uncertainty, and any genuinely external spending or
-  rollout gate. These are not design BLOCKs and not completed measurements.
+The earlier packet FINAL's disputed speed band remains unresolved. Codex and
+Kimi refute at R>0.80 in either phase; Hermes refutes at R>0.67. In (0.67,0.80],
+return the measured value and both positions to the user. The implementer cannot
+pick one. Above the ship threshold but outside that dispute, preserve the
+earlier middle-band reporting rules; do not round the result up to an estimate.
+Per-call saving never becomes an unsupported whole-idea saving.
 
-## Drafter Position Changes
+## Purpose / user-visible outcome
 
-Codex adopts Claude's explicit applicability manifest and source-role warning,
-Kimi's typed scope/evidence integration and blinding hygiene, and Hermes's
-observation taxonomy. Codex rejected artifact-heading budget counts, real-hang
-claims from silence, echo-based readiness, and ACP alias dual-reading; their
-authors explicitly retracted them in round 2. Codex narrows ACP normalization to
-actually reported billing data and distinguishes measured manual launches from
-unobserved handoffs. Those corrections are preserved, not smoothed into trade-offs.
+Make Parley capable of reporting what model work was actually attempted, what
+was independently verified, and what the time/cost/quality trade-off was.
+Deliver all priorities and an offline HTML that distinguishes historical
+descriptions, tested implementation, measured experiments and future follow-up.
+Do not turn more words, more signatures or larger teams into a quality score.
 
-## Comparison & Blind Spots
+## Context & orientation
 
-No substantive design disagreement remains in round-02. Every participant
-responded to the others; raw artifacts remain available. Convergence is not a
-PRIMARY correctness verdict on unimplemented code. Testable counterexamples,
-independent slice reviewers, and frozen live trials are required. No participant
-has yet established the real spending coverage of all six adapters or the pilot's
-external validity. Larger production durability remains a future observation.
+The CLI repository is parley-deck-cli, with Go packages under internal/.
+The sibling parley-deck-skill source supplies installed skill instructions.
+The live source-role protocol is parley-deck/COOPERATION.md. The evaluation
+workspace is the sibling parley-deck-evaluation directory; its historical
+assessments/2026-09-05 snapshot is frozen, and new work belongs under
+delivery/2026-09-05 plus its evaluation scripts/templates.
 
-## Work Ownership
+Code base for design inspection: 257ef8c75ac5e478edf42b59543e89cf94730de6.
+Reuse internal/runner, internal/store, internal/driver and the existing
+checks/preflight paths. The baseline full Go suite passed, but no proposed
+feature is certified by that baseline result.
 
-- Codex: telemetry, shared runner/app integration, budgets, pilot, report, integration.
-- Claude: new protocolpacket package, packet CLI helper/tests, applicability map,
-  source protocol wording and skill source in a separate worktree.
-- Hermes: preflight/liveness helper/tests and runner supervision policy/tests.
-- Kimi: new evidence package, driver checks integration and focused tests.
-- Exact file claims and merge order go into IMPLEMENTATION.md before code edits.
-  Non-implementers review every slice. A whole-program completion requires all
-  required outcomes, not merely four implementation handoffs.
+Codex owns shared runtime/app integration, telemetry, budgets, experiments and
+presentation. Claude owns the new packet package/helper/map and source instruction
+changes, including skill source in a separate worktree. Hermes owns liveness and
+supervision. Kimi owns typed evidence and the checks integration. Exact disjoint
+paths, tests, integration order and recovery state belong in IMPLEMENTATION.md
+before code edits. Non-owners review every changed slice; no self-issued overall
+acceptance is sufficient.
 
-## Signoffs
+## Observable acceptance criteria
 
-### Signoff: codex-1 - 2026-09-05
-Status: ACCEPT
-Notes: Accept D1-D8 and the recorded trade-offs. The design asserts no unmeasured
-speed, cost, model superiority, deployment, or production-correctness result.
-### Signoff: hermes-1 - 2026-09-05
-Status: ACCEPT
-Notes: Verified the disputed code claims in this worktree before signing: `Spec.BuffersStdout` is declared at `internal/agents/discover.go:60` (Codex's 61-65 points at `AutonomousWrite`; substance correct, field consumed only by TUI/run.created); `hostedPONG` (`internal/app/preflight.go:823-866`) returns only command-build-error/start-error/timeout/exit-error/no-pong; `isExactPONG` (:872) stays the sole readiness test. My five round-01 errors are retracted and D7 records the liveness taxonomy and BuffersStdout soft-watchdog policy accurately. Reservation: the exact packet trial (6+6 paired, AB/BA, R<=0.50), the 12-task three-arm pilot, and non-implementer R recomputation remain unrun obligations, not passed gates — a failed or unrun experiment is unfinished work, never completion. Source-only skill changes are in scope; global publication is human-only.
+| ID | Required observable result |
+| --- | --- |
+| AC-T1 | Every supported launch surface yields a unique requested record before spawn and a terminal record after its real outcome; unobserved handoffs are not launches. |
+| AC-T2 | At least 20 real new-runtime attempts reconcile without losing failed starts/retries or duplicating usage; requested and reported identity remain distinct. |
+| AC-T3 | Structured usage parsers, unknown/null provenance, secret canaries and telemetry-write failure tests pass; monetary boundaries stop or conservatively reserve unknown spend. |
+| AC-E1 | Missing/self/stale/skipped/zero-case/partial evidence and evidence-write failure cannot close a new whole implementation; code changes invalidate the tested tree. |
+| AC-E2 | An independent verifier executes the concurrency counterexample and corrected case; current-tree criterion evidence covers the delivered scope, with deployment separate. |
+| AC-P1 | One live-source renderer supplies complete inclusion/omission records and attestation across CLI, runner/handoff, source protocol and skill instructions; missing authority blocks and unknown applicability falls back visibly. |
+| AC-P2 | Execute the exact 12 matched packet pairs and 3 canaries plus full control; a non-implementer recomputes both R values and checks every seeded obligation. Report a failed speed hypothesis honestly. |
+| AC-B1 | Driver/manual/resume/BLOCK/failed-attempt boundary fixtures preserve precharged monotonic counts, inclusive 5/6 and 3/4 limits and idempotent actions; exhaustion cannot close or silently reset. |
+| AC-B2 | The opt-in two-confirmed-patch-regression trigger escalates only with independent patch-linked evidence; unchanged repeated criticism does not trigger it. |
+| AC-L1 | Real fake-child fixtures distinguish quiet late success, hard timeout, partial output, malformed/echo/empty replies, auth/provider/process errors; cleanup and unchanged quorum are verified. |
+| AC-X1 | Freeze and run twelve real tasks in solo, duo and full-six arms with equal enforceable ceilings, controlled full context, rotation and owned phase artifacts; retain failures and not-run cells honestly. |
+| AC-X2 | Two blind nonauthor grader configurations, deterministic code tests, disagreement handling, paired uncertainty and cost coverage produce auditable results without model-IQ or historical causal claims. |
+| AC-H1 | One self-contained offline HTML contains baseline plus actual delivery/results/limits; ego-browser confirms desktop/mobile/low-height/print, nonblank charts, readable controls, filtering and keyboard operation. |
+| AC-F1 | Register 14/30-day follow-up from actual delivery, marked not-yet-due until observed; no fake elapsed durability evidence. |
 
-### Signoff: hermes-1 - 2026-09-05 (clarification)
-Status: ACCEPT
-Notes: I accept the distinction. "Unfinished work" in my earlier note means an unrun or unrecomputed trial, not an actually executed, independently recomputed trial that merely fails the R<=0.50 speed threshold. An observed speed-gate failure is a valid measured negative result: the evaluation completes, optimization stays unshipped, and full/shadow mode remains enabled. I retract any reading of my earlier sentence requiring the preregistered speed hypothesis to succeed to finish the evaluation, and I do not require re-running a failed gate until it passes. Correctness defects still require fixes: the zero-correctness-miss and canary conditions bear on correctness independently of the ship decision.
+## Idempotence & recovery
 
-### Signoff: kimi-1 - 2026-09-05
-Status: ACCEPT-WITH-RESERVATIONS
-Notes: Accept D1-D8, the trade-offs, and the work ownership. Before signing I
-re-verified the disputed claim central to my slice in this worktree: at
-`internal/app/driver_checks.go:78-87` a failed `writeValidationEvidence` only
-warns while `allPass` can still return true — D3's fail-closed requirement and
-my round-02 defect list describe the current code accurately. My two round-02
-retractions (attempt ordinal is not a unique identity; no dual-read of
-`agent.usage`/`agent.acp.usage`) stand. Reservations, all already recorded in
-the design and restated so they cannot be read as satisfied: (1) the exact
-ratified packet trial (phases 1 and 6, 6+6 matched AB/BA pairs, R<=0.50 in both
-phases, zero correctness misses) and the 12-task three-arm real pilot remain
-unrun obligations, not passed gates — an unrun experiment is unfinished work
-and counts as nothing; (2) an executed but failed experimental optimization
-gate is a valid measured negative result that keeps shadow/audit mode and
-leaves optimization unshipped, with no re-run-until-pass; (3) non-implementer
-recomputation of R and independent per-slice verification are still owed;
-(4) source-only skill/protocol wording changes are in scope, while global
-publication, package release, and production deployment stay human-only and are
-not authorized by this signoff.
+Preserve failed invocation records, canonical artifact ownership and completed
+attempts. Resume from IMPLEMENTATION.md, current branches and durable run state,
+not remembered session narratives. Re-read source hashes before using packets,
+and tested-tree hashes before closure. Unique action/invocation IDs prevent
+double spending or double counted usage while retries remain distinct attempts.
 
-### Signoff: claude-1 - 2026-09-05
-Status: ACCEPT-WITH-RESERVATIONS
-Notes: Accept D1-D8, the trade-offs, the open items and the work ownership. The
-consensus records my round-02 positions and retractions accurately (heading-count
-ledger, participant-authored grants, redact-under-original-hash, and "skill change
-needs a release" are all withdrawn), and I issue no verdict on claims I own.
-Verified before signing, PRIMARY: D5 against
-`ideas/meta-protocol-change-phase-packet-and-fixup-budget/FINAL.md:108-113,146,201`
-- R = median(packet/full) per phase; phases 1 and 6; 6 paired runs per phase,
-counterbalanced AB/BA, packet generation counted inside the packet arm; 3
-packet-arm canary replicates plus a full-arm control on an `auto_implement`/§14
-task; §6/§14/§15 obligations checked in every run; ship only at R<=0.50 in BOTH
-phases AND canary passed AND zero obligation misses; disputed interval
-(0.67,0.80]; `## Never cut` list. Consensus D5 matches it. My round-02 code
-locators stand (`driver_checks.go:78-87` warn-and-pass; `impl.go:536-545` max of
-charged cursor and markers; `acp.go:389` emits `agent.acp.usage` while
-`loop.go:183` is the sole `agent.usage` reader; `Spec.BuffersStdout` at
-`discover.go:57-60` unused in `runner/`; the runs directory is git-tracked). I
-ran no tests, builds, probes or agents. No verdict conflicts remain: the
-line-offset differences on `BuffersStdout` and `isExactPONG` are locator
-precision, not contradictory truth-status, so no §15.3 section is required.
-Reservations: (1) The exact packet trial, the 12-task three-arm real pilot and
-non-implementer R recomputation are unrun obligations, not passed gates. An
-executed, independently recomputed trial that fails R<=0.50 is a valid measured
-negative result: it keeps full/shadow audit mode, leaves optimization unshipped,
-and is not re-run until it passes. An unrun trial is unfinished work and counts
-as nothing. Correctness misses and canary failures still require fixes. If the
-packet A/B is unexecuted at reporting time the HTML lists an unmet gate, not a
-result. (2) §15 formal gaps in this consensus: no one-line role-concentration
-statement (codex-1 is author, facilitator, drafter and participant); `## Drafter
-Position Changes` lacks the exact prior quotations and source round paths §15.5
-requires; there is no `## Alternatives disposition` with ALT- ids and no explicit
-§15.6(b) statement that four-way convergence is a shared prior and what would
-make the agreed position wrong. The substance is traceable in the round-02
-files, so I do not block. FINAL.md must carry the ALT- dispositions (charged
-counter over artifact headings; `Spec.BuffersStdout` for the soft watchdog;
-`isExactPONG` as sole readiness; extend existing checks/review machinery; refuse
-rather than redact detected secrets; full-fallback on unknown applicability;
-live source file authoritative on source-role decks; one normalized
-`agent.usage` per invocation) and may not contradict them. (3) My slice is
-source-only: `internal/protocolpacket`, the packet CLI, the applicability map,
-§9 item 1 wording and the sibling skill source in its own worktree. Builder and
-handoff call sites are codex-1's serialized change; exact disjoint file claims
-go into IMPLEMENTATION.md before any code edit. Global core publication, npm
-release and production deployment are human-only and are not authorized by this
-signoff. (4) All pilot arms run full context; shadow packets are logged only.
+Freeze experiment inputs and ceilings before treatment; amendments are new,
+explicit versions, never silent edits to a completed trial. Keep failed runs in
+their assigned cells and do not rerun a negative speed result until it passes.
+An external provider or spend stop leaves work pending. Recovery never silently
+substitutes a model, drops a selected participant or turns unknown evidence into
+success. Do not overwrite the historical assessment.
 
-## Procedural Addendum by codex-1
+## Known risks / de-risking
+
+Per-provider billing coverage and resolved-model identity may be unavailable.
+Equal elapsed ceilings do not by themselves mean equal compute; report which
+resource ceilings are actually enforced. The live pilot is small and curated;
+grader/model correlation, task mix and identity leakage constrain inference.
+Anonymization preserves substance and records possible leaks. Metadata attribution
+is not cryptographic identity, and bounded checks are not universal semantic proof.
+
+Real implementation may reveal interface details but may not silently weaken the
+accepted scope or experiment. Keep full/shadow default until the exact ship gate
+and any rollout authorization are satisfied. Source-only implementation does not
+authorize global core publication or package deployment.
 
 Role concentration: codex-1 is idea author, facilitator, participant and drafter;
 this creates no extra signoff weight or dispute-adjudication authority.
@@ -337,5 +313,13 @@ the claimed efficiency benefit. Such observations must be reported rather than
 outvoted. An observed speed-gate failure is valid evidence against shipping the
 optimization, not a reason to rerun until success.
 
-This addendum supplies the formal records requested by claude-1's accepted
-reservation. It does not amend D1-D8, reassign an artifact, or claim an unrun test.
+
+## References
+
+- Canonical consensus and owned signatures: ./consensus.md
+- Independent proposals: ./round-01/
+- Cross-review and retractions: ./round-02/
+- Binding prior experiment: ../meta-protocol-change-phase-packet-and-fixup-budget/FINAL.md
+- Live protocol: ../../COOPERATION.md
+- Design PR: https://github.com/feci/parley-deck-cli/pull/72
+- Frozen assessment: sibling parley-deck-evaluation/assessments/2026-09-05/REPORT.md
