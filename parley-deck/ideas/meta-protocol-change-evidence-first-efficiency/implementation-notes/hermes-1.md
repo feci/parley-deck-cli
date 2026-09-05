@@ -92,11 +92,10 @@ A background `go test ./...` was still running at handoff time; see "Current lim
 ## Current limitations
 
 - No concrete test failures were found; nothing to fix in this invocation.
-- I ran only the app and runner packages (my slice) deterministically. The full
-  `go test ./...` was launched in the background and had not finished when this
-  handoff was first written; I will append its result if it completes before I stop.
-  A full-suite result is additional signal, not a substitute for the focused runs
-  above.
+- Full suite result (completed after the first handoff write): `go test ./...`
+  exited 0 — every package `ok`, including internal/app (~103s) and
+  internal/runner (~18s) with my changes present. This is additional signal; the
+  focused runs above remain the per-slice evidence.
 - No real hosted-agent PONG was exercised (only fake-child fixtures). Real per-agent
   PONG behavior is the reviewers'/integration's job, not claimed here.
 - BuffersStdout is consumed as the pre-existing declared bool; the TUI's tri-state
