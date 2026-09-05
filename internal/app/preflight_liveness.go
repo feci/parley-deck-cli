@@ -57,11 +57,13 @@ const readinessTailBytes = 256
 // classifyReadiness maps one observed probe outcome to a typed class. It is pure
 // so the full fixture table can be unit-tested without a child process.
 //
-// Order matters on exit 0: a JSON error envelope wins over any embedded "PONG"
-// substring (an error is a failure even when its subtype claims success, and
-// even on a clean exit-zero wrapper); then the recognized envelope's assistant
-// payload; then the plain-text exact sentinel. A "PONG" that only survives as a
-// substring (echo, bullet, fence, malformed JSON) is never ready.
+// Order matters on exit 0: a JSON error/status envelope is a provider failure
+// and wins over any embedded "PONG" substring (an error is a failure even when
+// its subtype claims success, and even on a clean exit-zero wrapper); then the
+// recognized assistant/result envelope's exact payload; then the plain-text
+// exact sentinel. A "PONG" that only survives as a substring (echo, bullet,
+// fence, malformed JSON, a role-tagged user/system/tool message, or an
+// unrecognized string-valued key) is never ready.
 func classifyReadiness(stdout, stderr string, exitCode int, timedOut bool) readinessObservation {
 	obs := readinessObservation{ExitCode: exitCode}
 	corpus := stdout + "\n" + stderr
@@ -81,11 +83,14 @@ func classifyReadiness(stdout, stderr string, exitCode int, timedOut bool) readi
 	default:
 		isJSON, isErr, payload := recognizeEnvelope(stdout)
 		if isJSON && isErr {
-			// An error envelope is a failure, never readiness, whatever a nested
-			// success flag claims.
-			obs.Class = ClassProcessFailure
+			// A structured error/status envelope is a provider-side failure
+			// signal, never readiness, whatever a nested success/subtype flag
+			// claims. It must never be auto-excluded: a JSON error is a
+			// provider status field, not an arbitrary string of process text,
+			// so it is classified as a provider failure and does NOT fall back
+			// to an excludable process failure.
+			obs.Class = ClassProviderFailure
 			if pc := providerFailureClass(corpus); pc != "" {
-				obs.Class = ClassProviderFailure
 				obs.ProviderClass = pc
 			}
 		} else if isJSON && strings.TrimSpace(payload) == pongSentinel {
@@ -169,14 +174,28 @@ func recheckCommand(root string) string {
 
 // --- envelope recognition -----------------------------------------------------
 
-// recognizedEnvelopeContentFields are the assistant-content field names accepted
-// in a structured (JSON) envelope, in priority order.
-var recognizedEnvelopeContentFields = []string{"content", "message", "text", "result", "response", "output", "reply", "answer", "pong"}
+// recognizedEnvelopeContentFields are the assistant/result content field names
+// accepted in a recognized structured (JSON) envelope, in priority order. The set
+// is deliberately explicit and narrow: only field names a known assistant/result
+// envelope uses for its output are trusted. Arbitrary string-valued keys (e.g.
+// "answer", "pong", "output", "reply", "response", or any other bare key) are NOT
+// assistant output and are intentionally absent — an object carrying only such a
+// key is an unrecognized schema and stays non-ready. ("result" is both a content
+// key and a recognized wrapper key; see wrapperKeys.)
+var recognizedEnvelopeContentFields = []string{"content", "message", "text", "result"}
 
-// recognizeEnvelope parses raw as a single JSON object. It reports:
-//   isJSON   — raw is one JSON object (so structured handling applies)
-//   isError  — the object is an error/failure envelope
-//   payload  — the assistant content string, or "" when absent/unrecognized
+// recognizeEnvelope parses raw as a single JSON object and reports:
+//
+//	isJSON   — raw is one JSON object (so structured handling applies)
+//	isError  — the object is an error/failure envelope (never ready)
+//	payload  — the assistant/result content string, or "" when the object is
+//	           not a recognized assistant/result envelope
+//
+// Only a single, standalone JSON object is recognized. Streaming JSONL — several
+// objects on one line, or line-delimited objects — is NOT parsed or reassembled;
+// a JSONL stream falls through to the plain-text path and is never ready off an
+// echoed or streamed input line. The exact supported schema set is documented in
+// the handoff note and pinned by the positive fixtures below.
 func recognizeEnvelope(raw string) (isJSON, isError bool, payload string) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" || trimmed[0] != '{' {
@@ -189,16 +208,44 @@ func recognizeEnvelope(raw string) (isJSON, isError bool, payload string) {
 	if errorEnvelope(obj) {
 		return true, true, ""
 	}
-	return true, false, envelopePayload(obj)
+	if s, ok := assistantPayload(obj); ok {
+		return true, false, s
+	}
+	return true, false, "" // well-formed JSON, but not a recognized assistant envelope
 }
 
-// errorEnvelope reports whether obj is an error/failure envelope. The signal is
-// a top-level error/type/status/success/ok field; nested "success"/"subtype"
-// fields do NOT override an error signal (a JSON error envelope is rejected even
-// when its subtype says success).
+// wrapperKeys are the recognized envelope wrapper keys that may nest the
+// assistant/result content, one level deep.
+var wrapperKeys = []string{"result", "data", "payload", "response"}
+
+// errorEnvelope reports whether obj is an error/failure envelope, at the top
+// level or one wrapper level deep. The signal is an explicit provider status
+// field — a non-empty "error" value, is_error/isError == true, a type/status in
+// the error set, or success/ok == false. A nested "success"/"subtype" flag does
+// NOT override an error signal, and is_error:true wins whatever the subtype
+// claims.
 func errorEnvelope(obj map[string]any) bool {
+	if signalsError(obj) {
+		return true
+	}
+	for _, wrapper := range wrapperKeys {
+		if inner, ok := obj[wrapper].(map[string]any); ok && signalsError(inner) {
+			return true
+		}
+	}
+	return false
+}
+
+// signalsError checks one object for the explicit error/status fields that make
+// it a provider/result-level failure rather than a success envelope.
+func signalsError(obj map[string]any) bool {
 	if v, ok := obj["error"]; ok && !isEmptySignal(v) {
 		return true
+	}
+	for _, key := range []string{"is_error", "isError"} {
+		if b, ok := obj[key].(bool); ok && b {
+			return true
+		}
 	}
 	for _, key := range []string{"type", "status"} {
 		if s, ok := obj[key].(string); ok {
@@ -216,30 +263,49 @@ func errorEnvelope(obj map[string]any) bool {
 	return false
 }
 
-// envelopePayload extracts the assistant content string from a recognized
-// non-error envelope: a top-level content field, else one nested level under a
-// common wrapper key (result/data/payload). "" means no recognized payload.
-func envelopePayload(obj map[string]any) string {
-	if s := contentField(obj); s != "" {
-		return s
+// assistantPayload extracts the assistant content string from a recognized
+// non-error envelope. It returns (payload, false) when obj is NOT a recognized
+// assistant/result envelope: a role-tagged user/system/tool message, a wrapped
+// non-assistant message, or an object with no recognized content key. Only an
+// explicit "assistant" role (or a role-less result object) may supply content.
+func assistantPayload(obj map[string]any) (string, bool) {
+	if !assistantRoleOrAbsent(obj) {
+		return "", false
 	}
-	for _, wrapper := range []string{"result", "data", "payload", "response"} {
+	if s, ok := contentField(obj); ok {
+		return s, true
+	}
+	for _, wrapper := range wrapperKeys {
 		if inner, ok := obj[wrapper].(map[string]any); ok {
-			if s := contentField(inner); s != "" {
-				return s
+			if !assistantRoleOrAbsent(inner) {
+				continue
+			}
+			if s, ok := contentField(inner); ok {
+				return s, true
 			}
 		}
 	}
-	return ""
+	return "", false
 }
 
-func contentField(obj map[string]any) string {
+// assistantRoleOrAbsent reports whether obj presents no role at all (a raw
+// assistant/result object) or an explicit "assistant" role. A user/system/tool
+// role is an echoed input line, not assistant output.
+func assistantRoleOrAbsent(obj map[string]any) bool {
+	role, ok := obj["role"].(string)
+	if !ok {
+		return true
+	}
+	return strings.EqualFold(strings.TrimSpace(role), "assistant")
+}
+
+func contentField(obj map[string]any) (string, bool) {
 	for _, key := range recognizedEnvelopeContentFields {
 		if s, ok := obj[key].(string); ok {
-			return s
+			return s, true
 		}
 	}
-	return ""
+	return "", false
 }
 
 func isEmptySignal(v any) bool {
