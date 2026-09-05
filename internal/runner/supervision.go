@@ -61,6 +61,16 @@ func supervisionForAgent(agent agents.Discovery, hardTimeout time.Duration) Supe
 			cfg.StallTimeout = 0
 		}
 	}
+	// Honor a declared Spec.BuffersStdout (consensus ALT-02 / D7): a transport
+	// that buffers ALL stdout until process exit is EXPECTED to be silent while
+	// running, so the soft first-output and stall guards would be false kills.
+	// Disable both; the hard timeout and process-group cleanup (owned by the
+	// caller) remain the only bounds, and the heartbeat — which never counts as
+	// activity — stays on for observability.
+	if agent.BuffersStdout {
+		cfg.FirstEventTimeout = 0
+		cfg.StallTimeout = 0
+	}
 	return cfg
 }
 
