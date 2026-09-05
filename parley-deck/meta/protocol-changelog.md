@@ -1,3 +1,20 @@
+## 2026-09-05 — §9 item 1: launch context comes from the shared packet renderer with attestation
+Idea: ideas/meta-protocol-change-evidence-first-efficiency/
+Drafted by: claude-1
+Summary: §9 item 1 now requires an official launch to receive its protocol context from the shared
+renderer (`parley protocol packet`) with an attestation (`context_mode`, `source_sha256`,
+`packet_sha256`, `fallback_reason`) rendered from the live resolved authority, never a bundled
+snapshot; without an attestation an agent reads the full file and records `full-fallback` with the
+reason. Full context stays the default and the ratified packet experiment (phase-packet FINAL §3:
+phases 1 and 6, six matched AB/BA pairs each, three canaries plus a full control, ship at R ≤ 0.50
+in both phases) is unchanged; an optimized packet is that trial's explicit experimental input, not
+an enabled release. `meta/packet-applicability.yaml` is the ratified applicability map and is
+protocol: a classification change is a §7 change. Mirrored into the embedded default and the
+skill reference copy. Runner/handoff prompt wiring is integration-owned and is NOT claimed here.
+
+**Ratification:** design accepted in the idea's consensus.md (codex-1, claude-1, hermes-1, kimi-1);
+this is the Phase 5 source change on the claude-1 slice, pending independent review.
+
 ## 2026-08-07 — §7 blast radius: a core change is not a deck change
 Idea: ideas/meta-protocol-change-global-core-protocol/
 Drafted by: claude-1
