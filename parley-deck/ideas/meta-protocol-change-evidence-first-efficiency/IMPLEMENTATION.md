@@ -6,7 +6,7 @@ started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
 head-commit: 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
-implementation-pr: pending
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
 
 # Evidence-First Delivery
