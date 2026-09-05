@@ -14,24 +14,51 @@ import (
 
 func TestClassifyReadiness(t *testing.T) {
 	cases := []struct {
-		name             string
-		stdout, stderr   string
-		exitCode         int
-		timedOut         bool
-		want             ReadinessClass
-		wantReady        bool
-		wantSawSentinel  bool
+		name            string
+		stdout, stderr  string
+		exitCode        int
+		timedOut        bool
+		want            ReadinessClass
+		wantReady       bool
+		wantSawSentinel bool
 	}{
+		// Exact plain PONG is ready only for plain-output adapters.
 		{"exact plain PONG", "PONG\n", "", 0, false, ClassReady, true, false},
 		{"exact PONG whitespace", "  PONG  \n", "", 0, false, ClassReady, true, false},
-		{"recognized JSON PONG wrapper", `{"content":"PONG"}`, "", 0, false, ClassReady, true, false},
-		{"recognized nested JSON PONG", `{"result":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		// Recognized assistant/result envelope schemas: explicit positive coverage
+		// for every accepted content key, wrapper key, and the assistant role.
+		{"recognized JSON content key", `{"content":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"recognized JSON message key", `{"message":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"recognized JSON text key", `{"text":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"recognized JSON result string", `{"result":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"recognized assistant-role message", `{"role":"assistant","content":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"recognized result wrapper", `{"result":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		{"recognized data wrapper", `{"data":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		{"recognized payload wrapper", `{"payload":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		{"recognized response wrapper", `{"response":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		{"recognized result wrapper message key", `{"result":{"message":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		// Echoes, fences, malformed JSON, role-tagged non-assistant messages, and
+		// unrecognized string-valued keys are never ready.
 		{"echoed instruction is not ready", "Reply with exactly the single token: PONG\n", "", 0, false, ClassMalformedReply, false, true},
 		{"bullet PONG is not ready", "• PONG\n", "", 0, false, ClassMalformedReply, false, true},
 		{"fenced PONG is not ready", "```\nPONG\n```\n", "", 0, false, ClassMalformedReply, false, true},
 		{"malformed JSON with PONG is not ready", `{"content":"PONG"`, "", 0, false, ClassMalformedReply, false, true},
-		{"JSON error envelope defeated by subtype", `{"type":"error","subtype":"success","error":"boom"}`, "", 0, false, ClassProcessFailure, false, false},
-		{"JSON error envelope with PONG nested", `{"type":"error","message":"cannot compute PONG"}`, "", 0, false, ClassProcessFailure, false, false},
+		{"user-role echo is not ready", `{"role":"user","content":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"system-role message is not ready", `{"role":"system","content":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"tool-role message is not ready", `{"role":"tool","content":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"wrapped user-role echo is not ready", `{"data":{"role":"user","content":"PONG"}}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unrecognized answer key is not ready", `{"answer":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unrecognized output key is not ready", `{"output":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unrecognized pong key is not ready", `{"pong":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"JSONL stream is not ready", "{\"role\":\"assistant\",\"content\":\"PONG\"}\n{\"role\":\"assistant\",\"content\":\"PONG\"}\n", "", 0, false, ClassMalformedReply, false, true},
+		// Structured error/status envelopes are provider failures — never ready,
+		// never an excludable process failure — even when a subtype claims success.
+		{"JSON error envelope defeated by subtype", `{"type":"error","subtype":"success","error":"boom"}`, "", 0, false, ClassProviderFailure, false, false},
+		{"JSON error envelope with PONG nested", `{"type":"error","message":"cannot compute PONG"}`, "", 0, false, ClassProviderFailure, false, false},
+		{"is_error true with success subtype", `{"type":"result","is_error":true,"subtype":"success","result":"PONG"}`, "", 0, false, ClassProviderFailure, false, false},
+		{"wrapped is_error", `{"result":{"is_error":true,"content":"PONG"}}`, "", 0, false, ClassProviderFailure, false, false},
+		{"success false envelope", `{"success":false,"content":"PONG"}`, "", 0, false, ClassProviderFailure, false, false},
+		// Silence, non-JSON text, and deadline classes.
 		{"empty exit-zero wrapper", "", "", 0, false, ClassExitedEmpty, false, false},
 		{"unrecognized exit-zero text", "hello world\n", "", 0, false, ClassMalformedReply, false, false},
 		{"provider error on nonzero exit", "Error: authentication_failed — run login\n", "", 1, false, ClassProviderFailure, false, false},
@@ -230,10 +257,10 @@ func TestPongFixtureHelper(t *testing.T) {
 func pongFakeAgent(scenario string) agents.Discovery {
 	return agents.Discovery{
 		Spec: agents.Spec{
-			ID:          "fake",
-			Commands:    []string{os.Args[0]},
+			ID:           "fake",
+			Commands:     []string{os.Args[0]},
 			HeadlessArgs: []string{"-test.run=TestPongFixtureHelper", "--", scenario},
-			PromptMode:  agents.PromptStdin,
+			PromptMode:   agents.PromptStdin,
 		},
 		Path:  os.Args[0],
 		Found: true,
@@ -271,8 +298,8 @@ func TestHostedPONGRealChildFixtures(t *testing.T) {
 	})
 	t.Run("JSON error envelope subtype success", func(t *testing.T) {
 		obs := probe(t, "json-error-subtype-success", 5*time.Second)
-		if obs.Class != ClassProcessFailure || obs.Ready {
-			t.Fatalf("obs=%+v want process-failure, not ready", obs)
+		if obs.Class != ClassProviderFailure || obs.Ready {
+			t.Fatalf("obs=%+v want provider-failure, not ready", obs)
 		}
 	})
 	t.Run("empty exit-zero wrapper", func(t *testing.T) {
