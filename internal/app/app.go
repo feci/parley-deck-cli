@@ -2168,6 +2168,7 @@ func runHeadlessProbe(ctx context.Context, root, probeDir, runID string, result 
 	outputPath := filepath.Join(probeDir, result.ID+".md")
 	sentinel := fmt.Sprintf("# parley-runtime-probe agent=%s run=%s", result.ID, runID)
 	prompt := probePrompt(result, outputPath, sentinel)
+	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Phase: "runtime-probe", ArtifactPath: outputPath})
 
 	cmd, cleanup, err := runner.CommandFor(ctx, root, result, prompt)
 	if cleanup != nil {

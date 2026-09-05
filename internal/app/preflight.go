@@ -66,9 +66,9 @@ type gateKind string
 const (
 	gateBreakingFreshness gateKind = "breaking-freshness"
 	// gateUnknownFreshness fires when there is no hash to compare, so "in sync" cannot be claimed.
-	gateUnknownFreshness  gateKind = "unknown-freshness"
-	gateUnknownRole       gateKind = "unknown-role"
-	gateExcludeAgent      gateKind = "exclude-agent"
+	gateUnknownFreshness gateKind = "unknown-freshness"
+	gateUnknownRole      gateKind = "unknown-role"
+	gateExcludeAgent     gateKind = "exclude-agent"
 	// gateResolveReadiness blocks on an ambiguous readiness observation
 	// (malformed/empty/deadline). It is NOT an automatic exclusion.
 	gateResolveReadiness gateKind = "resolve-readiness"
@@ -843,6 +843,7 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) readinessObservation {
 	probeCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+	probeCtx = runner.WithLaunchInfo(probeCtx, runner.LaunchInfo{Phase: "preflight"})
 
 	cmd, cleanup, err := runner.CommandFor(probeCtx, root, agent, pongPrompt)
 	if cleanup != nil {
@@ -853,7 +854,7 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	}
 	cmd.Dir = root
 	// Spawn into its own process group so a timeout kill reaps the whole tree.
-	procctl.SetNewProcessGroup(cmd)
+	procctl.SetNewProcessGroup(cmd.Cmd)
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 	cmd.Stdout = &out
@@ -866,7 +867,7 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	if err := cmd.Start(); err != nil {
 		return readinessObservation{Class: ClassProcessFailure, ExitCode: -1, BuffersStdout: agent.BuffersStdout, Duration: time.Since(started)}
 	}
-	sp := procctl.Capture(cmd, "")
+	sp := procctl.Capture(cmd.Cmd, "")
 	waitErr := make(chan error, 1)
 	go func() { waitErr <- cmd.Wait() }()
 

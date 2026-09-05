@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c
+head-commit: 47661e5f7d72d81ef864baf9825fc223e91e7dc0
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -72,6 +72,12 @@ internal/acp/spawn.go and internal/acp/spawn_test.go for content-free stream
 observers and observed process exit status used by runner telemetry. These paths
 do not overlap any participant's claim; no ACP schema/billing inference is added.
 
+Additional Codex allocation (2026-09-05, before edits):
+internal/app/preflight_evidence_test.go for non-owner negative integration cases.
+Hermes may refine only preflight_liveness.go and preflight_liveness_test.go in a
+follow-up attempt and write implementation-notes/hermes-1-fix-readiness.md.
+Codex serializes CommandFor glue in preflight.go after the original handoff.
+
 Every participant writes its own supporting handoff at
 implementation-notes/<agent-id>.md. It may change only its own allocation row in
 its worktree if useful; it must not overwrite the shared implementation narrative
@@ -103,6 +109,23 @@ claim that a missing shared entrypoint is already wired.
   The worktree already shows this mirror edit; the original allocation omitted
   that required embedded copy. No other owner claims that path. This late claim
   correction is recorded rather than represented as a pre-edit allocation.
+- 2026-09-05 codex-1: integrated Claude's renderer at 876aafb and Hermes's
+  supervision/readiness at aaeaaaf, then Hermes's readiness follow-up ff3df32
+  and owned handoff 9238246. Integration merge HEAD is 47661e5. The four new
+  non-owner rejection cases pass with classifier/real-child fixtures (1.489s).
+  Full `go test ./...` passes on the integrated worktree including serialized
+  CommandFor and packet-command dispatch glue. This is not final independent
+  verification or a claim that AC-L1 is satisfied in full.
+- 2026-09-05 codex-1: source inspection leaves stricter readiness-schema checks
+  open: assistantPayload accepts role-less content fields without a recognized
+  message type; assistantRoleOrAbsent treats a present non-string role as absent.
+  Capture bounds and diagnostic-tail secrecy also remain open as reported by
+  Hermes. These are not waived by a green fixture suite.
+- 2026-09-05 codex-1: user requested an English presentation. The evaluation
+  report template, status copy, chart labels and document navigation are now
+  English. Separate translated documents preserve the frozen assessment; the
+  builder checks numeric/link/heading invariants and records both source hashes.
+  This is a presentation update, not an expansion of implementation completion.
 
 ## Deviations from FINAL.md
 

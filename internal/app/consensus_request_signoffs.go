@@ -412,6 +412,8 @@ type signoffRunResult struct {
 }
 
 func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
+	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Phase: "signoff",
+		ArtifactPath: consensusPath, Store: store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))})
 	switch agents.LaunchModeOrDefault(agent.LaunchMode) {
 	case agents.LaunchHeadless:
 		return signoffRunResult{}, runHeadlessSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)

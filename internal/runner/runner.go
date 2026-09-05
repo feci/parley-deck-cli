@@ -1192,16 +1192,8 @@ func buildAgentInvocation(root string, agent agents.Discovery, prompt string) (p
 	return agent.Path, args, env, cleanup, nil
 }
 
-func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*exec.Cmd, func(), error) {
-	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
-	if err != nil {
-		return nil, nil, err
-	}
-	cmd := exec.CommandContext(ctx, path, args...)
-	if env != nil {
-		cmd.Env = env
-	}
-	return cmd, cleanup, nil
+func CommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*AgentCommand, func(), error) {
+	return trackedCommandFor(ctx, root, agent, prompt)
 }
 
 func timeoutForAgent(override time.Duration, agent agents.Discovery) time.Duration {
