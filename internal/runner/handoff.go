@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/store"
 )
 
 const UsageCaveat = "This is a user-driven interactive handoff. Provider billing and usage accounting are determined by the provider and your account. Headless mode is programmatic execution."
@@ -24,21 +26,38 @@ type HandoffOptions struct {
 }
 
 type HandoffPacket struct {
+	InvocationID     string
 	Dir              string
 	PromptPath       string
 	InstructionsPath string
 }
 
-func WriteHandoffPacket(opts HandoffOptions) (HandoffPacket, error) {
+func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr error) {
 	if opts.RunID == "" {
 		return HandoffPacket{}, fmt.Errorf("run id is required for handoff packet")
 	}
+	agent := opts.Agent
+	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
+		agent.LaunchMode = agents.LaunchManual
+	}
+	ctx := WithLaunchInfo(context.Background(), LaunchInfo{RunID: opts.RunID, Phase: "handoff",
+		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))})
+	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent)
+	if err != nil {
+		return HandoffPacket{}, err
+	}
+	defer func() {
+		if err := evidence.finish(returnedErr, nil, nil); err != nil {
+			returnedErr = err
+		}
+	}()
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", opts.Agent.ID)
 	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return HandoffPacket{}, err
 	}
 
-	packet := HandoffPacket{
+	packet = HandoffPacket{
+		InvocationID:     evidence.invocation.ID,
 		Dir:              agentDir,
 		PromptPath:       filepath.Join(agentDir, "handoff-prompt.md"),
 		InstructionsPath: filepath.Join(agentDir, "handoff.md"),

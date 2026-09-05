@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 )
 
 type Options struct {
@@ -65,18 +67,19 @@ type Options struct {
 }
 
 type Result struct {
-	AgentID     string
-	OutputPath  string
-	StdoutPath  string
-	StderrPath  string
-	StartedAt   time.Time
-	CompletedAt time.Time
-	ExitError   string
-	ArtifactOK  bool
-	Skipped     bool
-	SkipReason  string
-	Warning     string
-	Duration    time.Duration
+	InvocationID string
+	AgentID      string
+	OutputPath   string
+	StdoutPath   string
+	StderrPath   string
+	StartedAt    time.Time
+	CompletedAt  time.Time
+	ExitError    string
+	ArtifactOK   bool
+	Skipped      bool
+	SkipReason   string
+	Warning      string
+	Duration     time.Duration
 	// Killed is set when the attempt was terminated by Handle.KillAgent (vs a
 	// timeout or self-exit), so projection can show a distinct "killed" badge.
 	Killed bool
@@ -481,6 +484,7 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		for attemptID := 1; ; attemptID++ {
 			res := runACPAgent(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt, attemptID)
 			if attemptID == 1 && res.FailureClass == "no_first_output" && !res.Killed {
+				result.InvocationID = res.InvocationID
 				if !preexisted {
 					if _, err := os.Stat(outputPath); err == nil && validateArtifactForPhase(opts, outputPath, agent.ID) != nil {
 						moveAsideInvalidArtifact(outputPath)
@@ -493,9 +497,12 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	// Attempt loop: retry ONCE, and only for a first-output watchdog kill.
+	retryOf := ""
 	for attemptID := 1; ; attemptID++ {
+		result.InvocationID = retryOf
 		attempt := runExecAttempt(parent, opts, agent, result, outputPath, stdoutPath, stderrPath, prompt, attemptID)
 		if attemptID == 1 && attempt.watchdog == "no_first_output" && !attempt.result.Killed {
+			retryOf = attempt.result.InvocationID
 			// The killed attempt's terminal agent.failed is already appended
 			// (before this retry's agent.started — durable kill targets the
 			// newest attempt). Move an invalid attempt-1 artifact aside.
@@ -538,6 +545,12 @@ func runExecAttempt(parent context.Context, opts Options, agent agents.Discovery
 	hardTimeout := timeoutForAgent(opts.Timeout, agent)
 	ctx, cancel := context.WithTimeout(parent, hardTimeout)
 	defer cancel()
+	ctx = WithLaunchInfo(ctx, LaunchInfo{
+		RunID: opts.RunID, SegmentID: opts.SegmentID, Idea: opts.Idea.Slug,
+		Phase: phaseOrDefault(opts.Phase), AttemptOrdinal: attemptID,
+		RetryOf: base.InvocationID, Store: opts.Store, ArtifactPath: outputPath,
+		Observe: func(record telemetry.Record) { result.InvocationID = record.InvocationID },
+	})
 
 	// Register this attempt so Handle.KillAgent can cancel just this agent (the
 	// cancel triggers the supervised wait's kill → group kill).
@@ -1022,7 +1035,23 @@ Prior rounds (read these):
 // procctl and hands it to onStarted (which records agent.started), then owns
 // cancellation: one goroutine Waits, and on ctx cancel the whole group is killed
 // (fixing orphan-on-timeout). Shared by the round path and steer attempts.
-func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, agent agents.Discovery, prompt, stdoutPath, stderrPath string, onStarted func(procctl.Spawned), act *activityTracker, cfg SupervisionConfig, hooks supervisionHooks) (procctl.Spawned, error) {
+func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, agent agents.Discovery, prompt, stdoutPath, stderrPath string, onStarted func(procctl.Spawned), act *activityTracker, cfg SupervisionConfig, hooks supervisionHooks) (spawned procctl.Spawned, runErr error) {
+	evidence, err := beginLaunch(ctx, root, runID, agent)
+	if err != nil {
+		return procctl.Spawned{}, err
+	}
+	marker = evidence.invocation.ID
+	var cmd *exec.Cmd
+	defer func() {
+		var code *int
+		if cmd != nil && cmd.ProcessState != nil {
+			value := cmd.ProcessState.ExitCode()
+			code = &value
+		}
+		if err := evidence.finish(runErr, ctx.Err(), code); err != nil {
+			runErr = err
+		}
+	}()
 	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
 	if cleanup != nil {
 		defer cleanup()
@@ -1030,7 +1059,8 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	if err != nil {
 		return procctl.Spawned{}, err
 	}
-	cmd := exec.Command(path, args...)
+	cmd = exec.Command(path, args...)
+	cmd.WaitDelay = 2 * time.Second
 	if env == nil {
 		env = os.Environ()
 	}
@@ -1038,12 +1068,12 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	cmd.Dir = root
 	procctl.SetNewProcessGroup(cmd)
 
-	stdoutFile, err := os.Create(stdoutPath)
+	stdoutFile, err := openPrivateLog(stdoutPath)
 	if err != nil {
 		return procctl.Spawned{}, err
 	}
 	defer stdoutFile.Close()
-	stderrFile, err := os.Create(stderrPath)
+	stderrFile, err := openPrivateLog(stderrPath)
 	if err != nil {
 		return procctl.Spawned{}, err
 	}
@@ -1053,15 +1083,23 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	}
 	// Counting writers attribute output bytes in-process — supervision adds no
 	// filesystem probing on the healthy path (consensus D1).
-	cmd.Stdout = &countingWriter{w: stdoutFile, t: act, stream: "stdout"}
-	cmd.Stderr = &countingWriter{w: stderrFile, t: act, stream: "stderr"}
+	cmd.Stdout = io.MultiWriter(evidence.collector.Writer("stdout"), &countingWriter{w: stdoutFile, t: act, stream: "stdout"})
+	cmd.Stderr = io.MultiWriter(evidence.collector.Writer("stderr"), &countingWriter{w: stderrFile, t: act, stream: "stderr"})
 	if agent.PromptMode == agents.PromptStdin {
 		cmd.Stdin = strings.NewReader(prompt)
+	}
+	if err := ctx.Err(); err != nil {
+		return procctl.Spawned{}, err
 	}
 	if err := cmd.Start(); err != nil {
 		return procctl.Spawned{}, err
 	}
 	sp := procctl.Capture(cmd, marker)
+	if err := evidence.started(cmd.Process.Pid); err != nil {
+		_ = procctl.KillGroup(sp)
+		_ = cmd.Wait()
+		return sp, err
+	}
 	if onStarted != nil {
 		onStarted(sp)
 	}
@@ -1069,6 +1107,21 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	go func() { waitErr <- cmd.Wait() }()
 	kill := func() { _ = procctl.KillGroup(sp) } // reap the whole tree, not just the direct child
 	return sp, waitSupervised(ctx.Done(), ctx.Err, waitErr, kill, act, cfg, hooks)
+}
+
+func openPrivateLog(path string) (*os.File, error) {
+	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
+		return nil, errors.New("agent log must be a regular file")
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 // cleanParticipantEnv sheds nested host-session markers when the spawned

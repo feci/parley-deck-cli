@@ -74,6 +74,26 @@ func TestRunRoundOneRoutesACPAgent(t *testing.T) {
 			t.Errorf("event %q missing; got types=%v", want, eventTypes(events))
 		}
 	}
+	records := terminalRecords(t, root)
+	if len(records) != 1 || records[0].InvocationID != results[0].InvocationID {
+		t.Fatalf("ACP telemetry identity: %+v", records)
+	}
+	r := records[0]
+	if r.StartedAt == nil || r.Outcome.ExitCode == nil || r.Outcome.Observation.StdoutBytes == 0 {
+		t.Fatalf("ACP lifecycle: %+v", r)
+	}
+	if r.Outcome.Usage.CostUSD != nil || r.Outcome.Usage.TotalTokens != nil {
+		t.Fatal("ACP invented billing from context utilization")
+	}
+	usageEvents := 0
+	for _, event := range events {
+		if event.Type == "agent.usage" {
+			usageEvents++
+		}
+	}
+	if usageEvents != 1 {
+		t.Fatalf("usage summaries: %d", usageEvents)
+	}
 }
 
 func TestRunRoundOneACPAgentMissingArgsFails(t *testing.T) {
@@ -115,6 +135,10 @@ func TestRunRoundOneACPAgentMissingArgsFails(t *testing.T) {
 	}
 	if !strings.Contains(results[0].ExitError, "ACPArgs is empty") {
 		t.Fatalf("error mismatch: %q", results[0].ExitError)
+	}
+	records := terminalRecords(t, root)
+	if len(records) != 1 || records[0].StartedAt != nil || records[0].Outcome.Status != "failed" {
+		t.Fatalf("ACP failed-build evidence: %+v", records)
 	}
 }
 

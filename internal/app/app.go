@@ -430,6 +430,8 @@ func runAgents(ctx context.Context, args []string, stdout, stderr io.Writer) int
 		return runAgentsList(ctx, args[1:], stdout, stderr)
 	case "verify", "probe":
 		return runAgentsVerify(ctx, args[1:], stdout, stderr)
+	case "exec":
+		return runAgentsExec(ctx, args[1:], stdout, stderr)
 	default:
 		fmt.Fprintln(stderr, "usage: parley agents list|verify")
 		return 2

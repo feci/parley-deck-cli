@@ -29,6 +29,9 @@ func New(dir string) Store {
 	return Store{dir: dir}
 }
 
+// Enabled distinguishes a real run store from an optional zero-value sink.
+func (s Store) Enabled() bool { return s.dir != "" }
+
 func NewRunID(t time.Time) string {
 	return t.UTC().Format("20060102T150405.000000000Z")
 }

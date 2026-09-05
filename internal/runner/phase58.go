@@ -69,6 +69,8 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	hardTimeout := timeoutForAgent(opts.Timeout, agent)
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
+	cctx = WithLaunchInfo(cctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
+		Idea: opts.Idea.Slug, Phase: "fixup", Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md")})
 
 	// The fix-up runs through the same hardened exec path as every other agent
 	// launch (review fix 4): process group + procctl marker + participant env

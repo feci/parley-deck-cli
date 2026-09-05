@@ -67,6 +67,11 @@ driver_test.go,loop.go,loop_budget_test.go,close_integrity_test.go,strict_gate_t
 internal/store/{events.go,events_test.go}. Additional integration-only paths need
 a recorded non-overlapping claim before editing, not implicit permission.
 
+Additional Codex allocation (2026-09-05, before edits):
+internal/acp/spawn.go and internal/acp/spawn_test.go for content-free stream
+observers and observed process exit status used by runner telemetry. These paths
+do not overlap any participant's claim; no ACP schema/billing inference is added.
+
 Every participant writes its own supporting handoff at
 implementation-notes/<agent-id>.md. It may change only its own allocation row in
 its worktree if useful; it must not overwrite the shared implementation narrative
@@ -83,6 +88,21 @@ claim that a missing shared entrypoint is already wired.
 
 - 2026-09-05 codex-1: created integration worktree from the merged design commit;
   claims recorded before production edits. No slice merged yet.
+- 2026-09-05 12:05Z codex-1: telemetry storage/parser foundation committed at
+  4a9697a. Shared exec wiring is in progress; the existing runner, telemetry and
+  store test packages passed locally. This is not independent final acceptance.
+- 2026-09-05 12:05Z codex-1: Kimi attempt
+  1d04e5ba-c074-4951-8694-543393b34a21 ended on a provider-reported weekly quota
+  (403), leaving uncommitted internal/evidence files without an owned handoff.
+  These files remain preserved in its worktree; no completion is claimed. The
+  user was asked whether to waive Kimi for this idea's remaining quorum. Pending
+  that answer, quorum is unchanged and final closure remains gated. Other
+  participants may continue their non-blocked implementation work.
+- Additional non-overlapping allocation: Claude may update
+  internal/protocol/defaults/COOPERATION.md to mirror the source protocol change.
+  The worktree already shows this mirror edit; the original allocation omitted
+  that required embedded copy. No other owner claims that path. This late claim
+  correction is recorded rather than represented as a pre-edit allocation.
 
 ## Deviations from FINAL.md
 

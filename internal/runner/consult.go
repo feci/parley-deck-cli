@@ -13,6 +13,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // Consult (runner-hardening-kindly D10): a lightweight advisory cross-agent
@@ -38,6 +39,7 @@ type ConsultOptions struct {
 }
 
 type ConsultResult struct {
+	InvocationID string
 	Answer       string
 	ExitError    string
 	FailureClass string
@@ -102,6 +104,18 @@ func RunConsult(ctx context.Context, opts ConsultOptions) ConsultResult {
 	result := ConsultResult{EffectiveTimeout: hardTimeout}
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
+	info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
+	if info.Phase == "" {
+		info.Phase = "consult"
+	}
+	observer := info.Observe
+	info.Observe = func(record telemetry.Record) {
+		result.InvocationID = record.InvocationID
+		if observer != nil {
+			observer(record)
+		}
+	}
+	cctx = WithLaunchInfo(cctx, info)
 
 	progress := func(format string, args ...any) {
 		if opts.Progress != nil {
