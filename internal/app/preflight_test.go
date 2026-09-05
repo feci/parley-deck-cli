@@ -384,10 +384,18 @@ func withFakeProbe(t *testing.T, fn probeFunc) {
 	t.Cleanup(func() { pingProbe = prev })
 }
 
+func readyObs() readinessObservation {
+	return readinessObservation{Class: ClassReady, Ready: true}
+}
+
+func procFailObs() readinessObservation {
+	return readinessObservation{Class: ClassProcessFailure, ExitCode: 1}
+}
+
 func TestPreflightReadyAllAvailable(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) (bool, string) {
-		return true, ""
+	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) readinessObservation {
+		return readyObs()
 	})
 	_, code, err := preflight(context.Background(), preflightOptions{Root: root}, []agents.Discovery{found("a"), found("b")}, &bytes.Buffer{}, &bytes.Buffer{})
 	if err != nil {
@@ -400,11 +408,11 @@ func TestPreflightReadyAllAvailable(t *testing.T) {
 
 func TestPreflightUnavailableAgentIsGateExit3(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) (bool, string) {
+	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) readinessObservation {
 		if a.ID == "b" {
-			return false, "unavailable:no-pong"
+			return procFailObs()
 		}
-		return true, ""
+		return readyObs()
 	})
 	// Three available + one unavailable: excluding the one still leaves >= 2, so
 	// the unavailable agent is a pending gate (exit 3), not a hard failure.
@@ -423,9 +431,12 @@ func TestPreflightUnavailableAgentIsGateExit3(t *testing.T) {
 
 func TestPreflightLessThanTwoParticipantsIsHardFailExit1(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) (bool, string) {
+	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) readinessObservation {
 		// Only "a" is available; excluding the rest would leave 1 participant.
-		return a.ID == "a", "unavailable:no-pong"
+		if a.ID == "a" {
+			return readyObs()
+		}
+		return procFailObs()
 	})
 	_, code, err := preflight(context.Background(), preflightOptions{Root: root},
 		[]agents.Discovery{found("a"), found("b")}, &bytes.Buffer{}, &bytes.Buffer{})
@@ -439,9 +450,9 @@ func TestPreflightLessThanTwoParticipantsIsHardFailExit1(t *testing.T) {
 
 func TestPreflightNoPingPresenceOnly(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) (bool, string) {
+	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) readinessObservation {
 		t.Fatal("probe must not be called in --no-ping mode")
-		return false, ""
+		return readinessObservation{}
 	})
 	missing := agents.Discovery{Spec: agents.Spec{ID: "gone", Commands: []string{"gone"}}, Found: false}
 	report, code, err := preflight(context.Background(), preflightOptions{Root: root, NoPing: true},
@@ -495,8 +506,8 @@ func TestIsExactPONG(t *testing.T) {
 
 func TestPreflightNonWorkspaceHardFailExit1(t *testing.T) {
 	root := t.TempDir() // no parley-deck/ deck
-	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) (bool, string) {
-		return true, ""
+	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) readinessObservation {
+		return readyObs()
 	})
 	var stderr bytes.Buffer
 	_, code, err := preflight(context.Background(), preflightOptions{Root: root, NoPing: true},
@@ -524,8 +535,8 @@ func TestParticipantDiscoveriesSelectsExactSet(t *testing.T) {
 
 func TestPreflightSelectedSoloHardFailExit1(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) (bool, string) {
-		return true, "" // every probed agent is available
+	withFakeProbe(t, func(context.Context, string, agents.Discovery, time.Duration) readinessObservation {
+		return readyObs() // every probed agent is available
 	})
 	// Even though three agents are installed+available, the SELECTED set is a
 	// single participant — the §1 non-solo hard-stop must fire (exit 1), not pass.
@@ -547,8 +558,11 @@ func TestPreflightSelectedSoloHardFailExit1(t *testing.T) {
 
 func TestPreflightYesRecordsExclusion(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) (bool, string) {
-		return a.ID != "c", "unavailable:no-pong"
+	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) readinessObservation {
+		if a.ID == "c" {
+			return procFailObs()
+		}
+		return readyObs()
 	})
 	// a+b available, c unavailable. With --yes the exclusion of c is confirmed
 	// (no gate) and >= 2 remain → exit 0, and c is recorded.
@@ -582,8 +596,11 @@ func TestPreflightUsageError(t *testing.T) {
 
 func TestPreflightJSONPropagatesGateExit3(t *testing.T) {
 	root := sourceWorkspace(t)
-	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) (bool, string) {
-		return a.ID != "b", "unavailable:no-pong"
+	withFakeProbe(t, func(_ context.Context, _ string, a agents.Discovery, _ time.Duration) readinessObservation {
+		if a.ID == "b" {
+			return procFailObs()
+		}
+		return readyObs()
 	})
 	// Three agents, one unavailable: an exclude gate (exit 3). With --json the
 	// payload is printed but the real exit code (3) must be returned, not 0.

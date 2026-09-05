@@ -66,9 +66,15 @@ type gateKind string
 const (
 	gateBreakingFreshness gateKind = "breaking-freshness"
 	// gateUnknownFreshness fires when there is no hash to compare, so "in sync" cannot be claimed.
-	gateUnknownFreshness gateKind = "unknown-freshness"
-	gateUnknownRole      gateKind = "unknown-role"
-	gateExcludeAgent     gateKind = "exclude-agent"
+	gateUnknownFreshness  gateKind = "unknown-freshness"
+	gateUnknownRole       gateKind = "unknown-role"
+	gateExcludeAgent      gateKind = "exclude-agent"
+	// gateResolveReadiness blocks on an ambiguous readiness observation
+	// (malformed/empty/deadline). It is NOT an automatic exclusion.
+	gateResolveReadiness gateKind = "resolve-readiness"
+	// gateProviderFailure blocks on a classified provider-side failure. It is
+	// distinct from process failure and is NOT an automatic exclusion.
+	gateProviderFailure gateKind = "provider-failure"
 )
 
 // gate is a pending readiness gate that requires explicit user confirmation. A
@@ -102,6 +108,9 @@ type rosterEntry struct {
 	Version   string `json:"version"`
 	Available bool   `json:"available"`
 	Reason    string `json:"reason,omitempty"`
+	// Class is the typed readiness observation (D7); empty for a present
+	// agent reported available by presence-only (--no-ping).
+	Class string `json:"class,omitempty"`
 }
 
 // preflightReport is the full readiness result.
@@ -124,8 +133,8 @@ type versionMeta struct {
 }
 
 // probeFunc is the seam for the hosted-PONG probe so tests do not shell out.
-// It returns (available, reason). reason is empty when available.
-type probeFunc func(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) (bool, string)
+// It returns the typed readiness observation; Ready is true only for ClassReady.
+type probeFunc func(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) readinessObservation
 
 // pingProbe is the production probe; tests swap it for a fake.
 var pingProbe probeFunc = hostedPONG
@@ -345,26 +354,32 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	report.Pinged = !opts.NoPing
 	report.Roster = checkRoster(ctx, opts, discovered)
 
-	// Availability exclusion is a gate: an unavailable agent the user must
-	// confirm excluding. With --yes the exclusion is CONFIRMED and recorded
-	// instead of gated. Count would-be participants to honor the §1 non-solo
-	// hard-stop.
+	// Gate construction (D7). A non-ready entry raises one of three gates:
+	// - definite unavailability (missing CLI or a plain non-provider process
+	//   failure) keeps the explicit operator exclusion (gateExcludeAgent); --yes
+	//   records the exclusion;
+	// - provider failure (gateProviderFailure) and ambiguous readiness
+	//   (gateResolveReadiness: malformed/empty/deadline) are BLOCKING gates that
+	//   are NOT auto-excluded and NOT waivable into an exclusion by --yes.
 	available := 0
 	for _, entry := range report.Roster {
 		if entry.Available {
 			available++
 			continue
 		}
-		if opts.Yes {
-			report.Excluded = append(report.Excluded, fmt.Sprintf("%s — %s — confirmed %s",
-				entry.RosterID, entry.Reason, time.Now().Format("2006-01-02")))
+		if isDefiniteUnavailable(entry.Class) {
+			if opts.Yes {
+				report.Excluded = append(report.Excluded, fmt.Sprintf("%s — %s — confirmed %s",
+					entry.RosterID, entry.Reason, time.Now().Format("2006-01-02")))
+				continue
+			}
+			kind, detail, confirm := readinessGateFor(entry, opts.Root)
+			report.Gates = append(report.Gates, gate{Kind: kind, Detail: detail, Confirm: confirm})
 			continue
 		}
-		report.Gates = append(report.Gates, gate{
-			Kind:    gateExcludeAgent,
-			Detail:  fmt.Sprintf("%s unavailable (%s) — confirm excluding it from this idea", entry.RosterID, entry.Reason),
-			Confirm: confirmCommand(opts.Root),
-		})
+		// Provider / ambiguous readiness: blocking, never auto-excluded.
+		kind, detail, confirm := readinessGateFor(entry, opts.Root)
+		report.Gates = append(report.Gates, gate{Kind: kind, Detail: detail, Confirm: confirm})
 	}
 
 	// Hard failure: excluding the unavailable agents would leave < 2 participants
@@ -796,6 +811,7 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 		if !agent.Found {
 			entries[i].Available = false
 			entries[i].Reason = "unavailable:missing"
+			entries[i].Class = "missing"
 			continue
 		}
 		if opts.NoPing {
@@ -806,10 +822,11 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 		wg.Add(1)
 		go func(idx int, a agents.Discovery) {
 			defer wg.Done()
-			ok, reason := pingProbe(probeCtx, opts.Root, a, timeout)
-			entries[idx].Available = ok
-			if !ok {
-				entries[idx].Reason = reason
+			obs := pingProbe(probeCtx, opts.Root, a, timeout)
+			entries[idx].Available = obs.Ready
+			entries[idx].Class = string(obs.Class)
+			if !obs.Ready {
+				entries[idx].Reason = readinessReason(obs)
 			}
 		}(i, agent)
 	}
@@ -819,8 +836,11 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 
 // hostedPONG runs the agent's real configured invocation with the PONG prompt,
 // bounded by timeout, and kills the process group on timeout so no children
-// leak. Available = exits in time AND stdout contains the sentinel.
-func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) (bool, string) {
+// leak. It returns the typed readiness observation: readiness requires an exact
+// PONG assistant response extracted from a recognized envelope. A timeout is an
+// observation (deadline-no-output / deadline-after-output), never a diagnosis
+// of a hang.
+func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) readinessObservation {
 	probeCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -829,7 +849,7 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 		defer cleanup()
 	}
 	if err != nil {
-		return false, "unavailable:command-build-error"
+		return readinessObservation{Class: ClassProcessFailure, ExitCode: -1, BuffersStdout: agent.BuffersStdout}
 	}
 	cmd.Dir = root
 	// Spawn into its own process group so a timeout kill reaps the whole tree.
@@ -842,27 +862,30 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 		cmd.Stdin = strings.NewReader(pongPrompt)
 	}
 
+	started := time.Now()
 	if err := cmd.Start(); err != nil {
-		return false, "unavailable:start-error"
+		return readinessObservation{Class: ClassProcessFailure, ExitCode: -1, BuffersStdout: agent.BuffersStdout, Duration: time.Since(started)}
 	}
 	sp := procctl.Capture(cmd, "")
 	waitErr := make(chan error, 1)
 	go func() { waitErr <- cmd.Wait() }()
 
+	var obs readinessObservation
 	select {
 	case <-probeCtx.Done():
 		_ = procctl.KillGroup(sp)
 		<-waitErr // reap
-		return false, "unavailable:timeout"
+		obs = classifyReadiness(out.String(), errOut.String(), -1, true)
 	case err := <-waitErr:
+		code := 0
 		if err != nil {
-			return false, "unavailable:exit-error"
+			code = exitCodeOf(err)
 		}
-		if isExactPONG(out.String()) {
-			return true, ""
-		}
-		return false, "unavailable:no-pong"
+		obs = classifyReadiness(out.String(), errOut.String(), code, false)
 	}
+	obs.Duration = time.Since(started)
+	obs.BuffersStdout = agent.BuffersStdout
+	return obs
 }
 
 // isExactPONG reports whether stdout is the exact PONG sentinel and nothing else.
