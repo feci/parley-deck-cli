@@ -89,7 +89,7 @@ func prepareProtocolPrompt(root, prompt string, info LaunchInfo) (string, teleme
 	if c.Body == "" || protocolpacket.Hash(c.Body) != c.PacketSHA256 {
 		return refuse("context-hash-mismatch")
 	}
-	if strings.Contains(c.Body, "</parley-protocol>") {
+	if strings.Contains(c.Body, "</parley-protocol>") || strings.Contains(c.Body, "<parley-protocol>") {
 		return refuse("protocol-envelope-collision")
 	}
 	attestation, err := json.Marshal(c.Attestation)

@@ -65,7 +65,7 @@ func TestMeasuredLaunchReceivesAttestedCurrentProtocol(t *testing.T) {
 }
 
 func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
-	for _, kind := range []string{"missing-authority", "secret", "tampered-body", "envelope-collision"} {
+	for _, kind := range []string{"missing-authority", "secret", "tampered-body", "envelope-collision", "opening-envelope-collision"} {
 		t.Run(kind, func(t *testing.T) {
 			root := t.TempDir()
 			path := writeLaunchProtocol(t, root)
@@ -76,6 +76,10 @@ func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
 				}
 			case "secret":
 				if err := os.WriteFile(path, []byte("# Protocol\napi_key=sk-1234567890abcdefghijklmnop\n"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			case "opening-envelope-collision":
+				if err := os.WriteFile(path, []byte("# Protocol\nQuoted opening tag: <parley-protocol>\n"), 0o600); err != nil {
 					t.Fatal(err)
 				}
 			case "envelope-collision":
@@ -179,5 +183,39 @@ func TestSupervisedExecPassesCurrentProtocolBytes(t *testing.T) {
 	records := terminalRecords(t, root)
 	if len(records) != 1 || records[0].Metadata.Context.SourceSHA256 == nil || *records[0].Metadata.Context.SourceSHA256 != protocolpacket.Hash(string(source)) {
 		t.Fatalf("wrong attestation: %+v", records)
+	}
+}
+
+func TestProbeBoundaryIsExplicitAndUnattested(t *testing.T) {
+	for _, phase := range []string{"", "implementation", "preflight", "runtime-probe"} {
+		t.Run("phase-"+phase, func(t *testing.T) {
+			root := t.TempDir()
+			ctx := WithLaunchInfo(context.Background(), LaunchInfo{Phase: phase, Context: telemetry.Context{Mode: "full", SourceSHA256: telemetry.String("forged")}})
+			cmd, cleanup, err := ProbeCommandFor(ctx, root, telemetryShell("printf PONG", false), "bounded capability probe")
+			if cleanup != nil {
+				defer cleanup()
+			}
+			allowed := phase == "preflight" || phase == "runtime-probe"
+			if !allowed {
+				if err == nil {
+					t.Fatal("task phase allowed probe-only launch")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := cmd.Run(); err != nil {
+				t.Fatal(err)
+			}
+			records := terminalRecords(t, root)
+			if len(records) != 1 {
+				t.Fatalf("missing probe record: %+v", records)
+			}
+			c := records[0].Metadata.Context
+			if c.Mode != "probe-only" || c.SourceSHA256 != nil || c.PacketSHA256 != nil || c.FallbackReason == nil || *c.FallbackReason != "no-protocol-task" {
+				t.Fatalf("probe certified task authority: %+v", c)
+			}
+		})
 	}
 }

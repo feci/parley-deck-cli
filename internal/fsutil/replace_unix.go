@@ -13,6 +13,10 @@ import (
 // is required; a failure after rename leaves the conservative replacement on
 // disk and returns an error rather than claiming the transaction is durable.
 func ReplaceSyncedFile(staged, path string) error {
+	return replaceSyncedFile(staged, path, SyncFile)
+}
+
+func replaceSyncedFile(staged, path string, syncDir func(*os.File) error) error {
 	if filepath.Clean(filepath.Dir(staged)) != filepath.Clean(filepath.Dir(path)) {
 		return fmt.Errorf("replacement must use a sibling staging file")
 	}
@@ -24,5 +28,5 @@ func ReplaceSyncedFile(staged, path string) error {
 		return err
 	}
 	defer dir.Close()
-	return SyncFile(dir)
+	return syncDir(dir)
 }
