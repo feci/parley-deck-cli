@@ -4,7 +4,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"parley-deck-cli/internal/protocolcore"
@@ -424,6 +426,461 @@ func TestResolveSourceRoles(t *testing.T) {
 	}
 	if _, err := ResolveSource(bad, store); !errors.Is(err, ErrAuthority) || !errors.Is(err, protocolcore.ErrNoRelease) {
 		t.Fatalf("missing release: %v", err)
+	}
+}
+
+// packetContext builds a publishable context from the fixture. Publication tests need a real
+// Context because WriteBody binds the body to its attestation.
+func packetContext(t *testing.T, req Request) Context {
+	t.Helper()
+	src, m := fixture(t)
+	c := Build(src, m, req)
+	if c.ContextMode == ModeRefused || c.Body == "" {
+		t.Fatalf("fixture context is not publishable: %+v", c.Attestation)
+	}
+	return c
+}
+
+func TestPublishedBodyIsFullDigestAddressedImmutableAndIdempotent(t *testing.T) {
+	root := t.TempDir()
+	c := packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &c); err != nil {
+		t.Fatal(err)
+	}
+	name := filepath.Base(c.BodyPath)
+	if !strings.HasSuffix(name, c.PacketSHA256+".md") || len(c.PacketSHA256) != 64 {
+		t.Fatalf("published name %q must carry the full 64-hex body digest %q", name, c.PacketSHA256)
+	}
+	if b, err := os.ReadFile(c.BodyPath); err != nil || string(b) != c.Body {
+		t.Fatalf("published body is not the attested body: %v", err)
+	}
+
+	// Republishing identical content is idempotent: same path, no error, no staged leftovers.
+	again := packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &again); err != nil || again.BodyPath != c.BodyPath {
+		t.Fatalf("republication: %v %s", err, again.BodyPath)
+	}
+	entries, err := os.ReadDir(RuntimeDir(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("runtime dir holds %d entries, want exactly the published body", len(entries))
+	}
+
+	// A path that already holds different bytes is refused, never truncated.
+	const tampered = "tampered protocol text\n"
+	if err := os.WriteFile(c.BodyPath, []byte(tampered), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	third := packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &third); err == nil || !strings.Contains(err.Error(), "different body") {
+		t.Fatalf("a mismatched published body must be refused, got %v", err)
+	}
+	if b, _ := os.ReadFile(c.BodyPath); string(b) != tampered {
+		t.Fatal("the mismatched file was overwritten instead of refused")
+	}
+}
+
+func TestWriteBodyRefusesUnattestedAndEmptyBodies(t *testing.T) {
+	root := t.TempDir()
+	c := packetContext(t, Request{Phase: 1, Track: "fast"})
+	c.Body += "\nappended after Build\n"
+	if err := WriteBody(root, &c); err == nil || !strings.Contains(err.Error(), "unattested") {
+		t.Fatalf("a body that does not hash to its attestation must be refused, got %v", err)
+	}
+	empty := packetContext(t, Request{Phase: 1, Track: "fast"})
+	empty.Body, empty.PacketSHA256 = "", Hash("")
+	if err := WriteBody(root, &empty); err == nil {
+		t.Fatal("an empty body must not be published")
+	}
+	if _, err := os.Stat(filepath.Join(root, ".parley-runtime")); !os.IsNotExist(err) {
+		t.Fatal("a refused publication must not create the runtime directory")
+	}
+}
+
+func TestWriteBodyRefusesSymlinkedRuntimePathsAndTargets(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	elsewhere := t.TempDir()
+
+	// A symlinked .parley-runtime parent is refused and nothing is written through it.
+	root := t.TempDir()
+	if err := os.Symlink(elsewhere, filepath.Join(root, ".parley-runtime")); err != nil {
+		t.Fatal(err)
+	}
+	c := packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &c); err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("symlinked runtime parent: %v", err)
+	}
+	if entries, _ := os.ReadDir(elsewhere); len(entries) != 0 {
+		t.Fatal("wrote through the symlinked runtime parent")
+	}
+
+	// A symlinked protocol-packets directory is refused.
+	root = t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, ".parley-runtime"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(elsewhere, RuntimeDir(root)); err != nil {
+		t.Fatal(err)
+	}
+	c = packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &c); err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("symlinked runtime dir: %v", err)
+	}
+
+	// A regular file where the runtime directory belongs is refused.
+	root = t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".parley-runtime"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c = packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &c); err == nil || !strings.Contains(err.Error(), "not a directory") {
+		t.Fatalf("runtime parent is a file: %v", err)
+	}
+
+	// A symlinked TARGET is refused, and the file it points at is untouched.
+	scratch := t.TempDir()
+	probe := packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(scratch, &probe); err != nil {
+		t.Fatal(err)
+	}
+	root = t.TempDir()
+	if err := os.MkdirAll(RuntimeDir(root), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	victim := filepath.Join(elsewhere, "victim.md")
+	if err := os.WriteFile(victim, []byte("victim\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(victim, filepath.Join(RuntimeDir(root), filepath.Base(probe.BodyPath))); err != nil {
+		t.Fatal(err)
+	}
+	c = packetContext(t, Request{Phase: 1, Track: "fast"})
+	if err := WriteBody(root, &c); err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("symlinked target: %v", err)
+	}
+	if b, _ := os.ReadFile(victim); string(b) != "victim\n" {
+		t.Fatal("wrote through a symlinked target")
+	}
+}
+
+func TestPublicationDirectoryAndBodyArePrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not meaningful on Windows")
+	}
+	root := t.TempDir()
+	c := packetContext(t, Request{Phase: 2, Track: "standard"})
+	if err := WriteBody(root, &c); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{filepath.Join(root, ".parley-runtime"), RuntimeDir(root)} {
+		fi, err := os.Stat(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fi.Mode().Perm() != 0o700 {
+			t.Fatalf("%s has mode %04o, want 0700", p, fi.Mode().Perm())
+		}
+	}
+	fi, err := os.Stat(c.BodyPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != 0o600 {
+		t.Fatalf("%s has mode %04o, want 0600", c.BodyPath, fi.Mode().Perm())
+	}
+
+	// A pre-existing group/world-accessible publication directory is restricted before use;
+	// a directory another local user can rewrite carries no immutability guarantee.
+	loose := t.TempDir()
+	if err := os.MkdirAll(RuntimeDir(loose), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(RuntimeDir(loose), 0o777); err != nil {
+		t.Fatal(err)
+	}
+	c2 := packetContext(t, Request{Phase: 2, Track: "standard"})
+	if err := WriteBody(loose, &c2); err != nil {
+		t.Fatal(err)
+	}
+	fi, err = os.Stat(RuntimeDir(loose))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm()&0o077 != 0 {
+		t.Fatalf("a world-writable publication directory was used as is (%04o)", fi.Mode().Perm())
+	}
+}
+
+func TestConcurrentPublicationPublishesOneCompleteBody(t *testing.T) {
+	root := t.TempDir()
+	src, m := fixture(t) // built once: t.Fatal must not be called from a spawned goroutine
+	const writers = 8
+
+	var wg sync.WaitGroup
+	errs := make([]error, writers)
+	paths := make([]string, writers)
+	start := make(chan struct{})
+	for i := 0; i < writers; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			c := Build(src, m, Request{Phase: 1, Track: "fast"})
+			<-start
+			errs[i] = WriteBody(root, &c)
+			paths[i] = c.BodyPath
+		}(i)
+	}
+	close(start)
+	wg.Wait()
+
+	want := Build(src, m, Request{Phase: 1, Track: "fast"}).Body
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("writer %d: %v", i, err)
+		}
+		if paths[i] != paths[0] {
+			t.Fatalf("writer %d published %s, writer 0 published %s", i, paths[i], paths[0])
+		}
+	}
+	entries, err := os.ReadDir(RuntimeDir(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		var names []string
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		t.Fatalf("concurrent publication left %d files (%v); want one complete body and no staged leftovers", len(entries), names)
+	}
+	// Whatever a concurrent reader would have opened must be the whole body, never a prefix.
+	b, err := os.ReadFile(filepath.Join(RuntimeDir(root), entries[0].Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != want {
+		t.Fatalf("published body is %d bytes, want the complete %d", len(b), len(want))
+	}
+
+	// Concurrent publication of DIFFERENT bodies keeps both, each complete.
+	var wg2 sync.WaitGroup
+	derr := make([]error, 2)
+	dpaths := make([]string, 2)
+	for i, phase := range []int{1, 2} {
+		wg2.Add(1)
+		go func(i, phase int) {
+			defer wg2.Done()
+			c := Build(src, m, Request{Phase: phase, Track: "fast", Optimize: true})
+			derr[i] = WriteBody(root, &c)
+			dpaths[i] = c.BodyPath
+		}(i, phase)
+	}
+	wg2.Wait()
+	for i, err := range derr {
+		if err != nil {
+			t.Fatalf("distinct writer %d: %v", i, err)
+		}
+	}
+	if dpaths[0] == dpaths[1] {
+		t.Fatalf("phase 1 and phase 2 packets share the path %s", dpaths[0])
+	}
+	entries, err = os.ReadDir(RuntimeDir(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("runtime dir holds %d files, want the full body plus two distinct packets", len(entries))
+	}
+	for _, e := range entries {
+		p := filepath.Join(RuntimeDir(root), e.Name())
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasSuffix(e.Name(), Hash(string(b))+".md") {
+			t.Fatalf("%s does not hold the body its name addresses", e.Name())
+		}
+	}
+}
+
+// TestConcurrentPublicationCreatesThePrivateRuntimeDirectoryOnce covers the create race that
+// broke repeated concurrent publication: two publishers both Lstat a missing .parley-runtime,
+// both call Mkdir, and the loser gets EEXIST. Failing on EEXIST breaks a legitimate concurrent
+// publisher; trusting EEXIST would accept whatever entry actually appeared, including a symlink
+// or a file planted in the window. Every success must therefore be backed by a real, private
+// directory. The storm is repeated on a fresh root so the window is hit rather than assumed.
+func TestConcurrentPublicationCreatesThePrivateRuntimeDirectoryOnce(t *testing.T) {
+	const rounds, creators = 10, 12
+	for round := 0; round < rounds; round++ {
+		root := t.TempDir()
+		var wg sync.WaitGroup
+		errs := make([]error, creators)
+		dirs := make([]string, creators)
+		start := make(chan struct{})
+		for i := 0; i < creators; i++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				<-start
+				dirs[i], errs[i] = publicationDir(root)
+			}(i)
+		}
+		close(start)
+		wg.Wait()
+
+		for i, err := range errs {
+			if err != nil {
+				t.Fatalf("round %d creator %d: %v", round, i, err)
+			}
+			if dirs[i] != RuntimeDir(root) {
+				t.Fatalf("round %d creator %d resolved %s, want %s", round, i, dirs[i], RuntimeDir(root))
+			}
+		}
+		for _, p := range []string{filepath.Join(root, ".parley-runtime"), RuntimeDir(root)} {
+			fi, err := os.Lstat(p)
+			if err != nil {
+				t.Fatalf("round %d: every publicationDir succeeded but %s: %v", round, p, err)
+			}
+			if fi.Mode()&os.ModeSymlink != 0 || !fi.IsDir() {
+				t.Fatalf("round %d: %s is %s, not a real directory", round, p, fi.Mode())
+			}
+			if runtime.GOOS != "windows" && fi.Mode().Perm()&0o077 != 0 {
+				t.Fatalf("round %d: %s is group/world accessible (%04o)", round, p, fi.Mode().Perm())
+			}
+		}
+	}
+}
+
+// TestVerifyPublishedRefusesASwappedSymlinkAndDifferentBytes pins the validation both EEXIST
+// paths funnel into. The link-EEXIST caller never went through existingBody, so verifyPublished
+// itself must refuse a symlink: reading with os.ReadFile followed one, which let a file swapped
+// in during the race "prove" the publication and hand a launch text that is not the attested text.
+func TestVerifyPublishedRefusesASwappedSymlinkAndDifferentBytes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks needs privileges on Windows")
+	}
+	dir := t.TempDir()
+	const body = "attested protocol body\n"
+	path := filepath.Join(dir, "packet.md")
+
+	// The attested bytes: idempotent republication, no error.
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyPublished(path, body); err != nil {
+		t.Fatalf("identical bytes must validate: %v", err)
+	}
+
+	// Different bytes: refused, and nothing is written.
+	const other = "someone else's body\n"
+	if err := os.WriteFile(path, []byte(other), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyPublished(path, body); err == nil || !strings.Contains(err.Error(), "different body") {
+		t.Fatalf("mismatched bytes must be refused, got %v", err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != other {
+		t.Fatal("verifyPublished modified the file it was asked to validate")
+	}
+
+	// A symlink is refused even when its target holds EXACTLY the attested bytes: content read
+	// through a link says nothing about what stands at the published path.
+	attacker := filepath.Join(t.TempDir(), "attacker.md")
+	if err := os.WriteFile(attacker, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "linked.md")
+	if err := os.Symlink(attacker, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyPublished(link, body); err == nil || !strings.Contains(err.Error(), "symlink") {
+		t.Fatalf("a body accepted through a symlink: %v", err)
+	}
+
+	// A directory (or any non-regular entry) is not a published body either.
+	if err := os.Mkdir(filepath.Join(dir, "dir.md"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyPublished(filepath.Join(dir, "dir.md"), body); err == nil || !strings.Contains(err.Error(), "not a regular file") {
+		t.Fatalf("non-regular entry: %v", err)
+	}
+}
+
+// TestPublicationFailsClosedWhenHardLinksAreUnsupported pins the removal of the direct-write
+// fallback. An O_CREATE|O_EXCL write at the target never clobbers, but it publishes an empty file
+// and fills it afterwards, so a launch reading in that window gets a partial body under a complete
+// attestation. Where the link is unavailable, publication must fail and leave nothing behind.
+func TestPublicationFailsClosedWhenHardLinksAreUnsupported(t *testing.T) {
+	root := t.TempDir()
+	c := packetContext(t, Request{Phase: 1, Track: "fast"})
+	restore := linkFile
+	linkFile = func(string, string) error { return errors.New("operation not supported") }
+	defer func() { linkFile = restore }()
+
+	err := WriteBody(root, &c)
+	if err == nil || !strings.Contains(err.Error(), "atomically") {
+		t.Fatalf("an unsupported hard link must fail publication, got %v", err)
+	}
+	if c.BodyPath != "" {
+		t.Fatalf("a failed publication recorded %s as the body path", c.BodyPath)
+	}
+	entries, rerr := os.ReadDir(RuntimeDir(root))
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(entries) != 0 {
+		var names []string
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		t.Fatalf("failed publication left %v; it must leave neither a partial body nor a staged file", names)
+	}
+}
+
+// TestStagedBodyIsFlushedOnThisFilesystem exercises the real filesystem behind t.TempDir().
+// Darwin's File.Sync issues F_FULLFSYNC, which shared volumes (a TMPDIR under /Volumes/...)
+// reject with ENOTTY even though ordinary fsync succeeds there; publication must neither fail
+// on such a volume nor stop flushing. Run it with TMPDIR pointed at one to see the difference.
+func TestStagedBodyIsFlushedOnThisFilesystem(t *testing.T) {
+	dir := t.TempDir()
+	f, err := os.CreateTemp(dir, ".staged-packet-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+	const body = "packet body\n"
+	if err := writeAndClose(f, body); err != nil {
+		t.Fatalf("staging a body in %s failed: %v", dir, err)
+	}
+	if b, err := os.ReadFile(f.Name()); err != nil || string(b) != body {
+		t.Fatalf("staged body is %q (%v), want %q", b, err, body)
+	}
+	if runtime.GOOS != "windows" {
+		fi, err := os.Stat(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fi.Mode().Perm() != 0o600 {
+			t.Fatalf("staged body has mode %04o, want 0600 before it is ever linked into place", fi.Mode().Perm())
+		}
+	}
+}
+
+func TestMismatchedFenceMarkerDoesNotHideHeadings(t *testing.T) {
+	// A ~~~ line inside a ``` block is content. Toggling on it would swallow every following
+	// heading into the preceding block, and an omitted block would then carry text the
+	// omission index attributes to the wrong locator.
+	raw := "# T\n\n## A\n\n```\n~~~\n## Not a heading\n```\n\n## B\n\nb text\n"
+	var locs []string
+	for _, b := range Parse(raw) {
+		locs = append(locs, b.Locator)
+	}
+	if got, want := strings.Join(locs, "|"), "# T|## A|## B"; got != want {
+		t.Fatalf("locators %q, want %q", got, want)
 	}
 }
 
