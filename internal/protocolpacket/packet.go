@@ -174,14 +174,22 @@ func Parse(raw string) []Block {
 			Locator: locator, Level: level, StartLine: start + 1, EndLine: end, SHA256: Hash(text), Text: text,
 		})
 	}
-	inFence := false
+	inFence := ""
 	for i, line := range lines {
 		t := strings.TrimSpace(line)
-		if strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~") {
-			inFence = !inFence
+		if marker := fenceMarker(t); marker != "" {
+			// Only the opening marker closes its own fence: a ~~~ line inside a ``` block is
+			// content, and treating it as a fence toggle would make the following headings
+			// invisible and silently fold their text into the preceding block.
+			switch {
+			case inFence == "":
+				inFence = marker
+			case inFence == marker:
+				inFence = ""
+			}
 			continue
 		}
-		if inFence {
+		if inFence != "" {
 			continue
 		}
 		lvl := headingLevel(line)
@@ -199,6 +207,17 @@ func Parse(raw string) []Block {
 	}
 	flush(len(lines))
 	return blocks
+}
+
+// fenceMarker returns the fence marker a trimmed line opens or closes, or "".
+func fenceMarker(trimmed string) string {
+	switch {
+	case strings.HasPrefix(trimmed, "```"):
+		return "```"
+	case strings.HasPrefix(trimmed, "~~~"):
+		return "~~~"
+	}
+	return ""
 }
 
 func headingLevel(line string) int {

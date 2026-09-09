@@ -177,6 +177,53 @@ func TestProtocolPacketRefusesOnMissingAuthorityAndSecrets(t *testing.T) {
 	}
 }
 
+// Publication is content-addressed and immutable: the same request resolves to the same path,
+// and a body changed on disk is refused instead of silently replaced. Handing a launch
+// protocol text that is not the attested text is the failure this command exists to prevent.
+func TestProtocolPacketRepublicationIsIdempotentAndRefusesATamperedBody(t *testing.T) {
+	root := packetFixture(t, true)
+	args := []string{"--dir", root, "--phase", "1", "--track", "fast", "--json"}
+
+	code, out, errOut := runPacket(t, args...)
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	var first protocolpacket.Context
+	if err := json.Unmarshal([]byte(out), &first); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(filepath.Base(first.BodyPath), first.PacketSHA256+".md") {
+		t.Fatalf("%s does not carry the full body digest %s", filepath.Base(first.BodyPath), first.PacketSHA256)
+	}
+
+	code, out, errOut = runPacket(t, args...)
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	var second protocolpacket.Context
+	if err := json.Unmarshal([]byte(out), &second); err != nil {
+		t.Fatal(err)
+	}
+	if second.BodyPath != first.BodyPath {
+		t.Fatalf("republication moved the body: %s vs %s", second.BodyPath, first.BodyPath)
+	}
+	if entries, err := os.ReadDir(filepath.Join(root, ".parley-runtime", "protocol-packets")); err != nil || len(entries) != 1 {
+		t.Fatalf("runtime dir holds %d entries: %v", len(entries), err)
+	}
+
+	const tampered = "not the protocol\n"
+	if err := os.WriteFile(first.BodyPath, []byte(tampered), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	code, _, errOut = runPacket(t, args...)
+	if code != 1 || !strings.Contains(errOut, "refusing to overwrite") {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	if b, _ := os.ReadFile(first.BodyPath); string(b) != tampered {
+		t.Fatal("the tampered body was overwritten instead of failing closed")
+	}
+}
+
 func TestProtocolPacketRequiresPhaseAndPrintsHelp(t *testing.T) {
 	code, _, errOut := runPacket(t, "--dir", t.TempDir())
 	if code != 2 || !strings.Contains(errOut, "--phase is required") {
