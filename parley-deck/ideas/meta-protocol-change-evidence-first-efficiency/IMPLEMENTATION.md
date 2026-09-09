@@ -332,6 +332,27 @@ suite exposed two legacy manual-handoff fixtures without source metadata; both
 now explicitly declare their test protocol authority and pass. Missing authority
 still has its own rejection fixtures. No independent final verdict is claimed.
 
+### Additional non-overlapping Codex allocation — replacement portability
+
+Claim `internal/fsutil/replace_unix.go`, `replace_windows.go`, and
+`replace_test.go` for a small platform replacement primitive used by the cursor.
+The current POSIX directory-sync sequence cannot be assumed to work through a
+Windows read-only directory handle. Use the existing x/sys/windows dependency's
+MoveFileEx with REPLACE_EXISTING and WRITE_THROUGH there; keep rename + directory
+sync on other platforms. No cross-volume copy fallback. Verify native behavior
+and Windows cross-compilation, with Windows runtime behavior explicitly untested.
+
+### 2026-09-10 — replacement portability validation
+
+`ReplaceSyncedFile` now uses rename plus required directory sync on POSIX, and
+MoveFileEx(REPLACE_EXISTING | WRITE_THROUGH) on Windows without a copy fallback.
+The staged file is synchronized before either replacement. Native fsutil/driver
+suites, shared-volume replacement/cursor tests and vet pass; the Windows fsutil
+test binary cross-compiles. Windows runtime behavior is not tested here. This
+supersedes the earlier deliberate Windows fail-closed limitation of attempting
+to flush an ordinary directory handle; it adds no claim of universal power-loss
+or network-filesystem durability.
+
 ## Outcomes & surprises
 
 Pending production implementation. The separate pilot harness has real passing
