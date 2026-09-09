@@ -134,8 +134,8 @@ func isProgressAction(a Action) bool {
 }
 
 // loopBudgetBreach returns a non-empty reason when a non-zero loop ceiling is exceeded
-// (LE-5). 0 ceilings are unlimited. Cost is summed best-effort from agent.usage events
-// (LE-6) and is only consulted when MaxCostUSD > 0.
+// (LE-5). 0 ceilings are unlimited. A monetary ceiling requires complete
+// per-invocation prices from agent.usage events and stops on unknown accounting.
 func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 	if d.cfg.MaxDriverSteps > 0 && steps >= d.cfg.MaxDriverSteps {
 		return fmt.Sprintf("driver-step budget exhausted (%d/%d steps)", steps, d.cfg.MaxDriverSteps)

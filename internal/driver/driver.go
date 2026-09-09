@@ -82,7 +82,7 @@ type Config struct {
 	// per user from ~/.parley [defaults.loop], overridable by `run` flags.
 	MaxDriverSteps int           // total progress Advances before escalation
 	MaxWallClock   time.Duration // total run wall-clock budget (distinct from the per-tick roundDeadline)
-	MaxCostUSD     float64       // total external-backend cost budget (best-effort, telemetry-gated; LE-6)
+	MaxCostUSD     float64       // observed invocation cost ceiling; unknown accounting stops (LE-6)
 	Out            io.Writer     // progress output (nil → discard)
 	// Track-aware config (idea track-aware-driver): the §4.0 rigor track derived
 	// from 00-prompt `track:` and the reviewer bounds it implies. Track is the

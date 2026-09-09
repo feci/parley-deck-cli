@@ -153,6 +153,15 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ### 2026-09-10 — recovered interrupted Codex session
 
+Additional non-overlapping Codex allocation: `internal/fsutil/sync_darwin.go`
+and `internal/fsutil/sync_other.go`. Move the tested sync adapter there so the
+telemetry and Claude-owned packet publisher share the same filesystem policy.
+Claude's packet handoff reproduces the same shared-volume ENOTTY failure and a
+fresh-directory mkdir race; those findings require an owner follow-up before
+integration. The non-atomic exclusive-create fallback also remains unacceptable
+for an immutable publication contract. Actual hardlink creation on the shared
+volume succeeded, so unsupported hardlinks can fail closed without a fallback.
+
 Recovered the original local conversation `019e5f54-222b-7802-8342-b98dfb89d306`.
 Its last substantive user instruction (2026-09-09 20:54Z) requested all six
 audit recommendations through Parley Deck. The session then ended on a workspace

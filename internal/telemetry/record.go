@@ -320,7 +320,7 @@ func (i *Invocation) write(name string) error {
 		file.Close()
 		return err
 	}
-	if err := syncRecord(file); err != nil {
+	if err := fsutil.SyncFile(file); err != nil {
 		file.Close()
 		return err
 	}

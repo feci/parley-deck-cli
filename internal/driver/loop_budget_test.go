@@ -69,7 +69,7 @@ func TestEmitLoopBudgetEvent(t *testing.T) {
 	t.Fatal("expected a loop.budget event")
 }
 
-// LE-6: loopCostUSD sums cost_usd across agent.usage events (best-effort).
+// LE-6: the observed total sums identified agent.usage events only.
 func TestLoopCostUSDSumsAgentUsage(t *testing.T) {
 	runDir := t.TempDir()
 	st := store.New(runDir)
