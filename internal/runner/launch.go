@@ -193,8 +193,20 @@ func RunMeasured(parent context.Context, opts ExecOptions) (record telemetry.Rec
 			observer(r)
 		}
 	}
+	prompt, protocolContext, contextErr := prepareProtocolPrompt(opts.Root, opts.Prompt, info)
+	info.Context = protocolContext
 	ctx = WithLaunchInfo(ctx, info)
-	cmd, cleanup, err := trackedCommandFor(ctx, opts.Root, opts.Agent, opts.Prompt)
+	if contextErr != nil {
+		attempt, err := beginLaunch(ctx, opts.Root, "manual", opts.Agent)
+		if err != nil {
+			return record, err
+		}
+		if err := attempt.finish(contextErr, ctx.Err(), nil); err != nil {
+			return record, err
+		}
+		return record, contextErr
+	}
+	cmd, cleanup, err := trackedCommandFor(ctx, opts.Root, opts.Agent, prompt)
 	if cleanup != nil {
 		defer cleanup()
 	}

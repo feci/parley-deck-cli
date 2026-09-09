@@ -30,9 +30,9 @@ type ImplOps interface {
 	Fixup(ctx context.Context, cycle int) error // Phase 8: re-invoke implementer for agreed fixes
 	Complete(ctx context.Context) error         // driver writes IMPLEMENTATION.md status=complete
 	// GoalCheck (LE-7) runs a fresh non-implementer agent to check FINAL.md observable
-	// acceptance criteria before close. Returns (false, detail) only on a confident FAIL;
-	// a checker error/ambiguous verdict returns (true, advisory) — fail-open, since this
-	// is defense-in-depth on top of an already-passed review consensus, not the sole gate.
+	// acceptance criteria before close. Missing, failed or ambiguous execution
+	// returns false: an unavailable checker cannot establish completion. This
+	// remains defense in depth and never replaces typed criterion evidence.
 	GoalCheck(ctx context.Context) (bool, string)
 }
 

@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: eee04d8
+head-commit: 9dfad2e
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -265,6 +265,72 @@ vet pass. Directory synchronization is required rather than silently ignored;
 platforms that reject it fail closed and remain unvalidated (including Windows).
 This does not claim same-UID tamper prevention, cross-entrypoint action identities,
 persistent loop counters, or completed per-launch monetary reservations.
+
+### Next serialized launch integration
+
+Codex is wiring the shared renderer into the measured manual launch boundary
+and handoff path in already-claimed runner files. Full context stays mandatory;
+unknown phase/track input is reported by the shadow renderer, never optimized
+away. Authority/publication/secret refusal must produce failed attempt evidence
+without starting a process. This first integration does not cover the remaining
+round/ACP/consult/signoff launch paths; those remain open.
+
+### 2026-09-09 22:45Z — evidence owner timeout and reproduced blockers
+
+Kimi invocation `f7248aa0-d6cc-4dc4-9d69-7341cce6f61d` reached the configured
+30-minute hard deadline (1800.112s), exit 143, failure_class=timeout. It produced
+partial owned code but no handoff. Reported cost and token usage are unknown;
+no quota/spend-cap diagnosis is inferred. The partial work remains preserved.
+
+Codex executed independent probes against the exact evidence source snapshot
+SHA256 `a71f397b8419ba715e3ffa1eea99bb1c6fafd0fe2603f206038252fa5f3c84a5`:
+- A report with no verifier attestation passed merely by supplying another ID.
+- A missing current-tree digest was accepted.
+- A malformed final envelope retained an earlier valid pass envelope.
+- Retargeting an in-root symlink, and changing a file's executable bit, each
+  retained the same tree digest. macOS /var aliasing also caused a false escape.
+The probe is private runtime material; no owner code or artifact was rewritten.
+Source inspection additionally shows the tested digest is taken after execution
+without a before/after stability check, and report synchronization errors are
+suppressed. These are owner fix-up requests, not accepted design deviations.
+
+### Next close-gate hardening
+
+Within the already-owned app/driver files, Codex will make missing, self,
+failed or ambiguous goal-check execution reject closure and require an exact
+PASS token rather than a prefix match. Typed criterion evidence remains a
+separate required gate owned by Kimi; a model's textual PASS cannot replace it.
+
+### 2026-09-10 — measured full-context launch and fail-closed goal check
+
+The manual `agents exec` boundary and interactive handoff now obtain full
+protocol text from the shared renderer, pass exactly the in-memory attested
+bytes, and include the shadow audit in the private prompt. Missing authority,
+secret refusal or failed body publication records a failed invocation without
+spawning a child or writing a handoff prompt. The canonical source is re-read
+for each new attempt; callers cannot overwrite the computed attestation.
+Other exec/ACP/consult/signoff paths still require integration, and this does
+not claim AC-P1 complete.
+
+A real owner recovery was launched through the new boundary: Kimi invocation
+`c16ced7b-14d0-4e82-80d6-0f88d035fb36`, started 2026-09-09 22:47Z, records full
+context with source and packet SHA256
+`317ac8a2279052c827ae31f173949348989cb83047a65545baa2f79a773367e6`.
+Its early owned handoff exists; final outcome is pending. No unknown spend is
+represented as zero.
+
+The goal check now rejects absent/self/unavailable checkers, process errors,
+nonzero exits even with a printed PASS, and ambiguous/reserved/prefix-only
+verdicts. An exact textual PASS is still insufficient to replace typed
+criterion evidence; that integration awaits the evidence owner's corrections.
+Manual-signoff errors also preserve the underlying launch refusal rather than
+replacing it with an empty-signoff validation diagnostic.
+
+Validation after these changes: full `go test ./...` passes; targeted manual/
+handoff/goal-check race tests and app/runner/driver vet pass. The initial full
+suite exposed two legacy manual-handoff fixtures without source metadata; both
+now explicitly declare their test protocol authority and pass. Missing authority
+still has its own rejection fixtures. No independent final verdict is claimed.
 
 ## Outcomes & surprises
 

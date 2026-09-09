@@ -370,42 +370,41 @@ func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
 
 // GoalCheck (LE-7) runs a fresh non-implementer agent (the review drafter) to check the
 // FINAL.md acceptance criteria before close, reusing the consult execution path with a
-// verdict prompt. Fail-open on checker error/ambiguity: only a confident FAIL returns
-// (false, …) so a broken checker never blocks an already-review-clean idea.
+// verdict prompt. Missing, self, failed or ambiguous execution cannot establish
+// completion. A textual pass remains defense in depth, not criterion evidence.
 func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	checker := o.drafter
 	// CF6: GoalCheck must use a non-implementer checker. The upstream guards
 	// (ReviewerCount < 2 under auto; OpenReviewRound under strict) already prevent
 	// the drafter==implementer fallback from reaching here, but enforce the contract
-	// locally too — never run the implementer as its own goal checker; fail open.
-	if checker == o.implementer {
-		fmt.Fprintf(o.out, "driver: goal-check skipped — no independent checker (drafter is the implementer) (advisory)\n")
-		return true, "advisory: goal-check has no independent checker"
+	// locally too — never run the implementer as its own goal checker.
+	if checker == "" || checker == o.implementer {
+		return false, "goal-check has no independent checker"
 	}
-	agent, ok := o.discoveryFor(checker)
-	if !ok {
-		fmt.Fprintf(o.out, "driver: goal-check skipped — checker %q not discovered (advisory)\n", checker)
-		return true, "advisory: goal-check checker unavailable"
+	agent, err := agents.ResolveParticipant(checker, o.base.Agents, rosterMappingFor(o.root))
+	if err != nil {
+		return false, "goal-check checker unavailable"
 	}
 	fmt.Fprintf(o.out, "driver: goal-done check via %s ...\n", checker)
 	dir := filepath.Join(o.root, protocol.DeckDir, "runs", o.base.RunID, "agents", checker)
-	_ = os.MkdirAll(dir, 0o755)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return false, "goal-check cannot create its evidence directory"
+	}
+	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: o.base.RunID,
+		Idea: o.ideaSlug, Phase: "goal-check", Store: o.base.Store})
 	res := runner.RunConsult(ctx, runner.ConsultOptions{
 		Root:  o.root,
 		Agent: agent,
-		// CF3: the goal-check is an advisory fail-open gate, so bound it tightly.
-		// Without an explicit timeout it inherits the agent's full timeout (15-30m);
-		// a hung checker would then block the driver tick for that long instead of
-		// failing open quickly. 2 minutes is ample for a single verdict.
+		// Keep the existing bounded one-shot deadline. A timeout leaves
+		// completion unverified and halts instead of silently passing.
 		Timeout:    2 * time.Minute,
 		Prompt:     runner.BuildGoalCheckPrompt(agent, o.base.Idea),
 		StdoutPath: filepath.Join(dir, "goal-check.stdout.log"),
 		StderrPath: filepath.Join(dir, "goal-check.stderr.log"),
 		Progress:   o.out,
 	})
-	if res.ExitError != "" {
-		fmt.Fprintf(o.out, "driver: goal-check inconclusive (checker error: %s) — proceeding (advisory)\n", res.ExitError)
-		return true, "advisory: goal-check checker error"
+	if res.ExitError != "" || res.AgentExit != 0 {
+		return false, "goal-check checker failed; completion is unverified"
 	}
 	switch parseGoalVerdict(res.Answer) {
 	case "FAIL":
@@ -413,8 +412,7 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	case "PASS":
 		return true, ""
 	default:
-		fmt.Fprintf(o.out, "driver: goal-check inconclusive (no clear verdict) — proceeding (advisory)\n")
-		return true, "advisory: goal-check inconclusive"
+		return false, "goal-check inconclusive; completion is unverified"
 	}
 }
 
@@ -438,9 +436,9 @@ func parseGoalVerdict(answer string) string {
 		rest := strings.TrimSpace(strings.TrimPrefix(t, "GOAL-CHECK:"))
 		// CF2: a bolded/quoted marker ("**GOAL-CHECK:** FAIL") leaves "** FAIL" in
 		// rest — strip the leading wrapper run before the PASS/FAIL prefix check.
-		rest = strings.TrimLeft(rest, "*`\"'_ ")
+		rest = strings.Trim(rest, "*`\"'_ ")
 		switch {
-		case strings.HasPrefix(rest, "PASS"):
+		case rest == "PASS":
 			verdict = "PASS"
 		case strings.HasPrefix(rest, "FAIL"):
 			verdict = "FAIL"

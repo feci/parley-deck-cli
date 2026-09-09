@@ -40,8 +40,11 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
 		agent.LaunchMode = agents.LaunchManual
 	}
-	ctx := WithLaunchInfo(context.Background(), LaunchInfo{RunID: opts.RunID, Phase: "handoff",
-		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))})
+	info := LaunchInfo{RunID: opts.RunID, Phase: "handoff",
+		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))}
+	prompt, protocolContext, contextErr := prepareProtocolPrompt(opts.Root, opts.Prompt, info)
+	info.Context = protocolContext
+	ctx := WithLaunchInfo(context.Background(), info)
 	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent)
 	if err != nil {
 		return HandoffPacket{}, err
@@ -51,6 +54,9 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 			returnedErr = err
 		}
 	}()
+	if contextErr != nil {
+		return HandoffPacket{}, contextErr
+	}
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", opts.Agent.ID)
 	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return HandoffPacket{}, err
@@ -62,7 +68,7 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 		PromptPath:       filepath.Join(agentDir, "handoff-prompt.md"),
 		InstructionsPath: filepath.Join(agentDir, "handoff.md"),
 	}
-	if err := os.WriteFile(packet.PromptPath, []byte(opts.Prompt), 0o644); err != nil {
+	if err := os.WriteFile(packet.PromptPath, []byte(prompt), 0o600); err != nil {
 		return HandoffPacket{}, err
 	}
 	if err := os.WriteFile(packet.InstructionsPath, []byte(handoffInstructions(opts, packet)), 0o644); err != nil {

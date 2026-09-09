@@ -1,0 +1,103 @@
+package runner
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"parley-deck-cli/internal/protocolpacket"
+)
+
+func writeLaunchProtocol(t *testing.T, root string) string {
+	t.Helper()
+	meta := filepath.Join(root, "parley-deck", "meta")
+	if err := os.MkdirAll(meta, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(meta, "version.json"), []byte(`{"protocolRole":"source"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "parley-deck", "COOPERATION.md")
+	if err := os.WriteFile(path, []byte("# Live source\n\n**Transport:** `local-dir`\n\nMandatory source obligation.\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestMeasuredLaunchReceivesAttestedCurrentProtocol(t *testing.T) {
+	root := t.TempDir()
+	path := writeLaunchProtocol(t, root)
+	for _, change := range []string{"", "\nA newly added obligation.\n"} {
+		if change != "" {
+			f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.WriteString(change); err != nil {
+				t.Fatal(err)
+			}
+			if err := f.Close(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		r, err := RunMeasured(context.Background(), ExecOptions{Root: root, Agent: telemetryShell("cat", false),
+			Prompt: "Private task", Info: LaunchInfo{Phase: "implementation"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		source, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c := r.Metadata.Context
+		if c.Mode != protocolpacket.ModeFull || c.SourceSHA256 == nil || *c.SourceSHA256 != protocolpacket.Hash(string(source)) || c.PacketSHA256 == nil {
+			t.Fatalf("launch did not attest current full context: %+v", c)
+		}
+		body, err := os.ReadFile(filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, "stdout.log"))
+		if err != nil || !strings.Contains(string(body), string(source)) || !strings.Contains(string(body), "Private task") || !strings.Contains(string(body), "Shadow packet audit:") {
+			t.Fatalf("source/task bytes did not reach the child: %v", err)
+		}
+	}
+}
+
+func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
+	for _, kind := range []string{"missing-authority", "secret", "tampered-body"} {
+		t.Run(kind, func(t *testing.T) {
+			root := t.TempDir()
+			path := writeLaunchProtocol(t, root)
+			switch kind {
+			case "missing-authority":
+				if err := os.Remove(path); err != nil {
+					t.Fatal(err)
+				}
+			case "secret":
+				if err := os.WriteFile(path, []byte("# Protocol\napi_key=sk-1234567890abcdefghijklmnop\n"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			case "tampered-body":
+				if _, _, err := prepareProtocolPrompt(root, "task", LaunchInfo{}); err != nil {
+					t.Fatal(err)
+				}
+				paths, err := filepath.Glob(filepath.Join(protocolpacket.RuntimeDir(root), "*.md"))
+				if err != nil || len(paths) != 1 {
+					t.Fatalf("packet paths: %v %v", paths, err)
+				}
+				if err := os.WriteFile(paths[0], []byte("tampered"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			r, err := RunMeasured(context.Background(), ExecOptions{Root: root, Agent: telemetryShell("touch spawned", false), Prompt: "task"})
+			if err == nil || r.InvocationID == "" || r.StartedAt != nil || r.Outcome == nil || r.Metadata.Context.Mode != protocolpacket.ModeRefused {
+				t.Fatalf("refusal did not preserve failed attempt: %+v %v", r, err)
+			}
+			if r.Outcome.FailureClass == nil || *r.Outcome.FailureClass != "protocol_context_refused" {
+				t.Fatalf("wrong failure classification: %+v", r.Outcome)
+			}
+			if _, err := os.Stat(filepath.Join(root, "spawned")); !os.IsNotExist(err) {
+				t.Fatal("refused protocol launched a child")
+			}
+		})
+	}
+}

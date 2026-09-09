@@ -1057,6 +1057,7 @@ func TestConsensusRequestSignoffsManualModeWritesHandoff(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	writeSourceRoleMetadata(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
 
 	bin := t.TempDir()
@@ -1127,6 +1128,7 @@ func TestResumeRejectsManualSignoffAfterExistingContentEdit(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	writeSourceRoleMetadata(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
 	consensusPath := filepath.Join(root, protocol.DeckDir, "ideas", "sample", "consensus.md")
 	data, err := os.ReadFile(consensusPath)

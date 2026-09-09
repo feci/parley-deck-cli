@@ -127,6 +127,10 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 		if errors.As(runErr, &integrity) {
 			status, failure = "failed", "telemetry_failure"
 		}
+		var contextFailure *protocolContextError
+		if errors.As(runErr, &contextFailure) {
+			status, failure = "failed", "protocol_context_refused"
+		}
 		outcome := telemetry.Outcome{Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,
 			ArtifactSHA256: observedArtifactHash(l.info.ArtifactPath)}

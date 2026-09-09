@@ -101,15 +101,47 @@ func TestNewDriverImplOpsDedupesReviewers(t *testing.T) {
 	}
 }
 
-// CF6: GoalCheck fails open (advisory) without running any agent when the only available
+// CF6: GoalCheck fails closed without running any agent when the only available
 // checker is the implementer itself (drafter == implementer) — it never runs the
 // implementer as its own goal checker.
 func TestGoalCheckNoIndependentChecker(t *testing.T) {
 	o := newOpsFor(t.TempDir(), t.TempDir(), nil, "claude", nil)
 	o.drafter = "claude" // == implementer
 	ok, detail := o.GoalCheck(context.Background())
-	if !ok {
-		t.Fatalf("goal-check with no independent checker must fail open; got (%v, %q)", ok, detail)
+	if ok {
+		t.Fatalf("goal-check with no independent checker must fail closed; got (%v, %q)", ok, detail)
+	}
+}
+
+func TestGoalCheckFailedOrUnverifiableExecutionCannotPass(t *testing.T) {
+	for name, tc := range map[string]struct {
+		script string
+		want   bool
+	}{
+		"exact pass":         {"printf 'GOAL-CHECK: PASS\\n'", true},
+		"explicit fail":      {"printf 'GOAL-CHECK: FAIL — missing criterion\\n'", false},
+		"ambiguous":          {"printf 'I have not checked this yet\\n'", false},
+		"empty":              {"exit 0", false},
+		"pass prefix":        {"printf 'GOAL-CHECK: PASSING\\n'", false},
+		"reservation":        {"printf 'GOAL-CHECK: PASS — not all scope verified\\n'", false},
+		"nonzero after pass": {"printf 'GOAL-CHECK: PASS\\n'; exit 7", false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := t.TempDir()
+			agent := agents.Discovery{Spec: agents.Spec{ID: "reviewer", Commands: []string{"sh"},
+				HeadlessArgs: []string{"-c", tc.script}, PromptMode: agents.PromptStdin}, Found: true, Path: "/bin/sh"}
+			o := newOpsFor(root, filepath.Join(root, "parley-deck", "ideas", "demo"), []agents.Discovery{agent}, "author", []string{"reviewer"})
+			o.drafter, o.base.RunID = "reviewer", "goal-fixture"
+			ok, detail := o.GoalCheck(context.Background())
+			if ok != tc.want {
+				t.Fatalf("GoalCheck = %v %q, want %v", ok, detail, tc.want)
+			}
+		})
+	}
+	o := newOpsFor(t.TempDir(), t.TempDir(), nil, "author", []string{"missing"})
+	o.drafter = "missing"
+	if ok, detail := o.GoalCheck(context.Background()); ok {
+		t.Fatalf("undiscovered checker passed: %q", detail)
 	}
 }
 

@@ -19,6 +19,9 @@ func TestParseGoalVerdict(t *testing.T) {
 		{`"GOAL-CHECK: PASS"`, "PASS"},                      // CF2: quote-wrapped token
 		{"**GOAL-CHECK:** FAIL", "FAIL"},                    // CF2: bolded marker prefix
 		{"GOAL-CHECK: FAIL\nGOAL-CHECK: RE-EVALUATING", ""}, // CF4: trailing ambiguous resets
+		{"GOAL-CHECK: PASSING", ""},
+		{"GOAL-CHECK: PASS — reservations remain", ""},
+		{"GOAL-CHECK: PASS\nGOAL-CHECK: PASS?", ""},
 	}
 	for _, c := range cases {
 		if got := parseGoalVerdict(c.in); got != c.want {

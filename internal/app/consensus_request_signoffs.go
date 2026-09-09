@@ -187,6 +187,9 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		signoff, validateErr := validateRequestedSignoff(before, after, agent.ID, string(beforeRaw), string(afterRaw))
 		if validateErr != nil {
 			printPartialProgress(stdout, successes)
+			if runErr != nil {
+				return fmt.Errorf("%s signoff attempt failed: %w (artifact validation: %v)", agent.ID, runErr, validateErr)
+			}
 			return validateErr
 		}
 		if runErr != nil {
