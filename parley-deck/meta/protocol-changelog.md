@@ -1,3 +1,34 @@
+## 2026-09-10 — §9 item 1: a `refused` launch is a stop, not a fallback (UNRELEASED)
+Idea: ideas/meta-protocol-change-evidence-first-efficiency/
+Drafted by: claude-1
+Summary: §9 item 1 previously said "Without an attestation, or on `refused`, read all of
+`parley-deck/COOPERATION.md` and record `context_mode=full-fallback`", which read as permission to
+convert a refusal into an ordinary fallback. The item now separates the two outcomes. `full-fallback`
+stays exactly as before: a valid, visible result that reads the live authority in full, records its
+reason, and proceeds. `refused` (unprovable authority, a detected secret) is a **stop** — never emit
+the refused content, never substitute another authority for it (a bundled snapshot, a cached or stale
+copy, a hand-assembled excerpt), never continue that launch on unattested text; resolve at the
+renderer and re-render, or report the blocker. A protocol task launch carrying no attestation is
+unresolved the same way and obtains one from the renderer before the task starts; the read-the-live-
+source fallback applies only where no renderer is reachable. This states FINAL D4's existing rules
+("Missing/unprovable authority blocks rather than substituting a bundled snapshot"; "Detected secrets
+refuse external context emission") at the point an agent acts on them.
+Unchanged: no authority is broadened, no new context mode exists, `full` remains the default, an
+optimized `packet` remains the ratified trial's explicit input, and no
+`meta/packet-applicability.yaml` classification changed (the edit is prose inside the existing
+`### 9.0 Pre-idea readiness check …` block; no heading was touched).
+Mirrored identically into `internal/protocol/defaults/COOPERATION.md` and the parley-deck-skill
+reference copy `skills/parley-deck/references/COOPERATION.md`; `skills/parley-deck/SKILL.md`
+standing instructions carry the matching stop/no-substitution and missing-attestation wording.
+The same commit mirrors the LE-7 close-integrity change below into the skill reference copy,
+superseding that entry's "not yet mirrored into the parley-deck-skill reference copy" status note.
+
+**Status: UNRELEASED.** Deck source, embedded default and skill source only — not published to a
+global core and not in a package release. Checks actually performed: PRIMARY source reads with
+file:line locators. No build, no `go test`, no drift-guard run and no skill add-on hash-manifest
+regeneration — no shell was available in this session; the facilitator regenerates the manifest and
+runs the tests. No signoff, no Phase-6 verdict and no acceptance is claimed.
+
 ## 2026-09-10 — §4 LE-7: a goal-done check can withhold a close, never establish one (UNRELEASED)
 Idea: ideas/meta-protocol-change-evidence-first-efficiency/
 Drafted by: claude-1
