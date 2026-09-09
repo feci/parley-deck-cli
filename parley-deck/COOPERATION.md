@@ -272,7 +272,7 @@ loop-engineering work). The tag is only a reference id; the rule text is what bi
 - **LE-3 — Model diversity.** A reviewer sharing the implementer's model is likelier to rubber-stamp; `require_model_diversity: true` turns an all-shared-model reviewer set into a hard gate.
 - **LE-4 — Verification command.** `checks:` in `00-prompt.md` is the build/test gate the driver runs (as `sh -c`) at Phase 5/8. `checks:` accepts either a scalar command (today's behavior) or an optional named list of `{name, command}` criteria (each expects exit 0); the list form activates the **completion contract** — the driver runs every criterion and writes the per-criterion result table into the `## Validation evidence` section of `IMPLEMENTATION.md` each cycle (overwriting the prior entry; git history preserves earlier cycles), with output secret-scrubbed and truncated.
 - **LE-5 — Loop budgets.** Driver runs are bounded by max steps / wall-clock / cost.
-- **LE-7 / LE-11 — Close-decision integrity.** Before an auto-driven close, a goal-done check verifies FINAL's observable acceptance criteria; reservations or too-few reviewers escalate rather than close.
+- **LE-7 / LE-11 — Close-decision integrity.** Before an auto-driven close, a goal-done check verifies FINAL's observable acceptance criteria; it can only withhold a close, never establish one — a missing, self or unavailable checker, a failed run, or an inconclusive or reserved verdict leaves completion unverified and escalates, and a textual pass never replaces current-tree criterion evidence. Reservations or too-few reviewers escalate rather than close.
 - **LE-10 — Candidate remediation.** Remediation ideas may start as `status: candidate`.
 
 ### Phase 0 — Kickoff
@@ -685,10 +685,17 @@ driver refuses to auto-complete on an `ACCEPT-WITH-RESERVATIONS` triage (reserva
 a human to read them) or with fewer than two independent reviewers. And under
 `auto_implement` or `strict_gate`, before completing, the driver runs a one-shot
 **goal-done check** — a fresh non-implementer agent verifies the `FINAL.md` observable
-acceptance criteria, and a confident fail escalates. The goal-check is defense-in-depth on
-top of the review consensus and fail-open on its own error (a broken or inconclusive
-checker never blocks a review-clean idea). A design-only idea keeps the lighter close
-(conditional rigor).
+acceptance criteria, and a confident fail escalates. **The check can only withhold a
+close, never establish one.** A checker that is missing, is the implementer, or cannot be
+resolved and launched; an execution that fails or exits non-zero; and a verdict that is
+inconclusive or only a pass-with-reservations each leave completion **unverified**, and
+each escalates for a human decision instead of passing. A textual goal-check verdict is
+defense in depth on top of the review consensus and **never substitutes for the
+current-tree independent criterion evidence a close already requires**: a self-issued
+verdict, a stale code tree, a skipped or no-execution report, a missing criterion, or a
+partial original scope cannot close an implementation. The trade is deliberate — an
+unavailable checker now halts a review-clean close until a human restores an independent
+checker or rules on it. A design-only idea keeps the lighter close (conditional rigor).
 
 ### Escalation to user (any phase)
 
