@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 9dfad2e
+head-commit: 8ccd1ea
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -448,3 +448,61 @@ CLI-estimated USD 2.4902795 with Opus 5 and Haiku in the reported model list.
 The earlier changelog statement about Codex's stale comment/aggregation refers
 to the owner's reviewed worktree; e2f9d19 already corrected those in integration.
 Separate skill-reference mirroring and review remain open.
+
+### 2026-09-10 — Kimi second timeout and independent check
+
+Invocation c16ced7b-14d0-4e82-80d6-0f88d035fb36 reached its 30-minute deadline
+(1800.905s, exit 143). Usage/cost remain unknown. The early owner note and all
+partial source are checkpointed on the Kimi branch, not merged. The new
+Codex-owned check in implementation-notes/codex-1-kimi-recovery-check-20260910.md
+records four failing fixture groups and two reproduced false-acceptance paths:
+duplicate envelope fields, and unrelated/unbound independent rerun attribution.
+Earlier missing-verifier, malformed-final-envelope, symlink and mode probes now
+reject correctly. No owner-completion or typed-evidence integration is claimed.
+
+At f84560b the full Go suite passes. Focused runner/app race checks, shared-volume
+context/handoff/replacement checks and runner/app/driver/fsutil vet also pass.
+These results do not cover or certify the unintegrated Kimi checkpoint.
+
+### 2026-09-10 — second Claude review disposition
+
+Claude independently reviewed f84560b by source inspection and preserved its
+verdict in implementation-notes/claude-1-context-review-skill-sync-20260910.md.
+It confirms prior mixed-verdict, signoff-context, refusal-diagnosis, Darwin file
+lifetime and Windows-directory-handle findings are addressed; it agrees that
+readiness/runtime probes need a separately labelled no-protocol-task boundary.
+This is partial source review with no reviewer-executed tests or final signoff.
+
+Codex accepts the opening-delimiter finding and adds refusal for both markers.
+The probe boundary now has negative phase-guard and explicit no-hash telemetry
+fixtures. The API remains an internal trusted-caller boundary; a stronger
+constructor that cannot accept free-form task text is a remaining refinement.
+The spawned interactive TTY path still lacks its own process invocation record,
+as separately identified by the reviewer; the unobserved handoff record is not
+misrepresented as that process. Handoff retention and cross-round source-hash
+reconciliation remain follow-ups, with no full launch-coverage acceptance.
+
+Counter-position to Claude's remaining directory-sync MAJOR: an unsupported
+barrier cannot be reported as satisfied for a durable budget reservation.
+Native and this shared-volume filesystem pass; other filesystems that reject
+directory fsync must stop visibly. Windows has a separate implementation.
+Codex claims internal/fsutil/replace_unix_test.go before editing to demonstrate
+that EINVAL/EOPNOTSUPP and real I/O errors all propagate after conservative
+replacement; no silent unsupported-errno success fallback will be introduced.
+This disposition is not a completed review-consensus signature.
+
+Final local edge-case fixes pass runner/fsutil/protocol packages after source
+synchronization. Full-suite evidence remains tied to f84560b; subsequent changes
+have their relevant package checks, not a fabricated full rerun.
+
+Eight unique real recovery terminal records are reconciled in the sibling
+evaluation delivery's runtime-recovery-invocations.json. Five reported CLI
+estimates total USD 16.125529; three costs are unknown, so the total is unknown.
+This does not satisfy the >=20-attempt gate. No roster change, live-pilot
+treatment, packet optimization rollout, release or global installation occurred.
+
+The full separate skill Node suite reached 397 tests: 395 passed and two
+packet-context tests failed on obsolete wording assertions. The owner is
+correcting those tests and clarifying bundled snapshot use as local orientation
+only, not authority for a protocol-task launch. No passing skill-suite claim
+is made before that correction is executed and checked.
