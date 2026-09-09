@@ -1,3 +1,38 @@
+## 2026-09-10 — §4 LE-7: a goal-done check can withhold a close, never establish one (UNRELEASED)
+Idea: ideas/meta-protocol-change-evidence-first-efficiency/
+Drafted by: claude-1
+Summary: The §4.0.1 LE-7/LE-11 line and the Phase-8 "Close-decision integrity" paragraph no longer
+say the goal-done check is "fail-open on its own error (a broken or inconclusive checker never
+blocks a review-clean idea)". A checker that is missing, is the implementer, or cannot be resolved
+and launched; an execution that fails or exits non-zero; and a verdict that is inconclusive or only
+a pass-with-reservations each now leave completion **unverified** and escalate for a human decision.
+The paragraph also states what the check is NOT: a textual verdict is defense in depth on top of the
+review consensus and never substitutes for the current-tree independent criterion evidence a close
+already requires (this idea's FINAL D3 — a self verdict, a stale code tree, a skipped/no-execution
+report, a missing criterion or a partial original scope cannot close an implementation).
+Unchanged: the check still fires only under `auto_implement` or `strict_gate`; the
+`ACCEPT-WITH-RESERVATIONS` and fewer-than-two-independent-reviewer refusals stand as written; a
+design-only idea keeps the lighter close. No §4.0 track cell, quorum rule, signoff rule or
+`meta/packet-applicability.yaml` classification changed. Mirrored byte-identically into
+`internal/protocol/defaults/COOPERATION.md` (the drift guard requires both copies to match).
+
+**Why:** the in-tree driver already fails closed on exactly these conditions
+(`internal/app/driver_impl.go` `GoalCheck`, whose `false` returns `internal/driver/impl.go` turns
+into `ActionEscalated`), so the protocol text in force asserted the opposite of the code. This entry
+carries the §7 text change that code needed; it does not certify the code. Known remaining gaps,
+owned elsewhere: a stale in-tree comment at `internal/driver/impl.go` still says "fail-open inside
+GoalCheck", and the verdict-aggregation correction is in progress on the codex-1 slice.
+
+**Ratification:** the design is accepted in this idea's `consensus.md` (codex-1, claude-1, hermes-1,
+kimi-1) and D3 states the rule; this is the Phase 5 protocol-text change on the claude-1 slice,
+pending independent review. No signoff, no overall acceptance and no Phase-6 verdict is claimed.
+
+**Status: UNRELEASED.** Deck source plus embedded default only — not published to a global core, not
+in a package release, and not yet mirrored into the parley-deck-skill reference copy (separate
+worktree, outside this slice). Checks actually performed: PRIMARY source reads with file:line
+locators and a line-by-line comparison confirming both protocol copies now carry identical text. No
+build, no `go test`, and no drift-guard run — no shell was available in this session.
+
 ## 2026-09-05 — §9 item 1: launch context comes from the shared packet renderer with attestation
 Idea: ideas/meta-protocol-change-evidence-first-efficiency/
 Drafted by: claude-1
