@@ -86,6 +86,7 @@ func setupRunnerIdea(t *testing.T) (string, protocol.IdeaStatus, store.Store) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Hardening test task", []string{"fake"})
 	if err != nil {
 		t.Fatal(err)

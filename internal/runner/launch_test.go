@@ -16,6 +16,7 @@ import (
 func TestTrackedCommandForRunAndCombinedOutput(t *testing.T) {
 	for _, combined := range []bool{false, true} {
 		root := t.TempDir()
+		writeLaunchProtocol(t, root)
 		cmd, cleanup, err := trackedCommandFor(context.Background(), root, telemetryShell("printf 'hello'; printf 'world' >&2", false), "prompt")
 		if err != nil {
 			t.Fatal(err)
@@ -45,6 +46,7 @@ func TestTrackedCommandForRunAndCombinedOutput(t *testing.T) {
 
 func TestTrackedCommandForSeparateStartWait(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	cmd, cleanup, err := trackedCommandFor(context.Background(), root, telemetryShell("cat", false), "input")
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +63,7 @@ func TestTrackedCommandForSeparateStartWait(t *testing.T) {
 	if err := cmd.Wait(); err != nil {
 		t.Fatal(err)
 	}
-	if output.String() != "input" {
+	if !strings.HasSuffix(output.String(), "Launch task:\ninput") || !strings.Contains(output.String(), "Mandatory source obligation.") {
 		t.Fatalf("stdin changed: %q", output.String())
 	}
 	if len(terminalRecords(t, root)) != 1 {
@@ -71,6 +73,7 @@ func TestTrackedCommandForSeparateStartWait(t *testing.T) {
 
 func TestTrackedCommandForTimeoutKillsChildGroup(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 	defer cancel()
 	cmd, cleanup, err := trackedCommandFor(ctx, root,
@@ -94,6 +97,7 @@ func TestTrackedCommandForTimeoutKillsChildGroup(t *testing.T) {
 
 func TestTrackedCommandForStartEvidenceFailureReaps(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	ctx := WithLaunchInfo(context.Background(), LaunchInfo{Observe: func(r telemetry.Record) {
 		if r.Type == "invocation.requested" {
 			if err := os.Mkdir(filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, "started.json"), 0o700); err != nil {
@@ -121,6 +125,7 @@ func TestTrackedCommandForStartEvidenceFailureReaps(t *testing.T) {
 func TestTrackedCommandForAbandonedAndFailedStart(t *testing.T) {
 	for _, start := range []bool{false, true} {
 		root := t.TempDir()
+		writeLaunchProtocol(t, root)
 		agent := telemetryShell("exit 0", false)
 		agent.Path = filepath.Join(root, "does-not-exist")
 		cmd, cleanup, err := trackedCommandFor(context.Background(), root, agent, "prompt")

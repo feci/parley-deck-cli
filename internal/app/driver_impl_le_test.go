@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 )
@@ -128,6 +129,10 @@ func TestGoalCheckFailedOrUnverifiableExecutionCannotPass(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			root := t.TempDir()
+			if err := protocol.InitWorkspace(root); err != nil {
+				t.Fatal(err)
+			}
+			declareAppTestSource(t, root)
 			agent := agents.Discovery{Spec: agents.Spec{ID: "reviewer", Commands: []string{"sh"},
 				HeadlessArgs: []string{"-c", tc.script}, PromptMode: agents.PromptStdin}, Found: true, Path: "/bin/sh"}
 			o := newOpsFor(root, filepath.Join(root, "parley-deck", "ideas", "demo"), []agents.Discovery{agent}, "author", []string{"reviewer"})

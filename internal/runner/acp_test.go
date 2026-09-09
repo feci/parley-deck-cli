@@ -23,6 +23,7 @@ func TestRunRoundOneRoutesACPAgent(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "ACP runner test", []string{"fake-acp"})
 	if err != nil {
 		t.Fatal(err)
@@ -101,6 +102,7 @@ func TestRunRoundOneACPAgentMissingArgsFails(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "ACP missing args", []string{"misconfigured"})
 	if err != nil {
 		t.Fatal(err)
@@ -192,6 +194,9 @@ func TestFakeACPAgentHelper(t *testing.T) {
 				if block.Type == "text" {
 					text += block.Text
 				}
+			}
+			if !strings.Contains(text, "Protocol context attestation:") || strings.Count(text, "<parley-protocol>") != 1 {
+				t.Fatal("ACP task did not receive exactly one attested protocol")
 			}
 			outRe := regexp.MustCompile(`(?m)^- Create exactly this file and no other protocol artifact: (.+)$`)
 			outMatch := outRe.FindStringSubmatch(text)

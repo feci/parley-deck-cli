@@ -77,6 +77,7 @@ func TestDurableKillEndToEndRealProcess(t *testing.T) {
 		t.Skip("durable kill is unsupported on windows")
 	}
 	runDir := t.TempDir()
+	writeLaunchProtocol(t, runDir)
 	st := store.New(runDir)
 	agentDir := filepath.Join(runDir, "agents", "sleeper")
 	if err := os.MkdirAll(agentDir, 0o755); err != nil {

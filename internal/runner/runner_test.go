@@ -105,6 +105,7 @@ func TestRunRoundOneCreatesArtifactWithHeadlessAgent(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Runner test task", []string{"fake"})
 	if err != nil {
 		t.Fatal(err)
@@ -172,6 +173,7 @@ func TestRunRoundOneAsyncClosesWithResults(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Async runner test task", []string{"fake"})
 	if err != nil {
 		t.Fatal(err)
@@ -336,6 +338,7 @@ func TestRunRoundOneIndexWriteFailureIsWarning(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Index warning task", []string{"fake"})
 	if err != nil {
 		t.Fatal(err)

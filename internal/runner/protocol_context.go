@@ -1,12 +1,17 @@
 package runner
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strconv"
 	"strings"
 
+	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/config"
+	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/protocolcore"
 	"parley-deck-cli/internal/protocolpacket"
 	"parley-deck-cli/internal/telemetry"
@@ -35,6 +40,10 @@ func prepareProtocolPrompt(root, prompt string, info LaunchInfo) (string, teleme
 		phase = 0
 	case "round-01":
 		phase = 1
+	case "consensus":
+		phase = 3
+	case "final":
+		phase = 4
 	case "implementation":
 		phase = 5
 	case "review":
@@ -43,9 +52,27 @@ func prepareProtocolPrompt(root, prompt string, info LaunchInfo) (string, teleme
 		phase = 7
 	case "fixup":
 		phase = 8
+	default:
+		if strings.HasPrefix(info.Phase, "round-") {
+			if round, err := strconv.Atoi(strings.TrimPrefix(info.Phase, "round-")); err == nil && round > 0 && info.Phase == roundLabel(round) {
+				phase = 2
+				if round == 1 {
+					phase = 1
+				}
+			}
+		}
+	}
+	track := "unknown"
+	if info.Idea != "" && info.Idea != "." && info.Idea != ".." && filepath.Base(info.Idea) == info.Idea && !strings.ContainsAny(info.Idea, `/\\`) {
+		if fields, err := protocol.ReadFrontmatter(filepath.Join(root, protocol.DeckDir, "ideas", info.Idea, "00-prompt.md")); err == nil {
+			switch fields["track"] {
+			case "fast", "standard", "deliberation":
+				track = fields["track"]
+			}
+		}
 	}
 	c, err := protocolpacket.Render(root, protocolcore.StoreAt(home), protocolpacket.Request{
-		Phase: phase, Track: "unknown", IdeaSlug: info.Idea,
+		Phase: phase, Track: track, IdeaSlug: info.Idea,
 	})
 	if err != nil {
 		if errors.Is(err, protocolpacket.ErrAuthority) {
@@ -82,4 +109,35 @@ func prepareProtocolPrompt(root, prompt string, info LaunchInfo) (string, teleme
 		ctx.FallbackReason = telemetry.String("renderer-fallback")
 	}
 	return fmt.Sprintf("Protocol context attestation: %s\nShadow packet audit: %s\nThis is an unapplied diagnostic only. Shadow included/omitted block counts do not describe the supplied full protocol.\n\nThe following is the resolved live protocol, supplied verbatim for this launch.\n<parley-protocol>\n%s\n</parley-protocol>\n\nLaunch task:\n%s", attestation, shadow, c.Body, prompt), ctx, nil
+}
+
+// beginProtocolLaunch owns attestation at each actual launch boundary. Callers
+// cannot inject a precomputed Context to certify different prompt bytes.
+func beginProtocolLaunch(ctx context.Context, root, runID string, agent agents.Discovery, prompt string) (context.Context, string, *launchEvidence, error) {
+	info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
+	prepared, protocolContext, contextErr := prepareProtocolPrompt(root, prompt, info)
+	info.Context = protocolContext
+	ctx = WithLaunchInfo(ctx, info)
+	evidence, err := beginLaunch(ctx, root, runID, agent)
+	if err != nil {
+		return ctx, "", nil, err
+	}
+	if contextErr != nil {
+		if err := evidence.finish(contextErr, ctx.Err(), nil); err != nil {
+			return ctx, "", nil, err
+		}
+		return ctx, "", nil, contextErr
+	}
+	return ctx, prepared, evidence, nil
+}
+
+func protocolLaunchPhase(opts Options) string {
+	if opts.Phase == "" || opts.Phase == "deliberation" {
+		round := opts.Round
+		if round < 1 {
+			round = 1
+		}
+		return roundLabel(round)
+	}
+	return opts.Phase
 }

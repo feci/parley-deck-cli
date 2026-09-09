@@ -375,6 +375,7 @@ func TestRunRecordsResolvedRuntime(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	localConfig := filepath.Join(root, protocol.DeckDir, "agents.local.toml")
 	if err := os.WriteFile(localConfig, []byte(`
 [agents.codex]
@@ -983,6 +984,7 @@ func TestConsensusRequestSignoffsHappyPath(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha", "beta"}, false, nil)
 
 	bin := t.TempDir()
@@ -1211,6 +1213,7 @@ func TestConsensusRequestSignoffsReviewPath(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha"}, true, nil)
 
 	bin := t.TempDir()
@@ -1243,6 +1246,7 @@ func TestConsensusRequestSignoffsNonZeroAfterAppendFails(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
 
 	bin := t.TempDir()
@@ -1271,6 +1275,7 @@ func TestConsensusRequestSignoffsBlockStops(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
 
 	bin := t.TempDir()
@@ -1299,6 +1304,7 @@ func TestConsensusRequestSignoffsRejectsForgedExtraSignoff(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha", "beta"}, false, nil)
 
 	bin := t.TempDir()
@@ -1320,6 +1326,7 @@ func TestConsensusRequestSignoffsRejectsExistingContentEdit(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareAppTestSource(t, root)
 	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
 
 	bin := t.TempDir()
@@ -1717,6 +1724,17 @@ rm -f "$out.bak"
 exit 0
 `
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func declareAppTestSource(t *testing.T, root string) {
+	t.Helper()
+	meta := filepath.Join(root, "parley-deck", "meta")
+	if err := os.MkdirAll(meta, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(meta, "version.json"), []byte(`{"protocolRole":"source"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }

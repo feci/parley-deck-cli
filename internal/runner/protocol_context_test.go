@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"parley-deck-cli/internal/protocolpacket"
+	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 )
 
 func writeLaunchProtocol(t *testing.T, root string) string {
@@ -106,5 +108,76 @@ func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
 				t.Fatal("refused protocol launched a child")
 			}
 		})
+	}
+}
+
+// declareTestLaunchSource gives synthetic fixture protocols explicit authority.
+// Production resolution never falls back to this test-only declaration.
+func declareTestLaunchSource(t *testing.T, root string) {
+	t.Helper()
+	meta := filepath.Join(root, "parley-deck", "meta")
+	if err := os.MkdirAll(meta, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(meta, "version.json"), []byte(`{"protocolRole":"source"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestProtocolTaskBoundariesRefuseWithoutAuthority(t *testing.T) {
+	for _, boundary := range []string{"command", "exec", "acp"} {
+		t.Run(boundary, func(t *testing.T) {
+			root := t.TempDir()
+			agent := telemetryShell("touch spawned", false)
+			ctx := WithLaunchInfo(context.Background(), LaunchInfo{Context: telemetry.Context{Mode: "full", SourceSHA256: telemetry.String("forged")}})
+			var err error
+			switch boundary {
+			case "command":
+				var cleanup func()
+				_, cleanup, err = CommandFor(ctx, root, agent, "task")
+				if cleanup != nil {
+					cleanup()
+				}
+			case "exec":
+				_, err = execAgentProcess(ctx, root, "test", agent.ID, "", agent, "task", filepath.Join(root, "stdout"), filepath.Join(root, "stderr"), nil, nil, SupervisionConfig{}, supervisionHooks{})
+			case "acp":
+				result := runACPAgent(ctx, Options{Root: root, RunID: "test", Store: store.New(filepath.Join(root, "events"))}, agent, Result{}, "target", "stdout", "stderr", "task", 1)
+				if result.ExitError == "" {
+					t.Fatal("ACP refusal missing")
+				}
+			}
+			if boundary != "acp" && err == nil {
+				t.Fatal("missing authority launched")
+			}
+			records := terminalRecords(t, root)
+			if len(records) != 1 || records[0].StartedAt != nil || records[0].Metadata.Context.Mode != "refused" {
+				t.Fatalf("bad refused attempt: %+v", records)
+			}
+			if _, err := os.Stat(filepath.Join(root, "spawned")); !os.IsNotExist(err) {
+				t.Fatal("refused attempt spawned child")
+			}
+		})
+	}
+}
+
+func TestSupervisedExecPassesCurrentProtocolBytes(t *testing.T) {
+	root := t.TempDir()
+	path := writeLaunchProtocol(t, root)
+	source, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdout := filepath.Join(root, "stdout")
+	_, err = execAgentProcess(context.Background(), root, "test", "test-1", "", telemetryShell("cat", false), "task", stdout, filepath.Join(root, "stderr"), nil, nil, SupervisionConfig{}, supervisionHooks{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := os.ReadFile(stdout)
+	if err != nil || !strings.Contains(string(body), string(source)) || strings.Count(string(body), "<parley-protocol>") != 1 {
+		t.Fatalf("protocol bytes lost or duplicated: %v", err)
+	}
+	records := terminalRecords(t, root)
+	if len(records) != 1 || records[0].Metadata.Context.SourceSHA256 == nil || *records[0].Metadata.Context.SourceSHA256 != protocolpacket.Hash(string(source)) {
+		t.Fatalf("wrong attestation: %+v", records)
 	}
 }

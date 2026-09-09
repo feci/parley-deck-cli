@@ -845,7 +845,7 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	defer cancel()
 	probeCtx = runner.WithLaunchInfo(probeCtx, runner.LaunchInfo{Phase: "preflight"})
 
-	cmd, cleanup, err := runner.CommandFor(probeCtx, root, agent, pongPrompt)
+	cmd, cleanup, err := runner.ProbeCommandFor(probeCtx, root, agent, pongPrompt)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -859,9 +859,6 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	var errOut bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &errOut
-	if agent.PromptMode == agents.PromptStdin {
-		cmd.Stdin = strings.NewReader(pongPrompt)
-	}
 
 	started := time.Now()
 	if err := cmd.Start(); err != nil {

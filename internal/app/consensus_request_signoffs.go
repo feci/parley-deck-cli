@@ -415,7 +415,8 @@ type signoffRunResult struct {
 }
 
 func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
-	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Phase: "signoff",
+	idea, phase := signoffContext(consensusPath)
+	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Idea: idea, Phase: phase,
 		ArtifactPath: consensusPath, Store: store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))})
 	switch agents.LaunchModeOrDefault(agent.LaunchMode) {
 	case agents.LaunchHeadless:
@@ -447,9 +448,6 @@ func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.D
 	cmd.Dir = rootAbs
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	if agent.PromptMode == agents.PromptStdin {
-		cmd.Stdin = strings.NewReader(prompt)
-	}
 	if err := cmd.Run(); err != nil {
 		if agentCtx.Err() != nil {
 			return agentCtx.Err()
@@ -540,9 +538,12 @@ func appendSignoffEvent(rootAbs, runID, eventType string, data map[string]any) e
 }
 
 func writeSignoffHandoff(rootAbs, runID string, agent agents.Discovery, prompt, consensusPath string) (runner.HandoffPacket, error) {
+	idea, phase := signoffContext(consensusPath)
 	return runner.WriteHandoffPacket(runner.HandoffOptions{
 		Root:               rootAbs,
 		RunID:              runID,
+		Idea:               idea,
+		Phase:              phase,
 		Agent:              agent,
 		Prompt:             prompt,
 		TargetPath:         consensusPath,
@@ -853,4 +854,14 @@ func yesNo(value bool) string {
 		return "yes"
 	}
 	return "no"
+}
+
+func signoffContext(path string) (idea, phase string) {
+	dir := filepath.Dir(path)
+	phase = "consensus"
+	if filepath.Base(dir) == "review" {
+		dir = filepath.Dir(dir)
+		phase = "review-consensus"
+	}
+	return filepath.Base(dir), phase
 }

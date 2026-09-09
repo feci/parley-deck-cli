@@ -46,3 +46,26 @@ func TestHandoffWithoutAuthorityPreservesRefusal(t *testing.T) {
 		t.Fatal("refused handoff emitted a prompt")
 	}
 }
+
+func TestHandoffAttemptsKeepDistinctPromptBytes(t *testing.T) {
+	root := t.TempDir()
+	writeLaunchProtocol(t, root)
+	opts := HandoffOptions{Root: root, RunID: "same-run", Agent: agents.Discovery{Spec: agents.Spec{ID: "human-1", LaunchMode: agents.LaunchManual}}, Prompt: "first-task"}
+	first, err := WriteHandoffPacket(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(first.PromptPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	opts.Prompt = "second-task"
+	second, err := WriteHandoffPacket(opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(first.PromptPath)
+	if err != nil || string(before) != string(after) || first.PromptPath == second.PromptPath {
+		t.Fatalf("earlier handoff replaced: %v", err)
+	}
+}

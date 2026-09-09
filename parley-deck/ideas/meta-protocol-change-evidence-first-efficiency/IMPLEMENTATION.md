@@ -398,3 +398,53 @@ open. The review's redundant cursor switch is harmless and deferred as a NIT.
 Runtime-review corrections above pass app, driver, runner and fsutil package
 suites (app 70.646s; runner 18.995s). The regression includes FAIL followed by
 a PASS template, ambiguous-before-PASS, and protocol envelope collision refusal.
+
+### Remaining launch-context integration plan
+
+Codex will apply the same renderer at the actual tracked-command, supervised
+exec and ACP boundaries, removing duplicate manual preparation. Every boundary
+will overwrite caller-supplied context attestation and persist refusals before
+returning without process start. App call sites must not replace the prepared
+stdin afterward. Test fixtures will explicitly supply synthetic source authority;
+missing authority and malicious source remain separate rejection cases. This
+also covers round/review/implementation/fixup/steer/consult/headless-signoff
+execution through their existing shared launch primitives. No optimized packet
+launch or experiment result is introduced. Preflight CommandFor glue remains
+Codex's previously recorded serialized allocation; Hermes source/tests stay owned.
+
+Capability/readiness probes are distinguished from protocol tasks: their bounded
+PONG/runtime-artifact instruction must work before a deck or installed core
+exists. They use an explicit probe-only instrumented boundary, restricted to
+preflight/runtime-probe phases, which replaces caller attestation with
+context_mode=probe-only and no source/body hashes. This interpretation of D4
+keeps every protocol-task builder on the renderer; probe-only is not a full
+context claim. Independent review of this distinction remains required.
+
+### 2026-09-10 — protocol-task launch wiring validated locally
+
+The tracked-command, supervised-exec and ACP boundaries now resolve and attest
+full live protocol bytes per actual attempt. This covers headless signoff,
+round/cross-review, implementation/review/fixup, steer and consult/goal-check
+through existing callers. Caller-supplied attestation is overwritten; direct
+stdin overwrites were removed at app call sites. ACP's real child fixture checks
+that one attested protocol reaches the prompt. Negative command/exec/ACP cases
+record refusal with no process start even if the caller supplies a forged hash.
+
+Round numbers now map to Phase 1/2; design/review consensus signoffs and handoffs
+carry Phase 3/7 and idea identity. Explicit canonical kickoff tracks populate
+shadow metadata; absent/unknown values remain unknown. Consult/steer with no
+conceptual phase remains unknown rather than guessing applicability.
+
+Handoffs publish unique per-invocation prompt names through synchronized staging
+and replacement; later attempts cannot overwrite an earlier attested prompt.
+The stable human instructions use atomic replacement. The regression verifies
+both retained attempts. Runner/app suites pass (19.548s / 72.766s). These are
+facilitator-run tests, not independent final acceptance.
+
+Claude's protocol-text fix at eba3a0a is integrated; the live/default close rule
+now matches D3. Its protocol/packet suites pass under facilitator execution.
+The invocation 2ebe2909-6446-4b67-85ed-c319f391d241 exited 0 after 306.630s,
+CLI-estimated USD 2.4902795 with Opus 5 and Haiku in the reported model list.
+The earlier changelog statement about Codex's stale comment/aggregation refers
+to the owner's reviewed worktree; e2f9d19 already corrected those in integration.
+Separate skill-reference mirroring and review remain open.
