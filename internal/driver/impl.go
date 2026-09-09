@@ -268,7 +268,7 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		}
 		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh
 		// non-implementer agent checks the FINAL.md acceptance criteria. A confident FAIL
-		// escalates; a checker error is advisory (fail-open inside GoalCheck).
+		// or unverified execution escalates; textual PASS cannot replace criterion evidence.
 		if d.cfg.AutoImplement || d.cfg.StrictGate {
 			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))

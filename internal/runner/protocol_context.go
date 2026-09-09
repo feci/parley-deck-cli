@@ -54,10 +54,16 @@ func prepareProtocolPrompt(root, prompt string, info LaunchInfo) (string, teleme
 		return refuse("context-publication-failed")
 	}
 	if c.ContextMode == protocolpacket.ModeRefused {
+		if reason := telemetry.SafeLabel(c.FallbackReason); reason != nil {
+			return refuse(*reason)
+		}
 		return refuse("renderer-refused")
 	}
 	if c.Body == "" || protocolpacket.Hash(c.Body) != c.PacketSHA256 {
 		return refuse("context-hash-mismatch")
+	}
+	if strings.Contains(c.Body, "</parley-protocol>") {
+		return refuse("protocol-envelope-collision")
 	}
 	attestation, err := json.Marshal(c.Attestation)
 	if err != nil {
@@ -75,5 +81,5 @@ func prepareProtocolPrompt(root, prompt string, info LaunchInfo) (string, teleme
 	if c.FallbackReason != "" && ctx.FallbackReason == nil {
 		ctx.FallbackReason = telemetry.String("renderer-fallback")
 	}
-	return fmt.Sprintf("Protocol context attestation: %s\nShadow packet audit: %s\n\nThe following is the resolved live protocol, supplied verbatim for this launch.\n<parley-protocol>\n%s\n</parley-protocol>\n\nLaunch task:\n%s", attestation, shadow, c.Body, prompt), ctx, nil
+	return fmt.Sprintf("Protocol context attestation: %s\nShadow packet audit: %s\nThis is an unapplied diagnostic only. Shadow included/omitted block counts do not describe the supplied full protocol.\n\nThe following is the resolved live protocol, supplied verbatim for this launch.\n<parley-protocol>\n%s\n</parley-protocol>\n\nLaunch task:\n%s", attestation, shadow, c.Body, prompt), ctx, nil
 }

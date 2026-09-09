@@ -416,10 +416,11 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	}
 }
 
-// parseGoalVerdict extracts the last GOAL-CHECK verdict from a goal-check answer
-// (case-insensitive). Returns "PASS", "FAIL", or "" (ambiguous / none).
+// parseGoalVerdict accepts PASS only when every stated verdict is an exact PASS.
+// A failure is sticky; any unknown verdict makes a pass ambiguous. A trailing
+// format example therefore cannot erase an earlier failure or reservation.
 func parseGoalVerdict(answer string) string {
-	verdict := ""
+	seenPass, seenFail, ambiguous := false, false, false
 	for _, line := range strings.Split(answer, "\n") {
 		t := strings.ToUpper(strings.TrimSpace(line))
 		// CF2: strip leading markdown / quote wrappers (heading, bold, blockquote,
@@ -429,22 +430,26 @@ func parseGoalVerdict(answer string) string {
 		if !strings.HasPrefix(t, "GOAL-CHECK:") {
 			continue
 		}
-		// CF4: reset on every matched verdict line so the LAST verdict wins — a
-		// trailing ambiguous line (e.g. "GOAL-CHECK: RE-EVALUATING") must clear a
-		// prior PASS/FAIL back to ambiguous rather than leaving it stuck.
-		verdict = ""
 		rest := strings.TrimSpace(strings.TrimPrefix(t, "GOAL-CHECK:"))
 		// CF2: a bolded/quoted marker ("**GOAL-CHECK:** FAIL") leaves "** FAIL" in
 		// rest — strip the leading wrapper run before the PASS/FAIL prefix check.
 		rest = strings.Trim(rest, "*`\"'_ ")
 		switch {
 		case rest == "PASS":
-			verdict = "PASS"
+			seenPass = true
 		case strings.HasPrefix(rest, "FAIL"):
-			verdict = "FAIL"
+			seenFail = true
+		default:
+			ambiguous = true
 		}
 	}
-	return verdict
+	if seenFail {
+		return "FAIL"
+	}
+	if seenPass && !ambiguous {
+		return "PASS"
+	}
+	return ""
 }
 
 func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []string) error {

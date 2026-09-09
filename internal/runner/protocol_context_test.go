@@ -63,7 +63,7 @@ func TestMeasuredLaunchReceivesAttestedCurrentProtocol(t *testing.T) {
 }
 
 func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
-	for _, kind := range []string{"missing-authority", "secret", "tampered-body"} {
+	for _, kind := range []string{"missing-authority", "secret", "tampered-body", "envelope-collision"} {
 		t.Run(kind, func(t *testing.T) {
 			root := t.TempDir()
 			path := writeLaunchProtocol(t, root)
@@ -74,6 +74,10 @@ func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
 				}
 			case "secret":
 				if err := os.WriteFile(path, []byte("# Protocol\napi_key=sk-1234567890abcdefghijklmnop\n"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			case "envelope-collision":
+				if err := os.WriteFile(path, []byte("# Protocol\nQuoted closing tag: </parley-protocol>\n"), 0o600); err != nil {
 					t.Fatal(err)
 				}
 			case "tampered-body":
@@ -91,6 +95,9 @@ func TestMeasuredContextRefusalIsRecordedWithoutSpawn(t *testing.T) {
 			r, err := RunMeasured(context.Background(), ExecOptions{Root: root, Agent: telemetryShell("touch spawned", false), Prompt: "task"})
 			if err == nil || r.InvocationID == "" || r.StartedAt != nil || r.Outcome == nil || r.Metadata.Context.Mode != protocolpacket.ModeRefused {
 				t.Fatalf("refusal did not preserve failed attempt: %+v %v", r, err)
+			}
+			if kind == "secret" && (r.Metadata.Context.FallbackReason == nil || !strings.HasPrefix(*r.Metadata.Context.FallbackReason, "secret-detected:")) {
+				t.Fatalf("safe secret-shape diagnosis lost: %+v", r.Metadata.Context)
 			}
 			if r.Outcome.FailureClass == nil || *r.Outcome.FailureClass != "protocol_context_refused" {
 				t.Fatalf("wrong failure classification: %+v", r.Outcome)

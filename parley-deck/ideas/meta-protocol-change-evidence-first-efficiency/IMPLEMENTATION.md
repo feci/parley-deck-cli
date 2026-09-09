@@ -370,3 +370,31 @@ Review against every AC in FINAL.md. Do not count a self-authored pass, an
 unexecuted task, unknown usage, stale tree or missing scope as success. Reviewers
 must exclude their own slice from independent verdicts and verify another
 owner's work directly. Correlated agreement is not a correctness result.
+
+### 2026-09-10 — independent runtime review disposition in progress
+
+Claude's authored partial review of 8b11f1d is preserved verbatim in
+implementation-notes/claude-1-runtime-review-20260910.md (invocation
+48b96bfa-6584-43e8-8c8e-8070eca0bc1e, process exited 0, 438.381 seconds,
+CLI-estimated USD 3.3188955; reported model list includes Opus 5 and Haiku).
+The reviewer inspected source without executing tests; this is not Phase-6
+acceptance. The newer 342fcf0 Windows replacement addresses its directory-handle
+portability concern in code; Windows runtime validation remains open. POSIX
+directory-flush errors remain fatal because ignoring them would weaken durable
+reservation semantics. No universal filesystem durability is claimed.
+
+Codex is correcting the mixed-verdict/trailing-template false PASS, preserving
+safe refusal classes, guarding protocol delimiter collisions, labelling shadow
+counts as unapplied diagnostics, and retaining the file lifetime during Darwin
+fsync fallback. Claude is updating the owned live/embedded LE-7 protocol text
+under already-ratified D3; the old fail-open sentence is a temporary unresolved
+implementation inconsistency, not an accepted deviation from FINAL. Strict or
+auto ideas with unverified goal checks intentionally remain open under D3.
+
+Partial phase mapping, headless-signoff context asymmetry and other launch
+surfaces still need integration. Handoff prompt publication remains separately
+open. The review's redundant cursor switch is harmless and deferred as a NIT.
+
+Runtime-review corrections above pass app, driver, runner and fsutil package
+suites (app 70.646s; runner 18.995s). The regression includes FAIL followed by
+a PASS template, ambiguous-before-PASS, and protocol envelope collision refusal.
