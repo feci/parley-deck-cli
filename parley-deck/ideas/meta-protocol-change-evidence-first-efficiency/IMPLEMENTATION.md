@@ -13,10 +13,15 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 
 ## Summary of work
 
-Design is merged at 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c with all four
-owned signatures. Production implementation begins here. No production feature,
-live pilot, packet measurement, independent final acceptance or deployment is
-claimed complete. The frozen historical evaluation is preserved.
+The signed design is merged at 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c.
+Implementation is partial on draft PR #73: measured protocol-task launch
+boundaries, live/full context attestation, cursor persistence, fail-closed goal
+checking, packet publication and source-instruction updates are integrated and
+locally tested. Claude's partial independent source reviews are preserved with
+their dispositions. Kimi's timed-out evidence checkpoint remains unintegrated
+after failing independent checks. The exact live experiments, complete launch
+coverage/shared budgets and full independent acceptance remain open. The frozen
+historical evaluation is unchanged.
 
 ## Implementation plan / checklist
 
@@ -142,12 +147,19 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Provision the three claimed CLI worktrees and the sibling skill worktree.
-2. Implement disjoint slices and collect owned handoffs with actual test results.
-3. Integrate and independently review each slice; implement agreed fixes.
-4. Build an uninstalled binary, verify real telemetry, freeze and run experiments.
-5. Populate/verify the single HTML, complete independent acceptance and the
-   protocol review cycle before merging the implementation PR.
+1. Complete Kimi's evidence correction from preserved checkpoint 7f2676f. Fix
+   independently reproduced unrelated-rerun/duplicate-field acceptance and the
+   four failing fixture groups before integration; preserve owner artifacts.
+2. Complete shared per-launch/per-action budget reservation, persistent loop
+   limits, remaining readiness validation and interactive TTY process telemetry.
+3. Reconcile at least 20 actual attempts across launch surfaces. The recovery
+   inventory currently has nine terminal attempts, three with unknown cost.
+4. Obtain the pending historical Hermes-to-Zcode decision and pilot amendment
+   direction. Freeze exact tasks/resource ceilings before either experiment;
+   preserve the signed packet trial and full-six design until lawfully amended.
+5. Finish independent per-slice review and the full Phase-6/7/8 review/signoff
+   cycle. Keep PR #73 and the source-skill changes in draft; no final merge,
+   global installation, immutable-core publication or release is authorized.
 
 ## Recovery / resume
 
@@ -355,10 +367,12 @@ or network-filesystem durability.
 
 ## Outcomes & surprises
 
-Pending production implementation. The separate pilot harness has real passing
-tests on Python 3.9 and 3.11 and independent reviewer reruns, but no live treatment
-has been executed. Claude's prior quota failure is preserved; his post-reset
-signature succeeded on the same requested model without a route change.
+Recovery resumed actual implementation and found additional false acceptance
+paths through independent checks. Integrated changes have the recorded local
+validation below; the Kimi slice is explicitly unintegrated. The separate pilot
+harness passes on Python 3.9 and 3.11 with independent reviewer reruns, but no live
+treatment has executed. Historical quota failures, timed-out attempts and unknown
+usage remain preserved; no missing execution is reclassified as success.
 
 ## Validation evidence
 
@@ -506,3 +520,31 @@ packet-context tests failed on obsolete wording assertions. The owner is
 correcting those tests and clarifying bundled snapshot use as local orientation
 only, not authority for a protocol-task launch. No passing skill-suite claim
 is made before that correction is executed and checked.
+
+### 2026-09-10 — recovery checkpoint ready to resume
+
+All recovery participant invocations have terminated. The final Claude owner
+follow-up 3e0c01f4-bf68-4422-8df4-ade47c2efe26 completed in 161.221s with
+CLI-estimated USD 1.3832965; reported models include Opus 5 and Haiku. The
+reconciled recovery inventory now has nine unique terminal attempts, six known
+estimates totaling USD 17.5088255 and three unknown costs; the overall total
+remains unknown. No >=20-attempt gate is claimed.
+
+The skill source at a5e9fbb is committed and available as draft PR
+https://github.com/feci/parley-deck-skill/pull/8, linked to CLI draft PR #73.
+Full npm test passes: 397 Node tests, 54 Python tests on Python 3.14, and all
+add-on manifest checks. Its six targeted context tests also pass. The earlier
+wording failures are corrected by the owner, with the authored handoff preserved.
+Bundled snapshots are now explicitly local orientation only, not launch authority.
+No globally installed source was changed and neither PR is merged.
+
+The offline report was rebuilt with the final recovery inventory and actual
+partial outcomes; its ten source/provenance tests pass. Desktop/mobile browser
+checks on the recovery report show working section controls, no horizontal
+page overflow, visible unrun pilot status and the frozen assessment hash.
+Subsequent report changes are limited to the final owner/test inventory paragraphs.
+
+Resume from the current-state checklist above. Preserve Kimi checkpoint 7f2676f
+and its independent rejection note. The pending user proposal remains in
+inbox/codex-1-to-user_meta-protocol-change-evidence-first-efficiency_recovery-decisions.md;
+there is no approval of a quorum or experimental-arm change by elapsed time.
