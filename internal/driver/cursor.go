@@ -13,9 +13,11 @@
 package driver
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -47,12 +49,13 @@ const (
 // must not be recoverable by editing artifacts, so Advance carries it forward from the
 // persisted cursor instead of deriving it.
 type Cursor struct {
-	Phase        Phase  `json:"phase"`
-	CurrentRound int    `json:"current_round"`
-	IdeaStatus   string `json:"idea_status"`
-	RoundsRun    int    `json:"rounds_run"`
-	MaxRounds    int    `json:"max_rounds"`
-	UpdatedAt    string `json:"updated_at"`
+	SchemaVersion int    `json:"schema_version,omitempty"`
+	Phase         Phase  `json:"phase"`
+	CurrentRound  int    `json:"current_round"`
+	IdeaStatus    string `json:"idea_status"`
+	RoundsRun     int    `json:"rounds_run"`
+	MaxRounds     int    `json:"max_rounds"`
+	UpdatedAt     string `json:"updated_at"`
 	// FixupCyclesPublished is the driver's own monotonic count of CHARGED fix-up
 	// attempts — reserved before the code-writing call, so an attempt that errors is
 	// counted too. (The name predates the corrected unit; `.fixup-done` markers are the
@@ -61,12 +64,16 @@ type Cursor struct {
 	// on-disk `.fixup-done` markers: deleting markers cannot buy a cycle, and forging
 	// one can only raise the count, which escalates sooner. Review round-03 showed the
 	// marker-only count was still editable state — the class had moved, not closed.
-	FixupCyclesPublished int `json:"fixup_cycles_published,omitempty"`
+	FixupCyclesPublished int `json:"fixup_cycles_published"`
 }
 
 // Save writes the cursor atomically (tmp + rename, same dir) so a crash mid-write
 // cannot corrupt the durable state. Mirrors internal/pipeline/run.go Save.
 func (c Cursor) Save(path string) error {
+	if c.FixupCyclesPublished < 0 {
+		return errors.New("negative charged fix-up count")
+	}
+	c.SchemaVersion = 1
 	if err := fsutil.MkdirAllResilient(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create driver dir: %w", err)
 	}
@@ -75,26 +82,117 @@ func (c Cursor) Save(path string) error {
 		return fmt.Errorf("encode cursor: %w", err)
 	}
 	data = append(data, '\n')
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	f, err := os.CreateTemp(filepath.Dir(path), ".driver-cursor-*")
+	if err != nil {
+		return fmt.Errorf("create cursor staging file: %w", err)
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	defer f.Close()
+	if _, err := f.Write(data); err != nil {
 		return fmt.Errorf("write cursor: %w", err)
+	}
+	if err := fsutil.SyncFile(f); err != nil {
+		return fmt.Errorf("sync cursor: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close cursor: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		return fmt.Errorf("commit cursor: %w", err)
 	}
+	// The charge is not acknowledged until the replacement directory entry is
+	// synchronized too. A failure here leaves the conservative charge on disk.
+	dir, err := os.Open(filepath.Dir(path))
+	if err != nil {
+		return fmt.Errorf("open cursor directory: %w", err)
+	}
+	defer dir.Close()
+	if err := fsutil.SyncFile(dir); err != nil {
+		return fmt.Errorf("sync cursor directory: %w", err)
+	}
 	return nil
 }
 
-// LoadCursor best-effort reads a persisted cursor. A missing or corrupt file is
-// non-fatal: callers Rebuild from disk, which is authoritative.
+// LoadCursor validates the persisted safety state. Phase may be rebuilt, but
+// malformed charged state must halt Advance rather than be inferred as zero.
+// Schema-less historical cursors may omit the old omitempty zero count; v1
+// requires it explicitly. Metadata is not protection against a same-user writer.
 func LoadCursor(path string) (Cursor, error) {
-	data, err := os.ReadFile(path)
+	info, err := os.Lstat(path)
 	if err != nil {
 		return Cursor{}, err
 	}
-	var c Cursor
-	if err := json.Unmarshal(data, &c); err != nil {
+	if !info.Mode().IsRegular() || info.Size() > 1<<20 {
+		return Cursor{}, errors.New("cursor must be a regular file of at most 1 MiB")
+	}
+	f, err := os.Open(path)
+	if err != nil {
 		return Cursor{}, err
+	}
+	defer f.Close()
+	opened, err := f.Stat()
+	if err != nil || !os.SameFile(info, opened) {
+		return Cursor{}, errors.New("cursor changed during open")
+	}
+	data, err := io.ReadAll(io.LimitReader(f, (1<<20)+1))
+	if err != nil || len(data) > 1<<20 {
+		return Cursor{}, errors.New("cannot read bounded cursor")
+	}
+	// encoding/json silently accepts duplicate keys and null integer fields.
+	// Both are ambiguous at a persisted spending boundary, so reject them.
+	dec := json.NewDecoder(bytes.NewReader(data))
+	if token, err := dec.Token(); err != nil || token != json.Delim('{') {
+		return Cursor{}, errors.New("cursor must be a JSON object")
+	}
+	fields := map[string]json.RawMessage{}
+	for dec.More() {
+		token, err := dec.Token()
+		if err != nil {
+			return Cursor{}, err
+		}
+		key, ok := token.(string)
+		if !ok || fields[key] != nil {
+			return Cursor{}, errors.New("cursor has an invalid or duplicate field")
+		}
+		var value json.RawMessage
+		if err := dec.Decode(&value); err != nil {
+			return Cursor{}, err
+		}
+		if bytes.Equal(value, []byte("null")) {
+			return Cursor{}, errors.New("cursor contains a null field")
+		}
+		fields[key] = value
+	}
+	var c Cursor
+	strict := json.NewDecoder(bytes.NewReader(data))
+	strict.DisallowUnknownFields()
+	if err := strict.Decode(&c); err != nil {
+		return Cursor{}, err
+	}
+	if strict.Decode(new(any)) != io.EOF {
+		return Cursor{}, errors.New("cursor contains trailing JSON")
+	}
+	for key := range fields {
+		switch key {
+		case "schema_version", "phase", "current_round", "idea_status", "rounds_run", "max_rounds", "updated_at", "fixup_cycles_published":
+		default:
+			return Cursor{}, fmt.Errorf("cursor contains unrecognized field %q", key)
+		}
+	}
+	for _, key := range []string{"phase", "current_round", "idea_status", "rounds_run", "max_rounds", "updated_at"} {
+		if fields[key] == nil {
+			return Cursor{}, fmt.Errorf("cursor is missing %s", key)
+		}
+	}
+	if fields["schema_version"] != nil && c.SchemaVersion != 1 {
+		return Cursor{}, errors.New("unsupported cursor schema")
+	}
+	if c.SchemaVersion == 1 && fields["fixup_cycles_published"] == nil {
+		return Cursor{}, errors.New("cursor is missing its charged fix-up count")
+	}
+	if c.FixupCyclesPublished < 0 || c.CurrentRound < 0 || c.RoundsRun < 0 || c.MaxRounds < 0 {
+		return Cursor{}, errors.New("cursor contains a negative counter")
 	}
 	return c, nil
 }

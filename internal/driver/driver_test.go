@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -299,6 +300,88 @@ func TestCorruptCursorIgnoredRebuildRecovers(t *testing.T) {
 	}
 	if c := Rebuild(ideaDir, 4); c.CurrentRound != 2 || c.Phase != PhaseRound {
 		t.Fatalf("Rebuild got round=%d phase=%s, want 2/round", c.CurrentRound, c.Phase)
+	}
+}
+
+func TestCursorSafetyStateRejectsAmbiguousCounts(t *testing.T) {
+	legacy := `{"phase":"review","current_round":2,"idea_status":"final","rounds_run":2,"max_rounds":4,"updated_at":"2026-09-10T00:00:00Z"}`
+	with := func(extra string) string { return strings.TrimSuffix(legacy, "}") + "," + extra + "}" }
+	for name, raw := range map[string]string{
+		"null object":          "null",
+		"empty object":         "{}",
+		"null count":           with(`"fixup_cycles_published":null`),
+		"negative count":       with(`"fixup_cycles_published":-1`),
+		"fractional count":     with(`"fixup_cycles_published":0.5`),
+		"duplicate count":      with(`"fixup_cycles_published":5,"fixup_cycles_published":0`),
+		"missing v1 count":     with(`"schema_version":1`),
+		"unknown schema":       with(`"schema_version":2,"fixup_cycles_published":0`),
+		"case alias count":     with(`"fixup_cycles_published":5,"FIXUP_CYCLES_PUBLISHED":0`),
+		"explicit zero schema": with(`"schema_version":0`),
+		"null schema":          with(`"schema_version":null`),
+		"trailing object":      legacy + "{}",
+	} {
+		t.Run(name, func(t *testing.T) {
+			parts := []string{"codex", "claude"}
+			ideaDir, runDir := setupIdea(t, parts, "")
+			writeAll(t, ideaDir, 1, parts)
+			appendEvent(t, runDir, "round.completed", "round-01")
+			if err := os.WriteFile(filepath.Join(runDir, "driver.json"), []byte(raw), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			fr := &fakeRunner{}
+			d := New(Config{IdeaDir: ideaDir, IdeaSlug: "demo", Participants: parts, RunDir: runDir,
+				Events: store.New(runDir), Auto: true}, fr)
+			action, _, err := d.Advance(context.Background())
+			if err == nil || action != ActionEscalated || len(fr.calls) != 0 {
+				t.Fatalf("ambiguous state advanced: action=%s calls=%v err=%v", action, fr.calls, err)
+			}
+		})
+	}
+	path := filepath.Join(t.TempDir(), "driver.json")
+	if err := os.WriteFile(path, []byte(legacy), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := LoadCursor(path)
+	if err != nil || c.FixupCyclesPublished != 0 {
+		t.Fatalf("valid historical omitted zero rejected: %+v %v", c, err)
+	}
+}
+
+func TestCursorReservationPublishesCompleteState(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "driver.json")
+	// A pre-existing name used by the old fixed staging path must not be touched.
+	sentinel := path + ".tmp"
+	if err := os.WriteFile(sentinel, []byte("preserve"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := Cursor{Phase: PhaseReview, FixupCyclesPublished: 5}
+	if err := c.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadCursor(path)
+	if err != nil || loaded.FixupCyclesPublished != 5 || loaded.SchemaVersion != 1 {
+		t.Fatalf("reservation was not persisted: %+v %v", loaded, err)
+	}
+	c.FixupCyclesPublished = -1
+	if err := c.Save(path); err == nil {
+		t.Fatal("negative reservation replaced valid state")
+	}
+	loaded, err = LoadCursor(path)
+	if err != nil || loaded.FixupCyclesPublished != 5 {
+		t.Fatalf("failed write damaged charged state: %+v %v", loaded, err)
+	}
+	if data, err := os.ReadFile(sentinel); err != nil || string(data) != "preserve" {
+		t.Fatalf("fixed staging filename overwritten: %q %v", data, err)
+	}
+	c.FixupCyclesPublished = 0
+	if err := c.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil || string(fields["fixup_cycles_published"]) != "0" {
+		t.Fatalf("new zero charge must be explicit: %s %v", data, err)
 	}
 }
 

@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 47661e5f7d72d81ef864baf9825fc223e91e7dc0
+head-commit: eee04d8
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -151,6 +151,15 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Recovery / resume
 
+### Active driver persistence work
+
+Codex will harden the already-owned `internal/driver/cursor.go` and its driver
+tests before adding shared budget entrypoints: make reservation writes durable
+with the verified filesystem sync policy, and reject malformed or negative
+charged state. Preserve valid historical cursors whose omitted zero field was
+written by the prior schema. This is persistence validation, not authentication
+against a same-user process capable of replacing the entire state.
+
 ### 2026-09-10 — recovered interrupted Codex session
 
 Additional non-overlapping Codex allocation: `internal/fsutil/sync_darwin.go`
@@ -222,7 +231,8 @@ native config, a dedicated `KIMI_CODE_HOME` under the private local recovery
 directory, and the same OS workspace write sandbox. Only that private runtime
 directory and its assigned worktree are writable. A concrete probe permits
 own-worktree writes and rejects a sibling-worktree write. Historical failed
-attempts remain untouched. Both resumed participant handoffs are pending.
+attempts remain untouched. The Kimi handoff remains pending. Claude has written both the initial resume
+handoff and its owner correction; see the validation entry below.
 
 No raw credentials, prompts or private session output are copied into these
 canonical records. The original session's workspace spend-cap failures are
@@ -232,6 +242,29 @@ Use this manifest and actual git worktree/branch state. Never delete or reset an
 unexpected worktree. Keep failed agent attempts and authored artifacts. The design
 FINAL is immutable; implementation details and genuine deviations belong here.
 No package, global skill/core installation or production deployment is requested.
+
+### 2026-09-10 — owner packet correction and cursor persistence
+
+Claude's corrective invocation `aa4c4736-9315-4d5e-a834-f5f11081fbe0` exited 0
+and wrote its own `implementation-notes/claude-1-recovery-fix-20260910.md`.
+Elapsed process time: 433.850s; reported CLI cost estimate: $2.12302 (not an
+invoice). Usage reports Opus 5 [1m] and Haiku entries, so no singular resolved
+model identity is inferred. The owner explicitly ran no shell tests. Codex then
+executed the packet package, 20 repetitions of concurrent-publication tests,
+shared-volume publication/flush fixtures, race tests, app packet tests and vet;
+all passed. The prior non-atomic direct-write fallback was removed by its owner.
+These are scoped executed checks, not a final review verdict or AC-P1 closure:
+renderer-to-launch wiring and attestation are still outstanding.
+
+Codex changed the driver cursor reservation writer to unique staging, file sync,
+atomic replacement and directory sync. Version 1 writes its charge explicitly;
+null, duplicate/aliased fields, negative counters, unknown schemas and incomplete
+objects halt instead of recreating a zero budget. Complete historical schema-less
+cursors retain the prior omitted-zero convention. Driver tests, race tests and
+vet pass. Directory synchronization is required rather than silently ignored;
+platforms that reject it fail closed and remain unvalidated (including Windows).
+This does not claim same-UID tamper prevention, cross-entrypoint action identities,
+persistent loop counters, or completed per-launch monetary reservations.
 
 ## Outcomes & surprises
 
