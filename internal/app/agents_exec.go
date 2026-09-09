@@ -113,6 +113,10 @@ func runAgentsExec(ctx context.Context, args []string, stdout, stderr io.Writer)
 	info := runner.LaunchInfo{RunID: *runID, SegmentID: *segment, Idea: *idea, Phase: *phase,
 		ArtifactPath: artifactPath, Store: store.New(filepath.Join(root, ".parley-runtime", "manual-runs", *runID))}
 	record, launchErr := runner.RunMeasured(ctx, runner.ExecOptions{Root: root, Agent: agent, Prompt: string(prompt), Timeout: *timeout, Info: info})
+	if record.InvocationID == "" {
+		fmt.Fprintln(stderr, "agents exec: launch setup failed before an invocation could be recorded; check headless mode and telemetry storage")
+		return 1
+	}
 	if *jsonOut {
 		if err := json.NewEncoder(stdout).Encode(record); err != nil {
 			fmt.Fprintln(stderr, "agents exec: cannot write result")

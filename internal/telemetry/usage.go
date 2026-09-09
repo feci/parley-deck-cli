@@ -174,7 +174,7 @@ func (c *Collector) consume(data []byte) {
 			u.CostBasis = "cli-estimate"
 		}
 		for model := range object(event["modelUsage"]) {
-			if safe := SafeLabel(model); safe != nil {
+			if safe := safeModel(model); safe != nil {
 				u.ReportedModels = append(u.ReportedModels, *safe)
 			}
 		}
@@ -191,7 +191,7 @@ func (c *Collector) consume(data []byte) {
 			c.failure = ""
 		}
 		c.usage = reportedUsage(object(event["usage"]), "codex.turn-completed")
-		c.usage.ReportedModel = SafeLabel(word(event["model"]))
+		c.usage.ReportedModel = safeModel(word(event["model"]))
 	case "opencode":
 		if kind != "step_finish" {
 			return
@@ -222,7 +222,7 @@ func (c *Collector) consume(data []byte) {
 			return
 		}
 		u := reportedUsage(raw, c.adapter+".reported-usage")
-		u.ReportedModel = SafeLabel(word(event["model"]))
+		u.ReportedModel = safeModel(word(event["model"]))
 		u.CostUSD = money(event["cost_usd"])
 		if u.CostUSD == nil {
 			u.CostUSD = money(event["total_cost_usd"])

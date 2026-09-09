@@ -186,6 +186,33 @@ func TestLegitimateTaskIdentifiersAreNotCredentialPrefixes(t *testing.T) {
 	}
 }
 
+func TestModelContextSuffixSurvivesPersistedLifecycle(t *testing.T) {
+	requested, reported := "claude/claude-opus-5[1m]", "claude-opus-5[1m]"
+	i, err := Begin(t.TempDir(), Metadata{RequestedModel: String(requested)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := i.Finish(Outcome{Status: "finished", Usage: Usage{
+		ReportedModel: String(reported), ReportedModels: []string{reported},
+	}}); err != nil {
+		t.Fatal(err)
+	}
+	r := readRecord(t, filepath.Join(i.Dir, "terminal.json"))
+	if r.Metadata.RequestedModel == nil || *r.Metadata.RequestedModel != requested ||
+		r.Outcome.Usage.ReportedModel == nil || *r.Outcome.Usage.ReportedModel != reported ||
+		len(r.Outcome.Usage.ReportedModels) != 1 || r.Outcome.Usage.ReportedModels[0] != reported || len(r.Warnings) != 0 {
+		t.Fatalf("requested/reported identity lost: %+v", r)
+	}
+	for _, unsafe := range []string{"provider/sk-FAKE_CANARY[1m]", "npm_FAKE_CANARY[1m]", strings.Repeat("a", 64) + "[1m]", "model[password]", "model[1m][1m]", "https://model[1m]"} {
+		if safeModel(unsafe) != nil {
+			t.Fatalf("unsafe model retained: %q", unsafe)
+		}
+	}
+	if SafeLabel(reported) != nil {
+		t.Fatal("model grammar expanded ordinary audit identifiers")
+	}
+}
+
 func TestTerminalIsIdempotentAndNotOverwritten(t *testing.T) {
 	i, err := Begin(t.TempDir(), Metadata{Agent: "agent-1"})
 	if err != nil {

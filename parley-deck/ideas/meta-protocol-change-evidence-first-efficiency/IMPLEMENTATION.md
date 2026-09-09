@@ -151,6 +151,74 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Recovery / resume
 
+### 2026-09-10 — recovered interrupted Codex session
+
+Recovered the original local conversation `019e5f54-222b-7802-8342-b98dfb89d306`.
+Its last substantive user instruction (2026-09-09 20:54Z) requested all six
+audit recommendations through Parley Deck. The session then ended on a workspace
+spend-cap error, including two failed continuation attempts. The history still
+exists in the May 25 rollout file; this recovery does not rewrite application
+history or participant signatures.
+
+The implementation worktrees remain at integration commit `88d650d`; PR #73
+is still a draft, with an older remote head `598324e`. Claude has no new resume
+handoff; Kimi's uncommitted evidence package remains preserved. Existing roster
+and pilot-amendment questions are unresolved and were surfaced again. Unrelated
+implementation can continue, but no quorum replacement or full-four pilot is
+effective yet.
+
+Next bounded recovery work (Codex-owned telemetry and measured-launch paths):
+- [x] Fix a reproduced launch blocker on this shared macOS volume: Go File.Sync
+  returns ENOTTY for F_FULLFSYNC while ordinary fsync succeeds. Preserve required
+  synchronization and all other write failures; do not silently skip sync.
+- [x] Preserve legitimate bracketed model identifiers in requested/reported
+  telemetry while retaining credential-shaped metadata rejection.
+- [x] Make a pre-record launch failure diagnosable without emitting fake schema-0
+  telemetry, raw prompts, or unsafe diagnostic content.
+- [ ] Rebuild the uninstalled binary, retry only missing Claude/Kimi actions,
+  and record actual results. Continue remaining runtime/budget integration.
+- [x] In the already-owned driver loop, reconcile costs by invocation identity;
+  unknown, conflicting, malformed or missing accounting must stop a configured
+  monetary ceiling and remain null in the total-cost display. This is one part
+  of D2/D6; it does not claim per-launch reservations or all budget paths complete.
+
+The shared-volume regression was reproduced with `TMPDIR` on that volume and
+`go test ./internal/telemetry -run '^TestLifecycleAndUnknowns$' -count=1`:
+`persist requested invocation before launch: sync ...: inappropriate ioctl for device`.
+The same filesystem accepted Python `os.fsync` on an actual written file. These
+are implementation observations, not independent completion verdicts.
+
+Recovery validation: the failing shared-volume lifecycle test now passes, along
+with manual-launch and bracketed-model regressions on that volume. The full Go
+suite passes after the telemetry/launcher changes. Telemetry and runner race
+tests and their app/runner/telemetry vet checks pass. Driver tests pass after the
+additional cost-reconciliation change; duplicate replay, distinct retry,
+unknown/null/invalid cost, conflicting identity, missing/corrupt event logs and
+inclusive monetary-ceiling cases are covered. No test result here closes an AC
+that requires independent verification or live experiments.
+
+Live recovery attempts use the rebuilt, uninstalled binary. Claude invocation
+`a23b2caa-9d10-447e-9a98-3101f9883202` started with requested model
+`claude-opus-5[1m]`, max effort, native restricted file tools and explicit
+`acceptEdits`/no permission prompts; native restricted mode demonstrably confines
+file tools and rejects bypassPermissions (per installed CLI help). The Parley
+inventory's legacy bypassPermissions declaration reports AUTO=no for this
+narrower mode; do not misreport that inventory as verified. Its effective
+file-write capability is established by the native mode and actual owned edits.
+
+Kimi invocation `4e56455d-873e-46bf-90e4-f3a1c5058ee8` failed at native storage
+setup with `permission denied`, before an owned artifact. Invocation
+`f7248aa0-d6cc-4dc4-9d69-7341cce6f61d` then started with `kimi-code/k3`, max from
+native config, a dedicated `KIMI_CODE_HOME` under the private local recovery
+directory, and the same OS workspace write sandbox. Only that private runtime
+directory and its assigned worktree are writable. A concrete probe permits
+own-worktree writes and rejects a sibling-worktree write. Historical failed
+attempts remain untouched. Both resumed participant handoffs are pending.
+
+No raw credentials, prompts or private session output are copied into these
+canonical records. The original session's workspace spend-cap failures are
+historical; no current failure is labelled a spend-cap failure without evidence.
+
 Use this manifest and actual git worktree/branch state. Never delete or reset an
 unexpected worktree. Keep failed agent attempts and authored artifacts. The design
 FINAL is immutable; implementation details and genuine deviations belong here.

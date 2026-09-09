@@ -3,8 +3,10 @@ package driver
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -144,8 +146,12 @@ func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 		}
 	}
 	if d.cfg.MaxCostUSD > 0 {
-		if spent := d.loopCostUSD(); spent >= d.cfg.MaxCostUSD {
-			return fmt.Sprintf("cost budget exhausted ($%.2f/$%.2f)", spent, d.cfg.MaxCostUSD)
+		cost := d.loopCost()
+		if !cost.complete {
+			return "cost budget cannot be enforced: " + cost.reason
+		}
+		if cost.usd >= d.cfg.MaxCostUSD {
+			return fmt.Sprintf("cost budget exhausted ($%.2f/$%.2f)", cost.usd, d.cfg.MaxCostUSD)
 		}
 	}
 	return ""
@@ -155,7 +161,12 @@ func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 // Cost is always reported for observability (F-T2-2); only enforcement is gated by
 // MaxCostUSD > 0 (in loopBudgetBreach).
 func (d *Driver) emitLoopBudget(steps int, start time.Time) {
-	cost := d.loopCostUSD()
+	cost := d.loopCost()
+	var total any
+	coverage := "incomplete"
+	if cost.complete {
+		total, coverage = cost.usd, "complete"
+	}
 	_ = d.cfg.Events.Append(store.Event{
 		Time: time.Now().UTC(),
 		Type: "loop.budget",
@@ -165,29 +176,57 @@ func (d *Driver) emitLoopBudget(steps int, start time.Time) {
 			"max_driver_steps":  d.cfg.MaxDriverSteps,
 			"elapsed_ms":        time.Since(start).Milliseconds(),
 			"max_wall_clock_ms": d.cfg.MaxWallClock.Milliseconds(),
-			"cost_usd":          cost,
+			"cost_usd":          total,
+			"cost_coverage":     coverage,
 			"max_cost_usd":      d.cfg.MaxCostUSD,
 		},
 	})
 }
 
-// loopCostUSD sums cost_usd across agent.usage events (LE-6). Best-effort: the runners do
-// not yet emit agent.usage, so this is 0 in practice until that telemetry lands.
-func (d *Driver) loopCostUSD() float64 {
+type loopCostSummary struct {
+	usd      float64
+	complete bool
+	reason   string
+}
+
+// A normalized usage event identifies one invocation, including a retry. Only
+// identical replays may be deduplicated; a missing price or contradictory replay
+// cannot establish the total against a monetary ceiling.
+func (d *Driver) loopCost() loopCostSummary {
+	if !d.cfg.Events.Enabled() {
+		return loopCostSummary{reason: "run event store is unavailable"}
+	}
 	evs, err := d.cfg.Events.Load()
 	if err != nil {
-		return 0
+		return loopCostSummary{reason: "run event accounting is missing or unreadable"}
 	}
-	total := 0.0
+	result := loopCostSummary{complete: true}
+	seen := map[string]map[string]any{}
 	for _, e := range evs {
 		if e.Type != "agent.usage" {
 			continue
 		}
-		if f, ok := e.Data["cost_usd"].(float64); ok {
-			total += f
+		id, _ := e.Data["invocation_id"].(string)
+		if strings.TrimSpace(id) == "" {
+			return loopCostSummary{reason: "usage event has no invocation identity"}
+		}
+		if prior, ok := seen[id]; ok {
+			if !reflect.DeepEqual(prior, e.Data) {
+				return loopCostSummary{reason: "conflicting usage for one invocation"}
+			}
+			continue
+		}
+		seen[id] = e.Data
+		cost, ok := e.Data["cost_usd"].(float64)
+		if !ok || math.IsNaN(cost) || math.IsInf(cost, 0) || cost < 0 || cost > 1_000_000 {
+			return loopCostSummary{reason: "invocation cost is unknown or invalid"}
+		}
+		result.usd += cost
+		if math.IsInf(result.usd, 0) {
+			return loopCostSummary{reason: "cost total is out of range"}
 		}
 	}
-	return total
+	return result
 }
 
 // escalateLoopBudget writes a durable blocking inbox note when a loop ceiling is hit and

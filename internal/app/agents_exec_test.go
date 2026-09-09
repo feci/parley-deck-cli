@@ -95,6 +95,21 @@ func TestAgentsExecRetainsFailedStart(t *testing.T) {
 	}
 }
 
+func TestAgentsExecUnrecordableLaunchDoesNotEmitFakeRecord(t *testing.T) {
+	root, prompt := measuredFixture(t, "touch launched")
+	if err := os.WriteFile(filepath.Join(root, ".parley-runtime"), []byte("not a directory"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	code := Run([]string{"agents", "exec", "--dir", root, "--agent", "fixture", "--prompt-file", prompt, "--json", "--yes"}, &out, &errOut)
+	if code != 1 || out.Len() != 0 || !strings.Contains(errOut.String(), "before an invocation could be recorded") {
+		t.Fatalf("code=%d output=%q stderr=%q", code, out.String(), errOut.String())
+	}
+	if _, err := os.Stat(filepath.Join(root, "launched")); !os.IsNotExist(err) {
+		t.Fatal("unrecordable request launched a process")
+	}
+}
+
 func TestResolveMeasuredAgentReusesRosterMapping(t *testing.T) {
 	d := []agents.Discovery{{Spec: agents.Spec{ID: "family", Commands: []string{"absent-command"}}}}
 	got, err := resolveMeasuredAgent("named-1", d, map[string]string{"named-1": "family"})

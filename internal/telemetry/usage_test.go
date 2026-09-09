@@ -24,6 +24,23 @@ func TestClaudeAuthoritativeSummaryAndReportedIdentity(t *testing.T) {
 	}
 }
 
+func TestStructuredUsagePreservesModelContextSuffix(t *testing.T) {
+	for adapter, envelope := range map[string]string{
+		"claude":  `{"type":"result","usage":{"input_tokens":1},"modelUsage":{"claude-opus-5[1m]":{}}}`,
+		"codex":   `{"type":"turn.completed","usage":{"input_tokens":1},"model":"claude-opus-5[1m]"}`,
+		"generic": `{"type":"result","usage":{"input_tokens":1},"model":"claude-opus-5[1m]"}`,
+	} {
+		t.Run(adapter, func(t *testing.T) {
+			c := NewCollector(adapter, true)
+			feed(c, envelope+"\n")
+			u, _, _ := c.Result()
+			if u.ReportedModel == nil || *u.ReportedModel != "claude-opus-5[1m]" {
+				t.Fatalf("provider identity lost: %+v", u)
+			}
+		})
+	}
+}
+
 func TestPrettyJSONAndChunkBoundaries(t *testing.T) {
 	c := NewCollector("claude", true)
 	text := "{\n  \"type\": \"result\",\n  \"usage\": {\"input_tokens\": 12},\n  \"total_cost_usd\": 0\n}\n"

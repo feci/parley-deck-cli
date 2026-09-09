@@ -100,6 +100,7 @@ type Invocation struct {
 }
 
 var labelPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/+@-]{0,179}$`)
+var modelSuffixPattern = regexp.MustCompile(`\[[0-9]+[kKmM]\]$`)
 var secretPattern = regexp.MustCompile(`(?i)((^|[/.:@])(npm_|gh[pousr]_|github_pat_|sk-|xox[baprs]-|AKIA[0-9A-Z]|eyJ[A-Za-z0-9_-]+\.)|bearer|password|api[_-]?key|authorization)`)
 var opaqueSecretPattern = regexp.MustCompile(`^(?:[a-fA-F0-9]{32,}|[A-Za-z0-9_]{48,})$`)
 var hashPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -114,6 +115,19 @@ func String(value string) *string {
 // SafeLabel accepts identifiers, not arbitrary diagnostic prose or URLs.
 func SafeLabel(value string) *string {
 	if !labelPattern.MatchString(value) || strings.Contains(value, "://") || secretPattern.MatchString(value) || opaqueSecretPattern.MatchString(value) {
+		return nil
+	}
+	return &value
+}
+
+// safeModel preserves context-window suffixes used in model identifiers without
+// expanding the grammar for ordinary labels or accepting arbitrary bracket text.
+func safeModel(value string) *string {
+	if len(value) > 180 {
+		return nil
+	}
+	base := modelSuffixPattern.ReplaceAllString(value, "")
+	if SafeLabel(base) == nil {
 		return nil
 	}
 	return &value
@@ -199,6 +213,9 @@ func cleanMetadata(m Metadata, warnings *[]string) Metadata {
 	for _, field := range optional {
 		if *field.target != nil {
 			clean := SafeLabel(**field.target)
+			if field.name == "requested_model" {
+				clean = safeModel(**field.target)
+			}
 			if clean == nil {
 				*warnings = append(*warnings, "unsafe_"+field.name+"_omitted")
 			}
@@ -237,11 +254,11 @@ func CleanUsage(usage Usage) Usage {
 	}
 	usage.CostUSD = clone(usage.CostUSD)
 	if usage.ReportedModel != nil {
-		usage.ReportedModel = SafeLabel(*usage.ReportedModel)
+		usage.ReportedModel = safeModel(*usage.ReportedModel)
 	}
 	models := []string{}
 	for _, model := range usage.ReportedModels {
-		if safe := SafeLabel(model); safe != nil {
+		if safe := safeModel(model); safe != nil {
 			models = append(models, *safe)
 		}
 	}
@@ -303,7 +320,7 @@ func (i *Invocation) write(name string) error {
 		file.Close()
 		return err
 	}
-	if err := file.Sync(); err != nil {
+	if err := syncRecord(file); err != nil {
 		file.Close()
 		return err
 	}
