@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 3ea8693
+head-commit: 374a5c5
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -18,11 +18,13 @@ Implementation is partial on draft PR #73: measured protocol-task launch
 boundaries, live/full context attestation, cursor persistence, fail-closed goal
 checking, packet publication and source-instruction updates are integrated and
 locally tested. Claude's partial independent source reviews are preserved with
-their dispositions. Kimi's latest uncommitted correction passes 58 independent focused test events
-with zero skips/failures and the preceding five adversarial probes. A new mixed
-package/build-failure probe reproduces false PASS; the owner is correcting it. The exact live experiments, complete launch
-coverage/shared budgets and full independent acceptance remain open. The frozen
-historical evaluation is unchanged.
+their dispositions. Kimi's package-failure correction and owner handoff are now
+integrated at 374a5c5. The production independent-verifier path has a passing
+full Go suite and real subprocess coverage, but a stronger post-completion
+counterexample exposes stale evidence after the generated status transition.
+That defect and report-write concurrency must be resolved before acceptance.
+The exact live experiments, complete launch coverage/shared budgets and full
+independent acceptance remain open. The frozen historical evaluation is unchanged.
 
 ## Implementation plan / checklist
 
@@ -818,3 +820,43 @@ The readiness source still contains a regex duplicate-key scan and incomplete
 schema/secret/capture enforcement. A bounded owner correction is running with
 the exact compiler failure and source counterexamples; no readiness acceptance
 or quorum amendment is inferred.
+
+
+Additional Codex allocation (2026-09-11, before edits):
+internal/app/evidence_verify.go and internal/app/evidence_verify_test.go for the
+runtime-only independent-verifier helper and real process closure integration
+fixtures. These new paths do not overlap Kimi's evidence package or existing
+app helper claims. Codex also uses its existing app.go, driver_impl.go,
+internal/driver/impl.go and runner/consult.go allocations for command routing,
+closure and launch identity glue. The actual verifier must invoke the helper;
+facilitator-side execution with a replacement actor string is not acceptable.
+
+
+### Independent verifier source checkpoint — 2026-09-11
+
+Kimi's corrected evidence slice and participant-owned handoff are integrated
+from 32d00bc via 374a5c5. The full independent evidence-package run has 85 passing
+terminal test events with zero skips/failures, including unchanged adversarial
+probes. The 53-event selected run overlaps it and is not an additional total.
+
+Codex has implemented a real verifier CLI/helper path through Driver.Advance:
+checks, an independently selected agent process, its actual helper execution,
+retained criterion reruns, bound receipt validation and a last completion gate.
+The full Go suite, scoped vet and Windows cross-build pass. Windows runtime and
+a live real-model closure trial remain untested. Details, source trust boundary
+and the still-open defects are in
+implementation-notes/codex-1-verifier-checkpoint-20260911.md.
+
+A newly executed stronger overlay probe fails after otherwise successful closure:
+writing status=complete changes the separately hashed non-evidence document.
+The passing suite did not check that final persisted invariant. Do not treat this
+checkpoint as AC-E acceptance. Preserve the failing counterexample and require a
+correction with an exact, verifier-bound status transition; never broaden the
+scope exclusion. Concurrent report replacement also still needs a cooperative
+serialization or compare-and-swap boundary, not just read/compare/rename.
+
+The current invocation inventory has 27 unique terminal attempts, 14 unknown
+costs, known CLI-estimate subtotal USD 36.6907045 and unknown total cost. The
+numerical >=20 threshold is met; actual launch-surface coverage is not. Hermes's
+latest owner slice does not compile and is not integrated; its unchanged own
+handoffs do not substitute for an executed successful compile.

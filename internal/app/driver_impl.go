@@ -26,14 +26,15 @@ import (
 // only on the driver.ImplOps interface, so internal/driver never imports
 // internal/app.
 type driverImplOps struct {
-	base        runner.Options // the round-01 runOpts (Root, RunID, Store, Agents, Idea, Timeout)
-	root        string
-	ideaSlug    string
-	ideaDir     string
-	implementer string   // FINAL drafter / first participant
-	reviewers   []string // non-implementer participants
-	drafter     string   // review-consensus drafter (facilitator)
-	out         io.Writer
+	base            runner.Options // the round-01 runOpts (Root, RunID, Store, Agents, Idea, Timeout)
+	root            string
+	ideaSlug        string
+	ideaDir         string
+	implementer     string   // FINAL drafter / first participant
+	reviewers       []string // non-implementer participants
+	drafter         string   // review-consensus drafter (facilitator)
+	out             io.Writer
+	verificationCLI string // internal process-fixture seam; empty uses this running CLI
 }
 
 func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, participants []string, out io.Writer) driver.ImplOps {
@@ -475,6 +476,14 @@ func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 // write by the orchestrator (NOT an implementer agent), so an implementer cannot
 // short-circuit review (consensus D5).
 func (o driverImplOps) Complete(ctx context.Context) error {
+	if _, isList, err := driver.ReadChecksContract(o.ideaDir); err != nil {
+		return err
+	} else if isList {
+		gate := o.EvidenceCloseGate(o.drafter)
+		if !gate.Allowed {
+			return fmt.Errorf("independent evidence changed before completion: %s", strings.Join(gate.Reasons, "; "))
+		}
+	}
 	path := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
 	data, err := os.ReadFile(path)
 	if err != nil {
