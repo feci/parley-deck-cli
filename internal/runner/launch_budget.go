@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -52,15 +53,42 @@ type launchBudgetError struct{ cause error }
 func (e *launchBudgetError) Error() string { return fmt.Sprintf("launch budget refused: %v", e.cause) }
 func (e *launchBudgetError) Unwrap() error { return e.cause }
 
-func (l *launchEvidence) reserveBudget(ctx context.Context, handoff bool) error {
+func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff bool) error {
 	policy, enabled := ctx.Value(launchBudgetKey{}).(LaunchBudget)
-	if !enabled || handoff {
+	if handoff {
 		return nil
 	}
-	_, err := policy.Store.Reserve(ctx, budget.Request{
+	bound, err := budget.LoadLaunchBinding(ctx, root, l.info.Idea)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &launchBudgetError{cause: err}
+	}
+	if bound != nil {
+		expected := LaunchBudget{Store: bound.Store, Limits: bound.Policy.Limits(), ReserveMicros: bound.Policy.ReserveMicros}
+		if enabled {
+			a, _ := json.Marshal(policy)
+			b, _ := json.Marshal(expected)
+			if string(a) != string(b) {
+				return &launchBudgetError{cause: errors.New("explicit launch policy conflicts with the frozen operator binding")}
+			}
+		}
+		// A programmatic context is never a way around an operator's frozen
+		// policy. The persisted binding is authoritative for this launch scope.
+		policy = LaunchBudget{Store: bound.Store, Limits: bound.Policy.Limits(), ReserveMicros: bound.Policy.ReserveMicros}
+		enabled = true
+	}
+	if !enabled {
+		return nil
+	}
+	_, err = policy.Store.Reserve(ctx, budget.Request{
 		ID: l.invocation.ID, Kind: budget.Launch, ReserveMicros: policy.ReserveMicros,
 	}, policy.Limits)
 	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 		return &launchBudgetError{cause: err}
 	}
 	l.budget = &policy

@@ -361,6 +361,13 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 	base := filepath.Join(root, ".parley-runtime", "evidence-verification")
 	// Verify the ignore prerequisite before writing any retained runtime files.
 	// Do not broaden the tested-tree exclusion to hide a configuration mistake.
+	if _, err := exec.LookPath("git"); err != nil {
+		return fail(fmt.Errorf("independent evidence verification requires Git: %w", err))
+	}
+	inGit, err := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--is-inside-work-tree").Output()
+	if err != nil || strings.TrimSpace(string(inGit)) != "true" {
+		return false, "independent evidence verification requires a Git worktree with ignored runtime storage; non-Git closure is not supported"
+	}
 	if err := exec.CommandContext(ctx, "git", "-C", root, "check-ignore", "-q", "--", ".parley-runtime/").Run(); err != nil {
 		return false, "verification runtime must be ignored before execution; add .parley-runtime/ to the repository ignore rules, rerun checks, then retry"
 	}
@@ -474,7 +481,14 @@ func (o driverImplOps) acceptVerification(dir string, req evidenceVerificationRe
 	if err != nil {
 		return err
 	}
-	expectedTransition := updated
+	encodedUpdated, err := json.Marshal(updated)
+	if err != nil {
+		return err
+	}
+	var expectedTransition evidence.Report
+	if err := json.Unmarshal(encodedUpdated, &expectedTransition); err != nil {
+		return err
+	}
 	expectedTransition.CompletionTransition = nil
 	if err := evidence.AuthorizeCompletionTransition(&expectedTransition, restPath, restContent, o.drafter); err != nil {
 		return err
@@ -490,13 +504,21 @@ func (o driverImplOps) acceptVerification(dir string, req evidenceVerificationRe
 		}
 		executions[execution.Name] = execution
 	}
+	originalRecords := make(map[string]evidence.CriterionRecord, len(original.Records))
+	for _, record := range original.Records {
+		originalRecords[record.Name] = record
+	}
 	for i := range updated.Records {
+		originalRecord, known := originalRecords[updated.Records[i].Name]
+		if !known {
+			return errors.New("verifier added an unknown original criterion")
+		}
 		execution, found := executions[updated.Records[i].Name]
 		retained := updated.Records[i].Provenance.VerifierRerun
 		if !found || retained == nil || execution.Status != evidence.StatusPass || !sameVerificationJSON(retained.Command, execution.Command) || execution.Provenance.Executor != o.drafter {
 			return errors.New("retained attestation differs from actual helper execution")
 		}
-		updated.Records[i].Provenance = original.Records[i].Provenance
+		updated.Records[i].Provenance = originalRecord.Provenance
 	}
 	if !sameVerificationJSON(updated, original) {
 		return errors.New("verifier changed the original evidence instead of only attesting it")

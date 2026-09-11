@@ -33,6 +33,8 @@ type ReportWriter struct {
 	active bool
 }
 
+// WithReportWriter is non-reentrant. Its callback must use the supplied writer
+// rather than opening another transaction or calling the standalone Save.
 func WithReportWriter(ctx context.Context, ideaDir string, fn func(*ReportWriter) error) error {
 	dir, err := filepath.Abs(ideaDir)
 	if err != nil {

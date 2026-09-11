@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path/filepath"
@@ -54,8 +55,19 @@ func TestReplaceSection(t *testing.T) {
 	}
 }
 
+func scratchContract(t *testing.T, criteria []driver.CheckCriterion) (string, string) {
+	t.Helper()
+	data, err := yaml.Marshal(struct {
+		Checks []driver.CheckCriterion `yaml:"checks"`
+	}{criteria})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return gateScratchRepo(t, string(data))
+}
+
 func TestRunChecksContractWritesEvidenceAndVetoes(t *testing.T) {
-	root, idea := gateScratchRepo(t, twoCriterionContract())
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "ok", Command: "true"}})
 	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
 
 	pass := []driver.CheckCriterion{{Name: "ok", Command: "true"}}
@@ -68,7 +80,9 @@ func TestRunChecksContractWritesEvidenceAndVetoes(t *testing.T) {
 	}
 
 	fail := []driver.CheckCriterion{{Name: "boom", Command: "exit 3"}}
-	okFail, detail := o.runChecksContract(context.Background(), fail)
+	failRoot, failIdea := scratchContract(t, fail)
+	failOps := driverImplOps{ideaDir: failIdea, root: failRoot, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
+	okFail, detail := failOps.runChecksContract(context.Background(), fail)
 	if okFail {
 		t.Fatal("failing contract must veto (return false)")
 	}
@@ -82,7 +96,7 @@ const passJSONLine = `printf '%s\n' '{"Action":"run","Test":"TestA"}' '{"Action"
 // Positive: structured test2json output yields typed evidence with real
 // executed-case counts, persisted to EVIDENCE.json and the markdown table.
 func TestRunChecksContractCountsExecutedCases(t *testing.T) {
-	root, idea := gateScratchRepo(t, twoCriterionContract())
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "unit", Command: passJSONLine}})
 	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
 
 	ok, detail := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: passJSONLine}})
@@ -108,10 +122,10 @@ func TestRunChecksContractCountsExecutedCases(t *testing.T) {
 // Adversarial: exit 0 with structured proof of ZERO executed cases vetoes the
 // cycle — an empty test run is not a pass.
 func TestRunChecksContractZeroExecutionVetoes(t *testing.T) {
-	root, idea := gateScratchRepo(t, twoCriterionContract())
+	zero := `printf '%s\n' '{"Action":"start","Package":"x"}' '{"Action":"pass","Package":"x"}'`
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "unit", Command: zero}})
 	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
 
-	zero := `printf '%s\n' '{"Action":"start","Package":"x"}' '{"Action":"pass","Package":"x"}'`
 	ok, detail := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: zero}})
 	if ok {
 		t.Fatal("zero-execution structured output must veto")
@@ -128,7 +142,7 @@ func TestRunChecksContractZeroExecutionVetoes(t *testing.T) {
 // Adversarial: opaque shell output containing the word PASS is exit-code
 // evidence only — never an executed-case count.
 func TestRunChecksContractUnknownOutputNotCertified(t *testing.T) {
-	root, idea := gateScratchRepo(t, twoCriterionContract())
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "unit", Command: "echo 'PASS all green'"}})
 	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
 
 	ok, _ := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: "echo 'PASS all green'"}})
@@ -168,5 +182,18 @@ func TestRunChecksContractEvidenceWriteFailureVetoes(t *testing.T) {
 	}
 	if !strings.Contains(detail, "evidence-write failure") {
 		t.Fatalf("veto detail should name the evidence-write failure: %q", detail)
+	}
+}
+
+func TestReplaceSectionIgnoresExamplesAndSubheadings(t *testing.T) {
+	doc := "# Title\n\n### Validation evidence\nNested content\n\n```md\n## Validation evidence\nExample text\n```\n\n## Validation evidence\nActual table\n\n## Notes\nBound scope\n"
+	stripped := replaceSection(doc, "## Validation evidence", "")
+	for _, want := range []string{"### Validation evidence", "Nested content", "## Validation evidence\nExample text", "Bound scope"} {
+		if !strings.Contains(stripped, want) {
+			t.Fatalf("stripped bound text %q: %s", want, stripped)
+		}
+	}
+	if strings.Contains(stripped, "Actual table") {
+		t.Fatal("did not strip the actual generated section")
 	}
 }

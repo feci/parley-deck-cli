@@ -22,6 +22,15 @@ func TestTransitionFrontmatterStatus(t *testing.T) {
 	if err != nil || string(back) != transitionDoc {
 		t.Fatalf("inverse must restore the original bytes: err=%v", err)
 	}
+	crlf := strings.ReplaceAll(transitionDoc, "\n", "\r\n")
+	crlfOut, crlfFrom, err := TransitionFrontmatterStatus([]byte(crlf), "complete")
+	if err != nil || crlfFrom != "implemented" || string(crlfOut) != strings.Replace(crlf, "status: implemented", "status: complete", 1) {
+		t.Fatalf("CRLF status transition changed other bytes: %q %v", crlfOut, err)
+	}
+	crlfBack, _, err := TransitionFrontmatterStatus(crlfOut, crlfFrom)
+	if err != nil || string(crlfBack) != crlf {
+		t.Fatalf("CRLF inverse did not restore original bytes: %v", err)
+	}
 
 	cases := []struct {
 		name string
@@ -36,7 +45,6 @@ func TestTransitionFrontmatterStatus(t *testing.T) {
 		{"unnormalized double space", "---\nstatus:  implemented\n---\n", "complete"},
 		{"unnormalized no space", "---\nstatus:implemented\n---\n", "complete"},
 		{"unnormalized leading space", "---\n status: implemented\n---\n", "complete"},
-		{"crlf not normalized", "---\r\nstatus: implemented\r\n---\r\n", "complete"},
 		{"multi-token value", "---\nstatus: not run\n---\n", "complete"},
 		{"comment value", "---\nstatus: implemented # done\n---\n", "complete"},
 		{"already complete", "---\nstatus: complete\n---\n", "complete"},
@@ -175,10 +183,10 @@ func TestVerifyCompletionTransition(t *testing.T) {
 		return r
 	}
 	for name, r := range map[string]*Report{
-		"tampered target":       tamper(func(tr *CompletionTransition) { tr.ToStatus = "final" }),
-		"tampered source":       tamper(func(tr *CompletionTransition) { tr.FromStatus = "final" }),
-		"empty source":          tamper(func(tr *CompletionTransition) { tr.FromStatus = "" }),
-		"tampered authorizer":   tamper(func(tr *CompletionTransition) { tr.AuthorizedBy = "kimi-1" }),
+		"tampered target":        tamper(func(tr *CompletionTransition) { tr.ToStatus = "final" }),
+		"tampered source":        tamper(func(tr *CompletionTransition) { tr.FromStatus = "final" }),
+		"empty source":           tamper(func(tr *CompletionTransition) { tr.FromStatus = "" }),
+		"tampered authorizer":    tamper(func(tr *CompletionTransition) { tr.AuthorizedBy = "kimi-1" }),
 		"tampered before digest": tamper(func(tr *CompletionTransition) { tr.BeforeSHA256 = sha256Hex([]byte("x")) }),
 		"tampered after digest":  tamper(func(tr *CompletionTransition) { tr.AfterSHA256 = sha256Hex([]byte("x")) }),
 	} {

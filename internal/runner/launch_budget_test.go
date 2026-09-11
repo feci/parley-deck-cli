@@ -92,112 +92,135 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX fixture commands; Windows cross-build is separate")
 	}
-	for _, surface := range []string{"manual", "round-process", "consult", "probe", "interactive", "acp"} {
-		t.Run(surface, func(t *testing.T) {
-			root := t.TempDir()
-			writeLaunchProtocol(t, root)
-			ledger := budget.Store{Dir: filepath.Join(t.TempDir(), "shared-ledger"), Scope: "idea:fixture"}
-			limits := budget.Limits{Actions: map[budget.Kind]int{budget.Launch: 1}}
-			ctx := WithLaunchBudget(context.Background(), LaunchBudget{Store: ledger, Limits: limits})
-			// The injected copy must survive both caller mutation and metadata replacement.
-			limits.Actions[budget.Launch] = 100
-			ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: "changed-run", Phase: "review"})
-			agent := telemetryShell("printf 'actual child\\n'", false)
-			var launch func(int) error
-			switch surface {
-			case "manual":
-				launch = func(int) error {
-					_, err := RunMeasured(ctx, ExecOptions{Root: root, Agent: agent, Prompt: "task", Timeout: time.Second})
-					return err
-				}
-			case "round-process":
-				launch = func(int) error { return runTelemetryFixture(ctx, root, agent) }
-			case "consult":
-				launch = func(int) error {
-					r := RunConsult(ctx, ConsultOptions{Root: root, Agent: agent, Prompt: "task", Timeout: time.Second,
-						StdoutPath: filepath.Join(root, "consult-out"), StderrPath: filepath.Join(root, "consult-err")})
-					if r.ExitError != "" {
-						return errors.New(r.ExitError)
-					}
-					return nil
-				}
-			case "probe":
-				launch = func(int) error {
-					cmd, cleanup, err := ProbeCommandFor(WithLaunchInfo(ctx, LaunchInfo{Phase: "preflight"}), root, agent, "PONG")
-					if cleanup != nil {
-						defer cleanup()
-					}
+	for _, configured := range []bool{false, true} {
+		for _, surface := range []string{"manual", "round-process", "consult", "probe", "interactive", "acp"} {
+			name := surface
+			if configured {
+				name += "-configured"
+			}
+			t.Run(name, func(t *testing.T) {
+				root := t.TempDir()
+				writeLaunchProtocol(t, root)
+				ledger := budget.Store{Dir: filepath.Join(t.TempDir(), "shared-ledger"), Scope: "idea:fixture"}
+				limits := budget.Limits{Actions: map[budget.Kind]int{budget.Launch: 1}}
+				ctx := WithLaunchBudget(context.Background(), LaunchBudget{Store: ledger, Limits: limits})
+				// The injected copy must survive both caller mutation and metadata replacement.
+				limits.Actions[budget.Launch] = 100
+				if configured && surface != "acp" {
+					binding, err := budget.ConfigureLaunchBudget(context.Background(), root, "", budget.LaunchPolicy{MaxLaunches: 1})
 					if err != nil {
+						t.Fatal(err)
+					}
+					ledger = binding.Store
+					// Ordinary application calls attach no explicit budget context.
+					ctx = context.Background()
+				}
+				ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: "changed-run", Phase: "review"})
+				agent := telemetryShell("printf 'actual child\\n'", false)
+				var launch func(int) error
+				switch surface {
+				case "manual":
+					launch = func(int) error {
+						_, err := RunMeasured(ctx, ExecOptions{Root: root, Agent: agent, Prompt: "task", Timeout: time.Second})
 						return err
 					}
-					return cmd.Run()
-				}
-			case "interactive":
-				interactive, terminal := interactiveFixture(t, root, "printf 'actual terminal child\\n'")
-				launch = func(int) error {
-					return RunInteractive(ctx, root, interactive, "task", "", terminal, terminal, terminal)
-				}
-			case "acp":
-				if err := protocol.InitWorkspace(root); err != nil {
-					t.Fatal(err)
-				}
-				declareTestLaunchSource(t, root)
-				idea, err := protocol.CreateIdea(root, "Budget ACP fixture", []string{"fake-acp"})
-				if err != nil {
-					t.Fatal(err)
-				}
-				acpAgent := agents.Discovery{Spec: agents.Spec{ID: "fake-acp", LaunchMode: agents.LaunchACP,
-					ACPArgs: []string{"-test.run=TestFakeACPAgentHelper", "--", "parley-fake-acp-agent"}, PromptMode: agents.PromptStdin}, Path: os.Args[0], Found: true}
-				launch = func(attempt int) error {
-					if attempt > 0 {
-						if err := os.Remove(filepath.Join(idea.Path, "round-01/fake-acp.md")); err != nil {
+				case "round-process":
+					launch = func(int) error { return runTelemetryFixture(ctx, root, agent) }
+				case "consult":
+					launch = func(int) error {
+						r := RunConsult(ctx, ConsultOptions{Root: root, Agent: agent, Prompt: "task", Timeout: time.Second,
+							StdoutPath: filepath.Join(root, "consult-out"), StderrPath: filepath.Join(root, "consult-err")})
+						if r.ExitError != "" {
+							return errors.New(r.ExitError)
+						}
+						return nil
+					}
+				case "probe":
+					launch = func(int) error {
+						cmd, cleanup, err := ProbeCommandFor(WithLaunchInfo(ctx, LaunchInfo{Phase: "preflight"}), root, agent, "PONG")
+						if cleanup != nil {
+							defer cleanup()
+						}
+						if err != nil {
 							return err
 						}
+						return cmd.Run()
 					}
-					runID := []string{"first", "second"}[attempt]
-					results := RunRoundOne(ctx, Options{Root: root, RunID: runID, Idea: idea, Task: "Budget ACP fixture",
-						Agents: []agents.Discovery{acpAgent}, Timeout: 10 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", runID))})
-					if len(results) != 1 || results[0].ExitError != "" || !results[0].ArtifactOK {
-						return errors.New("ACP did not complete with its own artifact")
+				case "interactive":
+					interactive, terminal := interactiveFixture(t, root, "printf 'actual terminal child\\n'")
+					launch = func(int) error {
+						return RunInteractive(ctx, root, interactive, "task", "", terminal, terminal, terminal)
 					}
-					return nil
-				}
-			}
-			if err := launch(0); err != nil {
-				t.Fatalf("first actual %s launch: %v", surface, err)
-			}
-			if err := launch(1); err == nil {
-				t.Fatal("second launch exceeded one-call cap")
-			}
-			records := terminalRecords(t, root)
-			if len(records) != 2 {
-				t.Fatalf("two attempted requests required, got %d", len(records))
-			}
-			started, refused := 0, 0
-			for _, rec := range records {
-				if rec.StartedAt != nil && rec.PID != nil {
-					started++
-				}
-				if rec.Outcome.FailureClass != nil && *rec.Outcome.FailureClass == "budget_refused" {
-					refused++
-					if rec.PID != nil || rec.StartedAt != nil {
-						t.Fatal("denied request spawned a child")
+				case "acp":
+					if err := protocol.InitWorkspace(root); err != nil {
+						t.Fatal(err)
+					}
+					declareTestLaunchSource(t, root)
+					idea, err := protocol.CreateIdea(root, "Budget ACP fixture", []string{"fake-acp"})
+					if err != nil {
+						t.Fatal(err)
+					}
+					if configured {
+						binding, err := budget.ConfigureLaunchBudget(context.Background(), root, idea.Slug, budget.LaunchPolicy{MaxLaunches: 1})
+						if err != nil {
+							t.Fatal(err)
+						}
+						ledger = binding.Store
+						ctx = context.Background()
+					}
+					acpAgent := agents.Discovery{Spec: agents.Spec{ID: "fake-acp", LaunchMode: agents.LaunchACP,
+						ACPArgs: []string{"-test.run=TestFakeACPAgentHelper", "--", "parley-fake-acp-agent"}, PromptMode: agents.PromptStdin}, Path: os.Args[0], Found: true}
+					launch = func(attempt int) error {
+						if attempt > 0 {
+							if err := os.Remove(filepath.Join(idea.Path, "round-01/fake-acp.md")); err != nil {
+								return err
+							}
+						}
+						runID := []string{"first", "second"}[attempt]
+						results := RunRoundOne(ctx, Options{Root: root, RunID: runID, Idea: idea, Task: "Budget ACP fixture",
+							Agents: []agents.Discovery{acpAgent}, Timeout: 10 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", runID))})
+						if len(results) != 1 || results[0].ExitError != "" || !results[0].ArtifactOK {
+							return errors.New("ACP did not complete with its own artifact")
+						}
+						return nil
 					}
 				}
-			}
-			if started != 1 || refused != 1 {
-				t.Fatalf("actual lifecycle started=%d refused=%d", started, refused)
-			}
-			snapshot, err := ledger.Inspect(context.Background())
-			if err != nil || len(snapshot.Entries) != 1 {
-				t.Fatalf("spent entries=%+v err=%v", snapshot.Entries, err)
-			}
-			for _, entry := range snapshot.Entries {
-				if !entry.Settled {
-					t.Fatal("actual process did not settle")
+				if err := launch(0); err != nil {
+					t.Fatalf("first actual %s launch: %v", surface, err)
 				}
-			}
-		})
+				if err := launch(1); err == nil {
+					t.Fatal("second launch exceeded one-call cap")
+				}
+				records := terminalRecords(t, root)
+				if len(records) != 2 {
+					t.Fatalf("two attempted requests required, got %d", len(records))
+				}
+				started, refused := 0, 0
+				for _, rec := range records {
+					if rec.StartedAt != nil && rec.PID != nil {
+						started++
+					}
+					if rec.Outcome.FailureClass != nil && *rec.Outcome.FailureClass == "budget_refused" {
+						refused++
+						if rec.PID != nil || rec.StartedAt != nil {
+							t.Fatal("denied request spawned a child")
+						}
+					}
+				}
+				if started != 1 || refused != 1 {
+					t.Fatalf("actual lifecycle started=%d refused=%d", started, refused)
+				}
+				snapshot, err := ledger.Inspect(context.Background())
+				if err != nil || len(snapshot.Entries) != 1 {
+					t.Fatalf("spent entries=%+v err=%v", snapshot.Entries, err)
+				}
+				for _, entry := range snapshot.Entries {
+					if !entry.Settled {
+						t.Fatal("actual process did not settle")
+					}
+				}
+			})
+		}
 	}
 }
 

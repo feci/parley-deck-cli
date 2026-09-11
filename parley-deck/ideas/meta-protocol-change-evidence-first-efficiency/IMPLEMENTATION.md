@@ -967,3 +967,89 @@ Claude may write only its own new implementation-notes/claude-1-publication-revi
 and its native atomic siblings there. No source claim overlaps: Codex continues
 app/budget work on integration, the reviewer inspects this frozen snapshot.
 The historical quorum remains unchanged; this is not a full Phase-6 signoff.
+
+
+### Captured full verification and budget continuity counterexample — September 11
+
+The full captured-output rerun passes at source 0cdc56e: app 101.024s,
+budget 3.221s, driver 4.791s, evidence 3.590s, runner 25.249s. The 1403-byte
+local and shared logs match SHA256
+f9c8e46a9162b6ae019d43e5b3743cd098a264d9b274c9a336d5de15bce10940.
+Shared log: .parley-runtime/report-serialization-full-captured-20260911.log.
+The damaged earlier log remains retained. Independent Claude review of this
+frozen source is running in the dedicated review worktree with a 15-minute
+ceiling and native USD 5 cap; its exact atomic-write sandbox canary passed.
+
+Before attaching automatic scope/policy, Codex executed a new budget continuity
+probe in the already-owned internal/budget boundary.
+Command: go test -count=1 ./internal/budget -run '^TestDeletedLedgerCannotResetCharges$'
+Result: FAIL, exit 1: deleting only ledger.json granted another attempt above
+the frozen cap. The store retained its lock origin but recreated empty charges.
+The correction publishes an immutable bounded continuity witness after durable
+ledger persistence and before any grant returns. Missing charged history then
+refuses; the witness cannot reconstruct charges or authenticate same-UID edits.
+The source is on integration only; the reviewer snapshot stays unchanged.
+
+
+Additional Codex allocation before policy wiring — September 11:
+internal/budget/binding.go and binding_test.go, internal/app/budget_configure.go
+and budget_configure_test.go. Existing budget.go, runner/launch_budget.go,
+runner/telemetry.go and their tests cover routing and the shared pre-spawn
+boundary. All files are disjoint from the frozen Claude review worktree.
+
+Implement an explicit attended configure control that pins a policy per idea
+(or auxiliary scope) in shared Git administration, then automatically resolves
+that binding at every common launch boundary. A binding cannot be overwritten
+by mutable participant files or a different injected context. Configuration
+refuses observed legacy activity until its charges can be migrated; absent
+policy is not claimed as enforcement. Existing internal explicit policies stay
+available for trusted tests/callers, without overriding a persisted binding.
+Initial configuration and later operator extensions are distinct: this step
+does not silently implement a reset/extension or authorize experiment funding.
+
+
+### Publication review follow-up allocation — September 11
+
+Claude's own frozen-source review is preserved unchanged at fbb3c31. Its
+new triple-deletion path and CRLF/nested-status cases are checked through
+actual tests, including Driver.Advance rather than source assertion alone.
+Codex serializes the following evidence-boundary follow-up after all owner
+calls are terminal: new internal/evidence/contract_pin.go; existing
+report_guard.go, completion.go and completion_review_test.go; app driver_checks.go,
+evidence_publication_test.go, driver_impl.go and driver/checks.go, driver.go.
+The runtime original-contract witness lives with the publication guard in
+Git administration and survives removal of cursor, report and current checks.
+It is monotonic cooperative state, not protection against deleting all Git
+administration or malicious same-UID tampering. Preserve exact CRLF bytes
+while accepting one top-level normalized status; nested fields stay ordinary
+bound content. No participant canonical review or signature is edited.
+
+Additional serialized correction before editing completion_test.go: Codex
+updates Kimi's old CRLF-refusal fixture to the accepted byte-preserving CRLF
+behavior, keeping inverse-transition coverage. This source-test overlap is
+serialized under the existing integration ownership, not a rewrite of Kimi's
+canonical review/handoff. No participant source writer is concurrent.
+
+### Original-contract continuity and configured launch budgets — September 11
+
+See implementation-notes/codex-1-publication-review-dispositions-20260911.md
+for every finding in Claude's 0cdc56e review, corrected triple deletion and
+CRLF handling, ledger continuity, actual persisted launch policy attachment,
+historical-accounting counterexamples, and exact validation logs. The full Go
+suite passes (app 92.263s, budget 4.117s, driver 5.357s, evidence 3.038s,
+runner 26.011s). Budget/evidence/runner race, scoped vet, Windows cross-build
+and isolated shared-volume runtime fixtures pass. Failed earlier runs remain
+retained. Windows runtime and final independent acceptance are unverified.
+
+The inventory now reconciles 33 unique terminal attempts, 17 unknown costs
+and USD 45.7335065 known CLI estimates. Total cost remains unknown. The added
+Claude attempt cf190d54-548d-4840-a5b6-b10f4eb09742 reports Opus 5 plus Haiku
+4.5, not an extra participant; its own source review is preserved at fbb3c31.
+
+Next read-only source-review allocation: ../worktrees/evidence-first-binding-review,
+branch review/meta-protocol-change-evidence-first-efficiency/binding-20260911,
+frozen from this tested checkpoint. Claude may write only its own new
+implementation-notes/claude-1-binding-review-20260911.md and its native atomic
+siblings there. This is a scoped source review, not final acceptance. Codex
+continues independent implementation on integration; no source files overlap
+with the reviewer. Historical quorum, full-six and exact packet gates remain.

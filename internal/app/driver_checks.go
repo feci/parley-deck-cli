@@ -92,6 +92,12 @@ func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []drive
 		return false, err.Error()
 	}
 
+	if _, err := driver.ObserveChecksContract(o.ideaDir, driver.ChecksContractDigest(criteria)); err != nil {
+		return false, err.Error()
+	}
+	if err := writer.PinChecksContract(driver.ChecksContractDigest(criteria)); err != nil {
+		return false, err.Error()
+	}
 	excl, err := definedEvidenceArtifacts(o.root, o.ideaDir)
 	if err != nil {
 		return false, fmt.Sprintf("contract: evidence artifact scoping: %v — no completion", err)
@@ -315,17 +321,49 @@ func (o driverImplOps) writeValidationEvidence(results []criterionResult) error 
 // replaceSection replaces the `heading` section (up to the next `## ` or EOF) with
 // replacement, appending it if the heading is absent.
 func replaceSection(doc, heading, replacement string) string {
-	idx := strings.Index(doc, heading)
-	if idx < 0 {
+	start, end := -1, len(doc)
+	offset := 0
+	fence := byte(0)
+	fenceLen := 0
+	for _, raw := range strings.SplitAfter(doc, "\n") {
+		line := strings.TrimSuffix(strings.TrimSuffix(raw, "\n"), "\r")
+		trimmed := strings.TrimLeft(line, " ")
+		indent := len(line) - len(trimmed)
+		if indent <= 3 && len(trimmed) >= 3 && (trimmed[0] == '`' || trimmed[0] == '~') {
+			n := 0
+			for n < len(trimmed) && trimmed[n] == trimmed[0] {
+				n++
+			}
+			if fence == 0 && n >= 3 {
+				fence = trimmed[0]
+				fenceLen = n
+				offset += len(raw)
+				continue
+			}
+			if fence == trimmed[0] && n >= fenceLen && strings.TrimSpace(trimmed[n:]) == "" {
+				fence = 0
+				offset += len(raw)
+				continue
+			}
+		}
+		if fence == 0 {
+			if start < 0 && strings.TrimRight(line, " \t") == heading {
+				start = offset
+			} else if start >= 0 && strings.HasPrefix(line, "## ") {
+				end = offset
+				break
+			}
+		}
+		offset += len(raw)
+	}
+	if start < 0 {
+		if replacement == "" {
+			return doc
+		}
 		if !strings.HasSuffix(doc, "\n") {
 			doc += "\n"
 		}
 		return doc + "\n" + replacement
 	}
-	rest := doc[idx+len(heading):]
-	next := strings.Index(rest, "\n## ")
-	if next < 0 {
-		return doc[:idx] + strings.TrimRight(replacement, "\n") + "\n"
-	}
-	return doc[:idx] + strings.TrimRight(replacement, "\n") + rest[next:]
+	return doc[:start] + strings.TrimRight(replacement, "\n") + "\n" + doc[end:]
 }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -497,6 +498,9 @@ func (o driverImplOps) completeWithWriter(ctx context.Context) error {
 	if err != nil {
 		return err
 	} else if contract != "" {
+		if runtime.GOOS == "windows" {
+			return fmt.Errorf("independent evidence completion requires a POSIX execution host; Windows runtime is not supported")
+		}
 		if err := o.requireAcceptedVerification(); err != nil {
 			return err
 		}

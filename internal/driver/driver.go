@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/track"
@@ -271,6 +272,11 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	pin, err := ObserveChecksContract(d.cfg.IdeaDir, c.ChecksContractSHA256)
 	if err != nil {
 		return ActionEscalated, c, fmt.Errorf("original completion scope: %w", err)
+	}
+	if pin != "" {
+		if err := evidence.PinChecksContract(ctx, d.cfg.IdeaDir, pin); err != nil {
+			return ActionEscalated, c, fmt.Errorf("pin original contract before agent work: %w", err)
+		}
 	}
 	if pin != c.ChecksContractSHA256 {
 		c.ChecksContractSHA256 = pin

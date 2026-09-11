@@ -1,9 +1,12 @@
 package evidence
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -30,6 +33,7 @@ func ReportPath(ideaDir string) string {
 
 // Save atomically persists the report. A failure here invalidates the whole
 // completion attempt (evidence-write failure is a failure, not a warning).
+// Non-reentrant: within WithReportWriter use the supplied writer.Save instead.
 func Save(ideaDir string, r *Report) error {
 	return WithReportWriter(context.Background(), ideaDir, func(w *ReportWriter) error {
 		_, err := w.Save(r)
@@ -80,13 +84,48 @@ func saveReport(ideaDir string, r *Report) ([]byte, error) {
 // Load reads a previously saved report. A missing or corrupt report is an
 // error: closure callers treat that as fail-closed (no evidence).
 func Load(ideaDir string) (*Report, error) {
-	data, err := os.ReadFile(ReportPath(ideaDir))
+	data, err := readBoundedEvidenceFile(ReportPath(ideaDir), 16<<20)
 	if err != nil {
 		return nil, fmt.Errorf("evidence: read report: %w", err)
 	}
 	var r Report
-	if err := json.Unmarshal(data, &r); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&r); err != nil {
 		return nil, fmt.Errorf("evidence: corrupt report: %w", err)
 	}
+	if decoder.Decode(new(any)) != io.EOF {
+		return nil, errors.New("evidence: trailing report content")
+	}
 	return &r, nil
+}
+
+func readBoundedEvidenceFile(path string, limit int64) ([]byte, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > limit {
+		return nil, errors.New("evidence artifact must be a bounded regular file")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	opened, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !os.SameFile(info, opened) {
+		return nil, errors.New("evidence artifact changed during open")
+	}
+	data, err := io.ReadAll(io.LimitReader(f, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, errors.New("evidence artifact exceeds size limit")
+	}
+	return data, nil
 }

@@ -301,6 +301,9 @@ func (s Store) update(ctx context.Context, change func(*Snapshot, time.Time) err
 	}
 	path := filepath.Join(s.Dir, "ledger.json")
 	state, err := read(path)
+	if witnessErr := s.checkContinuity(os.IsNotExist(err)); witnessErr != nil {
+		return Snapshot{}, witnessErr
+	}
 	if os.IsNotExist(err) {
 		state = Snapshot{Schema: 1, Scope: s.Scope, StartedAt: now, Entries: map[string]Reservation{}}
 	} else if err != nil {
@@ -338,6 +341,9 @@ func (s Store) update(ctx context.Context, change func(*Snapshot, time.Time) err
 	}
 	if err := write(path, append(data, '\n')); err != nil {
 		return state, fmt.Errorf("persist budget before work: %w", err)
+	}
+	if err := s.establishContinuity(); err != nil {
+		return state, fmt.Errorf("persist budget continuity before work: %w", err)
 	}
 	return state, nil
 }

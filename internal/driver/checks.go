@@ -32,15 +32,21 @@ type CheckCriterion struct {
 // deleting the current checks list cannot turn that history into a scalar task.
 // This is runtime safety state, not authentication against same-UID tampering.
 func ObserveChecksContract(ideaDir, expected string) (string, error) {
+	obligation, err := evidence.ReadContractPin(ideaDir)
+	if err != nil {
+		return "", fmt.Errorf("cannot read original contract witness: %w", err)
+	}
+	if obligation != "" {
+		if expected != "" && expected != obligation {
+			return "", fmt.Errorf("cursor differs from original contract witness")
+		}
+		expected = obligation
+	}
 	criteria, named, err := ReadChecksContract(ideaDir)
 	if err != nil {
 		return "", err
 	}
-	digest := func(checks []CheckCriterion) string {
-		encoded, _ := json.Marshal(checks)
-		sum := sha256.Sum256(encoded)
-		return hex.EncodeToString(sum[:])
-	}
+	digest := ChecksContractDigest
 	current := ""
 	if named {
 		current = digest(criteria)
@@ -71,6 +77,13 @@ func ObserveChecksContract(ideaDir, expected string) (string, error) {
 		}
 	}
 	return current, nil
+}
+
+// ChecksContractDigest is the canonical normalized names/commands binding.
+func ChecksContractDigest(criteria []CheckCriterion) string {
+	data, _ := json.Marshal(criteria)
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
 }
 
 // ReadChecksContract inspects the `checks:` frontmatter of 00-prompt.md.

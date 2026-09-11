@@ -268,7 +268,7 @@ func TestOriginlessLedgerInspectionNeverPinsOrLosesCharges(t *testing.T) {
 			t.Fatal("wrong scope accepted")
 		}
 		files, err := os.ReadDir(s.Dir)
-		if err != nil || len(files) != 1 || files[0].Name() != "ledger.json" {
+		if err != nil || len(files) != 2 || files[0].Name() != "ledger-established" || files[1].Name() != "ledger.json" {
 			t.Fatalf("read changed directory: %v %v", files, err)
 		}
 	}

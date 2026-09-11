@@ -39,3 +39,14 @@ func TestCompletionTransitionMatchedTamperingAndMalformedBinding(t *testing.T) {
 		})
 	}
 }
+
+func TestCompletionTransitionPreservesCRLFAndNestedStatus(t *testing.T) {
+	for _, lineEnd := range []string{"\n", "\r\n"} {
+		original := strings.Join([]string{"---", "status: implemented", "roles:", "  observer:", "    status: optional", "---", "body", ""}, lineEnd)
+		want := strings.Replace(original, "status: implemented", "status: complete", 1)
+		got, from, err := TransitionStatusToComplete([]byte(original))
+		if err != nil || from != "implemented" || string(got) != want {
+			t.Fatalf("valid document was not preserved: from=%q err=%v got=%q", from, err, got)
+		}
+	}
+}

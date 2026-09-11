@@ -73,18 +73,18 @@ func TransitionFrontmatterStatus(doc []byte, to string) (out []byte, from string
 		return nil, "", fmt.Errorf("evidence: invalid transition target status %q", to)
 	}
 	lines := strings.Split(string(doc), "\n")
-	if len(lines) == 0 || lines[0] != "---" {
+	if len(lines) == 0 || strings.TrimSuffix(lines[0], "\r") != "---" {
 		return nil, "", fmt.Errorf("evidence: document has no frontmatter block")
 	}
 	closing := -1
 	statusIdx := -1
 	value := ""
 	for i := 1; i < len(lines); i++ {
-		if lines[i] == "---" {
+		if strings.TrimSuffix(lines[i], "\r") == "---" {
 			closing = i
 			break
 		}
-		if trimmed := strings.TrimSpace(lines[i]); strings.HasPrefix(trimmed, "status:") {
+		if trimmed := strings.TrimSuffix(lines[i], "\r"); strings.HasPrefix(trimmed, "status:") {
 			if statusIdx >= 0 {
 				return nil, "", fmt.Errorf("evidence: duplicate frontmatter status field")
 			}
@@ -101,7 +101,7 @@ func TransitionFrontmatterStatus(doc []byte, to string) (out []byte, from string
 	if !completionStatusToken.MatchString(value) {
 		return nil, "", fmt.Errorf("evidence: frontmatter status value %q is not a single plain token", value)
 	}
-	if lines[statusIdx] != "status: "+value {
+	if strings.TrimSuffix(lines[statusIdx], "\r") != "status: "+value {
 		return nil, "", fmt.Errorf("evidence: frontmatter status line %q is not in the normalized form %q", lines[statusIdx], "status: "+value)
 	}
 	// Check YAML meaning as well as normalized bytes: quoted/spaced duplicate
@@ -135,6 +135,9 @@ func TransitionFrontmatterStatus(doc []byte, to string) (out []byte, from string
 	outLines := make([]string, len(lines))
 	copy(outLines, lines)
 	outLines[statusIdx] = "status: " + to
+	if strings.HasSuffix(lines[statusIdx], "\r") {
+		outLines[statusIdx] += "\r"
+	}
 	return []byte(strings.Join(outLines, "\n")), value, nil
 }
 
