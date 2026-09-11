@@ -12,6 +12,9 @@ import (
 )
 
 func runBudgetMigrate(ctx context.Context, args []string, stdout, stderr io.Writer, attended bool) int {
+	if len(args) > 0 && args[0] == "recover" {
+		return runBudgetMigrationRecovery(ctx, args[1:], stdout, stderr, attended)
+	}
 	if len(args) == 0 || args[0] != "inspect" && args[0] != "apply" {
 		fmt.Fprintln(stderr, "usage: parley budget migrate inspect|apply --kind launch|step|fixup|cross-review --dir DIR [--idea ID] [options]")
 		return 2

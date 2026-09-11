@@ -117,8 +117,12 @@ func checkLaunchMigrationPolicy(dir string, policy LaunchPolicy) error {
 	if policy.MigrationSHA256 != digest || !reflect.DeepEqual(policy.originalPolicy(), expected) {
 		return errors.New("migrated policy differs from its immutable operator decision")
 	}
+	_, marker, err := recoveredMigrationState(launchRecoveryBase(dir, r))
+	if err != nil {
+		return err
+	}
 	raw, err := readLockOrigin(filepath.Join(dir, "migration-active"))
-	if err != nil || string(raw) != string(migrationActiveBytes(digest)) {
+	if err != nil || string(raw) != string(marker) {
 		return errors.New("launch migration is not durably active; replay the exact operator decision before work")
 	}
 	return nil
@@ -132,10 +136,14 @@ func checkLaunchMigrationCharges(dir string, p LaunchPolicy, state Snapshot) err
 	if err != nil {
 		return err
 	}
-	if migrationDigest(r) != p.MigrationSHA256 || !state.StartedAt.Equal(r.Initial.StartedAt) {
+	initial, _, err := recoveredMigrationState(launchRecoveryBase(dir, r))
+	if err != nil {
+		return err
+	}
+	if migrationDigest(r) != p.MigrationSHA256 || !state.StartedAt.Equal(initial.StartedAt) {
 		return errors.New("migration accounting epoch or witness differs")
 	}
-	for id, initial := range r.Initial.Entries {
+	for id, initial := range initial.Entries {
 		current, ok := state.Entries[id]
 		// Monetary reconciliation may be appended, but it cannot alter the
 		// imported observation or erase the original spent action.
@@ -206,7 +214,11 @@ func migrateLaunchBudget(ctx context.Context, root, idea string, request LaunchM
 	if priorErr == nil {
 		active, activeErr := readLockOrigin(filepath.Join(dir, "migration-active"))
 		if activeErr == nil {
-			if string(active) != string(migrationActiveBytes(migrationDigest(prior))) {
+			_, marker, err := recoveredMigrationState(launchRecoveryBase(dir, prior))
+			if err != nil {
+				return PolicyStatus{}, err
+			}
+			if string(active) != string(marker) {
 				return PolicyStatus{}, errors.New("migration activation witness differs")
 			}
 			binding, err := LoadLaunchBinding(ctx, root, idea)
@@ -218,6 +230,9 @@ func migrateLaunchBudget(ctx context.Context, root, idea string, request LaunchM
 		if !os.IsNotExist(activeErr) {
 			return PolicyStatus{}, activeErr
 		}
+	}
+	if err := refusePendingRecovery(dir); err != nil {
+		return PolicyStatus{}, err
 	}
 	// Scope existence now prevents current readers from starting unbudgeted
 	// work. Recheck all historical files after taking the publication guard.

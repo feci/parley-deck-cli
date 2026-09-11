@@ -113,8 +113,12 @@ func checkProtocolMigrationPolicy(dir, digest string, original any) error {
 	if migrationDigest(r) != digest || !reflect.DeepEqual(original, protocolMigrationPolicy(r, digest)) {
 		return errors.New("protocol policy differs from immutable migration decision")
 	}
+	_, marker, err := recoveredMigrationState(protocolRecoveryBase(dir, r))
+	if err != nil {
+		return err
+	}
 	active, err := readLockOrigin(filepath.Join(dir, "migration-active"))
-	if err != nil || string(active) != string(protocolMigrationActive(digest)) {
+	if err != nil || string(active) != string(marker) {
 		return errors.New("protocol migration is not durably active; replay the exact decision before work")
 	}
 	return nil
@@ -128,10 +132,14 @@ func checkProtocolMigrationCharges(dir, digest string, s Snapshot) error {
 	if err != nil {
 		return err
 	}
-	if migrationDigest(r) != digest || s.Scope != r.Initial.Scope || !s.StartedAt.Equal(r.Initial.StartedAt) {
+	initial, _, err := recoveredMigrationState(protocolRecoveryBase(dir, r))
+	if err != nil {
+		return err
+	}
+	if migrationDigest(r) != digest || s.Scope != initial.Scope || !s.StartedAt.Equal(initial.StartedAt) {
 		return errors.New("protocol import lost its accounting origin")
 	}
-	for id, old := range r.Initial.Entries {
+	for id, old := range initial.Entries {
 		if current, ok := s.Entries[id]; !ok || !reflect.DeepEqual(current, old) {
 			return errors.New("imported protocol charge was removed or rewritten")
 		}
@@ -208,7 +216,11 @@ func migrateProtocolBudget(ctx context.Context, root, idea string, kind Kind, r 
 		}
 		active, err := readLockOrigin(filepath.Join(dir, "migration-active"))
 		if err == nil {
-			if string(active) != string(protocolMigrationActive(migrationDigest(prior))) {
+			_, marker, err := recoveredMigrationState(protocolRecoveryBase(dir, prior))
+			if err != nil {
+				return PolicyStatus{}, err
+			}
+			if string(active) != string(marker) {
 				return PolicyStatus{}, errors.New("protocol activation witness differs")
 			}
 			return inspectProtocolMigrationBinding(ctx, root, idea, kind)
@@ -216,6 +228,9 @@ func migrateProtocolBudget(ctx context.Context, root, idea string, kind Kind, r 
 		if !os.IsNotExist(err) {
 			return PolicyStatus{}, err
 		}
+	}
+	if err := refusePendingRecovery(dir); err != nil {
+		return PolicyStatus{}, err
 	}
 	i, err := InspectProtocolMigration(ctx, root, idea, kind, r.IdeaPath)
 	if err != nil {

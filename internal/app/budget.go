@@ -17,7 +17,7 @@ func runBudget(ctx context.Context, args []string, stdout, stderr io.Writer) int
 }
 
 func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr io.Writer, supported, attended bool) int {
-	if len(args) > 1 && args[0] == "migrate" && args[1] == "apply" && !supported {
+	if len(args) > 1 && args[0] == "migrate" && (args[1] == "apply" || len(args) > 2 && args[1] == "recover" && args[2] == "apply") && !supported {
 		fmt.Fprintln(stderr, "budget migration: attended operator control is unavailable on this platform; no import was activated")
 		return 2
 	}

@@ -577,7 +577,8 @@ before activation. Detected concurrent historical changes leave the import
 inactive for recovery. The stopped-writers assertion and hashes do not coordinate
 uncooperative external writers or authenticate a human with shared filesystem
 access. Keep writers stopped throughout the operation. Unknown/inconsistent
-history and changed inactive imports need separate recovery; do not force them.
+history still requires reconciliation. Changed inactive imports use the explicit
+recovery control below; original import replay never replaces their decision.
 
 The inventory allows 10,000 sources/actions and 64 MiB total source bytes; the
 import record is limited to 8 MiB. Individual metadata, event and artifact reads
@@ -663,10 +664,83 @@ timestamps record the declared accounting epoch, not invented observed child
 starts. Their zero monetary values represent protocol counts only; provider
 prices and unknown costs remain in the independent launch ledger. Import does
 not reconstruct durable semantic operation identities for exactly-once execution.
-Existing configured/charged scopes, changed inactive imports, malformed or
-unavailable history and lock-origin recovery require separate reconciliation.
+Existing active scopes, malformed or unavailable history and lock-origin recovery
+require separate reconciliation. Changed inactive imports use the control below.
 The same attendance, stopped-writer, hash-authentication, file-size and
 mixed-version limitations as launch import apply.
+
+### Recovering changed inactive imports
+
+An import that stopped before activation can be reconciled with subsequently
+observed history using the same control for launch, step, fixup and cross-review
+accounting. Preview is read-only and requires neither attendance nor a lock:
+
+```sh
+parley budget migrate recover inspect --kind launch --dir DIR --idea IDEA
+parley budget migrate recover inspect --kind step --dir DIR --idea IDEA
+```
+
+The preview includes the import directory, original decision, last recovery
+decision if present, exact import-state and current-history hashes, retained
+charges, original policy and minimum explicit accounting count. An active import
+is marked active and its current history is not rescanned; the history hash is
+empty because a new recovery is not applicable. Its latest exact decision may
+still be replayed to obtain current status, including later charges/extensions.
+
+With all affected writers stopped, the operator supplies a concrete decision:
+
+```sh
+parley budget migrate recover apply --kind launch --dir DIR --idea IDEA \
+  --expected-import-sha256 IMPORT_SHA --expected-history-sha256 HISTORY_SHA \
+  --decision-id DECISION --reason REASON --started-at ORIGINAL_OR_EARLIER_TIME \
+  --additional-launches PRE_TELEMETRY_TOTAL --writers-stopped --yes
+
+parley budget migrate recover apply --kind fixup --dir DIR --idea IDEA \
+  --expected-import-sha256 IMPORT_SHA --expected-history-sha256 HISTORY_SHA \
+  --decision-id DECISION --reason REASON --started-at ORIGINAL_OR_EARLIER_TIME \
+  --total-actions HISTORICAL_CYCLE_TOTAL --writers-stopped --yes
+```
+
+Use `--total-actions` for step and cross-review as well. Counts are absolute
+historical totals, not newly granted work. They cannot decrease below either
+retained operator accounting or the observed lower bound. Launch recovery unions
+unique observed attempts with the retained charges and the explicit total for
+pre-telemetry work. Existing attempt identities are not charged again. Anonymous
+operator counts are not automatically matched to newly discovered
+invocation IDs; without a proven mapping both are conservatively retained.
+This is distinct from the count of actually observed unique model invocations.
+Previous observations, including their unknown costs and timestamps, remain unchanged;
+conflicting terminal observations refuse even if the monetary amount is equal.
+Previously recorded charges survive a historical source disappearing, while
+unavailable roots or malformed current sources still refuse inspection. Recovery
+does not recreate missing raw source files. Protocol totals remain an explicit
+operator assertion because old child invocations lack reliable cycle identities.
+
+The original `migration.json` and policy ceilings are preserved. A bounded,
+hash-linked `migration-recovery.json` journal records each decision, observed file
+hashes, typed history and resulting accounting snapshot. The original accounting
+epoch can move earlier to include discovered work; it can never move later or
+extend the original lifetime allowance. No ceiling/reservation flag is accepted.
+Separate policy extension controls remain required after activation.
+
+Apply holds the existing resource guard, checks both preview hashes and publishes
+the journal before ledger/policy completion. Only a retained original or recovery
+checkpoint can be advanced; unknown ledger changes cannot be overwritten. The
+final versioned activation marker binds the original import and complete journal.
+Older readers reject this marker. Do not run older writers against recovered
+state. Removing the journal invalidates activation; it is not a reset mechanism.
+
+Interrupted publication can replay the exact last decision shown by preview,
+including its original expected hashes. A change in live history needs a new
+decision ID and fresh preview hashes; the earlier decision and charges stay in
+the journal. Exact active replay preserves later charges and policy extensions.
+An active import cannot be replaced by a new recovery. There are at most 32
+recovery decisions in a journal, with a 16 MiB journal bound and the existing
+history/action limits. Raw prompts, commands and source contents are not copied
+into recovery records. These are cooperative accounting and operator-attendance
+controls, not human authentication or distributed writer exclusion. Origin
+migration, semantic action replay and independent implementation acceptance
+remain separate requirements. Windows runtime remains unverified.
 
 ### Retaining and recovering independent verification refusals
 

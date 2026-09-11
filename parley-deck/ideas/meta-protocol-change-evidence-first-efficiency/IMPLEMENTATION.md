@@ -1792,3 +1792,59 @@ archived under browser-qa/table-integrity-20260911/report.html at its original
 hash. No fresh screenshot, physical click-placement or print/PDF pagination is
 certified. This remains current partial-report QA; independent acceptance and
 all live experiments/follow-ups remain open. Source manifest is unchanged.
+
+
+### Changed inactive import recovery allocation — September 11
+
+Before edits, Codex claims internal/budget/{migration_recovery.go,
+migration_recovery_test.go,launch_migration.go,protocol_migration.go},
+internal/app/{budget.go,budget_migrate.go,budget_migration_recovery.go,
+budget_migration_recovery_test.go}, docs/agent-runtime-configuration.md and
+implementation-notes/codex-1-import-recovery-dispositions-20260911.md.
+
+Add read-only preview and attended exact-decision recovery for changed inactive
+launch, step, fixup and cross-review imports. Preserve original migration.json,
+original policy ceilings and all original charges; append a bounded hash-linked
+recovery journal with actual current history and explicit accounting assertions.
+Merge newly observed launch attempts without recharging existing identities;
+retain unknown costs and refuse conflicting prior observations. Protocol totals
+and explicit pre-telemetry launch counts cannot shrink. An accounting epoch may
+move earlier to include newly found history, never later. Freeze both current
+import-state and current history hashes before publication. Exact replay handles
+interrupted persistence; changed history needs a new operator decision. A versioned
+activation witness binds the journal and makes old readers refuse recovered state.
+
+Exercise every accounting kind, interrupted write boundaries, changed-again
+history, concurrent exact/conflicting controls, active replay with later charges,
+no policy extension, unknown costs and malformed/stale/unattended decisions. This
+is implementation and fixture verification only; no actual operator accounting
+operation or model call is authorized by these test decisions. Lock-origin
+migration, semantic action replay, trajectory and all independent/live FINAL
+requirements remain intact.
+
+
+### Changed inactive import source checkpoint — September 11
+
+Read-only preview and attended exact-decision recovery now cover launch, step,
+fixup and cross-review imports whose history changed before activation. Original
+imports/ceilings and all charges remain; a bounded hash-linked journal plus a new
+activation marker binds each reconciled checkpoint. Counts cannot shrink, epochs
+cannot move later, conflicting terminal observations refuse, and exact replay
+preserves later charges and separate extensions. The owned recovery disposition
+records behavior, limits, all publication-failure fixtures and the initial compile
+correction. No independent acceptance is claimed.
+
+All 349 Go/module files match the source manifest. Full suite PASS (143.697s),
+budget/evidence/app/driver/runner race PASS (159.952s), scoped vet PASS (0.763s),
+Windows amd64 app cross-build PASS and isolated shared-volume recovery fixtures
+PASS (17.996s). Separate-process exact/conflicting controls and nine actual compiled
+CLI fixture probes passed. No actual model or real project accounting action ran.
+All other independent/live FINAL gates and original quorum remain unchanged.
+
+### Import recovery delivery allocation — September 11
+
+Before edits, Codex claims evaluation delivery/2026-09-05/{PROGRESS.md,
+priorities.json,report.html,report-manifest.json}, browser-import-recovery-20260911.json
+and browser-qa/import-recovery-20260911. Preserve the exact prior guard report before
+refreshing the partial report. Bind new report verification to this source;
+keep independent acceptance and every outstanding experiment/follow-up explicit.
