@@ -380,3 +380,168 @@ func gateHas(g EvidenceGateResult, sub string) bool {
 	}
 	return false
 }
+
+// attestContract runs the full contract and has verifier independently
+// re-execute and attest every criterion (the same real-rerun discipline as
+// TestEvidenceCloseGatePositive), returning the loaded, unsaved report.
+func attestContract(t *testing.T, root, ideaDir string, o driverImplOps, verifier string) *evidence.Report {
+	t.Helper()
+	criteria := mustContract(t, ideaDir)
+	if ok, detail := o.runChecksContract(context.Background(), criteria); !ok {
+		t.Fatalf("contract run should pass: %s", detail)
+	}
+	report, err := evidence.Load(ideaDir)
+	if err != nil {
+		t.Fatalf("typed report not persisted: %v", err)
+	}
+	excl, err := definedEvidenceArtifacts(root, ideaDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range criteria {
+		before, err := evidence.TreeDigest(root, excl...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rerun := evidence.RunCriterion(context.Background(), root, c.Name, c.Command, verifier)
+		after, err := evidence.TreeDigest(root, excl...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if before != after || before != report.TreeSHA256 {
+			t.Fatalf("verifier tree binding broken: before=%s after=%s report=%s", before[:12], after[:12], report.TreeSHA256[:12])
+		}
+		if err := evidence.AttestExecution(report, c.Name, verifier, evidence.VerifierExecution{
+			Command:          rerun.Command,
+			TreeBeforeSHA256: before,
+			TreeAfterSHA256:  after,
+		}); err != nil {
+			t.Fatalf("real independent attestation must succeed: %v", err)
+		}
+	}
+	return report
+}
+
+// authorizeCompletion has the attesting verifier authorize the completion
+// transition from the exact bound rest bytes and persists the report — the
+// adapter call the independently invoked verifier makes BEFORE Save.
+func authorizeCompletion(t *testing.T, root, ideaDir string, report *evidence.Report, verifier string) {
+	t.Helper()
+	restContent, implRel, err := implementationRestContent(root, ideaDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := evidence.AuthorizeCompletionTransition(report, implRel, restContent, verifier); err != nil {
+		t.Fatalf("verifier authorization must succeed: %v", err)
+	}
+	if err := evidence.Save(ideaDir, report); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// flipStatusComplete applies the deterministic completion transformation to
+// IMPLEMENTATION.md — the same bytes Complete must write.
+func flipStatusComplete(t *testing.T, ideaDir string) {
+	t.Helper()
+	implPath := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	raw, err := os.ReadFile(implPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	completed, from, err := evidence.TransitionStatusToComplete(raw)
+	if err != nil {
+		t.Fatalf("deterministic completion transformation: %v", err)
+	}
+	if from != "implemented" {
+		t.Fatalf("unexpected source status %q", from)
+	}
+	if err := os.WriteFile(implPath, completed, 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The facilitator's counterexample, fixed: independently attested evidence,
+// verifier-authorized status transition, deterministic flip to status:
+// complete — the close gate still allows, because the transition is verified
+// against the current content and recomputed back to the recorded state.
+func TestEvidenceCloseGateCompletionTransition(t *testing.T) {
+	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+	o := gateOps(root, ideaDir)
+	report := attestContract(t, root, ideaDir, o, "codex-1")
+	authorizeCompletion(t, root, ideaDir, report, "codex-1")
+	flipStatusComplete(t, ideaDir)
+	raw, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	if err != nil || !strings.Contains(string(raw), "\nstatus: complete\n") {
+		t.Fatalf("the deterministic flip must land status: complete: %v", err)
+	}
+	if gate := o.EvidenceCloseGate("codex-1"); !gate.Allowed {
+		t.Fatalf("an authorized, exactly-applied completion transition must close: %v", gate.Reasons)
+	}
+}
+
+// Counterexample regression: the SAME status flip WITHOUT a recorded
+// verifier-authorized transition is still denied — status/frontmatter scope
+// stays bound, never silently excluded.
+func TestEvidenceCloseGateStatusFlipWithoutTransitionDenied(t *testing.T) {
+	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+	o := gateOps(root, ideaDir)
+	report := attestContract(t, root, ideaDir, o, "codex-1")
+	if err := evidence.Save(ideaDir, report); err != nil {
+		t.Fatal(err)
+	}
+	flipStatusComplete(t, ideaDir)
+	gate := o.EvidenceCloseGate("codex-1")
+	if gate.Allowed || !gateHas(gate, "non-evidence content changed") {
+		t.Fatalf("an unauthorized status flip must deny: %+v", gate)
+	}
+}
+
+// A transition authorized by one verifier does not serve a different selected
+// verifier.
+func TestEvidenceCloseGateCompletionTransitionWrongVerifier(t *testing.T) {
+	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+	o := gateOps(root, ideaDir)
+	report := attestContract(t, root, ideaDir, o, "codex-1")
+	authorizeCompletion(t, root, ideaDir, report, "codex-1")
+	flipStatusComplete(t, ideaDir)
+	gate := o.EvidenceCloseGate("opencode-1")
+	if gate.Allowed || !gateHas(gate, "authorized by codex-1, not the selected verifier opencode-1") {
+		t.Fatalf("a transition must not authorize a different verifier: %+v", gate)
+	}
+}
+
+// The authorized transition covers ONLY the status flip: any extra
+// non-evidence edit alongside it is still denied.
+func TestEvidenceCloseGateCompletionTransitionExtraEditDenied(t *testing.T) {
+	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+	o := gateOps(root, ideaDir)
+	report := attestContract(t, root, ideaDir, o, "codex-1")
+	authorizeCompletion(t, root, ideaDir, report, "codex-1")
+	flipStatusComplete(t, ideaDir)
+	implPath := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	raw, err := os.ReadFile(implPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An edit OUTSIDE the generated evidence section (the summary section).
+	if err := os.WriteFile(implPath, []byte(strings.Replace(string(raw), "done", "done differently", 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	gate := o.EvidenceCloseGate("codex-1")
+	if gate.Allowed || !gateHas(gate, "not the authorized post-completion state") {
+		t.Fatalf("an extra edit must not hide inside the authorized transition: %+v", gate)
+	}
+}
+
+// An authorized-but-never-applied transition (the completion write failed or
+// was vetoed after authorization) leaves the evidence in its original, still
+// valid state — closure remains possible and completion can be retried.
+func TestEvidenceCloseGateCompletionTransitionUnapplied(t *testing.T) {
+	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+	o := gateOps(root, ideaDir)
+	report := attestContract(t, root, ideaDir, o, "codex-1")
+	authorizeCompletion(t, root, ideaDir, report, "codex-1")
+	if gate := o.EvidenceCloseGate("codex-1"); !gate.Allowed {
+		t.Fatalf("the un-applied authorized transition must leave the original state valid: %v", gate.Reasons)
+	}
+}

@@ -116,6 +116,12 @@ type Report struct {
 	// compares, so a non-evidence edit to an excluded file invalidates the
 	// report instead of hiding behind the exclusion.
 	ExtraDigests map[string]string `json:"extra_digests,omitempty"`
+	// CompletionTransition, when present, is the single authorized `status:
+	// complete` transition for one ExtraDigests-bound path, recorded by the
+	// independent verifier via AuthorizeCompletionTransition before the
+	// transition is applied. Absent on older reports: those remain valid only
+	// in their ORIGINAL state and are never silently upgraded.
+	CompletionTransition *CompletionTransition `json:"completion_transition,omitempty"`
 }
 
 // ClosureOptions parameterizes Evaluate.

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -94,17 +96,25 @@ func (o driverImplOps) EvidenceCloseGate(verifier string) EvidenceGateResult {
 	// its evidence section each cycle), so the report must separately bind the
 	// NON-evidence remainder. A report without that binding, or with a binding
 	// that no longer matches, is denied — a scope edit must not hide behind the
-	// exclusion.
-	restDigest, implRel, err := implementationRestDigest(o.root, o.ideaDir)
+	// exclusion. The ONLY admissible mismatch is the recorded completion
+	// transition: the attesting verifier's exact, pre-authorized `status:
+	// complete` flip, independently recomputed against the current content
+	// (evidence.VerifyCompletionTransition). Status/frontmatter stay bound —
+	// they are reconciled, never excluded.
+	restContent, implRel, err := implementationRestContent(o.root, o.ideaDir)
 	if err != nil {
 		return deny("non-evidence implementation digest failed: " + err.Error())
 	}
+	restSum := sha256.Sum256(restContent)
+	restDigest := hex.EncodeToString(restSum[:])
 	bound, ok := report.ExtraDigests[implRel]
 	if !ok || bound == "" {
 		return deny("report does not bind the non-evidence IMPLEMENTATION.md content — cannot rule out hidden scope edits")
 	}
 	if bound != restDigest {
-		return deny("IMPLEMENTATION.md non-evidence content changed after the evidence was recorded")
+		if trReasons := evidence.VerifyCompletionTransition(report, implRel, bound, restContent, verifier); len(trReasons) > 0 {
+			return deny("IMPLEMENTATION.md non-evidence content changed after the evidence was recorded (" + strings.Join(trReasons, "; ") + ")")
+		}
 	}
 	reasons := evidence.Evaluate(report, evidence.ClosureOptions{
 		RequiredScope:     scope,
