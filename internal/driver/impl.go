@@ -288,6 +288,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		if cerr != nil {
 			return ActionEscalated, c, fmt.Errorf("completion contract changed or invalid: %w", cerr)
 		}
+		if _, err := ObserveChecksContract(d.cfg.IdeaDir, c.ChecksContractSHA256); err != nil {
+			return ActionEscalated, c, fmt.Errorf("original completion scope changed: %w", err)
+		}
 		if hadNamedChecks || hasNamedChecks {
 			verifier, ok := d.cfg.Impl.(CompletionEvidenceOps)
 			if !ok {

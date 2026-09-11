@@ -131,6 +131,9 @@ func TestMain(m *testing.M) {
 					}
 					t.Fatalf("real verifier did not close: %s %v\n%s", action, err, progress.String())
 				}
+				if gate := op.EvidenceCloseGate(op.drafter); !gate.Allowed {
+					t.Fatalf("completed document invalidates its evidence: %v", gate.Reasons)
+				}
 				executions, err := os.ReadFile(filepath.Join(root, ".parley-runtime/executions.txt"))
 				if err != nil {
 					t.Fatal(err)
@@ -199,5 +202,41 @@ func TestEvidenceHelperRefusesMissingRuntimeIdentity(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "result.json")); !os.IsNotExist(err) {
 		t.Fatal("unattributed helper wrote receipt")
+	}
+}
+
+func TestCompleteRefusesDeletedOriginalContract(t *testing.T) {
+	for _, source := range []string{"prior-report", "cursor-even-after-report-deletion"} {
+		t.Run(source, func(t *testing.T) {
+			root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+			runDir := filepath.Join(root, ".parley-runtime", "original-run")
+			pin, err := driver.ObserveChecksContract(ideaDir, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			op := driverImplOps{root: root, ideaDir: ideaDir, ideaSlug: "idea-x", drafter: "reviewer", implementer: "author", base: runner.Options{Store: store.New(runDir)}}
+			if source != "prior-report" {
+				c := driver.Rebuild(ideaDir, 4)
+				c.ChecksContractSHA256 = pin
+				if err := c.Save(filepath.Join(runDir, "driver.json")); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.WriteFile(evidence.ReportPath(ideaDir), []byte("prior evidence"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: idea-x\n---\n"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := op.Complete(context.Background()); err == nil {
+				t.Fatal("direct Complete bypassed original named checks")
+			}
+			body, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(body), "status: complete") {
+				t.Fatal("refusal still marked implementation complete")
+			}
+		})
 	}
 }

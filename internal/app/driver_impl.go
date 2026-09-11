@@ -15,6 +15,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
@@ -476,9 +477,22 @@ func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 // write by the orchestrator (NOT an implementer agent), so an implementer cannot
 // short-circuit review (consensus D5).
 func (o driverImplOps) Complete(ctx context.Context) error {
-	if _, isList, err := driver.ReadChecksContract(o.ideaDir); err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
-	} else if isList {
+	}
+	pin := ""
+	if o.base.Store.Enabled() {
+		cursor, err := driver.LoadCursor(filepath.Join(o.base.Store.Directory(), "driver.json"))
+		if err == nil {
+			pin = cursor.ChecksContractSHA256
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	contract, err := driver.ObserveChecksContract(o.ideaDir, pin)
+	if err != nil {
+		return err
+	} else if contract != "" {
 		gate := o.EvidenceCloseGate(o.drafter)
 		if !gate.Allowed {
 			return fmt.Errorf("independent evidence changed before completion: %s", strings.Join(gate.Reasons, "; "))
@@ -488,6 +502,30 @@ func (o driverImplOps) Complete(ctx context.Context) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
+	}
+	if contract != "" {
+		completed, _, err := evidence.TransitionStatusToComplete(data)
+		if err != nil {
+			return err
+		}
+		report, err := evidence.Load(o.ideaDir)
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(o.root, path)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		beforeRest := []byte(replaceSection(string(data), "## Validation evidence", ""))
+		if report.ExtraDigests[rel] != sha256Hex(string(beforeRest)) {
+			return fmt.Errorf("implementation changed before completion write")
+		}
+		afterRest := []byte(replaceSection(string(completed), "## Validation evidence", ""))
+		if reasons := evidence.VerifyCompletionTransition(report, rel, report.ExtraDigests[rel], afterRest, o.drafter); len(reasons) > 0 {
+			return fmt.Errorf("completion status was not independently authorized: %s", strings.Join(reasons, "; "))
+		}
+		return writeVerificationBytes(path, completed)
 	}
 	lines := strings.Split(string(data), "\n")
 	inFrontmatter := false

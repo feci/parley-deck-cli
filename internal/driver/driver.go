@@ -243,6 +243,7 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	prev, err := LoadCursor(d.cursorPath())
 	switch {
 	case err == nil:
+		c.ChecksContractSHA256 = prev.ChecksContractSHA256
 		if prev.FixupCyclesPublished > c.FixupCyclesPublished {
 			c.FixupCyclesPublished = prev.FixupCyclesPublished
 		}
@@ -266,6 +267,16 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	// decides. See autoDriveEnabled.
 	if !d.autoDriveEnabled() {
 		return ActionSurfaceOnly, c, nil
+	}
+	pin, err := ObserveChecksContract(d.cfg.IdeaDir, c.ChecksContractSHA256)
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("original completion scope: %w", err)
+	}
+	if pin != c.ChecksContractSHA256 {
+		c.ChecksContractSHA256 = pin
+		if err := saveCursor(c, d.cursorPath()); err != nil {
+			return ActionEscalated, c, fmt.Errorf("pin checks before agent work: %w", err)
+		}
 	}
 	switch c.Phase {
 	case PhaseRound:

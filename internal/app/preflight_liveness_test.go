@@ -29,15 +29,15 @@ func TestClassifyReadiness(t *testing.T) {
 		// Recognized assistant/result envelope schemas: explicit positive coverage
 		// for every accepted content key, wrapper key, and the assistant role.
 		{"bare content no provenance is malformed", `{"content":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
-		{"recognized JSON message key", `{"message":"PONG"}`, "", 0, false, ClassReady, true, false},
-		{"recognized JSON text key", `{"text":"PONG"}`, "", 0, false, ClassReady, true, false},
-		{"recognized JSON result string", `{"result":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"unattributed JSON message key", `{"message":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unattributed JSON text key", `{"text":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unattributed JSON result string", `{"result":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
 		{"recognized assistant-role message", `{"role":"assistant","content":"PONG"}`, "", 0, false, ClassReady, true, false},
-		{"recognized result wrapper", `{"result":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
-		{"recognized data wrapper", `{"data":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
-		{"recognized payload wrapper", `{"payload":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
-		{"recognized response wrapper", `{"response":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
-		{"recognized result wrapper message key", `{"result":{"message":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		{"unattributed result wrapper", `{"result":{"content":"PONG"}}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unattributed data wrapper", `{"data":{"content":"PONG"}}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unattributed payload wrapper", `{"payload":{"content":"PONG"}}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unattributed response wrapper", `{"response":{"content":"PONG"}}`, "", 0, false, ClassMalformedReply, false, true},
+		{"unattributed result wrapper message key", `{"result":{"message":"PONG"}}`, "", 0, false, ClassMalformedReply, false, true},
 		{"recognized assistant result schema with subtype success", `{"type":"result","subtype":"success","is_error":false,"result":"PONG"}`, "", 0, false, ClassReady, true, false},
 		// Echoes, fences, malformed JSON, role-tagged non-assistant messages, and
 		// unrecognized string-valued keys are never ready.
@@ -231,7 +231,7 @@ func TestPongFixtureHelper(t *testing.T) {
 	case "ready":
 		_, _ = os.Stdout.WriteString("PONG\n")
 	case "json-ready":
-		_, _ = os.Stdout.WriteString(`{"content":"PONG"}` + "\n")
+		_, _ = os.Stdout.WriteString(`{"role":"assistant","content":"PONG"}` + "\n")
 	case "echo":
 		_, _ = os.Stdout.WriteString("Reply with exactly the single token: PONG\n")
 	case "malformed-json":
@@ -350,13 +350,13 @@ func TestDuplicateAndAliasedKeysRejected(t *testing.T) {
 	// Duplicate semantic key (after Unmarshal, map collapses duplicates to
 	// last-wins; pre-decode scan must catch the duplication).
 	cases := []struct {
-		name      string
-		raw       string
-		wantErr   bool
+		name    string
+		raw     string
+		wantErr bool
 	}{
 		{"duplicate content", `{"content":"PONG","content":"WRONG"}`, true},
 		{"duplicate role", `{"role":"assistant","role":"user","content":"PONG"}`, true},
-		{"case-aliased is_error/isError same value", `{"is_error":true,"isError":true,"content":"PONG"}`, false},
+		{"case-aliased is_error/isError same value", `{"is_error":true,"isError":true,"content":"PONG"}`, true},
 		{"case-aliased is_error/isError contradictory", `{"is_error":true,"isError":false,"content":"PONG"}`, true},
 		{"present-null role", `{"role":null,"content":"PONG"}`, true},
 		{"present-null is_error", `{"is_error":null,"content":"PONG"}`, true},

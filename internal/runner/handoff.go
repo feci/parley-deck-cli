@@ -16,6 +16,7 @@ import (
 const UsageCaveat = "This is a user-driven interactive handoff. Provider billing and usage accounting are determined by the provider and your account. Headless mode is programmatic execution."
 
 type HandoffOptions struct {
+	Context            context.Context
 	Root               string
 	RunID              string
 	Idea               string
@@ -50,8 +51,12 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))}
 	prompt, protocolContext, contextErr := prepareProtocolPrompt(opts.Root, opts.Prompt, info)
 	info.Context = protocolContext
-	ctx := WithLaunchInfo(context.Background(), info)
-	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent)
+	parent := opts.Context
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx := WithLaunchInfo(parent, info)
+	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent, launchHandoff)
 	if err != nil {
 		return HandoffPacket{}, err
 	}

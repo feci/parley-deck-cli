@@ -41,6 +41,7 @@ type launchEvidence struct {
 	info       LaunchInfo
 	once       sync.Once
 	finishErr  error
+	budget     *LaunchBudget
 	// A terminal's file descriptors must reach the child unchanged. Such a
 	// process has lifecycle evidence but no captured output stream evidence.
 	directTerminal bool
@@ -52,7 +53,7 @@ type launchIntegrityError struct{ reason string }
 
 func (e *launchIntegrityError) Error() string { return e.reason }
 
-func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery) (*launchEvidence, error) {
+func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
 	info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
 	if info.RunID == "" {
 		info.RunID = runID
@@ -78,6 +79,9 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	structured := metadata.LaunchMode != agents.LaunchACP && telemetry.StructuredArgs(args)
 	l := &launchEvidence{invocation: invocation, collector: telemetry.NewCollector(agent.Adapter(), structured), info: info}
 	l.notify()
+	if err := l.reserveBudget(ctx, len(intent) == 1 && intent[0] == launchHandoff); err != nil {
+		return nil, errors.Join(err, l.finish(err, ctx.Err(), nil))
+	}
 	return l, nil
 }
 
@@ -105,6 +109,11 @@ func (l *launchEvidence) started(pid int) error {
 func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 	l.once.Do(func() {
 		usage, observation, providerFailure := l.collector.Result()
+		defer func() {
+			if err := l.settleBudget(usage.CostUSD); err != nil {
+				l.finishErr = errors.Join(l.finishErr, &launchIntegrityError{reason: "cannot settle required launch budget; reservation retained"})
+			}
+		}()
 		if l.directTerminal {
 			observation.StreamCoverage = "not-observed-terminal"
 		}
@@ -139,6 +148,10 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 		var contextFailure *protocolContextError
 		if errors.As(runErr, &contextFailure) {
 			status, failure = "failed", "protocol_context_refused"
+		}
+		var budgetFailure *launchBudgetError
+		if errors.As(runErr, &budgetFailure) {
+			status, failure = "failed", "budget_refused"
 		}
 		outcome := telemetry.Outcome{Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,

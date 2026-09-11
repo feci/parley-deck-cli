@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 374a5c5
+head-commit: 195fbed
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -18,13 +18,14 @@ Implementation is partial on draft PR #73: measured protocol-task launch
 boundaries, live/full context attestation, cursor persistence, fail-closed goal
 checking, packet publication and source-instruction updates are integrated and
 locally tested. Claude's partial independent source reviews are preserved with
-their dispositions. Kimi's package-failure correction and owner handoff are now
-integrated at 374a5c5. The production independent-verifier path has a passing
-full Go suite and real subprocess coverage, but a stronger post-completion
-counterexample exposes stale evidence after the generated status transition.
-That defect and report-write concurrency must be resolved before acceptance.
-The exact live experiments, complete launch coverage/shared budgets and full
-independent acceptance remain open. The frozen historical evaluation is unchanged.
+their dispositions. Kimi's completion-transition source is integrated and wired
+through the actual independent helper. The post-completion evidence gate and
+original-contract deletion/restart counterexamples now pass after corrections.
+Readiness schema/capture corrections and an explicit runner budget-policy channel
+also pass focused tests; the full Go suite passes. Cooperative report-write
+serialization, automatic scope/policy resolution, legacy budgets, actual live
+experiments and final independent acceptance remain open. The frozen historical
+evaluation is unchanged.
 
 ## Implementation plan / checklist
 
@@ -860,3 +861,65 @@ costs, known CLI-estimate subtotal USD 36.6907045 and unknown total cost. The
 numerical >=20 threshold is met; actual launch-surface coverage is not. Hermes's
 latest owner slice does not compile and is not integrated; its unchanged own
 handoffs do not substitute for an executed successful compile.
+
+
+Additional Codex allocation (2026-09-11, before edits):
+internal/runner/launch_budget.go and internal/runner/launch_budget_test.go for
+one pre-spawn reservation and cancellation-independent terminal settlement
+across runner process implementations. These new paths are non-overlapping.
+The policy context is separate from replaceable LaunchInfo metadata. Durable
+scope/policy resolution, legacy import and app/operator configuration remain
+separate required integration work; an explicit internal context API alone
+must not be described as automatic whole-product budget enforcement.
+
+
+### Serialized readiness correction allocation — 2026-09-11
+
+Hermes's bounded correction invocation de2694cd-9daa-4cb5-8849-c956778674a6
+has stopped and its own handoff exists. Current owner source compiles, but
+TestClassifyReadiness/bare_content_no_provenance_is_malformed fails: an
+unattributed content field still becomes ready. Earlier failed compilation
+and the 16-failure compile-only overlay remain in private logs.
+
+Under parley-worktrees Sections 5/6, overlapping edits may be serialized through
+the integration-branch owner. Codex records this explicit serialized override
+BEFORE editing: internal/app/preflight.go, preflight_liveness.go and
+preflight_liveness_test.go will receive the necessary schema/capture fixes in
+integration/meta-protocol-change-evidence-first-efficiency at
+../worktrees/evidence-first-integration after the owner checkpoint is preserved.
+No concurrent Hermes source task remains; the owner worktree is retained.
+Original allocation and participant-owned artifacts/signatures are unchanged.
+This is source integration/fixup authorized by the existing completion task,
+not a quorum replacement or pilot amendment. Codex also updates its already
+owned preflight_evidence_test.go for the changed classifier signature and new
+adversarial cases. Independent review remains required after these corrections.
+
+
+Additional serialized completion correction allocation (2026-09-11, before edits):
+Kimi's completion-transition handoff and source are preserved at c232e1d and
+merged at 195fbed; his native call is terminal. Codex now serializes two
+non-concurrent source corrections in internal/evidence/completion.go and adds
+internal/evidence/completion_review_test.go: reject a malformed short binding
+without panic and require the actual recomputed post-state status to be complete,
+even when a modified record's AfterSHA256 matches another status. The pure status
+transform must also reject YAML aliases/duplicate spellings of the status key.
+This uses the integration-owner serialization rule, preserves Kimi's own note
+unchanged and requires fresh independent review of the resulting source.
+
+
+### Integrated verifier/readiness/process-budget checkpoint — 2026-09-11
+
+See implementation-notes/codex-1-verifier-readiness-budget-dispositions-20260911.md
+for all new review dispositions, ownership serialization, executed counterexamples
+and corrections. The generated status transition now remains auditable after
+completion, and driver cursor v2 prevents deletion/shrinkage of its original named
+checks across ticks or a process restart. The current full Go suite, scoped vet
+and Windows app cross-build pass; runner race tests pass. All claims remain
+partial until independent review accepts the final source, including the open
+report concurrency and recovery boundaries.
+
+The reconciled inventory now contains 32 unique terminal attempts, 17 unknown
+costs, known CLI-estimate subtotal USD 42.5625535 and unknown total cost. Original
+records, failed writes and provider-reported internal model usage are retained.
+No participant call remains active at this checkpoint. The exact packet trial,
+full-six pilot and pending quorum/pilot amendment decisions are unchanged.

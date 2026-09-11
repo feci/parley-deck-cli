@@ -314,7 +314,7 @@ func TestCursorSafetyStateRejectsAmbiguousCounts(t *testing.T) {
 		"fractional count":     with(`"fixup_cycles_published":0.5`),
 		"duplicate count":      with(`"fixup_cycles_published":5,"fixup_cycles_published":0`),
 		"missing v1 count":     with(`"schema_version":1`),
-		"unknown schema":       with(`"schema_version":2,"fixup_cycles_published":0`),
+		"unknown schema":       with(`"schema_version":3,"fixup_cycles_published":0`),
 		"case alias count":     with(`"fixup_cycles_published":5,"FIXUP_CYCLES_PUBLISHED":0`),
 		"explicit zero schema": with(`"schema_version":0`),
 		"null schema":          with(`"schema_version":null`),
@@ -360,7 +360,7 @@ func TestCursorReservationPublishesCompleteState(t *testing.T) {
 		t.Fatal(err)
 	}
 	loaded, err := LoadCursor(path)
-	if err != nil || loaded.FixupCyclesPublished != 5 || loaded.SchemaVersion != 1 {
+	if err != nil || loaded.FixupCyclesPublished != 5 || loaded.SchemaVersion != 2 {
 		t.Fatalf("reservation was not persisted: %+v %v", loaded, err)
 	}
 	c.FixupCyclesPublished = -1

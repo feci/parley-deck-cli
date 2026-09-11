@@ -273,6 +273,13 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 	if _, err := verificationBindings(req, &report, ideaDir); err != nil {
 		return err
 	}
+	restContent, restPath, err := implementationRestContent(root, ideaDir)
+	if err != nil {
+		return err
+	}
+	if err := evidence.AuthorizeCompletionTransition(&report, restPath, restContent, req.Verifier); err != nil {
+		return err
+	}
 	// Detect a replacement observed before save. This snapshot check is not
 	// atomic with Save; cooperative report-write serialization is still required.
 	currentRaw, err := os.ReadFile(evidence.ReportPath(ideaDir))
@@ -317,6 +324,9 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 	raw, err := readVerificationJSON(evidence.ReportPath(o.ideaDir), &original)
 	if err != nil {
 		return fail(err)
+	}
+	if original.CompletionTransition != nil {
+		return false, "fresh report required before a new completion verification"
 	}
 	rest, _, err := implementationRestDigest(o.root, o.ideaDir)
 	if err != nil {
@@ -395,6 +405,19 @@ Verifier command: %s
 	if len(updated.Records) != len(original.Records) {
 		return false, "verifier changed original criterion scope"
 	}
+	restContent, restPath, err := implementationRestContent(o.root, o.ideaDir)
+	if err != nil {
+		return fail(err)
+	}
+	expectedTransition := updated
+	expectedTransition.CompletionTransition = nil
+	if err := evidence.AuthorizeCompletionTransition(&expectedTransition, restPath, restContent, o.drafter); err != nil {
+		return fail(err)
+	}
+	if !reflect.DeepEqual(updated.CompletionTransition, expectedTransition.CompletionTransition) {
+		return false, "verifier did not authorize the exact generated completion transition"
+	}
+	updated.CompletionTransition = original.CompletionTransition
 	for i := range updated.Records {
 		retained := updated.Records[i].Provenance.VerifierRerun
 		if retained == nil || receipt.Executions[i].Name != updated.Records[i].Name || receipt.Executions[i].Status != evidence.StatusPass || !reflect.DeepEqual(retained.Command, receipt.Executions[i].Command) || receipt.Executions[i].Provenance.Executor != o.drafter {

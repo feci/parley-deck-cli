@@ -487,6 +487,69 @@ func TestNamedContractRequiresIndependentEvidenceAdapter(t *testing.T) {
 	}
 }
 
+func TestOriginalNamedScopeSurvivesDriverTicks(t *testing.T) {
+	contract := "checks:\n  - name: unit\n    command: true\n  - name: other\n    command: echo check\n"
+	for _, change := range []string{"unchanged", "delete-list", "scalar", "rename", "command", "shrink", "delete-list-and-report"} {
+		t.Run(change, func(t *testing.T) {
+			ideaDir, runDir, parts := setupReviewPhase(t, contract)
+			fi := &fakeImpl{roundComplete: false, checksOK: true, review: closeReady(consensus.TriageReady, 0, 2)}
+			d := newImplDriver(ideaDir, runDir, parts, false, fakeEvidenceImpl{fakeImpl: fi, allow: true})
+			if _, _, err := d.Advance(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			cursor, err := LoadCursor(filepath.Join(runDir, "driver.json"))
+			if err != nil || len(cursor.ChecksContractSHA256) != 64 {
+				t.Fatalf("scope not pinned before waiting: %+v %v", cursor, err)
+			}
+			path := filepath.Join(ideaDir, "00-prompt.md")
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			updated := string(raw)
+			switch change {
+			case "delete-list", "delete-list-and-report":
+				updated = strings.Replace(updated, contract, "", 1)
+			case "scalar":
+				updated = strings.Replace(updated, contract, "checks: true\n", 1)
+			case "rename":
+				updated = strings.Replace(updated, "name: unit", "name: replacement", 1)
+			case "command":
+				updated = strings.Replace(updated, "command: true", "command: false", 1)
+			case "shrink":
+				updated = strings.Replace(updated, "  - name: other\n    command: echo check\n", "", 1)
+			}
+			if err := os.WriteFile(path, []byte(updated), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if change == "delete-list-and-report" {
+				p := filepath.Join(ideaDir, "EVIDENCE.json")
+				if err := os.WriteFile(p, []byte("old recorded evidence"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Remove(p); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			fi.roundComplete = true
+			fi.calls = nil
+			// Reconstruct a new driver as on process restart; in-memory history is gone.
+			d = newImplDriver(ideaDir, runDir, parts, false, fakeEvidenceImpl{fakeImpl: fi, allow: true})
+			action, _, err := d.Advance(context.Background())
+			if change == "unchanged" {
+				if err != nil || action != ActionComplete {
+					t.Fatalf("unchanged original scope could not close: %s %v", action, err)
+				}
+			} else if err == nil || action != ActionEscalated || len(fi.calls) != 0 {
+				t.Fatalf("changed original scope reached execution/closure: %s %v calls=%v", action, err, fi.calls)
+			}
+		})
+	}
+}
+
 // Boundary test for the inclusive fix-up cap (idea
 // meta-protocol-change-phase-packet-and-fixup-budget). The §4.0 table prints "cap N
 // cycles" for every track; before this idea the guard was `cycle >= cap`, which published

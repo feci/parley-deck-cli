@@ -1,9 +1,20 @@
 package evidence
 
 import (
+	"encoding/hex"
 	"fmt"
+	"regexp"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
+
+var completionStatusToken = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+
+func validCompletionDigest(value string) bool {
+	decoded, err := hex.DecodeString(value)
+	return err == nil && len(decoded) == 32 && value == strings.ToLower(value)
+}
 
 // completion.go — the exact, authorized BEFORE/AFTER completion status
 // transition for evidence-bound documents (idea
@@ -58,7 +69,7 @@ type CompletionTransition struct {
 // The normalized-line requirement makes the transformation exactly invertible
 // for a given FromStatus, which VerifyCompletionTransition relies on.
 func TransitionFrontmatterStatus(doc []byte, to string) (out []byte, from string, err error) {
-	if to == "" || strings.ContainsAny(to, " \t\r\n:#") {
+	if !completionStatusToken.MatchString(to) {
 		return nil, "", fmt.Errorf("evidence: invalid transition target status %q", to)
 	}
 	lines := strings.Split(string(doc), "\n")
@@ -87,11 +98,36 @@ func TransitionFrontmatterStatus(doc []byte, to string) (out []byte, from string
 	if statusIdx < 0 {
 		return nil, "", fmt.Errorf("evidence: frontmatter has no status field")
 	}
-	if value == "" || strings.ContainsAny(value, " \t:#") {
+	if !completionStatusToken.MatchString(value) {
 		return nil, "", fmt.Errorf("evidence: frontmatter status value %q is not a single plain token", value)
 	}
 	if lines[statusIdx] != "status: "+value {
 		return nil, "", fmt.Errorf("evidence: frontmatter status line %q is not in the normalized form %q", lines[statusIdx], "status: "+value)
+	}
+	// Check YAML meaning as well as normalized bytes: quoted/spaced duplicate
+	// keys, merge keys and aliases must not create a second semantic status.
+	var parsed yaml.Node
+	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:closing], "\n")), &parsed); err != nil {
+		return nil, "", fmt.Errorf("evidence: invalid frontmatter: %w", err)
+	}
+	if len(parsed.Content) != 1 || parsed.Content[0].Kind != yaml.MappingNode {
+		return nil, "", fmt.Errorf("evidence: frontmatter must be a mapping")
+	}
+	fields, statusCount := parsed.Content[0].Content, 0
+	for i := 0; i < len(fields); i += 2 {
+		key, node := fields[i], fields[i+1]
+		if key.Value == "<<" {
+			return nil, "", fmt.Errorf("evidence: merged frontmatter cannot authorize status")
+		}
+		if key.Value == "status" {
+			statusCount++
+			if key.Kind != yaml.ScalarNode || node.Kind != yaml.ScalarNode || node.Tag != "!!str" || node.Value != value {
+				return nil, "", fmt.Errorf("evidence: ambiguous frontmatter status")
+			}
+		}
+	}
+	if statusCount != 1 {
+		return nil, "", fmt.Errorf("evidence: duplicate or missing YAML status")
 	}
 	if value == to {
 		return nil, "", fmt.Errorf("evidence: status is already %q — no transition to authorize", to)
@@ -132,7 +168,7 @@ func AuthorizeCompletionTransition(r *Report, path string, currentContent []byte
 		return fmt.Errorf("evidence: report already carries a completion transition — one transition per recorded report; re-record to change it")
 	}
 	bound, ok := r.ExtraDigests[path]
-	if !ok || bound == "" {
+	if !ok || !validCompletionDigest(bound) {
 		return fmt.Errorf("evidence: report binds no non-evidence digest for %q", path)
 	}
 	if len(r.Records) == 0 {
@@ -207,12 +243,17 @@ func VerifyCompletionTransition(r *Report, path, boundDigest string, currentCont
 	if tr.BeforeSHA256 == "" || tr.BeforeSHA256 != boundDigest {
 		reasons = append(reasons, "transition does not start from the recorded non-evidence state")
 	}
+	if !validCompletionDigest(boundDigest) || r.ExtraDigests[path] != boundDigest {
+		reasons = append(reasons, "transition is not bound to the report's original content")
+	}
 	if tr.AfterSHA256 == "" || sha256Hex(currentContent) != tr.AfterSHA256 {
 		reasons = append(reasons, "current content is not the authorized post-completion state")
 	} else if tr.FromStatus != "" && tr.FromStatus != "complete" {
-		before, _, err := TransitionFrontmatterStatus(currentContent, tr.FromStatus)
+		before, actualStatus, err := TransitionFrontmatterStatus(currentContent, tr.FromStatus)
 		if err != nil {
 			reasons = append(reasons, "current content's status field is malformed: "+err.Error())
+		} else if actualStatus != "complete" {
+			reasons = append(reasons, "current content does not have the authorized complete status")
 		} else if sha256Hex(before) != tr.BeforeSHA256 {
 			reasons = append(reasons, "recomputed pre-transition content does not match the recorded state — the status flip is not the only change")
 		}

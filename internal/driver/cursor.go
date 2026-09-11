@@ -14,6 +14,7 @@ package driver
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,9 +46,9 @@ const (
 // Rebuild derives every field from on-disk artifacts and the persisted Phase is
 // never trusted over disk. Only MaxRounds is config-derived.
 //
-// One field is deliberately NOT rebuildable: FixupCyclesPublished is a safety count that
-// must not be recoverable by editing artifacts, so Advance carries it forward from the
-// persisted cursor instead of deriving it.
+// Safety state is deliberately NOT rebuildable: the charged fix-up count and
+// original named-check binding survive artifact reconstruction. Advance carries
+// them forward from the persisted cursor before permitting agent work.
 type Cursor struct {
 	SchemaVersion int    `json:"schema_version,omitempty"`
 	Phase         Phase  `json:"phase"`
@@ -65,6 +66,9 @@ type Cursor struct {
 	// one can only raise the count, which escalates sooner. Review round-03 showed the
 	// marker-only count was still editable state — the class had moved, not closed.
 	FixupCyclesPublished int `json:"fixup_cycles_published"`
+	// Original named criterion names/commands, pinned before agent work. Unlike
+	// Phase this safety binding must survive disk-derived cursor reconstruction.
+	ChecksContractSHA256 string `json:"checks_contract_sha256"`
 }
 
 // Save writes the cursor atomically (tmp + rename, same dir) so a crash mid-write
@@ -73,7 +77,10 @@ func (c Cursor) Save(path string) error {
 	if c.FixupCyclesPublished < 0 {
 		return errors.New("negative charged fix-up count")
 	}
-	c.SchemaVersion = 1
+	if err := validateChecksPin(c.ChecksContractSHA256); err != nil {
+		return err
+	}
+	c.SchemaVersion = 2
 	if err := fsutil.MkdirAllResilient(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create driver dir: %w", err)
 	}
@@ -106,8 +113,9 @@ func (c Cursor) Save(path string) error {
 
 // LoadCursor validates the persisted safety state. Phase may be rebuilt, but
 // malformed charged state must halt Advance rather than be inferred as zero.
-// Schema-less historical cursors may omit the old omitempty zero count; v1
-// requires it explicitly. Metadata is not protection against a same-user writer.
+// Schema-less historical cursors may omit the old zero count; v1 requires it
+// explicitly, and v2 also requires the original-checks binding (empty for legacy
+// scalar tasks). Metadata is not protection against a same-user writer.
 func LoadCursor(path string) (Cursor, error) {
 	info, err := os.Lstat(path)
 	if err != nil {
@@ -165,7 +173,7 @@ func LoadCursor(path string) (Cursor, error) {
 	}
 	for key := range fields {
 		switch key {
-		case "schema_version", "phase", "current_round", "idea_status", "rounds_run", "max_rounds", "updated_at", "fixup_cycles_published":
+		case "schema_version", "phase", "current_round", "idea_status", "rounds_run", "max_rounds", "updated_at", "fixup_cycles_published", "checks_contract_sha256":
 		default:
 			return Cursor{}, fmt.Errorf("cursor contains unrecognized field %q", key)
 		}
@@ -175,16 +183,33 @@ func LoadCursor(path string) (Cursor, error) {
 			return Cursor{}, fmt.Errorf("cursor is missing %s", key)
 		}
 	}
-	if fields["schema_version"] != nil && c.SchemaVersion != 1 {
+	if fields["schema_version"] != nil && c.SchemaVersion != 1 && c.SchemaVersion != 2 {
 		return Cursor{}, errors.New("unsupported cursor schema")
 	}
-	if c.SchemaVersion == 1 && fields["fixup_cycles_published"] == nil {
+	if c.SchemaVersion >= 1 && fields["fixup_cycles_published"] == nil {
 		return Cursor{}, errors.New("cursor is missing its charged fix-up count")
+	}
+	if c.SchemaVersion == 2 && fields["checks_contract_sha256"] == nil {
+		return Cursor{}, errors.New("cursor is missing its original checks binding")
+	}
+	if err := validateChecksPin(c.ChecksContractSHA256); err != nil {
+		return Cursor{}, err
 	}
 	if c.FixupCyclesPublished < 0 || c.CurrentRound < 0 || c.RoundsRun < 0 || c.MaxRounds < 0 {
 		return Cursor{}, errors.New("cursor contains a negative counter")
 	}
 	return c, nil
+}
+
+func validateChecksPin(value string) error {
+	if value == "" {
+		return nil
+	}
+	decoded, err := hex.DecodeString(value)
+	if err != nil || len(decoded) != 32 || value != strings.ToLower(value) {
+		return errors.New("invalid original checks contract digest")
+	}
+	return nil
 }
 
 // Rebuild derives the phase purely from disk (consensus D2/D3). ideaDir is the

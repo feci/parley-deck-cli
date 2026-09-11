@@ -1,11 +1,16 @@
 package driver
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"parley-deck-cli/internal/evidence"
 
 	"gopkg.in/yaml.v3"
 )
@@ -20,6 +25,52 @@ import (
 type CheckCriterion struct {
 	Name    string `yaml:"name"`
 	Command string `yaml:"command"`
+}
+
+// ObserveChecksContract preserves the original named scope across driver ticks.
+// A prior report also activates the gate on legacy runs without a cursor pin;
+// deleting the current checks list cannot turn that history into a scalar task.
+// This is runtime safety state, not authentication against same-UID tampering.
+func ObserveChecksContract(ideaDir, expected string) (string, error) {
+	criteria, named, err := ReadChecksContract(ideaDir)
+	if err != nil {
+		return "", err
+	}
+	digest := func(checks []CheckCriterion) string {
+		encoded, _ := json.Marshal(checks)
+		sum := sha256.Sum256(encoded)
+		return hex.EncodeToString(sum[:])
+	}
+	current := ""
+	if named {
+		current = digest(criteria)
+	}
+	if expected != "" && current != expected {
+		return "", fmt.Errorf("original named checks contract was removed or changed")
+	}
+	if expected == "" {
+		_, err := os.Lstat(evidence.ReportPath(ideaDir))
+		if err != nil && !os.IsNotExist(err) {
+			return "", fmt.Errorf("cannot inspect prior named evidence: %w", err)
+		}
+		if err == nil {
+			if !named {
+				return "", fmt.Errorf("prior named evidence exists but its checks contract was removed")
+			}
+			report, err := evidence.Load(ideaDir)
+			if err != nil {
+				return "", err
+			}
+			prior := make([]CheckCriterion, 0, len(report.Records))
+			for _, rec := range report.Records {
+				prior = append(prior, CheckCriterion{Name: rec.Name, Command: rec.Command.Command})
+			}
+			if digest(prior) != current {
+				return "", fmt.Errorf("current checks differ from the original recorded scope")
+			}
+		}
+	}
+	return current, nil
 }
 
 // ReadChecksContract inspects the `checks:` frontmatter of 00-prompt.md.

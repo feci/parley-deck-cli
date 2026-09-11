@@ -53,18 +53,18 @@ type readinessObservation struct {
 	Duration      time.Duration
 
 	// Truncation metadata added for bounded capture observation (D7 correction).
-	Truncated      bool   // true when boundedWriter overflowed (stream exceeded cap)
+	Truncated        bool   // true when boundedWriter overflowed (stream exceeded cap)
 	TruncationReason string // e.g. "overflow" or "deadline-cut"; empty when not truncated
 }
 
 const readinessTailBytes = 256
 
 type boundedWriter struct {
-	buf         *bytes.Buffer
-	max         int
-	overflow    *bool
-	observedBytes int // total bytes actually written (before any cap) — preserved independently
-	truncated   *bool  // distinct from overflow: set when any truncation/dropping occurs
+	buf           *bytes.Buffer
+	max           int
+	overflow      *bool
+	observedBytes int   // total bytes actually written (before any cap) — preserved independently
+	truncated     *bool // distinct from overflow: set when any truncation/dropping occurs
 }
 
 func (w *boundedWriter) Write(p []byte) (int, error) {
@@ -89,17 +89,6 @@ func (w *boundedWriter) Write(p []byte) (int, error) {
 		}
 		return len(p), nil
 	}
-	// Empty Write at cap (remaining == 0, len(p) > 0) must NOT truncate.
-	if remaining == 0 {
-		// Consume the write without truncating or modifying buffer.
-		if w.overflow != nil && !*w.overflow {
-			*w.overflow = true
-		}
-		if w.truncated != nil && !*w.truncated {
-			*w.truncated = true
-		}
-		return len(p), nil
-	}
 	w.buf.Write(p[:remaining])
 	if w.overflow != nil {
 		*w.overflow = true
@@ -114,8 +103,8 @@ func (w *boundedWriter) Write(p []byte) (int, error) {
 // so the full fixture table can be unit-tested without a child process.
 func classifyReadiness(stdout, stderr string, exitCode int, timedOut bool, truncated bool, truncationReason string) readinessObservation {
 	obs := readinessObservation{
-		ExitCode: exitCode,
-		Truncated: truncated,
+		ExitCode:         exitCode,
+		Truncated:        truncated,
 		TruncationReason: truncationReason,
 	}
 	corpus := stdout + "\n" + stderr
@@ -126,20 +115,11 @@ func classifyReadiness(stdout, stderr string, exitCode int, timedOut bool, trunc
 	// bytes are preserved as observations; do not use TrimSpace to erase
 	// byte-observation evidence.
 	case truncated:
-		if stdout == "" && stderr == "" {
-			if timedOut {
-				obs.Class = ClassDeadlineNoOutput
-			} else {
-				obs.Class = ClassDeadlineAfterOutput
-			}
-		} else {
-			if timedOut {
-				obs.Class = ClassDeadlineAfterOutput
-			} else {
-				obs.Class = ClassMalformedReply
-			}
-			obs.SawSentinel = containsSentinel(stdout) || containsSentinel(stderr)
+		obs.Class = ClassMalformedReply
+		if timedOut {
+			obs.Class = ClassDeadlineAfterOutput
 		}
+		obs.SawSentinel = containsSentinel(stdout) || containsSentinel(stderr)
 	case timedOut:
 		// Actual byte presence (not TrimSpace) determines whether output existed.
 		if stdout == "" && stderr == "" {
@@ -240,12 +220,19 @@ func strictEnvelopeChecks(obj map[string]any) error {
 	if err := rejectMalformedFieldTypes(obj); err != nil {
 		return err
 	}
+	for _, value := range obj {
+		if inner, ok := value.(map[string]any); ok {
+			if err := strictEnvelopeChecks(inner); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
 var semanticEnvelopeKeys = []string{
 	"role", "type", "status", "subtype", "error", "is_error", "isError",
-	"success", "ok", "content", "message", "text", "result",
+	"success", "ok", "content", "message", "text", "result", "data", "payload", "response",
 }
 
 // isSemanticKey reports whether a decoded key string is one of the interpreted
@@ -313,7 +300,7 @@ func scanObject(dec *json.Decoder, state *tokenScanState) error {
 		// Check duplicate/case-aliased semantic key and present-null.
 		if isSemanticKey(keyStr) {
 			lowerKey := strings.ToLower(keyStr)
-			if state.seen[lowerKey] {
+			if keyStr != lowerKey || state.seen[lowerKey] {
 				return fmt.Errorf("duplicate/case-aliased semantic key %q in envelope", keyStr)
 			}
 			if valTok == nil {
@@ -387,7 +374,6 @@ func scanArray(dec *json.Decoder, parentState *tokenScanState) error {
 	}
 }
 
-
 func rejectCaseAliasedFields(obj map[string]any) error {
 	casePairs := [][2]string{{"is_error", "isError"}, {"success", "ok"}}
 	for _, pair := range casePairs {
@@ -397,11 +383,11 @@ func rejectCaseAliasedFields(obj map[string]any) error {
 			switch b1 := v1.(type) {
 			case bool:
 				switch b2 := v2.(type) {
-			case bool:
-				if b1 != b2 {
-					return fmt.Errorf("contradictory case-aliased fields %q=%v vs %q=%v", pair[0], b1, pair[1], b2)
+				case bool:
+					if b1 != b2 {
+						return fmt.Errorf("contradictory case-aliased fields %q=%v vs %q=%v", pair[0], b1, pair[1], b2)
+					}
 				}
-			}
 			}
 		}
 	}
@@ -435,27 +421,27 @@ func rejectMalformedFieldTypes(obj map[string]any) error {
 		if _, ok := obj[key]; ok {
 			v, present := obj[key]
 			if !present || v == nil {
-			return fmt.Errorf("malformed envelope field %q is present with null value; treat as present (not absent)", key)
-		}
+				return fmt.Errorf("malformed envelope field %q is present with null value; treat as present (not absent)", key)
+			}
 			switch v.(type) {
-		case string:
-		default:
-			return fmt.Errorf("malformed envelope field %q has non-string type %T", key, v)
+			case string:
+			default:
+				return fmt.Errorf("malformed envelope field %q has non-string type %T", key, v)
+			}
 		}
-	}
 	}
 	for _, key := range []string{"is_error", "isError", "success", "ok"} {
 		if _, ok := obj[key]; ok {
 			v, present := obj[key]
 			if !present || v == nil {
-			return fmt.Errorf("malformed envelope field %q is present with null value; treat as present (not absent)", key)
-		}
+				return fmt.Errorf("malformed envelope field %q is present with null value; treat as present (not absent)", key)
+			}
 			switch v.(type) {
-		case bool:
-		default:
-			return fmt.Errorf("malformed envelope field %q has non-bool type %T", key, v)
+			case bool:
+			default:
+				return fmt.Errorf("malformed envelope field %q has non-bool type %T", key, v)
+			}
 		}
-	}
 	}
 	return nil
 }
@@ -491,7 +477,7 @@ func errorEnvelope(obj map[string]any) bool {
 		return true
 	}
 	for _, wrapper := range wrapperKeys {
-		if inner, ok := obj[wrapper].(map[string]any); ok && signalsError(inner) {
+		if inner, ok := obj[wrapper].(map[string]any); ok && errorEnvelope(inner) {
 			return true
 		}
 	}
@@ -511,8 +497,8 @@ func signalsError(obj map[string]any) bool {
 		if s, ok := obj[key].(string); ok {
 			switch strings.ToLower(strings.TrimSpace(s)) {
 			case "error", "failure", "fault", "exception", "failed":
-			return true
-		}
+				return true
+			}
 		}
 	}
 	for _, key := range []string{"success", "ok"} {
@@ -524,120 +510,61 @@ func signalsError(obj map[string]any) bool {
 }
 
 func assistantPayload(obj map[string]any) (string, bool) {
-	if obj == nil {
+	if !hasRecognizedAssistantSchema(obj) || errorEnvelope(obj) {
 		return "", false
 	}
-	// Require explicit assistant role OR recognized typed assistant/result schema.
-	// Bare content without assistant role (or without recognized typed wrapper) is
-	// rejected: prevents ambiguous payloads passing as ready.
-	if roleVal, ok := obj["role"]; ok {
-		switch v := roleVal.(type) {
-		case string:
-			if !strings.EqualFold(strings.TrimSpace(v), "assistant") {
-				return "", false
-			}
-		default:
-			return "", false // malformed non-string role
-		}
-	} else {
-		// No role present: must be a recognized wrapper/result schema.
-		// If none of the recognized wrapper/content fields match an assistant
-		// output shape, reject as ambiguous.
-		if !hasRecognizedAssistantSchema(obj) {
-			return "", false
+	keys := []string{"content", "message", "text", "result", "data", "payload", "response"}
+	count := 0
+	for _, key := range keys {
+		if _, exists := obj[key]; exists {
+			count++
 		}
 	}
-	// Reject competing output fields: an assistant envelope with both
-	// recognized content fields (e.g. content + text) is ambiguous.
-	contentKeys := 0
-	for _, k := range recognizedEnvelopeContentFields {
-		if _, ok := obj[k]; ok {
-			contentKeys++
-		}
-	}
-	if contentKeys > 1 {
+	if count != 1 {
 		return "", false
 	}
-	if s, ok := contentField(obj); ok {
-		if s == "" {
-			return "", false
-		}
-		return s, true
+	if value, ok := contentField(obj); ok {
+		return value, true
 	}
-	for _, wrapper := range wrapperKeys {
-		if inner, ok := obj[wrapper].(map[string]any); ok {
-			if roleVal, ok := inner["role"]; ok {
-				switch v := roleVal.(type) {
-				case string:
-					if !strings.EqualFold(strings.TrimSpace(v), "assistant") {
-						continue
-					}
-				default:
-					continue // malformed role type in nested wrapper
-				}
-			} else {
-				// No role in nested wrapper — must have recognized assistant schema in inner.
-				if !hasRecognizedAssistantSchema(inner) {
-					continue
-				}
-			}
-			if s, ok := contentField(inner); ok {
-				if s != "" {
-					return s, true
-				}
-			}
+	for _, key := range keys {
+		if inner, ok := obj[key].(map[string]any); ok {
+			return assistantPayload(inner)
 		}
 	}
 	return "", false
 }
 
-// hasRecognizedAssistantSchema checks whether an object (without an explicit
-// assistant role) has a recognized assistant/result schema: either a direct
-// recognized content field with value, or a recognized wrapper key whose inner
-// object has an assistant role or recognized schema.
+// hasRecognizedAssistantSchema requires explicit assistant identity or a known
+// assistant/result envelope, including a nested attributed wrapper. Generic
+// content keys alone never establish provenance.
 func hasRecognizedAssistantSchema(obj map[string]any) bool {
 	if obj == nil {
 		return false
 	}
-	// If a 'type' field is present (and isn't empty/null), it must be a
-	// recognized assistant/result schema type; unknown types reject.
-	if typeVal, ok := obj["type"]; ok && typeVal != nil {
-		switch v := typeVal.(type) {
-		case string:
-			t := strings.ToLower(strings.TrimSpace(v))
-			if t != "" && t != "assistant" && t != "message" && t != "result" && t != "response" && t != "text" {
-				return false // unrecognized typed schema
-			}
-		default:
-			return false // non-string type value means unrecognized schema
-		}
+	if role, present := obj["role"]; present && role != "assistant" {
+		return false
 	}
-	// Direct recognized content field with non-empty value.
-	for _, key := range recognizedEnvelopeContentFields {
-		if v, ok := obj[key]; ok {
-			if s, isStr := v.(string); isStr && strings.TrimSpace(s) != "" {
-				return true
+	if kind, present := obj["type"]; present {
+		// These are explicit assistant/result envelopes. Generic content keys
+		// and unknown types never establish who produced the text.
+		if kind != "assistant" && kind != "message" && kind != "result" {
+			return false
+		}
+		if kind == "result" {
+			if subtype, present := obj["subtype"]; present && subtype != "success" {
+				return false
 			}
 		}
+		if kind == "assistant" || kind == "result" || obj["role"] == "assistant" {
+			return true
+		}
 	}
-	// Recognized wrapper with inner assistant content.
+	if obj["role"] == "assistant" {
+		return true
+	}
 	for _, wrapper := range wrapperKeys {
-		if inner, ok := obj[wrapper].(map[string]any); ok && inner != nil {
-			if innerRole, ok := inner["role"]; ok {
-				switch v := innerRole.(type) {
-				case string:
-					if strings.EqualFold(strings.TrimSpace(v), "assistant") {
-						if s, ok := contentField(inner); ok && s != "" {
-							return true
-						}
-					}
-				}
-			} else {
-				// No role in inner: check recognized schema in inner.
-				if hasRecognizedAssistantSchema(inner) {
-					return true
-				}
-			}
+		if inner, ok := obj[wrapper].(map[string]any); ok && hasRecognizedAssistantSchema(inner) {
+			return true
 		}
 	}
 	return false
@@ -737,6 +664,35 @@ func sanitizeTail(s string) string {
 }
 
 func scrubSecrets(s string) string {
+	var value any
+	if json.Unmarshal([]byte(s), &value) == nil {
+		var redact func(any) any
+		redact = func(v any) any {
+			switch node := v.(type) {
+			case map[string]any:
+				for key, child := range node {
+					k := strings.ToLower(strings.NewReplacer("_", "", "-", "").Replace(key))
+					if strings.Contains(k, "token") || strings.Contains(k, "secret") || strings.Contains(k, "password") || k == "passwd" || strings.Contains(k, "apikey") || strings.Contains(k, "accesskey") || strings.Contains(k, "privatekey") || k == "authorization" {
+						node[key] = "«redacted»"
+					} else {
+						node[key] = redact(child)
+					}
+				}
+			case []any:
+				for i, child := range node {
+					node[i] = redact(child)
+				}
+			}
+			return v
+		}
+		if raw, err := json.Marshal(redact(value)); err == nil {
+			s = string(raw)
+		}
+	} else if trimmed := strings.TrimSpace(s); strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		// A truncated/invalid JSON string may hide an escaped credential key or
+		// cut through its value. Preserve the observation, omit unsafe raw text.
+		return "«redacted malformed JSON diagnostic»"
+	}
 	// Full authorization bearer redaction (label + value), labeled JSON secrets
 	// (token/secret/password/api_key/access_key/private_key with value), standalone
 	// token shapes, and JWT fragments. Keeps label where appropriate (e.g. the key
@@ -765,10 +721,12 @@ func scrubSecrets(s string) string {
 	// Pattern 1: standalone bearer value removed entirely.
 	result = patterns[1].ReplaceAllString(result, "bearer «redacted»")
 	// Pattern 2: labeled secrets — keep label + separator; replace value.
+	quoted := regexp.MustCompile(`(?i)((?:token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key)\s*[:=]\s*)"(?:\\.|[^"\\])*(?:"|$)`)
+	result = quoted.ReplaceAllString(result, "$1\"«redacted»\"")
 	result = patterns[2].ReplaceAllString(result, "$1$2«redacted»")
 	// JSON credential fields (e.g. {"token":"..."} or {"api_key":"..."}) — redact value, keep key.
-	jsonSecretPattern := regexp.MustCompile(`(?i)("(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key)"\s*:\s*")[^"]*`)
-	result = jsonSecretPattern.ReplaceAllString(result, "$1«redacted»")
+	jsonSecretPattern := regexp.MustCompile(`(?i)("(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key)"\s*:\s*)"(?:\\.|[^"\\])*(?:"|$)`)
+	result = jsonSecretPattern.ReplaceAllString(result, "$1\"«redacted»\"")
 	// Patterns 3-7: standalone token shapes — full replacement.
 	for i := 3; i < len(patterns); i++ {
 		result = patterns[i].ReplaceAllString(result, "«redacted»")
