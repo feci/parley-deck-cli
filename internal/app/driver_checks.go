@@ -1,8 +1,9 @@
 package app
 
 import (
-	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/driver"
+	"parley-deck-cli/internal/evidence"
 )
 
 // driver_checks.go executes the list-form `checks:` completion contract and records the
@@ -47,28 +49,46 @@ type criterionResult struct {
 	ok       bool
 	dur      time.Duration
 	tail     string
+	record   evidence.CriterionRecord
 }
 
-// runChecksContract runs every criterion (sh -c, cwd = repo root), writes the evidence
-// table, and returns (allPass, detail). Any non-zero exit fails closed.
+// runChecksContract runs every criterion (sh -c, cwd = repo root) through the
+// typed evidence executor, writes the markdown evidence table AND the typed
+// EVIDENCE.json report, and returns (allPass, detail). Any non-zero exit fails
+// closed. A structured proof of zero executed cases (empty test2json stream)
+// or an all-skip run also fails closed — an exit-0 that ran nothing is not a
+// pass. An evidence-write failure (markdown table or typed report) is itself a
+// failure of the cycle, never a warning plus PASS.
+//
+// Tested-tree identity is taken BEFORE any criterion runs and re-verified
+// AFTER: a command (or a concurrent writer) that changes the code tree during
+// execution invalidates the whole attempt — the report still records the
+// pre-execution digest (preserving the failed attempt's evidence) and the
+// cycle fails closed.
 func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.CheckCriterion) (bool, string) {
+	excl, err := definedEvidenceArtifacts(o.root, o.ideaDir)
+	if err != nil {
+		return false, fmt.Sprintf("contract: evidence artifact scoping: %v — no completion", err)
+	}
+	preDigest, err := evidence.TreeDigest(o.root, excl...)
+	if err != nil {
+		return false, fmt.Sprintf("contract: pre-execution tree digest: %v — no completion", err)
+	}
 	results := make([]criterionResult, 0, len(criteria))
 	allPass := true
 	for _, c := range criteria {
 		fmt.Fprintf(o.out, "driver: contract check %q ...\n", c.Name)
-		start := time.Now()
-		cmd := exec.CommandContext(ctx, "sh", "-c", c.Command)
-		cmd.Dir = o.root
-		var buf bytes.Buffer
-		cmd.Stdout = &buf
-		cmd.Stderr = &buf
-		err := cmd.Run()
+		// Executor provenance is the asserted runtime identity of the
+		// implementer the driver acts for — attribution, not authentication
+		// (see the evidence package trust boundary).
+		rec := evidence.RunCriterion(ctx, o.root, c.Name, c.Command, o.implementer)
 		res := criterionResult{
 			name:     c.Name,
-			ok:       err == nil,
-			dur:      time.Since(start),
-			exitCode: exitCodeOf(err),
-			tail:     scrubAndTruncate(buf.String()),
+			ok:       rec.Status == evidence.StatusPass,
+			dur:      time.Duration(rec.Command.DurationMillis) * time.Millisecond,
+			exitCode: rec.Command.ExitCode,
+			tail:     rec.Command.Diagnostics,
+			record:   rec,
 		}
 		if !res.ok {
 			allPass = false
@@ -76,24 +96,90 @@ func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.
 		results = append(results, res)
 	}
 	if err := o.writeValidationEvidence(results); err != nil {
-		fmt.Fprintf(o.out, "driver: warning — could not write validation evidence: %v\n", err)
-	} else {
-		// Commit the driver-authored evidence immediately so it does not leave the tree
-		// dirty and trip the next fix-up cycle's gitTreeClean guard (review fix): mirrors
-		// the driver committing other artifacts. Best-effort: a commit failure only warns.
-		o.commitEvidence()
+		return false, fmt.Sprintf("contract: evidence-write failure (validation table): %v — no completion", err)
 	}
+	if err := o.writeTypedEvidence(results, preDigest, excl); err != nil {
+		return false, fmt.Sprintf("contract: evidence-write failure (typed report): %v — no completion", err)
+	}
+	// Commit the driver-authored evidence immediately so it does not leave the tree
+	// dirty and trip the next fix-up cycle's gitTreeClean guard (review fix): mirrors
+	// the driver committing other artifacts. Best-effort: a commit failure only warns.
+	o.commitEvidence()
 	if allPass {
 		return true, fmt.Sprintf("contract: %d/%d criteria passed", len(results), len(results))
 	}
 	var failed []string
 	for _, r := range results {
 		if !r.ok {
-			failed = append(failed, fmt.Sprintf("%s (exit %d)", r.name, r.exitCode))
+			failed = append(failed, fmt.Sprintf("%s (%s, exit %d)", r.name, r.record.Status, r.exitCode))
 		}
 	}
 	// Descriptive message so the author can fix the failing command (§14 stopping).
 	return false, "contract failed: " + strings.Join(failed, ", ") + " — see IMPLEMENTATION.md ## Validation evidence"
+}
+
+// writeTypedEvidence builds and atomically persists the typed EVIDENCE.json
+// report for this cycle. preDigest is the tested-tree identity taken BEFORE
+// the criteria ran; the tree is digested again here and a mismatch fails the
+// whole attempt (the code under test changed during execution) — but the
+// report is still persisted first, so the failed attempt leaves evidence.
+//
+// The tested-tree digest excludes only the defined evidence artifacts
+// (EVIDENCE.json and IMPLEMENTATION.md). Because excluding the whole
+// IMPLEMENTATION.md would hide edits to its NON-evidence sections, the report
+// additionally binds the digest of IMPLEMENTATION.md with ONLY the generated
+// ## Validation evidence section removed (Report.ExtraDigests); the close
+// gate recomputes and compares it.
+func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest string, excl []string) error {
+	postDigest, err := evidence.TreeDigest(o.root, excl...)
+	if err != nil {
+		return fmt.Errorf("post-execution tree digest: %w", err)
+	}
+	restDigest, implRel, err := implementationRestDigest(o.root, o.ideaDir)
+	if err != nil {
+		return fmt.Errorf("non-evidence implementation digest: %w", err)
+	}
+	report := &evidence.Report{
+		Idea:           o.ideaSlug,
+		ReviewedCommit: evidence.ReviewedCommit(o.root),
+		TreeSHA256:     preDigest,
+		TreeDirty:      evidence.TreeDirty(o.root),
+		GeneratedAt:    time.Now().UTC(),
+		ExtraDigests:   map[string]string{implRel: restDigest},
+	}
+	for _, r := range results {
+		report.Records = append(report.Records, r.record)
+	}
+	// Persist first: even a failed attempt (e.g. tree changed mid-run) leaves
+	// its evidence artifact for the audit trail.
+	if err := evidence.Save(o.ideaDir, report); err != nil {
+		return err
+	}
+	if postDigest != preDigest {
+		return fmt.Errorf("tested tree changed during check execution (pre %s…, post %s…) — the run did not test a stable tree",
+			preDigest[:12], postDigest[:12])
+	}
+	return nil
+}
+
+// implementationRestDigest returns the digest of the idea's IMPLEMENTATION.md
+// with ONLY the driver-generated `## Validation evidence` section removed,
+// plus the file's slash-separated path relative to root. Any edit to the
+// non-evidence content changes this digest, so the broad tree-digest exclusion
+// of IMPLEMENTATION.md cannot hide scope edits.
+func implementationRestDigest(root, ideaDir string) (digest, relSlash string, err error) {
+	rel, err := filepath.Rel(root, ideaDir)
+	if err != nil {
+		return "", "", err
+	}
+	relSlash = filepath.ToSlash(filepath.Join(rel, "IMPLEMENTATION.md"))
+	body, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	if err != nil {
+		return "", "", err
+	}
+	stripped := replaceSection(string(body), "## Validation evidence", "")
+	sum := sha256.Sum256([]byte(stripped))
+	return hex.EncodeToString(sum[:]), relSlash, nil
 }
 
 func exitCodeOf(err error) int {
@@ -130,11 +216,13 @@ func scrubAndTruncate(s string) string {
 	return out
 }
 
-// commitEvidence commits the driver-authored IMPLEMENTATION.md evidence write so the
-// tree stays clean between fix-up cycles. Best-effort and non-fatal: a non-git tree or
-// a no-op commit is silently fine.
+// commitEvidence commits the driver-authored evidence artifacts (the
+// IMPLEMENTATION.md evidence table and the typed EVIDENCE.json report) so the
+// tree stays clean between fix-up cycles. Best-effort and non-fatal: a non-git
+// tree or a no-op commit is silently fine.
 func (o driverImplOps) commitEvidence() {
-	rel := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
+	implRel := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
+	evidenceRel := filepath.Join(o.ideaDir, evidence.ReportFileName)
 	git := func(args ...string) error {
 		cmd := exec.Command("git", append([]string{"-C", o.root}, args...)...)
 		cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
@@ -143,14 +231,14 @@ func (o driverImplOps) commitEvidence() {
 	if git("rev-parse", "--is-inside-work-tree") != nil {
 		return // not a git tree → nothing to commit
 	}
-	if err := git("add", rel); err != nil {
+	if err := git("add", implRel, evidenceRel); err != nil {
 		fmt.Fprintf(o.out, "driver: warning — could not stage validation evidence: %v\n", err)
 		return
 	}
 	// `git commit` is a no-op error when nothing changed; ignore that case.
-	if err := git("commit", "-m", "[driver] "+o.ideaSlug+": validation evidence", "--", rel); err != nil {
-		// Only warn if the file actually has staged changes (a real failure).
-		if diff := exec.Command("git", "-C", o.root, "diff", "--cached", "--quiet", "--", rel).Run(); diff != nil {
+	if err := git("commit", "-m", "[driver] "+o.ideaSlug+": validation evidence", "--", implRel, evidenceRel); err != nil {
+		// Only warn if the files actually have staged changes (a real failure).
+		if diff := exec.Command("git", "-C", o.root, "diff", "--cached", "--quiet", "--", implRel, evidenceRel).Run(); diff != nil {
 			fmt.Fprintf(o.out, "driver: warning — could not commit validation evidence: %v\n", err)
 		}
 	}
@@ -167,14 +255,14 @@ func (o driverImplOps) writeValidationEvidence(results []criterionResult) error 
 	var tbl strings.Builder
 	tbl.WriteString("## Validation evidence\n\n")
 	tbl.WriteString("<!-- driver-populated (completion-contracts): overwritten each cycle; git history keeps prior runs -->\n\n")
-	tbl.WriteString("| criterion | exit | duration | result |\n")
-	tbl.WriteString("|---|---|---|---|\n")
+	tbl.WriteString("| criterion | exit | duration | cases (exec/fail/skip) | result |\n")
+	tbl.WriteString("|---|---|---|---|---|\n")
 	for _, r := range results {
-		verdict := "PASS"
-		if !r.ok {
-			verdict = "FAIL"
+		cases := "unknown" // opaque shell output: no executed-case semantics
+		if r.record.Command.ExecutedCases >= 0 {
+			cases = fmt.Sprintf("%d/%d/%d", r.record.Command.ExecutedCases, max(r.record.Command.FailedCases, 0), max(r.record.Command.SkippedCases, 0))
 		}
-		tbl.WriteString(fmt.Sprintf("| %s | %d | %s | %s |\n", r.name, r.exitCode, r.dur.Round(time.Millisecond), verdict))
+		tbl.WriteString(fmt.Sprintf("| %s | %d | %s | %s | %s |\n", r.name, r.exitCode, r.dur.Round(time.Millisecond), cases, strings.ToUpper(string(r.record.Status))))
 	}
 	for _, r := range results {
 		if r.tail != "" {
