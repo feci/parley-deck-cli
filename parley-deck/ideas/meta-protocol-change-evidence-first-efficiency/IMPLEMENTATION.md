@@ -2108,3 +2108,72 @@ stays pending; AC-B2 and the six-area goal are incomplete. No real model call,
 operator activation, final merge/release/deployment, global install or core
 publication occurred. The older bd00188 HTML, historical quorum/full-six pilot,
 Claude rate-limit recovery and unanswered experiment decisions remain unchanged.
+
+### Charge-bound captured-source verification allocation — September 11
+
+Before edits, Codex claims new internal/trajectory/{captured.go,captured_test.go},
+internal/trajectory/trajectory.go, docs/agent-runtime-configuration.md and the
+owned implementation-notes/codex-1-captured-verification-dispositions-20260911.md.
+Connect retained source/charge identity to actual paired criterion execution.
+Restore both private source archives, attach independent local copies of the
+original Git object history, detach at each actual recorded commit, and require
+exact original Source observations before execution. Never manufacture original
+clean commits or edit the live worktree/index/refs. If staged state or missing
+Git objects cannot be reconstructed exactly, refuse explicitly instead of
+substituting a different Git context. Retain original dirty status and commit
+identity in the comparison request.
+
+Freeze policy, complete original attempt/charge, invocation, archive references,
+material criterion hashes and selected non-implementer verifier. Bind actual
+AB/BA executions to these facts and recheck source/authority around execution.
+Reuse existing format-aware criterion assessment; ordinary pass-only completion
+attestation and clean-Git comparison semantics stay unchanged. Return partial
+observations on interruption/drift. Add real archived dirty/deleted/untracked
+source execution, charge/criterion/source substitution, missing history, Git-state
+preservation and staged-state refusal fixtures.
+
+This continues the required independent runner/helper path. The API itself does
+not invoke a model or authenticate a participant. Durable helper requests,
+invocation receipts, complete trajectory evaluation and review/recovery remain
+required before accepting attempts or declaring AC-B2 complete.
+
+### Charge-bound captured verification checkpoint — September 12
+
+FreezeCaptured now pins the complete shared policy/attempt/charge, original
+invocation, material criteria and both source archives. OpenCaptured restores
+private before/after source and independently copies original Git objects without
+hardlinks, checkout filters or template hooks, detached at the actual commits.
+Both roots must reproduce the original Source observation exactly; dirty output
+keeps its original HEAD/status, and no synthetic clean commit is introduced.
+Staged-index differences, missing original commits, object alternates, excessive
+or unsupported storage and nested Git parents refuse. Original source, index,
+HEAD and refs are preserved. VerifyCaptured rechecks authority and both sources
+around actual AB/BA executions and returns partial observations on drift or
+interruption. Assessment is shared with the original clean-commit comparison;
+ordinary pass-only completion semantics remain unchanged. A workspace handle is
+single-use but does not yet provide cross-process durable helper replay control.
+
+All ten new tests pass, including actual dirty failed child output after live
+edits, original committed ancestry, exact execution order, clean/inconclusive/
+opaque outcomes, request/authority/scope substitutions, copied object independence,
+source mutation, signalled real-process interruption, staging refusal and unchanged
+criticism. All 368 Go/module files match manifest
+bf97070a3ed66c535b9b49a49e5a79f0a04627ac61274e6a992e862652895970.
+Full JSON suite PASS (167.580s, all 32 package terminal events), six-package race
+PASS (183.213s), vet PASS (1.493s), Windows amd64 trajectory/app cross-builds PASS
+with PE amd64 headers verified. Compiled shared-volume trajectory/runner/driver/
+app fixtures PASS (162.394/10.170/1.652/3.290s). Every new test passed in full,
+race and the shared-volume run; logs match native copies, contain no NUL bytes
+and no failed-test events. final-verification.json and thirty-nine checksummed
+evidence files are retained under captured-verification-validation-20260912.
+
+The owned captured-verification disposition records supported source reproduction,
+trust/host limits, staged/index/object retention gaps and remaining integration.
+This API does not launch a model, publish or authenticate an independent helper
+receipt, resolve pending state or authorize continuation. Actual runner/helper
+invocation, durable receipts/observations, full charged patch-list evaluation,
+retained review trigger and explicit recovery remain required. AC-B2 and the six
+areas remain incomplete. No new model call or actual operator activation occurred.
+The older report, real experiment requirements and unanswered recovery/roster/
+pilot/funding decisions are unchanged. No final merge/release/deployment/global
+installation/immutable-core publication is claimed.

@@ -984,8 +984,9 @@ refs are never restoration targets.
 Restoration supplies source files without creating Git metadata or asserting a
 new commit/ancestry. Use an execution parent outside any existing Git worktree.
 Host permission and symlink semantics must reproduce the archived tree exactly;
-unsupported restoration fails visibly. Creating the verifier's isolated Git
-execution roots and binding its independent helper receipt remain separate work.
+unsupported restoration fails visibly. The captured-source API below can attach
+isolated original Git history when its exact state is reproducible. Binding the
+independent model invocation and durable helper receipt remains separate work.
 
 If actual source can be observed but its archive cannot be published, the
 terminal record retains that observation with `archive-unavailable`. If actual
@@ -998,3 +999,46 @@ Old v1 digest-only policies/state are explicitly refused with recovery guidance,
 without changing their bytes. Current files cannot reconstruct a past attempt;
 do not delete old state or relabel it v2. No automatic migration or historical
 archive reconstruction is supplied by this checkpoint.
+
+### Charge-bound execution of captured worktrees
+
+`FreezeCaptured` reads the complete shared trajectory authority and freezes the
+original policy, exact charge/attempt, invocation, original material criterion
+hashes, selected non-implementer verifier, source observations and both archive
+references. An unfinished capture or unchanged source cannot establish a new
+patch regression. This request preserves actual commit and dirty status; it does
+not convert uncommitted output into a synthetic clean commit.
+
+`OpenCaptured` restores the two archives into newly allocated private roots and
+attaches separate local copies of original Git object history. Each copy is
+detached at its actual recorded commit. Local clone uses no hardlinks or checkout
+filters and an empty hook template. Source/index/HEAD/branch files in the original
+repository are never write targets. The exact original source digest, commit and
+status observation must match each reproduced root before it can execute.
+Git object storage is checked before/after copying against 512 MiB and 100,000
+entries; alternates, symlink/special object entries and excess data refuse.
+
+The retained archive covers source files, not arbitrary historical Git index
+blobs or an independent backup of every Git object. A staged-state difference,
+missing recorded commit or otherwise unreproducible original Source refuses;
+the current index, a new commit or an invented clean status cannot fill the gap.
+Retaining staged index/object authority and explicit recovery for these states
+remain required integration work. Verification parents must be outside existing
+Git repositories; partial preparation removes only newly allocated directories.
+
+`VerifyCaptured` rechecks durable authority and both full source observations
+around actual original criterion executions in AB/BA order. Each workspace
+handle is single-use. Partial outputs and actual post-source hashes are returned
+on drift/interruption; a caller must retain those failures. `AssessCaptured`
+reuses the existing structured criterion assessment: a stable new material failure
+can confirm regression; prior failures are inconclusive, and opaque, skipped,
+missing or interrupted output cannot confirm an outcome. Original clean-commit
+comparison and ordinary pass-only completion attestation retain their rules.
+
+These are internal execution APIs, not a complete independent verification CLI.
+They do not invoke a model, authenticate the verifier label, publish a durable
+helper receipt or authorize the next patch. The parent still needs instrumented
+independent model/helper invocation, exact receipt acceptance, durable observations,
+the complete charge-derived expected patch inventory, retained review trigger
+and explicit recovery/disposition. No call to these APIs resolves pending state,
+resets budget, changes quorum or supplies implementation completion.

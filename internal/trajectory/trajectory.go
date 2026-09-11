@@ -196,19 +196,30 @@ func Assess(r Request, o Observation) (Assessment, error) {
 	if o.Version != 1 || o.RequestSHA256 != sha || o.Verifier != r.Verifier || len(o.Pairs) != len(r.Criteria) {
 		return Assessment{}, errors.New("missing or mismatched independent patch observation")
 	}
+	return assessPairs(r.Criteria, r.Before, r.After, r.Verifier, o.Pairs)
+}
+
+// Both clean-commit and captured-worktree comparisons use the same semantic
+// assessment. Their distinct request validators retain their own provenance;
+// captured dirty source never acquires a manufactured clean commit identity.
+func assessPairs(criteria []CriterionBinding, beforeTree, afterTree Tree, verifier string, pairs []Pair) (Assessment, error) {
+	if len(pairs) != len(criteria) {
+		return Assessment{}, errors.New("missing material criterion pairs")
+	}
 	result := Assessment{Outcome: NoRegression}
-	for i, c := range r.Criteria {
-		p := o.Pairs[i]
+	for i, c := range criteria {
+		p := pairs[i]
 		if p.Name != c.Name {
 			return Assessment{}, errors.New("patch observation changed or reordered criterion scope")
 		}
 		var before, after evidence.Status
+		var err error
 		for j := 0; j < 2; j++ {
-			before, err = classify(p.Before[j], c, r.Before, r.Verifier)
+			before, err = classify(p.Before[j], c, beforeTree, verifier)
 			if err != nil {
 				return Assessment{}, fmt.Errorf("baseline %q: %w", c.Name, err)
 			}
-			after, err = classify(p.After[j], c, r.After, r.Verifier)
+			after, err = classify(p.After[j], c, afterTree, verifier)
 			if err != nil {
 				return Assessment{}, fmt.Errorf("patched %q: %w", c.Name, err)
 			}
