@@ -162,23 +162,35 @@ func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest s
 	return nil
 }
 
-// implementationRestDigest returns the digest of the idea's IMPLEMENTATION.md
-// with ONLY the driver-generated `## Validation evidence` section removed,
-// plus the file's slash-separated path relative to root. Any edit to the
-// non-evidence content changes this digest, so the broad tree-digest exclusion
-// of IMPLEMENTATION.md cannot hide scope edits.
-func implementationRestDigest(root, ideaDir string) (digest, relSlash string, err error) {
+// implementationRestContent returns the exact bound bytes of the idea's
+// IMPLEMENTATION.md with ONLY the driver-generated `## Validation evidence`
+// section removed, plus the file's slash-separated path relative to root.
+// This is the digest space of Report.ExtraDigests for this path — the bytes a
+// verifier authorizes a completion transition from, and the bytes the close
+// gate recomputes against.
+func implementationRestContent(root, ideaDir string) (content []byte, relSlash string, err error) {
 	rel, err := filepath.Rel(root, ideaDir)
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 	relSlash = filepath.ToSlash(filepath.Join(rel, "IMPLEMENTATION.md"))
 	body, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
 	if err != nil {
-		return "", "", err
+		return nil, "", err
 	}
 	stripped := replaceSection(string(body), "## Validation evidence", "")
-	sum := sha256.Sum256([]byte(stripped))
+	return []byte(stripped), relSlash, nil
+}
+
+// implementationRestDigest returns the digest of implementationRestContent.
+// Any edit to the non-evidence content changes this digest, so the broad
+// tree-digest exclusion of IMPLEMENTATION.md cannot hide scope edits.
+func implementationRestDigest(root, ideaDir string) (digest, relSlash string, err error) {
+	content, relSlash, err := implementationRestContent(root, ideaDir)
+	if err != nil {
+		return "", "", err
+	}
+	sum := sha256.Sum256(content)
 	return hex.EncodeToString(sum[:]), relSlash, nil
 }
 
