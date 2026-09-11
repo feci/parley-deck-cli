@@ -310,6 +310,11 @@ func (b runtimeBinding) inspect(ctx context.Context) (PolicyStatus, error) {
 			return PolicyStatus{}, err
 		}
 	}
+	if p, ok := b.policy.(StepPolicy); ok {
+		if err := checkProtocolMigrationCharges(filepath.Dir(b.store.Dir), p.MigrationSHA256, s); err != nil {
+			return PolicyStatus{}, err
+		}
+	}
 	spent := 0
 	for _, e := range s.Entries {
 		if e.Kind != b.policy.policyKind() {

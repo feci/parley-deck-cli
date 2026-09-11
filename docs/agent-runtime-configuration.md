@@ -286,7 +286,7 @@ the shared ledger; it is diagnostic metadata, not a credential.
 
 Never delete a live lock inode, its `lock-origin`, or a ledger to recover budget.
 Old v1 origins and relocated ledgers refuse rather than silently repinning.
-There is no supported migration/re-pin command yet: preserve all ledger and
+There is no supported lock-origin migration/re-pin command yet: preserve all ledger and
 origin files, use the original compatible environment, and keep writers stopped
 if it is unavailable. `budget inspect` remains available for diagnostics. A cache
 filesystem without verified exclusion stops visibly and names its path. Windows
@@ -326,8 +326,8 @@ legacy defaults. Missing or malformed prompts cannot create a legacy grant.
 
 Changing flags or track does not extend a frozen policy. Missing or corrupt
 policy/ledger state, inconsistent carried history, or unclassified previous
-invocations refuse further work. Preserve that state for explicit migration;
-no supported legacy cycle migration command exists yet. A valid existing cycle policy
+invocations refuse further work. Historical accounting without a saved policy
+uses the explicit migration control below. A valid existing cycle policy
 can receive the finite operator extension described below.
 Standalone unobserved handoff preparation does not activate or spend a cycle
 policy. An unobserved historical request is not proof that no outside execution
@@ -391,8 +391,8 @@ checkable; they do not authenticate a human or prevent a process with the same
 filesystem access from rewriting an entire history. The attendance check has
 the same limitations as `budget reconcile`; do not allocate a terminal to
 manufacture user authorization. Launch/step extensions have their separate
-controls below. Legacy step/cycle migration and lock-origin recovery remain open;
-launch history has the separate import control described below.
+controls below. Historical launch/step/cycle import has the separate controls
+described below; lock-origin recovery remains open.
 
 ### Mapping a configured dollar ceiling to launch reservations
 
@@ -568,5 +568,87 @@ The inventory allows 10,000 sources/actions and 64 MiB total source bytes; the
 import record is limited to 8 MiB. Individual metadata, event and artifact reads
 are bounded too. Required zero-valued fields must remain explicitly present.
 Old readers reject the new migration reference rather than ignore it. Windows
-is cross-compiled only. Step/cycle history import, lock-origin relocation/re-pin,
-and semantic action replay remain separate unfinished controls.
+is cross-compiled only. Lock-origin relocation/re-pin and semantic action replay
+remain separate unfinished controls.
+
+### Importing historical driver steps and protocol cycles
+
+Historical protocol counts have their own import. A child invocation is not a
+driver step or a whole cross-review group. Inspect one accounting kind at a time:
+
+```sh
+parley budget migrate inspect --kind step --dir DIR --idea IDEA
+parley budget migrate inspect --kind fixup --dir DIR --idea IDEA
+parley budget migrate inspect --kind cross-review --dir DIR --idea IDEA
+```
+
+For a nested pipeline idea, supply its canonical relative `--idea-path`, such as
+`parley-deck/pipelines/PIPELINE/blocks/BLOCK/idea`, on both inspect and apply.
+The inventory binds those artifacts as well as normal idea/run/invocation sources
+in all available worktrees. Reading it creates no accounting state.
+
+The observed `lower_bound` is a floor, not complete lifetime accounting. Distinct
+published driver transitions add across runs; identical observations and copied
+runs are counted once. Conflicting copies refuse. Lifetime/run counters overlap
+those events and therefore contribute a maximum, not an additional sum. Distinct
+completed fixup marker paths are counted across worktrees; round/cursor counters
+provide further floors. A fixup phase event may finish an already charged cycle
+after a crash, so it cannot establish a new fixup for every event. Typed child
+attempts establish at most one ungrouped action; they are never charged once per
+participant. Unknown phases, unobserved handoffs and pre-start launch refusals
+remain visible for reconciliation. A launch refusal does not prove that no
+protocol charge preceded it. Prose and participant headings do not supply totals.
+
+After stopping all writers and reconciling the complete history, an attended
+operator supplies an explicit **total**, including observed, failed, partial and
+unobserved historical protocol attempts:
+
+```sh
+parley budget migrate apply --kind step --dir DIR --idea IDEA \
+  --expected-history-sha256 HASH --decision-id UNIQUE_ID --reason 'Accounting basis' \
+  --started-at RFC3339 --total-actions TOTAL_STEPS \
+  --max-steps LIFETIME_CEILING --wall-clock LIFETIME_DURATION --writers-stopped --yes
+
+parley budget migrate apply --kind fixup --dir DIR --idea IDEA \
+  --expected-history-sha256 HASH --decision-id UNIQUE_ID --reason 'Accounting basis' \
+  --started-at RFC3339 --total-actions TOTAL_FIXUPS \
+  --max-cycles LIFETIME_CEILING --writers-stopped --yes
+```
+
+Use `--kind cross-review` for cross-review groups with the same cycle arguments.
+These templates do not authorize any real accounting decision. Zero totals must
+be explicit and cannot be below observed floors. Unlike launch import's
+`--additional-launches`, `--total-actions` includes all reconciled protocol work.
+The original epoch cannot follow any observed history; step inventory also derives
+an earlier origin from reported elapsed time. Wall time includes pauses. Importing
+an already exhausted or over-cap history preserves it without permitting new work.
+Step maximum zero means unlimited; cycle maximum zero forbids the operation.
+
+Choose ceilings consistent with the intended runtime configuration before apply.
+Migration records the operator's accounting policy; it does not rewrite or validate
+the idea's track configuration. The driver still requires the original cycle
+ceiling to match its configuration, and typed manual calls reject a stricter
+current track. Importing a larger ceiling cannot bypass a fast-track exclusion.
+A mismatched frozen policy may therefore be unusable; changing its file, deleting
+it or replaying a different decision is not supported recovery. Use the separate
+finite extension control for a valid active policy when an extension is authorized.
+
+Publication retains an immutable decision/inventory/initial ledger, ledger
+continuity, the referenced policy and a final activation marker. Exact replay
+recovers unchanged partial publication and returns current active state with
+later charges and grants intact. Source changes before activation leave it
+inactive. Required persisted zero/nullable fields remain explicit. Runtime readers
+check every imported entry and the original epoch, including cached nested
+sessions; replacing an imported identity while retaining the aggregate count
+refuses. An output error can follow successful publication: inspect or replay the
+exact decision before attempting work.
+
+Entries use `protocol-migration:<kind>:<decision-id>:<index>` identities. Their
+timestamps record the declared accounting epoch, not invented observed child
+starts. Their zero monetary values represent protocol counts only; provider
+prices and unknown costs remain in the independent launch ledger. Import does
+not reconstruct durable semantic operation identities for exactly-once execution.
+Existing configured/charged scopes, changed inactive imports, malformed or
+unavailable history and lock-origin recovery require separate reconciliation.
+The same attendance, stopped-writer, hash-authentication, file-size and
+mixed-version limitations as launch import apply.

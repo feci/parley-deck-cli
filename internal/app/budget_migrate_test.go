@@ -62,7 +62,7 @@ func TestBudgetMigrationCLIRequiresAttendanceAndAllExplicitFields(t *testing.T) 
 			t.Fatalf("invalid call accepted: %v", tail)
 		}
 	}
-	for _, tail := range [][]string{{"--yes=false"}, {"--max-launches", "0"}, {"--writers-stopped=false"}, {"--kind", "step"}, {"unexpected"}} {
+	for _, tail := range [][]string{{"--yes=false"}, {"--max-launches", "0"}, {"--writers-stopped=false"}, {"--kind", "unknown"}, {"unexpected"}} {
 		inspect := append([]string{"migrate", "inspect", "--dir", root, "--idea", "idea"}, tail...)
 		if code := runBudgetPlatformControl(ctx, inspect, io.Discard, io.Discard, false, false); code == 0 {
 			t.Fatal("invalid inspect accepted", tail)

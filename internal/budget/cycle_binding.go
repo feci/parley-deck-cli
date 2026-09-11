@@ -27,6 +27,7 @@ type CyclePolicy struct {
 	Carried         int              `json:"carried"`
 	OriginalMaximum *int             `json:"original_maximum,omitempty"`
 	Extensions      []CycleExtension `json:"extensions,omitempty"`
+	MigrationSHA256 string           `json:"migration_sha256,omitempty"`
 }
 
 type CycleBinding struct {
@@ -72,7 +73,16 @@ func readCyclePolicy(path string) (CyclePolicy, error) {
 	if p.Scope == "" || p.Idea == "" || !strings.HasPrefix(p.IdeaPath, "parley-deck/") || strings.Contains(p.IdeaPath, "\\") || filepath.IsAbs(p.IdeaPath) || filepath.ToSlash(filepath.Clean(p.IdeaPath)) != p.IdeaPath || (p.Kind != Fixup && p.Kind != CrossReview) || p.Maximum < 0 || p.Carried < 0 {
 		return p, errors.New("invalid cycle policy")
 	}
-	return p, validateCycleExtensions(p, fields)
+	if raw, ok := fields["migration_sha256"]; ok {
+		var digest string
+		if json.Unmarshal(raw, &digest) != nil || !validCycleDecision("migration", "migration", digest) {
+			return p, errors.New("invalid cycle migration reference")
+		}
+	}
+	if err := validateCycleExtensions(p, fields); err != nil {
+		return p, err
+	}
+	return p, checkProtocolMigrationPolicy(filepath.Dir(path), p.MigrationSHA256, originalCyclePolicy(p))
 }
 
 func LoadCycleBinding(ctx context.Context, root, idea string, kind Kind) (*CycleBinding, error) {
@@ -162,6 +172,11 @@ func EnsureCycleBinding(ctx context.Context, root, idea string, kind Kind, maxim
 		return b, nil
 	} else if !os.IsNotExist(err) {
 		return nil, err
+	}
+	for _, name := range []string{"migration.json", "migration-active"} {
+		if _, err := os.Lstat(filepath.Join(dir, name)); err == nil || !os.IsNotExist(err) {
+			return nil, errors.New("cycle migration requires exact replay, not configuration")
+		}
 	}
 	if err := refuseUnmigratedCycles(roots, idea, relative, kind, carried, currentRun); err != nil {
 		return nil, err

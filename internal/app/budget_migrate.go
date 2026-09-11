@@ -13,14 +13,18 @@ import (
 
 func runBudgetMigrate(ctx context.Context, args []string, stdout, stderr io.Writer, attended bool) int {
 	if len(args) == 0 || args[0] != "inspect" && args[0] != "apply" {
-		fmt.Fprintln(stderr, "usage: parley budget migrate inspect|apply --kind launch --dir DIR [--idea ID] [options]")
+		fmt.Fprintln(stderr, "usage: parley budget migrate inspect|apply --kind launch|step|fixup|cross-review --dir DIR [--idea ID] [options]")
 		return 2
 	}
 	f := flag.NewFlagSet("budget migrate "+args[0], flag.ContinueOnError)
 	f.SetOutput(stderr)
 	root := f.String("dir", ".", "workspace; all linked worktrees are inventoried")
 	idea := f.String("idea", "", "idea identity; empty means auxiliary launches")
-	kind := f.String("kind", "launch", "accounting kind; launch is currently supported")
+	kind := f.String("kind", "launch", "accounting kind: launch, step, fixup or cross-review")
+	ideaPath := f.String("idea-path", "", "canonical relative idea path for protocol accounting; supports nested pipeline ideas")
+	total := f.Int("total-actions", -1, "explicit total historical protocol actions, including failed and ungrouped attempts")
+	steps := f.Int("max-steps", -1, "absolute lifetime step ceiling; 0 = unlimited")
+	cycles := f.Int("max-cycles", -1, "absolute lifetime cycle ceiling; 0 forbids this cycle kind")
 	history := f.String("expected-history-sha256", "", "exact inventory hash from migration inspect")
 	decision := f.String("decision-id", "", "unique operator migration decision")
 	reason := f.String("reason", "", "operator explanation and legacy accounting basis")
@@ -35,12 +39,21 @@ func runBudgetMigrate(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err := f.Parse(args[1:]); err != nil {
 		return 2
 	}
-	if f.NArg() != 0 || *kind != "launch" {
-		fmt.Fprintln(stderr, "migration accepts no positional arguments; only launch accounting is currently supported")
+	if f.NArg() != 0 {
+		fmt.Fprintln(stderr, "migration accepts no positional arguments")
 		return 2
 	}
 	visited := map[string]bool{}
 	f.Visit(func(f *flag.Flag) { visited[f.Name] = true })
+	if *kind != "launch" {
+		return runBudgetMigrateProtocol(ctx, args[0], protocolMigrationOptions{Root: *root, Idea: *idea, IdeaPath: *ideaPath, Kind: *kind, History: *history, Decision: *decision, Reason: *reason, Started: *started, Total: *total, Steps: *steps, Cycles: *cycles, Wall: *wall, Writers: *writers, Yes: *yes}, visited, stdout, stderr, attended)
+	}
+	for _, name := range []string{"idea-path", "total-actions", "max-steps", "max-cycles"} {
+		if visited[name] {
+			fmt.Fprintln(stderr, "launch migration does not accept protocol accounting flags")
+			return 2
+		}
+	}
 	var result any
 	var err error
 	if args[0] == "inspect" {

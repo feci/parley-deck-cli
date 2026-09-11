@@ -55,7 +55,13 @@ func cloneCyclePolicy(p CyclePolicy) CyclePolicy {
 }
 
 func sameCycleAuthority(a, b CyclePolicy) bool {
-	return a.Scope == b.Scope && a.Idea == b.Idea && a.IdeaPath == b.IdeaPath && a.Kind == b.Kind && a.Carried == b.Carried && a.InitialMaximum() == b.InitialMaximum()
+	return a.Scope == b.Scope && a.Idea == b.Idea && a.IdeaPath == b.IdeaPath && a.Kind == b.Kind && a.Carried == b.Carried && a.InitialMaximum() == b.InitialMaximum() && a.MigrationSHA256 == b.MigrationSHA256
+}
+
+func originalCyclePolicy(p CyclePolicy) CyclePolicy {
+	p.Maximum = p.InitialMaximum()
+	p.Version, p.OriginalMaximum, p.Extensions = 1, nil, nil
+	return p
 }
 
 // CyclePolicyDigest addresses canonical JSON, not whitespace in a policy file.
@@ -139,6 +145,9 @@ func (b *CycleBinding) current() (*CycleBinding, error) {
 func (b *CycleBinding) Inspect(ctx context.Context) (CycleStatus, error) {
 	state, err := b.Store.Inspect(ctx)
 	if err != nil {
+		return CycleStatus{}, err
+	}
+	if err := checkProtocolMigrationCharges(filepath.Dir(b.Store.Dir), b.Policy.MigrationSHA256, state); err != nil {
 		return CycleStatus{}, err
 	}
 	spent := b.Count(state)

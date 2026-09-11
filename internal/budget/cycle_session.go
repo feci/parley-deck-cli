@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"path/filepath"
 	"sync"
 )
 
@@ -85,6 +86,9 @@ func ChargeCycle(ctx context.Context, kind Kind) (int, error) {
 			var state Snapshot
 			if err == nil {
 				state, err = current.Store.Inspect(ctx)
+			}
+			if err == nil {
+				err = checkProtocolMigrationCharges(filepath.Dir(current.Store.Dir), current.Policy.MigrationSHA256, state)
 			}
 			if err == nil && s.binding.Count(state) < s.ordinal {
 				err = errors.New("cycle accounting lost a reserved charge")

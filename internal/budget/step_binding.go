@@ -14,13 +14,14 @@ import (
 // actual runtime configuration, never a participant's grant or prose. Zero
 // means unlimited; a saved policy remains authoritative when flags are absent.
 type StepPolicy struct {
-	Version     int               `json:"version"`
-	Scope       string            `json:"scope"`
-	Idea        string            `json:"idea"`
-	MaxSteps    int               `json:"max_steps"`
-	WallClockNS int64             `json:"wall_clock_ns"`
-	Original    *PolicyCeilings   `json:"original,omitempty"`
-	Extensions  []PolicyExtension `json:"extensions,omitempty"`
+	Version         int               `json:"version"`
+	Scope           string            `json:"scope"`
+	Idea            string            `json:"idea"`
+	MaxSteps        int               `json:"max_steps"`
+	WallClockNS     int64             `json:"wall_clock_ns"`
+	Original        *PolicyCeilings   `json:"original,omitempty"`
+	Extensions      []PolicyExtension `json:"extensions,omitempty"`
+	MigrationSHA256 string            `json:"migration_sha256,omitempty"`
 }
 type StepBinding struct {
 	Policy StepPolicy
@@ -35,6 +36,9 @@ func stepScope(ctx context.Context, root, idea string, history bool) (string, st
 	return filepath.Join(filepath.Dir(dir), "steps-"+key(scope)), "parley-steps/v1:" + key(scope), roots, err
 }
 func (p StepPolicy) validateBase() error {
+	if p.MigrationSHA256 != "" && !validCycleDecision("migration", "migration", p.MigrationSHA256) {
+		return errors.New("invalid step migration reference")
+	}
 	if (p.Version != 1 && p.Version != 2) || p.Scope == "" || p.Idea == "" || p.MaxSteps < 0 || p.WallClockNS < 0 {
 		return errors.New("invalid step policy")
 	}
@@ -45,7 +49,10 @@ func readStepPolicy(path string) (StepPolicy, error) {
 	if err := readRuntimePolicy(path, &p, []string{"version", "scope", "idea", "max_steps", "wall_clock_ns"}); err != nil {
 		return p, err
 	}
-	return p, validateRuntimePolicy(p)
+	if err := validateRuntimePolicy(p); err != nil {
+		return p, err
+	}
+	return p, checkProtocolMigrationPolicy(filepath.Dir(path), p.MigrationSHA256, p.originalPolicy())
 }
 
 func LoadStepBinding(ctx context.Context, root, idea string) (*StepBinding, error) {
@@ -121,6 +128,11 @@ func EnsureStepBinding(ctx context.Context, root, idea string, steps int, wall t
 	policyPath := filepath.Join(dir, "policy.json")
 	if _, e := os.Lstat(policyPath); e == nil || !os.IsNotExist(e) {
 		return nil, errors.New("step policy exists but cannot be read")
+	}
+	for _, name := range []string{"migration.json", "migration-active"} {
+		if _, err := os.Lstat(filepath.Join(dir, name)); err == nil || !os.IsNotExist(err) {
+			return nil, errors.New("step migration requires exact replay, not configuration")
+		}
 	}
 	if err = refuseUnmigratedSteps(roots, idea); err != nil {
 		return nil, err

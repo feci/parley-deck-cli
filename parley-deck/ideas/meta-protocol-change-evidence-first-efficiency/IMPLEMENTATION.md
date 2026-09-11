@@ -1494,3 +1494,77 @@ Its exact sidecar and raw/harness evidence identify the verified file. New
 screenshots timed out; physical click placement and fresh visual screenshot
 review are not certified. The owned disposition records these limits explicitly.
 Report state stays partial/preparation and the all-six goal remains incomplete.
+
+### Historical step/cycle accounting migration allocation — September 11
+
+The preceding goal turn made verified progress (source fd3e3ce, checkpoint
+85c8ad9, current draft PR and report evidence). Codex now claims
+internal/budget/{protocol_migration.go,protocol_migration_history.go,
+protocol_migration_test.go,protocol_migration_history_test.go,step_binding.go,
+cycle_binding.go,cycle_extension.go,policy_extension.go},
+internal/app/{budget_migrate.go,budget_migrate_protocol.go,
+budget_migrate_protocol_test.go}, owned driver/runner protocol-migration fixtures,
+and docs/agent-runtime-configuration.md before edits.
+
+Add explicit attended import for driver-step, fixup and cross-review accounting,
+retaining original epoch, source hashes and known lower bounds from driver
+counters/events and structural cycle markers. Nested participant launches are
+not one protocol charge each. Legacy telemetry lacks durable operation grouping;
+therefore expose ambiguous invocations and require an explicit operator total
+including failed/partially observed attempts. The observed floor is not a claim
+of complete lifetime accounting, and a pre-start launch refusal alone cannot
+prove no protocol step/cycle was charged before it. Never infer totals from prose.
+
+Use an immutable import record, ledger continuity, a policy hash reference and
+final activation marker; preserve exact partial replay and later charges/grants.
+Existing policies/ledgers cannot be replaced and real track/runtime gates stay
+intact. Import is not semantic action replay or lock-origin recovery. Keep this
+implementation serialized under Codex; no real operator grant/migration or
+participant invocation is authorized by this allocation. Test refusal-only
+history, known/unknown grouping, stale/malformed/conflicting copies, epoch/count
+floors, all publication failures, exact replay, and actual runner/driver resume
+at inclusive caps. The signed full objective and independent gates stay open.
+
+Codex also claims internal/budget/cycle_session.go before editing its cached
+session path: subsequent children must check imported charge continuity, not only
+the aggregate current count. This does not add a second charge for a nested child.
+
+Codex claims internal/app/budget_migrate_test.go before updating the old negative
+inspect case: `--kind step` is now a supported read-only operation, so the
+unknown-kind rejection fixture must use an actually unsupported name. Existing
+launch-only apply calls with mixed protocol flags must still refuse.
+
+### Protocol migration disposition and delivery allocation — September 11
+
+Before edits, Codex claims implementation-notes/codex-1-protocol-migration-dispositions-20260911.md,
+the evaluation delivery/2026-09-05/{PROGRESS.md,priorities.json,report.html}
+refresh, and browser-protocol-migration-20260911.json with its owned browser-qa
+subdirectory. Record current-source validation and the retained negative tests,
+then synchronize draft PR #73. Previous launch-migration test/report results do
+not certify the new step/cycle import. Every unfinished full-scope requirement
+and unanswered recovery decision remains open.
+
+
+### Protocol accounting migration checkpoint — September 11
+
+The step/fixup/cross-review import now preserves explicit lifetime totals and
+original epochs through partial publication, exact replay, later charges and
+finite grants. Distinct published steps add across runs without charging nested
+children separately; fixup recovery events do not invent fresh code-writing
+attempts. Disjoint marker paths across worktrees remain counted. The owned
+protocol-migration disposition records source-bound behavior, negative tests,
+actual-process evidence, track compatibility and remaining recovery limits.
+
+Full Go suite PASS (134.046s); budget/driver/runner/evidence/app race PASS
+(147.141s); scoped vet and Windows amd64 app cross-build PASS. Isolated
+shared-volume publication/worktree/actual-process fixtures PASS (13.366s).
+Actual compiled CLI refuses unattended imports for all three kinds with exit 2
+and no created state. All 338 Go/module files match the retained source manifest.
+The negative history regressions and initial driver fixture's mistaken refund
+expectation are retained; runtime precharge behavior was preserved.
+
+No real policy was imported/extended and no participant/model was invoked.
+Independent acceptance, Windows runtime, guard/changed-import recovery, semantic
+replay, canonical refusal recovery, independent regression trajectory and every
+full-scope model/packet/full-six pilot/grading/signature/elapsed-follow-up
+obligation remain pending. This checkpoint does not complete the six-part goal.
