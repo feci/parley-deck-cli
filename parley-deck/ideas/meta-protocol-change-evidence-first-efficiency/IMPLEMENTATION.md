@@ -1771,3 +1771,24 @@ priorities.json,report.html,report-manifest.json}, browser-guard-continuity-2026
 and browser-qa/guard-continuity-20260911. Preserve the exact previously verified
 table report before refreshing the current partial report. Bind report QA to the
 new source checkpoint, without implying independent implementation acceptance.
+
+
+### Resource guard report verification checkpoint — September 11
+
+The current 627683-byte report for source 1b891cf572deb3ee3975b221c051af745a8120ff
+passes ten report tests and 56 live ego-browser assertions at 1440×900, 1280×540,
+390×844 and 320×720. Current guard behavior and retained negatives, all sections
+and documents, partial/not-run gates, painted charts, search/reset/pagination,
+actual ArrowRight navigation and print-media visibility passed. The existing
+README-documented Python environment built the report without installation.
+
+Report SHA256: 72ff61c3f62df25b94a5304097124621c2944a0bdc058824922c993609e19d71.
+Embedded payload SHA256: 5d1f20782bc19ac683312e6435d22c2c227706bcad34749e5aece54e166f757e.
+Local full-file hashes bracket browser QA. Dedicated cleanup of task space 31
+returned done:true. Exact logs, checksums and limitations are under evaluation
+delivery/2026-09-05/browser-qa/guard-continuity-20260911, with
+browser-guard-continuity-20260911.json beside them. The prior table report is
+archived under browser-qa/table-integrity-20260911/report.html at its original
+hash. No fresh screenshot, physical click-placement or print/PDF pagination is
+certified. This remains current partial-report QA; independent acceptance and
+all live experiments/follow-ups remain open. Source manifest is unchanged.
