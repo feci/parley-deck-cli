@@ -354,6 +354,24 @@ operation does not establish exactly-once execution or durable semantic replay
 across a process crash. The stored accounting and attended controls do not
 authenticate a human against another process with the same filesystem access.
 
+Active step, fixup and cross-review sessions retain the exact immutable charge
+returned by their original ledger publication: scope, accounting start, entry
+identity, kind, reservation time and reserved exposure. Before another nested
+operation, the session checks that same entry. An unchanged aggregate count
+cannot hide a missing or substituted charge. A changed original timestamp,
+reserved amount or accounting start also refuses. Once observed, a refusal stays
+with that live session even if the old bytes later reappear; no new charge is
+created and no accounting is repaired implicitly.
+
+Later separate charges, valid policy extensions, settlement and explicit
+unknown-cost reconciliation may proceed while the original reservation stays
+unchanged. The last allowed active group can still finish under its own charge,
+subject to the existing lifetime clock. The witness is captured from the actual
+publication result rather than a later read that could adopt a replaced entry.
+This protects live session continuity; it does not add durable cross-process
+semantic operation identity, permission to retry a crashed action or human
+authentication. Cooperative writers must preserve original charges.
+
 ### Inspecting and extending a cycle ceiling
 
 Inspect the existing policy without creating runtime state or changing it:

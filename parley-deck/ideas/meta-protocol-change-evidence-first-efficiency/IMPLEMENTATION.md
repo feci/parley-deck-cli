@@ -1872,3 +1872,39 @@ physical print/PDF pagination is certified. This verifies the current partial
 report, not independent source acceptance or future populated experiment results.
 The exact 349-file source set and all validation evidence hashes remain unchanged.
 All outstanding FINAL gates, historical quorum and recovery decisions remain open.
+
+### Exact active reservation continuity allocation — September 11
+
+Before edits, Codex claims internal/budget/{reservation_receipt.go,
+reservation_receipt_test.go,step_session.go,cycle_session.go,cycle_binding.go}, the owned
+implementation-notes/codex-1-reservation-continuity-dispositions-20260911.md and
+docs/agent-runtime-configuration.md. Existing session tests show nesting and total
+charges, but retained sessions do not bind revalidation to their exact reservation.
+Reproduce disappearance/substitution of the session's own entry while retaining
+the same aggregate count; fail before further nested execution on any changed
+original charge. Retain the original reservation identity, kind, timestamp and
+reserved exposure, preserve legitimate later charges/extensions/settlements, and
+keep publication errors sticky. Use the existing ledger and locking mechanisms.
+This is required active-action continuity, not a claim that durable cross-process
+semantic replay, origin migration, trajectory or independent/live FINAL gates
+are complete. Record the reproduced negative and current-source validation.
+
+### Exact active reservation continuity source checkpoint — September 11
+
+Fifteen real ledger/session fixtures reproduced further nested admission after
+same-count substitution or a changed original timestamp/reserved exposure/epoch.
+Step, fixup and cross-review sessions now pin their exact original reservation
+from its publication result and recheck it before further nested work. Refusals
+remain sticky and never rewrite accounting. Later charges, valid extensions,
+settlement/reconciliation and the last allowed live group remain supported.
+The owned reservation-continuity disposition records the exact scope and limits.
+
+All 351 Go/module files match manifest
+c3e2507ec3c76781e1606e97a466ae34b198d38b68b5fc9f615b1a52436952c8.
+Full suite PASS (146.656s), budget/evidence/app/driver/runner race PASS (165.232s),
+scoped vet PASS (1.256s), Windows amd64 app cross-build PASS and the compiled
+budget fixtures on an isolated shared volume PASS (5.721s). No model or actual
+operator accounting operation ran. This closes the identified live-session gap;
+durable cross-process semantic replay and all other unfinished FINAL obligations
+remain open. The latest browser-verified report remains explicitly bound to the
+prior bd00188 source checkpoint; refreshing presentation is still pending.

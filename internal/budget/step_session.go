@@ -14,6 +14,7 @@ import (
 type stepSession struct {
 	mu                sync.Mutex
 	binding           *StepBinding
+	receipt           reservationReceipt
 	active, attempted bool
 	err               error
 }
@@ -79,6 +80,9 @@ func ChargeStep(ctx context.Context) error {
 					state, err = current.Store.Inspect(ctx)
 				}
 				if err == nil {
+					err = s.receipt.check(state)
+				}
+				if err == nil {
 					err = current.checkTime(state)
 				}
 			}
@@ -92,7 +96,12 @@ func ChargeStep(ctx context.Context) error {
 		s.err = err
 		return err
 	}
-	_, s.err = s.binding.reserve(ctx, "step:"+hex.EncodeToString(id[:]))
+	reservationID := "step:" + hex.EncodeToString(id[:])
+	var state Snapshot
+	state, s.err = s.binding.reserve(ctx, reservationID)
+	if s.err == nil {
+		s.receipt, s.err = newReservationReceipt(state, reservationID, DriverStep)
+	}
 	if s.err != nil {
 		s.err = fmt.Errorf("driver step reservation refused: %w", s.err)
 	}

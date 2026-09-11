@@ -212,20 +212,28 @@ func (b *CycleBinding) Count(s Snapshot) int {
 }
 
 func (b *CycleBinding) Reserve(ctx context.Context, id string) (int, error) {
+	n, _, err := b.reserveWithReceipt(ctx, id)
+	return n, err
+}
+
+// Capture the original reservation from the snapshot returned by publication,
+// while still holding the policy guard. A later independent read must never
+// adopt a changed entry as the active session's original authority.
+func (b *CycleBinding) reserveWithReceipt(ctx context.Context, id string) (int, reservationReceipt, error) {
 	// Serialize policy changes with reservations. A cached binding must observe
 	// the current grant and cannot spend against a changed/corrupt authority.
 	release, err := AcquireResourceGuard(ctx, filepath.Dir(b.Store.Dir))
 	if err != nil {
-		return 0, err
+		return 0, reservationReceipt{}, err
 	}
 	defer release()
 	current, err := b.current()
 	if err != nil {
-		return 0, err
+		return 0, reservationReceipt{}, err
 	}
 	b = current
 	if _, err := b.Inspect(ctx); err != nil {
-		return 0, err
+		return 0, reservationReceipt{}, err
 	}
 	remaining := b.Policy.Maximum - b.Policy.Carried
 	limits := Limits{Actions: map[Kind]int{}, Denied: map[Kind]bool{}}
@@ -237,7 +245,11 @@ func (b *CycleBinding) Reserve(ctx context.Context, id string) (int, error) {
 	zero := int64(0)
 	state, err := b.Store.Reserve(ctx, Request{ID: id, Kind: b.Policy.Kind, ReserveMicros: &zero}, limits)
 	if err != nil {
-		return 0, err
+		return 0, reservationReceipt{}, err
 	}
-	return b.Count(state), nil
+	receipt, err := newReservationReceipt(state, id, b.Policy.Kind)
+	if err != nil {
+		return 0, reservationReceipt{}, err
+	}
+	return b.Count(state), receipt, nil
 }

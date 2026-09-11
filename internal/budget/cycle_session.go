@@ -14,6 +14,7 @@ type cycleRefusalKey struct{ Kind Kind }
 type cycleSession struct {
 	mu                sync.Mutex
 	binding           CycleBinding
+	receipt           reservationReceipt
 	active, attempted bool
 	ordinal           int
 	err               error
@@ -90,6 +91,9 @@ func ChargeCycle(ctx context.Context, kind Kind) (int, error) {
 			if err == nil {
 				err = checkProtocolMigrationCharges(filepath.Dir(current.Store.Dir), current.Policy.MigrationSHA256, state)
 			}
+			if err == nil {
+				err = s.receipt.check(state)
+			}
 			if err == nil && s.binding.Count(state) < s.ordinal {
 				err = errors.New("cycle accounting lost a reserved charge")
 			}
@@ -103,6 +107,6 @@ func ChargeCycle(ctx context.Context, kind Kind) (int, error) {
 		s.err = err
 		return 0, err
 	}
-	s.ordinal, s.err = s.binding.Reserve(ctx, "cycle:"+hex.EncodeToString(id[:]))
+	s.ordinal, s.receipt, s.err = s.binding.reserveWithReceipt(ctx, "cycle:"+hex.EncodeToString(id[:]))
 	return s.ordinal, s.err
 }
