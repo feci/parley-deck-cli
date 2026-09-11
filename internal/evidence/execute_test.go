@@ -109,6 +109,16 @@ func TestRunCriterionEnvelopeSingleValid(t *testing.T) {
 	}
 }
 
+// Adversarial: a single envelope line containing a DUPLICATE JSON field
+// (executed_cases 0 then 1) fails closed — last-wins decoding is not evidence.
+func TestRunCriterionEnvelopeDuplicateFieldFailsClosed(t *testing.T) {
+	cmd := `printf '%s\n' 'PARLEY-EVIDENCE {"executed_cases":0,"executed_cases":1,"failed_cases":0}'`
+	rec := RunCriterion(context.Background(), t.TempDir(), "c", cmd, "kimi-1")
+	if rec.Status != StatusFail || rec.Command.ExecutedCases != -1 {
+		t.Fatalf("duplicate envelope fields must fail closed with no counts, got %q %+v", rec.Status, rec.Command)
+	}
+}
+
 // Adversarial: duplicate envelope lines fail closed — an earlier valid pass
 // must NEVER shadow a later claim (the old last-wins recovery is gone).
 func TestRunCriterionEnvelopeDuplicateFailsClosed(t *testing.T) {
@@ -129,16 +139,26 @@ func TestRunCriterionMalformedFinalEnvelopeFailsClosed(t *testing.T) {
 	}
 }
 
-// Adversarial: null/partial/negative/conflicting envelope counts all fail closed.
+// Adversarial: null/partial/negative/conflicting envelope counts all fail closed,
+// as do duplicate, case-aliased, unknown and trailing fields — permissive
+// decoding is never evidence of execution.
 func TestParseEnvelopeFailClosed(t *testing.T) {
 	cases := map[string]string{
-		"malformed":    "PARLEY-EVIDENCE {not json}",
-		"not json":     "PARLEY-EVIDENCE hello",
-		"null counts":  `PARLEY-EVIDENCE {"executed_cases":null,"failed_cases":null}`,
-		"partial":      `PARLEY-EVIDENCE {"executed_cases":3}`,
-		"negative":     `PARLEY-EVIDENCE {"executed_cases":-2,"failed_cases":0}`,
-		"conflicting":  `PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":2}`,
-		"empty object": `PARLEY-EVIDENCE {}`,
+		"malformed":       "PARLEY-EVIDENCE {not json}",
+		"not json":        "PARLEY-EVIDENCE hello",
+		"null counts":     `PARLEY-EVIDENCE {"executed_cases":null,"failed_cases":null}`,
+		"partial":         `PARLEY-EVIDENCE {"executed_cases":3}`,
+		"negative":        `PARLEY-EVIDENCE {"executed_cases":-2,"failed_cases":0}`,
+		"conflicting":     `PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":2}`,
+		"empty object":    `PARLEY-EVIDENCE {}`,
+		"duplicate field": `PARLEY-EVIDENCE {"executed_cases":0,"executed_cases":1,"failed_cases":0}`,
+		"aliased field":   `PARLEY-EVIDENCE {"Executed_Cases":1,"failed_cases":0}`,
+		"unknown field":   `PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":0,"extra":9}`,
+		"string count":    `PARLEY-EVIDENCE {"executed_cases":"3","failed_cases":0}`,
+		"fractional":      `PARLEY-EVIDENCE {"executed_cases":1.5,"failed_cases":0}`,
+		"trailing object": `PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":0} {"executed_cases":9}`,
+		"trailing junk":   `PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":0} trailing`,
+		"array payload":   `PARLEY-EVIDENCE [1,0]`,
 	}
 	for name, out := range cases {
 		env, present, err := ParseEnvelope(out)

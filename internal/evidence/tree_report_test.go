@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,15 +89,43 @@ func TestTreeDigestModeChangeChanges(t *testing.T) {
 	}
 }
 
-// Adversarial: an unsupported entry (fifo) is an error, never silently skipped.
+// Adversarial: an unsupported entry (fifo, or a unix socket where fifos are
+// not supported) is an error, never silently skipped — including when the
+// entry is UNTRACKED and git's file inventory omits it entirely.
 func TestTreeDigestUnsupportedEntryFails(t *testing.T) {
 	root := scratchGitRepo(t, map[string]string{"a.go": "package a\n"})
 	if err := syscall.Mkfifo(filepath.Join(root, "pipe"), 0o644); err != nil {
-		t.Skipf("mkfifo unsupported: %v", err)
+		// This host's shared test volume cannot host FIFOs, and its long
+		// mandated TMPDIR paths exceed the AF_UNIX sun_path limit. Fall back
+		// to a unix socket created through a short RELATIVE path; the socket
+		// file lands inside the repo and must fail the digest the same way.
+		makeUnsupportedSocket(t, root)
 	}
 	if _, err := TreeDigest(root); err == nil {
 		t.Fatal("unsupported entry type must fail the digest")
 	}
+}
+
+// makeUnsupportedSocket creates a unix socket file inside root via a relative
+// bind path (cwd-relative binds sidestep the AF_UNIX length limit). It stays
+// open until cleanup so the socket file is present during the digest.
+func makeUnsupportedSocket(t *testing.T, root string) {
+	t.Helper()
+	prev, err := os.Getwd()
+	if err != nil {
+		t.Skipf("cannot set up unsupported-entry probe: %v", err)
+	}
+	if err := os.Chdir(root); err != nil {
+		t.Skipf("cannot set up unsupported-entry probe: %v", err)
+	}
+	ln, err := net.Listen("unix", "parley-evidence-probe.sock")
+	if cherr := os.Chdir(prev); cherr != nil {
+		t.Fatalf("cannot restore cwd: %v", cherr)
+	}
+	if err != nil {
+		t.Skipf("no unsupported-entry probe available on this filesystem: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
 }
 
 // Positive: a symlink through a /var-style path alias inside the canonical
@@ -186,7 +215,7 @@ func TestTreeDigestChangesWithContent(t *testing.T) {
 // Positive: only the explicitly excluded evidence artifacts are left out.
 func TestTreeDigestExcludesOnlyDefinedArtifacts(t *testing.T) {
 	root := scratchGitRepo(t, map[string]string{
-		"code.go":      "package a\n",
+		"code.go":       "package a\n",
 		"EVIDENCE.json": "{}",
 	})
 	withEvidence, err := TreeDigest(root)

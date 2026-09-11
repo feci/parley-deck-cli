@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func gateScratchRepo(t *testing.T, checksYAML string) (root, ideaDir string) {
 	files := map[string]string{
 		"go.mod":   "module scratch\n\ngo 1.26\n",
 		"src/a.go": "package src\n",
-		filepath.Join("parley-deck/ideas/idea-x", "00-prompt.md"): "---\nidea: idea-x\nstatus: implemented\n" + checksYAML + "---\n\n## Problem\n",
+		filepath.Join("parley-deck/ideas/idea-x", "00-prompt.md"):      "---\nidea: idea-x\nstatus: implemented\n" + checksYAML + "---\n\n## Problem\n",
 		filepath.Join("parley-deck/ideas/idea-x", "IMPLEMENTATION.md"): "---\nidea: idea-x\nstatus: implemented\n---\n\n## Summary of work\n\ndone\n\n## Validation evidence\n\n(pending)\n",
 	}
 	for rel, content := range files {
@@ -67,16 +68,50 @@ func gateOps(root, ideaDir string) driverImplOps {
 	return driverImplOps{root: root, ideaSlug: "idea-x", ideaDir: ideaDir, implementer: "kimi-1", out: io.Discard}
 }
 
-// Positive: a full run of the contract followed by an independent verifier's
-// gate evaluation allows closure.
+// Positive: a full run of the contract followed by a REAL independent
+// verifier re-execution — each criterion re-run by the verifier against the
+// tested tree, bound before/after, attested and persisted — allows closure.
 func TestEvidenceCloseGatePositive(t *testing.T) {
 	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
 	o := gateOps(root, ideaDir)
-	if ok, detail := o.runChecksContract(context.Background(), mustContract(t, ideaDir)); !ok {
+	criteria := mustContract(t, ideaDir)
+	if ok, detail := o.runChecksContract(context.Background(), criteria); !ok {
 		t.Fatalf("contract run should pass: %s", detail)
 	}
-	if _, err := os.Stat(evidence.ReportPath(ideaDir)); err != nil {
+	report, err := evidence.Load(ideaDir)
+	if err != nil {
 		t.Fatalf("typed report not persisted: %v", err)
+	}
+	// The independent verifier re-executes every criterion itself and binds the
+	// attestation to the tested tree digests taken immediately before/after.
+	excl, err := definedEvidenceArtifacts(root, ideaDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range criteria {
+		before, err := evidence.TreeDigest(root, excl...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rerun := evidence.RunCriterion(context.Background(), root, c.Name, c.Command, "codex-1")
+		after, err := evidence.TreeDigest(root, excl...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if before != after || before != report.TreeSHA256 {
+			t.Fatalf("verifier tree binding broken: before=%s after=%s report=%s", before[:12], after[:12], report.TreeSHA256[:12])
+		}
+		err = evidence.AttestExecution(report, c.Name, "codex-1", evidence.VerifierExecution{
+			Command:          rerun.Command,
+			TreeBeforeSHA256: before,
+			TreeAfterSHA256:  after,
+		})
+		if err != nil {
+			t.Fatalf("real independent attestation must succeed: %v", err)
+		}
+	}
+	if err := evidence.Save(ideaDir, report); err != nil {
+		t.Fatalf("persisting the attested report: %v", err)
 	}
 	gate := o.EvidenceCloseGate("codex-1")
 	if !gate.Allowed {
@@ -216,48 +251,125 @@ func TestEvidenceCloseGateCorruptReport(t *testing.T) {
 //
 //	go test ./internal/app/ -run TestSerialVsBarrierConcurrencyFixture -v
 //
-// A client and a server rendezvous over a TCP loopback connection (the
-// filesystem here cannot host FIFOs; /usr/bin/nc is a macOS built-in, not a
-// new dependency). The server blocks until a client connects; the client
-// fails immediately with no listener. Executed SERIALLY, both halves fail —
-// no serial check runner can certify this criterion. Executed CONCURRENTLY
-// (barrier), both pass. The evidence records make the distinction auditable:
-// the serial attempt leaves fail-typed records, the barrier attempt leaves
-// pass records with matching command digests.
+// Portable: no netcat, no FIFOs (this host's /usr/bin/nc proved unreliable and
+// the shared volume cannot host FIFOs). Both barrier halves are the test
+// binary re-executing itself as a helper (TestHelperProcess, gated by
+// PARLEY_BARRIER_HELPER). The server listens on a loopback port, publishes it
+// atomically, and blocks in Accept; the client polls for the port file and
+// fails on its own when no listener appears. Executed SERIALLY, both halves
+// fail — no serial check runner can certify this criterion. Executed
+// CONCURRENTLY (barrier), both pass with structured executed-case proof. The
+// evidence records make the distinction auditable: the serial attempt leaves
+// fail-typed records, the barrier attempt leaves pass records with 1 executed
+// case each.
 func TestSerialVsBarrierConcurrencyFixture(t *testing.T) {
-	root := t.TempDir()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	bin, err := os.Executable()
 	if err != nil {
-		t.Skipf("loopback unavailable: %v", err)
+		t.Fatal(err)
 	}
-	port := ln.Addr().(*net.TCPAddr).Port
-	_ = ln.Close()
-	server := fmt.Sprintf("nc -l %d >/dev/null", port)
-	client := fmt.Sprintf("printf hello | nc 127.0.0.1 %d", port)
+	helper := func(mode, dir string) string {
+		return fmt.Sprintf("PARLEY_BARRIER_HELPER=1 %q -test.run '^TestHelperProcess$' -- %s %q", bin, mode, dir)
+	}
 
-	// Serial: client first (no listener → connection refused), then the
-	// server bounded to 500ms (no client → deadline kill).
-	recC := evidence.RunCriterion(context.Background(), root, "barrier-client", client, "kimi-1")
+	// Serial: client first (no port file → explicit failure after its poll
+	// window), then the server bounded to 500ms (no client → deadline kill).
+	serialDir := t.TempDir()
+	recC := evidence.RunCriterion(context.Background(), serialDir, "barrier-client", helper("dial", serialDir), "kimi-1")
 	serialCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	recS := evidence.RunCriterion(serialCtx, root, "barrier-server", server, "kimi-1")
+	recS := evidence.RunCriterion(serialCtx, serialDir, "barrier-server", helper("serve", serialDir), "kimi-1")
 	cancel()
 	if recC.Status != evidence.StatusFail || recS.Status != evidence.StatusFail {
 		t.Fatalf("serial execution of a barrier pair must fail both halves, got client=%q server=%q", recC.Status, recS.Status)
 	}
 
-	// Barrier: both concurrently, 5s safety deadline.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Barrier: both concurrently, 10s safety deadline.
+	barrierDir := t.TempDir()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	ch := make(chan evidence.CriterionRecord, 2)
-	go func() { ch <- evidence.RunCriterion(ctx, root, "barrier-server", server, "kimi-1") }()
-	go func() { ch <- evidence.RunCriterion(ctx, root, "barrier-client", client, "kimi-1") }()
+	go func() {
+		ch <- evidence.RunCriterion(ctx, barrierDir, "barrier-server", helper("serve", barrierDir), "kimi-1")
+	}()
+	go func() {
+		ch <- evidence.RunCriterion(ctx, barrierDir, "barrier-client", helper("dial", barrierDir), "kimi-1")
+	}()
 	for range 2 {
-		if r := <-ch; r.Status != evidence.StatusPass {
-			t.Fatalf("barrier execution must pass both halves, got %q (%+v)", r.Name, r)
+		r := <-ch
+		if r.Status != evidence.StatusPass || r.Command.Format != evidence.FormatGoTestJSON || r.Command.ExecutedCases != 1 {
+			t.Fatalf("barrier execution must pass both halves with structured proof, got %q (%+v)", r.Name, r.Command)
 		}
 	}
 	fmt.Printf("fixture: serial=(client:%s,server:%s) barrier=(pass,pass) — serial execution cannot certify a barrier criterion\n",
 		recC.Status, recS.Status)
+}
+
+// TestHelperProcess is not a test: with PARLEY_BARRIER_HELPER=1 it runs the
+// barrier helper (`serve`/`dial <dir>`) and exits, so the concurrency fixture
+// needs nothing but this test binary. Both modes print a test2json pass event
+// on success so the records carry structured executed-case proof.
+func TestHelperProcess(t *testing.T) {
+	if os.Getenv("PARLEY_BARRIER_HELPER") != "1" {
+		return
+	}
+	args := os.Args
+	for i, a := range args {
+		if a == "--" {
+			args = args[i+1:]
+			break
+		}
+	}
+	if len(args) != 2 {
+		os.Exit(2)
+	}
+	mode, dir := args[0], args[1]
+	portFile := filepath.Join(dir, "barrier-port")
+	pass := func(test string) {
+		fmt.Printf("{\"Action\":\"run\",\"Test\":%q}\n{\"Action\":\"pass\",\"Test\":%q}\n", test, test)
+	}
+	switch mode {
+	case "serve":
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			os.Exit(1)
+		}
+		// Publish the port atomically so the client never reads a partial write.
+		tmp := portFile + ".tmp"
+		if err := os.WriteFile(tmp, []byte(strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)), 0o644); err != nil {
+			os.Exit(1)
+		}
+		if err := os.Rename(tmp, portFile); err != nil {
+			os.Exit(1)
+		}
+		conn, err := ln.Accept() // blocks until the client arrives or the deadline kill
+		if err != nil {
+			os.Exit(1)
+		}
+		_ = conn.Close()
+		pass("TestBarrierServer")
+		os.Exit(0)
+	case "dial":
+		deadline := time.Now().Add(2 * time.Second)
+		var port []byte
+		for {
+			var err error
+			port, err = os.ReadFile(portFile)
+			if err == nil {
+				break
+			}
+			if time.Now().After(deadline) {
+				os.Exit(1) // no listener appeared — the serial half fails here
+			}
+			time.Sleep(25 * time.Millisecond)
+		}
+		conn, err := net.Dial("tcp", "127.0.0.1:"+strings.TrimSpace(string(port)))
+		if err != nil {
+			os.Exit(1)
+		}
+		_ = conn.Close()
+		pass("TestBarrierClient")
+		os.Exit(0)
+	}
+	os.Exit(2)
 }
 
 func gateHas(g EvidenceGateResult, sub string) bool {

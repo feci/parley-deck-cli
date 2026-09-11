@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-// positiveRecord returns a fully valid passing record for criterion `name`.
+// positiveRecord returns a fully valid passing record for criterion `name`,
+// including a retained independent attestation that reconciles with it.
 func positiveRecord(name, executor string) CriterionRecord {
 	return CriterionRecord{
 		Name:   name,
@@ -20,8 +21,25 @@ func positiveRecord(name, executor string) CriterionRecord {
 			Format:         FormatGoTestJSON,
 			ExecutedCases:  2,
 			FailedCases:    0,
+			SkippedCases:   0,
 		},
-		Provenance: Provenance{Executor: executor, Verifier: "codex-1", VerifierTreeSHA256: "treehash"},
+		Provenance: Provenance{
+			Executor: executor,
+			Verifier: "codex-1",
+			VerifierRerun: &VerifierExecution{
+				Command: CommandEvidence{
+					CommandSHA256: "abc",
+					OutputSHA256:  "rerun-out",
+					ExitCode:      0,
+					Format:        FormatGoTestJSON,
+					ExecutedCases: 2,
+					FailedCases:   0,
+					SkippedCases:  0,
+				},
+				TreeBeforeSHA256: "treehash",
+				TreeAfterSHA256:  "treehash",
+			},
+		},
 	}
 }
 
@@ -194,7 +212,7 @@ func TestEvaluateUnattestedVerifierRejected(t *testing.T) {
 	r := positiveReport()
 	for i := range r.Records {
 		r.Records[i].Provenance.Verifier = ""
-		r.Records[i].Provenance.VerifierTreeSHA256 = ""
+		r.Records[i].Provenance.VerifierRerun = nil
 	}
 	reasons := Evaluate(r, positiveOpts())
 	if !containsAny(reasons, "no persisted independent verifier attestation") {
@@ -212,13 +230,60 @@ func TestEvaluateVerifierMismatchRejected(t *testing.T) {
 	}
 }
 
-// Adversarial: an attestation bound to a different tree than the report's is
-// not evidence for this report.
+// Adversarial: an attestation whose retained re-run executed against a
+// different tree than the report's is not evidence for this report.
 func TestEvaluateAttestationTreeMismatchRejected(t *testing.T) {
 	r := positiveReport()
-	r.Records[0].Provenance.VerifierTreeSHA256 = "other-tree"
-	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "bound to a different tree") {
+	r.Records[0].Provenance.VerifierRerun.TreeBeforeSHA256 = "other-tree"
+	r.Records[0].Provenance.VerifierRerun.TreeAfterSHA256 = "other-tree"
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "different tree than the report tested") {
 		t.Fatalf("attestation bound to another tree must be rejected, got: %v", reasons)
+	}
+}
+
+// Adversarial: a verifier name with NO retained independent execution is not a
+// verdict — the rerun record must be present and must reconcile.
+func TestEvaluateAttestationWithoutRetainedRerunRejected(t *testing.T) {
+	r := positiveReport()
+	r.Records[1].Provenance.VerifierRerun = nil
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "retains no independent execution record") {
+		t.Fatalf("name-only attestation must be rejected, got: %v", reasons)
+	}
+}
+
+// Adversarial: a retained re-run of a DIFFERENT command (unrelated output) is
+// rejected at close, even when the verifier name matches.
+func TestEvaluateUnrelatedRerunRejected(t *testing.T) {
+	r := positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.CommandSHA256 = "unrelated-command"
+	r.Records[0].Provenance.VerifierRerun.Command.OutputSHA256 = "unrelated-output"
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "not the same exact command") {
+		t.Fatalf("unrelated re-run command must be rejected, got: %v", reasons)
+	}
+}
+
+// Adversarial: a retained re-run whose tree changed mid-verification, whose
+// counts diverge from the original record, or that failed, is rejected.
+func TestEvaluateRerunReconciliationRejected(t *testing.T) {
+	r := positiveReport()
+	r.Records[0].Provenance.VerifierRerun.TreeAfterSHA256 = "changed-during-rerun"
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "changed during the independent re-run") {
+		t.Fatalf("unstable verification tree must be rejected, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.ExecutedCases = 7
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "executed-case count differs") {
+		t.Fatalf("diverging executed counts must be rejected, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.FailedCases = 1
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "independent re-run recorded 1 failed cases") {
+		t.Fatalf("failed re-run must be rejected, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.OutputSHA256 = ""
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "binds no output hash") {
+		t.Fatalf("re-run without output binding must be rejected, got: %v", reasons)
 	}
 }
 
@@ -258,40 +323,98 @@ func TestEvaluateFailClosedSurface(t *testing.T) {
 }
 
 // AttestExecution: the only path to a verifier name on a record runs through
-// evidence of an independent execution.
+// retained, bound evidence of an independent execution.
 func TestAttestExecution(t *testing.T) {
-	r := positiveReport()
-	for i := range r.Records {
-		r.Records[i].Provenance.Verifier = ""
-		r.Records[i].Provenance.VerifierTreeSHA256 = ""
+	fresh := func() *Report {
+		r := positiveReport()
+		for i := range r.Records {
+			r.Records[i].Provenance.Verifier = ""
+			r.Records[i].Provenance.VerifierRerun = nil
+		}
+		return r
 	}
-	rerun := CommandEvidence{ExitCode: 0, Format: FormatGoTestJSON, ExecutedCases: 2, FailedCases: 0}
-	if err := AttestExecution(r, "unit", "codex-1", rerun); err != nil {
+	goodRerun := VerifierExecution{
+		Command: CommandEvidence{
+			CommandSHA256: "abc", // matches positiveRecord's command hash
+			OutputSHA256:  "rerun-out",
+			ExitCode:      0,
+			Format:        FormatGoTestJSON,
+			ExecutedCases: 2,
+			FailedCases:   0,
+			SkippedCases:  0,
+		},
+		TreeBeforeSHA256: "treehash",
+		TreeAfterSHA256:  "treehash",
+	}
+	r := fresh()
+	if err := AttestExecution(r, "unit", "codex-1", goodRerun); err != nil {
 		t.Fatalf("valid attestation must succeed: %v", err)
 	}
-	if r.Records[0].Provenance.Verifier != "codex-1" || r.Records[0].Provenance.VerifierTreeSHA256 != r.TreeSHA256 {
-		t.Fatalf("attestation must bind verifier and tree, got %+v", r.Records[0].Provenance)
+	got := r.Records[0].Provenance
+	if got.Verifier != "codex-1" || got.VerifierRerun == nil ||
+		got.VerifierRerun.TreeBeforeSHA256 != r.TreeSHA256 || got.VerifierRerun.Command.CommandSHA256 != "abc" {
+		t.Fatalf("attestation must retain verifier, command and tree binding, got %+v", got)
 	}
-	if err := AttestExecution(r, "integration", "kimi-1", rerun); err == nil {
+	if err := AttestExecution(r, "integration", "kimi-1", goodRerun); err == nil {
 		t.Fatal("self attestation must be refused")
 	}
-	if err := AttestExecution(r, "integration", "codex-1", CommandEvidence{ExitCode: 1, Format: FormatGoTestJSON, ExecutedCases: 2}); err == nil {
+	fail := goodRerun
+	fail.Command.ExitCode = 1
+	if err := AttestExecution(r, "integration", "codex-1", fail); err == nil {
 		t.Fatal("failed re-run must not attest")
 	}
-	if err := AttestExecution(r, "integration", "codex-1", CommandEvidence{ExitCode: 0, Format: FormatShell}); err == nil {
+	shell := goodRerun
+	shell.Command.Format = FormatShell
+	shell.Command.ExecutedCases = -1
+	shell.Command.FailedCases = -1
+	shell.Command.SkippedCases = -1
+	if err := AttestExecution(r, "integration", "codex-1", shell); err == nil {
 		t.Fatal("opaque shell re-run must not attest")
 	}
-	if err := AttestExecution(r, "integration", "codex-1", CommandEvidence{ExitCode: 0, Format: FormatGoTestJSON, ExecutedCases: 0, FailedCases: 0}); err == nil {
+	zero := goodRerun
+	zero.Command.ExecutedCases = 0
+	if err := AttestExecution(r, "integration", "codex-1", zero); err == nil {
 		t.Fatal("zero-execution re-run must not attest")
 	}
-	if err := AttestExecution(r, "nonexistent", "codex-1", rerun); err == nil {
+	otherCmd := goodRerun
+	otherCmd.Command.CommandSHA256 = "unrelated-command"
+	if err := AttestExecution(r, "integration", "codex-1", otherCmd); err == nil {
+		t.Fatal("re-run of a different command must not attest")
+	}
+	noOut := goodRerun
+	noOut.Command.OutputSHA256 = ""
+	if err := AttestExecution(r, "integration", "codex-1", noOut); err == nil {
+		t.Fatal("re-run without an output hash must not attest")
+	}
+	otherTree := goodRerun
+	otherTree.TreeBeforeSHA256 = "other-tree"
+	otherTree.TreeAfterSHA256 = "other-tree"
+	if err := AttestExecution(r, "integration", "codex-1", otherTree); err == nil {
+		t.Fatal("re-run against a different tree must not attest")
+	}
+	unstable := goodRerun
+	unstable.TreeAfterSHA256 = "changed-during-rerun"
+	if err := AttestExecution(r, "integration", "codex-1", unstable); err == nil {
+		t.Fatal("re-run on a tree that changed mid-verification must not attest")
+	}
+	diverge := goodRerun
+	diverge.Command.ExecutedCases = 3
+	if err := AttestExecution(r, "integration", "codex-1", diverge); err == nil {
+		t.Fatal("re-run with diverging executed-case count must not attest")
+	}
+	if err := AttestExecution(r, "nonexistent", "codex-1", goodRerun); err == nil {
 		t.Fatal("attesting an unknown criterion must fail")
 	}
-	if err := AttestExecution(r, "integration", "", rerun); err == nil {
+	if err := AttestExecution(r, "integration", "", goodRerun); err == nil {
 		t.Fatal("empty verifier identity must fail")
 	}
+	failedRec := fresh()
+	failedRec.Records[1].Status = StatusFail
+	if err := AttestExecution(failedRec, "integration", "codex-1", goodRerun); err == nil {
+		t.Fatal("attesting a non-pass record must fail")
+	}
 	noTree := &Report{}
-	if err := AttestExecution(noTree, "unit", "codex-1", rerun); err == nil {
+	if err := AttestExecution(noTree, "unit", "codex-1", goodRerun); err == nil {
 		t.Fatal("attestation without a tested tree digest must fail")
 	}
 }

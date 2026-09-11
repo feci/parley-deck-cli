@@ -87,7 +87,7 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 	out := capbuf.buf.Bytes()
 
 	ce := CommandEvidence{
-		Command:        ScrubAndTruncate(command), // safe representation only; raw text is never persisted
+		Command:        ScrubAndTruncate(command),  // safe representation only; raw text is never persisted
 		CommandSHA256:  sha256Hex([]byte(command)), // hash binds the EXACT raw input
 		OutputSHA256:   hex.EncodeToString(hasher.Sum(nil)),
 		ExitCode:       exitCodeOf(runErr),
@@ -209,10 +209,12 @@ func ParseGoTestJSON(out []byte) (executed, failed, skipped int, recognized bool
 // ParseEnvelope extracts the explicit evidence envelope, failing closed.
 // Returns (envelope, present, err): present is true when ANY PARLEY-EVIDENCE
 // line exists, and err is non-nil whenever that envelope cannot be trusted —
-// malformed JSON, null/partial counts, negative counts, failed>executed, or
-// duplicate envelope lines. A caller MUST NOT recover an earlier valid line
-// when the last one is malformed, and MUST NOT fall through to another output
-// parser when present is true.
+// malformed JSON, a non-object payload, duplicate fields (encoding/json's
+// last-wins collapse is NEVER accepted as evidence), case-aliased or unknown
+// fields, null/non-integer counts, trailing content after the object, negative
+// counts, failed>executed, or duplicate envelope lines. A caller MUST NOT
+// recover an earlier valid line when the last one is malformed, and MUST NOT
+// fall through to another output parser when present is true.
 func ParseEnvelope(out string) (Envelope, bool, error) {
 	var lines []string
 	for _, line := range strings.Split(out, "\n") {
@@ -227,9 +229,9 @@ func ParseEnvelope(out string) (Envelope, bool, error) {
 	if len(lines) > 1 {
 		return Envelope{}, true, fmt.Errorf("duplicate evidence envelope lines (%d) — ambiguous claim", len(lines))
 	}
-	var e Envelope
-	if err := json.Unmarshal([]byte(lines[0]), &e); err != nil {
-		return Envelope{}, true, fmt.Errorf("malformed evidence envelope: %v", err)
+	e, err := parseEnvelopeStrict(lines[0])
+	if err != nil {
+		return Envelope{}, true, err
 	}
 	if e.ExecutedCases == nil || e.FailedCases == nil {
 		return Envelope{}, true, fmt.Errorf("partial evidence envelope: executed_cases and failed_cases are both required")
@@ -241,6 +243,74 @@ func ParseEnvelope(out string) (Envelope, bool, error) {
 		return Envelope{}, true, fmt.Errorf("conflicting evidence envelope: %d failed > %d executed", *e.FailedCases, *e.ExecutedCases)
 	}
 	return e, true, nil
+}
+
+// parseEnvelopeStrict decodes one envelope body with a token walk so that
+// semantics a permissive json.Unmarshal would hide are rejected: duplicate
+// fields (a zero executed count followed by a one must NOT decode as one),
+// case-aliased fields (encoding/json matches keys case-insensitively —
+// "Executed_Cases" would silently set ExecutedCases), unknown fields, null or
+// non-integer values, and any trailing content after the closing brace.
+func parseEnvelopeStrict(line string) (Envelope, error) {
+	dec := json.NewDecoder(strings.NewReader(line))
+	dec.UseNumber()
+	tok, err := dec.Token()
+	if err != nil {
+		return Envelope{}, fmt.Errorf("malformed evidence envelope: %v", err)
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return Envelope{}, fmt.Errorf("evidence envelope must be a single JSON object")
+	}
+	var e Envelope
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return Envelope{}, fmt.Errorf("malformed evidence envelope: %v", err)
+		}
+		key, ok := kt.(string)
+		if !ok {
+			return Envelope{}, fmt.Errorf("malformed evidence envelope: non-string field name")
+		}
+		var target **int
+		switch key {
+		case "executed_cases":
+			target = &e.ExecutedCases
+		case "failed_cases":
+			target = &e.FailedCases
+		default:
+			if strings.EqualFold(key, "executed_cases") || strings.EqualFold(key, "failed_cases") {
+				return Envelope{}, fmt.Errorf("aliased evidence envelope field %q — exact lowercase field names are required", key)
+			}
+			return Envelope{}, fmt.Errorf("unknown evidence envelope field %q", key)
+		}
+		if *target != nil {
+			return Envelope{}, fmt.Errorf("duplicate evidence envelope field %q", key)
+		}
+		vt, err := dec.Token()
+		if err != nil {
+			return Envelope{}, fmt.Errorf("malformed evidence envelope: %v", err)
+		}
+		num, ok := vt.(json.Number)
+		if !ok {
+			return Envelope{}, fmt.Errorf("evidence envelope field %q must be a JSON integer — null, booleans, strings and nested values are rejected", key)
+		}
+		n, err := num.Int64()
+		if err != nil {
+			return Envelope{}, fmt.Errorf("evidence envelope field %q must be an integer: %v", key, err)
+		}
+		v := int(n)
+		*target = &v
+	}
+	if _, err := dec.Token(); err != nil { // the closing '}'
+		return Envelope{}, fmt.Errorf("malformed evidence envelope: %v", err)
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		if err == nil {
+			return Envelope{}, fmt.Errorf("trailing content after the evidence envelope object")
+		}
+		return Envelope{}, fmt.Errorf("malformed trailing content after the evidence envelope: %v", err)
+	}
+	return e, nil
 }
 
 // secretPatterns redact credential-shaped tokens from recorded output before

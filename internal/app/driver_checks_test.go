@@ -150,10 +150,14 @@ func TestRunChecksContractUnknownOutputNotCertified(t *testing.T) {
 }
 
 // Adversarial: an evidence-write failure vetoes the cycle outright — never a
-// warning plus PASS.
+// warning plus PASS. The fixture carries one in-scope code file so the
+// pre-execution tree digest SUCCEEDS and the veto is exercised at the intended
+// persistence step (an empty digestable tree would fail earlier for the wrong
+// reason).
 func TestRunChecksContractEvidenceWriteFailureVetoes(t *testing.T) {
 	idea := t.TempDir()
 	os.WriteFile(filepath.Join(idea, "IMPLEMENTATION.md"), []byte("---\nidea: x\n---\n\n## Validation evidence\n\n(pending)\n"), 0o644)
+	os.WriteFile(filepath.Join(idea, "code.go"), []byte("package x\n"), 0o644)
 	os.Chmod(idea, 0o555)
 	t.Cleanup(func() { os.Chmod(idea, 0o755) })
 	o := driverImplOps{ideaDir: idea, root: idea, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}

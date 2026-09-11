@@ -123,16 +123,50 @@ func TreeDigest(root string, excludeRel ...string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// rejectUnsupportedEntries walks the working tree (pruning only .git) and
+// fails on any entry that is neither a regular file nor a symlink — fifos,
+// sockets and devices. The git inventory path needs this cross-check because
+// `git ls-files -o` omits untracked non-regular entries entirely, which would
+// otherwise let a fifo sit in the tree unidentified. The walk inspects entry
+// TYPES only; ignored regular files remain out of scope exactly as before.
+func rejectUnsupportedEntries(root string) error {
+	return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if d.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Type().IsRegular() || d.Type()&os.ModeSymlink != 0 {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("tree digest: unsupported entry type %s (%s)", filepath.ToSlash(rel), d.Type())
+	})
+}
+
 // listTreeFiles returns slash-separated paths relative to root. In a git work
 // tree it uses `git ls-files -c -o --exclude-standard` (tracked + real
 // untracked, honoring .gitignore so dependency/cache directories stay out of
-// scope without broad content-class exclusions). Outside git it falls back to
-// a filesystem walk that skips only .git.
+// scope without broad content-class exclusions). Because that inventory omits
+// untracked NON-regular entries (fifos, sockets, devices) entirely, the git
+// path first cross-checks the working tree for unsupported entry types — an
+// unsupported entry is an error, never silently skipped. Outside git it falls
+// back to a filesystem walk that skips only .git.
 func listTreeFiles(root string) ([]string, error) {
 	if ReviewedCommit(root) != "" {
 		out, err := exec.Command("git", "-C", root, "ls-files", "-c", "-o", "--exclude-standard", "-z").Output()
 		if err != nil {
 			return nil, fmt.Errorf("git ls-files: %w", err)
+		}
+		if err := rejectUnsupportedEntries(root); err != nil {
+			return nil, err
 		}
 		var files []string
 		for _, p := range strings.Split(string(out), "\x00") {

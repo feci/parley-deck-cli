@@ -41,31 +41,46 @@ const (
 // Provenance records who executed and who verified, as asserted runtime
 // identity (NOT authentication). Executor==Verifier is a self verdict.
 // Verifier is empty until an independent verifier attests via AttestExecution;
-// VerifierTreeSHA256 binds that attestation to the tested tree the verifier
-// actually re-ran against.
+// VerifierRerun RETAINS the verifier's actual independent execution record —
+// command hash, output hash, counts, exit status and the before/after tested
+// tree digests it ran against — so Evaluate can reconcile the attestation
+// instead of trusting a supplied name.
 type Provenance struct {
 	Executor string `json:"executor"`
 	Verifier string `json:"verifier"` // empty until an independent verifier attests
-	// VerifierTreeSHA256 is the tested-tree digest the verifier attestation is
-	// bound to. An attestation recorded against a different tree than the
-	// report's is not evidence for this report.
-	VerifierTreeSHA256 string `json:"verifier_tree_sha256,omitempty"`
+	// VerifierRerun is the retained independent execution the attestation is
+	// based on. An attestation recorded against a different command, different
+	// counts, or a different tree than the report's is not evidence for this
+	// report. Callers MUST NOT hand-populate Provenance fields: the only
+	// legitimate write path is AttestExecution.
+	VerifierRerun *VerifierExecution `json:"verifier_rerun,omitempty"`
+}
+
+// VerifierExecution is the retained record of the verifier's independent
+// re-execution of one criterion. TreeBeforeSHA256/TreeAfterSHA256 are the
+// tested-tree digests the verifier computed immediately before and after its
+// re-run; both must exist, be equal (the re-run tested a stable tree), and
+// match the report's tested tree.
+type VerifierExecution struct {
+	Command          CommandEvidence `json:"command"`
+	TreeBeforeSHA256 string          `json:"tree_before_sha256"`
+	TreeAfterSHA256  string          `json:"tree_after_sha256"`
 }
 
 // CommandEvidence binds one executed command to hashes of its exact input and
 // bounded scrubbed output, plus executed-case counts when the format supports
 // them. ExecutedCases is -1 when the format cannot prove a count.
 type CommandEvidence struct {
-	Command       string `json:"command"`
-	CommandSHA256 string `json:"command_sha256"`
-	OutputSHA256  string `json:"output_sha256"` // hash of the RAW captured output
-	ExitCode      int    `json:"exit_code"`
-	DurationMillis int64 `json:"duration_ms"`
-	Format        string `json:"format"`
-	ExecutedCases int    `json:"executed_cases"` // -1 = unknown/unsupported
-	FailedCases   int    `json:"failed_cases"`   // -1 = unknown/unsupported
-	SkippedCases  int    `json:"skipped_cases"`  // -1 = unknown/unsupported
-	Diagnostics   string `json:"diagnostics"`    // bounded, secret-scrubbed tail
+	Command        string `json:"command"`
+	CommandSHA256  string `json:"command_sha256"`
+	OutputSHA256   string `json:"output_sha256"` // hash of the RAW captured output
+	ExitCode       int    `json:"exit_code"`
+	DurationMillis int64  `json:"duration_ms"`
+	Format         string `json:"format"`
+	ExecutedCases  int    `json:"executed_cases"` // -1 = unknown/unsupported
+	FailedCases    int    `json:"failed_cases"`   // -1 = unknown/unsupported
+	SkippedCases   int    `json:"skipped_cases"`  // -1 = unknown/unsupported
+	Diagnostics    string `json:"diagnostics"`    // bounded, secret-scrubbed tail
 }
 
 // CriterionRecord is the typed record for one named completion criterion.
@@ -123,11 +138,24 @@ type ClosureOptions struct {
 //     (structured formats must prove >0 executed, 0 failed, non-negative
 //     counts), and command/output hash binding;
 //   - every record carries a PERSISTED independent verifier attestation
-//     (Provenance.Verifier, set by AttestExecution after an independent
-//     re-execution): non-empty, not the executor, matching the closing
-//     verifier identity, and bound to this report's tested tree. A caller
-//     supplying a different name in ClosureOptions.Verifier cannot conjure an
-//     independent verdict — the attestation must already exist in the report.
+//     (Provenance.Verifier plus the retained Provenance.VerifierRerun, both set
+//     only by AttestExecution after an independent re-execution): the verifier
+//     name is non-empty, not the executor, matches the closing verifier
+//     identity, and the retained re-run reconciles with the record — same
+//     exact command hash, non-empty output hash, pass-consistent exit/status,
+//     equal executed/skipped counts, zero failures, and before/after tested
+//     tree digests equal to each other and to this report's tested tree. A
+//     caller supplying a different name in ClosureOptions.Verifier conjures
+//     nothing — the attestation and its retained execution must already exist
+//     in the report.
+//
+// Trusted-caller boundary: Evaluate and AttestExecution verify the INTERNAL
+// CONSISTENCY AND BINDING of the persisted evidence (a supplied name without a
+// consistent retained execution, a different command/tree/counts, or a self
+// verdict all fail closed). They trust the calling orchestrator to have
+// ACTUALLY executed the re-run it attests — a same-UID caller able to
+// fabricate mutually consistent hashes is outside this boundary. Runtime
+// attribution is not cryptographic authentication of a human (FINAL D3).
 func Evaluate(r *Report, opts ClosureOptions) []string {
 	var reasons []string
 	if r == nil {
@@ -204,10 +232,10 @@ func Evaluate(r *Report, opts ClosureOptions) []string {
 			reasons = append(reasons, p+"closing verifier "+opts.Verifier+" does not match persisted attestation by "+rec.Provenance.Verifier)
 		}
 		if rec.Provenance.Verifier != "" {
-			if rec.Provenance.VerifierTreeSHA256 == "" {
-				reasons = append(reasons, p+"verifier attestation is not bound to a tested tree digest")
-			} else if r.TreeSHA256 != "" && rec.Provenance.VerifierTreeSHA256 != r.TreeSHA256 {
-				reasons = append(reasons, p+"verifier attestation is bound to a different tree than the one tested")
+			if rec.Provenance.VerifierRerun == nil {
+				reasons = append(reasons, p+"attestation retains no independent execution record (AttestExecution is the only legitimate write path)")
+			} else {
+				reasons = append(reasons, reconcileRerun(p, rec, rec.Provenance.VerifierRerun, r.TreeSHA256)...)
 			}
 		}
 		// Count validity: anything below -1 is malformed in every format.
@@ -245,16 +273,28 @@ func Evaluate(r *Report, opts ClosureOptions) []string {
 
 // AttestExecution records an independent verifier attestation for one criterion
 // AFTER the verifier has independently executed the check itself. rerun is the
-// CommandEvidence produced by that independent execution; it must show a
-// passing structured run (exit 0, a case-proving format, >0 executed, 0 failed
-// — an opaque shell exit-0 is not an attestation basis).
+// RETAINED record of that independent execution: its CommandEvidence plus the
+// tested-tree digests taken immediately before and after the re-run. The
+// attestation is refused unless the re-run is bound to this criterion and this
+// report's tested tree: same exact command hash as the criterion record, a
+// non-empty output hash, exit 0, a case-proving format, >0 executed and 0
+// failed cases, counts equal to the original record's, a pass-typed original
+// record, and equal before/after tree digests matching the report's tested
+// tree. An opaque shell exit-0 is not an attestation basis.
 //
-// This API exists so the only way to place a verifier name on a record is to
-// supply evidence of an independent execution; there is deliberately no API
-// that stamps a name without one. Runtime attribution is not authentication:
-// the attestation makes a self verdict detectable and rejectable, it does not
-// prove who a human operator is.
-func AttestExecution(r *Report, criterion, verifier string, rerun CommandEvidence) error {
+// The rerun record is persisted inside the report (Provenance.VerifierRerun),
+// not discarded, and Evaluate re-reconciles every one of these bindings at
+// close time. This API exists so the only way to place a verifier name on a
+// record is to supply evidence of an independent execution; there is
+// deliberately no API that stamps a name without one, and a supplied name is
+// never itself a verdict.
+//
+// Trusted-caller boundary: the caller is trusted to have ACTUALLY executed
+// the re-run and to supply the real digests it produced; this function
+// guarantees that anything LESS than a fully bound, consistent, independent
+// execution is refused. It does not and cannot prove execution to a party
+// beyond that boundary — runtime attribution is not authentication of a human.
+func AttestExecution(r *Report, criterion, verifier string, rerun VerifierExecution) error {
 	if r == nil {
 		return fmt.Errorf("evidence: cannot attest on a nil report")
 	}
@@ -271,20 +311,67 @@ func AttestExecution(r *Report, criterion, verifier string, rerun CommandEvidenc
 		if rec.Provenance.Executor == verifier {
 			return fmt.Errorf("evidence: %s cannot attest criterion %q it executed (self verdict)", verifier, criterion)
 		}
-		if rerun.ExitCode != 0 {
-			return fmt.Errorf("evidence: independent re-run of %q exited %d — not an attestation basis", criterion, rerun.ExitCode)
+		if rec.Status != StatusPass {
+			return fmt.Errorf("evidence: criterion %q is %q — only a pass-typed record can be attested", criterion, rec.Status)
 		}
-		if rerun.Format != FormatGoTestJSON && rerun.Format != FormatEnvelope {
-			return fmt.Errorf("evidence: independent re-run of %q has unstructured %q output — not an attestation basis", criterion, formatOrNone(rerun.Format))
-		}
-		if rerun.ExecutedCases <= 0 || rerun.FailedCases != 0 {
-			return fmt.Errorf("evidence: independent re-run of %q executed %d cases with %d failures — not an attestation basis", criterion, rerun.ExecutedCases, rerun.FailedCases)
+		if errs := reconcileRerun("", rec, &rerun, r.TreeSHA256); len(errs) > 0 {
+			return fmt.Errorf("evidence: independent re-run of %q is not an attestation basis: %s", criterion, strings.Join(errs, "; "))
 		}
 		r.Records[i].Provenance.Verifier = verifier
-		r.Records[i].Provenance.VerifierTreeSHA256 = r.TreeSHA256
+		r.Records[i].Provenance.VerifierRerun = &rerun
 		return nil
 	}
 	return fmt.Errorf("evidence: no record for criterion %q", criterion)
+}
+
+// reconcileRerun verifies that a retained independent execution is bound to
+// the criterion record and the report's tested tree: same exact command hash,
+// non-empty output hash, exit 0, a case-proving format, >0 executed and 0
+// failed cases, executed/skipped counts equal to the original record's, and
+// non-empty before/after tree digests that are equal to each other (a stable
+// tree during verification) and to the report's tested tree. p prefixes each
+// reason ("" at attestation time, the criterion prefix at close time).
+func reconcileRerun(p string, rec CriterionRecord, vr *VerifierExecution, treeSHA256 string) []string {
+	var reasons []string
+	rc := vr.Command
+	if rc.ExitCode != 0 {
+		reasons = append(reasons, p+fmt.Sprintf("independent re-run exited %d", rc.ExitCode))
+	}
+	if rc.Format != FormatGoTestJSON && rc.Format != FormatEnvelope {
+		reasons = append(reasons, p+"independent re-run used unstructured "+formatOrNone(rc.Format)+" output")
+	}
+	if rc.ExecutedCases <= 0 {
+		reasons = append(reasons, p+"independent re-run executed no cases")
+	}
+	if rc.FailedCases != 0 {
+		reasons = append(reasons, p+fmt.Sprintf("independent re-run recorded %d failed cases", rc.FailedCases))
+	}
+	if rec.Command.CommandSHA256 == "" || rc.CommandSHA256 != rec.Command.CommandSHA256 {
+		reasons = append(reasons, p+"independent re-run command hash missing or differs from the criterion record — not the same exact command")
+	}
+	if rc.OutputSHA256 == "" {
+		reasons = append(reasons, p+"independent re-run binds no output hash")
+	}
+	if vr.TreeBeforeSHA256 == "" || vr.TreeAfterSHA256 == "" {
+		reasons = append(reasons, p+"independent re-run is not bound to before/after tested-tree digests")
+	} else {
+		if vr.TreeBeforeSHA256 != vr.TreeAfterSHA256 {
+			reasons = append(reasons, p+"tested tree changed during the independent re-run")
+		}
+		if treeSHA256 != "" && vr.TreeBeforeSHA256 != treeSHA256 {
+			reasons = append(reasons, p+"independent re-run executed against a different tree than the report tested")
+		}
+	}
+	// Result reconciliation: the same exact command on the same tested tree
+	// must reproduce the same structured counts; divergence means the two
+	// executions are not evidence of the same thing.
+	if rc.ExecutedCases >= 0 && rec.Command.ExecutedCases >= 0 && rc.ExecutedCases != rec.Command.ExecutedCases {
+		reasons = append(reasons, p+fmt.Sprintf("executed-case count differs between original (%d) and independent re-run (%d)", rec.Command.ExecutedCases, rc.ExecutedCases))
+	}
+	if rc.SkippedCases >= 0 && rec.Command.SkippedCases >= 0 && rc.SkippedCases != rec.Command.SkippedCases {
+		reasons = append(reasons, p+fmt.Sprintf("skipped-case count differs between original (%d) and independent re-run (%d)", rec.Command.SkippedCases, rc.SkippedCases))
+	}
+	return reasons
 }
 
 func formatOrNone(s string) string {
