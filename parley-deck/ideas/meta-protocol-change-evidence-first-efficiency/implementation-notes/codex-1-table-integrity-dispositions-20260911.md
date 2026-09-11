@@ -105,3 +105,21 @@ final populated report QA and actual elapsed follow-ups remain open. Historical
 quorum/pilot/funding and Claude review recovery decisions remain unanswered.
 No real model, operator accounting action, deployment, release, merge, global
 install or core publication occurred. The six-part goal is incomplete.
+
+## Exact report checkpoint
+
+The 624432-byte current report for source 60640709ebb8b963311495900a981b763329c314
+passed ten report tests and 56 live ego-browser assertions at 1440×900, 1280×540,
+390×844 and 320×720. All sections and documents, current expanded progress,
+retained negative evidence, partial/not-run gates, painted charts, empty search,
+reset/pagination, actual ArrowRight navigation and print-media visibility passed.
+The first harness mistook dataset.view for dataset.panel, recording 21 failures;
+its log is retained. Correcting that observation required no report changes.
+
+Report SHA256: 7e7c295fa72fe859151a509b4c97998fda3f17e9e2878655734c164aa1f39906.
+Browser embedded-data SHA256: 955cbab005c2c3704c1a4fcf816c79e5f2d4f982897ceaa45638f6523c0e8f90.
+Local full-file hashes before and after QA match. File-scheme full-source fetch
+is unsupported. Isolated space 30 cleanup returned done:true. No fresh screenshot,
+physical click-placement or physical print/PDF pagination certification is claimed.
+The checked report remains partial and does not certify future experiments or
+independent implementation acceptance. No model or operator accounting action ran.

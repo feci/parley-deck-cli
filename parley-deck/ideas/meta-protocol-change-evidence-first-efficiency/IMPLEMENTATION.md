@@ -1704,3 +1704,25 @@ shared-volume projection/actual-helper fixtures PASS. Original table-forgery and
 Unicode failures, diagnostic ordering and Markdown fixture corrections remain
 retained. Independent acceptance and all other full-scope obligations remain
 pending; no real model or operator accounting operation occurred.
+
+
+### Human table report verification checkpoint — September 11
+
+Source 60640709ebb8b963311495900a981b763329c314 and its 344-file Go/module manifest
+remain unchanged. The current 624432-byte offline report passes ten report tests
+and 56 ego-browser assertions across desktop, low-height and two mobile widths.
+Current source/projection behavior, retained negative cases, partial/not-run states,
+all sections/documents, painted charts, search/reset/pagination, actual keyboard
+navigation and print-media visibility passed. The first harness read the wrong
+DOM dataset field and retained 21 assertion failures; correcting the harness
+produced 56 passes without modifying or rebuilding the report.
+
+Full report SHA256: 7e7c295fa72fe859151a509b4c97998fda3f17e9e2878655734c164aa1f39906.
+Browser embedded-data SHA256: 955cbab005c2c3704c1a4fcf816c79e5f2d4f982897ceaa45638f6523c0e8f90.
+Local full-file hashes bracket QA. New task space 30 was required because the old
+space was absent; its dedicated cleanup returned done:true. Exact logs, retained
+first attempt and observations are under delivery/2026-09-05/browser-qa/
+table-integrity-20260911, with browser-table-integrity-20260911.json beside them.
+No fresh screenshot, physical click placement or print/PDF pagination is certified.
+This is current partial-report verification, not independent source acceptance or
+future populated experiment verification. All remaining FINAL gates are unchanged.
