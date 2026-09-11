@@ -1457,3 +1457,40 @@ subdirectory. Update the existing draft PR description after tested source is
 committed. The report must keep every priority partial/preparation, retain failed
 validation history and identify the exact source/report it describes. Browser QA
 uses ego-browser only and does not certify an unexecuted experiment or treatment.
+
+
+### Launch accounting migration checkpoint — September 11
+
+Source fd3e3ce68080a0b7b39d168e153af0280221f94e adds explicit attended historical launch import, including
+retained pre-start refusals without invented model charges. Unique failed/started
+attempts, original timestamps, unknown costs and CLI-estimate provenance survive.
+Exact replay recovers unchanged partial publication and retains subsequent spend,
+reconciliation and grants. Missing/corrupt/aliased/nonterminal/stale history,
+conflicting event/cursor identities and implicit missing zero fields refuse.
+The owned launch-migration disposition records all behavior and limitations.
+
+Full Go suite PASS (93.717s); complete scoped race PASS
+(107.389s); focused adversarial/race, scoped vet, Windows app
+cross-build, isolated shared-volume publication/worktree/actual-process fixtures
+and the real unattended CLI refusal PASS. All 330 Go/module files match the
+retained manifest. Initial missing-field/identity failures, the full-suite test's
+unrecognized safe read refusal, and the mistakenly nested shared-volume fixture
+failure remain retained. No production check was weakened to hide those outcomes.
+
+No real operator migration/grant or participant invocation occurred. Independent
+acceptance and Windows runtime remain unverified. Step/cycle migration, guard
+recovery, semantic replay, canonical refusal recovery, independent regression
+trajectory and the full signed real-model/packet/pilot/grading/signature/elapsed
+follow-up requirements remain open. The goal is not complete.
+
+
+### Current report verification checkpoint — September 11
+
+The 613084-byte report 306c99b7f1cac02452ab724fb999076db00da3f9b82a937a6e40d234f6745b66
+passes ten report tests and 55 live ego-browser DOM/layout/canvas/interaction
+assertions across desktop, low-height and both mobile widths. The expanded log
+includes current source fd3e3ce and retained failures without page overflow.
+Its exact sidecar and raw/harness evidence identify the verified file. New
+screenshots timed out; physical click placement and fresh visual screenshot
+review are not certified. The owned disposition records these limits explicitly.
+Report state stays partial/preparation and the all-six goal remains incomplete.
