@@ -18,15 +18,16 @@ import (
 // frozen for this scope; zero count/cost/time ceilings mean unlimited. Unknown
 // observed costs stay unknown even when ReserveMicros supplies a safe ceiling.
 type LaunchPolicy struct {
-	Version       int               `json:"version"`
-	Scope         string            `json:"scope"`
-	Idea          string            `json:"idea"`
-	MaxLaunches   int               `json:"max_launches"`
-	MaxCostMicros int64             `json:"max_cost_micros"`
-	WallClockMS   int64             `json:"wall_clock_ms"`
-	ReserveMicros *int64            `json:"reserve_micros"`
-	Original      *PolicyCeilings   `json:"original,omitempty"`
-	Extensions    []PolicyExtension `json:"extensions,omitempty"`
+	Version         int               `json:"version"`
+	Scope           string            `json:"scope"`
+	Idea            string            `json:"idea"`
+	MaxLaunches     int               `json:"max_launches"`
+	MaxCostMicros   int64             `json:"max_cost_micros"`
+	WallClockMS     int64             `json:"wall_clock_ms"`
+	ReserveMicros   *int64            `json:"reserve_micros"`
+	Original        *PolicyCeilings   `json:"original,omitempty"`
+	Extensions      []PolicyExtension `json:"extensions,omitempty"`
+	MigrationSHA256 string            `json:"migration_sha256,omitempty"`
 }
 
 func (p LaunchPolicy) Limits() Limits {
@@ -35,6 +36,9 @@ func (p LaunchPolicy) Limits() Limits {
 func (p LaunchPolicy) validate() error { return validateRuntimePolicy(p) }
 
 func (p LaunchPolicy) validateBase() error {
+	if p.MigrationSHA256 != "" && !validCycleDecision("migration", "migration", p.MigrationSHA256) {
+		return errors.New("invalid launch migration reference")
+	}
 	if (p.Version != 1 && p.Version != 2) || p.Scope == "" || p.MaxLaunches < 0 || p.MaxCostMicros < 0 || p.WallClockMS < 0 || p.WallClockMS > int64((1<<63-1)/time.Millisecond) || (p.ReserveMicros != nil && *p.ReserveMicros < 0) {
 		return errors.New("invalid frozen launch budget policy")
 	}
@@ -158,6 +162,21 @@ func LoadLaunchBinding(ctx context.Context, root, idea string) (*LaunchBinding, 
 }
 
 func readLaunchPolicy(path string) (LaunchPolicy, error) {
+	p, err := readLaunchPolicyRaw(path)
+	if err != nil {
+		return p, err
+	}
+	if p.MigrationSHA256 == "" {
+		for _, name := range []string{"migration.json", "migration-active"} {
+			if _, err := os.Lstat(filepath.Join(filepath.Dir(path), name)); err == nil || !os.IsNotExist(err) {
+				return p, errors.New("launch policy lost its migration reference")
+			}
+		}
+	}
+	return p, checkLaunchMigrationPolicy(filepath.Dir(path), p)
+}
+
+func readLaunchPolicyRaw(path string) (LaunchPolicy, error) {
 	var p LaunchPolicy
 	if err := readRuntimePolicy(path, &p, []string{"version", "scope", "idea", "max_launches", "max_cost_micros", "wall_clock_ms", "reserve_micros"}); err != nil {
 		return p, err
@@ -170,6 +189,9 @@ func readLaunchPolicy(path string) (LaunchPolicy, error) {
 // An exact replay preserves every charge and the original wall-clock origin.
 // Policy extensions and legacy migration are separate controls, not resets here.
 func ConfigureLaunchBudget(ctx context.Context, root, idea string, policy LaunchPolicy) (*LaunchBinding, error) {
+	if policy.MigrationSHA256 != "" {
+		return nil, errors.New("configure cannot manufacture a migration reference")
+	}
 	dir, scope, roots, err := launchScope(ctx, root, idea, true)
 	if err != nil {
 		return nil, err
@@ -195,6 +217,7 @@ func ConfigureLaunchBudget(ctx context.Context, root, idea string, policy Launch
 	defer release()
 	path := filepath.Join(dir, "policy.json")
 	if prior, err := readLaunchPolicy(path); err == nil {
+		policy.MigrationSHA256 = prior.MigrationSHA256
 		a, _ := json.Marshal(prior.originalPolicy())
 		b, _ := json.Marshal(policy)
 		if !bytes.Equal(a, b) {
@@ -207,6 +230,9 @@ func ConfigureLaunchBudget(ctx context.Context, root, idea string, policy Launch
 		return binding, nil
 	} else if !os.IsNotExist(err) {
 		return nil, err
+	}
+	if _, err := os.Lstat(filepath.Join(dir, "migration.json")); err == nil || !os.IsNotExist(err) {
+		return nil, errors.New("pending migration requires exact operator replay, not fresh configuration")
 	}
 	if err := refuseUnmigratedLaunches(roots, idea); err != nil {
 		return nil, err

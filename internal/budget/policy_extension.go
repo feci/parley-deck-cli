@@ -204,6 +204,12 @@ func readRuntimePolicy(path string, target any, required []string) error {
 	if err := check(fields, required); err != nil {
 		return err
 	}
+	if raw, ok := fields["migration_sha256"]; ok {
+		var digest string
+		if json.Unmarshal(raw, &digest) != nil || !validCycleDecision("migration", "migration", digest) {
+			return errors.New("invalid or empty migration policy reference")
+		}
+	}
 	var version int
 	if err := json.Unmarshal(fields["version"], &version); err != nil {
 		return err
@@ -298,6 +304,11 @@ func (b runtimeBinding) inspect(ctx context.Context) (PolicyStatus, error) {
 	s, err := b.store.Inspect(ctx)
 	if err != nil {
 		return PolicyStatus{}, err
+	}
+	if p, ok := b.policy.(LaunchPolicy); ok {
+		if err := checkLaunchMigrationCharges(filepath.Dir(b.store.Dir), p, s); err != nil {
+			return PolicyStatus{}, err
+		}
 	}
 	spent := 0
 	for _, e := range s.Entries {

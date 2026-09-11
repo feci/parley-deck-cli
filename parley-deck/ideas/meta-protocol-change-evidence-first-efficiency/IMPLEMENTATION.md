@@ -1404,3 +1404,56 @@ The owned runtime-extension disposition identifies the exact QA sidecar and its
 limits. Earlier harness mistakes and the actual overflow are retained separately.
 No final populated experiment result, independent acceptance or physical print
 verification is inferred from this presentation checkpoint.
+
+### Legacy launch accounting migration allocation — September 11
+
+Codex claims internal/budget/{launch_migration.go,launch_migration_test.go,
+launch_migration_history.go,launch_migration_history_test.go,
+binding.go,policy_extension.go}, internal/app/{budget.go,budget_migrate.go,
+budget_migrate_test.go}, the owned runner migration fixture and runtime guide
+before edits. Add a read-only historical inventory and explicit attended launch
+accounting import with a frozen history hash, decision identity/reason, original
+accounting epoch, all future policy ceilings and an explicit additional legacy
+launch count. Require quiescent writers; never infer user approval from terminal
+allocation. No real migration or grant is authorized by this source allocation.
+
+Import unique recognized attempts with original timestamps and observed cost
+provenance. Preserve unknown monetary values. Retain proven pre-start refusals
+without inventing a model execution or silently dropping their evidence. Unobserved
+handoffs remain potentially spent; missing/inconsistent/nonterminal records,
+conflicting copies, malformed state and stale inventory refuse. Inventory all
+available worktrees and relevant artifacts; the operator must account explicitly
+for work preceding invocation telemetry. Do not derive that count from prose.
+
+Publish a hash-bound immutable import record, ledger and continuity witness before
+the policy can authorize work. Replay must recover partial publication without
+erasing later charges or grants. Existing configured/charged state cannot be
+overwritten by migration; lock-origin recovery is a separate obligation. Test
+known/unknown costs, refusal-only bootstrap, old failed attempts, shared worktrees,
+concurrent activation, stale input, publication recovery and actual resumed
+processes. This is the launch-accounting part of the broader D6 migration work;
+step/cycle migration and all other remaining requirements stay open.
+
+### Concurrent historical-read refusal allocation — September 11
+
+The first full migration suite failed only because the existing eight-contender
+cycle-extension test recognized a stale policy hash but not the bounded reader's
+safe rejection of an atomic policy replacement during its initial read. Its
+final state assertions still verified one winner, one grant and retained spend.
+Codex claims internal/budget/{step_history.go,cycle_extension_test.go} before
+edits to expose that existing changed-file outcome as a typed sentinel and let
+the contention test recognize exactly that safe refusal. Preserve both bounded
+reader checks and the one-winner/count assertions; do not accept arbitrary errors
+or retry until a passing result hides the failed run. Retain the original full
+log and rerun meaningful focused and whole-suite validation after this correction.
+
+### Launch migration disposition and delivery allocation — September 11
+
+Before edits, Codex claims its launch-migration disposition under
+implementation-notes/codex-1-launch-migration-dispositions-20260911.md, the existing
+evaluation delivery/2026-09-05/{PROGRESS.md,priorities.json,report.html} content
+refresh, and browser-launch-migration-20260911.json with its owned browser-qa
+subdirectory. Update the existing draft PR description after tested source is
+committed. The report must keep every priority partial/preparation, retain failed
+validation history and identify the exact source/report it describes. Browser QA
+uses ego-browser only and does not certify an unexecuted experiment or treatment.

@@ -327,7 +327,7 @@ legacy defaults. Missing or malformed prompts cannot create a legacy grant.
 Changing flags or track does not extend a frozen policy. Missing or corrupt
 policy/ledger state, inconsistent carried history, or unclassified previous
 invocations refuse further work. Preserve that state for explicit migration;
-no supported legacy migration command exists yet. A valid existing cycle policy
+no supported legacy cycle migration command exists yet. A valid existing cycle policy
 can receive the finite operator extension described below.
 Standalone unobserved handoff preparation does not activate or spend a cycle
 policy. An unobserved historical request is not proof that no outside execution
@@ -391,7 +391,8 @@ checkable; they do not authenticate a human or prevent a process with the same
 filesystem access from rewriting an entire history. The attendance check has
 the same limitations as `budget reconcile`; do not allocate a terminal to
 manufacture user authorization. Launch/step extensions have their separate
-controls below. Legacy history migration and lock-origin recovery remain open.
+controls below. Legacy step/cycle migration and lock-origin recovery remain open;
+launch history has the separate import control described below.
 
 ### Mapping a configured dollar ceiling to launch reservations
 
@@ -411,8 +412,8 @@ The dollar default is a total ceiling; it supplies no per-call reservation or
 provider price. If the policy/reservation is absent or the requested finite cap
 does not match any recorded version,
 execution refuses with a terminal `budget_refused` record. Existing invocation
-history can require the still-pending explicit legacy migration before a first
-policy can be configured; deleting that evidence is not recovery.
+history can require the explicit launch migration below before a first policy
+can be configured; deleting that evidence is not recovery.
 
 Dollar ceilings are converted through the configured float's shortest decimal
 representation to whole microdollars, rounding down so conversion does not raise
@@ -489,3 +490,83 @@ Histories allow 128 decisions per policy and at most 1 MiB of JSON. Decision IDs
 are at most 128 bytes, reasons 1024 bytes; integer overflows and clock regression
 refuse. Attendance and hash chains are not human authentication against another
 process with the same filesystem access. No unattended override exists.
+
+### Importing historical launch accounting
+
+When invocation history predates a saved launch policy, including a retained
+pre-start `budget_refused` request, inspect it without initializing budget state:
+
+```sh
+parley budget migrate inspect --kind launch --dir DIR --idea IDEA
+```
+
+Omit `--idea` only for the auxiliary launch scope. Inspection inventories all
+available linked Git worktrees, invocation metadata, historical run events and
+cursors, and the idea's canonical artifacts. It returns source hashes, unique
+attempts and original observed-cost bases, the earliest observed timestamp, a
+minimum additional legacy launch count, and one canonical `history_sha256`.
+It stores no prompts, logs or artifact contents in the import record. Missing
+worktrees, conflicting idea identities/copies, nonterminal or malformed records,
+directory/file aliases and out-of-bounds sources refuse.
+
+After stopping writers and reviewing the inventory, supply an explicit operator
+decision through an attended terminal:
+
+```sh
+parley budget migrate apply --kind launch --dir DIR --idea IDEA \
+  --expected-history-sha256 HASH --decision-id UNIQUE_ID \
+  --reason 'Operator explanation and legacy accounting basis' \
+  --started-at ORIGINAL_RFC3339_EPOCH --additional-launches N \
+  --max-launches TOTAL --max-cost-micros MICROS --wall-clock DURATION \
+  --reserve-micros MICROS_PER_FUTURE_LAUNCH --writers-stopped --yes
+```
+
+This template supplies no real operator decision. `--additional-launches` is an
+explicit assertion about work preceding complete invocation telemetry, including
+failed attempts; zero must be stated explicitly. Its value must meet the observed
+legacy start floor. Artifact prose does not establish that count. `--started-at`
+must be the original accounting epoch, no later than any observed history. All
+three ceilings are explicit lifetime totals, including imported work and pauses;
+zero has the usual unlimited launch/step meaning. A positive monetary cap requires
+an explicit conservative per-future-launch reservation no larger than the cap.
+The reservation may be omitted when no monetary cap applies; it remains unknown.
+
+Each unique recognized attempt is imported as spent, including ordinary failed
+starts. Known observations round upward to whole microdollars; the retained
+terminal hash and original cost basis distinguish a CLI estimate from an invoice.
+Unknown observed costs stay unknown. Additional legacy attempts have both unknown
+observed cost and unknown reservation, with IDs
+`legacy-migration:<decision-id>:<zero-based-index>`. They require explicit monetary
+reconciliation before a monetary cap permits new work. No future reservation is
+retroactively assigned to an old attempt. Unobserved handoffs remain potentially
+spent with unknown cost.
+
+Only typed pre-start `budget_refused` or `protocol_context_refused` failures with
+consistent metadata and no process/observed work are exempt from the launch count.
+Their source records and inventory entries remain retained. Positive token/cost,
+output, activity or contradictory start evidence refuses that exemption. A real
+process fixture covers refusal, preserved history, activation, actual child
+execution, subsequent cap refusals and replay across new runs; it calls no model.
+
+Migration writes an immutable versioned decision/inventory/initial-ledger record,
+the ledger and its continuity witness, and a hash-bound policy, then activates a
+final marker. Readers refuse partial publication. Exact replay recovers unchanged
+partial state or returns current active state while preserving later spend,
+reconciliations and extensions. Stale/conflicting decisions cannot overwrite an
+existing policy, ledger or import. A missing previously active policy is an error.
+Output failure may follow successful activation: inspect or replay the exact
+decision. Deleting evidence or retrying a different decision is not recovery.
+
+The history hash is checked before and under the publication guard and again
+before activation. Detected concurrent historical changes leave the import
+inactive for recovery. The stopped-writers assertion and hashes do not coordinate
+uncooperative external writers or authenticate a human with shared filesystem
+access. Keep writers stopped throughout the operation. Unknown/inconsistent
+history and changed inactive imports need separate recovery; do not force them.
+
+The inventory allows 10,000 sources/actions and 64 MiB total source bytes; the
+import record is limited to 8 MiB. Individual metadata, event and artifact reads
+are bounded too. Required zero-valued fields must remain explicitly present.
+Old readers reject the new migration reference rather than ignore it. Windows
+is cross-compiled only. Step/cycle history import, lock-origin relocation/re-pin,
+and semantic action replay remain separate unfinished controls.

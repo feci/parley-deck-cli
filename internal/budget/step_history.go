@@ -12,6 +12,10 @@ import (
 	"strings"
 )
 
+// A concurrent atomic replacement is a refused snapshot, not lost accounting.
+// Callers can distinguish that transient refusal from malformed history.
+var errHistoryChanged = errors.New("driver history changed")
+
 // Old Run counters reset on re-entry, so their last value is not a lifetime
 // total. A cursor has no native idea identity: resolve it from validated events
 // before deciding whether its charges belong to the idea being configured.
@@ -184,7 +188,7 @@ func readStepHistoryFile(path string, limit int64) ([]byte, error) {
 	defer f.Close()
 	opened, err := f.Stat()
 	if err != nil || !os.SameFile(before, opened) {
-		return nil, errors.New("driver history changed during open")
+		return nil, fmt.Errorf("%w during open", errHistoryChanged)
 	}
 	data, err := io.ReadAll(io.LimitReader(f, limit+1))
 	if err != nil {
@@ -193,7 +197,7 @@ func readStepHistoryFile(path string, limit int64) ([]byte, error) {
 	after, statErr := f.Stat()
 	current, pathErr := os.Lstat(path)
 	if statErr != nil || pathErr != nil || !os.SameFile(opened, current) || !current.Mode().IsRegular() || opened.Size() != after.Size() || !opened.ModTime().Equal(after.ModTime()) {
-		return nil, errors.New("driver history changed during read")
+		return nil, fmt.Errorf("%w during read", errHistoryChanged)
 	}
 	if int64(len(data)) > limit {
 		return nil, fmt.Errorf("driver history exceeds %d bytes", limit)

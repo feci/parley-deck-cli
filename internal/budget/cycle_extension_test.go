@@ -124,10 +124,12 @@ func TestCycleExtensionConcurrentDecisionsRequireFreshPreview(t *testing.T) {
 	for i := 0; i < 8; i++ {
 		if err := <-results; err == nil {
 			passed++
-		} else if !strings.Contains(err.Error(), "changed since inspection") {
+		} else if !strings.Contains(err.Error(), "changed since inspection") && !errors.Is(err, errHistoryChanged) {
 			t.Errorf("unexpected conflict: %v", err)
 		}
 	}
+	// The initial bounded read can refuse a concurrently replaced policy.
+	// Both that refusal and a stale hash must still leave exactly one grant.
 	status, err := InspectCycleBudget(ctx, root, "idea", CrossReview)
 	if err != nil || passed != 1 || len(status.Policy.Extensions) != 1 || status.Spent != 3 {
 		t.Fatalf("concurrent decision lost history: passed=%d status=%+v err=%v", passed, status, err)
