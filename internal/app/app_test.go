@@ -1261,6 +1261,28 @@ func TestConsensusRequestSignoffsNonZeroAfterAppendFails(t *testing.T) {
 	if !strings.Contains(stderr.String(), "exited with error after appending valid signoff") {
 		t.Fatalf("stderr=%q", stderr.String())
 	}
+	logs, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "events.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	observed := 0
+	for _, path := range logs {
+		events, err := store.New(filepath.Dir(path)).Load()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, event := range events {
+			if event.Type == "agent.signoff.artifact-present-after-failure" {
+				observed++
+				if event.Data["agent"] != "alpha" || event.Data["signoff_status"] != "accept" || event.Data["artifact_sha256"] == "" {
+					t.Fatalf("artifact evidence: %+v", event)
+				}
+			}
+		}
+	}
+	if observed != 1 {
+		t.Fatalf("artifact evidence events = %d", observed)
+	}
 	summary, err := consensus.Status(root, "sample", false)
 	if err != nil {
 		t.Fatal(err)

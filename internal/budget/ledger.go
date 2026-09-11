@@ -21,11 +21,12 @@ import (
 )
 
 var (
-	ErrReserved     = errors.New("action already reserved: reconcile it before any new execution")
-	ErrLimit        = errors.New("budget exhausted")
-	ErrUnknownCost  = errors.New("monetary exposure is unknown")
-	ErrCostOverflow = errors.New("monetary exposure overflows microdollars")
-	ErrClockSkew    = errors.New("budget clock moved backwards")
+	ErrReserved       = errors.New("action already reserved: reconcile it before any new execution")
+	ErrLimit          = errors.New("budget exhausted")
+	ErrUnknownCost    = errors.New("monetary exposure is unknown")
+	ErrCostOverflow   = errors.New("monetary exposure overflows microdollars")
+	ErrClockSkew      = errors.New("budget clock moved backwards")
+	ErrLockContention = errors.New("budget lock contention exhausted the acquisition deadline")
 )
 
 type Kind string
@@ -43,6 +44,9 @@ type Limits struct {
 	Actions    map[Kind]int
 	Denied     map[Kind]bool
 	CostMicros int64
+	// Refuse unknown new reservations even without a monetary cap. A provider
+	// may still report unknown terminal cost; this does not invent a price.
+	RequireKnownCost bool
 	// Elapsed wall time from the first reservation, including pauses/resumes.
 	WallClock time.Duration
 }
@@ -85,23 +89,17 @@ type Store struct {
 	persist    func(string, []byte) error
 }
 
-// Inspect reads an existing ledger under its pinned lock. It never initializes
-// budget state or charges an action. The returned maps have no retained owner.
+// Inspect reads an existing atomically published ledger without creating locks,
+// origins or directories. It returns a complete point-in-time snapshot, which
+// may precede a concurrent replacement. The maps have no retained owner.
 func (s Store) Inspect(ctx context.Context) (Snapshot, error) {
 	if s.Dir == "" || s.Scope == "" {
 		return Snapshot{}, errors.New("budget directory and scope are required")
 	}
 	path := filepath.Join(s.Dir, "ledger.json")
-	if _, err := os.Lstat(path); err != nil {
+	if err := ctx.Err(); err != nil {
 		return Snapshot{}, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	release, err := lock(ctx, filepath.Join(s.Dir, "ledger.lock"))
-	if err != nil {
-		return Snapshot{}, err
-	}
-	defer release()
 	state, err := read(path)
 	if err != nil {
 		return Snapshot{}, err
@@ -152,10 +150,10 @@ func (s Store) Reserve(ctx context.Context, req Request, limits Limits) (Snapsho
 		if ceiling := limits.Actions[req.Kind]; ceiling > 0 && count >= ceiling {
 			return fmt.Errorf("%w: %s", ErrLimit, req.Kind)
 		}
+		if (limits.CostMicros > 0 || limits.RequireKnownCost) && req.ReserveMicros == nil {
+			return ErrUnknownCost
+		}
 		if limits.CostMicros > 0 {
-			if req.ReserveMicros == nil {
-				return ErrUnknownCost
-			}
 			exposure, err := state.ExposureError()
 			if err != nil {
 				return err
@@ -238,13 +236,9 @@ func copyInt(n *int64) *int64 {
 	return &v
 }
 
-// Exposure is the sum of observed terminal cost and outstanding conservative
-// reservations. It never represents unknown cost as zero or permits overflow.
-func (s Snapshot) Exposure() (int64, bool) {
-	n, err := s.ExposureError()
-	return n, err == nil
-}
-
+// ExposureError sums observed cost and outstanding reservations, retaining
+// distinct unknown-cost and overflow errors. Explicit operator ceilings are
+// the fallback only while the original observation is unknown.
 func (s Snapshot) ExposureError() (int64, error) {
 	var total int64
 	for _, entry := range s.Entries {

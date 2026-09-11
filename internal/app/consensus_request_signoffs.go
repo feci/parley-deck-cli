@@ -193,6 +193,14 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		}
 		if runErr != nil {
 			printPartialProgress(stdout, successes)
+			// Record only after the shared validator proves a new, valid append.
+			// All launch modes retain the failed process outcome independently.
+			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.signoff.artifact-present-after-failure", map[string]any{
+				"agent": agent.ID, "artifact": after.Path, "artifact_sha256": sha256Hex(string(afterRaw)),
+				"launch_mode": agents.LaunchModeOrDefault(agent.LaunchMode), "signoff_status": signoff.Status,
+			}); eventErr != nil {
+				return errors.Join(runErr, eventErr)
+			}
 			return fmt.Errorf("%s exited with error after appending valid signoff: %w", agent.ID, runErr)
 		}
 

@@ -12,7 +12,12 @@ import (
 )
 
 func runBudget(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	return runBudgetControl(ctx, args, stdout, stderr, hasTTYSupported && platformHasTTY())
+	supported, attended := budgetAttendance()
+	if len(args) > 0 && args[0] == "reconcile" && !supported {
+		fmt.Fprintln(stderr, "budget reconcile: attended recovery is unavailable on this platform; preserve the ledger and use the supported original environment. No unattended override exists.")
+		return 2
+	}
+	return runBudgetControl(ctx, args, stdout, stderr, attended)
 }
 
 // The bool is an internal test seam. The CLI always computes it from the
@@ -56,13 +61,16 @@ func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		return 0
 	}
+	if !attended {
+		fmt.Fprintln(stderr, "budget reconcile: refusing unattended cost adjustment; use this explicit operator control from a terminal. Participant frontmatter does not grant a budget extension.")
+		return 2
+	}
 	if !*yes || *action == "" || *decision == "" || *ceiling < 0 || strings.TrimSpace(*reason) == "" {
 		fmt.Fprintln(stderr, "budget reconcile requires --action-id, --decision-id, --ceiling-micros, --reason and --yes")
 		return 2
 	}
-	if !attended {
-		fmt.Fprintln(stderr, "budget reconcile: refusing unattended cost adjustment; use this explicit operator control from a terminal. Participant frontmatter does not grant a budget extension.")
-		return 2
+	if *ceiling == 0 {
+		fmt.Fprintln(stderr, "budget reconcile: explicit zero ceiling counts this unknown observation as zero exposure; the observed cost remains unknown and this operator decision is retained.")
 	}
 	if _, err := s.ReconcileUnknown(ctx, *action, *decision, *ceiling, *reason); err != nil {
 		fmt.Fprintf(stderr, "budget reconcile: %v\n", err)

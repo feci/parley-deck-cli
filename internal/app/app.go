@@ -124,6 +124,7 @@ Usage:
   %s init [--dir DIR]
   %s agents list [--dir DIR]                        (adapter/runtime inventory — NOT the roster)
   %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
+  %s budget inspect|reconcile --ledger DIR --scope ID
   %s protocol status|render|check [--dir DIR] [--dry-run] [--yes] [--json]
   %s protocol publish --version V --from FILE            (attended; requires a terminal)
   %s roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]
@@ -333,6 +334,7 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
 		appName,
 		appName,
 		appName,

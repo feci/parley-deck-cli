@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 9cd1e42
+head-commit: 9ea4e0f
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -18,8 +18,9 @@ Implementation is partial on draft PR #73: measured protocol-task launch
 boundaries, live/full context attestation, cursor persistence, fail-closed goal
 checking, packet publication and source-instruction updates are integrated and
 locally tested. Claude's partial independent source reviews are preserved with
-their dispositions. Kimi's corrected 89a4305 checkpoint passes independent focused tests but
-remains unintegrated after three new adversarial probes; its owner is correcting them. The exact live experiments, complete launch
+their dispositions. Kimi's latest uncommitted correction passes 58 independent focused test events
+with zero skips/failures and the preceding five adversarial probes. A new mixed
+package/build-failure probe reproduces false PASS; the owner is correcting it. The exact live experiments, complete launch
 coverage/shared budgets and full independent acceptance remain open. The frozen
 historical evaluation is unchanged.
 
@@ -147,14 +148,14 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Complete Kimi's new correction from 89a4305. Independent tests now confirm
-   the previous unrelated-rerun, duplicate-envelope and fixture fixes. Three new
-   reproduced probes remain; see codex-1-kimi-independent-20260911.md.
+1. Complete Kimi's mixed package/build-failure correction after the 58-event
+   independent pass. The preceding three issues are fixed in uncommitted owner
+   source; the new masked-exit package-failure probe still requires correction.
 2. Wire the tested shared reservation store into per-launch/per-action budgets,
    persistent loop limits and manual/driver/resume/BLOCK paths. Complete readiness
    validation and independent re-review of the corrected terminal process path.
 3. Reconcile at least 20 actual attempts across launch surfaces. The recovery
-   inventory currently has twelve terminal attempts, four with unknown cost.
+   inventory currently has fourteen terminal attempts, five with unknown cost.
 4. Obtain the pending historical Hermes-to-Zcode decision and pilot amendment
    direction. Freeze exact tasks/resource ceilings before either experiment;
    preserve the signed packet trial and full-six design until lawfully amended.
@@ -728,3 +729,28 @@ new probe correction under invocation a4e1d24c-6466-4764-96c9-ae83b3e7ec85
 (exec session 76055, started 09:00:25Z, 30-minute deadline). Do not restart it
 while live. The terminal inventory now contains twelve real attempts, four
 unknown costs, known CLI-estimate subtotal USD 23.977798, total cost unknown.
+
+Claude completed review f47b7f16-bfdd-4ca7-99af-2b0d70d020f8 at 09:28:48Z
+(655.093s, exit 0, CLI estimate USD 4.5135205). The own artifact confirms most
+corrections and retains three new major findings: cache-lock identity loss,
+Inspect origin mutation, and unsupported attended recovery platforms. Codex
+will fix the existing owned budget/CLI paths before integration: bind a random
+per-lock identity and refuse a missing lock/origin on an existing ledger, make
+Inspect an atomic read without writes, and implement a Windows console probe.
+Additional non-overlapping allocation before edits: internal/app/budget_attended_windows.go
+and budget_attended_other.go for this budget-specific control; global protocol
+publication's terminal policy is unchanged.
+
+
+### Budget identity correction checkpoint — 2026-09-11
+
+Implementation dispositions and executed checks are recorded in
+implementation-notes/codex-1-budget-identity-dispositions-20260911.md. Claude's
+source review remains unchanged; these changes still require independent review.
+The full app suite following the previous operator CLI additions passed (66.253s,
+budget-control-app-suite-20260911.log). New focused checks are scoped above.
+The recovery inventory now contains 14 unique terminal attempts, five unknown
+costs, known CLI-estimate subtotal USD 28.4913185 and unknown total cost.
+Kimi is working on the new independently reproduced package/build-failure PASS
+under measured run recovery-kimi-package-failure-20260911 (exec session 40766).
+No new experiment or quorum amendment is inferred from that correction run.

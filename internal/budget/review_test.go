@@ -1,6 +1,7 @@
 package budget
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,163 @@ import (
 	"testing"
 	"time"
 )
+
+func testPinnedLockPath(t *testing.T, dir string) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(dir, "lock-origin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(string(data), "\n")
+	if len(parts) != 5 || parts[0] != "parley-budget-lock/v2" {
+		t.Fatalf("origin: %q", data)
+	}
+	return parts[2]
+}
+
+func TestMissingEstablishedLockIsNotRecreatedWhileHeld(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Reserve(ctx, Request{ID: "spent", Kind: Launch}, Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	release, err := lock(ctx, filepath.Join(s.Dir, "ledger.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	path := testPinnedLockPath(t, s.Dir)
+	if err := os.Remove(path); err != nil {
+		t.Skipf("platform already prevents removing the held lock: %v", err)
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "next", Kind: Launch}, Limits{}); err == nil || !strings.Contains(err.Error(), "refusing recreation") {
+		t.Fatalf("deleted live lock authorized work: %v", err)
+	}
+	if _, err := os.Lstat(path); !os.IsNotExist(err) {
+		t.Fatalf("lock recreated: %v", err)
+	}
+	after, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("charge changed: %v", err)
+	}
+}
+
+func TestReplacedLockIdentityRefusesBeforeReservation(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Reserve(ctx, Request{ID: "spent", Kind: Launch}, Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	path := testPinnedLockPath(t, s.Dir)
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := lockIdentity(path, true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "next", Kind: Launch}, Limits{}); err == nil || !strings.Contains(err.Error(), "identity changed") {
+		t.Fatalf("foreign identity admitted: %v", err)
+	}
+	state, err := s.Inspect(ctx)
+	if err != nil || len(state.Entries) != 1 {
+		t.Fatalf("charges: %+v %v", state, err)
+	}
+}
+
+func TestLockDescriptorCannotSwitchIdentityDuringAcquisition(t *testing.T) {
+	s := testStore(t)
+	changed := false
+	take := func(f *os.File) (bool, error) {
+		if !changed {
+			changed = true
+			// Preserve the inode while changing the token between identity read
+			// and lock acquisition, so an inode-only check cannot catch it.
+			if _, err := f.WriteAt([]byte(strings.Repeat("0", 64)+"\n"), 0); err != nil {
+				return false, err
+			}
+		}
+		return tryLock(f)
+	}
+	release, err := lockWithOps(context.Background(), filepath.Join(s.Dir, "ledger.lock"), take, unlock)
+	if release != nil {
+		release()
+		t.Fatal("changed descriptor authorized work")
+	}
+	if err == nil || !strings.Contains(err.Error(), "identity changed") {
+		t.Fatalf("descriptor identity: %v", err)
+	}
+}
+
+func TestOriginlessLedgerInspectionNeverPinsOrLosesCharges(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Reserve(ctx, Request{ID: "spent", Kind: Launch}, Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(s.Dir, "lock-origin")); err != nil {
+		t.Fatal(err)
+	}
+	for _, scope := range []string{s.Scope, "wrong-scope"} {
+		reader := s
+		reader.Scope = scope
+		state, err := reader.Inspect(ctx)
+		if scope == s.Scope && (err != nil || len(state.Entries) != 1) {
+			t.Fatalf("inspection: %+v %v", state, err)
+		}
+		if scope != s.Scope && err == nil {
+			t.Fatal("wrong scope accepted")
+		}
+		files, err := os.ReadDir(s.Dir)
+		if err != nil || len(files) != 1 || files[0].Name() != "ledger.json" {
+			t.Fatalf("read changed directory: %v %v", files, err)
+		}
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "next", Kind: Launch}, Limits{}); err == nil || !strings.Contains(err.Error(), "has no lock origin") {
+		t.Fatalf("missing origin silently bootstrapped: %v", err)
+	}
+	after, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("lost historical charge: %v", err)
+	}
+}
+
+func TestRequireKnownCostPreventsUnknownReservationWithoutCap(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	limits := Limits{RequireKnownCost: true}
+	if _, err := s.Reserve(ctx, Request{ID: "unknown", Kind: Launch}, limits); !errors.Is(err, ErrUnknownCost) {
+		t.Fatalf("unknown reservation: %v", err)
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "known", Kind: Launch, ReserveMicros: micros(7)}, limits); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "known", Kind: Launch}, limits); !errors.Is(err, ErrReserved) {
+		t.Fatalf("replay priority lost: %v", err)
+	}
+}
+
+func TestContentionNamesBudgetAndPreservesDeadline(t *testing.T) {
+	s := testStore(t)
+	release, err := lock(context.Background(), filepath.Join(s.Dir, "ledger.lock"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	_, err = s.Reserve(ctx, Request{ID: "next", Kind: Launch}, Limits{})
+	if !errors.Is(err, ErrLockContention) || !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("ambiguous contention: %v", err)
+	}
+}
 
 func TestNoOpKernelLockIsRefused(t *testing.T) {
 	s := testStore(t)
@@ -38,7 +196,7 @@ func TestOriginBootstrapCannotSplitAcrossCachePaths(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			err := pinLockOrigin(dir, paths[i%2])
+			err := pinLockOrigin(dir, paths[i%2], strings.Repeat(strconv.Itoa(i%2), 64))
 			if err == nil {
 				mu.Lock()
 				winners[i%2]++
