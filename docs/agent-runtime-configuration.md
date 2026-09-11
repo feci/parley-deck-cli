@@ -279,6 +279,8 @@ pinned in the shared ledger. The origin records hostname, absolute cache path
 and that identity. Missing established cache locks, differing identity/host/path,
 and existing ledgers without an origin refuse before further mutations. Held
 file descriptors are rechecked against both the pinned token and current inode. On Windows the locked byte is at offset 1 MiB, beyond the bounded identity reads, so the second-handle exclusion probe does not read the locked range.
+The exact pinned origin is also rechecked after acquisition and exclusion probing;
+waiting callers cannot recreate a missing origin or adopt a changed one.
 Paths resolve absolute paths through symlinks and use conservative case folding
 on every OS. This does not authenticate a machine or coordinate cloned identities
 and distributed writers. The origin's local cache path is visible to readers of
@@ -292,6 +294,19 @@ if it is unavailable. `budget inspect` remains available for diagnostics. A cach
 filesystem without verified exclusion stops visibly and names its path. Windows
 is cross-compiled; runtime validation is pending. Crashes may leave staging files;
 no automatic sweeper removes files that another writer might still be using.
+
+Synchronization-only resource guards now persist `guard-established`, containing
+their exact origin, before returning permission. They have no ledger whose
+existence could otherwise distinguish first use from lost lock state. A retained
+witness with a missing origin refuses before recreating either the origin or the
+local inode; a conflicting witness also refuses. Failed witness publication
+returns no permission and releases the kernel lock. An unchanged-origin retry can
+finish interrupted publication. This does not implement lock migration or prove
+quiescence: preserve the witness with the origin and cache identity. Existing
+guards acquire the witness on their first successful use by this runtime. Older
+binaries and erasing both the witness and origin are outside this protection.
+The API is cooperative synchronization, not protection against a malicious
+same-UID actor who can rewrite all state.
 
 Action ceilings count lifetime attempts, including failed and settled attempts.
 A zero/absent ceiling means unlimited; the internal denied-kind control expresses

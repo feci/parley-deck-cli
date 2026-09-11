@@ -30,6 +30,10 @@ func lock(ctx context.Context, path string) (func(), error) {
 }
 
 func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, error), drop func(*os.File)) (func(), error) {
+	return lockWithReady(ctx, path, take, drop, nil)
+}
+
+func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, error), drop func(*os.File), ready func(string) error) (func(), error) {
 	canonical, err := filepath.Abs(filepath.Dir(path))
 	if err != nil {
 		return nil, err
@@ -64,6 +68,11 @@ func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, er
 		return nil, originErr
 	}
 	if newOrigin {
+		if _, err := os.Lstat(filepath.Join(canonical, resourceGuardWitness)); err == nil {
+			return nil, errors.New("established resource guard has no lock origin; preserve its witness and stop writers; refusing recreation")
+		} else if !os.IsNotExist(err) {
+			return nil, err
+		}
 		if _, err := os.Lstat(filepath.Join(canonical, "ledger.json")); err == nil {
 			return nil, errors.New("existing budget ledger has no lock origin; preserve charges and stop writers: a supported migration is not yet available")
 		} else if !os.IsNotExist(err) {
@@ -118,6 +127,11 @@ func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, er
 				f.Close()
 				return nil, err
 			}
+			if err := verifyPinnedLockOrigin(canonical, path, token); err != nil {
+				drop(f)
+				f.Close()
+				return nil, err
+			}
 			// Verify the actual lock filesystem, rather than trusting a successful
 			// syscall on a filesystem that implements it as a no-op.
 			probe, err := os.OpenFile(path, os.O_RDWR, 0o600)
@@ -147,6 +161,35 @@ func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, er
 				f.Close()
 				return nil, err
 			}
+			if err := verifyPinnedLockOrigin(canonical, path, token); err != nil {
+				drop(f)
+				f.Close()
+				return nil, err
+			}
+			if ready != nil {
+				if err := ready(canonical); err != nil {
+					drop(f)
+					f.Close()
+					return nil, err
+				}
+				// Continuity publication may perform filesystem work. It cannot
+				// switch this acquisition to a newly observed origin or inode.
+				if err := verifyLockIdentity(f, path, token); err != nil {
+					drop(f)
+					f.Close()
+					return nil, err
+				}
+				if err := verifyPinnedLockOrigin(canonical, path, token); err != nil {
+					drop(f)
+					f.Close()
+					return nil, err
+				}
+			}
+			if err := ctx.Err(); err != nil {
+				drop(f)
+				f.Close()
+				return nil, interrupted(err)
+			}
 			var once sync.Once
 			return func() { once.Do(func() { drop(f); f.Close() }) }, nil
 		}
@@ -160,6 +203,26 @@ func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, er
 		case <-timer.C:
 		}
 	}
+}
+
+// An origin read before waiting is not authority after acquiring a kernel lock.
+// In particular, never use pinLockOrigin here: a missing origin must not be
+// recreated by an old waiter. This read-only check also follows the exclusion
+// probe, which may have run after a concurrent origin change.
+func verifyPinnedLockOrigin(dir, lockPath, token string) error {
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		return errors.New("cannot identify budget lock host")
+	}
+	data, err := readLockOrigin(filepath.Join(dir, "lock-origin"))
+	if err != nil {
+		return fmt.Errorf("budget lock origin unavailable after acquisition: %w", err)
+	}
+	expected := []byte("parley-budget-lock/v2\n" + host + "\n" + lockPath + "\n" + token + "\n")
+	if !bytes.Equal(data, expected) {
+		return errors.New("budget lock origin changed before exclusion was established")
+	}
+	return nil
 }
 
 // Read through the actual descriptor that will hold the kernel lock. ReadAt

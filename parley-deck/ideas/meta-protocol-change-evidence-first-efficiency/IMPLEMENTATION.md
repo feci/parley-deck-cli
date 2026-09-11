@@ -1726,3 +1726,48 @@ table-integrity-20260911, with browser-table-integrity-20260911.json beside them
 No fresh screenshot, physical click placement or print/PDF pagination is certified.
 This is current partial-report verification, not independent source acceptance or
 future populated experiment verification. All remaining FINAL gates are unchanged.
+
+
+### Resource guard continuity allocation — September 11
+
+Before edits, Codex claims internal/budget/{lock.go,resource_guard.go,
+resource_guard_test.go}, docs/agent-runtime-configuration.md and the owned
+implementation-notes/codex-1-guard-continuity-dispositions-20260911.md.
+
+The synchronization-only resource guard has no ledger; losing its origin and
+local inode can look like first use even while an old descriptor remains held.
+Reproduce that overlap with actual child processes before fixing it. Establish
+a durable guard witness before returning permission, refuse missing or changed
+origin continuity without recreation, and recheck exact pinned origin after
+kernel acquisition/probing so a waiting caller cannot use obsolete origin data.
+Retain failures, test write interruption and lock cleanup, and preserve current
+budget/evidence publication behavior. This is a required foundation for safe
+recovery, not an operator migration command or a claim that lock-origin recovery,
+changed-inactive-import recovery or any other full-goal gate is complete.
+
+
+### Resource guard continuity source checkpoint — September 11
+
+A real second process reproduced split guard ownership after losing origin and
+local lock pathname while the first holder remained alive. Six acquisition/probe
+origin-mutation fixtures also granted work before correction. Guard witnesses and
+read-only pinned-origin rechecks now reject these cases. Witness publication,
+retry, conflicting origins, cancellation and released kernel ownership are tested.
+The first negative process fixture's cleanup ordering was separately corrected;
+the actual overlapping acquisition preceded its cancelled-child diagnostic.
+
+All 345 Go/module files match the source manifest. Full suite PASS (132.785s),
+budget/evidence/app/driver/runner race PASS (152.416s), scoped vet PASS (1.251s),
+Windows amd64 app cross-build PASS and isolated shared-volume guard/lock/concurrent
+reservation fixtures PASS (2.063s). The owned guard disposition records exact
+behavior, retained counterexamples and limits. Safe migration/reconciliation,
+semantic action replay, patch-regression trajectory and every independent/live
+FINAL gate remain open. No model or operator accounting action ran.
+
+### Guard continuity delivery allocation — September 11
+
+Before edits, Codex claims evaluation delivery/2026-09-05/{PROGRESS.md,
+priorities.json,report.html,report-manifest.json}, browser-guard-continuity-20260911.json
+and browser-qa/guard-continuity-20260911. Preserve the exact previously verified
+table report before refreshing the current partial report. Bind report QA to the
+new source checkpoint, without implying independent implementation acceptance.
