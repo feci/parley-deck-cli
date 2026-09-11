@@ -25,6 +25,12 @@ func TestHandoffTelemetryDoesNotInventLaunch(t *testing.T) {
 	if r.Outcome.Status != "unobserved-handoff" || r.Outcome.Usage.CostUSD != nil {
 		t.Fatalf("handoff: %+v", r.Outcome)
 	}
+	if r.Outcome.Observation.StdoutBytes != nil || r.Outcome.Observation.StderrBytes != nil {
+		t.Fatal("handoff invented measured bytes")
+	}
+	if !strings.Contains(packet.PromptPath, string(filepath.Separator)+".parley-runtime"+string(filepath.Separator)) {
+		t.Fatal("private prompt written to a tracked path")
+	}
 	body, err := os.ReadFile(packet.PromptPath)
 	if err != nil || !strings.Contains(string(body), "Mandatory source obligation.") || !strings.Contains(string(body), "private prompt") || r.Metadata.Context.Mode != "full" {
 		t.Fatalf("handoff lost attested protocol or task: %+v %v", r.Metadata.Context, err)

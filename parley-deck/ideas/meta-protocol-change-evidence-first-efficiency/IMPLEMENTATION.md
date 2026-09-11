@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 8ccd1ea
+head-commit: 374a5c5
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -18,10 +18,13 @@ Implementation is partial on draft PR #73: measured protocol-task launch
 boundaries, live/full context attestation, cursor persistence, fail-closed goal
 checking, packet publication and source-instruction updates are integrated and
 locally tested. Claude's partial independent source reviews are preserved with
-their dispositions. Kimi's timed-out evidence checkpoint remains unintegrated
-after failing independent checks. The exact live experiments, complete launch
-coverage/shared budgets and full independent acceptance remain open. The frozen
-historical evaluation is unchanged.
+their dispositions. Kimi's package-failure correction and owner handoff are now
+integrated at 374a5c5. The production independent-verifier path has a passing
+full Go suite and real subprocess coverage, but a stronger post-completion
+counterexample exposes stale evidence after the generated status transition.
+That defect and report-write concurrency must be resolved before acceptance.
+The exact live experiments, complete launch coverage/shared budgets and full
+independent acceptance remain open. The frozen historical evaluation is unchanged.
 
 ## Implementation plan / checklist
 
@@ -147,13 +150,14 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Complete Kimi's evidence correction from preserved checkpoint 7f2676f. Fix
-   independently reproduced unrelated-rerun/duplicate-field acceptance and the
-   four failing fixture groups before integration; preserve owner artifacts.
-2. Complete shared per-launch/per-action budget reservation, persistent loop
-   limits, remaining readiness validation and interactive TTY process telemetry.
+1. Complete Kimi's mixed package/build-failure correction after the 58-event
+   independent pass. The preceding three issues are fixed in uncommitted owner
+   source; the new masked-exit package-failure probe still requires correction.
+2. Wire the tested shared reservation store into per-launch/per-action budgets,
+   persistent loop limits and manual/driver/resume/BLOCK paths. Complete readiness
+   validation and independent re-review of the corrected terminal process path.
 3. Reconcile at least 20 actual attempts across launch surfaces. The recovery
-   inventory currently has nine terminal attempts, three with unknown cost.
+   inventory currently has fourteen terminal attempts, five with unknown cost.
 4. Obtain the pending historical Hermes-to-Zcode decision and pilot amendment
    direction. Freeze exact tasks/resource ceilings before either experiment;
    preserve the signed packet trial and full-six design until lawfully amended.
@@ -548,3 +552,311 @@ Resume from the current-state checklist above. Preserve Kimi checkpoint 7f2676f
 and its independent rejection note. The pending user proposal remains in
 inbox/codex-1-to-user_meta-protocol-change-evidence-first-efficiency_recovery-decisions.md;
 there is no approval of a quorum or experimental-arm change by elapsed time.
+
+### 2026-09-11 — continued six-priority implementation
+
+The user renewed the instruction to finish all six priorities and resume existing
+work. Integration HEAD a2e7f5d and draft PR #73 were revalidated. The existing
+Hermes-to-Zcode / full-four amendment decision remains pending; unrelated work
+continues with existing owners. No historical FINAL or signatures change.
+
+Codex next works on the remaining interactive spawn-TTY launch telemetry in
+previously claimed runner/launch.go, launch_test.go, handoff.go, handoff_test.go,
+and app/consensus_request_signoffs.go and its tests. Preserve actual terminal
+file descriptors while recording the separate process invocation; do not count
+the unobserved handoff as execution or invent unobserved stream usage. Revalidate
+the live rendered protocol and handoff before the process starts. Test actual
+child success, failed start, timeout cleanup and required evidence failures.
+
+Kimi's preserved 7f2676f checkpoint now has the current integration merged into
+its isolated worktree without conflicts. Retry only its unfinished evidence
+corrections through a newly built, uninstalled measured launcher. All ownership
+boundaries remain unchanged.
+
+Additional non-overlapping Codex allocation before edits: internal/procctl/terminal_unix.go
+and terminal_windows.go for foreground terminal ownership with process-group cleanup.
+The terminal launch keeps actual descriptors; it must also restore the prior foreground
+group after exit and kill only the owned child group on timeout. A constant shell
+no-op used to restore foreground executes no model task and is not agent telemetry.
+
+Additional Codex allocation before editing: docs/agent-runtime-configuration.md
+for the spawn-TTY prompt delivery requirement. A process with no configured
+file/argument delivery cannot claim receipt of the rendered protocol. Print-only
+handoffs remain user-driven; measured protocol-task spawning requires an explicit
+matching prompt placeholder.
+
+The terminal process path now creates its own invocation, re-renders current
+protocol context, and requires a matching file/argument prompt delivery contract.
+It preserves all three real terminal descriptors and explicitly labels stream
+observations unavailable. Unix foreground ownership is restored through the
+os/exec child setup, avoiding process-wide signal-handler mutation; timeouts
+terminate the owned child group. Normal child/failed-start/nonzero/timeout and
+required-evidence failure fixtures pass, as do the relevant signoff/handoff
+checks. A compiled test binary under Python pty.fork verified actual child TTY
+detection, child terminal input and restored-parent terminal input on Darwin.
+An initial harness using go test directly failed because the Go test launcher
+redirects the test binary's stdin; the corrected harness executes the compiled
+binary under the PTY and passes. The failed observation is not discarded.
+Focused race checks and vet passed before the final delivery-contract change;
+current full-suite and independent owner review are still required. Windows
+cross-compilation passed before that final change; Windows runtime is untested.
+
+Full go test ./... passed on terminal-launch commit 122f4d2. Claude's independent
+source review is running via measured launcher parley-recovery-4. Kimi's new
+owner correction is running via parley-recovery-3 and has created its own early
+handoff; neither in-progress action is claimed as completed.
+
+Next Codex budget work (existing internal/budget/** allocation): implement the
+shared durable reservation store before wiring callers. It must serialize
+concurrent callers with an OS lock, precharge unique actions, retain failed or
+interrupted reservations, reject replay as permission to execute again, retain
+unknown monetary exposure, reject corrupt persisted state and use the tested
+fsutil synchronized replacement boundary. Driver/manual/resume/BLOCK wiring and
+operator extensions remain separately required; a passing store alone is not AC-B1.
+
+The mandatory shared-volume reservation test found that flock on this mount
+reports success without mutual exclusion: 23 of 24 concurrent calls passed a
+five-call monetary cap, and a second process acquired a supposedly held lock.
+The package is NOT accepted on that evidence. Move the kernel lock to the
+host-local cache, keyed by the canonical ledger directory, and verify competing
+handles are excluded before trusting it. Ledger data and synchronization remain
+in the worktree. This is a same-host runtime lock, not distributed cross-host
+coordination; that limitation must remain explicit in review and documentation.
+
+The reservation-store tests now pass on ordinary local temp storage and the
+actual shared worktree volume. They exercise concurrent monetary/call ceilings,
+replayed IDs, failed/crashed precharges, kernel-lock release after killing a
+separate process, unknown terminal cost, conflicting settlement, durable
+replacement failure and malformed/duplicate/aliased state. The local-cache
+lock verifies same-host exclusion with competing handles before every use.
+The store's data remains on the shared volume. Same-host locking is explicit;
+distributed writers are not certified. Driver/manual/launch integration is not
+yet present, so this remains a foundation rather than a completed budget gate.
+
+Claude's new owner-authored partial source review at 122f4d2 identified three
+MAJOR findings: unobserved byte counters serialized as zero, lack of a real-PTY
+timeout/restoration fixture, and unbounded/undocumented argument prompt delivery.
+Codex accepts these as correction work, plus the concrete MINOR mode/diagnostic/
+selection/timeout/private-prompt issues. No review or signature is edited.
+Additional non-overlapping Codex allocation: scripts/test_terminal_launch.py,
+a reproducible Unix PTY harness for the actual compiled Go terminal tests.
+
+Terminal review dispositions (Claude reviewed 122f4d2, not the following fixes):
+MAJOR-1 corrected with nullable output byte counters; unobserved handoffs and
+TTY streams now persist null. MAJOR-2 corrected with the committed PTY harness
+covering timeout, failed start and both evidence-write failures: all four restore
+the parent's readable terminal and leave no delayed descendant artifact. The
+success case also passes /dev/tty at a nonzero parent fd. MAJOR-3 corrected with
+a 120 KiB per-argument guard, an explicit file-mode preference and documentation
+of argv visibility. This is a conservative bound, not a universal argv capacity
+claim; OS total argv/env failures still remain recorded failed starts.
+
+MINOR-1 through MINOR-5: added interactive-mode validation; preserved restoration
+error details; shared delivery validation with selection and recorded failed
+handoff events; used one session/poll deadline; moved newly rendered handoff
+prompts into private ignored invocation directories. Historical prompt artifacts
+are preserved. SysProcAttr now preserves unrelated fields, WaitDelay is explicit,
+and the argument scan exits on a match. The fixed /bin/sh restoration helper is
+retained as an explicit Unix dependency; it runs no task data. Failed exits remain
+failures even if an artifact exists, preserving the existing process-integrity gate.
+Ctty parent-fd semantics are independently confirmed in local Go source
+syscall/exec_libc.go lines 30-34 and by the nonzero-fd PTY fixture. This is Codex's
+disposition and test evidence, not Claude's agreement or a final signature.
+
+Validation after the terminal review corrections: full go test ./... PASS;
+focused runner/telemetry race checks PASS; vet PASS; Windows runner cross-build
+PASS (runtime untested); python3 scripts/test_terminal_launch.py PASS for all
+five real-PTY scenarios. The budget-store ordinary/shared-volume/race tests and
+Windows cross-build also pass. The English report was rebuilt and all ten report
+tests passed; no new browser QA is claimed for this text-only progress update.
+Recovery inventory now contains ten terminal attempts (three costs unknown),
+with known CLI-estimate subtotal USD 21.381507; overall cost remains unknown.
+Claude's review attempt completed at 601.450 seconds and estimated USD 3.8726815;
+its reported model list includes Opus 5 and Haiku, so no single-model attribution
+is inferred. Kimi's new attempt remains live at this checkpoint.
+
+Live continuation handles at 2026-09-11 08:49Z (revalidate before any retry):
+- Kimi invocation e020e34e-b900-44c5-9fad-70d7baac1a2b, agents-exec session
+  34323, expected terminal deadline around 08:49:29Z. Its own handoff now reports
+  corrected evidence/fixtures, with unsupported-entry coverage skipped on this
+  shared filesystem; independent inspection/execution and commit still required.
+- Claude follow-up review launched on 9cd1e42 through parley-recovery-5,
+  agents-exec session 29245. It reviews budget foundation and terminal fixes;
+  expected owned artifact claude-1-budget-tty-followup-20260911.md. Do not restart
+  while this actual process is live.
+- PR #73 remains draft, pushed through 9cd1e42. No final merge or release.
+
+### 2026-09-11 09:00Z — independent findings and next bounded corrections
+
+Kimi completed invocation e020e34e-b900-44c5-9fad-70d7baac1a2b at
+08:49:13.899763Z (1784.296s, exit 0, cost unknown); source checkpoint 89a4305
+is preserved locally. Codex independently ran the focused evidence/app suite
+on local TMPDIR: 42 pass events, zero failures/skips, including unsupported
+entries and the serial/barrier fixture. New overlay probes reproduce three
+remaining issues in the Kimi-owned slice; details and exact commands are in
+implementation-notes/codex-1-kimi-independent-20260911.md. Integration remains
+pending owner correction; earlier handoffs are preserved.
+
+Claude follow-up invocation 6e0126fc-30cb-44a7-8b69-04d6ee4f8e85 completed
+at 08:57:05.137977Z (509.599s, exit 0, CLI-estimate USD 2.596291). His own
+partial source review concurs with the principal TTY corrections and identifies
+budget locking/recovery and residual TTY issues. No shell execution or full
+acceptance is attributed to that review. Old sessions 29245 and 34323 are
+terminal and must not be polled or restarted.
+
+Codex will correct the existing budget allocation before caller wiring: make
+lock identity stable or refuse divergent local-cache origins, canonicalize
+absolute paths before resolving aliases, conservatively unify case aliases,
+pin the no-op-lock detector with an injected regression, and cover concurrent
+process cap enforcement. Bound JSON traversal and diagnose clock/overflow
+failures. Add explicit append-only operator cost reconciliation without
+erasing spent actions or unknown observed costs. Operator authorization must
+come from an actual CLI control, never participant frontmatter. All launch/
+action integration and acceptance gates remain open.
+
+Codex next wires the explicit cost-recovery control in the already-claimed
+internal/app/{budget.go,budget_test.go,app.go}: read-only inspection and an
+attended `budget reconcile` command with an exact ledger/scope/action/decision,
+conservative ceiling and reason. Reuse the existing platform terminal probe;
+this is an operator control, not cryptographic authentication or a grant from
+participant frontmatter. Add the recovery instructions to the already-claimed
+docs/agent-runtime-configuration.md. Per-launch enforcement remains separate.
+
+Codex's budget and residual terminal corrections now have executed evidence and
+explicit dispositions in implementation-notes/codex-1-budget-review-dispositions-20260911.md.
+The independent reviewer has not accepted those corrections yet. The earlier
+full-suite pass predates the later operator-control/Inspect additions; those
+additions separately pass focused app/budget tests. Kimi is running only the
+new probe correction under invocation a4e1d24c-6466-4764-96c9-ae83b3e7ec85
+(exec session 76055, started 09:00:25Z, 30-minute deadline). Do not restart it
+while live. The terminal inventory now contains twelve real attempts, four
+unknown costs, known CLI-estimate subtotal USD 23.977798, total cost unknown.
+
+Claude completed review f47b7f16-bfdd-4ca7-99af-2b0d70d020f8 at 09:28:48Z
+(655.093s, exit 0, CLI estimate USD 4.5135205). The own artifact confirms most
+corrections and retains three new major findings: cache-lock identity loss,
+Inspect origin mutation, and unsupported attended recovery platforms. Codex
+will fix the existing owned budget/CLI paths before integration: bind a random
+per-lock identity and refuse a missing lock/origin on an existing ledger, make
+Inspect an atomic read without writes, and implement a Windows console probe.
+Additional non-overlapping allocation before edits: internal/app/budget_attended_windows.go
+and budget_attended_other.go for this budget-specific control; global protocol
+publication's terminal policy is unchanged.
+
+
+### Budget identity correction checkpoint — 2026-09-11
+
+Implementation dispositions and executed checks are recorded in
+implementation-notes/codex-1-budget-identity-dispositions-20260911.md. Claude's
+source review remains unchanged; these changes still require independent review.
+The full app suite following the previous operator CLI additions passed (66.253s,
+budget-control-app-suite-20260911.log). New focused checks are scoped above.
+The recovery inventory now contains 14 unique terminal attempts, five unknown
+costs, known CLI-estimate subtotal USD 28.4913185 and unknown total cost.
+Kimi is working on the new independently reproduced package/build-failure PASS
+under measured run recovery-kimi-package-failure-20260911 (exec session 40766).
+No new experiment or quorum amendment is inferred from that correction run.
+
+
+### Recovery invocation correction — 2026-09-11
+
+The first package-failure follow-up did not start useful work: invocation
+fefaab07-cb0a-4f40-9f3f-7f8bdba2b5a1 ended at 09:41:52Z after 0.859s,
+exit 1, with "storage write failed: permission denied" and no artifact. It used
+the wrong local Kimi home/sandbox pairing. The failed attempt is retained, not
+relabelled or removed. Retry f750e9ad-b977-44c4-95f3-cc9ce51a77ee uses the
+original recovery KIMI_CODE_HOME and participant-recovery.sb, started 09:56:00Z
+(exec 55171, 30-minute ceiling). Claude source review f77101c9-71e8-4252-b7f4-5f661f73b2f4
+started 09:53:16Z against 3ea8693 (exec 6497, native restricted tools only).
+The report inventory now has 15 terminal attempts, six unknown costs, known
+CLI-estimate subtotal USD 28.4913185 and unknown total cost. Report build/tests
+pass (10 tests); current refresh is status-only, without new browser QA.
+Next actual verifier integration call-site requirements are recorded in
+implementation-notes/codex-1-evidence-close-callsite-plan-20260911.md.
+
+Additional source concern for the next budget disposition: Windows currently
+locks byte 0 while identity/probe reads include that byte. LockFileEx's mandatory
+range exclusion may prevent a second handle from reading identity while held,
+including the self-probe; cross-compilation cannot establish runtime correctness.
+Evaluate a separate lock range beyond the bounded identity payload and retain
+Windows runtime status as untested. The current review source is left stable
+at 3ea8693 while that independent reviewer runs; no closure claim is made.
+
+
+### Existing Hermes owner continuation — 2026-09-11
+
+Read-only discovery confirms the original Hermes CLI remains installed with saved
+model fireworks/inkling and high reasoning. Pending replacement is not approval;
+the historical idea still has hermes-1. A bounded file-tools-only continuation
+asks that existing owner to finish readiness schema/capture/diagnostic fixes in
+its original worktree, with no new membership or signatures. Runtime config and
+state are isolated; global config/auth files are reused read-only. Only the
+owner's already-claimed preflight source/test files and a new own handoff may be
+written. Codex will run independent tests and serialize existing preflight glue
+when integrating. This does not authorize a pilot amendment or resolve quorum.
+
+
+### D-series corrections and recovered owner review — 2026-09-11
+
+Claude's original review of 3ea8693 is now published by Claude unchanged, with
+exact byte identity independently checked against the original denied Write
+payload. Publication retries are separate spent attempts, not new source reviews.
+Codex's dispositions are in implementation-notes/codex-1-budget-d-series-dispositions-20260911.md.
+They cover Windows lock-byte separation, origin diagnostics, retained unknown-cost
+reserves, bounded read-only inspection, honest unsupported recovery, and durable
+BLOCK evidence even after failed execution. Focused, race, shared-volume, vet
+and Windows cross-build checks pass; Windows runtime remains untested. This
+is a partial implementation correction, not final independent acceptance.
+
+Kimi's package-failure follow-up timed out with source retained and no new owner
+handoff. Independent local checks on that source pass 53 selected evidence/app
+test events and 85 full evidence-package test events, zero skips/failures,
+including the unchanged negative overlay probes. Owner handoff recovery is in
+progress; the source has not yet been integrated.
+
+Hermes completed a partial owner handoff after an earlier turn-limit exit.
+Independent compilation then found a missing strings import in his new tests.
+The readiness source still contains a regex duplicate-key scan and incomplete
+schema/secret/capture enforcement. A bounded owner correction is running with
+the exact compiler failure and source counterexamples; no readiness acceptance
+or quorum amendment is inferred.
+
+
+Additional Codex allocation (2026-09-11, before edits):
+internal/app/evidence_verify.go and internal/app/evidence_verify_test.go for the
+runtime-only independent-verifier helper and real process closure integration
+fixtures. These new paths do not overlap Kimi's evidence package or existing
+app helper claims. Codex also uses its existing app.go, driver_impl.go,
+internal/driver/impl.go and runner/consult.go allocations for command routing,
+closure and launch identity glue. The actual verifier must invoke the helper;
+facilitator-side execution with a replacement actor string is not acceptable.
+
+
+### Independent verifier source checkpoint — 2026-09-11
+
+Kimi's corrected evidence slice and participant-owned handoff are integrated
+from 32d00bc via 374a5c5. The full independent evidence-package run has 85 passing
+terminal test events with zero skips/failures, including unchanged adversarial
+probes. The 53-event selected run overlaps it and is not an additional total.
+
+Codex has implemented a real verifier CLI/helper path through Driver.Advance:
+checks, an independently selected agent process, its actual helper execution,
+retained criterion reruns, bound receipt validation and a last completion gate.
+The full Go suite, scoped vet and Windows cross-build pass. Windows runtime and
+a live real-model closure trial remain untested. Details, source trust boundary
+and the still-open defects are in
+implementation-notes/codex-1-verifier-checkpoint-20260911.md.
+
+A newly executed stronger overlay probe fails after otherwise successful closure:
+writing status=complete changes the separately hashed non-evidence document.
+The passing suite did not check that final persisted invariant. Do not treat this
+checkpoint as AC-E acceptance. Preserve the failing counterexample and require a
+correction with an exact, verifier-bound status transition; never broaden the
+scope exclusion. Concurrent report replacement also still needs a cooperative
+serialization or compare-and-swap boundary, not just read/compare/rename.
+
+The current invocation inventory has 27 unique terminal attempts, 14 unknown
+costs, known CLI-estimate subtotal USD 36.6907045 and unknown total cost. The
+numerical >=20 threshold is met; actual launch-surface coverage is not. Hermes's
+latest owner slice does not compile and is not integrated; its unchanged own
+handoffs do not substitute for an executed successful compile.

@@ -61,6 +61,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runInit(args[1:], stdout, stderr)
 	case "agents":
 		return runAgents(ctx, args[1:], stdout, stderr)
+	case "evidence":
+		return runEvidenceVerify(ctx, args[1:], stdout, stderr)
 	case "consensus":
 		return runConsensus(ctx, args[1:], stdout, stderr)
 	case "pipeline":
@@ -99,6 +101,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runPreset(args[1:], stdout, stderr)
 	case "protocol":
 		return runProtocol(args[1:], stdout, stderr)
+	case "budget":
+		return runBudget(ctx, args[1:], stdout, stderr)
 	case "roster":
 		return runRoster(args[1:], stdout, stderr)
 	case "tui":
@@ -122,6 +126,7 @@ Usage:
   %s init [--dir DIR]
   %s agents list [--dir DIR]                        (adapter/runtime inventory — NOT the roster)
   %s agents verify [--dir DIR] [--agent ID] [--full] [--yes]
+  %s budget inspect|reconcile --ledger DIR --scope ID
   %s protocol status|render|check [--dir DIR] [--dry-run] [--yes] [--json]
   %s protocol publish --version V --from FILE            (attended; requires a terminal)
   %s roster show [--scope deck|machine] [--dir DIR] [--all] [--json] [--explain AGENT]
@@ -222,6 +227,10 @@ Commands:
   tui
       Open the project TUI for workspace status, run state, questions, and
       agent/runtime inspection.
+
+  budget inspect|reconcile --ledger DIR --scope ID
+      Inspect an existing budget ledger or record an attended conservative
+      ceiling for unknown cost. Reconciliation preserves spent actions.
 
   version
       Print the CLI version. With --all, also print parley-deck-skill and
@@ -327,6 +336,7 @@ Exit codes:
   3  Pending manual/interactive handoff for consensus request-signoffs.
 
 `, appName,
+		appName,
 		appName,
 		appName,
 		appName,

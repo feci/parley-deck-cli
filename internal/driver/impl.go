@@ -36,6 +36,13 @@ type ImplOps interface {
 	GoalCheck(ctx context.Context) (bool, string)
 }
 
+// CompletionEvidenceOps is required to close a named checks contract. Older
+// adapters without an actual independent execution path fail closed for that
+// contract; a goal-check verdict cannot substitute for the missing operation.
+type CompletionEvidenceOps interface {
+	VerifyCompletionEvidence(context.Context) (bool, string)
+}
+
 // ReviewStatus wraps the review-mode consensus summary plus the machine-readable
 // Phase-7 fields the unattended loop decides on (consensus D5).
 type ReviewStatus struct {
@@ -247,9 +254,10 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		// pre-review/post-fixup runs do not prove HEAD when review closes with zero agreed
 		// fixes. Scoped to the list shape so scalar/absent `checks:` is unchanged. Fails
 		// closed (can only veto a close, never auto-pass), independent of strict_gate.
-		if _, isList, cerr := ReadChecksContract(d.cfg.IdeaDir); cerr != nil {
+		_, hadNamedChecks, cerr := ReadChecksContract(d.cfg.IdeaDir)
+		if cerr != nil {
 			return ActionEscalated, c, fmt.Errorf("completion contract invalid: %w", cerr)
-		} else if isList {
+		} else if hadNamedChecks {
 			if ok, detail := d.cfg.Impl.RunChecks(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("completion contract not satisfied at HEAD (checks: list):\n%s", strings.TrimSpace(detail))
 			}
@@ -272,6 +280,21 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		if d.cfg.AutoImplement || d.cfg.StrictGate {
 			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))
+			}
+		}
+		// Re-read after the goal-check, the last model operation before closure.
+		// Removing the original list cannot bypass its independent evidence gate.
+		_, hasNamedChecks, cerr := ReadChecksContract(d.cfg.IdeaDir)
+		if cerr != nil {
+			return ActionEscalated, c, fmt.Errorf("completion contract changed or invalid: %w", cerr)
+		}
+		if hadNamedChecks || hasNamedChecks {
+			verifier, ok := d.cfg.Impl.(CompletionEvidenceOps)
+			if !ok {
+				return ActionEscalated, c, errors.New("named checks require an independent verifier execution; adapter does not provide it")
+			}
+			if ok, detail := verifier.VerifyCompletionEvidence(ctx); !ok {
+				return ActionEscalated, c, fmt.Errorf("independent completion evidence refused:\n%s", strings.TrimSpace(detail))
 			}
 		}
 		// DONE (D5): the driver — not the implementer — writes status=complete.

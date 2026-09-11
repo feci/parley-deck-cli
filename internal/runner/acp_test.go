@@ -80,7 +80,7 @@ func TestRunRoundOneRoutesACPAgent(t *testing.T) {
 		t.Fatalf("ACP telemetry identity: %+v", records)
 	}
 	r := records[0]
-	if r.StartedAt == nil || r.Outcome.ExitCode == nil || r.Outcome.Observation.StdoutBytes == 0 {
+	if r.StartedAt == nil || r.Outcome.ExitCode == nil || (r.Outcome.Observation.StdoutBytes == nil || *r.Outcome.Observation.StdoutBytes == 0) {
 		t.Fatalf("ACP lifecycle: %+v", r)
 	}
 	if r.Outcome.Usage.CostUSD != nil || r.Outcome.Usage.TotalTokens != nil {

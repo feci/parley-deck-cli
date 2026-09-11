@@ -1261,6 +1261,28 @@ func TestConsensusRequestSignoffsNonZeroAfterAppendFails(t *testing.T) {
 	if !strings.Contains(stderr.String(), "exited with error after appending valid signoff") {
 		t.Fatalf("stderr=%q", stderr.String())
 	}
+	logs, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "events.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	observed := 0
+	for _, path := range logs {
+		events, err := store.New(filepath.Dir(path)).Load()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, event := range events {
+			if event.Type == "agent.signoff.artifact-present-after-failure" {
+				observed++
+				if event.Data["agent"] != "alpha" || event.Data["signoff_status"] != "accept" || event.Data["canonical_signoff_status"] != consensus.StatusAccept || event.Data["artifact_sha256"] == "" {
+					t.Fatalf("artifact evidence: %+v", event)
+				}
+			}
+		}
+	}
+	if observed != 1 {
+		t.Fatalf("artifact evidence events = %d", observed)
+	}
 	summary, err := consensus.Status(root, "sample", false)
 	if err != nil {
 		t.Fatal(err)
@@ -1271,31 +1293,110 @@ func TestConsensusRequestSignoffsNonZeroAfterAppendFails(t *testing.T) {
 }
 
 func TestConsensusRequestSignoffsBlockStops(t *testing.T) {
-	root := t.TempDir()
-	if err := protocol.InitWorkspace(root); err != nil {
-		t.Fatal(err)
+	for _, exitCode := range []int{0, 7} {
+		t.Run(fmt.Sprint(exitCode), func(t *testing.T) {
+			root := t.TempDir()
+			if err := protocol.InitWorkspace(root); err != nil {
+				t.Fatal(err)
+			}
+			declareAppTestSource(t, root)
+			writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+			bin := t.TempDir()
+			alpha := writeFakeSignoffCLI(t, bin, "alpha", "block", exitCode)
+			writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
+			var stdout, stderr bytes.Buffer
+			code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
+			if code != 1 || !strings.Contains(stderr.String(), "alpha appended BLOCK signoff") {
+				t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+			}
+			summary, err := consensus.Status(root, "sample", false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if summary.Triage != consensus.TriageBlocked {
+				t.Fatalf("summary=%+v", summary)
+			}
+			logs, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "events.jsonl"))
+			if err != nil || len(logs) != 1 {
+				t.Fatalf("logs=%v err=%v", logs, err)
+			}
+			events, err := store.New(filepath.Dir(logs[0])).Load()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(events) == 0 || events[0].Type != "run.created" || events[0].Data["idea"] != "sample" || events[0].Data["mode"] != "consensus-signoff" {
+				t.Fatalf("missing headless run identity: %+v", events)
+			}
+			observed := 0
+			raw, err := os.ReadFile(summary.Path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, event := range events {
+				if event.Type == "agent.signoff.block-recorded" {
+					observed++
+					if event.Data["agent"] != "alpha" || event.Data["signoff_status"] != "block" || event.Data["canonical_signoff_status"] != consensus.StatusBlock || event.Data["process_failed"] != (exitCode != 0) || event.Data["artifact_sha256"] != sha256Hex(string(raw)) {
+						t.Fatalf("wrong BLOCK evidence: %+v", event)
+					}
+				}
+				if event.Type == "agent.signoff.artifact-present-after-failure" {
+					t.Fatalf("BLOCK recorded as acceptance: %+v", event)
+				}
+			}
+			if observed != 1 {
+				t.Fatalf("BLOCK events=%d", observed)
+			}
+		})
 	}
-	declareAppTestSource(t, root)
-	writeConsensusIdea(t, root, "sample", []string{"alpha"}, false, nil)
+}
 
-	bin := t.TempDir()
-	alpha := writeFakeSignoffCLI(t, bin, "alpha", "block", 0)
-	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
-
-	var stdout, stderr bytes.Buffer
-	code := Run([]string{"consensus", "request-signoffs", "--dir", root, "sample"}, &stdout, &stderr)
-	if code != 1 {
-		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "alpha appended BLOCK signoff") {
-		t.Fatalf("stderr=%q", stderr.String())
-	}
-	summary, err := consensus.Status(root, "sample", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if summary.Triage != consensus.TriageBlocked {
-		t.Fatalf("summary=%+v", summary)
+func TestConsensusRequestSignoffsFailedInvalidAppendHasNoArtifactEvent(t *testing.T) {
+	for _, appendMode := range []string{"forged", "absent"} {
+		t.Run(appendMode, func(t *testing.T) {
+			root := t.TempDir()
+			if err := protocol.InitWorkspace(root); err != nil {
+				t.Fatal(err)
+			}
+			declareAppTestSource(t, root)
+			writeConsensusIdea(t, root, "sample", []string{"alpha", "beta"}, false, nil)
+			bin := t.TempDir()
+			alpha := filepath.Join(bin, "alpha")
+			if appendMode == "forged" {
+				alpha = writeFakeForgedSignoffCLI(t, bin, "alpha", "beta")
+				body, err := os.ReadFile(alpha)
+				if err != nil {
+					t.Fatal(err)
+				}
+				body = bytes.ReplaceAll(body, []byte("exit 0"), []byte("exit 7"))
+				if err := os.WriteFile(alpha, body, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err := os.WriteFile(alpha, []byte("#!/bin/sh\ncat >/dev/null\nexit 7\n"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
+			var stdout, stderr bytes.Buffer
+			if code := Run([]string{"consensus", "request-signoffs", "--dir", root, "--participants", "alpha", "sample"}, &stdout, &stderr); code != 1 {
+				t.Fatalf("invalid failure code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+			}
+			logs, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "events.jsonl"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, path := range logs {
+				events, err := store.New(filepath.Dir(path)).Load()
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, event := range events {
+					if event.Type == "agent.signoff.artifact-present-after-failure" || event.Type == "agent.signoff.block-recorded" {
+						t.Fatalf("invalid append certified: %+v", event)
+					}
+				}
+			}
+		})
 	}
 }
 

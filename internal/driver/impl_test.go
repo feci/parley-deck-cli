@@ -452,6 +452,41 @@ func TestPhaseReviewListChecksVetoCompletion(t *testing.T) {
 	}
 }
 
+type fakeEvidenceImpl struct {
+	*fakeImpl
+	allow bool
+}
+
+func (f fakeEvidenceImpl) VerifyCompletionEvidence(context.Context) (bool, string) {
+	f.calls = append(f.calls, "independent-evidence")
+	return f.allow, "independent verification fixture"
+}
+
+func TestNamedContractRequiresIndependentEvidenceAdapter(t *testing.T) {
+	for _, name := range []string{"missing-adapter", "verifier-refused", "verified"} {
+		t.Run(name, func(t *testing.T) {
+			ideaDir, runDir, parts := setupReviewPhase(t, "checks:\n  - name: unit\n    command: true\n")
+			if err := os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			fi := &fakeImpl{roundComplete: true, checksOK: true, review: closeReady(consensus.TriageReady, 0, 2)}
+			var ops ImplOps = fi
+			if name != "missing-adapter" {
+				ops = fakeEvidenceImpl{fakeImpl: fi, allow: name == "verified"}
+			}
+			d := newImplDriver(ideaDir, runDir, parts, false, ops)
+			action, _, err := d.Advance(context.Background())
+			if name == "verified" {
+				if err != nil || action != ActionComplete || strings.Join(fi.calls, ",") != "checks,independent-evidence,complete" {
+					t.Fatalf("evidence must immediately precede complete: %s %v %v", action, err, fi.calls)
+				}
+			} else if err == nil || action != ActionEscalated || contains(fi.calls, "complete") {
+				t.Fatalf("missing/refused evidence allowed close: %s %v %v", action, err, fi.calls)
+			}
+		})
+	}
+}
+
 // Boundary test for the inclusive fix-up cap (idea
 // meta-protocol-change-phase-packet-and-fixup-budget). The §4.0 table prints "cap N
 // cycles" for every track; before this idea the guard was `cycle >= cap`, which published

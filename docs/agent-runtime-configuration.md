@@ -115,7 +115,20 @@ acp_args = ["..."]
 
 In the TUI Agents pane, use `h`, `i`, `a`, and `m` to set a session-only launch mode override for headless, interactive, ACP, or manual mode. `a` is accepted only when the agent has ACP configured through built-in defaults or local `acp_args`.
 
-`interactive_invoke = "spawn-tty"` may be used when the command should be started attached to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
+`interactive_invoke = "spawn-tty"` starts automatically only from `parley consensus request-signoffs`; other command surfaces currently print a handoff. The automatic path attaches the command to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
+
+Spawning a protocol task requires configured prompt delivery: use
+`interactive_prompt_mode = "file"` with `{prompt_path}` in `interactive_args`, or
+`interactive_prompt_mode = "arg"` with `{prompt}`. The argument template must use
+the selected CLI's actual prompt-file or prompt-argument option. Prefer file mode:
+argument mode exposes the full protocol and task through the process command line
+and refuses expanded arguments larger than 120 KiB. Missing delivery
+refuses the task before spawn; `none` remains valid for print-only handoffs. A
+fresh live protocol is rendered at each process launch, with a separate unique
+invocation from the earlier printed handoff. Terminal descriptors are passed
+unchanged. Process lifecycle and exit are measured; terminal stream content,
+first activity, resolved model and billing remain unobserved. Terminal process
+groups are restored after exit and child groups are terminated on timeout.
 
 Provider billing and usage accounting are determined by the provider and account. Parley only makes the technical mode explicit: headless and ACP are programmatic execution; interactive/manual are user-driven handoff flows.
 
@@ -216,3 +229,80 @@ Probe outputs are not source artifacts and are ignored by Git.
 
 See also: [agent-cli-mechanics.md](agent-cli-mechanics.md) — verified per-CLI
 invocation behaviors (stdin/flag gotchas, failure modes) the runner relies on.
+
+
+## Inspecting and reconciling a budget ledger
+
+The durable reservation package and its recovery controls are available in this
+source branch. Automatic launch/action callers are still being integrated; the
+presence of this command does not establish that every launch is budgeted.
+
+Inspect an existing ledger with:
+
+```sh
+parley budget inspect --ledger /absolute/path/to/ledger-directory --scope IDEA
+```
+
+An unknown monetary observation without a retained conservative bound stops a configured cost ceiling. If the operator
+can establish a conservative upper bound, record that exact decision from an
+attended terminal:
+
+```sh
+parley budget reconcile --ledger /absolute/path/to/ledger-directory --scope IDEA   --action-id INVOCATION_OR_ACTION_ID --decision-id UNIQUE_OPERATOR_DECISION   --ceiling-micros 7000000 --reason 'Conservative upper bound established by the operator' --yes
+```
+
+One microdollar is one millionth of USD; `7000000` means a USD 7 conservative
+ceiling. This is a template, not a suggested amount or an authorization. The
+original observed cost remains unknown. The decision is appended to the charged
+entry and the action remains spent. An exact repeat of the same decision is
+idempotent; a conflicting replay refuses. A later decision has a new identity.
+Known monetary observations cannot be rewritten by this recovery command. If a settled attempt has unknown actual cost and a known original reservation, that reservation remains its minimum exposure; reconciliation cannot lower that bound. An explicit
+zero ceiling prints a specific notice: the operator is counting this unknown
+observation as zero exposure; the original cost remains unknown. Decision IDs
+are unique within the charged entry, limited to 128 bytes; reasons to 1024 bytes.
+All decisions are retained in order, subject to the ledger size bound.
+No command reads participant frontmatter as a budget grant.
+
+The terminal requirement is an attended control, not proof of a human identity.
+An agent must not allocate a terminal to manufacture operator authorization.
+It must first obtain the user's concrete decision. Inspection is read-only and
+works without a terminal; it creates no directories, origin or cache locks, even
+for an origin-less ledger or wrong-scope read. It reads one atomically published
+snapshot and may precede a concurrent replacement. A replacement between inspection and opening the file is retried up to four times; continued replacement returns `ErrSnapshotChanged` so the operator can retry. Malformed or missing ledgers are not retried. Windows checks the input
+console with `GetConsoleMode`; Unix accepts a terminal on stdin or stdout. Unsupported targets explicitly report that a ledger originating there has no supported attended recovery or migration yet.
+Windows runtime behavior remains untested; cross-compilation alone is not runtime evidence.
+
+Locks use a verified local kernel lock because some shared filesystems report
+successful `flock` calls without providing exclusion. A permanent local lock
+contains a random 256-bit identity, atomically published before a v2 origin is
+pinned in the shared ledger. The origin records hostname, absolute cache path
+and that identity. Missing established cache locks, differing identity/host/path,
+and existing ledgers without an origin refuse before further mutations. Held
+file descriptors are rechecked against both the pinned token and current inode. On Windows the locked byte is at offset 1 MiB, beyond the bounded identity reads, so the second-handle exclusion probe does not read the locked range.
+Paths resolve absolute paths through symlinks and use conservative case folding
+on every OS. This does not authenticate a machine or coordinate cloned identities
+and distributed writers. The origin's local cache path is visible to readers of
+the shared ledger; it is diagnostic metadata, not a credential.
+
+Never delete a live lock inode, its `lock-origin`, or a ledger to recover budget.
+Old v1 origins and relocated ledgers refuse rather than silently repinning.
+There is no supported migration/re-pin command yet: preserve all ledger and
+origin files, use the original compatible environment, and keep writers stopped
+if it is unavailable. `budget inspect` remains available for diagnostics. A cache
+filesystem without verified exclusion stops visibly and names its path. Windows
+is cross-compiled; runtime validation is pending. Crashes may leave staging files;
+no automatic sweeper removes files that another writer might still be using.
+
+Action ceilings count lifetime attempts, including failed and settled attempts.
+A zero/absent ceiling means unlimited; the internal denied-kind control expresses
+an outright refusal separately. `Limits.RequireKnownCost` can require a known
+conservative reservation without a monetary cap. This cannot invent a provider
+price; an unknown terminal observation remains unknown while its conservative reservation remains charged. Exposure uses the larger of that reservation and the latest operator ceiling until an actual cost is known. Elapsed wall time includes pauses and resume;
+backward clock movement refuses with a specific error. Lock contention is bounded
+by the caller's deadline and a 30-second upper bound; `ErrLockContention` wraps
+the context error after a failed acquisition wait, so callers can distinguish
+contention from an agent timeout. Unrelated filesystem I/O is not interruptible
+by that context. Unsupported ledger schemas
+fail closed: mixed versions are not certified. The 16 MiB ledger ceiling and full
+file rewrite currently bound scalability; no automatic compaction or deletion
+of charge identities is implemented.

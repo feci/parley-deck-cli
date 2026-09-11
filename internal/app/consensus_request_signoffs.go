@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -137,7 +136,7 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	successes := make([]string, 0, len(selected))
 	pending := make([]string, 0)
 	runID := store.NewRunID(time.Now())
-	if hasNonHeadlessLaunch(selected) {
+	{
 		runStore := store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))
 		if err := runStore.Append(store.Event{
 			Time: time.Now().UTC(),
@@ -192,8 +191,30 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 			}
 			return validateErr
 		}
+		canonicalStatus, _ := consensus.CanonicalStatus(signoff.Status) // validated above
+		if canonicalStatus == consensus.StatusBlock {
+			printPartialProgress(stdout, successes)
+			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.signoff.block-recorded", map[string]any{
+				"agent": agent.ID, "artifact": after.Path, "artifact_sha256": sha256Hex(string(afterRaw)),
+				"launch_mode": agents.LaunchModeOrDefault(agent.LaunchMode), "signoff_status": signoff.Status,
+				"process_failed":           runErr != nil,
+				"canonical_signoff_status": canonicalStatus,
+			}); eventErr != nil {
+				return errors.Join(runErr, eventErr)
+			}
+			return errors.Join(fmt.Errorf("%s appended BLOCK signoff", agent.ID), runErr)
+		}
 		if runErr != nil {
 			printPartialProgress(stdout, successes)
+			// Record only after the shared validator proves a new, valid append.
+			// All launch modes retain the failed process outcome independently.
+			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.signoff.artifact-present-after-failure", map[string]any{
+				"agent": agent.ID, "artifact": after.Path, "artifact_sha256": sha256Hex(string(afterRaw)),
+				"launch_mode": agents.LaunchModeOrDefault(agent.LaunchMode), "signoff_status": signoff.Status,
+				"canonical_signoff_status": canonicalStatus,
+			}); eventErr != nil {
+				return errors.Join(runErr, eventErr)
+			}
 			return fmt.Errorf("%s exited with error after appending valid signoff: %w", agent.ID, runErr)
 		}
 
@@ -357,6 +378,11 @@ func validateLaunchModes(selected []agents.Discovery) error {
 		if invoke != agents.InteractiveInvokePrintOnly && invoke != agents.InteractiveInvokeSpawnTTY {
 			return fmt.Errorf("%w: %s has invalid interactive_invoke %q", errRequestUsage, agent.ID, agent.InteractiveInvoke)
 		}
+		if mode == agents.LaunchInteractive && invoke == agents.InteractiveInvokeSpawnTTY {
+			if err := runner.ValidateInteractiveDelivery(agent); err != nil {
+				return fmt.Errorf("%w: %s: %v", errRequestUsage, agent.ID, err)
+			}
+		}
 	}
 	return nil
 }
@@ -458,6 +484,8 @@ func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.D
 }
 
 func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
+	agentCtx, cancel := context.WithTimeout(ctx, requestInteractiveSignoffTimeout(agent))
+	defer cancel()
 	packet, err := writeSignoffHandoff(rootAbs, runID, agent, prompt, consensusPath)
 	if err != nil {
 		return signoffRunResult{}, err
@@ -480,13 +508,14 @@ func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agen
 	}
 
 	if agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke) == agents.InteractiveInvokeSpawnTTY {
-		if err := runInteractiveTTY(ctx, rootAbs, agent, packet, consensusPath); err != nil {
+		if err := runInteractiveTTY(agentCtx, rootAbs, agent, prompt, consensusPath); err != nil {
+			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.handoff.failed", map[string]any{"agent": agent.ID, "reason": "interactive-process-failed"}); eventErr != nil {
+				return signoffRunResult{}, errors.Join(err, eventErr)
+			}
 			return signoffRunResult{}, err
 		}
 	}
 
-	agentCtx, cancel := context.WithTimeout(ctx, requestInteractiveSignoffTimeout(agent))
-	defer cancel()
 	ticker := time.NewTicker(time.Duration(agents.InteractivePollMSOrDefault(agent.InteractivePollMS)) * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -552,21 +581,11 @@ func writeSignoffHandoff(rootAbs, runID string, agent agents.Discovery, prompt, 
 	})
 }
 
-func runInteractiveTTY(ctx context.Context, rootAbs string, agent agents.Discovery, packet runner.HandoffPacket, targetPath string) error {
+func runInteractiveTTY(ctx context.Context, rootAbs string, agent agents.Discovery, prompt, targetPath string) error {
 	if !isTerminal(os.Stdin) || !isTerminal(os.Stdout) {
 		return fmt.Errorf("%s interactive_invoke=spawn-tty requires a terminal", agent.ID)
 	}
-	command := strings.TrimSpace(agent.InteractiveCommand)
-	if command == "" {
-		command = agent.Path
-	}
-	args := runner.ExpandInteractiveArgs(agent.InteractiveArgs, rootAbs, packet.PromptPath, targetPath)
-	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Dir = rootAbs
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := runner.RunInteractive(ctx, rootAbs, agent, prompt, targetPath, os.Stdin, os.Stdout, os.Stderr); err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
@@ -646,12 +665,9 @@ func validateRequestedSignoff(before, after consensus.Summary, agentID, beforeRa
 			return consensus.Signoff{}, fmt.Errorf("%s changed signoff for %s", agentID, agent)
 		}
 	}
-	status, err := consensus.CanonicalStatus(signoff.Status)
+	_, err := consensus.CanonicalStatus(signoff.Status)
 	if err != nil {
 		return consensus.Signoff{}, err
-	}
-	if status == consensus.StatusBlock {
-		return consensus.Signoff{}, fmt.Errorf("%s appended BLOCK signoff", agentID)
 	}
 	return signoff, nil
 }

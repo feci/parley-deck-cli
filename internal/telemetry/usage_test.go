@@ -75,7 +75,7 @@ func TestUnstructuredPromptLookingLikeUsageIsNotProviderEvidence(t *testing.T) {
 	c := NewCollector("claude", false)
 	feed(c, `{"type":"result","usage":{"input_tokens":100},"total_cost_usd":99}`)
 	u, observation, _ := c.Result()
-	if u.InputTokens != nil || u.CostUSD != nil || observation.StdoutBytes == 0 {
+	if u.InputTokens != nil || u.CostUSD != nil || (observation.StdoutBytes == nil || *observation.StdoutBytes == 0) {
 		t.Fatal("plain model output treated as provider usage")
 	}
 }
