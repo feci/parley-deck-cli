@@ -1628,3 +1628,23 @@ compiled CLI inspect/refuse/recover/replay probes PASS. Initial path-alias and
 test-instrumentation failures remain retained. No production lock was weakened.
 Independent acceptance, Windows runtime and all remaining full-scope obligations
 in the disposition are still pending. No model or real accounting action occurred.
+
+
+### Refusal report verification checkpoint — September 11
+
+Source 9cef3fc9a90c8b3025796398dd06d8ef4d3b3b3c matches the retained 342-file
+source manifest. The current 620834-byte English offline report has SHA256
+42f47e73764d063b4e246a971c39f69cbf0dd15597da3b6803d0aa11b5b59513.
+Ten report tests and 56 live ego-browser assertions pass at desktop, low-height
+and both mobile widths. Its actual embedded-data hash matches the local payload;
+the local full HTML hash was checked before and after QA. File-scheme source
+fetch is unsupported, so a browser-computed full HTML hash is not claimed.
+
+All sections/documents, expanded current progress, visible partial/not-run gates,
+painted charts, filtering/reset, pagination, actual keyboard navigation and
+print-media visibility pass. Fresh screenshot review, physical click placement,
+physical printing/PDF pagination and future populated experiment QA remain
+unverified. The exact-file sidecar and raw observations retain those limits and
+the corrected stdout/stderr log capture. Space 29 was closed with done:true.
+No source acceptance, model invocation, real accounting action or goal completion
+is inferred from this report checkpoint.
