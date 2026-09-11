@@ -2,6 +2,7 @@
 agent: codex-1
 idea: meta-protocol-change-evidence-first-efficiency
 date: 2026-09-11
+source-commit: 1a3d512e8909af3c82e418c04d15aae646675ced
 status: tested-slice-independent-acceptance-pending
 ---
 
@@ -102,6 +103,19 @@ Race log SHA256: 8583920214c2ac058974fb39b853388b7654cfd65e1ad0c323cbe2af9880ddb
 Negative history log: 04ee8fe6f5de55c88876c60f5e8f85d148dd3830b996e5af0c869a0f1fc0be85.
 Initial driver fixture log: 95d5cfeecc6ef6dcaffbdcec12618e3d7143c53653f26e8ca429a11b6cc6b920.
 Prior fd3e3ce validation and report QA remain separately retained.
+
+The updated 617000-byte English offline report, SHA256
+c2cbdfb81d5c77641bf7294ca72e0aecab7ce10f75c68d5fbc355487c59b7b07,
+passes all ten report tests and 55 live ego-browser assertions at 1440x900,
+1280x540, 390x844 and 320x720. All panels/documents, expanded current progress,
+painted canvases, search/reset, pagination, keyboard section navigation and
+print-media panel visibility pass. The exact sidecar is
+`parley-deck-evaluation/delivery/2026-09-05/browser-protocol-migration-20260911.json`
+in the sibling evaluation workspace; raw logs/observations/checksums are under
+its `browser-qa/protocol-migration-20260911/` directory. Native DOM clicks have
+explicit state readback and keyboard checks use real key dispatch. No fresh
+screenshot review, physical click-placement or printing/PDF pagination is
+certified. This is the current partial report, not future populated-result QA.
 
 ## Remaining limits and full objective
 

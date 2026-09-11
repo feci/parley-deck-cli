@@ -1568,3 +1568,12 @@ Independent acceptance, Windows runtime, guard/changed-import recovery, semantic
 replay, canonical refusal recovery, independent regression trajectory and every
 full-scope model/packet/full-six pilot/grading/signature/elapsed-follow-up
 obligation remain pending. This checkpoint does not complete the six-part goal.
+
+Source 1a3d512e8909af3c82e418c04d15aae646675ced is the committed implementation
+matching that 338-file manifest. The 617000-byte current English offline report
+c2cbdfb81d5c77641bf7294ca72e0aecab7ce10f75c68d5fbc355487c59b7b07 passes
+ten report tests and 55 live ego-browser assertions at desktop, low-height and
+both mobile widths. The owned disposition and exact-file sidecar record the
+current progress, navigation/filter/pagination/keyboard/painted-chart/print-media
+checks and their screenshot/physical-print limitations. Model experiments remain
+not-run and independent acceptance remains pending.
