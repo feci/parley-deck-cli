@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 9ea4e0f
+head-commit: 3ea8693
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -754,3 +754,28 @@ costs, known CLI-estimate subtotal USD 28.4913185 and unknown total cost.
 Kimi is working on the new independently reproduced package/build-failure PASS
 under measured run recovery-kimi-package-failure-20260911 (exec session 40766).
 No new experiment or quorum amendment is inferred from that correction run.
+
+
+### Recovery invocation correction — 2026-09-11
+
+The first package-failure follow-up did not start useful work: invocation
+fefaab07-cb0a-4f40-9f3f-7f8bdba2b5a1 ended at 09:41:52Z after 0.859s,
+exit 1, with "storage write failed: permission denied" and no artifact. It used
+the wrong local Kimi home/sandbox pairing. The failed attempt is retained, not
+relabelled or removed. Retry f750e9ad-b977-44c4-95f3-cc9ce51a77ee uses the
+original recovery KIMI_CODE_HOME and participant-recovery.sb, started 09:56:00Z
+(exec 55171, 30-minute ceiling). Claude source review f77101c9-71e8-4252-b7f4-5f661f73b2f4
+started 09:53:16Z against 3ea8693 (exec 6497, native restricted tools only).
+The report inventory now has 15 terminal attempts, six unknown costs, known
+CLI-estimate subtotal USD 28.4913185 and unknown total cost. Report build/tests
+pass (10 tests); current refresh is status-only, without new browser QA.
+Next actual verifier integration call-site requirements are recorded in
+implementation-notes/codex-1-evidence-close-callsite-plan-20260911.md.
+
+Additional source concern for the next budget disposition: Windows currently
+locks byte 0 while identity/probe reads include that byte. LockFileEx's mandatory
+range exclusion may prevent a second handle from reading identity while held,
+including the self-probe; cross-compilation cannot establish runtime correctness.
+Evaluate a separate lock range beyond the bounded identity payload and retain
+Windows runtime status as untested. The current review source is left stable
+at 3ea8693 while that independent reviewer runs; no closure claim is made.
