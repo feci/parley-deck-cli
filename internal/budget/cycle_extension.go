@@ -55,7 +55,7 @@ func cloneCyclePolicy(p CyclePolicy) CyclePolicy {
 }
 
 func sameCycleAuthority(a, b CyclePolicy) bool {
-	return a.Scope == b.Scope && a.Idea == b.Idea && a.IdeaPath == b.IdeaPath && a.Kind == b.Kind && a.Carried == b.Carried && a.InitialMaximum() == b.InitialMaximum() && a.MigrationSHA256 == b.MigrationSHA256
+	return a.Scope == b.Scope && a.Idea == b.Idea && a.IdeaPath == b.IdeaPath && a.Kind == b.Kind && a.Carried == b.Carried && a.InitialMaximum() == b.InitialMaximum() && a.MigrationSHA256 == b.MigrationSHA256 && a.TrajectorySHA256 == b.TrajectorySHA256
 }
 
 func originalCyclePolicy(p CyclePolicy) CyclePolicy {

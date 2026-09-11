@@ -899,3 +899,56 @@ persist/approve an opt-in policy, reconcile interrupted model work, authorize
 completion, change quorum or release the two-regression review requirement.
 The frozen commands must implement the original material acceptance criteria;
 this bounded comparison does not prove universal causation or test adequacy.
+
+### Persistent opt-in trajectory capture (integration in progress)
+
+The experimental trajectory policy now persists beside the shared fixup budget.
+Linked worktrees and new runs use the same policy, reservation identities and
+attempt inventory. It is opt-in and requires a fresh, uncharged fixup policy:
+existing imported or charged histories cannot be adopted as an empty experiment.
+The initial fixup ceiling must match the selected protocol track.
+
+From an attended terminal, initialize the original ceiling, preview the exact
+source/material-scope policy, then activate using both returned hashes:
+
+```sh
+parley trajectory initialize --dir . --idea IDEA --max-fixups 5 --yes
+parley trajectory configure --dir . --idea IDEA --implementer AGENT
+parley trajectory configure --dir . --idea IDEA --implementer AGENT \
+  --policy-sha256 SHA_FROM_PREVIEW --cycle-policy-sha256 CYCLE_SHA_FROM_PREVIEW --yes
+parley trajectory inspect --dir . --idea IDEA
+```
+
+The first command above uses the deliberation fixup ceiling; use the actual
+track ceiling for the idea. Configuration reads the original named `checks`
+contract and requires a clean exact Git worktree. The preview contains command
+hashes, not raw commands. Activation does not invoke a model or grant completion.
+A partial initialization requires exact activation replay; deleting a reference
+while retaining its state cannot silently disable the capture requirement.
+Older readers reject the newly referenced policy instead of running unobserved.
+
+At the common precharge boundary, a required observer records the exact original
+reservation and actual before-state before permission to execute. Failed observer
+publication leaves the charge spent. A ledger entry absent from the trajectory
+is unknown history and refuses further work. Before model launch, the runner
+binds the charge to the actual invocation and frozen implementer. Normal failure,
+failed start and interrupted process paths retain their actual terminal and
+post-state observations. Dirty output stays dirty; an unavailable digest is
+explicitly retained without substituting the expected source. Capture does not
+commit, stash, discard, or manufacture a clean snapshot. Run status and exit zero
+are not independent verification. Driver and application completion paths reject
+pending attempts, including after resume or a separate finite budget extension.
+
+This checkpoint is **capture and refusal enforcement**, not the completed
+trajectory policy. Every captured attempt currently remains pending. Independent
+model/helper invocation, authenticated-runtime receipt matching, durable execution
+publication, dirty/interrupted snapshot restoration and explicit disposition/
+recovery must be integrated with the existing paired-execution core before the
+next patch can proceed under this policy. There is no reset/accept/override CLI
+in this checkpoint. Do not enable it on ongoing production work expecting an
+already complete review-and-continue workflow. AC-B2 remains incomplete.
+
+These controls coordinate cooperative runtime writers. Process labels, hashes,
+terminal presence and files under the same user account do not authenticate a
+human or defeat a malicious actor consistently fabricating all state. Independent
+acceptance and actual live experiment results remain separate obligations.

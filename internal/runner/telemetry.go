@@ -15,6 +15,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // LaunchInfo describes orchestration, never prompt content or command arguments.
@@ -50,6 +51,7 @@ type launchEvidence struct {
 	once       sync.Once
 	finishErr  error
 	budget     *LaunchBudget
+	trajectory *trajectory.Run
 	// A terminal's file descriptors must reach the child unchanged. Such a
 	// process has lifecycle evidence but no captured output stream evidence.
 	directTerminal bool
@@ -169,6 +171,15 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 		var budgetFailure *launchBudgetError
 		if errors.As(runErr, &budgetFailure) {
 			status, failure = "failed", "budget_refused"
+		}
+		if l.trajectory != nil {
+			captureCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			err := l.trajectory.Finish(captureCtx, status, exitCode)
+			cancel()
+			if err != nil {
+				l.finishErr = &launchIntegrityError{reason: "cannot retain trajectory post-state; charged attempt remains unresolved"}
+				status, failure = "failed", "trajectory_failure"
+			}
 		}
 		outcome := telemetry.Outcome{Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,

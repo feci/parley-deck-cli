@@ -61,6 +61,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runInit(args[1:], stdout, stderr)
 	case "agents":
 		return runAgents(ctx, args[1:], stdout, stderr)
+	case "trajectory":
+		return runTrajectory(ctx, args[1:], stdout, stderr)
 	case "evidence":
 		return runEvidenceVerify(ctx, args[1:], stdout, stderr)
 	case "consensus":

@@ -12,6 +12,7 @@ import (
 
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // ImplOps is the agent-launch seam for Parley Deck Phases 5-8 (consensus D1). The
@@ -311,6 +312,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 			if ok, detail := verifier.VerifyCompletionEvidence(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("independent completion evidence refused:\n%s", strings.TrimSpace(detail))
 			}
+		}
+		if err := trajectory.RequireResolved(ctx, d.cfg.Root, d.cfg.IdeaSlug); err != nil {
+			return ActionEscalated, c, fmt.Errorf("patch trajectory blocks completion: %w", err)
 		}
 		// DONE (D5): the driver — not the implementer — writes status=complete.
 		if err := d.cfg.Impl.Complete(ctx); err != nil {

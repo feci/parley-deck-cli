@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/track"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // groupProtocolCycle freezes/loads a policy before a grouped operation starts.
@@ -20,6 +21,9 @@ import (
 // cannot disappear behind a high-level early return. Saved limits are reused.
 func groupProtocolCycle(ctx context.Context, root, idea, ideaDir, runID string, kind budget.Kind) (context.Context, func()) {
 	noop := func() {}
+	if kind == budget.Fixup {
+		ctx = budget.WithCycleObserver(ctx, &trajectory.Observer{Root: root})
+	}
 	fixups, cross, explicit, err := cycleCeilings(ideaDir)
 	cap := fixups
 	if kind == budget.CrossReview {

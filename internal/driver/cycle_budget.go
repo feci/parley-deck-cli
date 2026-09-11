@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/trajectory"
 )
 
 type cycleRoundRunner struct {
@@ -71,6 +72,7 @@ func (r cycleRoundRunner) RunRound(ctx context.Context, round int) error {
 // Reserve before the compatibility cursor is updated. Its failed publication
 // cannot refund the durable charge; the nested real runner reuses this session.
 func (d *Driver) reserveFixupCycle(ctx context.Context, charged int) (context.Context, int, func(), error) {
+	ctx = budget.WithCycleObserver(ctx, &trajectory.Observer{Root: d.cfg.Root})
 	b, err := budget.EnsureCycleBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug, budget.Fixup, d.cfg.MaxFixupCycles, charged, d.cfg.RunDir, d.cfg.IdeaDir)
 	if err != nil {
 		return ctx, 0, func() {}, err

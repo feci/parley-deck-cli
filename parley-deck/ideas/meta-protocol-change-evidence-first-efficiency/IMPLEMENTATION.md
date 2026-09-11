@@ -1967,3 +1967,72 @@ AC-B2 remains incomplete until complete real patch coverage, source snapshots,
 independent verifier invocation, durable observations and all enforcement/recovery
 paths are wired and independently accepted. Other FINAL gates remain open.
 The last browser-verified report remains bound to bd00188, pending refresh.
+
+### Persistent trajectory accounting allocation — September 11
+
+Before edits, Codex claims internal/budget/{cycle_binding.go,cycle_extension.go,
+cycle_session.go,cycle_observer.go,cycle_observer_test.go}, new
+internal/trajectory/{state.go,state_test.go}, internal/runner/{cycle_budget.go,
+telemetry.go,launch_budget.go,trajectory.go,trajectory_test.go},
+internal/driver/{cycle_budget.go,impl.go}, internal/app/{app.go,trajectory.go,
+trajectory_test.go,driver_impl.go}, docs/agent-runtime-configuration.md and the owned
+implementation-notes/codex-1-trajectory-accounting-dispositions-20260911.md.
+
+Persist explicit opt-in scope before the first fixup charge, binding original
+material criteria and implementer to the shared cycle authority. Use existing
+resource guards and synced publication, and pin required observation in the
+cycle policy so missing state or an older writer cannot silently bypass it.
+At the actual reservation boundary retain every exact charged attempt, including
+failed or interrupted work. Record actual pre/post Git and source observations;
+dirty results remain dirty and unresolved, without committing or discarding them.
+Bind each launch to its actual invocation and reservation. Refuse new patches and
+completion while coverage is missing or a prior attempt awaits independent
+verification. Exercise manual/driver accounting, restart, exact ledger identity,
+state deletion, publication failure and dirty/nonzero execution fixtures.
+
+The previously validated execution core is committed at 26a6b434dc9433597e17853a86c05d2e3a2caaaa.
+This allocation continues AC-B2 integration, not a reduced acceptance target.
+Independent model invocation, verified helper receipt publication, restoration
+of interrupted/dirty snapshots and the full trajectory decision/explicit recovery
+path remain required before declaring AC-B2 or the overall task complete.
+
+Before adding driver integration fixtures, Codex also claims
+internal/driver/trajectory_test.go. Verify the actual driver reservation boundary
+and fresh-process refusal against its shared state, including a finite budget
+extension that must not resolve missing independent trajectory evidence.
+
+### Persistent trajectory accounting source checkpoint — September 11
+
+Explicit opt-in capture now binds the original material criteria and implementer
+to the shared fixup policy. Driver/manual precharge records every exact attempted
+reservation before execution permission. The instrumented runner binds its real
+invocation and retains failed/interrupted terminal and dirty/unavailable source
+observations. Missing entries, changed original charges, repeated launches and
+pending observations refuse another fixup and both completion paths. A linked
+worktree and a separate process retain that refusal after a finite extension.
+The owned trajectory-accounting disposition documents the trust boundary and
+remaining independent execution/snapshot/disposition integration; AC-B2 is open.
+
+Two live-handle negative cases reproduced incorrect success after the required
+accounting directory disappeared before launch/terminal capture. Both now refuse;
+an actual child that displaces accounting and exits zero yields trajectory_failure.
+All 364 Go/module files match manifest
+5bc5352d75ff5f5bc5e8c1da088510199ae97595c7a8ac55039fa4103020e8e2.
+Current full JSON suite PASS (152.744s, all 32 package terminal events), scoped
+race PASS (160.730s, all six packages), vet PASS (1.100s), Windows amd64 trajectory
+and app cross-builds PASS. Compiled shared-volume trajectory/runner/driver/app
+fixtures PASS (24.074/10.900/1.852/6.234s). Native/shared JSON logs match exactly;
+final-verification.json checks every new top-level test passed, complete package
+coverage, unchanged source, and artifact checksums. Windows runtime is unverified.
+
+A preceding broad run exited 1 (156.489s) with an incomplete sparse log containing
+NUL bytes; its cause remains unclassified. The preceding race returned 0 but its
+log was also sparse. Those attempts remain retained as incomplete evidence;
+replacement runs captured complete structured output locally before shared
+publication. Later success does not explain away the earlier failure.
+No model invocation or actual operator approval/activation ran. Current capture
+retains identities/digests, not yet reconstructible archives of dirty contents.
+Every captured attempt stays pending until actual independent helper execution,
+durable receipt/decision publication and explicit recovery are integrated.
+All other FINAL obligations, pending recovery decisions and the older bd00188
+HTML report state remain unchanged. No final merge/release/deployment is claimed.

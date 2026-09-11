@@ -18,16 +18,17 @@ import (
 // (the fast track has no cross-review rounds). Policy is runtime state, never
 // a grant taken from participant-authored headings or extension frontmatter.
 type CyclePolicy struct {
-	Version         int              `json:"version"`
-	Scope           string           `json:"scope"`
-	Idea            string           `json:"idea"`
-	IdeaPath        string           `json:"idea_path"`
-	Kind            Kind             `json:"kind"`
-	Maximum         int              `json:"maximum"`
-	Carried         int              `json:"carried"`
-	OriginalMaximum *int             `json:"original_maximum,omitempty"`
-	Extensions      []CycleExtension `json:"extensions,omitempty"`
-	MigrationSHA256 string           `json:"migration_sha256,omitempty"`
+	Version          int              `json:"version"`
+	Scope            string           `json:"scope"`
+	Idea             string           `json:"idea"`
+	IdeaPath         string           `json:"idea_path"`
+	Kind             Kind             `json:"kind"`
+	Maximum          int              `json:"maximum"`
+	Carried          int              `json:"carried"`
+	OriginalMaximum  *int             `json:"original_maximum,omitempty"`
+	Extensions       []CycleExtension `json:"extensions,omitempty"`
+	MigrationSHA256  string           `json:"migration_sha256,omitempty"`
+	TrajectorySHA256 string           `json:"trajectory_sha256,omitempty"`
 }
 
 type CycleBinding struct {
@@ -77,6 +78,11 @@ func readCyclePolicy(path string) (CyclePolicy, error) {
 		var digest string
 		if json.Unmarshal(raw, &digest) != nil || !validCycleDecision("migration", "migration", digest) {
 			return p, errors.New("invalid cycle migration reference")
+		}
+	}
+	if raw, ok := fields["trajectory_sha256"]; ok {
+		if p.Kind != Fixup || p.Carried != 0 || p.MigrationSHA256 != "" || !validCycleDecision("trajectory", "trajectory", p.TrajectorySHA256) || string(raw) == "null" {
+			return p, errors.New("invalid required trajectory policy")
 		}
 	}
 	if err := validateCycleExtensions(p, fields); err != nil {
@@ -235,6 +241,19 @@ func (b *CycleBinding) reserveWithReceipt(ctx context.Context, id string) (int, 
 	if _, err := b.Inspect(ctx); err != nil {
 		return 0, reservationReceipt{}, err
 	}
+	observer, err := requiredCycleObserver(ctx, b)
+	if err != nil {
+		return 0, reservationReceipt{}, err
+	}
+	if observer != nil {
+		state, err := b.Store.Inspect(ctx)
+		if err != nil {
+			return 0, reservationReceipt{}, err
+		}
+		if err := observer.BeforeCycle(ctx, *b, state); err != nil {
+			return 0, reservationReceipt{}, err
+		}
+	}
 	remaining := b.Policy.Maximum - b.Policy.Carried
 	limits := Limits{Actions: map[Kind]int{}, Denied: map[Kind]bool{}}
 	if remaining <= 0 {
@@ -250,6 +269,11 @@ func (b *CycleBinding) reserveWithReceipt(ctx context.Context, id string) (int, 
 	receipt, err := newReservationReceipt(state, id, b.Policy.Kind)
 	if err != nil {
 		return 0, reservationReceipt{}, err
+	}
+	if observer != nil {
+		if err := observer.AfterCycle(ctx, *b, state, key(id)); err != nil {
+			return b.Count(state), receipt, err
+		}
 	}
 	return b.Count(state), receipt, nil
 }

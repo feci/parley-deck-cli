@@ -10,6 +10,7 @@ import (
 
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/config"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // LaunchBudget is trusted orchestration policy. It is not read from participant
@@ -71,6 +72,13 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 				return ctx.Err()
 			}
 			return &launchBudgetError{cause: err}
+		}
+		if kind == budget.Fixup {
+			capture, err := trajectory.Begin(ctx, root, l.info.Idea, l.invocation.Snapshot().Metadata.Agent, l.invocation.ID)
+			if err != nil {
+				return &launchBudgetError{cause: err}
+			}
+			l.trajectory = capture
 		}
 	}
 	stepCtx, finishStep, err := budget.JoinStepSession(ctx, root, l.info.Idea)

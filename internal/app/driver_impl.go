@@ -21,6 +21,7 @@ import (
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/track"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // driverImplOps is the production driver.ImplOps adapter (driver-impl-phase). It
@@ -482,6 +483,9 @@ func (o driverImplOps) Complete(ctx context.Context) error {
 }
 
 func (o driverImplOps) completeWithWriter(ctx context.Context) error {
+	if err := trajectory.RequireResolved(ctx, o.root, o.ideaSlug); err != nil {
+		return err
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
