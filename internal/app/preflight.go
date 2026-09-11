@@ -855,10 +855,12 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	cmd.Dir = root
 	// Spawn into its own process group so a timeout kill reaps the whole tree.
 	procctl.SetNewProcessGroup(cmd.Cmd)
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &errOut
+	// Bound retained diagnostic bytes while continuing to drain both streams.
+	const maxCaptureBytes = 64 * 1024
+	var out, errOut bytes.Buffer
+	var stdoutOverflow, stderrOverflow, stdoutTruncated, stderrTruncated bool
+	cmd.Stdout = &boundedWriter{buf: &out, max: maxCaptureBytes, overflow: &stdoutOverflow, truncated: &stdoutTruncated}
+	cmd.Stderr = &boundedWriter{buf: &errOut, max: maxCaptureBytes, overflow: &stderrOverflow, truncated: &stderrTruncated}
 
 	started := time.Now()
 	if err := cmd.Start(); err != nil {
@@ -869,20 +871,45 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	go func() { waitErr <- cmd.Wait() }()
 
 	var obs readinessObservation
+	truncationReason := ""
 	select {
 	case <-probeCtx.Done():
 		_ = procctl.KillGroup(sp)
-		<-waitErr // reap
-		obs = classifyReadiness(out.String(), errOut.String(), -1, true)
+		<-waitErr // reap process before observation
+		// Timeout is a deadline observation: classify against the actual
+		// stdout/stderr captured so far (whitespace/dropped bytes observed,
+		// not trimmed away as byte-observation). Never use TrimSpace on bytes.
+		obs = classifyReadiness(out.String(), errOut.String(), -1, true, stdoutTruncated || stderrTruncated, truncationReason)
 	case err := <-waitErr:
 		code := 0
 		if err != nil {
 			code = exitCodeOf(err)
 		}
-		obs = classifyReadiness(out.String(), errOut.String(), code, false)
+		if stdoutTruncated || stderrTruncated {
+			truncationReason = "overflow"
+		}
+	obs = classifyReadiness(out.String(), errOut.String(), code, false, stdoutOverflow || stderrOverflow || stdoutTruncated || stderrTruncated, truncationReason)
 	}
 	obs.Duration = time.Since(started)
 	obs.BuffersStdout = agent.BuffersStdout
+	if stdoutOverflow || stderrOverflow || stdoutTruncated || stderrTruncated {
+		obs.Truncated = true
+		if truncationReason == "" {
+			truncationReason = "overflow"
+		}
+		obs.TruncationReason = truncationReason
+		if obs.Class == ClassReady {
+			obs.Class = ClassMalformedReply
+			obs.Ready = false
+		}
+		// Explicit overflow observation: any truncated capture is a malformed
+		// reply, never ready, with the partial output preserved in the tail.
+		obs.StdoutTail = sanitizeTail(out.String())
+		obs.StderrTail = sanitizeTail(errOut.String())
+		if stdoutOverflow && strings.Contains(obs.StdoutTail, pongSentinel) {
+			obs.SawSentinel = true
+		}
+	}
 	return obs
 }
 
