@@ -106,3 +106,25 @@ report QA and actual elapsed 14/30-day follow-ups remain binding. Historical quo
 pilot/funding and Claude review recovery choices remain unanswered. Model inventory
 is unchanged: 34 terminal attempts, 17 unknown costs, USD 46.1887585 known CLI
 estimates and unknown total. No real project accounting decision was executed.
+
+## Delivery verification checkpoint
+
+Source bd0018865946764cd65cd5cde7860bb5bfd480c9 is represented in the exact
+629641-byte offline report. Ten report tests and all 56 ego-browser assertions
+passed at 1440×900, 1280×540, 390×844 and 320×720. All sections/documents,
+expanded current recovery progress, retained negative history and compile failure,
+partial/not-run gates, painted charts, search/reset/pagination, actual ArrowRight
+navigation and print-media visibility were verified. Normal media and desktop
+metrics were restored. Dedicated cleanup of task space 33 returned done:true.
+
+Full-file SHA256: 06ed736c5ef7379adf1ce3c3d1adc51f5afbb34ef6869b70798f8ad28b87a0be.
+Embedded payload SHA256: 2c01b0d2b78666bf30c6549848922688133e3416c0dac13cb320c4a774e5e685.
+Browser payload hashing and local full-file hashes bracket QA; file-scheme source
+fetch is unsupported. The report was not rebuilt after QA. The exact previous
+guard report remains archived. Checks, observations, cleanup and checksums are in
+evaluation delivery/2026-09-05/browser-qa/import-recovery-20260911 and the adjacent
+browser-import-recovery-20260911.json. Fresh screenshots, physical click placement
+and physical print/PDF pagination are unverified. This is partial-report QA only;
+all independent/live FINAL gates remain open. The exact 349-file source manifest
+and retained validation evidence hashes still match. No model or real operator
+accounting action was added by this checkpoint.

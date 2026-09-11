@@ -1848,3 +1848,27 @@ priorities.json,report.html,report-manifest.json}, browser-import-recovery-20260
 and browser-qa/import-recovery-20260911. Preserve the exact prior guard report before
 refreshing the partial report. Bind new report verification to this source;
 keep independent acceptance and every outstanding experiment/follow-up explicit.
+
+
+### Changed inactive import report verification checkpoint — September 11
+
+The current 629641-byte report for source bd0018865946764cd65cd5cde7860bb5bfd480c9
+passes ten report tests and 56 ego-browser assertions at 1440×900, 1280×540,
+390×844 and 320×720. Current recovery behavior, retained negative history and
+initial compile correction, all sections/documents, partial/not-run states,
+painted charts, search/reset/pagination over 673 ideas, actual ArrowRight
+navigation and print-media visibility passed. Normal media and desktop metrics
+were restored. Dedicated cleanup of task space 33 returned done:true; unrelated
+spaces 1, 2 and 32 were not used or closed.
+
+Report SHA256: 06ed736c5ef7379adf1ce3c3d1adc51f5afbb34ef6869b70798f8ad28b87a0be.
+Embedded payload SHA256: 2c01b0d2b78666bf30c6549848922688133e3416c0dac13cb320c4a774e5e685.
+Local full-file hashes bracket browser QA, and the exact report was not rebuilt.
+All checks, observations, confirmed cleanup and file hashes are retained under
+evaluation delivery/2026-09-05/browser-qa/import-recovery-20260911, with
+browser-import-recovery-20260911.json beside them. The previous guard report is
+archived at its original hash. No fresh screenshot, physical click placement or
+physical print/PDF pagination is certified. This verifies the current partial
+report, not independent source acceptance or future populated experiment results.
+The exact 349-file source set and all validation evidence hashes remain unchanged.
+All outstanding FINAL gates, historical quorum and recovery decisions remain open.
