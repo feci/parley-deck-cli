@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -224,6 +225,31 @@ func RunMeasured(parent context.Context, opts ExecOptions) (record telemetry.Rec
 	return record, returnErr
 }
 
+func interactivePlaceholder(agent agents.Discovery) string {
+	placeholder := ""
+	switch agents.InteractivePromptModeOrDefault(agent.InteractivePromptMode) {
+	case agents.InteractivePromptFile:
+		placeholder = "{prompt_path}"
+	case agents.InteractivePromptArg:
+		placeholder = "{prompt}"
+	}
+	return placeholder
+}
+
+// ValidateInteractiveDelivery is shared by selection and the actual spawn gate.
+func ValidateInteractiveDelivery(agent agents.Discovery) error {
+	if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchInteractive {
+		return errors.New("terminal spawning requires interactive launch mode")
+	}
+	placeholder := interactivePlaceholder(agent)
+	for _, arg := range agent.InteractiveArgs {
+		if placeholder != "" && strings.Contains(arg, placeholder) {
+			return nil
+		}
+	}
+	return &protocolContextError{reason: "interactive-prompt-delivery-unconfigured"}
+}
+
 // RunInteractive measures the process separately from a previously printed
 // handoff. It renders a fresh prompt at the process boundary and passes real
 // terminal descriptors directly; wrapping them in a writer would turn them
@@ -233,20 +259,11 @@ func RunMeasured(parent context.Context, opts ExecOptions) (record telemetry.Rec
 func RunInteractive(parent context.Context, root string, agent agents.Discovery, prompt, targetPath string, stdin, stdout, stderr *os.File) (returnedErr error) {
 	ctx, cancel := context.WithTimeout(parent, time.Duration(agents.InteractiveTimeoutMSOrDefault(agent.InteractiveTimeoutMS))*time.Millisecond)
 	defer cancel()
-	placeholder := ""
-	switch agents.InteractivePromptModeOrDefault(agent.InteractivePromptMode) {
-	case agents.InteractivePromptFile:
-		placeholder = "{prompt_path}"
-	case agents.InteractivePromptArg:
-		placeholder = "{prompt}"
+	if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchInteractive {
+		return errors.New("terminal spawning requires interactive launch mode")
 	}
-	deliversPrompt := false
-	for _, arg := range agent.InteractiveArgs {
-		if placeholder != "" && strings.Contains(arg, placeholder) {
-			deliversPrompt = true
-		}
-	}
-	if !deliversPrompt {
+	placeholder := interactivePlaceholder(agent)
+	if err := ValidateInteractiveDelivery(agent); err != nil {
 		info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
 		info.Context = telemetry.Context{Mode: "refused", FallbackReason: telemetry.String("interactive-prompt-delivery-unconfigured")}
 		evidence, err := beginLaunch(WithLaunchInfo(ctx, info), root, "interactive", agent)
@@ -289,9 +306,15 @@ func RunInteractive(parent context.Context, root string, agent agents.Discovery,
 	if placeholder == "{prompt}" {
 		for i := range args {
 			args[i] = strings.ReplaceAll(args[i], "{prompt}", prepared)
+			// Conservative per-element bound, below Linux's common 128 KiB
+			// limit; total argv/env can still cause a recorded failed start.
+			if len(args[i]) > 120<<10 {
+				return &protocolContextError{reason: "interactive-prompt-argument-too-large-use-file"}
+			}
 		}
 	}
 	cmd = exec.CommandContext(ctx, command, args...)
+	cmd.WaitDelay = 2 * time.Second
 	cmd.Dir = root
 	cmd.Env = append(cleanParticipantEnv(agent.Adapter(), os.Environ()), procctl.MarkerEnv(evidence.info.RunID, agent.ID, evidence.invocation.ID)...)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
@@ -301,7 +324,7 @@ func RunInteractive(parent context.Context, root string, agent agents.Discovery,
 	}
 	defer func() {
 		if err := restore(); err != nil {
-			returnedErr = errors.Join(returnedErr, errors.New("cannot restore terminal foreground process group"))
+			returnedErr = errors.Join(returnedErr, fmt.Errorf("cannot restore terminal foreground process group: %w", err))
 		}
 	}()
 	// The child PID is its newly created process-group ID even if it exits

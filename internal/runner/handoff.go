@@ -71,7 +71,7 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 	packet = HandoffPacket{
 		InvocationID:     evidence.invocation.ID,
 		Dir:              agentDir,
-		PromptPath:       filepath.Join(agentDir, "handoff-prompt-"+evidence.invocation.ID+".md"),
+		PromptPath:       filepath.Join(evidence.invocation.Dir, "handoff-prompt.md"),
 		InstructionsPath: filepath.Join(agentDir, "handoff.md"),
 	}
 	if err := writeHandoffPrompt(packet.PromptPath, []byte(prompt)); err != nil {

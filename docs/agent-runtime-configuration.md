@@ -120,7 +120,9 @@ In the TUI Agents pane, use `h`, `i`, `a`, and `m` to set a session-only launch 
 Spawning a protocol task requires configured prompt delivery: use
 `interactive_prompt_mode = "file"` with `{prompt_path}` in `interactive_args`, or
 `interactive_prompt_mode = "arg"` with `{prompt}`. The argument template must use
-the selected CLI's actual prompt-file or prompt-argument option. Missing delivery
+the selected CLI's actual prompt-file or prompt-argument option. Prefer file mode:
+argument mode exposes the full protocol and task through the process command line
+and refuses expanded arguments larger than 120 KiB. Missing delivery
 refuses the task before spawn; `none` remains valid for print-only handoffs. A
 fresh live protocol is rendered at each process launch, with a separate unique
 invocation from the earlier printed handoff. Terminal descriptors are passed

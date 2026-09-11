@@ -60,8 +60,8 @@ type Usage struct {
 type Observation struct {
 	StreamCoverage  string `json:"stream_coverage,omitempty"`
 	FirstActivityMS *int64 `json:"first_activity_ms"`
-	StdoutBytes     int64  `json:"stdout_bytes"`
-	StderrBytes     int64  `json:"stderr_bytes"`
+	StdoutBytes     *int64 `json:"stdout_bytes"`
+	StderrBytes     *int64 `json:"stderr_bytes"`
 	TruncatedInput  bool   `json:"parser_input_truncated"`
 }
 
@@ -293,6 +293,8 @@ func (i *Invocation) Finish(outcome Outcome) error {
 		outcome.Observation.StreamCoverage = "unknown"
 	}
 	outcome.Observation.FirstActivityMS = clone(outcome.Observation.FirstActivityMS)
+	outcome.Observation.StdoutBytes = clone(outcome.Observation.StdoutBytes)
+	outcome.Observation.StderrBytes = clone(outcome.Observation.StderrBytes)
 	outcome.Usage = CleanUsage(outcome.Usage)
 	now := time.Now().UTC()
 	duration := time.Since(i.began).Milliseconds()

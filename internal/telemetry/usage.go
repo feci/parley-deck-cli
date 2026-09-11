@@ -17,18 +17,19 @@ const parserLimit = 256 * 1024
 // Collector interprets only explicitly structured adapter output. Text that a
 // model prints in a plain-text transport is not provider usage evidence.
 type Collector struct {
-	mu             sync.Mutex
-	adapter        string
-	structured     bool
-	began          time.Time
-	observation    Observation
-	line           []byte
-	tail           []byte
-	dropping       bool
-	usage          Usage
-	failure        string
-	steps          map[string]Usage
-	ambiguousSteps bool
+	stdoutBytes, stderrBytes int64
+	mu                       sync.Mutex
+	adapter                  string
+	structured               bool
+	began                    time.Time
+	observation              Observation
+	line                     []byte
+	tail                     []byte
+	dropping                 bool
+	usage                    Usage
+	failure                  string
+	steps                    map[string]Usage
+	ambiguousSteps           bool
 }
 
 type streamWriter struct {
@@ -53,10 +54,10 @@ func (w streamWriter) Write(data []byte) (int, error) {
 		c.observation.FirstActivityMS = &elapsed
 	}
 	if w.stream == "stderr" {
-		c.observation.StderrBytes += int64(len(data))
+		c.stderrBytes += int64(len(data))
 		return len(data), nil
 	}
-	c.observation.StdoutBytes += int64(len(data))
+	c.stdoutBytes += int64(len(data))
 	if !c.structured {
 		return len(data), nil
 	}
@@ -281,6 +282,8 @@ func (c *Collector) Result() (Usage, Observation, string) {
 		u.CostBasis = "unavailable"
 	}
 	observation := c.observation
+	observation.StdoutBytes = clone(&c.stdoutBytes)
+	observation.StderrBytes = clone(&c.stderrBytes)
 	observation.FirstActivityMS = clone(observation.FirstActivityMS)
 	return CleanUsage(u), observation, c.failure
 }

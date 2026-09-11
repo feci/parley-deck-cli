@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,7 +65,7 @@ func TestInteractiveProcessHasDistinctFreshEvidence(t *testing.T) {
 		if r.StartedAt == nil || r.PID == nil || r.Outcome.ExitCode == nil || *r.Outcome.ExitCode != 0 || r.Outcome.Status != "process-exited" || r.Metadata.Context.Mode != "full" {
 			t.Fatalf("missing process evidence: %+v", r)
 		}
-		if r.Outcome.Observation.StreamCoverage != "not-observed-terminal" || r.Outcome.Observation.FirstActivityMS != nil || r.Outcome.Usage.CostUSD != nil || r.Outcome.Usage.ReportedModel != nil {
+		if r.Outcome.Observation.StdoutBytes != nil || r.Outcome.Observation.StderrBytes != nil || r.Outcome.Observation.StreamCoverage != "not-observed-terminal" || r.Outcome.Observation.FirstActivityMS != nil || r.Outcome.Usage.CostUSD != nil || r.Outcome.Usage.ReportedModel != nil {
 			t.Fatalf("invented terminal observations: %+v", r.Outcome)
 		}
 	}
@@ -145,19 +146,106 @@ func TestInteractiveRealTerminal(t *testing.T) {
 	writeLaunchProtocol(t, root)
 	agent, _ := interactiveFixture(t, root, `test -t 0 && test -t 1 && test -t 2 && IFS= read -r answer && test "$answer" = child`)
 	agent.InteractiveTimeoutMS = 5000
-	if err := RunInteractive(context.Background(), root, agent, "task", "", os.Stdin, os.Stdout, os.Stderr); err != nil {
+	input, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer input.Close()
+	fmt.Println("TTY_CHILD_READY")
+	if err := RunInteractive(context.Background(), root, agent, "task", "", input, os.Stdout, os.Stderr); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", `IFS= read -r answer && test "$answer" = parent`)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	fmt.Println("TTY_PARENT_READY")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("parent terminal not restored: %v", err)
 	}
 	r := terminalRecords(t, root)[0]
 	if r.StartedAt == nil || r.Outcome.Observation.StreamCoverage != "not-observed-terminal" {
 		t.Fatalf("missing terminal evidence: %+v", r)
+	}
+}
+
+func TestInteractiveRealTerminalFailures(t *testing.T) {
+	if os.Getenv("PARLEY_TTY_TEST") != "1" {
+		t.Skip("requires a controlling PTY harness")
+	}
+	for _, scenario := range []string{"timeout", "start-write", "failed-start", "terminal-write"} {
+		t.Run(scenario, func(t *testing.T) {
+			root := t.TempDir()
+			writeLaunchProtocol(t, root)
+			agent, _ := interactiveFixture(t, root, `(sleep 2; touch survived) & wait`)
+			agent.InteractiveTimeoutMS = 150
+			if scenario == "failed-start" {
+				agent.InteractiveCommand = filepath.Join(root, "missing")
+			}
+			ctx := WithLaunchInfo(context.Background(), LaunchInfo{Observe: func(r telemetry.Record) {
+				if r.Type != "invocation.requested" {
+					return
+				}
+				name := ""
+				if scenario == "start-write" {
+					name = "started.json"
+				}
+				if scenario == "terminal-write" {
+					name = "terminal.json"
+				}
+				if name != "" {
+					if err := os.Mkdir(filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, name), 0o700); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}})
+			if err := RunInteractive(ctx, root, agent, "task", "", os.Stdin, os.Stdout, os.Stderr); err == nil {
+				t.Fatal("failure accepted")
+			}
+			parentCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(parentCtx, "/bin/sh", "-c", `IFS= read -r answer && test "$answer" = parent`)
+			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+			fmt.Println("TTY_PARENT_READY")
+			if err := cmd.Run(); err != nil {
+				t.Fatalf("parent foreground not restored: %v", err)
+			}
+			time.Sleep(2100 * time.Millisecond)
+			if _, err := os.Stat(filepath.Join(root, "survived")); !os.IsNotExist(err) {
+				t.Fatal("terminal descendant survived failure")
+			}
+		})
+	}
+}
+
+func TestInteractiveArgumentDeliveryAndBound(t *testing.T) {
+	for _, large := range []bool{false, true} {
+		root := t.TempDir()
+		writeLaunchProtocol(t, root)
+		agent, out := interactiveFixture(t, root, `printf '%s' "$1"`)
+		agent.InteractivePromptMode = agents.InteractivePromptArg
+		agent.InteractiveArgs = []string{"-c", `printf '%s' "$1"`, "fixture", "{prompt}"}
+		prompt := "argument task"
+		if large {
+			prompt = strings.Repeat("x", 121<<10)
+		}
+		err := RunInteractive(context.Background(), root, agent, prompt, "", out, out, out)
+		if large {
+			if err == nil || !strings.Contains(err.Error(), "too-large-use-file") {
+				t.Fatalf("oversized argument: %v", err)
+			}
+			if terminalRecords(t, root)[0].StartedAt != nil {
+				t.Fatal("oversized argument spawned")
+			}
+		} else {
+			if err != nil {
+				t.Fatal(err)
+			}
+			body, err := os.ReadFile(out.Name())
+			if err != nil || !strings.Contains(string(body), "Mandatory source obligation.") || !strings.HasSuffix(string(body), prompt) {
+				t.Fatalf("arg prompt not delivered: %v", err)
+			}
+		}
 	}
 }
 
@@ -183,7 +271,7 @@ func TestTrackedCommandForRunAndCombinedOutput(t *testing.T) {
 			t.Fatalf("stderr missing: %q", output)
 		}
 		records := terminalRecords(t, root)
-		if len(records) != 1 || records[0].Outcome.Observation.StdoutBytes != 5 || records[0].Outcome.Observation.StderrBytes != 5 {
+		if len(records) != 1 || (records[0].Outcome.Observation.StdoutBytes == nil || *records[0].Outcome.Observation.StdoutBytes != 5) || (records[0].Outcome.Observation.StderrBytes == nil || *records[0].Outcome.Observation.StderrBytes != 5) {
 			t.Fatalf("records: %+v", records)
 		}
 		if err := cmd.Run(); err == nil {

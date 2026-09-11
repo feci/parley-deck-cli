@@ -356,6 +356,11 @@ func validateLaunchModes(selected []agents.Discovery) error {
 		if invoke != agents.InteractiveInvokePrintOnly && invoke != agents.InteractiveInvokeSpawnTTY {
 			return fmt.Errorf("%w: %s has invalid interactive_invoke %q", errRequestUsage, agent.ID, agent.InteractiveInvoke)
 		}
+		if mode == agents.LaunchInteractive && invoke == agents.InteractiveInvokeSpawnTTY {
+			if err := runner.ValidateInteractiveDelivery(agent); err != nil {
+				return fmt.Errorf("%w: %s: %v", errRequestUsage, agent.ID, err)
+			}
+		}
 	}
 	return nil
 }
@@ -457,6 +462,8 @@ func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.D
 }
 
 func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
+	agentCtx, cancel := context.WithTimeout(ctx, requestInteractiveSignoffTimeout(agent))
+	defer cancel()
 	packet, err := writeSignoffHandoff(rootAbs, runID, agent, prompt, consensusPath)
 	if err != nil {
 		return signoffRunResult{}, err
@@ -479,13 +486,14 @@ func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agen
 	}
 
 	if agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke) == agents.InteractiveInvokeSpawnTTY {
-		if err := runInteractiveTTY(ctx, rootAbs, agent, prompt, consensusPath); err != nil {
+		if err := runInteractiveTTY(agentCtx, rootAbs, agent, prompt, consensusPath); err != nil {
+			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.handoff.failed", map[string]any{"agent": agent.ID, "reason": "interactive-process-failed"}); eventErr != nil {
+				return signoffRunResult{}, errors.Join(err, eventErr)
+			}
 			return signoffRunResult{}, err
 		}
 	}
 
-	agentCtx, cancel := context.WithTimeout(ctx, requestInteractiveSignoffTimeout(agent))
-	defer cancel()
 	ticker := time.NewTicker(time.Duration(agents.InteractivePollMSOrDefault(agent.InteractivePollMS)) * time.Millisecond)
 	defer ticker.Stop()
 	for {

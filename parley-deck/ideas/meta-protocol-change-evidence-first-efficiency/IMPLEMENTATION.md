@@ -628,3 +628,45 @@ lock verifies same-host exclusion with competing handles before every use.
 The store's data remains on the shared volume. Same-host locking is explicit;
 distributed writers are not certified. Driver/manual/launch integration is not
 yet present, so this remains a foundation rather than a completed budget gate.
+
+Claude's new owner-authored partial source review at 122f4d2 identified three
+MAJOR findings: unobserved byte counters serialized as zero, lack of a real-PTY
+timeout/restoration fixture, and unbounded/undocumented argument prompt delivery.
+Codex accepts these as correction work, plus the concrete MINOR mode/diagnostic/
+selection/timeout/private-prompt issues. No review or signature is edited.
+Additional non-overlapping Codex allocation: scripts/test_terminal_launch.py,
+a reproducible Unix PTY harness for the actual compiled Go terminal tests.
+
+Terminal review dispositions (Claude reviewed 122f4d2, not the following fixes):
+MAJOR-1 corrected with nullable output byte counters; unobserved handoffs and
+TTY streams now persist null. MAJOR-2 corrected with the committed PTY harness
+covering timeout, failed start and both evidence-write failures: all four restore
+the parent's readable terminal and leave no delayed descendant artifact. The
+success case also passes /dev/tty at a nonzero parent fd. MAJOR-3 corrected with
+a 120 KiB per-argument guard, an explicit file-mode preference and documentation
+of argv visibility. This is a conservative bound, not a universal argv capacity
+claim; OS total argv/env failures still remain recorded failed starts.
+
+MINOR-1 through MINOR-5: added interactive-mode validation; preserved restoration
+error details; shared delivery validation with selection and recorded failed
+handoff events; used one session/poll deadline; moved newly rendered handoff
+prompts into private ignored invocation directories. Historical prompt artifacts
+are preserved. SysProcAttr now preserves unrelated fields, WaitDelay is explicit,
+and the argument scan exits on a match. The fixed /bin/sh restoration helper is
+retained as an explicit Unix dependency; it runs no task data. Failed exits remain
+failures even if an artifact exists, preserving the existing process-integrity gate.
+Ctty parent-fd semantics are independently confirmed in local Go source
+syscall/exec_libc.go lines 30-34 and by the nonzero-fd PTY fixture. This is Codex's
+disposition and test evidence, not Claude's agreement or a final signature.
+
+Validation after the terminal review corrections: full go test ./... PASS;
+focused runner/telemetry race checks PASS; vet PASS; Windows runner cross-build
+PASS (runtime untested); python3 scripts/test_terminal_launch.py PASS for all
+five real-PTY scenarios. The budget-store ordinary/shared-volume/race tests and
+Windows cross-build also pass. The English report was rebuilt and all ten report
+tests passed; no new browser QA is claimed for this text-only progress update.
+Recovery inventory now contains ten terminal attempts (three costs unknown),
+with known CLI-estimate subtotal USD 21.381507; overall cost remains unknown.
+Claude's review attempt completed at 601.450 seconds and estimated USD 3.8726815;
+its reported model list includes Opus 5 and Haiku, so no single-model attribution
+is inferred. Kimi's new attempt remains live at this checkpoint.

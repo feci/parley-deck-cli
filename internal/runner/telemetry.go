@@ -108,6 +108,9 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 		if l.directTerminal {
 			observation.StreamCoverage = "not-observed-terminal"
 		}
+		if l.directTerminal || l.invocation.Snapshot().StartedAt == nil {
+			observation.StdoutBytes, observation.StderrBytes = nil, nil
+		}
 		status, failure := "process-exited", ""
 		if runErr == nil && l.invocation.Snapshot().StartedAt == nil {
 			status = "unobserved-handoff"

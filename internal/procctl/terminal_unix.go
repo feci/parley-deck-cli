@@ -25,7 +25,11 @@ func AttachTerminal(cmd *exec.Cmd, input *os.File) (restore func() error, err er
 	if err != nil {
 		return nil, err
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Foreground: true, Ctty: int(input.Fd())}
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+	}
+	cmd.SysProcAttr.Setsid, cmd.SysProcAttr.Setctty = false, false
+	cmd.SysProcAttr.Foreground, cmd.SysProcAttr.Pgid, cmd.SysProcAttr.Ctty = true, 0, int(input.Fd())
 	return func() error {
 		// os/exec's child setup masks SIGTTOU around the foreground ioctl.
 		// Restore through that setup instead of temporarily changing the
