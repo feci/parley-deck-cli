@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 78a7b13
+head-commit: 9c1990c
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -22,14 +22,15 @@ their dispositions. Kimi's completion-transition source is integrated and wired
 through the actual independent helper. The post-completion evidence gate and
 original-contract deletion/restart counterexamples now pass after corrections.
 Readiness schema/capture corrections, shared launch/step/cycle policies, finite
-operator cycle extensions and monetary-default enforcement are integrated.
-Source 78a7b13 refuses a configured dollar ceiling before an unreserved first
-process launch and requires a matching persistent operator policy. The full Go
-suite, scoped race, vet and shared-volume fixtures pass. Legacy migration,
-launch/step extensions, safe guard recovery, durable semantic action replay,
-canonical refusal publication/recovery, regression trajectory, actual live
-experiments and final independent acceptance remain open. The frozen historical
-evaluation is unchanged.
+operator extensions and monetary-default enforcement are integrated. Source
+9c1990c adds attended launch/step extensions without resetting spent history,
+reservation amounts or activation time; cached runtime bindings use the recorded
+grant. It also fixes the reproduced evidence cancellation data race. The original
+expanded race failure is retained alongside the fresh full Go and five-package
+race PASS, scoped vet, Windows cross-build and shared-volume fixtures. Legacy
+migration, safe guard recovery, durable semantic action replay, canonical refusal
+publication/recovery, regression trajectory, actual live experiments and final
+independent acceptance remain open. The frozen historical evaluation is unchanged.
 
 ## Implementation plan / checklist
 
@@ -1345,3 +1346,61 @@ and cancellation of an actual child group, including a TERM-resistant descendant
 holding output pipes. Re-run the original app barrier fixture under the race
 detector, then the required full and scoped race suites. This correction and
 its execution record do not constitute participant-owned independent acceptance.
+
+### Runtime extension checkpoint and report allocation — September 11
+
+Source 9c1990c adds read-only launch/step inspection and finite attended absolute
+extensions. Original/effective ceilings, per-launch reservation, charged ledger
+bytes, activation time and ordered decisions are retained. Exact replay remains
+idempotent after later decisions. Unrecorded settings, stale/conflicting grants,
+lost charges, clock regression and malformed history refuse. Extensions serialize
+with reservations and settlements; nested children remain one charged step.
+The driver reads persistent monetary exposure separately from observed usage.
+No real policy was extended and unknown observed costs remain unknown.
+
+Expanded race testing found an existing RunCriterion cancellation race. A new
+actual-process fixture reproduced it before the fix, including a TERM-resistant
+descendant holding output pipes. Cancellation now uses exec's established process
+identity, without the unsynchronized post-Start assignment. Both the new fixture
+and the original serial/barrier fixture pass under the race detector. Original
+Kimi source/handoffs and independent review artifacts remain preserved.
+
+Full Go suite PASS (app 98.824s, budget 18.914s, driver 15.266s, evidence 6.118s,
+runner 35.887s; wall 102.638s). Budget/driver/runner/evidence/app race PASS
+(22.138s/17.629s/65.175s/6.517s/122.273s; wall 123.291s). Scoped vet, Windows
+app cross-build and actual shared-volume cancellation fixtures PASS. All 323
+Go/module files match the tested manifest. Thirty-eight logs/manifests, including
+both negative race runs, are retained under the ignored runtime-extension
+validation directory. Windows runtime and independent acceptance remain unverified.
+
+Codex claims the owned runtime-extension disposition and the current evaluation
+delivery/2026-09-05/{PROGRESS.md,priorities.json,report.html} update before edits,
+followed by draft PR #73 description synchronization. Rebuild and run the ten
+report checks. No fresh exact-report browser QA is inferred from older evidence.
+All remaining D6, real-model, packet, full-six pilot, blind-grading, owned-signature
+and actual elapsed follow-up requirements remain binding; no full-goal completion.
+
+### Expanded report layout correction allocation — September 11
+
+Before edits, Codex claims the evaluation template templates/delivery-report.html
+and delivery/2026-09-05/browser-runtime-extension-20260911.json plus its owned
+browser-qa evidence directory. Actual ego-browser QA of report hash 85e81b4 found
+that expanding Technical progress log at width 390 creates page width 541:
+unbroken plain-text hashes/URLs overflow paragraphs in #progress.doc. Retain the
+negative observation and preceding harness mistakes. Apply the existing document
+wrapping behavior to progress prose, rebuild, run the ten report checks, and
+verify the changed report's expanded/collapsed sections and interactions at the
+four viewport sizes. This is presentation correction, not live experiment proof.
+
+### Verified report checkpoint — September 11
+
+Report 0b9e72687fdd50e19cb74f5938d5d9849d11cd837b39a027b4d092fc73456e43
+(609331 bytes; built 2026-09-11T16:00:05.838108+00:00) passes all ten report tests
+and 62 retained ego-browser assertions across desktop, low-height and both mobile
+widths. Expanded progress prose now fits; current source and the failed race
+record are accessible through its summary control. Search/reset, pagination,
+keyboard focus, five documents, painted charts and print-media visibility pass.
+The owned runtime-extension disposition identifies the exact QA sidecar and its
+limits. Earlier harness mistakes and the actual overflow are retained separately.
+No final populated experiment result, independent acceptance or physical print
+verification is inferred from this presentation checkpoint.
