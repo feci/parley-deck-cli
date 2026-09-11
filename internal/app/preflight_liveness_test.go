@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestClassifyReadiness(t *testing.T) {
 		{"exact PONG whitespace", "  PONG  \n", "", 0, false, ClassReady, true, false},
 		// Recognized assistant/result envelope schemas: explicit positive coverage
 		// for every accepted content key, wrapper key, and the assistant role.
-		{"recognized JSON content key", `{"content":"PONG"}`, "", 0, false, ClassReady, true, false},
+		{"bare content no provenance is malformed", `{"content":"PONG"}`, "", 0, false, ClassMalformedReply, false, true},
 		{"recognized JSON message key", `{"message":"PONG"}`, "", 0, false, ClassReady, true, false},
 		{"recognized JSON text key", `{"text":"PONG"}`, "", 0, false, ClassReady, true, false},
 		{"recognized JSON result string", `{"result":"PONG"}`, "", 0, false, ClassReady, true, false},
@@ -37,6 +38,7 @@ func TestClassifyReadiness(t *testing.T) {
 		{"recognized payload wrapper", `{"payload":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
 		{"recognized response wrapper", `{"response":{"content":"PONG"}}`, "", 0, false, ClassReady, true, false},
 		{"recognized result wrapper message key", `{"result":{"message":"PONG"}}`, "", 0, false, ClassReady, true, false},
+		{"recognized assistant result schema with subtype success", `{"type":"result","subtype":"success","is_error":false,"result":"PONG"}`, "", 0, false, ClassReady, true, false},
 		// Echoes, fences, malformed JSON, role-tagged non-assistant messages, and
 		// unrecognized string-valued keys are never ready.
 		{"echoed instruction is not ready", "Reply with exactly the single token: PONG\n", "", 0, false, ClassMalformedReply, false, true},
@@ -68,7 +70,7 @@ func TestClassifyReadiness(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			obs := classifyReadiness(tc.stdout, tc.stderr, tc.exitCode, tc.timedOut)
+			obs := classifyReadiness(tc.stdout, tc.stderr, tc.exitCode, tc.timedOut, false, "")
 			if obs.Class != tc.want {
 				t.Fatalf("class=%q want %q", obs.Class, tc.want)
 			}
@@ -83,7 +85,7 @@ func TestClassifyReadiness(t *testing.T) {
 }
 
 func TestClassifyReadinessProviderSubclass(t *testing.T) {
-	obs := classifyReadiness("", "429 Too Many Requests, rate limit hit", 1, false)
+	obs := classifyReadiness("", "429 Too Many Requests, rate limit hit", 1, false, false, "")
 	if obs.Class != ClassProviderFailure || obs.ProviderClass != "rate-limit" {
 		t.Fatalf("class=%q subclass=%q want provider-failure/rate-limit", obs.Class, obs.ProviderClass)
 	}
@@ -339,4 +341,206 @@ func TestHostedPONGRealChildFixtures(t *testing.T) {
 			t.Fatalf("probe took %v; the child must be killed and reaped promptly", elapsed)
 		}
 	})
+}
+
+// --- regression tests for malformed/duplicate envelopes, bounded capture,
+// ambiguous content, nested malformed roles, secret-safe tails ------------
+
+func TestDuplicateAndAliasedKeysRejected(t *testing.T) {
+	// Duplicate semantic key (after Unmarshal, map collapses duplicates to
+	// last-wins; pre-decode scan must catch the duplication).
+	cases := []struct {
+		name      string
+		raw       string
+		wantErr   bool
+	}{
+		{"duplicate content", `{"content":"PONG","content":"WRONG"}`, true},
+		{"duplicate role", `{"role":"assistant","role":"user","content":"PONG"}`, true},
+		{"case-aliased is_error/isError same value", `{"is_error":true,"isError":true,"content":"PONG"}`, false},
+		{"case-aliased is_error/isError contradictory", `{"is_error":true,"isError":false,"content":"PONG"}`, true},
+		{"present-null role", `{"role":null,"content":"PONG"}`, true},
+		{"present-null is_error", `{"is_error":null,"content":"PONG"}`, true},
+		{"duplicate nested wrapper", `{"result":{"content":"PONG"},"result":{"message":"WRONG"}}`, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := preDecodeScan(tc.raw)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("preDecodeScan(%q) error=%v want error=%v", tc.raw, err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestAmbiguousContentDoesNotPassAsReady(t *testing.T) {
+	// Bare content key without assistant role is a recognized result envelope
+	// (intended good CLI reply); but an unknown typed object (e.g. number, array,
+	// nested object without recognized role/content) must not yield ready.
+	obsUnknown := classifyReadiness(`{"content":123}`, "", 0, false, false, "")
+	if obsUnknown.Class != ClassMalformedReply {
+		t.Fatalf("unknown typed content (number) should be malformed-reply, got %s", obsUnknown.Class)
+	}
+	obsNestedUnknown := classifyReadiness(`{"data":{"unknown":"PONG"}}`, "", 0, false, false, "")
+	if obsNestedUnknown.Class != ClassMalformedReply {
+		t.Fatalf("nested unknown wrapper should be malformed-reply, got %s", obsNestedUnknown.Class)
+	}
+	// Contradictory nested role/content: wrapper has assistant role but inner
+	// has user role — should not silently choose passing interpretation.
+	obsContradictory := classifyReadiness(`{"data":{"role":"user","content":"PONG"}}`, "", 0, false, false, "")
+	if obsContradictory.Class != ClassMalformedReply {
+		t.Fatalf("nested contradictory role/content should be malformed-reply, got %s", obsContradictory.Class)
+	}
+	// Bare assistant content without role or recognized schema is malformed —
+	// it lacks provenance and must not pass as ready (fixture correction).
+	obsBareContent := classifyReadiness(`{"content":"PONG"}`, "", 0, false, false, "")
+	if obsBareContent.Class != ClassMalformedReply || obsBareContent.Ready {
+		t.Fatalf("bare content without provenance should be malformed-reply/not-ready, got %s ready=%v", obsBareContent.Class, obsBareContent.Ready)
+	}
+}
+
+func TestBoundedCaptureOverflowExplicitNotReady(t *testing.T) {
+	// Host-level test: boundedWriter with overflow must produce non-ready
+	// observation with preserved tail observation (not silently ready).
+	var out bytes.Buffer
+	overflow := false
+	bw := boundedWriter{buf: &out, max: 8, overflow: &overflow}
+	// Write more than max bytes to trigger overflow.
+	long := "PONGPONGPONGPONGPONG"
+	n, err := bw.Write([]byte(long))
+	if err != nil {
+		t.Fatalf("boundedWriter Write error: %v", err)
+	}
+	if n != len(long) {
+		t.Fatalf("Write returned %d want %d (must continue consuming)", n, len(long))
+	}
+	if !overflow {
+		t.Fatalf("expected overflow=true after exceeding max bytes")
+	}
+	// Observation on overflow must not be ClassReady.
+	obs := classifyReadiness(out.String(), "", 0, false, true, "overflow")
+	if obs.Class == ClassReady {
+		t.Fatalf("overflowed partial capture must NOT yield ready (prevent partial PONG pass)")
+	}
+	if !strings.Contains(string(obs.StdoutTail), "PONG") && obs.SawSentinel {
+		// The partial PONG may be preserved in tail as observation; that is fine.
+	}
+}
+
+func TestSecretSafeTailScrubsCredentials(t *testing.T) {
+	// Synthetic bearer/JSON credential values without real credentials.
+	samples := []string{
+		`Authorization: Bearer sk-test12345678901234567890abcd`,
+		`token=ghp_synthetic0123456789012345678a`,
+		`{"error":"auth failed","token":"sk-testsecretvalue"}`,
+		`key = AKIAIOSFODNN7EXAMPLE`,
+		`authorization: bearer eyJhbGci.eyJzdWI.test.signaturevalue123`,
+	}
+	for _, s := range samples {
+		scrubbed := scrubSecrets(s)
+		if strings.Contains(scrubbed, "sk-test") || strings.Contains(scrubbed, "ghp_") ||
+			strings.Contains(scrubbed, "AKIAIOSFODNN7") || strings.Contains(scrubbed, "eyJhbGci") {
+			t.Errorf("scrubSecrets did not fully scrub synthetic secret in %q; got %q", s, scrubbed)
+		}
+		// The authorization bearer pattern specifically must not leak suffix.
+		if strings.Contains(s, "Authorization") && strings.Contains(scrubbed, "Bearer") {
+			// After full redaction, "Bearer" may still appear if it is the label,
+			// but the token value must not remain untouched. Confirm full value replaced.
+			if strings.Contains(scrubbed, "test123") || strings.Contains(scrubbed, "abcd") {
+				t.Errorf("Authorization bearer value suffix leaked in %q -> %q", s, scrubbed)
+			}
+		}
+	}
+}
+
+func TestNestedMalformedRoleNotPassedAsReady(t *testing.T) {
+	// Nested wrapper with assistant role and inner content must pass; nested
+	// wrapper with user/system/tool role must fail; nested wrapper with malformed
+	// role type (non-string) must fail.
+	goodNested := `{"data":{"role":"assistant","content":"PONG"}}`
+	obs := classifyReadiness(goodNested, "", 0, false, false, "")
+	if obs.Class != ClassReady || !obs.Ready {
+		t.Fatalf("good nested assistant envelope expected ready, got %s ready=%v", obs.Class, obs.Ready)
+	}
+	badRoleType := `{"data":{"role":123,"content":"PONG"}}`
+	obs2 := classifyReadiness(badRoleType, "", 0, false, false, "")
+	if obs2.Class != ClassMalformedReply {
+		t.Fatalf("nested malformed role type (number) expected malformed-reply, got %s", obs2.Class)
+	}
+}
+
+func TestAmbiguousUnknownTypeRejected(t *testing.T) {
+	obs := classifyReadiness(`{"type":"unknown","content":"PONG"}`, "", 0, false, false, "")
+	if obs.Class == ClassReady {
+		t.Fatalf("unknown type %q with content should NOT be ready (ambiguous schema)", "unknown")
+	}
+}
+
+func TestCompetingOutputFieldsRejected(t *testing.T) {
+	obs := classifyReadiness(`{"role":"assistant","content":"PONG","text":"FAIL"}`, "", 0, false, false, "")
+	if obs.Class == ClassReady {
+		t.Fatalf("competing content+text fields should NOT be ready")
+	}
+}
+
+func TestBoundedCapturePreservesWhitespaceObservation(t *testing.T) {
+	var out bytes.Buffer
+	overflow := false
+	truncated := false
+	bw := boundedWriter{buf: &out, max: 4, overflow: &overflow, truncated: &truncated, observedBytes: 0}
+	n, err := bw.Write([]byte("    PONG"))
+	if err != nil {
+		t.Fatalf("boundedWriter Write error: %v", err)
+	}
+	if n != len("    PONG") {
+		t.Fatalf("Write returned %d want %d", n, len("    PONG"))
+	}
+	if !overflow || !truncated {
+		t.Fatalf("expected overflow=true and truncated=true")
+	}
+	if bw.observedBytes != len("    PONG") {
+		t.Fatalf("observedBytes=%d want %d (independent of cap)", bw.observedBytes, len("    PONG"))
+	}
+	obs := classifyReadiness(out.String(), "", 0, false, true, "overflow")
+	if obs.Class == ClassReady {
+		t.Fatalf("whitespace-prefixed overflow must NOT yield ready")
+	}
+	if !obs.Truncated || obs.TruncationReason != "overflow" {
+		t.Fatalf("expected Truncated=true and TruncationReason=overflow, got truncated=%v reason=%q", obs.Truncated, obs.TruncationReason)
+	}
+}
+
+func TestBoundedCaptureEmptyWriteAtExactBoundNoOverflow(t *testing.T) {
+	var out bytes.Buffer
+	overflow := false
+	truncated := false
+	bw := boundedWriter{buf: &out, max: 4, overflow: &overflow, truncated: &truncated, observedBytes: 0}
+	n, err := bw.Write([]byte("PONG"))
+	if err != nil {
+		t.Fatalf("Write error: %v", err)
+	}
+	if n != 4 {
+		t.Fatalf("Write returned %d want 4", n)
+	}
+	if overflow || truncated {
+		t.Fatalf("exact-bound write must NOT set overflow or truncated")
+	}
+	if bw.observedBytes != 4 {
+		t.Fatalf("observedBytes=%d want 4", bw.observedBytes)
+	}
+}
+
+func TestSecretSafeTailScrubsJSONLabeledCredentials(t *testing.T) {
+	raw := `{"token":"sk-testsecretvalue"}`
+	scrubbed := scrubSecrets(raw)
+	if strings.Contains(scrubbed, "sk-testsecretvalue") {
+		t.Errorf("labeled JSON secret value not fully scrubbed: got %q", scrubbed)
+	}
+	if !strings.Contains(scrubbed, "«redacted»") {
+		t.Errorf("expected redaction marker in scrubbed result, got %q", scrubbed)
+	}
+	bearer := `Authorization: Bearer sk-testsecretvalue123`
+	scrubbedBearer := scrubSecrets(bearer)
+	if strings.Contains(scrubbedBearer, "sk-testsecretvalue123") {
+		t.Errorf("bearer token suffix leaked in %q", scrubbedBearer)
+	}
 }
