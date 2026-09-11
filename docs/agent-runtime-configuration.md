@@ -327,7 +327,8 @@ legacy defaults. Missing or malformed prompts cannot create a legacy grant.
 Changing flags or track does not extend a frozen policy. Missing or corrupt
 policy/ledger state, inconsistent carried history, or unclassified previous
 invocations refuse further work. Preserve that state for explicit migration;
-no supported legacy migration or cycle-extension command exists yet.
+no supported legacy migration command exists yet. A valid existing cycle policy
+can receive the finite operator extension described below.
 Standalone unobserved handoff preparation does not activate or spend a cycle
 policy. An unobserved historical request is not proof that no outside execution
 occurred and can still require reconciliation before first activation.
@@ -337,3 +338,57 @@ prompts or commands executed outside Parley. Grouping one live synchronous
 operation does not establish exactly-once execution or durable semantic replay
 across a process crash. The stored accounting and attended controls do not
 authenticate a human against another process with the same filesystem access.
+
+### Inspecting and extending a cycle ceiling
+
+Inspect the existing policy without creating runtime state or changing it:
+
+```sh
+parley budget cycle inspect --dir /absolute/workspace --idea IDEA --kind fixup
+```
+
+The JSON result includes `policy_sha256`, the original/effective maximum,
+recorded extensions, spent count, ledger path and original activation time.
+Use `--kind cross-review` for the separate Phase-2 policy. This is a snapshot;
+concurrent work can spend more cycles after inspection.
+
+After deciding on a finite absolute maximum, the operator can record it from
+an attended terminal:
+
+```sh
+parley budget cycle extend --dir /absolute/workspace --idea IDEA --kind fixup \
+  --expected-policy-sha256 HASH_FROM_INSPECTION --decision-id UNIQUE_DECISION \
+  --max-cycles 6 --reason 'Operator reason for this finite grant' --yes
+```
+
+This is a command template, not approval to extend any real idea. `6` means a
+total maximum of six charged attempts, including all previous failed attempts;
+it does not add six attempts. The maximum must exceed the current maximum and
+spent count. Zero/unlimited and the largest platform integer are rejected. An
+extension cannot enable a skipped phase whose original cycle maximum is zero.
+No participant frontmatter supplies attendance, a decision or an extension.
+
+The expected hash addresses canonical policy JSON and protects against a stale
+policy preview; it does not freeze the changing spent count. Each decision ID
+is unique within that cycle policy. An exact replay returns the current policy
+without another grant or rewrite, including after later extensions. Reusing
+the ID with different values or submitting a new ID against an old policy hash
+refuses. A failure after atomic publication may have recorded the decision:
+inspect first or replay the exact decision, never assume that work can be retried.
+
+The first extension advances the policy to schema v2 while retaining its
+original maximum, carried count, scope and ordered grant history. The ledger,
+spent action identities and activation clock are unchanged. Reservations and
+extension publication share the existing resource guard. Driver, BLOCK and
+typed manual calls read the effective grant while retaining the original
+track configuration, non-solo, strict review and evidence gates. Existing v1
+policies remain readable; an older binary refuses an extended v2 policy rather
+than ignoring its fields. Mixed-version continued execution is not certified.
+
+Decisions are bounded to 128 per policy, with IDs of at most 128 bytes, reasons
+of at most 1024 bytes and a 1 MiB policy limit. Hash links make changes and replay
+checkable; they do not authenticate a human or prevent a process with the same
+filesystem access from rewriting an entire history. The attendance check has
+the same limitations as `budget reconcile`; do not allocate a terminal to
+manufacture user authorization. Legacy history migration, launch/step policy
+extensions and lock-origin recovery are separate controls still to be completed.

@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: a223a0d
+head-commit: 321aef9
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -1216,3 +1216,36 @@ actual model concurrency/closure, the exact packet trial, full-six comparative
 pilot, owned final reviews/signatures and elapsed follow-ups remain pending.
 No new model invocation occurred; inventory remains 34 terminal attempts,
 17 unknown costs, USD 46.1887585 known CLI estimates and unknown total.
+
+
+### Finite cycle-extension checkpoint — September 11
+
+Tested source 321aef9 adds read-only `budget cycle inspect` and attended explicit
+`budget cycle extend`. A finite absolute grant retains original ceiling, carried
+count, all decision history, charged ledger bytes and activation clock. Stale
+previews/conflicting replay refuse; exact decision replay does not grant again.
+Driver, manual and BLOCK paths actually use the recorded extension. Skipped
+phases, track configuration, strict review and independent evidence gates remain.
+
+An existing full-suite diagnostic test caught an omitted refused-attempt ordinal;
+it was corrected without weakening the assertion. Final whole Go suite passes
+(app 88.994s, budget 12.375s, driver 9.884s, runner 30.044s). Budget/runner race
+passed at unchanged source; corrected driver race passes in 12.294s. Vet,
+Windows app cross-build, isolated shared-volume fixtures and a real unattended
+CLI refusal all pass. Windows runtime and fresh independent acceptance remain
+unverified. No real idea received an operator grant and no model call occurred.
+
+Exact validation, failure logs, schema limits and remaining scope are in
+implementation-notes/codex-1-cycle-extension-dispositions-20260911.md. Legacy
+migration, launch/step extensions, safe recovery, durable semantic replay,
+monetary mapping, canonical refusal evidence and regression trajectory remain
+required, alongside all outstanding independent/live experiment delivery gates.
+
+### Cycle-extension publication allocation — September 11
+
+Codex owns the serialized documentation/report refresh for tested source 321aef9:
+the existing runtime guide and owned disposition, evaluation workspace
+delivery/2026-09-05/{PROGRESS.md,priorities.json,report.html}, and the draft PR
+description. Check retained validation hashes, rebuild the report and run its
+existing tests before publication. Prior browser evidence describes the previous
+report hash; a content refresh does not inherit exact-file browser verification.
