@@ -95,8 +95,8 @@ func TestUnknownExposureAndSettlement(t *testing.T) {
 	if _, err := s.Settle(ctx, "next", nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Reserve(ctx, Request{ID: "after-unknown", Kind: Launch, ReserveMicros: micros(1)}, Limits{CostMicros: 10}); !errors.Is(err, ErrUnknownCost) {
-		t.Fatalf("unknown prior call: %v", err)
+	if _, err := s.Reserve(ctx, Request{ID: "after-unknown", Kind: Launch, ReserveMicros: micros(1)}, Limits{CostMicros: 10}); !errors.Is(err, ErrLimit) {
+		t.Fatalf("retained reservation must exhaust the cap: %v", err)
 	}
 }
 

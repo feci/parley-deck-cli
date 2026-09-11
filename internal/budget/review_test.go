@@ -30,6 +30,143 @@ func testPinnedLockPath(t *testing.T, dir string) string {
 	return parts[2]
 }
 
+func TestUnknownSettlementRetainsConservativeReserve(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	limits := Limits{CostMicros: 10, RequireKnownCost: true}
+	if _, err := s.Reserve(ctx, Request{ID: "first", Kind: Launch, ReserveMicros: micros(7)}, limits); err != nil {
+		t.Fatal(err)
+	}
+	state, err := s.Settle(ctx, "first", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := state.Entries[key("first")]
+	if !entry.Settled || entry.ActualMicros != nil || *entry.ReserveMicros != 7 {
+		t.Fatalf("observation changed: %+v", entry)
+	}
+	if exposure, err := state.ExposureError(); exposure != 7 || err != nil {
+		t.Fatalf("lost conservative reserve: %d %v", exposure, err)
+	}
+	before, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ReconcileUnknown(ctx, "first", "lower", 0, "Attempt to lower an existing bound"); err == nil {
+		t.Fatal("operator silently lowered retained reserve")
+	}
+	after, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("refusal changed charges: %v", err)
+	}
+	state, err = s.ReconcileUnknown(ctx, "first", "higher", 8, "Explicit larger conservative bound")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exposure, err := state.ExposureError(); exposure != 8 || err != nil {
+		t.Fatalf("larger bound ignored: %d %v", exposure, err)
+	}
+	// Legacy persisted reconciliations cannot undercut the original reservation.
+	legacy := state.Entries[key("first")]
+	legacy.Reconciliations[len(legacy.Reconciliations)-1].CeilingMicros = 0
+	state.Entries[key("first")] = legacy
+	if exposure, err := state.ExposureError(); exposure != 7 || err != nil {
+		t.Fatalf("legacy ceiling undercut reserve: %d %v", exposure, err)
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "remaining", Kind: Launch, ReserveMicros: micros(2)}, limits); err != nil {
+		t.Fatalf("known remaining allowance refused: %v", err)
+	}
+	if _, err := s.Reserve(ctx, Request{ID: "over", Kind: Launch, ReserveMicros: micros(1)}, limits); !errors.Is(err, ErrLimit) {
+		t.Fatalf("unknown actual allowed overspend: %v", err)
+	}
+}
+
+func TestOriginDiagnosticsPrecedeMissingLocalIdentity(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		field       int
+		value, want string
+	}{
+		{"old-version", 0, "parley-budget-lock/v1", "unsupported or malformed origin version"},
+		{"other-host", 1, "another-budget-test-host.invalid", "hostname changed"},
+		{"relocated", 2, "/different/cache/or/ledger/location", "cache path or ledger location changed"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := testStore(t)
+			ctx := context.Background()
+			if _, err := s.Reserve(ctx, Request{ID: "spent", Kind: Launch}, Limits{}); err != nil {
+				t.Fatal(err)
+			}
+			lockPath := testPinnedLockPath(t, s.Dir)
+			if err := os.Remove(lockPath); err != nil {
+				t.Fatal(err)
+			}
+			origin := filepath.Join(s.Dir, "lock-origin")
+			data, err := os.ReadFile(origin)
+			if err != nil {
+				t.Fatal(err)
+			}
+			parts := strings.Split(string(data), "\n")
+			parts[tc.field] = tc.value
+			if err := os.WriteFile(origin, []byte(strings.Join(parts, "\n")), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			before, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.Reserve(ctx, Request{ID: "next", Kind: Launch}, Limits{}); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("misdirected origin diagnostic: %v", err)
+			}
+			if _, err := os.Stat(lockPath); !os.IsNotExist(err) {
+				t.Fatalf("recreated local identity: %v", err)
+			}
+			after, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+			if err != nil || !bytes.Equal(before, after) {
+				t.Fatalf("refusal changed charges: %v", err)
+			}
+		})
+	}
+}
+
+func TestSnapshotRetryIsBoundedSelectiveAndCancellable(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	if _, err := s.Reserve(ctx, Request{ID: "spent", Kind: Launch}, Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(s.Dir, "ledger.json")
+	calls := 0
+	state, err := readStableSnapshot(ctx, path, func(p string) (Snapshot, error) {
+		calls++
+		if calls <= 2 {
+			return Snapshot{}, fmt.Errorf("concurrent publish: %w", ErrSnapshotChanged)
+		}
+		return read(p)
+	})
+	if err != nil || calls != 3 || len(state.Entries) != 1 {
+		t.Fatalf("retry: %d %+v %v", calls, state, err)
+	}
+	calls = 0
+	_, err = readStableSnapshot(ctx, path, func(string) (Snapshot, error) { calls++; return Snapshot{}, ErrSnapshotChanged })
+	if !errors.Is(err, ErrSnapshotChanged) || calls != 5 {
+		t.Fatalf("unbounded read: %d %v", calls, err)
+	}
+	calls = 0
+	corrupt := errors.New("malformed ledger")
+	_, err = readStableSnapshot(ctx, path, func(string) (Snapshot, error) { calls++; return Snapshot{}, corrupt })
+	if !errors.Is(err, corrupt) || calls != 1 {
+		t.Fatalf("corruption retried: %d %v", calls, err)
+	}
+	calls = 0
+	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	_, err = readStableSnapshot(cancelCtx, path, func(string) (Snapshot, error) { calls++; cancel(); return Snapshot{}, ErrSnapshotChanged })
+	if !errors.Is(err, context.Canceled) || calls != 1 {
+		t.Fatalf("cancel ignored: %d %v", calls, err)
+	}
+}
+
 func TestMissingEstablishedLockIsNotRecreatedWhileHeld(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
@@ -245,22 +382,31 @@ func TestSeparateProcessesCannotExceedActionOrCostCap(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			var children []*exec.Cmd
+			outputs := make(map[*exec.Cmd]*bytes.Buffer)
 			for i := 0; i < 12; i++ {
 				cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestBudgetReservationProcess$")
 				cmd.Env = append(os.Environ(), "PARLEY_BUDGET_RESERVE_DIR="+s.Dir, "PARLEY_BUDGET_RESERVE_ID="+fmt.Sprint(i), "PARLEY_BUDGET_RESERVE_COST="+strconv.FormatBool(cost))
+				output := &bytes.Buffer{}
+				cmd.Stdout, cmd.Stderr = output, output
+				outputs[cmd] = output
 				if err := cmd.Start(); err != nil {
 					t.Fatal(err)
 				}
 				children = append(children, cmd)
 			}
 			passed := 0
+			unexpected := 0
 			for _, cmd := range children {
 				err := cmd.Wait()
 				if err == nil {
 					passed++
 				} else if cmd.ProcessState.ExitCode() != 23 {
-					t.Errorf("child failure: %v", err)
+					unexpected++
+					t.Errorf("reservation fixture process failed (not a cap refusal): %v; output=%s", err, outputs[cmd].String())
 				}
+			}
+			if unexpected > 0 {
+				t.Fatalf("%d process/acquisition failures prevent evaluating the admission count", unexpected)
 			}
 			if passed != 5 {
 				t.Fatalf("%d admissions against five-call cap", passed)

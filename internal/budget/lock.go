@@ -70,6 +70,11 @@ func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, er
 			return nil, err
 		}
 	}
+	if !newOrigin {
+		if err := checkLockOriginLocation(canonical, path); err != nil {
+			return nil, err
+		}
+	}
 	token, err := lockIdentity(path, newOrigin)
 	if err != nil {
 		return nil, err
@@ -167,7 +172,7 @@ func verifyLockIdentity(f *os.File, path, token string) error {
 	}
 	var data [66]byte
 	n, err := f.ReadAt(data[:], 0)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
 	if n != 65 || string(data[:n]) != token+"\n" {
@@ -190,23 +195,7 @@ func pinLockOrigin(dir, lockPath, token string) error {
 	}
 	path := filepath.Join(dir, "lock-origin")
 	check := func() error {
-		info, err := os.Lstat(path)
-		if err != nil {
-			return err
-		}
-		if !info.Mode().IsRegular() || info.Size() > 16<<10 {
-			return errors.New("invalid budget lock origin")
-		}
-		f, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		opened, err := f.Stat()
-		if err != nil || !os.SameFile(info, opened) {
-			return errors.New("budget lock origin changed during open")
-		}
-		prior, err := io.ReadAll(io.LimitReader(f, (16<<10)+1))
+		prior, err := readLockOrigin(path)
 		if err != nil {
 			return err
 		}
@@ -245,7 +234,7 @@ func pinLockOrigin(dir, lockPath, token string) error {
 	if err := f.Close(); err != nil {
 		return err
 	}
-	if err := publishOrigin(f.Name(), path); err != nil && !os.IsExist(err) {
+	if err := publishExclusive(f.Name(), path); err != nil && !os.IsExist(err) {
 		return err
 	}
 	return check()
@@ -312,8 +301,64 @@ func lockIdentity(path string, create bool) (string, error) {
 	if err := f.Close(); err != nil {
 		return "", err
 	}
-	if err := publishOrigin(f.Name(), path); err != nil && !os.IsExist(err) {
+	if err := publishExclusive(f.Name(), path); err != nil && !os.IsExist(err) {
 		return "", err
 	}
 	return read()
+}
+
+// Diagnose the immutable origin before consulting a possibly absent local
+// identity. This is a read-only header check; token equality is still enforced
+// by pinLockOrigin and the held descriptor checks before any permission.
+func checkLockOriginLocation(dir, lockPath string) error {
+	path := filepath.Join(dir, "lock-origin")
+	data, err := readLockOrigin(path)
+	if err != nil {
+		return err
+	}
+	parts := strings.Split(string(data), "\n")
+	reason := ""
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		return errors.New("cannot identify budget lock host")
+	}
+	switch {
+	case len(parts) != 5 || parts[0] != "parley-budget-lock/v2" || parts[4] != "":
+		reason = "unsupported or malformed origin version"
+	case parts[1] != host:
+		reason = "hostname changed"
+	case parts[2] != lockPath:
+		reason = "cache path or ledger location changed"
+	}
+	if reason != "" {
+		return fmt.Errorf("budget lock origin mismatch at %s: %s; preserve charges; a supported migration is not yet available", path, reason)
+	}
+	return nil
+}
+
+func readLockOrigin(path string) ([]byte, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > 16<<10 {
+		return nil, errors.New("invalid budget lock origin")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	opened, err := f.Stat()
+	if err != nil || !os.SameFile(info, opened) {
+		return nil, errors.New("budget lock origin changed during open")
+	}
+	data, err := io.ReadAll(io.LimitReader(f, (16<<10)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > 16<<10 {
+		return nil, errors.New("budget lock origin exceeds limit")
+	}
+	return data, nil
 }

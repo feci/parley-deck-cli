@@ -93,3 +93,30 @@ func TestBudgetInspectDoesNotInitializeState(t *testing.T) {
 		t.Fatal("inspection initialized budget state")
 	}
 }
+
+func TestBudgetUnsupportedPlatformPreservesLedgerAndAllowsInspection(t *testing.T) {
+	s := budget.Store{Dir: t.TempDir(), Scope: "idea"}
+	ctx := context.Background()
+	if _, err := s.Reserve(ctx, budget.Request{ID: "spent", Kind: budget.Launch}, budget.Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out, stderr bytes.Buffer
+	args := []string{"reconcile", "--ledger", s.Dir, "--scope", s.Scope, "--action-id", "spent", "--decision-id", "x", "--ceiling-micros", "0", "--reason", "Operator decision", "--yes"}
+	if rc := runBudgetPlatformControl(ctx, args, &out, &stderr, false, true); rc != 2 {
+		t.Fatalf("unsupported recovery allowed: %d %s", rc, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "originating here has no supported attended recovery or migration") {
+		t.Fatalf("impossible recovery advice: %s", stderr.String())
+	}
+	if rc := runBudgetPlatformControl(ctx, []string{"inspect", "--ledger", s.Dir, "--scope", s.Scope}, &out, &stderr, false, false); rc != 0 {
+		t.Fatalf("unsupported platform cannot inspect: %d %s", rc, stderr.String())
+	}
+	after, err := os.ReadFile(filepath.Join(s.Dir, "ledger.json"))
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("recovery refusal changed charges: %v", err)
+	}
+}

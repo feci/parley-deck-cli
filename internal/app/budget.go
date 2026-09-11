@@ -13,8 +13,12 @@ import (
 
 func runBudget(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	supported, attended := budgetAttendance()
+	return runBudgetPlatformControl(ctx, args, stdout, stderr, supported, attended)
+}
+
+func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr io.Writer, supported, attended bool) int {
 	if len(args) > 0 && args[0] == "reconcile" && !supported {
-		fmt.Fprintln(stderr, "budget reconcile: attended recovery is unavailable on this platform; preserve the ledger and use the supported original environment. No unattended override exists.")
+		fmt.Fprintln(stderr, "budget reconcile: attended recovery is unavailable on this platform. A ledger originating here has no supported attended recovery or migration yet; preserve all charges and stop writers. No unattended override exists.")
 		return 2
 	}
 	return runBudgetControl(ctx, args, stdout, stderr, attended)

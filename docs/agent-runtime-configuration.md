@@ -243,7 +243,7 @@ Inspect an existing ledger with:
 parley budget inspect --ledger /absolute/path/to/ledger-directory --scope IDEA
 ```
 
-An unknown monetary observation stops a configured cost ceiling. If the operator
+An unknown monetary observation without a retained conservative bound stops a configured cost ceiling. If the operator
 can establish a conservative upper bound, record that exact decision from an
 attended terminal:
 
@@ -256,7 +256,7 @@ ceiling. This is a template, not a suggested amount or an authorization. The
 original observed cost remains unknown. The decision is appended to the charged
 entry and the action remains spent. An exact repeat of the same decision is
 idempotent; a conflicting replay refuses. A later decision has a new identity.
-Known monetary observations cannot be rewritten by this recovery command. An explicit
+Known monetary observations cannot be rewritten by this recovery command. If a settled attempt has unknown actual cost and a known original reservation, that reservation remains its minimum exposure; reconciliation cannot lower that bound. An explicit
 zero ceiling prints a specific notice: the operator is counting this unknown
 observation as zero exposure; the original cost remains unknown. Decision IDs
 are unique within the charged entry, limited to 128 bytes; reasons to 1024 bytes.
@@ -268,9 +268,8 @@ An agent must not allocate a terminal to manufacture operator authorization.
 It must first obtain the user's concrete decision. Inspection is read-only and
 works without a terminal; it creates no directories, origin or cache locks, even
 for an origin-less ledger or wrong-scope read. It reads one atomically published
-snapshot and may precede a concurrent replacement. Windows checks the input
-console with `GetConsoleMode`; other supported targets use the existing terminal
-probe. Unsupported targets explicitly report that attended recovery is unavailable.
+snapshot and may precede a concurrent replacement. A replacement between inspection and opening the file is retried up to four times; continued replacement returns `ErrSnapshotChanged` so the operator can retry. Malformed or missing ledgers are not retried. Windows checks the input
+console with `GetConsoleMode`; Unix accepts a terminal on stdin or stdout. Unsupported targets explicitly report that a ledger originating there has no supported attended recovery or migration yet.
 Windows runtime behavior remains untested; cross-compilation alone is not runtime evidence.
 
 Locks use a verified local kernel lock because some shared filesystems report
@@ -279,7 +278,7 @@ contains a random 256-bit identity, atomically published before a v2 origin is
 pinned in the shared ledger. The origin records hostname, absolute cache path
 and that identity. Missing established cache locks, differing identity/host/path,
 and existing ledgers without an origin refuse before further mutations. Held
-file descriptors are rechecked against both the pinned token and current inode.
+file descriptors are rechecked against both the pinned token and current inode. On Windows the locked byte is at offset 1 MiB, beyond the bounded identity reads, so the second-handle exclusion probe does not read the locked range.
 Paths resolve absolute paths through symlinks and use conservative case folding
 on every OS. This does not authenticate a machine or coordinate cloned identities
 and distributed writers. The origin's local cache path is visible to readers of
@@ -298,7 +297,7 @@ Action ceilings count lifetime attempts, including failed and settled attempts.
 A zero/absent ceiling means unlimited; the internal denied-kind control expresses
 an outright refusal separately. `Limits.RequireKnownCost` can require a known
 conservative reservation without a monetary cap. This cannot invent a provider
-price; an unknown terminal observation remains unknown. Elapsed wall time includes pauses and resume;
+price; an unknown terminal observation remains unknown while its conservative reservation remains charged. Exposure uses the larger of that reservation and the latest operator ceiling until an actual cost is known. Elapsed wall time includes pauses and resume;
 backward clock movement refuses with a specific error. Lock contention is bounded
 by the caller's deadline and a 30-second upper bound; `ErrLockContention` wraps
 the context error after a failed acquisition wait, so callers can distinguish

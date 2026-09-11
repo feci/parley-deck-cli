@@ -779,3 +779,42 @@ including the self-probe; cross-compilation cannot establish runtime correctness
 Evaluate a separate lock range beyond the bounded identity payload and retain
 Windows runtime status as untested. The current review source is left stable
 at 3ea8693 while that independent reviewer runs; no closure claim is made.
+
+
+### Existing Hermes owner continuation — 2026-09-11
+
+Read-only discovery confirms the original Hermes CLI remains installed with saved
+model fireworks/inkling and high reasoning. Pending replacement is not approval;
+the historical idea still has hermes-1. A bounded file-tools-only continuation
+asks that existing owner to finish readiness schema/capture/diagnostic fixes in
+its original worktree, with no new membership or signatures. Runtime config and
+state are isolated; global config/auth files are reused read-only. Only the
+owner's already-claimed preflight source/test files and a new own handoff may be
+written. Codex will run independent tests and serialize existing preflight glue
+when integrating. This does not authorize a pilot amendment or resolve quorum.
+
+
+### D-series corrections and recovered owner review — 2026-09-11
+
+Claude's original review of 3ea8693 is now published by Claude unchanged, with
+exact byte identity independently checked against the original denied Write
+payload. Publication retries are separate spent attempts, not new source reviews.
+Codex's dispositions are in implementation-notes/codex-1-budget-d-series-dispositions-20260911.md.
+They cover Windows lock-byte separation, origin diagnostics, retained unknown-cost
+reserves, bounded read-only inspection, honest unsupported recovery, and durable
+BLOCK evidence even after failed execution. Focused, race, shared-volume, vet
+and Windows cross-build checks pass; Windows runtime remains untested. This
+is a partial implementation correction, not final independent acceptance.
+
+Kimi's package-failure follow-up timed out with source retained and no new owner
+handoff. Independent local checks on that source pass 53 selected evidence/app
+test events and 85 full evidence-package test events, zero skips/failures,
+including the unchanged negative overlay probes. Owner handoff recovery is in
+progress; the source has not yet been integrated.
+
+Hermes completed a partial owner handoff after an earlier turn-limit exit.
+Independent compilation then found a missing strings import in his new tests.
+The readiness source still contains a regex duplicate-key scan and incomplete
+schema/secret/capture enforcement. A bounded owner correction is running with
+the exact compiler failure and source counterexamples; no readiness acceptance
+or quorum amendment is inferred.

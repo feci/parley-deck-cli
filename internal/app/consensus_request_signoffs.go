@@ -136,7 +136,7 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	successes := make([]string, 0, len(selected))
 	pending := make([]string, 0)
 	runID := store.NewRunID(time.Now())
-	if hasNonHeadlessLaunch(selected) {
+	{
 		runStore := store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))
 		if err := runStore.Append(store.Event{
 			Time: time.Now().UTC(),
@@ -191,6 +191,19 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 			}
 			return validateErr
 		}
+		canonicalStatus, _ := consensus.CanonicalStatus(signoff.Status) // validated above
+		if canonicalStatus == consensus.StatusBlock {
+			printPartialProgress(stdout, successes)
+			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.signoff.block-recorded", map[string]any{
+				"agent": agent.ID, "artifact": after.Path, "artifact_sha256": sha256Hex(string(afterRaw)),
+				"launch_mode": agents.LaunchModeOrDefault(agent.LaunchMode), "signoff_status": signoff.Status,
+				"process_failed":           runErr != nil,
+				"canonical_signoff_status": canonicalStatus,
+			}); eventErr != nil {
+				return errors.Join(runErr, eventErr)
+			}
+			return errors.Join(fmt.Errorf("%s appended BLOCK signoff", agent.ID), runErr)
+		}
 		if runErr != nil {
 			printPartialProgress(stdout, successes)
 			// Record only after the shared validator proves a new, valid append.
@@ -198,6 +211,7 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 			if eventErr := appendSignoffEvent(rootAbs, runID, "agent.signoff.artifact-present-after-failure", map[string]any{
 				"agent": agent.ID, "artifact": after.Path, "artifact_sha256": sha256Hex(string(afterRaw)),
 				"launch_mode": agents.LaunchModeOrDefault(agent.LaunchMode), "signoff_status": signoff.Status,
+				"canonical_signoff_status": canonicalStatus,
 			}); eventErr != nil {
 				return errors.Join(runErr, eventErr)
 			}
@@ -651,12 +665,9 @@ func validateRequestedSignoff(before, after consensus.Summary, agentID, beforeRa
 			return consensus.Signoff{}, fmt.Errorf("%s changed signoff for %s", agentID, agent)
 		}
 	}
-	status, err := consensus.CanonicalStatus(signoff.Status)
+	_, err := consensus.CanonicalStatus(signoff.Status)
 	if err != nil {
 		return consensus.Signoff{}, err
-	}
-	if status == consensus.StatusBlock {
-		return consensus.Signoff{}, fmt.Errorf("%s appended BLOCK signoff", agentID)
 	}
 	return signoff, nil
 }

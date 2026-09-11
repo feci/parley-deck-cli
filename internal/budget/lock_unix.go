@@ -19,7 +19,7 @@ func tryLock(f *os.File) (bool, error) {
 }
 func unlock(f *os.File) { _ = unix.Flock(int(f.Fd()), unix.LOCK_UN) }
 
-func publishOrigin(staged, path string) error {
+func publishExclusive(staged, path string) error {
 	if err := os.Link(staged, path); err != nil {
 		return err
 	}

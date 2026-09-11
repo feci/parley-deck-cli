@@ -21,12 +21,13 @@ import (
 )
 
 var (
-	ErrReserved       = errors.New("action already reserved: reconcile it before any new execution")
-	ErrLimit          = errors.New("budget exhausted")
-	ErrUnknownCost    = errors.New("monetary exposure is unknown")
-	ErrCostOverflow   = errors.New("monetary exposure overflows microdollars")
-	ErrClockSkew      = errors.New("budget clock moved backwards")
-	ErrLockContention = errors.New("budget lock contention exhausted the acquisition deadline")
+	ErrReserved        = errors.New("action already reserved: reconcile it before any new execution")
+	ErrLimit           = errors.New("budget exhausted")
+	ErrUnknownCost     = errors.New("monetary exposure is unknown")
+	ErrCostOverflow    = errors.New("monetary exposure overflows microdollars")
+	ErrClockSkew       = errors.New("budget clock moved backwards")
+	ErrLockContention  = errors.New("budget lock contention exhausted the acquisition deadline")
+	ErrSnapshotChanged = errors.New("budget ledger was replaced during inspection; retry the read")
 )
 
 type Kind string
@@ -97,10 +98,7 @@ func (s Store) Inspect(ctx context.Context) (Snapshot, error) {
 		return Snapshot{}, errors.New("budget directory and scope are required")
 	}
 	path := filepath.Join(s.Dir, "ledger.json")
-	if err := ctx.Err(); err != nil {
-		return Snapshot{}, err
-	}
-	state, err := read(path)
+	state, err := readStableSnapshot(ctx, path, read)
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -108,6 +106,22 @@ func (s Store) Inspect(ctx context.Context) (Snapshot, error) {
 		return Snapshot{}, errors.New("budget scope mismatch")
 	}
 	return state, nil
+}
+
+// Retry only an observed atomic replacement, never malformed data or a missing
+// ledger. A busy writer cannot turn this diagnostic operation into an unbounded
+// wait; the caller can retry ErrSnapshotChanged after five unsuccessful reads.
+func readStableSnapshot(ctx context.Context, path string, readFile func(string) (Snapshot, error)) (Snapshot, error) {
+	for attempt := 0; attempt < 5; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return Snapshot{}, err
+		}
+		state, err := readFile(path)
+		if !errors.Is(err, ErrSnapshotChanged) {
+			return state, err
+		}
+	}
+	return Snapshot{}, ErrSnapshotChanged
 }
 
 func validKind(k Kind) bool { return k == Launch || k == DriverStep || k == Fixup || k == CrossReview }
@@ -198,6 +212,9 @@ func (s Store) ReconcileUnknown(ctx context.Context, id, decisionID string, ceil
 		if observed != nil {
 			return errors.New("operator reconciliation cannot replace a known monetary observation")
 		}
+		if entry.ReserveMicros != nil && ceiling < *entry.ReserveMicros {
+			return errors.New("operator reconciliation cannot lower the retained conservative reservation while actual cost is unknown")
+		}
 		entry.Reconciliations = append(entry.Reconciliations, Reconciliation{ID: decisionID, At: now, CeilingMicros: ceiling, Reason: reason})
 		state.Entries[k] = entry
 		return nil
@@ -243,11 +260,13 @@ func (s Snapshot) ExposureError() (int64, error) {
 	var total int64
 	for _, entry := range s.Entries {
 		n := entry.ReserveMicros
-		if entry.Settled {
+		if entry.Settled && entry.ActualMicros != nil {
 			n = entry.ActualMicros
-		}
-		if n == nil && len(entry.Reconciliations) > 0 {
-			n = &entry.Reconciliations[len(entry.Reconciliations)-1].CeilingMicros
+		} else if len(entry.Reconciliations) > 0 {
+			ceiling := &entry.Reconciliations[len(entry.Reconciliations)-1].CeilingMicros
+			if n == nil || *ceiling > *n {
+				n = ceiling
+			}
 		}
 		if n == nil || *n < 0 {
 			return 0, ErrUnknownCost
@@ -337,8 +356,11 @@ func read(path string) (Snapshot, error) {
 	}
 	defer f.Close()
 	opened, err := f.Stat()
-	if err != nil || !os.SameFile(info, opened) {
-		return Snapshot{}, errors.New("budget ledger changed during open")
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if !os.SameFile(info, opened) {
+		return Snapshot{}, ErrSnapshotChanged
 	}
 	data, err := io.ReadAll(io.LimitReader(f, (16<<20)+1))
 	if err != nil || len(data) > 16<<20 {
