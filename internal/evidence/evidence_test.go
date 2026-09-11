@@ -427,3 +427,181 @@ func containsAny(reasons []string, sub string) bool {
 	}
 	return false
 }
+
+// Adversarial (independent probe, codex-1 2026-09-11): a retained gotest-json
+// re-run with a missing (-1) or malformed (<-1) skipped count is refused at
+// attestation — a real `go test -json` parse always yields a skipped count, so
+// a negative one proves the retained record is not one. Only the envelope
+// format may legitimately carry skipped_cases=-1 (it has no such field), and
+// valid-but-diverging skipped counts still fail reconciliation.
+func TestAttestExecutionRerunCountValidity(t *testing.T) {
+	fresh := func() *Report {
+		r := positiveReport()
+		for i := range r.Records {
+			r.Records[i].Provenance.Verifier = ""
+			r.Records[i].Provenance.VerifierRerun = nil
+		}
+		return r
+	}
+	goodRerun := VerifierExecution{
+		Command: CommandEvidence{
+			CommandSHA256: "abc", // matches positiveRecord's command hash
+			OutputSHA256:  "rerun-out",
+			ExitCode:      0,
+			Format:        FormatGoTestJSON,
+			ExecutedCases: 2,
+			FailedCases:   0,
+			SkippedCases:  0,
+		},
+		TreeBeforeSHA256: "treehash",
+		TreeAfterSHA256:  "treehash",
+	}
+	for _, n := range []int{-1, -2, -100} {
+		r := fresh()
+		bad := goodRerun
+		bad.Command.SkippedCases = n
+		if err := AttestExecution(r, "unit", "codex-1", bad); err == nil {
+			t.Fatalf("gotest-json re-run with skipped_cases=%d must not attest", n)
+		}
+	}
+	// Envelope re-runs legitimately lack a skipped count: -1 is retained.
+	r := fresh()
+	env := goodRerun
+	env.Command.Format = FormatEnvelope
+	env.Command.SkippedCases = -1
+	if err := AttestExecution(r, "unit", "codex-1", env); err != nil {
+		t.Fatalf("envelope re-run without a skipped count must attest: %v", err)
+	}
+	// ...but a malformed count below -1 is refused in every format.
+	r = fresh()
+	envBad := env
+	envBad.Command.SkippedCases = -2
+	if err := AttestExecution(r, "unit", "codex-1", envBad); err == nil {
+		t.Fatal("envelope re-run with skipped_cases=-2 must not attest")
+	}
+	// Valid-but-diverging skipped counts still fail reconciliation.
+	r = fresh()
+	diverge := goodRerun
+	diverge.Command.SkippedCases = 1
+	if err := AttestExecution(r, "unit", "codex-1", diverge); err == nil {
+		t.Fatal("re-run with diverging skipped-case count must not attest")
+	}
+}
+
+// Adversarial (independent probe, codex-1 2026-09-11): a PERSISTED retained
+// re-run whose skipped count is invalid fails closed at Evaluate, exactly as
+// an invalid original record does — format compatibility cannot bypass
+// reconciliation.
+func TestEvaluateInvalidRerunSkippedCountsRejected(t *testing.T) {
+	for _, n := range []int{-1, -2, -100} {
+		r := positiveReport()
+		r.Records[0].Provenance.VerifierRerun.Command.SkippedCases = n
+		if reasons := Evaluate(r, positiveOpts()); len(reasons) == 0 {
+			t.Fatalf("retained re-run with skipped_cases=%d must not close", n)
+		}
+	}
+	// The legitimate envelope absence (-1) still closes.
+	r := positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.Format = FormatEnvelope
+	r.Records[0].Provenance.VerifierRerun.Command.SkippedCases = -1
+	if reasons := Evaluate(r, positiveOpts()); len(reasons) != 0 {
+		t.Fatalf("envelope re-run without a skipped count must still close, got: %v", reasons)
+	}
+}
+
+// Adversarial (independent MAJOR probe, codex-1 2026-09-11): package-level
+// fail/build-fail events are structured proof of failure at package scope
+// (a failed build runs no test cases), so a pass-claimed gotest-json record
+// carrying any, a gotest-json record missing the count (-1), or a malformed
+// count (<-1) each fail closed at Evaluate — as does a persisted retained
+// re-run whose masked exit laundered a package failure.
+func TestEvaluatePackageFailuresRejected(t *testing.T) {
+	r := positiveReport()
+	r.Records[0].Command.FailedPackages = 2
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "failed package-level event") {
+		t.Fatalf("failed package-level events must be rejected, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Command.FailedPackages = -1
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "failed-package count absent") {
+		t.Fatalf("gotest-json record without a failed-package count must be rejected, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Command.FailedPackages = -2
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "invalid (negative) case count") {
+		t.Fatalf("malformed failed-package count must be rejected, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.FailedPackages = 1
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "failed package-level event") {
+		t.Fatalf("retained re-run with a package failure must not close, got: %v", reasons)
+	}
+	r = positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.FailedPackages = -1
+	if reasons := Evaluate(r, positiveOpts()); !containsAny(reasons, "carries no failed-package count") {
+		t.Fatalf("retained gotest-json re-run without a failed-package count must not close, got: %v", reasons)
+	}
+	// The legitimate envelope absence (-1) still closes.
+	r = positiveReport()
+	r.Records[0].Provenance.VerifierRerun.Command.Format = FormatEnvelope
+	r.Records[0].Provenance.VerifierRerun.Command.SkippedCases = -1
+	r.Records[0].Provenance.VerifierRerun.Command.FailedPackages = -1
+	if reasons := Evaluate(r, positiveOpts()); len(reasons) != 0 {
+		t.Fatalf("envelope re-run without package counts must still close, got: %v", reasons)
+	}
+}
+
+// Adversarial (independent MAJOR probe, codex-1 2026-09-11): a verifier's
+// independent re-run whose output masks a package/build failure behind exit 0
+// is NOT an attestation basis — the retained execution carries the structured
+// failure, and a missing or malformed failed-package count on a gotest-json
+// re-run proves it did not come from a real parse. Only the envelope format
+// may legitimately carry failed_packages=-1.
+func TestAttestExecutionRerunPackageFailureRejected(t *testing.T) {
+	fresh := func() *Report {
+		r := positiveReport()
+		for i := range r.Records {
+			r.Records[i].Provenance.Verifier = ""
+			r.Records[i].Provenance.VerifierRerun = nil
+		}
+		return r
+	}
+	goodRerun := VerifierExecution{
+		Command: CommandEvidence{
+			CommandSHA256: "abc", // matches positiveRecord's command hash
+			OutputSHA256:  "rerun-out",
+			ExitCode:      0,
+			Format:        FormatGoTestJSON,
+			ExecutedCases: 2,
+			FailedCases:   0,
+			SkippedCases:  0,
+		},
+		TreeBeforeSHA256: "treehash",
+		TreeAfterSHA256:  "treehash",
+	}
+	for _, n := range []int{1, 2} {
+		r := fresh()
+		bad := goodRerun
+		bad.Command.FailedPackages = n
+		if err := AttestExecution(r, "unit", "codex-1", bad); err == nil {
+			t.Fatalf("re-run with failed_packages=%d (masked package failure) must not attest", n)
+		}
+	}
+	for _, n := range []int{-1, -2} {
+		r := fresh()
+		bad := goodRerun
+		bad.Command.FailedPackages = n
+		if err := AttestExecution(r, "unit", "codex-1", bad); err == nil {
+			t.Fatalf("gotest-json re-run with failed_packages=%d must not attest", n)
+		}
+	}
+	// Envelope re-runs legitimately lack package counts: -1 is retained.
+	r := fresh()
+	env := goodRerun
+	env.Command.Format = FormatEnvelope
+	env.Command.SkippedCases = -1
+	env.Command.FailedPackages = -1
+	if err := AttestExecution(r, "unit", "codex-1", env); err != nil {
+		t.Fatalf("envelope re-run without package counts must attest: %v", err)
+	}
+}

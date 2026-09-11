@@ -21,6 +21,12 @@ import (
 // Semantic attestation is format-aware:
 //   - `go test -json` output is parsed as structured test2json events; executed
 //     and failed case counts come from real Pass/Fail test events, not regexes.
+//     The event decoder is strict: duplicate or case-aliased semantic fields
+//     and malformed event lines fail closed (never collapse into a shell pass).
+//     Package-level fail/build-fail events (a failed build runs no test cases)
+//     fail closed through FailedPackages without touching the exact test-case
+//     counts, so a masked pipeline exit cannot launder a package failure into
+//     an overall pass.
 //   - An explicit evidence envelope (a `PARLEY-EVIDENCE {...}` JSON line) may
 //     assert executed_cases/failed_cases for claims test2json cannot express.
 //   - Anything else is FormatShell: exit code and output hash only, no case
@@ -96,12 +102,14 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 		ExecutedCases:  -1,
 		FailedCases:    -1,
 		SkippedCases:   -1,
+		FailedPackages: -1,
 		Diagnostics:    ScrubAndTruncate(string(out)),
 	}
 	if capbuf.overflow {
 		ce.Diagnostics = "output exceeded the evidence capture bound — partial output is not a semantic basis\n" + ce.Diagnostics
 	}
 	envelopeInvalid := ""
+	goTestInvalid := ""
 	if env, present, envErr := ParseEnvelope(string(out)); present {
 		// An explicit envelope line is authoritative for case semantics: never
 		// fall through to the unrelated test2json parser, and never recover an
@@ -114,11 +122,25 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 			ce.ExecutedCases = *env.ExecutedCases
 			ce.FailedCases = *env.FailedCases
 		}
-	} else if execCount, failCount, skipCount, ok := ParseGoTestJSON(out); ok {
+	} else if execCount, failCount, skipCount, pkgFailCount, recognized, gerr := parseGoTestJSONEvidence(out); recognized {
+		// A recognized test2json stream is authoritative for case semantics:
+		// when it is malformed or carries duplicate/case-aliased semantic
+		// fields there is NO fall-through to an opaque shell pass — the record
+		// keeps the gotest-json format with unknown counts and fails closed,
+		// mirroring the envelope path.
 		ce.Format = FormatGoTestJSON
-		ce.ExecutedCases = execCount
-		ce.FailedCases = failCount
-		ce.SkippedCases = skipCount
+		if gerr != nil {
+			goTestInvalid = gerr.Error()
+			ce.Diagnostics = "invalid test2json event stream (fails closed): " + gerr.Error() + "\n" + ce.Diagnostics
+		} else {
+			ce.ExecutedCases = execCount
+			ce.FailedCases = failCount
+			ce.SkippedCases = skipCount
+			ce.FailedPackages = pkgFailCount
+			if pkgFailCount > 0 {
+				ce.Diagnostics = fmt.Sprintf("test2json stream reports %d package-level failure event(s) (fail/build-fail — a failed build runs no test cases; a masked exit code does not clear this)\n", pkgFailCount) + ce.Diagnostics
+			}
+		}
 	}
 
 	status := StatusPass
@@ -129,6 +151,10 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 		status = StatusFail // unbounded output was truncated: not fully captured evidence
 	case envelopeInvalid != "":
 		status = StatusFail
+	case goTestInvalid != "":
+		status = StatusFail
+	case ce.Format == FormatGoTestJSON && ce.FailedPackages > 0:
+		status = StatusFail // structured evidence of a package/build failure overrides a masked exit 0
 	case ce.Format != FormatShell && ce.FailedCases > 0:
 		status = StatusFail // structured evidence of failing cases overrides exit 0
 	case ce.Format != FormatShell && ce.ExecutedCases == 0 && ce.SkippedCases > 0:
@@ -153,20 +179,26 @@ type cappedWriter struct {
 }
 
 func (w *cappedWriter) Write(p []byte) (int, error) {
-	if room := w.max - w.buf.Len(); room > 0 {
+	// Overflow is decided from the PRE-WRITE remaining capacity: a chunk that
+	// fits exactly (alone or as the last of several) is retained in full and
+	// is not truncation; only a chunk larger than what is left overflows.
+	room := w.max - w.buf.Len()
+	if len(p) > room {
+		w.overflow = true
+	}
+	if room > 0 {
 		n := len(p)
 		if n > room {
 			n = room
 		}
 		w.buf.Write(p[:n])
 	}
-	if len(p) > w.max-w.buf.Len() {
-		w.overflow = true
-	}
 	return len(p), nil
 }
 
-// testEvent is one test2json output line.
+// testEvent is one test2json output line. Action and Test are the SEMANTIC
+// fields the counters rely on; the strict parser below rejects a line where
+// either is duplicated, case-aliased, or not a string.
 type testEvent struct {
 	Action string `json:"Action"`
 	Test   string `json:"Test"`
@@ -178,19 +210,62 @@ type testEvent struct {
 // counted. Only terminal test-level actions count: pass/fail mark executed
 // cases; skip is reported separately — an all-skip run proves no executed
 // cases and is typed StatusSkipped, which cannot close.
+//
+// A stream that IS recognized as test2json but is malformed, carries
+// duplicate/case-aliased semantic fields, or reports a PACKAGE-LEVEL failure
+// (a fail or build-fail event with no Test field — a failed build runs no
+// test cases, so such a failure is invisible to the case counts this
+// signature returns) is rejected as a pass basis: this wrapper reports it as
+// recognized with all counts zeroed (no usable evidence, never a pass).
+// Callers that must distinguish those cases from clean recognition — and fail
+// closed with the reason and the exact counts instead of degrading — use
+// parseGoTestJSONEvidence; RunCriterion does.
 func ParseGoTestJSON(out []byte) (executed, failed, skipped int, recognized bool) {
+	executed, failed, skipped, failedPackages, recognized, err := parseGoTestJSONEvidence(out)
+	if err != nil || failedPackages > 0 {
+		return 0, 0, 0, recognized
+	}
+	return executed, failed, skipped, recognized
+}
+
+// parseGoTestJSONEvidence is the strict test2json parser behind RunCriterion.
+// recognized=true means the stream claimed test2json structure; err is non-nil
+// when that claim cannot be trusted — a line that decodes as an event object
+// with a duplicated, case-aliased or non-string Action/Test field, a `{` line
+// that is not one complete JSON object, or trailing content after an event.
+// recognized=true with err != nil MUST fail closed: it is never a basis for
+// counts and never falls back to opaque shell semantics. Plain non-`{` noise
+// lines (build-failure text, summaries) and well-formed objects without an
+// Action claim remain noise and are skipped, as before.
+//
+// Package-level events (no Test field) are never test cases and never touch
+// the exact test-case counts: start/run/output/pass/skip carry no failure
+// semantics, but a package-level fail or build-fail event is structured proof
+// the PACKAGE failed at package scope (a failed build runs no test cases; a
+// TestMain/panic failure may run none of them). Each such EVENT increments
+// failedPackages — one failed build normally contributes two (its build-fail
+// plus its package-level fail), so failedPackages is a failure SIGNAL to be
+// read as >0, not a distinct-package tally. failedPackages == 0 guarantees the
+// stream reports no package-scope failure.
+func parseGoTestJSONEvidence(out []byte) (executed, failed, skipped, failedPackages int, recognized bool, err error) {
 	sawEvent := false
 	for _, line := range bytes.Split(out, []byte("\n")) {
 		line = bytes.TrimSpace(line)
 		if len(line) == 0 || line[0] != '{' {
 			continue
 		}
-		var ev testEvent
-		if err := json.Unmarshal(line, &ev); err != nil || ev.Action == "" {
+		ev, isEvent, lerr := parseTestEventStrict(line)
+		if lerr != nil {
+			return 0, 0, 0, 0, true, lerr
+		}
+		if !isEvent {
 			continue
 		}
 		sawEvent = true
 		if ev.Test == "" {
+			if ev.Action == "fail" || ev.Action == "build-fail" {
+				failedPackages++
+			}
 			continue // package-level event, not a test case
 		}
 		switch ev.Action {
@@ -203,7 +278,111 @@ func ParseGoTestJSON(out []byte) (executed, failed, skipped int, recognized bool
 			skipped++
 		}
 	}
-	return executed, failed, skipped, sawEvent
+	return executed, failed, skipped, failedPackages, sawEvent, nil
+}
+
+// parseTestEventStrict decodes one trimmed `{`-prefixed test2json output line
+// with a token walk so that semantics a permissive json.Unmarshal would hide
+// are rejected (same discipline as parseEnvelopeStrict): duplicate Action or
+// Test fields (encoding/json's last-wins collapse would decode
+// {"Action":"fail","Action":"pass"} as a pass — that is NEVER accepted as
+// evidence), case-aliased semantic fields (encoding/json matches keys
+// case-insensitively — "action" would silently set Action), non-string
+// semantic values, and trailing content after the closing brace. Other real
+// test2json fields (Time, Package, Output, Elapsed) and unknown future fields
+// are skipped without inspection, including nested values.
+//
+// isEvent is false (with err nil) for a well-formed object that makes no
+// Action claim — noise as far as case semantics are concerned. err non-nil
+// means the line purported to carry event structure but cannot be trusted.
+func parseTestEventStrict(line []byte) (ev testEvent, isEvent bool, err error) {
+	dec := json.NewDecoder(bytes.NewReader(line))
+	tok, err := dec.Token()
+	if err != nil {
+		return ev, false, fmt.Errorf("malformed test2json event line: %v", err)
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return ev, false, fmt.Errorf("test2json event line is not a single JSON object")
+	}
+	seenAction, seenTest := false, false
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return ev, false, fmt.Errorf("malformed test2json event line: %v", err)
+		}
+		key, ok := kt.(string)
+		if !ok {
+			return ev, false, fmt.Errorf("malformed test2json event line: non-string field name")
+		}
+		semantic := key == "Action" || key == "Test"
+		if !semantic {
+			if strings.EqualFold(key, "Action") || strings.EqualFold(key, "Test") {
+				return ev, false, fmt.Errorf("case-aliased test2json field %q — exact field names are required", key)
+			}
+			if err := skipJSONValue(dec); err != nil {
+				return ev, false, fmt.Errorf("malformed test2json event line: %v", err)
+			}
+			continue
+		}
+		if (key == "Action" && seenAction) || (key == "Test" && seenTest) {
+			return ev, false, fmt.Errorf("duplicate test2json field %q — last-wins collapse is not evidence", key)
+		}
+		if key == "Action" {
+			seenAction = true
+		} else {
+			seenTest = true
+		}
+		vt, err := dec.Token()
+		if err != nil {
+			return ev, false, fmt.Errorf("malformed test2json event line: %v", err)
+		}
+		s, ok := vt.(string)
+		if !ok {
+			return ev, false, fmt.Errorf("test2json field %q must be a string — non-string semantic values are rejected", key)
+		}
+		if key == "Action" {
+			ev.Action = s
+		} else {
+			ev.Test = s
+		}
+	}
+	if _, err := dec.Token(); err != nil { // the closing '}'
+		return ev, false, fmt.Errorf("malformed test2json event line: %v", err)
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		if err == nil {
+			return ev, false, fmt.Errorf("trailing content after the test2json event object")
+		}
+		return ev, false, fmt.Errorf("malformed trailing content after the test2json event: %v", err)
+	}
+	return ev, ev.Action != "", nil
+}
+
+// skipJSONValue consumes one complete JSON value from dec, including nested
+// objects and arrays. Used for event fields the counters do not rely on.
+func skipJSONValue(dec *json.Decoder) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if d, ok := tok.(json.Delim); ok && (d == '{' || d == '[') {
+		depth := 1
+		for depth > 0 {
+			t, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			if dd, ok := t.(json.Delim); ok {
+				switch dd {
+				case '{', '[':
+					depth++
+				case '}', ']':
+					depth--
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // ParseEnvelope extracts the explicit evidence envelope, failing closed.

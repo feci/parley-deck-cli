@@ -5,7 +5,8 @@
 // per-criterion records (status, provenance, command/output hashes, executed
 // case counts when the format supports them, bounded secret-safe diagnostics).
 // Evaluate is the fail-closed closure gate: missing/self/stale/skipped/
-// no-execution/partial evidence cannot close a whole implementation.
+// no-execution/package-failure/partial evidence cannot close a whole
+// implementation.
 //
 // Trust boundary: Provenance.Executor/Verifier are ASSERTED runtime identities
 // (agent ids from the orchestrator), not cryptographic authentication of a
@@ -70,6 +71,12 @@ type VerifierExecution struct {
 // CommandEvidence binds one executed command to hashes of its exact input and
 // bounded scrubbed output, plus executed-case counts when the format supports
 // them. ExecutedCases is -1 when the format cannot prove a count.
+// FailedPackages is -1 unless the format can prove package-scope outcomes
+// (gotest-json): it counts package-level fail/build-fail EVENTS — structured
+// proof a package failed at package scope (a failed build runs no test cases).
+// One failed build normally emits both a build-fail and a package-level fail,
+// so FailedPackages is a failure signal to be read as >0, not a
+// distinct-package tally, and it is never folded into the test-case counts.
 type CommandEvidence struct {
 	Command        string `json:"command"`
 	CommandSHA256  string `json:"command_sha256"`
@@ -77,10 +84,11 @@ type CommandEvidence struct {
 	ExitCode       int    `json:"exit_code"`
 	DurationMillis int64  `json:"duration_ms"`
 	Format         string `json:"format"`
-	ExecutedCases  int    `json:"executed_cases"` // -1 = unknown/unsupported
-	FailedCases    int    `json:"failed_cases"`   // -1 = unknown/unsupported
-	SkippedCases   int    `json:"skipped_cases"`  // -1 = unknown/unsupported
-	Diagnostics    string `json:"diagnostics"`    // bounded, secret-scrubbed tail
+	ExecutedCases  int    `json:"executed_cases"`  // -1 = unknown/unsupported
+	FailedCases    int    `json:"failed_cases"`    // -1 = unknown/unsupported
+	SkippedCases   int    `json:"skipped_cases"`   // -1 = unknown/unsupported
+	FailedPackages int    `json:"failed_packages"` // -1 = unknown/unsupported (shell/envelope)
+	Diagnostics    string `json:"diagnostics"`     // bounded, secret-scrubbed tail
 }
 
 // CriterionRecord is the typed record for one named completion criterion.
@@ -136,15 +144,18 @@ type ClosureOptions struct {
 //   - no duplicate criterion records; every required criterion has a record;
 //   - every record passes, with non-contradictory exit/status, valid counts
 //     (structured formats must prove >0 executed, 0 failed, non-negative
-//     counts), and command/output hash binding;
+//     counts, and a gotest-json record must carry its failed-package count
+//     with zero failed package-level events), and command/output hash binding;
 //   - every record carries a PERSISTED independent verifier attestation
 //     (Provenance.Verifier plus the retained Provenance.VerifierRerun, both set
 //     only by AttestExecution after an independent re-execution): the verifier
 //     name is non-empty, not the executor, matches the closing verifier
 //     identity, and the retained re-run reconciles with the record — same
 //     exact command hash, non-empty output hash, pass-consistent exit/status,
-//     equal executed/skipped counts, zero failures, and before/after tested
-//     tree digests equal to each other and to this report's tested tree. A
+//     valid counts on the re-run itself (nothing below -1; a gotest-json
+//     re-run must carry its skipped count), equal executed/skipped counts,
+//     zero failures, and before/after tested tree digests equal to each other
+//     and to this report's tested tree. A
 //     caller supplying a different name in ClosureOptions.Verifier conjures
 //     nothing — the attestation and its retained execution must already exist
 //     in the report.
@@ -239,7 +250,7 @@ func Evaluate(r *Report, opts ClosureOptions) []string {
 			}
 		}
 		// Count validity: anything below -1 is malformed in every format.
-		if rec.Command.ExecutedCases < -1 || rec.Command.FailedCases < -1 || rec.Command.SkippedCases < -1 {
+		if rec.Command.ExecutedCases < -1 || rec.Command.FailedCases < -1 || rec.Command.SkippedCases < -1 || rec.Command.FailedPackages < -1 {
 			reasons = append(reasons, p+"invalid (negative) case count")
 		}
 		// No-execution: a format that can count cases must report at least one,
@@ -256,6 +267,12 @@ func Evaluate(r *Report, opts ClosureOptions) []string {
 			}
 			if rec.Command.Format == FormatGoTestJSON && rec.Command.SkippedCases < 0 {
 				reasons = append(reasons, p+"skipped-case count absent in test2json output")
+			}
+			if rec.Command.Format == FormatGoTestJSON && rec.Command.FailedPackages < 0 {
+				reasons = append(reasons, p+"failed-package count absent in test2json output")
+			}
+			if rec.Command.Format == FormatGoTestJSON && rec.Command.FailedPackages > 0 {
+				reasons = append(reasons, p+fmt.Sprintf("%d failed package-level event(s) in test2json output", rec.Command.FailedPackages))
 			}
 			if rec.Command.FailedCases > rec.Command.ExecutedCases && rec.Command.ExecutedCases >= 0 {
 				reasons = append(reasons, p+"conflicting counts: more failed than executed cases")
@@ -278,9 +295,13 @@ func Evaluate(r *Report, opts ClosureOptions) []string {
 // attestation is refused unless the re-run is bound to this criterion and this
 // report's tested tree: same exact command hash as the criterion record, a
 // non-empty output hash, exit 0, a case-proving format, >0 executed and 0
-// failed cases, counts equal to the original record's, a pass-typed original
-// record, and equal before/after tree digests matching the report's tested
-// tree. An opaque shell exit-0 is not an attestation basis.
+// failed cases, zero failed package-level events, valid counts on the re-run
+// itself (a gotest-json re-run with a missing or malformed skipped or
+// failed-package count is refused — only the envelope format may legitimately
+// carry skipped_cases=-1 and failed_packages=-1), counts equal to the
+// original record's, a pass-typed original record, and equal before/after tree
+// digests matching the report's tested tree. An opaque shell exit-0 is not an
+// attestation basis.
 //
 // The rerun record is persisted inside the report (Provenance.VerifierRerun),
 // not discarded, and Evaluate re-reconciles every one of these bindings at
@@ -327,10 +348,17 @@ func AttestExecution(r *Report, criterion, verifier string, rerun VerifierExecut
 // reconcileRerun verifies that a retained independent execution is bound to
 // the criterion record and the report's tested tree: same exact command hash,
 // non-empty output hash, exit 0, a case-proving format, >0 executed and 0
-// failed cases, executed/skipped counts equal to the original record's, and
-// non-empty before/after tree digests that are equal to each other (a stable
-// tree during verification) and to the report's tested tree. p prefixes each
-// reason ("" at attestation time, the criterion prefix at close time).
+// failed cases, zero failed package-level events (a masked exit cannot
+// launder a build/package failure into an attestation), valid counts on the
+// retained execution itself (nothing below
+// -1 in any format; a gotest-json re-run must carry its skipped and
+// failed-package counts — only the envelope format may legitimately lack them,
+// so format compatibility cannot smuggle an invalid count past
+// reconciliation), executed/skipped/failed-package
+// counts equal to the original record's, and non-empty before/after tree
+// digests that are equal to each other (a stable tree during verification)
+// and to the report's tested tree. p prefixes each reason ("" at attestation
+// time, the criterion prefix at close time).
 func reconcileRerun(p string, rec CriterionRecord, vr *VerifierExecution, treeSHA256 string) []string {
 	var reasons []string
 	rc := vr.Command
@@ -345,6 +373,24 @@ func reconcileRerun(p string, rec CriterionRecord, vr *VerifierExecution, treeSH
 	}
 	if rc.FailedCases != 0 {
 		reasons = append(reasons, p+fmt.Sprintf("independent re-run recorded %d failed cases", rc.FailedCases))
+	}
+	if rc.FailedPackages > 0 {
+		reasons = append(reasons, p+fmt.Sprintf("independent re-run recorded %d failed package-level event(s)", rc.FailedPackages))
+	}
+	// Count validity applies to the retained execution exactly as to the
+	// original record: anything below -1 is malformed in every format, and a
+	// gotest-json re-run must carry real skipped and failed-package counts — a
+	// true `go test -json` parse always yields them, so a negative value there
+	// means the retained record did not come from one. -1 remains legitimate
+	// only for the envelope format, which really lacks those fields.
+	if rc.ExecutedCases < -1 || rc.FailedCases < -1 || rc.SkippedCases < -1 || rc.FailedPackages < -1 {
+		reasons = append(reasons, p+"independent re-run has an invalid (negative) case count")
+	}
+	if rc.Format == FormatGoTestJSON && rc.SkippedCases < 0 {
+		reasons = append(reasons, p+"independent re-run's test2json output carries no skipped-case count — not a real go test -json parse")
+	}
+	if rc.Format == FormatGoTestJSON && rc.FailedPackages < 0 {
+		reasons = append(reasons, p+"independent re-run's test2json output carries no failed-package count — not a real go test -json parse")
 	}
 	if rec.Command.CommandSHA256 == "" || rc.CommandSHA256 != rec.Command.CommandSHA256 {
 		reasons = append(reasons, p+"independent re-run command hash missing or differs from the criterion record — not the same exact command")
@@ -370,6 +416,9 @@ func reconcileRerun(p string, rec CriterionRecord, vr *VerifierExecution, treeSH
 	}
 	if rc.SkippedCases >= 0 && rec.Command.SkippedCases >= 0 && rc.SkippedCases != rec.Command.SkippedCases {
 		reasons = append(reasons, p+fmt.Sprintf("skipped-case count differs between original (%d) and independent re-run (%d)", rec.Command.SkippedCases, rc.SkippedCases))
+	}
+	if rc.FailedPackages >= 0 && rec.Command.FailedPackages >= 0 && rc.FailedPackages != rec.Command.FailedPackages {
+		reasons = append(reasons, p+fmt.Sprintf("failed-package count differs between original (%d) and independent re-run (%d)", rec.Command.FailedPackages, rc.FailedPackages))
 	}
 	return reasons
 }
