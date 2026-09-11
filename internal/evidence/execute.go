@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -72,12 +73,14 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = root
 	procctl.SetNewProcessGroup(cmd)
-	var spawned procctl.Spawned
 	cmd.Cancel = func() error {
-		if spawned.PID > 0 {
-			return procctl.KillGroup(spawned)
+		if cmd.Process == nil {
+			return os.ErrProcessDone
 		}
-		return nil
+		// exec publishes Process before starting its context watcher. Setsid
+		// makes this PID the group ID, even if the shell has already exited.
+		// No post-Start identity assignment may race with cancellation.
+		return procctl.KillGroup(procctl.Spawned{PID: cmd.Process.Pid, PGID: cmd.Process.Pid})
 	}
 	cmd.WaitDelay = waitDelay
 	hasher := sha256.New()
@@ -87,7 +90,6 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 	cmd.Stderr = sink
 	runErr := cmd.Start()
 	if runErr == nil {
-		spawned = procctl.Capture(cmd, "evidence-criterion:"+name)
 		runErr = cmd.Wait()
 	}
 	out := capbuf.buf.Bytes()

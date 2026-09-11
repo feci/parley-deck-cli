@@ -2,6 +2,7 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -58,6 +59,12 @@ func (d *Driver) Run(ctx context.Context) error {
 		}
 
 		if binding != nil {
+			binding, err = binding.Current()
+			if err != nil {
+				return fmt.Errorf("refresh lifetime driver policy: %w", err)
+			}
+			d.cfg.MaxDriverSteps = binding.Policy.MaxSteps
+			d.cfg.MaxWallClock = time.Duration(binding.Policy.WallClockNS)
 			state, err := binding.Store.Inspect(ctx)
 			if err != nil {
 				return fmt.Errorf("read lifetime driver budget: %w", err)
@@ -67,7 +74,8 @@ func (d *Driver) Run(ctx context.Context) error {
 
 		// LE-5: enforce the loop ceilings BEFORE advancing. A breach escalates (durable
 		// inbox note) and halts — it never marks the idea complete.
-		if reason := d.loopBudgetBreach(steps, start); reason != "" {
+		reason, monetaryCeiling := d.runtimeLoopBudgetBreach(ctx, steps, start)
+		if reason != "" {
 			return d.escalateLoopBudget(last, reason)
 		}
 
@@ -80,7 +88,7 @@ func (d *Driver) Run(ctx context.Context) error {
 				return fmt.Errorf("read charged driver step: %w", inspectErr)
 			}
 			steps, start = budget.StepCount(state), state.StartedAt
-			if emitErr := d.emitLoopBudget(steps, start); emitErr != nil {
+			if emitErr := d.emitLoopBudget(steps, start, monetaryCeiling); emitErr != nil {
 				return emitErr
 			}
 		}
@@ -96,7 +104,7 @@ func (d *Driver) Run(ctx context.Context) error {
 		// LE-5: count progress Advances and record budget burn for the TUI/state.
 		if binding == nil && isProgressAction(action) {
 			steps++
-			if err := d.emitLoopBudget(steps, start); err != nil {
+			if err := d.emitLoopBudget(steps, start, monetaryCeiling); err != nil {
 				return err
 			}
 		}
@@ -192,15 +200,60 @@ func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 	return ""
 }
 
+// Saved operator extensions govern the actual loop, including an older runtime
+// configuration naming the original cap. Retain observed usage separately from
+// conservative ledger exposure; neither a new run nor missing usage resets it.
+func (d *Driver) runtimeLoopBudgetBreach(ctx context.Context, steps int, start time.Time) (string, *int64) {
+	b, err := budget.LoadLaunchBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug)
+	if err != nil {
+		return "cannot read persistent launch budget: " + err.Error(), nil
+	}
+	if err := budget.RequireMonetaryBinding(b, d.cfg.MaxCostUSD); err != nil {
+		return err.Error(), nil
+	}
+	if b == nil {
+		return d.loopBudgetBreach(steps, start), nil
+	}
+	status, err := b.Inspect(ctx)
+	if err != nil {
+		return "cannot inspect persistent launch budget: " + err.Error(), nil
+	}
+	var policy budget.LaunchPolicy
+	if err := json.Unmarshal(status.Policy, &policy); err != nil {
+		return "cannot decode persistent launch budget", nil
+	}
+	ceiling := policy.MaxCostMicros
+	copy := *d
+	copy.cfg.MaxCostUSD = 0
+	if reason := copy.loopBudgetBreach(steps, start); reason != "" {
+		return reason, &ceiling
+	}
+	if ceiling > 0 {
+		if status.ExposureMicros == nil {
+			return "cost budget cannot be enforced: monetary exposure is unknown", &ceiling
+		}
+		if *status.ExposureMicros >= ceiling {
+			return fmt.Sprintf("cost budget exhausted (%d/%d microdollars)", *status.ExposureMicros, ceiling), &ceiling
+		}
+	}
+	return "", &ceiling
+}
+
 // emitLoopBudget records budget burn after a progress step so the TUI/state can show it.
 // Cost is always reported for observability (F-T2-2); only enforcement is gated by
 // MaxCostUSD > 0 (in loopBudgetBreach).
-func (d *Driver) emitLoopBudget(steps int, start time.Time) error {
+func (d *Driver) emitLoopBudget(steps int, start time.Time, persistentCeiling ...*int64) error {
 	cost := d.loopCost()
 	var total any
 	coverage := "incomplete"
 	if cost.complete {
 		total, coverage = cost.usd, "complete"
+	}
+	maxCost := d.cfg.MaxCostUSD
+	var maxMicros any
+	if len(persistentCeiling) > 0 && persistentCeiling[0] != nil {
+		maxMicros = *persistentCeiling[0]
+		maxCost = float64(*persistentCeiling[0]) / 1_000_000
 	}
 	return d.cfg.Events.Append(store.Event{
 		Time: time.Now().UTC(),
@@ -213,7 +266,8 @@ func (d *Driver) emitLoopBudget(steps int, start time.Time) error {
 			"max_wall_clock_ms": d.cfg.MaxWallClock.Milliseconds(),
 			"cost_usd":          total,
 			"cost_coverage":     coverage,
-			"max_cost_usd":      d.cfg.MaxCostUSD,
+			"max_cost_usd":      maxCost,
+			"max_cost_micros":   maxMicros,
 		},
 	})
 }

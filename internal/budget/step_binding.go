@@ -1,12 +1,10 @@
 package budget
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,11 +14,13 @@ import (
 // actual runtime configuration, never a participant's grant or prose. Zero
 // means unlimited; a saved policy remains authoritative when flags are absent.
 type StepPolicy struct {
-	Version     int    `json:"version"`
-	Scope       string `json:"scope"`
-	Idea        string `json:"idea"`
-	MaxSteps    int    `json:"max_steps"`
-	WallClockNS int64  `json:"wall_clock_ns"`
+	Version     int               `json:"version"`
+	Scope       string            `json:"scope"`
+	Idea        string            `json:"idea"`
+	MaxSteps    int               `json:"max_steps"`
+	WallClockNS int64             `json:"wall_clock_ns"`
+	Original    *PolicyCeilings   `json:"original,omitempty"`
+	Extensions  []PolicyExtension `json:"extensions,omitempty"`
 }
 type StepBinding struct {
 	Policy StepPolicy
@@ -34,37 +34,20 @@ func stepScope(ctx context.Context, root, idea string, history bool) (string, st
 	dir, scope, roots, err := launchScope(ctx, root, idea, history)
 	return filepath.Join(filepath.Dir(dir), "steps-"+key(scope)), "parley-steps/v1:" + key(scope), roots, err
 }
+func (p StepPolicy) validateBase() error {
+	if (p.Version != 1 && p.Version != 2) || p.Scope == "" || p.Idea == "" || p.MaxSteps < 0 || p.WallClockNS < 0 {
+		return errors.New("invalid step policy")
+	}
+	return nil
+}
 func readStepPolicy(path string) (StepPolicy, error) {
 	var p StepPolicy
-	data, err := readLockOrigin(path)
-	if err != nil {
+	if err := readRuntimePolicy(path, &p, []string{"version", "scope", "idea", "max_steps", "wall_clock_ns"}); err != nil {
 		return p, err
 	}
-	if err = checkJSON(json.NewDecoder(bytes.NewReader(data))); err != nil {
-		return p, err
-	}
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.DisallowUnknownFields()
-	if err = dec.Decode(&p); err != nil {
-		return p, err
-	}
-	if dec.Decode(new(any)) != io.EOF {
-		return p, errors.New("trailing step policy data")
-	}
-	var fields map[string]json.RawMessage
-	if err = json.Unmarshal(data, &fields); err != nil {
-		return p, err
-	}
-	for _, name := range []string{"version", "scope", "idea", "max_steps", "wall_clock_ns"} {
-		if _, ok := fields[name]; !ok {
-			return p, errors.New("incomplete step policy")
-		}
-	}
-	if p.Version != 1 || p.Scope == "" || p.Idea == "" || p.MaxSteps < 0 || p.WallClockNS < 0 {
-		return p, errors.New("invalid step policy")
-	}
-	return p, nil
+	return p, validateRuntimePolicy(p)
 }
+
 func LoadStepBinding(ctx context.Context, root, idea string) (*StepBinding, error) {
 	if idea == "" {
 		return nil, nil
@@ -104,7 +87,7 @@ func EnsureStepBinding(ctx context.Context, root, idea string, steps int, wall t
 		return nil, err
 	}
 	if old != nil {
-		if (steps != 0 && steps != old.Policy.MaxSteps) || (wall != 0 && int64(wall) != old.Policy.WallClockNS) {
+		if !old.Policy.accepts(steps, wall) {
 			return nil, errors.New("driver step policy is frozen; an explicit operator extension is required")
 		}
 		return old, nil
@@ -128,7 +111,7 @@ func EnsureStepBinding(ctx context.Context, root, idea string, steps int, wall t
 	}
 	defer release()
 	if old, err = LoadStepBinding(ctx, root, idea); err == nil && old != nil {
-		if old.Policy.MaxSteps != steps || old.Policy.WallClockNS != int64(wall) {
+		if !old.Policy.accepts(steps, wall) {
 			return nil, errors.New("conflicting first step policy")
 		}
 		return old, nil
@@ -160,6 +143,14 @@ func EnsureStepBinding(ctx context.Context, root, idea string, steps int, wall t
 }
 
 func (b *StepBinding) Check(ctx context.Context) (Snapshot, error) {
+	current, err := b.Current()
+	if err != nil {
+		return Snapshot{}, err
+	}
+	b = current
+	if _, err := (runtimeBinding{b.Policy, b.Store}).inspect(ctx); err != nil {
+		return Snapshot{}, err
+	}
 	state, err := b.Store.Inspect(ctx)
 	if err != nil {
 		return state, err
@@ -174,7 +165,13 @@ func (b *StepBinding) Check(ctx context.Context) (Snapshot, error) {
 }
 
 func (b *StepBinding) checkTime(state Snapshot) error {
+	if err := (runtimeBinding{b.Policy, b.Store}).checkClock(state.StartedAt); err != nil {
+		return err
+	}
 	now := time.Now().UTC()
+	if b.Store.now != nil {
+		now = b.Store.now().UTC()
+	}
 	if now.Before(state.StartedAt) {
 		return ErrClockSkew
 	}

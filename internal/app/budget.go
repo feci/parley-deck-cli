@@ -17,8 +17,8 @@ func runBudget(ctx context.Context, args []string, stdout, stderr io.Writer) int
 }
 
 func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr io.Writer, supported, attended bool) int {
-	if len(args) > 1 && args[0] == "cycle" && args[1] == "extend" && !supported {
-		fmt.Fprintln(stderr, "budget cycle extend: attended operator control is unavailable on this platform; no grant was recorded")
+	if len(args) > 1 && (args[0] == "cycle" || args[0] == "launch" || args[0] == "step") && args[1] == "extend" && !supported {
+		fmt.Fprintf(stderr, "budget %s extend: attended operator control is unavailable on this platform; no grant was recorded\n", args[0])
 		return 2
 	}
 	if len(args) > 0 && (args[0] == "reconcile" || args[0] == "configure") && !supported {
@@ -36,6 +36,9 @@ func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr
 // platform probe; no flag or participant-authored field supplies attendance.
 // As with protocol publication, terminal presence is not human authentication.
 func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writer, attended bool) int {
+	if len(args) > 0 && (args[0] == "launch" || args[0] == "step") {
+		return runBudgetPolicy(ctx, args[0], args[1:], stdout, stderr, attended)
+	}
 	if len(args) > 0 && args[0] == "cycle" {
 		return runBudgetCycle(ctx, args[1:], stdout, stderr, attended)
 	}
@@ -43,6 +46,7 @@ func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writ
 		return runBudgetConfigure(ctx, args[1:], stdout, stderr, attended)
 	}
 	if len(args) == 0 || (args[0] != "inspect" && args[0] != "reconcile") {
+		fmt.Fprintln(stderr, "runtime policy controls: parley budget launch|step inspect|extend --dir DIR [--idea ID] [options]")
 		fmt.Fprintln(stderr, "usage: parley budget inspect|reconcile --ledger DIR --scope ID [options]; parley budget configure --dir DIR [--idea ID] --max-launches N --max-cost-micros N --wall-clock D --yes; parley budget cycle inspect|extend --dir DIR --idea ID --kind fixup|cross-review [options]")
 		return 2
 	}

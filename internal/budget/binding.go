@@ -18,20 +18,24 @@ import (
 // frozen for this scope; zero count/cost/time ceilings mean unlimited. Unknown
 // observed costs stay unknown even when ReserveMicros supplies a safe ceiling.
 type LaunchPolicy struct {
-	Version       int    `json:"version"`
-	Scope         string `json:"scope"`
-	Idea          string `json:"idea"`
-	MaxLaunches   int    `json:"max_launches"`
-	MaxCostMicros int64  `json:"max_cost_micros"`
-	WallClockMS   int64  `json:"wall_clock_ms"`
-	ReserveMicros *int64 `json:"reserve_micros"`
+	Version       int               `json:"version"`
+	Scope         string            `json:"scope"`
+	Idea          string            `json:"idea"`
+	MaxLaunches   int               `json:"max_launches"`
+	MaxCostMicros int64             `json:"max_cost_micros"`
+	WallClockMS   int64             `json:"wall_clock_ms"`
+	ReserveMicros *int64            `json:"reserve_micros"`
+	Original      *PolicyCeilings   `json:"original,omitempty"`
+	Extensions    []PolicyExtension `json:"extensions,omitempty"`
 }
 
 func (p LaunchPolicy) Limits() Limits {
 	return Limits{Actions: map[Kind]int{Launch: p.MaxLaunches}, CostMicros: p.MaxCostMicros, WallClock: time.Duration(p.WallClockMS) * time.Millisecond}
 }
-func (p LaunchPolicy) validate() error {
-	if p.Version != 1 || p.Scope == "" || p.MaxLaunches < 0 || p.MaxCostMicros < 0 || p.WallClockMS < 0 || p.WallClockMS > int64((1<<63-1)/time.Millisecond) || (p.ReserveMicros != nil && *p.ReserveMicros < 0) {
+func (p LaunchPolicy) validate() error { return validateRuntimePolicy(p) }
+
+func (p LaunchPolicy) validateBase() error {
+	if (p.Version != 1 && p.Version != 2) || p.Scope == "" || p.MaxLaunches < 0 || p.MaxCostMicros < 0 || p.WallClockMS < 0 || p.WallClockMS > int64((1<<63-1)/time.Millisecond) || (p.ReserveMicros != nil && *p.ReserveMicros < 0) {
 		return errors.New("invalid frozen launch budget policy")
 	}
 	if p.MaxCostMicros > 0 && (p.ReserveMicros == nil || *p.ReserveMicros > p.MaxCostMicros) {
@@ -154,34 +158,11 @@ func LoadLaunchBinding(ctx context.Context, root, idea string) (*LaunchBinding, 
 }
 
 func readLaunchPolicy(path string) (LaunchPolicy, error) {
-	var policy LaunchPolicy
-	data, err := readLockOrigin(path)
-	if err != nil {
-		return policy, err
+	var p LaunchPolicy
+	if err := readRuntimePolicy(path, &p, []string{"version", "scope", "idea", "max_launches", "max_cost_micros", "wall_clock_ms", "reserve_micros"}); err != nil {
+		return p, err
 	}
-	if err := checkJSON(json.NewDecoder(bytes.NewReader(data))); err != nil {
-		return policy, err
-	}
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&policy); err != nil {
-		return policy, err
-	}
-	if dec.Decode(new(any)) != io.EOF {
-		return policy, errors.New("trailing launch policy data")
-	}
-	// Every field, including explicit zero/unlimited and null/unknown, is
-	// required. Removing a ceiling must not silently decode to unlimited.
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil {
-		return policy, err
-	}
-	for _, name := range []string{"version", "scope", "idea", "max_launches", "max_cost_micros", "wall_clock_ms", "reserve_micros"} {
-		if _, ok := fields[name]; !ok {
-			return policy, errors.New("incomplete launch budget policy")
-		}
-	}
-	return policy, policy.validate()
+	return p, p.validate()
 }
 
 // ConfigureLaunchBudget freezes a first policy only. The CLI must establish
@@ -214,13 +195,13 @@ func ConfigureLaunchBudget(ctx context.Context, root, idea string, policy Launch
 	defer release()
 	path := filepath.Join(dir, "policy.json")
 	if prior, err := readLaunchPolicy(path); err == nil {
-		a, _ := json.Marshal(prior)
+		a, _ := json.Marshal(prior.originalPolicy())
 		b, _ := json.Marshal(policy)
 		if !bytes.Equal(a, b) {
 			return nil, errors.New("launch policy is frozen; changing it requires a separate explicit operator extension, not configure")
 		}
 		binding := &LaunchBinding{Policy: prior, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}
-		if _, err := binding.Store.Inspect(ctx); err != nil {
+		if _, err := binding.Inspect(ctx); err != nil {
 			return nil, err
 		}
 		return binding, nil

@@ -390,8 +390,8 @@ of at most 1024 bytes and a 1 MiB policy limit. Hash links make changes and repl
 checkable; they do not authenticate a human or prevent a process with the same
 filesystem access from rewriting an entire history. The attendance check has
 the same limitations as `budget reconcile`; do not allocate a terminal to
-manufacture user authorization. Legacy history migration, launch/step policy
-extensions and lock-origin recovery are separate controls still to be completed.
+manufacture user authorization. Launch/step extensions have their separate
+controls below. Legacy history migration and lock-origin recovery remain open.
 
 ### Mapping a configured dollar ceiling to launch reservations
 
@@ -403,11 +403,13 @@ persistent policy before dispatch. A run-local usage total alone cannot authoriz
 the first call or reset spend in another run.
 
 A positive dollar default requires an existing launch policy for the same idea
-(or the shared auxiliary scope for calls with no idea), with the matching finite
-`max_cost_micros` and an explicit conservative `reserve_micros`. Establish that
+(or the shared auxiliary scope for calls with no idea), naming its original or
+another recorded finite `max_cost_micros` and an explicit conservative
+`reserve_micros`. The effective current grant governs execution. Establish that
 policy using the attended `budget configure` control before the first execution.
 The dollar default is a total ceiling; it supplies no per-call reservation or
-provider price. If the policy/reservation is absent or the finite cap differs,
+provider price. If the policy/reservation is absent or the requested finite cap
+does not match any recorded version,
 execution refuses with a terminal `budget_refused` record. Existing invocation
 history can require the still-pending explicit legacy migration before a first
 policy can be configured; deleting that evidence is not recovery.
@@ -426,3 +428,64 @@ parse failures cannot silently disable a budget. Standalone handoff preparation
 does not activate or charge a policy; its eventual execution must pass the normal
 launch boundary. Unknown terminal prices remain unknown, with conservative
 reservations retained as exposure. A changed default does not extend a policy.
+
+### Extending launch and driver-step policies
+
+Inspect an existing policy, its current count/exposure, original activation time
+and canonical hash without initializing runtime state:
+
+```sh
+parley budget launch inspect --dir DIR --idea IDEA
+parley budget step inspect --dir DIR --idea IDEA
+```
+
+Launch inspection may omit `--idea` to address the auxiliary launch scope. A
+step policy always requires an idea. After deciding on an explicit extension,
+use an attended terminal and supply every absolute ceiling for that policy:
+
+```sh
+parley budget launch extend --dir DIR --idea IDEA \
+  --max-launches N --max-cost-micros MICROS --wall-clock DURATION \
+  --expected-policy-sha256 HASH --decision-id UNIQUE_ID --reason 'Operator reason' --yes
+parley budget step extend --dir DIR --idea IDEA \
+  --max-steps N --wall-clock DURATION \
+  --expected-policy-sha256 HASH --decision-id UNIQUE_ID --reason 'Operator reason' --yes
+```
+
+These are templates, not permission to extend a real policy. At least one finite
+ceiling must increase. Unchanged zero axes retain their original unlimited
+meaning; an extension cannot change a finite axis to zero or lower another axis.
+An increased action ceiling must exceed spent attempts; an increased monetary
+ceiling must exceed recorded exposure; an increased duration must exceed elapsed
+time since original activation. Unknown exposure must be reconciled before a
+monetary increase. Increasing only another axis preserves that unknown exposure
+and does not make it spendable under a monetary cap. Launch durations use whole
+milliseconds; step durations retain nanosecond resolution.
+
+The first extension creates a v2 policy with original ceilings and an ordered,
+bounded decision history. Every decision records its prior canonical policy
+hash, absolute ceilings, spent count, known/unknown exposure, original activation
+time, decision time and reason. The charged ledger and per-launch reservation
+amount remain unchanged. Changing a reservation or migrating legacy authority
+is a separate operation, not an extension. Existing v1 policies remain readable;
+old readers refuse v2 rather than ignore its extension fields.
+
+Policy hashes freeze a preview of policy, not subsequent spend. Publication
+holds both the policy resource guard and the ledger lock, so reservations,
+settlement and cost reconciliation cannot race the recorded grant exposure.
+Exact replay returns the current policy without another grant, even after later
+decisions; conflicting ID reuse or a stale new decision refuses. Publication or
+output failure can leave an applied grant: inspect or replay the exact decision
+before attempting work. Never delete history or assume a failed command refunded it.
+
+Cached bindings and resumed driver/manual paths load the effective grant. Runtime
+configuration and trusted launch contexts may still reference the original or a
+recorded intermediate policy; an unrecorded value is not an extension. Nested
+children retain their one charged transition. The loop uses persistent monetary
+exposure while reporting observed usage separately. These controls neither waive
+protocol/review gates nor establish exactly-once execution of semantic actions.
+
+Histories allow 128 decisions per policy and at most 1 MiB of JSON. Decision IDs
+are at most 128 bytes, reasons 1024 bytes; integer overflows and clock regression
+refuse. Attendance and hash chains are not human authentication against another
+process with the same filesystem access. No unattended override exists.

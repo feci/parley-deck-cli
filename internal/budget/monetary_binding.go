@@ -47,8 +47,10 @@ func RequireMonetaryBinding(b *LaunchBinding, usd float64) error {
 	if err := b.Policy.validate(); err != nil {
 		return err
 	}
-	if b.Policy.MaxCostMicros != micros {
-		return errors.New("configured monetary ceiling differs from the frozen launch policy; configuration is not an operator extension or migration")
+	for _, c := range policyHistory(b.Policy) {
+		if c.CostMicros == micros {
+			return nil
+		}
 	}
-	return nil
+	return errors.New("configured monetary ceiling differs from the frozen launch policy; configuration is not an operator extension or migration")
 }

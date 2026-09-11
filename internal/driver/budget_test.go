@@ -9,6 +9,56 @@ import (
 	"time"
 )
 
+func TestDriverConsumesRecordedStepAndMonetaryExtensions(t *testing.T) {
+	ctx := context.Background()
+	parts := []string{"codex", "claude"}
+	ideaDir, runDir := setupIdea(t, parts, "")
+	writeAll(t, ideaDir, 1, parts)
+	appendEvent(t, runDir, "round.completed", "round-01")
+	fr := &fakeRunner{writeOnRun: func(n int) { writeAll(t, ideaDir, n, parts) }}
+	d := newTestDriver(ideaDir, runDir, parts, 3, true, fr)
+	d.cfg.MaxDriverSteps = 1
+	if _, _, err := d.Advance(ctx); err != nil {
+		t.Fatal(err)
+	}
+	s, err := budget.InspectRuntimeBudget(ctx, d.cfg.Root, "demo", budget.DriverStep)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := budget.ExtendRuntimeBudget(ctx, d.cfg.Root, "demo", budget.DriverStep, budget.PolicyExtensionRequest{DecisionID: "step", ExpectedPolicySHA256: s.PolicySHA256, Reason: "Explicit fixture step extension", Ceilings: budget.PolicyCeilings{Actions: 2}}); err != nil {
+		t.Fatal(err)
+	}
+	// Run reconstructs state while still carrying the original one-step config.
+	if err := d.Run(ctx); err != nil || len(fr.calls) != 2 {
+		t.Fatalf("recorded step extension ignored: calls=%v err=%v", fr.calls, err)
+	}
+	// Monetary loop enforcement must use current exposure and the recorded grant,
+	// even when runtime configuration still names the original dollar ceiling.
+	root := t.TempDir()
+	reserve := int64(1000000)
+	b, err := budget.ConfigureLaunchBudget(ctx, root, "money", budget.LaunchPolicy{MaxCostMicros: reserve, ReserveMicros: &reserve})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Reserve(ctx, "first"); err != nil {
+		t.Fatal(err)
+	}
+	monetary := New(Config{Root: root, IdeaSlug: "money", MaxCostUSD: 1}, &fakeRunner{})
+	if reason, _ := monetary.runtimeLoopBudgetBreach(ctx, 0, time.Now()); reason == "" {
+		t.Fatal("spent original ceiling passed")
+	}
+	s, err = budget.InspectRuntimeBudget(ctx, root, "money", budget.Launch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := budget.ExtendRuntimeBudget(ctx, root, "money", budget.Launch, budget.PolicyExtensionRequest{DecisionID: "money", ExpectedPolicySHA256: s.PolicySHA256, Reason: "Explicit fixture cost extension", Ceilings: budget.PolicyCeilings{CostMicros: 2 * reserve}}); err != nil {
+		t.Fatal(err)
+	}
+	if reason, limit := monetary.runtimeLoopBudgetBreach(ctx, 0, time.Now()); reason != "" || limit == nil || *limit != 2*reserve {
+		t.Fatalf("original config ignored monetary grant: %s %v", reason, limit)
+	}
+}
+
 func TestDriverMonetaryLimitRequiresPersistentReservationPolicy(t *testing.T) {
 	parts := []string{"codex", "claude"}
 	ideaDir, runDir := setupIdea(t, parts, "")

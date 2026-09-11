@@ -30,6 +30,9 @@ const launchHandoff launchIntent = true
 // Detach mutable limits so a caller cannot accidentally change in-flight policy.
 func WithLaunchBudget(ctx context.Context, policy LaunchBudget) context.Context {
 	copyMap := func(in map[budget.Kind]int) map[budget.Kind]int {
+		if len(in) == 0 {
+			return nil
+		}
 		out := make(map[budget.Kind]int, len(in))
 		for k, v := range in {
 			out[k] = v
@@ -37,7 +40,10 @@ func WithLaunchBudget(ctx context.Context, policy LaunchBudget) context.Context 
 		return out
 	}
 	policy.Limits.Actions = copyMap(policy.Limits.Actions)
-	denied := make(map[budget.Kind]bool, len(policy.Limits.Denied))
+	var denied map[budget.Kind]bool
+	if len(policy.Limits.Denied) > 0 {
+		denied = make(map[budget.Kind]bool, len(policy.Limits.Denied))
+	}
 	for k, v := range policy.Limits.Denied {
 		denied[k] = v
 	}
@@ -98,11 +104,18 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 		return &launchBudgetError{cause: err}
 	}
 	if bound != nil {
-		expected := LaunchBudget{Store: bound.Store, Limits: bound.Policy.Limits(), ReserveMicros: bound.Policy.ReserveMicros}
 		if enabled {
 			a, _ := json.Marshal(policy)
-			b, _ := json.Marshal(expected)
-			if string(a) != string(b) {
+			matched := false
+			for _, limits := range bound.Policy.LimitHistory() {
+				expected := LaunchBudget{Store: bound.Store, Limits: limits, ReserveMicros: bound.Policy.ReserveMicros}
+				b, _ := json.Marshal(expected)
+				if string(a) == string(b) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
 				return &launchBudgetError{cause: errors.New("explicit launch policy conflicts with the frozen operator binding")}
 			}
 		}
@@ -114,9 +127,11 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 	if !enabled {
 		return nil
 	}
-	_, err = policy.Store.Reserve(ctx, budget.Request{
-		ID: l.invocation.ID, Kind: budget.Launch, ReserveMicros: policy.ReserveMicros,
-	}, policy.Limits)
+	if bound != nil {
+		_, err = bound.Reserve(ctx, l.invocation.ID)
+	} else {
+		_, err = policy.Store.Reserve(ctx, budget.Request{ID: l.invocation.ID, Kind: budget.Launch, ReserveMicros: policy.ReserveMicros}, policy.Limits)
+	}
 	if err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()

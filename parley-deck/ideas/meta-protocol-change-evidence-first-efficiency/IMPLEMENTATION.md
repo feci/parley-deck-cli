@@ -1302,3 +1302,46 @@ unverified. Exact commands, source manifest, negative probe and log hashes are
 in implementation-notes/codex-1-monetary-default-dispositions-20260911.md.
 No participant model was called. All remaining D6 and experiment obligations
 listed above still apply; this is not all-six-priorities completion.
+
+### Launch/step extension allocation — September 11
+
+Codex claims the serialized D6 extension implementation before edits:
+internal/budget/{policy_extension.go,policy_extension_test.go,binding.go,
+step_binding.go,step_session.go,monetary_binding.go},
+internal/runner/{launch_budget.go,policy_extension_test.go},
+internal/driver/{loop.go,budget.go,budget_test.go},
+internal/app/{budget.go,budget_policy.go,budget_policy_test.go}, runtime docs and
+the owned extension disposition. Existing participant artifacts are unchanged.
+
+Add read-only inspection and attended explicit finite absolute launch/step
+extensions. Preserve the original ceilings, reservation amount, charged ledger,
+activation time and decision history. At least one finite ceiling must increase;
+unlimited axes stay unchanged, no grant lowers another ceiling, and increased
+axes must exceed actual spent exposure/elapsed time. Unknown monetary exposure
+requires reconciliation before increasing a monetary ceiling. Exact replay is
+idempotent; stale/conflicting decisions and malformed history refuse.
+
+Serialize extension and reservation through the existing resource guard and
+reload cached bindings. Driver/manual/BLOCK and nested sessions must consume
+effective limits without double-charging or relaxing protocol/independent gates.
+Original configuration remains a valid authority reference after a recorded grant;
+unrecorded intermediate values remain invalid. Test publication recovery, races,
+continued execution, nested grants, clock and schema boundaries, actual CLI
+attendance refusal and isolated shared-volume behavior. No real policy extension
+is authorized by this implementation allocation.
+
+### Evidence cancellation race allocation — September 11
+
+Codex claims serialized integration edits to internal/evidence/execute.go and
+the new owned internal/evidence/execute_cancellation_test.go before edits.
+The expanded budget/driver/runner/app race run retained in runtime-extension
+validation fails: RunCriterion's context watcher reads spawned concurrently
+with its post-Start assignment (execute.go:77/90). Preserve that negative run
+and Kimi's original source attribution, handoffs and review artifacts.
+
+Use the live command's established process identity for cancellation without
+unsynchronized post-start state. Verify cancellation before launch, start failure,
+and cancellation of an actual child group, including a TERM-resistant descendant
+holding output pipes. Re-run the original app barrier fixture under the race
+detector, then the required full and scoped race suites. This correction and
+its execution record do not constitute participant-owned independent acceptance.

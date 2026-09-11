@@ -36,7 +36,7 @@ func OpenStepSession(ctx context.Context, b *StepBinding) (context.Context, func
 		if !old.active {
 			return ctx, noop, errors.New("driver step session has ended")
 		}
-		if old.binding.Store.Dir != b.Store.Dir || old.binding.Store.Scope != b.Store.Scope {
+		if old.binding.Store.Dir != b.Store.Dir || old.binding.Store.Scope != b.Store.Scope || policyDigest(old.binding.Policy.originalPolicy()) != policyDigest(b.Policy.originalPolicy()) {
 			return ctx, noop, errors.New("nested step scope mismatch")
 		}
 		return ctx, noop, nil
@@ -71,9 +71,16 @@ func ChargeStep(ctx context.Context) error {
 			// The inclusive step cap permits the rest of this charged transition.
 			// It does not permit a later launch after lifetime time has expired,
 			// or after required accounting state has disappeared/corrupted.
-			state, err := s.binding.Store.Inspect(ctx)
+			current, err := s.binding.Current()
 			if err == nil {
-				err = s.binding.checkTime(state)
+				var state Snapshot
+				_, err = (runtimeBinding{current.Policy, current.Store}).inspect(ctx)
+				if err == nil {
+					state, err = current.Store.Inspect(ctx)
+				}
+				if err == nil {
+					err = current.checkTime(state)
+				}
 			}
 			s.err = err
 		}
@@ -85,8 +92,7 @@ func ChargeStep(ctx context.Context) error {
 		s.err = err
 		return err
 	}
-	zero := int64(0)
-	_, s.err = s.binding.Store.Reserve(ctx, Request{ID: "step:" + hex.EncodeToString(id[:]), Kind: DriverStep, ReserveMicros: &zero}, s.binding.Policy.limits())
+	_, s.err = s.binding.reserve(ctx, "step:"+hex.EncodeToString(id[:]))
 	if s.err != nil {
 		s.err = fmt.Errorf("driver step reservation refused: %w", s.err)
 	}
