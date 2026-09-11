@@ -596,3 +596,35 @@ binary under the PTY and passes. The failed observation is not discarded.
 Focused race checks and vet passed before the final delivery-contract change;
 current full-suite and independent owner review are still required. Windows
 cross-compilation passed before that final change; Windows runtime is untested.
+
+Full go test ./... passed on terminal-launch commit 122f4d2. Claude's independent
+source review is running via measured launcher parley-recovery-4. Kimi's new
+owner correction is running via parley-recovery-3 and has created its own early
+handoff; neither in-progress action is claimed as completed.
+
+Next Codex budget work (existing internal/budget/** allocation): implement the
+shared durable reservation store before wiring callers. It must serialize
+concurrent callers with an OS lock, precharge unique actions, retain failed or
+interrupted reservations, reject replay as permission to execute again, retain
+unknown monetary exposure, reject corrupt persisted state and use the tested
+fsutil synchronized replacement boundary. Driver/manual/resume/BLOCK wiring and
+operator extensions remain separately required; a passing store alone is not AC-B1.
+
+The mandatory shared-volume reservation test found that flock on this mount
+reports success without mutual exclusion: 23 of 24 concurrent calls passed a
+five-call monetary cap, and a second process acquired a supposedly held lock.
+The package is NOT accepted on that evidence. Move the kernel lock to the
+host-local cache, keyed by the canonical ledger directory, and verify competing
+handles are excluded before trusting it. Ledger data and synchronization remain
+in the worktree. This is a same-host runtime lock, not distributed cross-host
+coordination; that limitation must remain explicit in review and documentation.
+
+The reservation-store tests now pass on ordinary local temp storage and the
+actual shared worktree volume. They exercise concurrent monetary/call ceilings,
+replayed IDs, failed/crashed precharges, kernel-lock release after killing a
+separate process, unknown terminal cost, conflicting settlement, durable
+replacement failure and malformed/duplicate/aliased state. The local-cache
+lock verifies same-host exclusion with competing handles before every use.
+The store's data remains on the shared volume. Same-host locking is explicit;
+distributed writers are not certified. Driver/manual/launch integration is not
+yet present, so this remains a foundation rather than a completed budget gate.
