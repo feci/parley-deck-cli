@@ -66,6 +66,32 @@ type criterionResult struct {
 // pre-execution digest (preserving the failed attempt's evidence) and the
 // cycle fails closed.
 func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.CheckCriterion) (bool, string) {
+	var ok bool
+	var detail string
+	err := evidence.WithReportWriter(ctx, o.ideaDir, func(w *evidence.ReportWriter) error {
+		ok, detail = o.runChecksWithWriter(ctx, criteria, w)
+		return nil
+	})
+	if err != nil {
+		return false, "contract: evidence-write failure (publication guard): " + err.Error()
+	}
+	return ok, detail
+}
+
+func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []driver.CheckCriterion, writer *evidence.ReportWriter) (bool, string) {
+	// Do not let a delayed check cycle alter the table after completion.
+	data, err := os.ReadFile(filepath.Join(o.ideaDir, "IMPLEMENTATION.md"))
+	if err != nil {
+		return false, err.Error()
+	}
+	_, status, err := evidence.TransitionStatusToComplete(data)
+	if status == "complete" {
+		return false, evidence.ErrReportFinalized.Error()
+	}
+	if err != nil {
+		return false, err.Error()
+	}
+
 	excl, err := definedEvidenceArtifacts(o.root, o.ideaDir)
 	if err != nil {
 		return false, fmt.Sprintf("contract: evidence artifact scoping: %v — no completion", err)
@@ -98,7 +124,7 @@ func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.
 	if err := o.writeValidationEvidence(results); err != nil {
 		return false, fmt.Sprintf("contract: evidence-write failure (validation table): %v — no completion", err)
 	}
-	if err := o.writeTypedEvidence(results, preDigest, excl); err != nil {
+	if err := o.writeTypedEvidence(results, preDigest, excl, writer); err != nil {
 		return false, fmt.Sprintf("contract: evidence-write failure (typed report): %v — no completion", err)
 	}
 	// Commit the driver-authored evidence immediately so it does not leave the tree
@@ -130,7 +156,7 @@ func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.
 // additionally binds the digest of IMPLEMENTATION.md with ONLY the generated
 // ## Validation evidence section removed (Report.ExtraDigests); the close
 // gate recomputes and compares it.
-func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest string, excl []string) error {
+func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest string, excl []string, writer *evidence.ReportWriter) error {
 	postDigest, err := evidence.TreeDigest(o.root, excl...)
 	if err != nil {
 		return fmt.Errorf("post-execution tree digest: %w", err)
@@ -152,7 +178,7 @@ func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest s
 	}
 	// Persist first: even a failed attempt (e.g. tree changed mid-run) leaves
 	// its evidence artifact for the audit trail.
-	if err := evidence.Save(o.ideaDir, report); err != nil {
+	if _, err := writer.Save(report); err != nil {
 		return err
 	}
 	if postDigest != preDigest {
@@ -283,7 +309,7 @@ func (o driverImplOps) writeValidationEvidence(results []criterionResult) error 
 	}
 
 	updated := replaceSection(string(body), "## Validation evidence", tbl.String())
-	return os.WriteFile(path, []byte(updated), 0o644)
+	return writeVerificationBytes(path, []byte(updated))
 }
 
 // replaceSection replaces the `heading` section (up to the next `## ` or EOF) with

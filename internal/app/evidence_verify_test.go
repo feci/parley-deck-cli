@@ -24,7 +24,17 @@ import (
 // Only the prior review consensus is a fixture. RunChecks, the independent
 // agent process, its real CLI helper, all criterion subprocesses and Complete
 // use production implementations through Driver.Advance.
-type evidenceCloseFixtureOps struct{ driverImplOps }
+type evidenceCloseFixtureOps struct {
+	driverImplOps
+	beforeComplete func()
+}
+
+func (o evidenceCloseFixtureOps) Complete(ctx context.Context) error {
+	if o.beforeComplete != nil {
+		o.beforeComplete()
+	}
+	return o.driverImplOps.Complete(ctx)
+}
 
 func (o evidenceCloseFixtureOps) ReviewRoundComplete(int) (bool, error) { return true, nil }
 func (o evidenceCloseFixtureOps) ReviewStatus() (driver.ReviewStatus, error) {
@@ -47,9 +57,14 @@ func TestEvidenceVerifierProductionClosure(t *testing.T) {
 	}
 	cases := []struct {
 		name, beforeHelper, afterHelper, mode string
-		self, wantPass                        bool
+		self, wantPass, recover               bool
+		beforeComplete                        string
 	}{
 		{name: "real-independent-execution", wantPass: true},
+		{name: "report-persistence-failure-recovery", beforeHelper: "if [ -f .parley-runtime/inject ]; then chmod 500 parley-deck/ideas/idea-x; fi", recover: true},
+		{name: "receipt-persistence-failure-recovery", beforeHelper: "if [ -f .parley-runtime/inject ]; then for d in .parley-runtime/evidence-verification/attempt-*; do mkdir \"$d/result.json\"; done; fi", recover: true},
+		{name: "report-replaced-after-driver-acceptance", beforeComplete: "report"},
+		{name: "receipt-removed-after-driver-acceptance", beforeComplete: "receipt"},
 		{name: "text-pass-without-helper", beforeHelper: "printf 'GOAL-CHECK: PASS\\n'; exit 0"},
 		{name: "self", self: true},
 		{name: "missing-process", beforeHelper: "exit 7"},
@@ -113,10 +128,39 @@ func TestMain(m *testing.M) {
 			op := driverImplOps{root: root, ideaDir: ideaDir, ideaSlug: "idea-x", implementer: "implementer", drafter: "reviewer", reviewers: []string{"reviewer"}, out: &progress, verificationCLI: binary,
 				base: runner.Options{Root: root, RunID: "verification-fixture", Store: store.New(runDir), Timeout: 20 * time.Second,
 					Agents: []agents.Discovery{{Spec: agents.Spec{ID: "reviewer", PromptMode: agents.PromptStdin, LaunchMode: agents.LaunchHeadless, HeadlessArgs: []string{"--fixture"}}, Found: true, Path: path}}}}
+			if tc.recover {
+				if err := os.WriteFile(filepath.Join(root, ".parley-runtime/inject"), nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = os.Chmod(ideaDir, 0755) })
+			}
 			if tc.self {
 				op.drafter = op.implementer
 			}
-			d := driver.New(driver.Config{Root: root, IdeaDir: ideaDir, IdeaSlug: "idea-x", RunDir: runDir, Participants: []string{"implementer", "reviewer"}, Auto: true, Events: store.New(runDir), Impl: evidenceCloseFixtureOps{op}, Out: io.Discard}, nil)
+			wrapped := evidenceCloseFixtureOps{driverImplOps: op}
+			if tc.beforeComplete != "" {
+				wrapped.beforeComplete = func() {
+					if tc.beforeComplete == "report" {
+						report, err := evidence.Load(ideaDir)
+						if err != nil {
+							t.Fatal(err)
+						}
+						report.GeneratedAt = report.GeneratedAt.Add(time.Second)
+						if err := evidence.Save(ideaDir, report); err != nil {
+							t.Fatal(err)
+						}
+					} else {
+						paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime", "evidence-verification", "*", "result.json"))
+						if len(paths) != 1 {
+							t.Fatalf("no accepted receipt: %v", paths)
+						}
+						if err := os.Remove(paths[0]); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+			}
+			d := driver.New(driver.Config{Root: root, IdeaDir: ideaDir, IdeaSlug: "idea-x", RunDir: runDir, Participants: []string{"implementer", "reviewer"}, Auto: true, Events: store.New(runDir), Impl: wrapped, Out: io.Discard}, nil)
 			action, _, err := d.Advance(context.Background())
 			impl, readErr := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
 			if readErr != nil {
@@ -145,7 +189,57 @@ func TestMain(m *testing.M) {
 			} else if err == nil || action != driver.ActionEscalated || strings.Contains(string(impl), "status: complete") {
 				t.Fatalf("invalid verification closed: %s %v\n%s", action, err, progress.String())
 			}
-			if !tc.self && tc.name != "text-pass-without-helper" && tc.name != "missing-process" {
+			if tc.beforeComplete != "" {
+				if tc.beforeComplete == "report" && !strings.Contains(err.Error(), "changed after driver acceptance") {
+					t.Fatalf("wrong refusal: %v", err)
+				}
+				if tc.beforeComplete == "receipt" && !strings.Contains(err.Error(), "receipt unavailable") {
+					t.Fatalf("wrong refusal: %v", err)
+				}
+			}
+			if tc.recover {
+				if tc.name == "report-persistence-failure-recovery" {
+					paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime/evidence-verification/*/result.json"))
+					if len(paths) != 1 {
+						t.Fatalf("missing failed helper receipt: %v", paths)
+					}
+					var receipt evidenceVerificationReceipt
+					if _, e := readVerificationJSON(paths[0], &receipt); e != nil {
+						t.Fatal(e)
+					}
+					if len(receipt.Executions) != 1 || !strings.Contains(receipt.Error, "create temp report") {
+						t.Fatalf("not actual post-execution report persistence failure: %+v", receipt)
+					}
+				} else {
+					report, e := evidence.Load(ideaDir)
+					if e != nil || report.CompletionTransition == nil {
+						t.Fatalf("report not retained after receipt persistence failure: %+v %v", report, e)
+					}
+				}
+				if _, e := os.Stat(filepath.Join(runDir, "evidence-accepted.json")); !os.IsNotExist(e) {
+					t.Fatal("failed publication was accepted")
+				}
+				if e := os.Chmod(ideaDir, 0755); e != nil {
+					t.Fatal(e)
+				}
+				if e := os.Remove(filepath.Join(root, ".parley-runtime/inject")); e != nil {
+					t.Fatal(e)
+				}
+				// Fresh checks and a new real helper recover without editing
+				// the frozen old attempt or inventing its missing receipt.
+				retryDir := filepath.Join(root, protocol.DeckDir, "runs", "retry-verification")
+				op.base.RunID = "retry-verification"
+				op.base.Store = store.New(retryDir)
+				retry := driver.New(driver.Config{Root: root, IdeaDir: ideaDir, IdeaSlug: "idea-x", RunDir: retryDir, Participants: []string{"implementer", "reviewer"}, Auto: true, Events: store.New(retryDir), Impl: evidenceCloseFixtureOps{driverImplOps: op}, Out: io.Discard}, nil)
+				action, _, retryErr := retry.Advance(context.Background())
+				if retryErr != nil || action != driver.ActionComplete {
+					t.Fatalf("fresh real verification did not recover: %s %v\n%s", action, retryErr, progress.String())
+				}
+				if gate := op.EvidenceCloseGate(op.drafter); !gate.Allowed {
+					t.Fatalf("recovered completion invalidates evidence: %v", gate.Reasons)
+				}
+			}
+			if !tc.self && !tc.recover && tc.beforeComplete == "" && tc.name != "text-pass-without-helper" && tc.name != "missing-process" {
 				paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime", "evidence-verification", "*", "result.json"))
 				if len(paths) != 1 {
 					t.Fatalf("expected actual helper receipt, found %v; failure could be unrelated: %v\n%s", paths, err, progress.String())

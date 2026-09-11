@@ -477,6 +477,10 @@ func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 // write by the orchestrator (NOT an implementer agent), so an implementer cannot
 // short-circuit review (consensus D5).
 func (o driverImplOps) Complete(ctx context.Context) error {
+	return evidence.WithReportWriter(ctx, o.ideaDir, func(_ *evidence.ReportWriter) error { return o.completeWithWriter(ctx) })
+}
+
+func (o driverImplOps) completeWithWriter(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -493,6 +497,9 @@ func (o driverImplOps) Complete(ctx context.Context) error {
 	if err != nil {
 		return err
 	} else if contract != "" {
+		if err := o.requireAcceptedVerification(); err != nil {
+			return err
+		}
 		gate := o.EvidenceCloseGate(o.drafter)
 		if !gate.Allowed {
 			return fmt.Errorf("independent evidence changed before completion: %s", strings.Join(gate.Reasons, "; "))
@@ -551,11 +558,7 @@ func (o driverImplOps) Complete(ctx context.Context) error {
 	if !replaced {
 		return fmt.Errorf("%s has no frontmatter status field", path)
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, path)
+	return writeVerificationBytes(path, []byte(strings.Join(lines, "\n")))
 }
 
 func roundDirLabel(n int) string { return fmt.Sprintf("round-%02d", n) }

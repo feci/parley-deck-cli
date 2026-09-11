@@ -23,17 +23,11 @@ import (
 // one. It performs no writes; the decision is computed from the persisted
 // report plus a freshly recomputed tree digest.
 //
-// Wiring (Codex-owned driver state machine; this file is the API, the call
-// site is theirs):
-//
-//	if criteria, isList, err := driver.ReadChecksContract(o.ideaDir); err == nil && isList && len(criteria) > 0 {
-//	    gate := o.EvidenceCloseGate(independentVerifierID) // e.g. the goal-check / review-consensus non-implementer identity
-//	    if !gate.Allowed {
-//	        // veto the `status: complete` transition; escalate per §14 stopping
-//	        // judgment — never auto-retry, never close:
-//	        return fmt.Errorf("typed evidence gate: %s", strings.Join(gate.Reasons, "; "))
-//	    }
-//	}
+// The driver pins the original named contract before agent work. Its independent
+// helper reruns the frozen criteria and publishes a report/receipt transaction;
+// the driver accepts that exact report. Complete holds the shared publication
+// guard from acceptance validation through this veto and the status write. A
+// standalone call here is an observation, not permission to write a later status.
 //
 // The verifier identity is an ASSERTED runtime identity (attribution), not
 // authentication of a human; its purpose is that a self verdict is detectable

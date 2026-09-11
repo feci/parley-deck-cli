@@ -130,7 +130,7 @@ func TransitionFrontmatterStatus(doc []byte, to string) (out []byte, from string
 		return nil, "", fmt.Errorf("evidence: duplicate or missing YAML status")
 	}
 	if value == to {
-		return nil, "", fmt.Errorf("evidence: status is already %q — no transition to authorize", to)
+		return nil, value, fmt.Errorf("evidence: status is already %q — no transition to authorize", to)
 	}
 	outLines := make([]string, len(lines))
 	copy(outLines, lines)

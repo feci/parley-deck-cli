@@ -947,3 +947,23 @@ binds completion to the report actually reconciled against that receipt.
 Completed reports cannot be overwritten by a delayed writer. No same-UID or
 distributed-host authentication is claimed. Require actual process contention,
 failure/recovery and post-completion tests, then independent source review.
+
+The same serialized report correction includes internal/evidence/completion.go: return the already validated prior status alongside the existing no-op error, so publication can distinguish completed status from malformed frontmatter without weakening transition validation.
+
+
+### Report publication checkpoint and next independent review — September 11
+
+See implementation-notes/codex-1-report-publication-20260911.md for the
+shared cooperative guard, byte-CAS, exact accepted-report binding and actual
+persistence-failure/recovery process tests. Source remains partial. The full
+Go command exited zero, but the streamed shared-volume log is damaged; the
+in-memory captured rerun is pending. Focused, race, shared-volume, vet and
+Windows cross-build checks pass. No Windows runtime or live-model closure claim.
+
+A read-only source-review worktree will be frozen from this checkpoint at
+../worktrees/evidence-first-publication-review, branch
+review/meta-protocol-change-evidence-first-efficiency/publication-20260911.
+Claude may write only its own new implementation-notes/claude-1-publication-review-20260911.md
+and its native atomic siblings there. No source claim overlaps: Codex continues
+app/budget work on integration, the reviewer inspects this frozen snapshot.
+The historical quorum remains unchanged; this is not a full Phase-6 signoff.

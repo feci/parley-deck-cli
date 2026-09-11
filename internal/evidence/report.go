@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -30,23 +31,30 @@ func ReportPath(ideaDir string) string {
 // Save atomically persists the report. A failure here invalidates the whole
 // completion attempt (evidence-write failure is a failure, not a warning).
 func Save(ideaDir string, r *Report) error {
+	return WithReportWriter(context.Background(), ideaDir, func(w *ReportWriter) error {
+		_, err := w.Save(r)
+		return err
+	})
+}
+
+func saveReport(ideaDir string, r *Report) ([]byte, error) {
 	if r == nil {
-		return fmt.Errorf("evidence: cannot save a nil report")
+		return nil, fmt.Errorf("evidence: cannot save a nil report")
 	}
 	data, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
-		return fmt.Errorf("evidence: marshal report: %w", err)
+		return nil, fmt.Errorf("evidence: marshal report: %w", err)
 	}
 	final := ReportPath(ideaDir)
 	tmp, err := os.CreateTemp(ideaDir, ".evidence-*.json.tmp")
 	if err != nil {
-		return fmt.Errorf("evidence: create temp report: %w", err)
+		return nil, fmt.Errorf("evidence: create temp report: %w", err)
 	}
 	tmpName := tmp.Name()
 	if _, err := tmp.Write(data); err != nil {
 		_ = tmp.Close()
 		_ = os.Remove(tmpName)
-		return fmt.Errorf("evidence: write report: %w", err)
+		return nil, fmt.Errorf("evidence: write report: %w", err)
 	}
 	// Durability barrier before the atomic rename. fsutil.SyncFile requests a
 	// full sync and falls back to ordinary fsync ONLY when the volume rejects
@@ -56,17 +64,17 @@ func Save(ideaDir string, r *Report) error {
 	if err := fsutil.SyncFile(tmp); err != nil {
 		_ = tmp.Close()
 		_ = os.Remove(tmpName)
-		return fmt.Errorf("evidence: sync report: %w", err)
+		return nil, fmt.Errorf("evidence: sync report: %w", err)
 	}
 	if err := tmp.Close(); err != nil {
 		_ = os.Remove(tmpName)
-		return fmt.Errorf("evidence: close report: %w", err)
+		return nil, fmt.Errorf("evidence: close report: %w", err)
 	}
-	if err := os.Rename(tmpName, final); err != nil {
+	if err := fsutil.ReplaceSyncedFile(tmpName, final); err != nil {
 		_ = os.Remove(tmpName)
-		return fmt.Errorf("evidence: commit report: %w", err)
+		return nil, fmt.Errorf("evidence: commit report: %w", err)
 	}
-	return nil
+	return data, nil
 }
 
 // Load reads a previously saved report. A missing or corrupt report is an
