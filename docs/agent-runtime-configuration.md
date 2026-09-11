@@ -392,3 +392,37 @@ filesystem access from rewriting an entire history. The attendance check has
 the same limitations as `budget reconcile`; do not allocate a terminal to
 manufacture user authorization. Legacy history migration, launch/step policy
 extensions and lock-origin recovery are separate controls still to be completed.
+
+### Mapping a configured dollar ceiling to launch reservations
+
+`[defaults.loop].max_cost_usd` is checked at the common process launch boundary,
+including manual calls, rounds/reviews, consults, preflight, interactive execution
+and ACP. The layered runtime configuration is read from the live origin of a
+disposable review checkout. A nonzero driver `MaxCostUSD` also requires the same
+persistent policy before dispatch. A run-local usage total alone cannot authorize
+the first call or reset spend in another run.
+
+A positive dollar default requires an existing launch policy for the same idea
+(or the shared auxiliary scope for calls with no idea), with the matching finite
+`max_cost_micros` and an explicit conservative `reserve_micros`. Establish that
+policy using the attended `budget configure` control before the first execution.
+The dollar default is a total ceiling; it supplies no per-call reservation or
+provider price. If the policy/reservation is absent or the finite cap differs,
+execution refuses with a terminal `budget_refused` record. Existing invocation
+history can require the still-pending explicit legacy migration before a first
+policy can be configured; deleting that evidence is not recovery.
+
+Dollar ceilings are converted through the configured float's shortest decimal
+representation to whole microdollars, rounding down so conversion does not raise
+the ceiling. For example, USD 12.5 maps to 12500000 microdollars. A positive amount
+below one microdollar, negative/nonfinite input or int64 overflow refuses rather
+than becoming unlimited. The reservation remains operator-supplied; this does
+not guarantee that a provider cannot charge more than that declared bound.
+
+Zero or omitted defaults do not disable a saved policy. The usual configuration
+layering still applies before a policy exists: an explicit deck zero overrides a
+machine default. Missing explicitly selected configuration, unreadable files and
+parse failures cannot silently disable a budget. Standalone handoff preparation
+does not activate or charge a policy; its eventual execution must pass the normal
+launch boundary. Unknown terminal prices remain unknown, with conservative
+reservations retained as exposure. A changed default does not extend a policy.

@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 321aef9
+head-commit: 78a7b13
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -21,9 +21,13 @@ locally tested. Claude's partial independent source reviews are preserved with
 their dispositions. Kimi's completion-transition source is integrated and wired
 through the actual independent helper. The post-completion evidence gate and
 original-contract deletion/restart counterexamples now pass after corrections.
-Readiness schema/capture corrections and an explicit runner budget-policy channel
-also pass focused tests; the full Go suite passes. Cooperative report-write
-serialization, automatic scope/policy resolution, legacy budgets, actual live
+Readiness schema/capture corrections, shared launch/step/cycle policies, finite
+operator cycle extensions and monetary-default enforcement are integrated.
+Source 78a7b13 refuses a configured dollar ceiling before an unreserved first
+process launch and requires a matching persistent operator policy. The full Go
+suite, scoped race, vet and shared-volume fixtures pass. Legacy migration,
+launch/step extensions, safe guard recovery, durable semantic action replay,
+canonical refusal publication/recovery, regression trajectory, actual live
 experiments and final independent acceptance remain open. The frozen historical
 evaluation is unchanged.
 
@@ -1274,3 +1278,27 @@ legacy history, issue an extension, or establish independent acceptance.
 Additional test allocation: extend internal/runner/launch_budget_test.go's
 existing six-surface process fixture to run with a configured monetary default,
 an explicit conservative reservation and no launch-count cap.
+
+### Monetary default enforcement checkpoint — September 11
+
+Source 78a7b13 connects configured max_cost_usd to the shared process launch
+boundary. A local-process counterexample at 0a872c5 returned success for an
+unreserved manual launch despite a USD 1 default; it now records budget_refused
+without starting a child. Positive defaults require a matching persistent finite
+policy and explicit conservative reservation. Missing/invalid required config
+does not become unlimited. Zero/omitted defaults preserve saved policies.
+
+All six existing process surfaces run the new monetary fixture. New runs retain
+known or conservatively bounded unknown exposure, and disposable review clones
+resolve defaults at their live origin. Dollar ceilings convert conservatively;
+no provider price or real operator grant is inferred. Fresh configuration after
+retained refusal history can still require the pending legacy migration.
+
+Full Go suite PASS (app 102.204s, budget 10.856s, driver 11.656s,
+runner 32.633s; wall 104.835s). Budget/config/driver/runner race PASS
+(14.247s/1.692s/10.728s/60.329s), scoped vet, Windows app cross-build and actual
+shared-volume fixtures PASS. Windows runtime and independent acceptance remain
+unverified. Exact commands, source manifest, negative probe and log hashes are
+in implementation-notes/codex-1-monetary-default-dispositions-20260911.md.
+No participant model was called. All remaining D6 and experiment obligations
+listed above still apply; this is not all-six-priorities completion.
