@@ -39,22 +39,6 @@ func TestScrubAndTruncate(t *testing.T) {
 	}
 }
 
-func TestReplaceSection(t *testing.T) {
-	doc := "# Title\n\n## Summary\n\nx\n\n## Validation evidence\n\nold\n\n## Notes\n\nkeep\n"
-	out := replaceSection(doc, "## Validation evidence", "## Validation evidence\n\nNEW\n")
-	if strings.Contains(out, "old") {
-		t.Fatalf("old content not replaced:\n%s", out)
-	}
-	if !strings.Contains(out, "NEW") || !strings.Contains(out, "## Notes") || !strings.Contains(out, "keep") {
-		t.Fatalf("replaced too much or too little:\n%s", out)
-	}
-	// Absent heading → appended.
-	out2 := replaceSection("# T\n\nbody\n", "## Validation evidence", "## Validation evidence\n\nADDED\n")
-	if !strings.Contains(out2, "ADDED") {
-		t.Fatal("absent section should append")
-	}
-}
-
 func scratchContract(t *testing.T, criteria []driver.CheckCriterion) (string, string) {
 	t.Helper()
 	data, err := yaml.Marshal(struct {
@@ -182,18 +166,5 @@ func TestRunChecksContractEvidenceWriteFailureVetoes(t *testing.T) {
 	}
 	if !strings.Contains(detail, "evidence-write failure") {
 		t.Fatalf("veto detail should name the evidence-write failure: %q", detail)
-	}
-}
-
-func TestReplaceSectionIgnoresExamplesAndSubheadings(t *testing.T) {
-	doc := "# Title\n\n### Validation evidence\nNested content\n\n```md\n## Validation evidence\nExample text\n```\n\n## Validation evidence\nActual table\n\n## Notes\nBound scope\n"
-	stripped := replaceSection(doc, "## Validation evidence", "")
-	for _, want := range []string{"### Validation evidence", "Nested content", "## Validation evidence\nExample text", "Bound scope"} {
-		if !strings.Contains(stripped, want) {
-			t.Fatalf("stripped bound text %q: %s", want, stripped)
-		}
-	}
-	if strings.Contains(stripped, "Actual table") {
-		t.Fatal("did not strip the actual generated section")
 	}
 }

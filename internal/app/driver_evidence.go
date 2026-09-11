@@ -110,6 +110,10 @@ func (o driverImplOps) EvidenceCloseGate(verifier string) EvidenceGateResult {
 			return deny("IMPLEMENTATION.md non-evidence content changed after the evidence was recorded (" + strings.Join(trReasons, "; ") + ")")
 		}
 	}
+	doc, projectionErr := readImplementationEvidence(o.ideaDir)
+	if projectionErr == nil {
+		projectionErr = verifyValidationEvidence(doc, implRel, report)
+	}
 	reasons := evidence.Evaluate(report, evidence.ClosureOptions{
 		RequiredScope:     scope,
 		CurrentTreeSHA256: current,
@@ -118,6 +122,9 @@ func (o driverImplOps) EvidenceCloseGate(verifier string) EvidenceGateResult {
 		// not semantically certified and cannot close a whole implementation.
 		RequireStructured: true,
 	})
+	if projectionErr != nil {
+		reasons = append(reasons, "validation evidence: "+projectionErr.Error())
+	}
 	if len(reasons) > 0 {
 		return deny(reasons...)
 	}

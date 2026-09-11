@@ -715,3 +715,44 @@ cross-compilation alone does not certify runtime support. These are cooperative
 same-UID records, not cryptographic authentication of an agent or protection from
 deletion of all local/committed history. Canonical failures from concurrent work
 can invalidate a tested tree; rerun verification rather than rebasing old evidence.
+
+### Integrity of the human validation table
+
+Named checks now render the `## Validation evidence` section from the actual
+original typed criterion records. The visible caption distinguishes those
+executions from independent acceptance. Counts retain `unknown` values, timing
+is shown in milliseconds, and diagnostics stay scrubbed and bounded. Markdown
+labels are escaped and diagnostic fences exceed embedded backtick runs. Text
+normalization matches JSON persistence, including truncated Unicode diagnostics.
+
+`EVIDENCE.json` binds the exact managed section under the additional ExtraDigests
+key `<relative IMPLEMENTATION.md path>#validation-evidence/v1`. The independent
+helper and final closure path both recompute that digest and reconstruct the
+expected table from the original records. Changing a table and updating its hash
+alone cannot make a different claim match the actual records. Request/report/
+receipt binding and independently executed criterion reconciliation still apply.
+The table never supplies its own independent verifier or deployment claim.
+
+CommonMark parsing (pinned Goldmark dependency) identifies actual top-level
+level-two sections, including ATX and setext forms. Fenced/indented examples,
+comments, raw HTML blocks, list/blockquote headings and level-three subheadings
+remain outside the managed section. Duplicate managed sections refuse rather
+than selecting one silently. A following level-one or level-two heading ends
+the section; all remaining document bytes stay bound exactly. A missing section
+is initialized before command execution. Unclosed Markdown contexts that would
+hide the generated section refuse publication.
+
+The non-evidence remainder is now pinned before commands run and compared after
+execution. A command that changes that scope fails the cycle and retains a typed
+report with the original scope binding. The authorized status transition remains
+the only permitted change to those bound bytes at completion. CRLF documents
+retain their line endings and the table remains bound after the exact status flip.
+
+Older reports without the section binding require fresh checks and independent
+verification; no self-authored hash upgrades an old acceptance. Changed, deleted,
+rehashed but inconsistent, or ambiguous tables veto closure. Table checks are
+vetoes alongside original scope, typed outcome and independent execution checks.
+The parent CLI enforcing final closure must be upgraded before relying on this
+new control; older binaries do not enforce an additional map key themselves.
+This remains cooperative runtime attribution, not authentication against a
+same-UID actor capable of fabricating all mutually consistent artifacts.

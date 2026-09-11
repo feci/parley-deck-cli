@@ -47,8 +47,6 @@ type criterionResult struct {
 	name     string
 	exitCode int
 	ok       bool
-	dur      time.Duration
-	tail     string
 	record   evidence.CriterionRecord
 }
 
@@ -102,6 +100,10 @@ func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []drive
 	if err != nil {
 		return false, fmt.Sprintf("contract: evidence artifact scoping: %v — no completion", err)
 	}
+	preRest, _, err := o.prepareValidationEvidence()
+	if err != nil {
+		return false, "contract: validation evidence preparation: " + err.Error()
+	}
 	preDigest, err := evidence.TreeDigest(o.root, excl...)
 	if err != nil {
 		return false, fmt.Sprintf("contract: pre-execution tree digest: %v — no completion", err)
@@ -117,9 +119,7 @@ func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []drive
 		res := criterionResult{
 			name:     c.Name,
 			ok:       rec.Status == evidence.StatusPass,
-			dur:      time.Duration(rec.Command.DurationMillis) * time.Millisecond,
 			exitCode: rec.Command.ExitCode,
-			tail:     rec.Command.Diagnostics,
 			record:   rec,
 		}
 		if !res.ok {
@@ -130,7 +130,7 @@ func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []drive
 	if err := o.writeValidationEvidence(results); err != nil {
 		return false, fmt.Sprintf("contract: evidence-write failure (validation table): %v — no completion", err)
 	}
-	if err := o.writeTypedEvidence(results, preDigest, excl, writer); err != nil {
+	if err := o.writeTypedEvidence(results, preDigest, preRest, excl, writer); err != nil {
 		return false, fmt.Sprintf("contract: evidence-write failure (typed report): %v — no completion", err)
 	}
 	// Commit the driver-authored evidence immediately so it does not leave the tree
@@ -162,7 +162,7 @@ func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []drive
 // additionally binds the digest of IMPLEMENTATION.md with ONLY the generated
 // ## Validation evidence section removed (Report.ExtraDigests); the close
 // gate recomputes and compares it.
-func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest string, excl []string, writer *evidence.ReportWriter) error {
+func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest, preRest string, excl []string, writer *evidence.ReportWriter) error {
 	postDigest, err := evidence.TreeDigest(o.root, excl...)
 	if err != nil {
 		return fmt.Errorf("post-execution tree digest: %w", err)
@@ -177,15 +177,30 @@ func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest s
 		TreeSHA256:     preDigest,
 		TreeDirty:      evidence.TreeDirty(o.root),
 		GeneratedAt:    time.Now().UTC(),
-		ExtraDigests:   map[string]string{implRel: restDigest},
+		ExtraDigests:   map[string]string{implRel: preRest},
 	}
 	for _, r := range results {
 		report.Records = append(report.Records, r.record)
+	}
+	doc, err := readImplementationEvidence(o.ideaDir)
+	if err != nil {
+		return err
+	}
+	_, section, err := splitValidationEvidence(doc)
+	if err != nil || len(section) == 0 {
+		return fmt.Errorf("validation evidence section unavailable: %v", err)
+	}
+	report.ExtraDigests[implRel+validationEvidenceBindingSuffix] = sha256Hex(string(section))
+	if err := verifyValidationEvidence(doc, implRel, report); err != nil {
+		return err
 	}
 	// Persist first: even a failed attempt (e.g. tree changed mid-run) leaves
 	// its evidence artifact for the audit trail.
 	if _, err := writer.Save(report); err != nil {
 		return err
+	}
+	if restDigest != preRest {
+		return fmt.Errorf("non-evidence implementation changed during check execution")
 	}
 	if postDigest != preDigest {
 		return fmt.Errorf("tested tree changed during check execution (pre %s…, post %s…) — the run did not test a stable tree",
@@ -206,12 +221,12 @@ func implementationRestContent(root, ideaDir string) (content []byte, relSlash s
 		return nil, "", err
 	}
 	relSlash = filepath.ToSlash(filepath.Join(rel, "IMPLEMENTATION.md"))
-	body, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	body, err := readImplementationEvidence(ideaDir)
 	if err != nil {
 		return nil, "", err
 	}
-	stripped := replaceSection(string(body), "## Validation evidence", "")
-	return []byte(stripped), relSlash, nil
+	rest, _, err := splitValidationEvidence(body)
+	return rest, relSlash, err
 }
 
 // implementationRestDigest returns the digest of implementationRestContent.
@@ -292,78 +307,21 @@ func (o driverImplOps) commitEvidence() {
 // IMPLEMENTATION.md with the latest per-criterion table (git history keeps prior cycles).
 func (o driverImplOps) writeValidationEvidence(results []criterionResult) error {
 	path := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
-	body, err := os.ReadFile(path)
+	body, err := readImplementationEvidence(o.ideaDir)
 	if err != nil {
 		return err
 	}
-	var tbl strings.Builder
-	tbl.WriteString("## Validation evidence\n\n")
-	tbl.WriteString("<!-- driver-populated (completion-contracts): overwritten each cycle; git history keeps prior runs -->\n\n")
-	tbl.WriteString("| criterion | exit | duration | cases (exec/fail/skip) | result |\n")
-	tbl.WriteString("|---|---|---|---|---|\n")
-	for _, r := range results {
-		cases := "unknown" // opaque shell output: no executed-case semantics
-		if r.record.Command.ExecutedCases >= 0 {
-			cases = fmt.Sprintf("%d/%d/%d", r.record.Command.ExecutedCases, max(r.record.Command.FailedCases, 0), max(r.record.Command.SkippedCases, 0))
-		}
-		tbl.WriteString(fmt.Sprintf("| %s | %d | %s | %s | %s |\n", r.name, r.exitCode, r.dur.Round(time.Millisecond), cases, strings.ToUpper(string(r.record.Status))))
+	records := make([]evidence.CriterionRecord, 0, len(results))
+	for _, result := range results {
+		records = append(records, result.record)
 	}
-	for _, r := range results {
-		if r.tail != "" {
-			tbl.WriteString(fmt.Sprintf("\n<details><summary>%s output (scrubbed, truncated)</summary>\n\n```\n%s\n```\n</details>\n", r.name, r.tail))
-		}
+	rendered, err := renderValidationEvidence(records, validationNewline(body))
+	if err != nil {
+		return err
 	}
-
-	updated := replaceSection(string(body), "## Validation evidence", tbl.String())
-	return writeVerificationBytes(path, []byte(updated))
-}
-
-// replaceSection replaces the `heading` section (up to the next `## ` or EOF) with
-// replacement, appending it if the heading is absent.
-func replaceSection(doc, heading, replacement string) string {
-	start, end := -1, len(doc)
-	offset := 0
-	fence := byte(0)
-	fenceLen := 0
-	for _, raw := range strings.SplitAfter(doc, "\n") {
-		line := strings.TrimSuffix(strings.TrimSuffix(raw, "\n"), "\r")
-		trimmed := strings.TrimLeft(line, " ")
-		indent := len(line) - len(trimmed)
-		if indent <= 3 && len(trimmed) >= 3 && (trimmed[0] == '`' || trimmed[0] == '~') {
-			n := 0
-			for n < len(trimmed) && trimmed[n] == trimmed[0] {
-				n++
-			}
-			if fence == 0 && n >= 3 {
-				fence = trimmed[0]
-				fenceLen = n
-				offset += len(raw)
-				continue
-			}
-			if fence == trimmed[0] && n >= fenceLen && strings.TrimSpace(trimmed[n:]) == "" {
-				fence = 0
-				offset += len(raw)
-				continue
-			}
-		}
-		if fence == 0 {
-			if start < 0 && strings.TrimRight(line, " \t") == heading {
-				start = offset
-			} else if start >= 0 && strings.HasPrefix(line, "## ") {
-				end = offset
-				break
-			}
-		}
-		offset += len(raw)
+	updated, err := replaceValidationEvidence(body, rendered)
+	if err != nil {
+		return err
 	}
-	if start < 0 {
-		if replacement == "" {
-			return doc
-		}
-		if !strings.HasSuffix(doc, "\n") {
-			doc += "\n"
-		}
-		return doc + "\n" + replacement
-	}
-	return doc[:start] + strings.TrimRight(replacement, "\n") + "\n" + doc[end:]
+	return writeVerificationBytes(path, updated)
 }

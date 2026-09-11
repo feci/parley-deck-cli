@@ -1648,3 +1648,59 @@ unverified. The exact-file sidecar and raw observations retain those limits and
 the corrected stdout/stderr log capture. Space 29 was closed with done:true.
 No source acceptance, model invocation, real accounting action or goal completion
 is inferred from this report checkpoint.
+
+
+### Human evidence projection integrity allocation — September 11
+
+The preceding goal turn made verified committed progress at f976fc3. The current
+worktree and draft PR match that checkpoint. Before edits, Codex claims go.mod,
+go.sum, internal/app/{evidence_table.go,evidence_table_test.go,driver_checks.go,
+driver_checks_test.go,driver_evidence.go,driver_evidence_test.go,driver_impl.go,
+evidence_verify.go,evidence_verify_test.go}, the runtime guide and
+implementation-notes/codex-1-table-integrity-dispositions-20260911.md.
+
+Render the managed human table deterministically from actual typed records, bind
+its exact bytes under a separate ExtraDigests key, and independently reconcile
+that projection before helper execution/publication and final closure. Use a
+CommonMark parser for actual top-level sections so examples, comments, nested
+blocks and alternative heading syntax cannot silently select the wrong span.
+Refuse ambiguous managed sections; keep all other implementation bytes bound,
+including the authorized exact status transition. Retain failed attempts and
+require fresh checks for older reports without a table binding. Test direct
+post-recording edits, changed records with recomputed table hashes, missing or
+duplicate sections, misleading markup/diagnostics, CRLF and actual helper/close
+interleavings. Preserve the original quorum and all remaining full-scope gates.
+
+The same claimed checks path also pins the exact non-evidence remainder before
+commands run, compares it after execution, and retains the original binding on
+failure. A missing managed section is initialized before that snapshot. This
+closes a source-observed gap where commands could alter excluded implementation
+scope before its first digest was taken; it does not exclude more content.
+
+
+### Table integrity delivery allocation — September 11
+
+Before edits, Codex claims the evaluation delivery/2026-09-05/{PROGRESS.md,
+priorities.json,report.html,report-manifest.json} refresh and
+browser-table-integrity-20260911.json with browser-qa/table-integrity-20260911.
+Record exact-source validation and all initial negative cases, then update the
+existing draft PR. All five display priorities (six underlying audit areas)
+remain partial/preparation until their full independent and live gates pass.
+
+
+### Human table integrity source checkpoint — September 11
+
+Typed original records now determine the human validation section. Exact section
+hashing and deterministic reconstruction run through the independent helper and
+final status-write gate. CommonMark boundaries preserve examples and non-evidence
+scope; duplicate/missing/rehashed-inconsistent tables refuse. Pre-execution scope
+binding, CRLF and JSON-compatible Unicode rendering are covered. The owned table
+integrity disposition records behavior, negative cases and limitations.
+
+All 344 Go/module files match the manifest. Full Go suite PASS
+(127.709s); app/evidence/driver/runner race PASS (142.938s).
+Scoped vet, module verification, Windows amd64 app cross-build and isolated
+shared-volume projection/actual-helper fixtures PASS. Original table-forgery and
+Unicode failures, diagnostic ordering and Markdown fixture corrections remain
+retained. Independent acceptance and all other full-scope obligations remain
+pending; no real model or operator accounting operation occurred.

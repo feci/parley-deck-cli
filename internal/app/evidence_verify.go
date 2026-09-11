@@ -184,6 +184,13 @@ func verificationBindings(req evidenceVerificationRequest, report *evidence.Repo
 	if rest != req.RestSHA256 || report.ExtraDigests[rel] != rest {
 		return nil, "", errors.New("non-evidence implementation content changed")
 	}
+	doc, err := readImplementationEvidence(ideaDir)
+	if err != nil {
+		return nil, "", err
+	}
+	if err := verifyValidationEvidence(doc, rel, report); err != nil {
+		return nil, "", err
+	}
 	return criteria, tree, nil
 }
 

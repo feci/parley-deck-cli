@@ -61,6 +61,10 @@ func TestEvidenceVerifierProductionClosure(t *testing.T) {
 		beforeComplete                        string
 	}{
 		{name: "real-independent-execution", wantPass: true},
+		{name: "table-changed-before-helper", beforeHelper: "printf '\\nUnverified human claim\\n' >> parley-deck/ideas/idea-x/IMPLEMENTATION.md"},
+		{name: "table-changed-after-helper", afterHelper: "printf '\\nUnverified human claim\\n' >> parley-deck/ideas/idea-x/IMPLEMENTATION.md"},
+		{name: "table-changed-after-acceptance", beforeComplete: "table"},
+		{name: "table-changed-during-helper", mode: "table-edit"},
 		{name: "report-persistence-failure-recovery", beforeHelper: "if [ -f .parley-runtime/inject ]; then chmod 500 parley-deck/ideas/idea-x; fi", recover: true},
 		{name: "receipt-persistence-failure-recovery", beforeHelper: "if [ -f .parley-runtime/inject ]; then for d in .parley-runtime/evidence-verification/attempt-*; do mkdir \"$d/result.json\"; done; fi", recover: true},
 		{name: "report-replaced-after-driver-acceptance", beforeComplete: "report"},
@@ -97,6 +101,10 @@ func TestActualExecution(t *testing.T) {
  f, err := os.OpenFile("../.parley-runtime/executions.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
  if err != nil { t.Fatal(err) }
  fmt.Fprintf(f, "%s:%d\n", os.Getenv("PARLEY_AGENT_ID"), os.Getpid()); f.Close()
+ if os.Getenv("PARLEY_TEST_VERIFY_MODE") == "table-edit" {
+ f,err:=os.OpenFile("../parley-deck/ideas/idea-x/IMPLEMENTATION.md",os.O_WRONLY|os.O_APPEND,0600)
+ if err!=nil{t.Fatal(err)};fmt.Fprintln(f,"Unverified human claim");f.Close()
+}
  if os.Getenv("PARLEY_TEST_VERIFY_MODE") == "skip" { t.Skip("real skipped verifier fixture") }
 }
 func TestMain(m *testing.M) {
@@ -149,6 +157,19 @@ func TestMain(m *testing.M) {
 						if err := evidence.Save(ideaDir, report); err != nil {
 							t.Fatal(err)
 						}
+					} else if tc.beforeComplete == "table" {
+						path := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+						raw, e := os.ReadFile(path)
+						if e != nil {
+							t.Fatal(e)
+						}
+						changed := strings.Replace(string(raw), "| 1/0/0 |", "| 99/0/0 |", 1)
+						if changed == string(raw) {
+							t.Fatal("table mutation did not land")
+						}
+						if e := os.WriteFile(path, []byte(changed), 0644); e != nil {
+							t.Fatal(e)
+						}
 					} else {
 						paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime", "evidence-verification", "*", "result.json"))
 						if len(paths) != 1 {
@@ -192,6 +213,9 @@ func TestMain(m *testing.M) {
 			if tc.beforeComplete != "" {
 				if tc.beforeComplete == "report" && !strings.Contains(err.Error(), "changed after driver acceptance") {
 					t.Fatalf("wrong refusal: %v", err)
+				}
+				if tc.beforeComplete == "table" && !strings.Contains(err.Error(), "validation evidence") {
+					t.Fatalf("wrong table refusal: %v", err)
 				}
 				if tc.beforeComplete == "receipt" && !strings.Contains(err.Error(), "receipt unavailable") {
 					t.Fatalf("wrong refusal: %v", err)

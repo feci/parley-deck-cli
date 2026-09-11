@@ -528,11 +528,20 @@ func (o driverImplOps) completeWithWriter(ctx context.Context) error {
 			return err
 		}
 		rel = filepath.ToSlash(rel)
-		beforeRest := []byte(replaceSection(string(data), "## Validation evidence", ""))
+		if err := verifyValidationEvidence(data, rel, report); err != nil {
+			return err
+		}
+		beforeRest, _, err := splitValidationEvidence(data)
+		if err != nil {
+			return err
+		}
 		if report.ExtraDigests[rel] != sha256Hex(string(beforeRest)) {
 			return fmt.Errorf("implementation changed before completion write")
 		}
-		afterRest := []byte(replaceSection(string(completed), "## Validation evidence", ""))
+		afterRest, _, err := splitValidationEvidence(completed)
+		if err != nil {
+			return err
+		}
 		if reasons := evidence.VerifyCompletionTransition(report, rel, report.ExtraDigests[rel], afterRest, o.drafter); len(reasons) > 0 {
 			return fmt.Errorf("completion status was not independently authorized: %s", strings.Join(reasons, "; "))
 		}
