@@ -652,3 +652,66 @@ Existing configured/charged scopes, changed inactive imports, malformed or
 unavailable history and lock-origin recovery require separate reconciliation.
 The same attendance, stopped-writer, hash-authentication, file-size and
 mixed-version limitations as launch import apply.
+
+### Retaining and recovering independent verification refusals
+
+A refused driver verification retains a bounded observation before attempting
+canonical publication. A helper that returns a failure also retains its own
+observation, even if its parent has stopped. The frozen request includes its
+unique attempt directory identity; helper and driver observations share its
+request digest without becoming two model invocations. An absent helper result
+alone does not prove that its process terminated.
+
+Records contain observer and failure stage, safe optional idea/run/verifier/
+invocation labels, available request/report/receipt hashes and actual helper
+criterion statuses with command hashes. They contain no raw commands, output,
+provider diagnostics, prompts or environment. Unsafe labels become explicit
+nulls. Stage codes identify the failing boundary; detailed local diagnostics
+remain in the original private runtime artifacts.
+
+Pending observations live below the worktree's Git administration directory in
+`parley-evidence-guards/<scope>/refusals/`. They do not require root runtime ignore
+rules or a functioning report lock to be retained. A helper does not commit: the
+parent publishes this attempt's observations, or the operator recovers an exact
+record after interruption. Inspecting creates no files:
+
+```sh
+parley evidence refusals inspect --dir DIR --idea IDEA
+parley evidence refusals recover --dir DIR --idea IDEA --expected-sha256 SHA
+```
+
+Use the full `sha256` returned by inspect. Recovery validates the exact canonical
+JSON bytes, takes the existing evidence publication guard and writes
+`parley-deck/ideas/IDEA/verification-refusals/SHA.json`. It commits only that path
+and verifies the committed bytes. Unrelated staged/working changes remain intact.
+Exact replay verifies the existing commit without adding one. Under the same
+guard, recovery removes interrupted canonical staging files only when their
+names bind the selected digest and their bytes are a prefix of that exact retained
+record. Unrelated or divergent staging remains unresolved. Conflicting bytes
+or duplicate observation identities with different content refuse; later
+observations and pending source files are preserved. All valid exact copies of
+one observation coalesce in the inventory.
+
+A commit or publication failure remains a failed verification with recoverable
+pending history. Inspect distinguishes canonical presence from verified Git
+commit. Invalid, interrupted or unreadable entries remain visible and block
+verification; digest-bound recovery can still publish other intact records but
+cannot invent the lost content. A missing original lock or changed lock origin
+continues to refuse publication: this command does not recreate or migrate it.
+Restore the original compatible environment where possible. Complete loss of
+pending administration and local history cannot be reconstructed by this control.
+
+Refusal files are included in the normal source-tree digest, with no new
+exclusion. Publication therefore requires fresh checks before another independent
+verification. Uncommitted or incomplete observations block verification and final
+acceptance. Recovery never executes criteria, invokes a model, grants a budget,
+changes a signature or issues acceptance. Failed report/receipt writes require
+both exact-record recovery (if publication failed) and fresh checks before retry.
+
+Independent closure still requires Git and a POSIX execution host. Non-Git
+observations have only local persistence, including local runtime-origin metadata;
+they cannot claim Git durability or enable non-Git independent closure. Windows
+cross-compilation alone does not certify runtime support. These are cooperative
+same-UID records, not cryptographic authentication of an agent or protection from
+deletion of all local/committed history. Canonical failures from concurrent work
+can invalidate a tested tree; rerun verification rather than rebasing old evidence.

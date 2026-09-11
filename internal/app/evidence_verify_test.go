@@ -197,6 +197,27 @@ func TestMain(m *testing.M) {
 					t.Fatalf("wrong refusal: %v", err)
 				}
 			}
+			if !tc.wantPass && tc.beforeComplete == "" {
+				entries, e := evidence.InspectVerificationRefusals(ideaDir)
+				if e != nil || len(entries) == 0 {
+					t.Fatalf("missing canonical/pending refusal: %+v %v", entries, e)
+				}
+				if tc.name != "report-persistence-failure-recovery" {
+					if e := requireCommittedRefusals(context.Background(), root, ideaDir); e != nil {
+						t.Fatal(e)
+					}
+				}
+				for _, entry := range entries {
+					if entry.Record == nil {
+						t.Fatalf("invalid observation: %+v", entry)
+					}
+					if entry.Record.Observer == "helper" && tc.mode != "" {
+						if len(entry.Record.Executions) != 1 {
+							t.Fatalf("lost helper execution observations: %+v", entry.Record)
+						}
+					}
+				}
+			}
 			if tc.recover {
 				if tc.name == "report-persistence-failure-recovery" {
 					paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime/evidence-verification/*/result.json"))
@@ -224,6 +245,17 @@ func TestMain(m *testing.M) {
 				}
 				if e := os.Remove(filepath.Join(root, ".parley-runtime/inject")); e != nil {
 					t.Fatal(e)
+				}
+				// Recover the exact observations after fixing storage, then execute
+				// fresh checks. Recovery itself cannot synthesize a receipt or pass.
+				pending, e := evidence.InspectVerificationRefusals(ideaDir)
+				if e != nil {
+					t.Fatal(e)
+				}
+				for _, entry := range pending {
+					if e := recoverVerificationRefusal(context.Background(), root, ideaDir, entry.SHA256); e != nil {
+						t.Fatal(e)
+					}
 				}
 				// Fresh checks and a new real helper recover without editing
 				// the frozen old attempt or inventing its missing receipt.
@@ -282,7 +314,7 @@ func TestEvidenceHelperRefusesMissingRuntimeIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "request.json")
-	req := evidenceVerificationRequest{Version: 1, Root: canonical, Idea: "idea-x", RunID: "run", Verifier: "reviewer"}
+	req := evidenceVerificationRequest{Version: 1, AttemptID: "attempt-x", Root: canonical, Idea: "idea-x", RunID: "run", Verifier: "reviewer"}
 	if err := writeVerificationJSON(path, req); err != nil {
 		t.Fatal(err)
 	}

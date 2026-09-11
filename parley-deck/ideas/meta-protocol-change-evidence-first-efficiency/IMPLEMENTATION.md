@@ -1577,3 +1577,54 @@ both mobile widths. The owned disposition and exact-file sidecar record the
 current progress, navigation/filter/pagination/keyboard/painted-chart/print-media
 checks and their screenshot/physical-print limitations. Model experiments remain
 not-run and independent acceptance remains pending.
+
+
+### Durable verification refusal allocation — September 11
+
+The immediately preceding goal turn only recalled the audit, so it made no
+implementation progress. Current clean source and draft PR #73 remain 7b3b084.
+Codex now claims internal/evidence/{refusal.go,refusal_test.go},
+internal/app/{evidence_refusals.go,evidence_refusals_test.go,evidence_verify.go,
+evidence_verify_test.go,evidence_publication_test.go}, the runtime guide and
+implementation-notes/codex-1-refusal-dispositions-20260911.md before edits.
+
+Retain bounded typed failure observations in Git administration before guarded
+canonical publication. Driver and helper observations share verification identity
+when a frozen request exists, without inventing model invocations. Preserve exact
+immutable records, missing/failed publication, and explicit hash-bound recovery.
+Commit only the new refusal path and verify its committed bytes. Refusals stay
+inside the tested tree digest: publication requires fresh checks and never grants
+acceptance. Do not serialize raw diagnostics, commands, output or credentials.
+Test actual helper failures, parent interruption, publication/commit failures,
+concurrent/exact/conflicting recovery, staged-file isolation, ignored-runtime
+prerequisites and false-closure rejection. Historical quorum, independent review,
+real-model trials and the full six-part objective remain unchanged and open.
+
+
+### Refusal delivery allocation — September 11
+
+Before edits, Codex claims the evaluation delivery/2026-09-05/{PROGRESS.md,
+priorities.json,report.html,report-manifest.json} refresh and browser-refusal-20260911.json with its
+owned browser-qa/refusal-20260911 directory. Record current-source validation,
+retained initial path-alias and test-instrumentation failures, and explicit
+limitations. Update the existing draft PR after committing verified source.
+The five presentation priorities (six audit areas when context and budgets are
+separated) remain partial/preparation. No model trial, independent acceptance or
+closed gate may be inferred from local process fixtures or report rendering.
+
+
+### Durable refusal source checkpoint — September 11
+
+Bounded driver/helper refusal observations now have guarded canonical publication,
+Git byte verification and exact-hash recovery. Pending observations survive a
+stopped parent or failed publication; canonical records remain in the tested tree
+and require fresh checks. The owned refusal disposition records concurrency,
+interrupted staging, conflict and staged-file isolation behavior and limitations.
+
+All 342 Go/module files match the manifest. Full Go suite PASS
+(113.824s); evidence/app/driver/runner race PASS (130.440s);
+scoped vet, Windows amd64 app cross-build, isolated shared-volume suites and actual
+compiled CLI inspect/refuse/recover/replay probes PASS. Initial path-alias and
+test-instrumentation failures remain retained. No production lock was weakened.
+Independent acceptance, Windows runtime and all remaining full-scope obligations
+in the disposition are still pending. No model or real accounting action occurred.

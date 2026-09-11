@@ -20,6 +20,7 @@ import (
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // This runtime command is invoked BY the independently selected CLI agent.
@@ -28,6 +29,7 @@ import (
 // only the actual helper's retained executions, never a model's textual PASS.
 type evidenceVerificationRequest struct {
 	Version      int    `json:"version"`
+	AttemptID    string `json:"attempt_id"`
 	Root         string `json:"root"`
 	Idea         string `json:"idea"`
 	RunID        string `json:"run_id"`
@@ -51,6 +53,9 @@ type evidenceVerificationReceipt struct {
 }
 
 func runEvidenceVerify(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "refusals" {
+		return runEvidenceRefusals(ctx, args[1:], stdout, stderr)
+	}
 	if len(args) == 0 || args[0] != "verify" {
 		fmt.Fprintln(stderr, "usage: parley evidence verify --request PATH --request-sha256 SHA (independent verifier runtime only)")
 		return 2
@@ -214,6 +219,35 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 	if req.Idea == "" || filepath.Base(req.Idea) != req.Idea || req.Idea == "." || req.Idea == ".." {
 		return errors.New("invalid verification idea identity")
 	}
+	stage := "identity"
+	var observedExecutions []evidence.CriterionRecord
+	defer func() {
+		if resultErr == nil {
+			return
+		}
+		_, scope, scopeErr := verificationRefusalScope(root, req.Idea)
+		if scopeErr != nil {
+			resultErr = errors.Join(resultErr, errors.New("helper refusal has no safe idea scope"))
+			return
+		}
+		rec, err := newVerificationRefusal("helper", stage, req.Idea, req.RunID, req.Verifier, requestSHA, req.ReportSHA256, os.Getenv("PARLEY_PROC_MARKER"))
+		if err == nil {
+			for _, execution := range observedExecutions {
+				rec.Executions = append(rec.Executions, evidence.RefusalExecution{Name: telemetry.SafeLabel(execution.Name), Status: execution.Status, CommandSHA256: evidence.RefusalHash(execution.Command.CommandSHA256)})
+			}
+			var retained evidenceVerificationReceipt
+			if raw, e := readVerificationJSON(filepath.Join(filepath.Dir(requestAbs), "result.json"), &retained); e == nil {
+				rec.ReceiptSHA256 = evidence.RefusalHash(sha256Hex(string(raw)))
+			}
+			_, err = evidence.RetainVerificationRefusal(scope, rec)
+		}
+		if err != nil {
+			resultErr = errors.Join(resultErr, errors.New("helper refusal retention failed"))
+		}
+	}()
+	if req.AttemptID != filepath.Base(filepath.Dir(requestAbs)) {
+		return errors.New("verification attempt identity differs from its frozen directory")
+	}
 	if req.RunID == "" || req.Verifier == "" || os.Getenv("PARLEY_RUN_ID") != req.RunID || os.Getenv("PARLEY_AGENT_ID") != req.Verifier || os.Getenv("PARLEY_PROC_MARKER") == "" {
 		return errors.New("helper must run inside the selected independent verifier invocation")
 	}
@@ -230,6 +264,7 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 		}
 		resultErr = errors.Join(resultErr, writeVerificationJSON(filepath.Join(filepath.Dir(requestAbs), "result.json"), receipt))
 	}()
+	stage = "original-report"
 	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", req.Idea)
 	var report evidence.Report
 	originalRaw, err := readVerificationJSON(filepath.Join(filepath.Dir(requestAbs), "original-report.json"), &report)
@@ -243,6 +278,7 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 	if err != nil || !bytes.Equal(currentOriginal, originalRaw) {
 		return errors.New("canonical evidence differs from the frozen original report")
 	}
+	stage = "bindings"
 	criteria, _, err := verificationBindings(req, &report, ideaDir)
 	if err != nil {
 		return err
@@ -252,6 +288,7 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 			return errors.New("fresh execution report required; an earlier verifier cannot be replayed")
 		}
 	}
+	stage = "execution"
 	for _, criterion := range criteria {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -262,6 +299,7 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 		}
 		rec := evidence.RunCriterion(ctx, root, criterion.Name, criterion.Command, req.Verifier)
 		receipt.Executions = append(receipt.Executions, rec)
+		observedExecutions = receipt.Executions
 		_, afterTree, err := verificationBindings(req, &report, ideaDir)
 		if err != nil {
 			return err
@@ -287,6 +325,7 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 	if err := evidence.AuthorizeCompletionTransition(&report, restPath, restContent, req.Verifier); err != nil {
 		return err
 	}
+	stage = "publication"
 	return evidence.WithReportWriter(ctx, ideaDir, func(writer *evidence.ReportWriter) error {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -309,7 +348,13 @@ func executeIndependentVerification(ctx context.Context, requestPath, requestSHA
 	})
 }
 
-func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, string) {
+func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (ok bool, detail string) {
+	stage, requestSHA, originalSHA, invocation := "preflight", "", "", ""
+	defer func() {
+		if !ok {
+			detail += "; " + o.retainDriverRefusal(stage, requestSHA, originalSHA, invocation)
+		}
+	}()
 	fail := func(err error) (bool, string) { return false, err.Error() }
 	// The helper command and criteria currently use the POSIX shell contract.
 	// Cross-compilation does not establish an executable Windows contract.
@@ -340,11 +385,16 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 		return false, "idea directory does not match the canonical verification root"
 	}
 	o.root, o.ideaDir = root, ideaDir
+	if err := requireCommittedRefusals(ctx, root, ideaDir); err != nil {
+		return fail(err)
+	}
+	stage = "original-report"
 	var original evidence.Report
 	raw, err := readVerificationJSON(evidence.ReportPath(o.ideaDir), &original)
 	if err != nil {
 		return fail(err)
 	}
+	originalSHA = sha256Hex(string(raw))
 	if original.CompletionTransition != nil {
 		return false, "fresh report required before a new completion verification"
 	}
@@ -355,9 +405,11 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 	req := evidenceVerificationRequest{Version: 1, Root: root, Idea: o.ideaSlug,
 		RunID: o.base.RunID, Verifier: o.drafter, ReportSHA256: sha256Hex(string(raw)),
 		TreeSHA256: original.TreeSHA256, RestSHA256: rest}
+	stage = "bindings"
 	if _, _, err := verificationBindings(req, &original, o.ideaDir); err != nil {
 		return fail(err)
 	}
+	stage = "runtime"
 	base := filepath.Join(root, ".parley-runtime", "evidence-verification")
 	// Verify the ignore prerequisite before writing any retained runtime files.
 	// Do not broaden the tested-tree exclusion to hide a configuration mistake.
@@ -394,6 +446,8 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 	if err != nil {
 		return fail(err)
 	}
+	stage = "request"
+	req.AttemptID = filepath.Base(dir)
 	requestPath := filepath.Join(dir, "request.json")
 	if err := writeVerificationBytes(filepath.Join(dir, "original-report.json"), raw); err != nil {
 		return fail(err)
@@ -405,7 +459,7 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 	if err != nil {
 		return fail(err)
 	}
-	requestSHA := sha256Hex(string(requestRaw))
+	requestSHA = sha256Hex(string(requestRaw))
 	// Refuse if runtime creation itself changed the tested tree (e.g. runtime
 	// paths are not ignored in this deck). Never expand exclusions to hide it.
 	if _, _, err := verificationBindings(req, &original, o.ideaDir); err != nil {
@@ -424,12 +478,15 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (bool, stri
 Execute the exact verifier command below once from this invocation. It reads the frozen named criteria, runs them, records actual independent executions and binds them to the original report and tested tree. Do not edit code, requests, reports, receipts, scope or signatures yourself. Do not substitute a written PASS, manually populated attribution, or commands selected from memory. If execution is unavailable or fails, report the actual failure. After the helper returns, print a short outcome and stop. Runtime attribution is not human authentication.
 Verifier command: %s
 `, o.drafter, o.ideaSlug, command)
+	stage = "launch"
 	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: o.base.RunID, Idea: o.ideaSlug, Phase: "evidence-verification", Store: o.base.Store})
 	res := runner.RunConsult(ctx, runner.ConsultOptions{Root: root, Agent: agent, Prompt: prompt,
 		Timeout: o.base.Timeout, StdoutPath: filepath.Join(dir, "agent.stdout.log"), StderrPath: filepath.Join(dir, "agent.stderr.log"), Progress: o.out})
+	invocation = res.InvocationID
 	if res.ExitError != "" || res.AgentExit != 0 || res.InvocationID == "" {
 		return false, "independent verifier process failed or its launch was not observed"
 	}
+	stage = "acceptance"
 	err = evidence.WithReportWriter(ctx, o.ideaDir, func(_ *evidence.ReportWriter) error {
 		return o.acceptVerification(dir, req, original, requestPath, requestSHA, res.InvocationID)
 	})
@@ -533,6 +590,9 @@ func (o driverImplOps) acceptVerification(dir string, req evidenceVerificationRe
 
 // Called while holding the report writer guard, before the final gate/write.
 func (o driverImplOps) requireAcceptedVerification() error {
+	if err := requireCommittedRefusals(context.Background(), o.root, o.ideaDir); err != nil {
+		return err
+	}
 	if !o.base.Store.Enabled() {
 		return errors.New("completion requires persistent independent verification acceptance")
 	}
