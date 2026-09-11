@@ -1908,3 +1908,62 @@ operator accounting operation ran. This closes the identified live-session gap;
 durable cross-process semantic replay and all other unfinished FINAL obligations
 remain open. The latest browser-verified report remains explicitly bound to the
 prior bd00188 source checkpoint; refreshing presentation is still pending.
+
+### Patch-regression trajectory execution allocation — September 11
+
+Before edits, Codex claims the new internal/trajectory/{trajectory.go,
+verify.go,trajectory_test.go,verify_test.go} files, the owned
+implementation-notes/codex-1-trajectory-execution-dispositions-20260911.md and
+docs/agent-runtime-configuration.md. Build the execution and decision core for
+FINAL D6/AC-B2 using the existing evidence.RunCriterion machinery, without
+changing the ordinary completion attestation's pass-only contract. Freeze exact
+before/after commit and tree identities, patch bytes, criterion command hashes,
+independent runtime verifier and ordered patch-request ancestry before checks.
+Run actual paired baseline/patched checks in AB/BA order and require stable trees
+and consistent structured observations; parser/process failures, missing coverage,
+ambiguous existing failures and self-attribution are not confirmed regressions.
+Derive outcomes from retained executions rather than a supplied verdict. Detect
+the first two consecutive confirmed material criterion regressions, preserve that
+review requirement, and reject replayed patches or omitted sequence entries.
+
+Use executable Git fixtures for new regression, unchanged prior failure, clean
+intervening patch, instability, missing/zero-case/opaque evidence and source drift.
+This establishes the paired-execution core only. Persisted opt-in policy and
+complete driver/manual/verifier invocation wiring remain required before AC-B2
+can be accepted; no prototype API or fixture will be presented as that gate's
+completion. No real model invocation is part of this implementation step.
+
+The paired failure classifier also needs typed execution completeness: a failing
+test seen in a truncated stream must not establish a confirmed regression.
+Before edits, Codex additionally claims internal/evidence/execute.go and the new
+internal/evidence/execution_observation_test.go for an additive detailed-execution
+API. Preserve existing RunCriterion and persisted report shapes; expose process,
+capture and parser completeness as runtime observation rather than parsing the
+human diagnostic string. Existing evidence owner artifacts remain untouched.
+
+### Patch-regression execution core checkpoint — September 11
+
+The new trajectory core freezes exact clean before/after Git snapshots and
+material command hashes, performs actual paired AB/BA criterion executions, and
+derives consecutive regression decisions from the retained observations. Two
+confirmed material regressions trigger a retained review requirement; a clean
+intervening patch breaks the sequence. Prior failures, unstable/incomplete output,
+reduced passing coverage and missing/replayed/changed-scope records cannot supply
+false confirmations. The additive detailed criterion API supplies typed capture,
+parser and process completeness while preserving ordinary evidence report shapes.
+
+All 356 Go/module files match manifest
+6f60552b591b1c23ff448e3c6b94b5672ca5e6164701f32028ba82a643077e84.
+Full suite PASS (124.571s), trajectory/evidence/budget/app/driver/runner race PASS
+(146.321s), scoped vet PASS (1.237s), Windows amd64 trajectory/app cross-builds
+PASS and the compiled trajectory fixtures on an isolated shared volume PASS
+(60.063s). Initial SafeLabel pointer-type build failures are retained; all
+subsequent runtime validation passed. No real model or operator action ran.
+
+The owned trajectory execution disposition records current behavior, trust
+boundaries and concrete remaining integration. This is an execution/decision
+core, not a persisted opt-in policy or enforcement across driver/manual paths.
+AC-B2 remains incomplete until complete real patch coverage, source snapshots,
+independent verifier invocation, durable observations and all enforcement/recovery
+paths are wired and independently accepted. Other FINAL gates remain open.
+The last browser-verified report remains bound to bd00188, pending refresh.

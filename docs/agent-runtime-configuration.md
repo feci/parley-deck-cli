@@ -863,3 +863,39 @@ The parent CLI enforcing final closure must be upgraded before relying on this
 new control; older binaries do not enforce an additional map key themselves.
 This remains cooperative runtime attribution, not authentication against a
 same-UID actor capable of fabricating all mutually consistent artifacts.
+
+## Patch-regression trajectory execution core
+
+The new internal trajectory API prepares the paired-execution part of the
+opt-in pilot rule. It is not yet exposed as a CLI policy or enforced by the
+ordinary driver/manual paths. AC-B2 remains incomplete until durable policy,
+complete patch-attempt coverage and independently invoked verifier integration
+are connected and verified.
+
+`Freeze` binds separate clean Git baseline/patched snapshots, full commit IDs,
+source-tree hashes, the exact binary patch digest, independent runtime verifier,
+ordered patch ancestry and a fixed material criterion scope. Requests retain
+command hashes instead of raw commands. `Verify` uses the existing criterion
+executor twice on each snapshot in AB/BA order, rechecking both snapshots and
+patch identity around every command. Partial observations are retained in its
+return value on failure. The additive `RunCriterionDetailed` API distinguishes
+complete observed failures from interrupted processes, capture overflow and
+malformed structured output without changing ordinary persisted evidence reports.
+
+`Assess` derives a material regression from a stable structured pass-to-fail
+transition. Opaque, missing, skipped, zero-case, contradictory, self-attributed
+or unstable evidence cannot supply a confirmation. Pre-existing failures and
+reduced passing coverage cannot establish a clean patch. `Evaluate` requires
+the full ordered expected patch list separately from observations; a clean
+intervening patch breaks the consecutive count, while the first two-confirmation
+review trigger remains recorded even if later input includes a clean patch.
+Missing observations, sequence gaps, changed scope and replayed patches refuse.
+
+The future orchestrator must bind that expected list to every real opted-in
+patch attempt, select the actual non-implementer verifier and verify its invocation
+and retained helper output. An empty caller-supplied list is not evidence that no
+real patch occurred. These APIs do not independently authenticate identities,
+persist/approve an opt-in policy, reconcile interrupted model work, authorize
+completion, change quorum or release the two-regression review requirement.
+The frozen commands must implement the original material acceptance criteria;
+this bounded comparison does not prove universal causation or test adequacy.

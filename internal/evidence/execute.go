@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -69,6 +70,21 @@ type Envelope struct {
 // never persisted, only its hash (commands routinely carry secrets in env
 // assignments).
 func RunCriterion(ctx context.Context, root, name, command, executor string) CriterionRecord {
+	return RunCriterionDetailed(ctx, root, name, command, executor).Record
+}
+
+// CriterionExecution distinguishes a complete observed failing test from an
+// interrupted process, truncated capture or malformed structured output. The
+// latter remain failures for closure, but cannot prove a patch-induced
+// regression. Complete does not certify opaque shell output or authenticity.
+type CriterionExecution struct {
+	Record   CriterionRecord `json:"record"`
+	Complete bool            `json:"complete"`
+}
+
+// RunCriterionDetailed uses the same execution and parsing path as RunCriterion
+// and adds typed observation completeness without changing persisted reports.
+func RunCriterionDetailed(ctx context.Context, root, name, command, executor string) CriterionExecution {
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	cmd.Dir = root
@@ -164,12 +180,17 @@ func RunCriterion(ctx context.Context, root, name, command, executor string) Cri
 	case ce.Format != FormatShell && ce.ExecutedCases == 0:
 		status = StatusNotRun // structured proof that nothing executed
 	}
-	return CriterionRecord{
+	complete := !capbuf.overflow && envelopeInvalid == "" && goTestInvalid == "" && ctx.Err() == nil
+	if runErr != nil {
+		var exitErr *exec.ExitError
+		complete = complete && errors.As(runErr, &exitErr) && exitErr.ExitCode() >= 0
+	}
+	return CriterionExecution{Complete: complete, Record: CriterionRecord{
 		Name:       name,
 		Status:     status,
 		Command:    ce,
 		Provenance: Provenance{Executor: executor},
-	}
+	}}
 }
 
 // cappedWriter retains at most max bytes of a stream while consuming it all,
