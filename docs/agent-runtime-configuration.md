@@ -1042,3 +1042,41 @@ independent model/helper invocation, exact receipt acceptance, durable observati
 the complete charge-derived expected patch inventory, retained review trigger
 and explicit recovery/disposition. No call to these APIs resolves pending state,
 resets budget, changes quorum or supplies implementation completion.
+
+
+### Durable captured-verification journal (internal API)
+
+`trajectory.PrepareCapturedVerification` freezes a `VerificationTicket` before
+launch. The private ticket binds the canonical origin worktree, driver run,
+selected non-implementer and complete `CapturedRequest`. Shared cycle storage
+reserves `trajectory-verifications/<original-charge-key>/` once. An existing
+reservation, including an interrupted or incomplete write, refuses replacement.
+The directory and files must pass persistence barriers before work proceeds.
+
+`ReserveCapturedVerificationLaunch` records one distinct invocation before
+spawn; `ExecuteCapturedVerification` exclusively claims its helper before source
+preparation or commands. The helper records both prepared source roots before
+execution. Each actual AB/BA execution gets an ordered, hash-linked immutable
+step record. A terminal receipt binds request, launch, helper claim, prepared
+roots and all completed steps; errors retain a bounded failure-stage label.
+Required writes fail closed. Neither a failed terminal write nor a process crash
+makes the original ticket reusable. Failed and partial records stay in place.
+
+`ReadCapturedVerification` rechecks original charge/state/archive authority,
+request, launch, claim, preparation, bounded complete journal inventory and the
+receipt. It returns available partial observations with an error when a terminal
+is missing or failed. Changed original authority also refuses; preserved private
+files then require explicit recovery inspection. A process killed during a check
+may leave only earlier completed steps plus a claimed unfinished invocation;
+that missing outcome must not be inferred. `prepared.json` retains the private
+workspace locations for later recovery cleanup. Source archives remain retained.
+
+These APIs do **not** yet wire the selected model into the instrumented runner,
+authenticate inherited process markers, provide an operator retry/recovery flow,
+resolve pending attempts or grant completion/continuation. The caller must bind
+the reserved invocation to its observed process and terminal outcome before
+acceptance. Same-UID artifact fabrication is outside this attribution boundary.
+Requests/receipts contain private local paths; they are not telemetry exports.
+The journal currently requires a POSIX host. Windows cross-compilation is not
+Windows execution support. Existing staged-source/history reconstruction refusals
+remain unchanged.

@@ -331,6 +331,12 @@ func (w *CapturedWorkspace) check(ctx context.Context) error {
 // by replaying execution. The parent must retain every returned partial result.
 // This function itself neither invokes nor authenticates the selected model.
 func VerifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criterion) (Observation, error) {
+	return verifyCaptured(ctx, w, criteria, nil, nil)
+}
+
+// The journal hooks are private: callers cannot replace source validation or
+// turn an observation-write failure into an accepted execution.
+func verifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criterion, guard func() error, retain func(int, Execution) error) (Observation, error) {
 	if w == nil {
 		return Observation{}, errors.New("captured verification workspace is required")
 	}
@@ -354,9 +360,18 @@ func VerifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criter
 			return o, errors.New("captured verification changed frozen criterion command or order")
 		}
 	}
-	if err = w.check(ctx); err != nil {
+	check := func() error {
+		if guard != nil {
+			if err := guard(); err != nil {
+				return err
+			}
+		}
+		return w.check(ctx)
+	}
+	if err = check(); err != nil {
 		return o, err
 	}
+	ordinal := 0
 	for _, c := range criteria {
 		o.Pairs = append(o.Pairs, Pair{Name: c.Name})
 		p := &o.Pairs[len(o.Pairs)-1]
@@ -364,7 +379,7 @@ func VerifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criter
 			after bool
 			index int
 		}{{false, 0}, {true, 0}, {true, 1}, {false, 1}} {
-			if err = w.check(ctx); err != nil {
+			if err = check(); err != nil {
 				return o, err
 			}
 			root, source, target := w.before, r.Before, &p.Before[step.index]
@@ -373,13 +388,20 @@ func VerifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criter
 			}
 			execution := evidence.RunCriterionDetailed(ctx, root, c.Name, c.Command, r.Verifier)
 			*target = Execution{Complete: execution.Complete, Record: execution.Record, TreeBeforeSHA256: source.Tree.SHA256}
-			actual, err := Observe(ctx, root)
-			if err == nil {
+			actual, observeErr := Observe(ctx, root)
+			if observeErr == nil {
 				target.TreeAfterSHA256 = actual.Tree.SHA256
-			} else {
-				return o, fmt.Errorf("captured criterion post-source unavailable: %w", err)
 			}
-			if err = w.check(ctx); err != nil {
+			ordinal++
+			if retain != nil {
+				if err = retain(ordinal, *target); err != nil {
+					return o, fmt.Errorf("captured execution retention failed: %w", err)
+				}
+			}
+			if observeErr != nil {
+				return o, fmt.Errorf("captured criterion post-source unavailable: %w", observeErr)
+			}
+			if err = check(); err != nil {
 				return o, err
 			}
 			if !execution.Complete {

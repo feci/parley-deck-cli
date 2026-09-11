@@ -2177,3 +2177,70 @@ areas remain incomplete. No new model call or actual operator activation occurre
 The older report, real experiment requirements and unanswered recovery/roster/
 pilot/funding decisions are unchanged. No final merge/release/deployment/global
 installation/immutable-core publication is claimed.
+
+### Ownership claim — durable captured verification journal, September 12
+
+Codex-1 owns `internal/trajectory/verification.go`, its new tests, the private
+observation hook in `internal/trajectory/captured.go`, runtime documentation and
+`implementation-notes/codex-1-durable-verification-journal-20260912.md`.
+
+Persist the exact captured request and selected verifier/run before launch in
+shared charge-scoped storage. Reserve one observed invocation and one helper
+claim durably, refusing duplicate or interrupted replay without inventing a new
+patch charge. Retain bounded ordered execution observations and a terminal
+receipt, including preparation failures and partial executions. Re-read exact
+request/launch authority around helper execution; accept only a complete matching
+receipt under unchanged original authority. Use actual cross-process fixtures
+for competing claims, interruption and replay. Record the same-UID trust limit.
+
+This internal journal is a prerequisite for the instrumented model/CLI helper
+integration. It does not itself launch/authenticate a model, resolve trajectory
+attempts, authorize retries or continuation, change quorum, or satisfy AC-B2.
+Existing source archives, pass-only completion and older report remain scoped
+as previously recorded. No real model or operator action is part of these tests.
+
+### Durable captured verification journal checkpoint — September 12
+
+The shared journal now reserves one exact captured ticket per original fixup
+charge before launch, one distinct invocation before spawn and one exclusive
+helper claim before source preparation or criterion execution. Prepared private
+source roots are retained before checks. Every actual AB/BA execution is written
+as an immutable bounded step with its ordinal and prior digest. A terminal receipt
+binds request, launch, claim, preparation and all retained steps. Changed authority,
+missing/ambiguous/extra history and lost observation/receipt writes refuse. Killed
+helpers leave completed steps and a pending claim; fresh processes cannot silently
+retry or replace the attempt. Checked reads return partial observations with an
+error for missing/failed terminals and never resolve the underlying charge.
+
+Validation covers exactly 370 Go/module files, manifest SHA256
+7158926537d9076a55286b7297c6875f17f1cc34df478217b54d4a70ad92f501.
+Full JSON Go suite PASS (182.834s; all 32 package terminal events, including the
+no-test cmd/parley package), six-package race PASS (195.817s), scoped vet PASS
+(1.420s). Windows amd64 trajectory/app cross-builds passed and their PE amd64
+headers and binary hashes were checked; Windows runtime remains unverified.
+Compiled shared-volume trajectory/runner/driver/app fixtures passed in
+222.010/9.169/1.525/3.229s. All ten new top-level test entries (nine behavioral
+tests and their synthetic process-helper entry) passed in full, race and shared
+runs. Complete native/shared logs match and contain no NUL bytes or failed-test
+events. `final-verification.json`, the exact validation and verification scripts,
+toolchain identity and 38 checksummed evidence files are retained under
+`.parley-runtime/durable-verification-validation-20260912/`.
+
+The original focused run is retained separately within that evidence directory.
+No test failure was hidden or rerun to obtain a passing checkpoint. The preceding
+sparse-log anomaly remains unclassified at its original source checkpoint; these
+passes do not retroactively explain it. The older HTML report has the same
+629641 bytes and SHA256 06ed736c5ef7379adf1ce3c3d1adc51f5afbb34ef6869b70798f8ad28b87a0be.
+
+Actual synthetic process fixtures cover competing helpers, exactly one execution
+sequence, a killed helper after its first retained observation, fresh-process
+replay refusal, source/scope/identity/history mutations and required-write failure.
+The owned durable-journal note records POSIX, same-UID attribution, interrupted
+workspace cleanup and remaining staged/object recovery limits. This is an internal
+API; actual instrumented model/helper invocation, inherited-marker/terminal binding,
+full charge-derived evaluation and durable review/recovery/continuation remain
+required. Every trajectory attempt remains pending. No new model invocation or
+actual operator activation occurred. AC-B2, the six areas, independent current-source
+acceptance, live experiments and final report/follow-up delivery remain incomplete.
+The previously unanswered provider recovery, historical roster/pilot and funding
+choices remain unchanged; no merge/release/deployment/global publication is claimed.
