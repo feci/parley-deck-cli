@@ -30,6 +30,14 @@ type LaunchInfo struct {
 }
 
 type launchInfoKey struct{}
+type launchOriginKey struct{}
+
+// The protocol runner captures its live origin before a disposable review
+// checkout replaces the execution cwd. This is runtime lineage, never a
+// participant-provided telemetry field. Budgets and evidence survive cleanup.
+func withLaunchOrigin(ctx context.Context, root string) context.Context {
+	return context.WithValue(ctx, launchOriginKey{}, root)
+}
 
 func WithLaunchInfo(ctx context.Context, info LaunchInfo) context.Context {
 	return context.WithValue(ctx, launchInfoKey{}, info)
@@ -54,6 +62,9 @@ type launchIntegrityError struct{ reason string }
 func (e *launchIntegrityError) Error() string { return e.reason }
 
 func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
+	if origin, ok := ctx.Value(launchOriginKey{}).(string); ok {
+		root = origin
+	}
 	info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
 	if info.RunID == "" {
 		info.RunID = runID

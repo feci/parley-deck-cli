@@ -127,12 +127,11 @@ func TestEmitLoopBudgetReportsCostWhenUnlimited(t *testing.T) {
 // F-T2-3: a Run with an already-elapsed wall-clock budget escalates via the inbox note
 // on the first pre-Advance check and never reaches Complete.
 func TestRunEscalatesOnLoopBudget(t *testing.T) {
-	deck := t.TempDir()
-	runDir := filepath.Join(deck, "runs", "r1")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	d := New(Config{IdeaSlug: "demo", RunDir: runDir, Events: store.New(runDir), MaxWallClock: time.Nanosecond}, &fakeRunner{})
+	parts := []string{"codex", "claude"}
+	ideaDir, runDir := setupIdea(t, parts, "")
+	deck := filepath.Dir(filepath.Dir(runDir))
+	d := newTestDriver(ideaDir, runDir, parts, 3, true, &fakeRunner{})
+	d.cfg.MaxWallClock = time.Nanosecond
 	if err := d.Run(context.Background()); err != nil {
 		t.Fatalf("Run should halt cleanly on a budget breach, got err=%v", err)
 	}

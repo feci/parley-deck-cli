@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
@@ -197,6 +198,10 @@ func (h *Handle) setResults(results []Result) {
 }
 
 func RunRoundOne(ctx context.Context, opts Options) []Result {
+	ctx = withLaunchOrigin(ctx, opts.Root)
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+
 	if opts.Round == 0 {
 		opts.Round = 1
 	}

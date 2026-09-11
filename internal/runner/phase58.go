@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
@@ -20,6 +21,9 @@ import (
 // IMPLEMENTATION.md (and code on a branch) per FINAL.md. opts.Idea.Participants
 // must contain exactly the implementer. Reuses the shared launch machinery.
 func RunImplementation(ctx context.Context, opts Options) Result {
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+
 	opts.Phase = "implementation"
 	opts.ArtifactName = "IMPLEMENTATION.md"
 	if opts.RoundLabel == "" {
@@ -50,6 +54,9 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 // an ordinary nonzero exit with a valid artifact succeeds with agent_exit
 // (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+
 	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
@@ -327,6 +334,9 @@ func validateArtifactForPhase(opts Options, outputPath, agentID string) error {
 // the machine-readable Phase-7 contract (outstanding_agreed_fixes). Overwrites
 // any prior draft so each fix-up cycle records the current count.
 func RunReviewConsensus(ctx context.Context, opts Options) Result {
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+
 	opts.Phase = "review-consensus"
 	opts.ArtifactName = filepath.Join("review", "consensus.md")
 	opts.Overwrite = true

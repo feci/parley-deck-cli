@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/protocol"
 )
@@ -60,6 +61,9 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 			if reason := finalScaffoldReason(finalPath); reason != "" {
 				return ActionEscalated, c, fmt.Errorf("FINAL.md is not acceptable after drafting: %s", reason)
 			}
+		}
+		if err := budget.ChargeStep(ctx); err != nil {
+			return ActionEscalated, c, err
 		}
 		if err := setIdeaStatus(d.cfg.IdeaDir, "final"); err != nil {
 			return ActionEscalated, c, fmt.Errorf("commit idea status final: %w", err)

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/store"
 )
 
@@ -32,6 +33,19 @@ func (d *Driver) Run(ctx context.Context) error {
 	}
 	defer release()
 
+	// Persist the policy before the first transition. Saved limits remain
+	// authoritative on a new Run, including when its flags are omitted.
+	binding, err := budget.EnsureStepBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug, d.cfg.MaxDriverSteps, d.cfg.MaxWallClock)
+	if err != nil {
+		return fmt.Errorf("persistent driver budget: %w", err)
+	}
+	if binding != nil {
+		private := *d
+		private.cfg.MaxDriverSteps = binding.Policy.MaxSteps
+		private.cfg.MaxWallClock = time.Duration(binding.Policy.WallClockNS)
+		d = &private
+	}
+
 	deadline := time.Now().Add(roundDeadline)
 	start := time.Now()
 	steps := 0
@@ -43,6 +57,14 @@ func (d *Driver) Run(ctx context.Context) error {
 		default:
 		}
 
+		if binding != nil {
+			state, err := binding.Store.Inspect(ctx)
+			if err != nil {
+				return fmt.Errorf("read lifetime driver budget: %w", err)
+			}
+			steps, start = budget.StepCount(state), state.StartedAt
+		}
+
 		// LE-5: enforce the loop ceilings BEFORE advancing. A breach escalates (durable
 		// inbox note) and halts — it never marks the idea complete.
 		if reason := d.loopBudgetBreach(steps, start); reason != "" {
@@ -51,6 +73,17 @@ func (d *Driver) Run(ctx context.Context) error {
 
 		action, c, err := d.Advance(ctx)
 		last = c
+		// Report the durable charge even if the action failed after reserving it.
+		if binding != nil {
+			state, inspectErr := binding.Store.Inspect(ctx)
+			if inspectErr != nil {
+				return fmt.Errorf("read charged driver step: %w", inspectErr)
+			}
+			steps, start = budget.StepCount(state), state.StartedAt
+			if emitErr := d.emitLoopBudget(steps, start); emitErr != nil {
+				return emitErr
+			}
+		}
 		if err != nil {
 			// A runner failure or a malformed event log halts the driver; capture
 			// it in a durable blocking inbox note (consensus D4/AF3), not just
@@ -61,9 +94,11 @@ func (d *Driver) Run(ctx context.Context) error {
 			return err
 		}
 		// LE-5: count progress Advances and record budget burn for the TUI/state.
-		if isProgressAction(action) {
+		if binding == nil && isProgressAction(action) {
 			steps++
-			d.emitLoopBudget(steps, start)
+			if err := d.emitLoopBudget(steps, start); err != nil {
+				return err
+			}
 		}
 		switch action {
 		case ActionPromoted:
@@ -160,14 +195,14 @@ func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 // emitLoopBudget records budget burn after a progress step so the TUI/state can show it.
 // Cost is always reported for observability (F-T2-2); only enforcement is gated by
 // MaxCostUSD > 0 (in loopBudgetBreach).
-func (d *Driver) emitLoopBudget(steps int, start time.Time) {
+func (d *Driver) emitLoopBudget(steps int, start time.Time) error {
 	cost := d.loopCost()
 	var total any
 	coverage := "incomplete"
 	if cost.complete {
 		total, coverage = cost.usd, "complete"
 	}
-	_ = d.cfg.Events.Append(store.Event{
+	return d.cfg.Events.Append(store.Event{
 		Time: time.Now().UTC(),
 		Type: "loop.budget",
 		Data: map[string]any{
@@ -233,7 +268,7 @@ func (d *Driver) loopCost() loopCostSummary {
 // halts cleanly (LE-5: budget hit = escalate, never complete).
 func (d *Driver) escalateLoopBudget(c Cursor, reason string) error {
 	d.escalate(c, "loop-budget", fmt.Sprintf(
-		"The auto-driver hit a loop budget and halted rather than continue:\n\n    %s\n\nThis is a safety ceiling (loop engineering: a budget hit escalates, it does not mark the idea complete). Raise the relevant ceiling in ~/.parley [defaults.loop] or via the run flag, or split the work into smaller ideas, then re-run 'parley run --auto'.",
+		"The auto-driver hit a loop budget and halted rather than continue:\n\n    %s\n\nThis is a safety ceiling (loop engineering: a budget hit escalates, it does not mark the idea complete). Preserve the saved policy and charges. A new run or changed flags cannot extend a frozen lifetime ceiling; an explicit operator extension or accounting migration is required before continuing.",
 		reason))
 	return nil
 }

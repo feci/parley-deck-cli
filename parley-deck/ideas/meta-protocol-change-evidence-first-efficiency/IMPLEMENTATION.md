@@ -1070,3 +1070,73 @@ first Run and round 3 after resume, observed calls [2 3]. See
 implementation-notes/codex-1-driver-resume-counterexample-20260911.md for exact
 reproduction and required next boundary. This negative probe is separate from
 the passing ordinary suite and confirms that D6/AC-B1 is not yet complete.
+
+### Persistent driver-step allocation before edits — September 11
+
+Codex claims new internal/budget/step_binding.go, step_binding_test.go,
+step_session.go and step_session_test.go; new internal/driver/budget.go and
+budget_test.go; new internal/runner/step_budget.go and step_budget_test.go.
+Existing serialized claims cover driver.go, loop.go, impl.go, runner.go and
+phase58.go. Add internal/driver/consensus.go for the shared pre-mutation
+boundary; it has no concurrent owner writer. All work stays on integration.
+The frozen Claude review tree at 2194dca stays unchanged and its invocation
+is terminal. No participant's own review/handoff is edited.
+
+Implement frozen lifetime step/time policy with the existing durable store,
+one precharged step session per actual driver transition, shared by nested
+runner calls. Read-only/await paths do not reserve steps; failed work retains
+its charge. Direct Advance, resumed/new runs, BLOCK and supported manual
+protocol runners must consult the same idea scope. Existing driver history
+cannot silently acquire zero charges. This is the step/time slice; fixup and
+cross-review counters, explicit legacy migration/extensions, monetary policy
+mapping and regression trajectory remain separately required D6 work.
+
+Continuation allocation: add internal/budget/step_history.go and its tests for
+validated run identity and bounded history reads. Codex also extends the existing
+internal/runner/launch_budget_test.go process fixture under the same serialized
+integration ownership. Refused manual attempts must reach the already-instrumented
+launch boundary; no high-level grouping shortcut may erase request/terminal
+evidence. These edits do not change the frozen independent review checkpoint.
+
+Snapshot-boundary continuation allocation before edits: internal/runner/telemetry.go
+is added to this serialized slice. A Phase-6 disposable shared clone must retain
+the live origin for budget scope and invocation evidence; clone cleanup cannot
+erase telemetry or create an unbudgeted identity. Reproduce both step-policy
+refusal and launch-policy bypass through the actual review snapshot fixture.
+
+Shared-volume follow-up allocation before edits: internal/runner/reviewsnapshot.go
+and a new reviewsnapshot_test.go are serialized to Codex. The executed fixture
+reached real review publication, where Darwin File.Sync returned ENOTTY. Reuse
+the existing strict fsutil.SyncFile fallback and synced atomic replacement;
+retain snapshot recovery and propagate every actual synchronization failure.
+
+### Persistent steps and disposable-review origin — September 11
+
+The driver-resume counterexample is corrected by frozen lifetime step/time
+policy and durable precharged transition grouping. Run reporting now uses the
+saved count and clock; unrelated legacy cursors use validated run identity.
+Failed requests lacking a cursor also require migration. Manual refusal still
+produces requested/terminal telemetry at the common launch boundary.
+
+The actual review snapshot fixture additionally exposed lost origin accounting:
+step policy wrongly denied the first clone review, while launch policy granted
+a second call. Private runtime lineage now retains the live policy/evidence
+root across snapshot execution and cleanup. Shared-volume execution exposed
+ENOTTY during review artifact publication; the existing strict synchronization
+helper and synced replacement correct it while preserving failure recovery.
+All negative logs and own dispositions are in implementation-notes/
+codex-1-persistent-step-and-snapshot-dispositions-20260911.md.
+
+Final full Go suite passes: app 97.897s, budget 5.165s, driver 6.543s, evidence
+1.798s, runner 29.673s; captured log SHA256
+e1bf602e6a365fbe61f6b517913f472f020715d0514f51d6d3f3c759c8bd6c27.
+Budget/driver race pass (13.154s/11.095s); corrected runner race passes in
+54.408s. Scoped vet, Windows app cross-build and actual isolated shared-volume
+fixtures pass. Windows runtime and fresh independent acceptance are unverified.
+
+This is a tested step/time and snapshot-accounting slice. D6 still requires
+persistent fixup/cross-review counters, legacy migration, operator extensions,
+monetary default mapping, canonical refusal evidence and regression trajectory.
+All exact packet/pilot, real-model verifier and owned-signature gates remain.
+No new participant call occurred: inventory remains 34 terminal attempts,
+17 unknown costs, USD 46.1887585 known CLI estimates and unknown total.

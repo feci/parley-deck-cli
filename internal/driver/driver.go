@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
@@ -269,6 +270,15 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	if !d.autoDriveEnabled() {
 		return ActionSurfaceOnly, c, nil
 	}
+	if c.Phase == PhaseDone || c.Phase == PhaseBlocked {
+		return ActionSurfaceOnly, c, nil
+	}
+	ctx, scoped, finishStep, err := d.withStepBudget(ctx)
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("persistent driver budget: %w", err)
+	}
+	defer finishStep()
+	d = scoped
 	pin, err := ObserveChecksContract(d.cfg.IdeaDir, c.ChecksContractSHA256)
 	if err != nil {
 		return ActionEscalated, c, fmt.Errorf("original completion scope: %w", err)
@@ -347,6 +357,9 @@ func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, er
 		if err := d.runner.RunRound(ctx, next); err != nil {
 			return ActionEscalated, c, fmt.Errorf("run %s: %w", roundLabel(next), err)
 		}
+	}
+	if err := budget.ChargeStep(ctx); err != nil {
+		return ActionEscalated, c, err
 	}
 	if err := setIdeaStatus(d.cfg.IdeaDir, roundLabel(next)); err != nil {
 		return ActionEscalated, c, fmt.Errorf("set idea status: %w", err)

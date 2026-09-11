@@ -58,6 +58,20 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 	if handoff {
 		return nil
 	}
+	stepCtx, finishStep, err := budget.JoinStepSession(ctx, root, l.info.Idea)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &launchBudgetError{cause: err}
+	}
+	defer finishStep()
+	if err := budget.ChargeStep(stepCtx); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &launchBudgetError{cause: err}
+	}
 	bound, err := budget.LoadLaunchBinding(ctx, root, l.info.Idea)
 	if err != nil {
 		if ctx.Err() != nil {

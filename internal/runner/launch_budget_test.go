@@ -92,12 +92,11 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX fixture commands; Windows cross-build is separate")
 	}
-	for _, configured := range []bool{false, true} {
+	for _, policy := range []string{"context", "launch", "step"} {
+		configured := policy == "launch"
+		steps := policy == "step"
 		for _, surface := range []string{"manual", "round-process", "consult", "probe", "interactive", "acp"} {
-			name := surface
-			if configured {
-				name += "-configured"
-			}
+			name := surface + "-" + policy
 			t.Run(name, func(t *testing.T) {
 				root := t.TempDir()
 				writeLaunchProtocol(t, root)
@@ -115,13 +114,22 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 					// Ordinary application calls attach no explicit budget context.
 					ctx = context.Background()
 				}
-				ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: "changed-run", Phase: "review"})
+				ideaID := ""
+				if steps && surface != "acp" {
+					ideaID = "step-fixture"
+					binding, err := budget.EnsureStepBinding(context.Background(), root, ideaID, 1, 0)
+					if err != nil {
+						t.Fatal(err)
+					}
+					ledger, ctx = binding.Store, context.Background()
+				}
+				ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: "changed-run", Idea: ideaID, Phase: "review"})
 				agent := telemetryShell("printf 'actual child\\n'", false)
 				var launch func(int) error
 				switch surface {
 				case "manual":
 					launch = func(int) error {
-						_, err := RunMeasured(ctx, ExecOptions{Root: root, Agent: agent, Prompt: "task", Timeout: time.Second})
+						_, err := RunMeasured(ctx, ExecOptions{Root: root, Agent: agent, Prompt: "task", Timeout: time.Second, Info: LaunchInfo{Idea: ideaID, Phase: "review"}})
 						return err
 					}
 				case "round-process":
@@ -137,7 +145,7 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 					}
 				case "probe":
 					launch = func(int) error {
-						cmd, cleanup, err := ProbeCommandFor(WithLaunchInfo(ctx, LaunchInfo{Phase: "preflight"}), root, agent, "PONG")
+						cmd, cleanup, err := ProbeCommandFor(WithLaunchInfo(ctx, LaunchInfo{Idea: ideaID, Phase: "preflight"}), root, agent, "PONG")
 						if cleanup != nil {
 							defer cleanup()
 						}
@@ -167,6 +175,13 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 						}
 						ledger = binding.Store
 						ctx = context.Background()
+					}
+					if steps {
+						binding, err := budget.EnsureStepBinding(context.Background(), root, idea.Slug, 1, 0)
+						if err != nil {
+							t.Fatal(err)
+						}
+						ledger, ctx = binding.Store, context.Background()
 					}
 					acpAgent := agents.Discovery{Spec: agents.Spec{ID: "fake-acp", LaunchMode: agents.LaunchACP,
 						ACPArgs: []string{"-test.run=TestFakeACPAgentHelper", "--", "parley-fake-acp-agent"}, PromptMode: agents.PromptStdin}, Path: os.Args[0], Found: true}
@@ -215,7 +230,7 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 					t.Fatalf("spent entries=%+v err=%v", snapshot.Entries, err)
 				}
 				for _, entry := range snapshot.Entries {
-					if !entry.Settled {
+					if !steps && !entry.Settled {
 						t.Fatal("actual process did not settle")
 					}
 				}
