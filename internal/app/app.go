@@ -99,6 +99,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runPreset(args[1:], stdout, stderr)
 	case "protocol":
 		return runProtocol(args[1:], stdout, stderr)
+	case "budget":
+		return runBudget(ctx, args[1:], stdout, stderr)
 	case "roster":
 		return runRoster(args[1:], stdout, stderr)
 	case "tui":
@@ -222,6 +224,10 @@ Commands:
   tui
       Open the project TUI for workspace status, run state, questions, and
       agent/runtime inspection.
+
+  budget inspect|reconcile --ledger DIR --scope ID
+      Inspect an existing budget ledger or record an attended conservative
+      ceiling for unknown cost. Reconciliation preserves spent actions.
 
   version
       Print the CLI version. With --all, also print parley-deck-skill and

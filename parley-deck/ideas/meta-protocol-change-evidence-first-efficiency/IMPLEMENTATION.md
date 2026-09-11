@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 8ccd1ea
+head-commit: 9cd1e42
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -18,8 +18,8 @@ Implementation is partial on draft PR #73: measured protocol-task launch
 boundaries, live/full context attestation, cursor persistence, fail-closed goal
 checking, packet publication and source-instruction updates are integrated and
 locally tested. Claude's partial independent source reviews are preserved with
-their dispositions. Kimi's timed-out evidence checkpoint remains unintegrated
-after failing independent checks. The exact live experiments, complete launch
+their dispositions. Kimi's corrected 89a4305 checkpoint passes independent focused tests but
+remains unintegrated after three new adversarial probes; its owner is correcting them. The exact live experiments, complete launch
 coverage/shared budgets and full independent acceptance remain open. The frozen
 historical evaluation is unchanged.
 
@@ -147,13 +147,14 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Complete Kimi's evidence correction from preserved checkpoint 7f2676f. Fix
-   independently reproduced unrelated-rerun/duplicate-field acceptance and the
-   four failing fixture groups before integration; preserve owner artifacts.
-2. Complete shared per-launch/per-action budget reservation, persistent loop
-   limits, remaining readiness validation and interactive TTY process telemetry.
+1. Complete Kimi's new correction from 89a4305. Independent tests now confirm
+   the previous unrelated-rerun, duplicate-envelope and fixture fixes. Three new
+   reproduced probes remain; see codex-1-kimi-independent-20260911.md.
+2. Wire the tested shared reservation store into per-launch/per-action budgets,
+   persistent loop limits and manual/driver/resume/BLOCK paths. Complete readiness
+   validation and independent re-review of the corrected terminal process path.
 3. Reconcile at least 20 actual attempts across launch surfaces. The recovery
-   inventory currently has nine terminal attempts, three with unknown cost.
+   inventory currently has twelve terminal attempts, four with unknown cost.
 4. Obtain the pending historical Hermes-to-Zcode decision and pilot amendment
    direction. Freeze exact tasks/resource ceilings before either experiment;
    preserve the signed packet trial and full-six design until lawfully amended.
@@ -670,3 +671,60 @@ with known CLI-estimate subtotal USD 21.381507; overall cost remains unknown.
 Claude's review attempt completed at 601.450 seconds and estimated USD 3.8726815;
 its reported model list includes Opus 5 and Haiku, so no single-model attribution
 is inferred. Kimi's new attempt remains live at this checkpoint.
+
+Live continuation handles at 2026-09-11 08:49Z (revalidate before any retry):
+- Kimi invocation e020e34e-b900-44c5-9fad-70d7baac1a2b, agents-exec session
+  34323, expected terminal deadline around 08:49:29Z. Its own handoff now reports
+  corrected evidence/fixtures, with unsupported-entry coverage skipped on this
+  shared filesystem; independent inspection/execution and commit still required.
+- Claude follow-up review launched on 9cd1e42 through parley-recovery-5,
+  agents-exec session 29245. It reviews budget foundation and terminal fixes;
+  expected owned artifact claude-1-budget-tty-followup-20260911.md. Do not restart
+  while this actual process is live.
+- PR #73 remains draft, pushed through 9cd1e42. No final merge or release.
+
+### 2026-09-11 09:00Z — independent findings and next bounded corrections
+
+Kimi completed invocation e020e34e-b900-44c5-9fad-70d7baac1a2b at
+08:49:13.899763Z (1784.296s, exit 0, cost unknown); source checkpoint 89a4305
+is preserved locally. Codex independently ran the focused evidence/app suite
+on local TMPDIR: 42 pass events, zero failures/skips, including unsupported
+entries and the serial/barrier fixture. New overlay probes reproduce three
+remaining issues in the Kimi-owned slice; details and exact commands are in
+implementation-notes/codex-1-kimi-independent-20260911.md. Integration remains
+pending owner correction; earlier handoffs are preserved.
+
+Claude follow-up invocation 6e0126fc-30cb-44a7-8b69-04d6ee4f8e85 completed
+at 08:57:05.137977Z (509.599s, exit 0, CLI-estimate USD 2.596291). His own
+partial source review concurs with the principal TTY corrections and identifies
+budget locking/recovery and residual TTY issues. No shell execution or full
+acceptance is attributed to that review. Old sessions 29245 and 34323 are
+terminal and must not be polled or restarted.
+
+Codex will correct the existing budget allocation before caller wiring: make
+lock identity stable or refuse divergent local-cache origins, canonicalize
+absolute paths before resolving aliases, conservatively unify case aliases,
+pin the no-op-lock detector with an injected regression, and cover concurrent
+process cap enforcement. Bound JSON traversal and diagnose clock/overflow
+failures. Add explicit append-only operator cost reconciliation without
+erasing spent actions or unknown observed costs. Operator authorization must
+come from an actual CLI control, never participant frontmatter. All launch/
+action integration and acceptance gates remain open.
+
+Codex next wires the explicit cost-recovery control in the already-claimed
+internal/app/{budget.go,budget_test.go,app.go}: read-only inspection and an
+attended `budget reconcile` command with an exact ledger/scope/action/decision,
+conservative ceiling and reason. Reuse the existing platform terminal probe;
+this is an operator control, not cryptographic authentication or a grant from
+participant frontmatter. Add the recovery instructions to the already-claimed
+docs/agent-runtime-configuration.md. Per-launch enforcement remains separate.
+
+Codex's budget and residual terminal corrections now have executed evidence and
+explicit dispositions in implementation-notes/codex-1-budget-review-dispositions-20260911.md.
+The independent reviewer has not accepted those corrections yet. The earlier
+full-suite pass predates the later operator-control/Inspect additions; those
+additions separately pass focused app/budget tests. Kimi is running only the
+new probe correction under invocation a4e1d24c-6466-4764-96c9-ae83b3e7ec85
+(exec session 76055, started 09:00:25Z, 30-minute deadline). Do not restart it
+while live. The terminal inventory now contains twelve real attempts, four
+unknown costs, known CLI-estimate subtotal USD 23.977798, total cost unknown.

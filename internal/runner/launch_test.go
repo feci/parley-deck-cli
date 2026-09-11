@@ -72,7 +72,7 @@ func TestInteractiveProcessHasDistinctFreshEvidence(t *testing.T) {
 }
 
 func TestInteractiveProcessFailureEvidence(t *testing.T) {
-	for _, scenario := range []string{"missing-delivery", "missing-authority", "failed-start", "failed-exit", "timeout", "start-write", "terminal-write"} {
+	for _, scenario := range []string{"wrong-mode", "missing-delivery", "missing-authority", "failed-start", "failed-exit", "timeout", "start-write", "terminal-write"} {
 		t.Run(scenario, func(t *testing.T) {
 			root := t.TempDir()
 			if scenario != "missing-authority" {
@@ -83,6 +83,9 @@ func TestInteractiveProcessFailureEvidence(t *testing.T) {
 				script = "exec sleep 20"
 			}
 			agent, terminal := interactiveFixture(t, root, script)
+			if scenario == "wrong-mode" {
+				agent.LaunchMode = agents.LaunchHeadless
+			}
 			if scenario == "missing-delivery" {
 				agent.InteractivePromptMode = agents.InteractivePromptNone
 			}
@@ -113,7 +116,7 @@ func TestInteractiveProcessFailureEvidence(t *testing.T) {
 			if len(records) != 1 || records[0].Outcome.Status != "failed" {
 				t.Fatalf("missing failure: %+v", records)
 			}
-			want := map[string]string{"missing-delivery": "protocol_context_refused", "missing-authority": "protocol_context_refused", "failed-start": "start_failure", "failed-exit": "process_failure", "timeout": "timeout", "start-write": "telemetry_failure"}[scenario]
+			want := map[string]string{"wrong-mode": "protocol_context_refused", "missing-delivery": "protocol_context_refused", "missing-authority": "protocol_context_refused", "failed-start": "start_failure", "failed-exit": "process_failure", "timeout": "timeout", "start-write": "telemetry_failure"}[scenario]
 			if got := records[0].Outcome.FailureClass; got == nil || *got != want {
 				t.Fatalf("failure class: %v, want %s", got, want)
 			}
@@ -199,7 +202,15 @@ func TestInteractiveRealTerminalFailures(t *testing.T) {
 					}
 				}
 			}})
-			if err := RunInteractive(ctx, root, agent, "task", "", os.Stdin, os.Stdout, os.Stderr); err == nil {
+			terminal, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer terminal.Close()
+			if terminal.Fd() <= 2 {
+				t.Fatal("failure fixture must exercise a nonzero parent terminal descriptor")
+			}
+			if err := RunInteractive(ctx, root, agent, "task", "", terminal, os.Stdout, os.Stderr); err == nil {
 				t.Fatal("failure accepted")
 			}
 			parentCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

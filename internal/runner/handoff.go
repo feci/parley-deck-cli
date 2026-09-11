@@ -97,7 +97,10 @@ func handoffInstructions(opts HandoffOptions, packet HandoffPacket) string {
 	fmt.Fprintf(&b, "# Interactive handoff: %s\n\n", opts.Agent.ID)
 	fmt.Fprintf(&b, "Agent: %s\n", opts.Agent.ID)
 	fmt.Fprintf(&b, "Launch mode: %s\n", agents.LaunchModeOrDefault(opts.Agent.LaunchMode))
-	fmt.Fprintf(&b, "Invoke: %s\n", agents.InteractiveInvokeOrDefault(opts.Agent.InteractiveInvoke))
+	fmt.Fprintf(&b, "Configured invoke: %s\n", agents.InteractiveInvokeOrDefault(opts.Agent.InteractiveInvoke))
+	if agents.InteractiveInvokeOrDefault(opts.Agent.InteractiveInvoke) == "spawn-tty" {
+		b.WriteString("Automatic spawn-tty is supported by `parley consensus request-signoffs` only. Other commands provide a print-only handoff that you must launch yourself. This packet does not record a process launch.\n")
+	}
 	fmt.Fprintf(&b, "Prompt mode: %s\n", agents.InteractivePromptModeOrDefault(opts.Agent.InteractivePromptMode))
 	fmt.Fprintf(&b, "Prompt file: %s\n", packet.PromptPath)
 	fmt.Fprintf(&b, "Target artifact: %s\n", opts.TargetPath)

@@ -229,3 +229,57 @@ Probe outputs are not source artifacts and are ignored by Git.
 
 See also: [agent-cli-mechanics.md](agent-cli-mechanics.md) — verified per-CLI
 invocation behaviors (stdin/flag gotchas, failure modes) the runner relies on.
+
+
+## Inspecting and reconciling a budget ledger
+
+The durable reservation package and its recovery controls are available in this
+source branch. Automatic launch/action callers are still being integrated; the
+presence of this command does not establish that every launch is budgeted.
+
+Inspect an existing ledger with:
+
+```sh
+parley budget inspect --ledger /absolute/path/to/ledger-directory --scope IDEA
+```
+
+An unknown monetary observation stops a configured cost ceiling. If the operator
+can establish a conservative upper bound, record that exact decision from an
+attended terminal:
+
+```sh
+parley budget reconcile --ledger /absolute/path/to/ledger-directory --scope IDEA   --action-id INVOCATION_OR_ACTION_ID --decision-id UNIQUE_OPERATOR_DECISION   --ceiling-micros 7000000 --reason 'Conservative upper bound established by the operator' --yes
+```
+
+One microdollar is one millionth of USD; `7000000` means a USD 7 conservative
+ceiling. This is a template, not a suggested amount or an authorization. The
+original observed cost remains unknown. The decision is appended to the charged
+entry and the action remains spent. An exact repeat of the same decision is
+idempotent; a conflicting replay refuses. A later decision has a new identity.
+Known monetary observations cannot be rewritten by this recovery command.
+No command reads participant frontmatter as a budget grant.
+
+The terminal requirement is an attended control, not proof of a human identity.
+An agent must not allocate a terminal to manufacture operator authorization.
+It must first obtain the user's concrete decision. Inspection is read-only and
+works without a terminal; it does not initialize missing budget state.
+
+Locks use a verified local kernel lock because some shared filesystems report
+successful `flock` calls without providing exclusion. Each ledger permanently
+pins its first host/cache origin. A different cache environment, account path or
+hostname refuses visibly instead of taking a separate lock. Paths are resolved
+from absolute paths through symlinks; case folding is conservative on every OS.
+This is coordination for one pinned origin, not distributed cross-host locking.
+Never delete a live lock inode, its `lock-origin`, or a ledger to recover budget.
+Cache migration requires quiescent operator maintenance; automatic migration is
+not implemented. A cache filesystem without proven exclusion stops visibly and
+names the actual lock path. Windows is cross-compiled; runtime validation is pending.
+
+Action ceilings count lifetime attempts, including failed and settled attempts.
+A zero/absent ceiling means unlimited; the internal denied-kind control expresses
+an outright refusal separately. Elapsed wall time includes pauses and resume;
+backward clock movement refuses with a specific error. Lock contention is bounded
+by the caller's deadline and a 30-second upper bound. Unsupported ledger schemas
+fail closed: mixed versions are not certified. The 16 MiB ledger ceiling and full
+file rewrite currently bound scalability; no automatic compaction or deletion
+of charge identities is implemented.

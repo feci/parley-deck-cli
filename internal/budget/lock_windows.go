@@ -18,3 +18,16 @@ func tryLock(f *os.File) (bool, error) {
 func unlock(f *os.File) {
 	_ = windows.UnlockFileEx(windows.Handle(f.Fd()), 0, 1, 0, &windows.Overlapped{})
 }
+
+func publishOrigin(staged, path string) error {
+	from, err := windows.UTF16PtrFromString(staged)
+	if err != nil {
+		return err
+	}
+	to, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+	// No REPLACE_EXISTING: a competing complete origin wins and must match.
+	return windows.MoveFileEx(from, to, windows.MOVEFILE_WRITE_THROUGH)
+}

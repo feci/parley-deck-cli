@@ -239,7 +239,7 @@ func interactivePlaceholder(agent agents.Discovery) string {
 // ValidateInteractiveDelivery is shared by selection and the actual spawn gate.
 func ValidateInteractiveDelivery(agent agents.Discovery) error {
 	if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchInteractive {
-		return errors.New("terminal spawning requires interactive launch mode")
+		return &protocolContextError{reason: "interactive-launch-mode-required"}
 	}
 	placeholder := interactivePlaceholder(agent)
 	for _, arg := range agent.InteractiveArgs {
@@ -259,18 +259,20 @@ func ValidateInteractiveDelivery(agent agents.Discovery) error {
 func RunInteractive(parent context.Context, root string, agent agents.Discovery, prompt, targetPath string, stdin, stdout, stderr *os.File) (returnedErr error) {
 	ctx, cancel := context.WithTimeout(parent, time.Duration(agents.InteractiveTimeoutMSOrDefault(agent.InteractiveTimeoutMS))*time.Millisecond)
 	defer cancel()
-	if agents.LaunchModeOrDefault(agent.LaunchMode) != agents.LaunchInteractive {
-		return errors.New("terminal spawning requires interactive launch mode")
-	}
 	placeholder := interactivePlaceholder(agent)
-	if err := ValidateInteractiveDelivery(agent); err != nil {
+	if refusal := ValidateInteractiveDelivery(agent); refusal != nil {
 		info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
-		info.Context = telemetry.Context{Mode: "refused", FallbackReason: telemetry.String("interactive-prompt-delivery-unconfigured")}
+		reason := "interactive-launch-refused"
+		var contextErr *protocolContextError
+		if errors.As(refusal, &contextErr) {
+			reason = contextErr.reason
+		}
+		info.Context = telemetry.Context{Mode: "refused", FallbackReason: telemetry.String(reason)}
 		evidence, err := beginLaunch(WithLaunchInfo(ctx, info), root, "interactive", agent)
 		if err != nil {
 			return err
 		}
-		refusal := &protocolContextError{reason: "interactive-prompt-delivery-unconfigured"}
+		evidence.directTerminal = true
 		if err := evidence.finish(refusal, ctx.Err(), nil); err != nil {
 			return err
 		}

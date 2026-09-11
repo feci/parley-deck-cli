@@ -21,9 +21,11 @@ import (
 )
 
 var (
-	ErrReserved    = errors.New("action already reserved: reconcile it before any new execution")
-	ErrLimit       = errors.New("budget exhausted")
-	ErrUnknownCost = errors.New("monetary exposure is unknown")
+	ErrReserved     = errors.New("action already reserved: reconcile it before any new execution")
+	ErrLimit        = errors.New("budget exhausted")
+	ErrUnknownCost  = errors.New("monetary exposure is unknown")
+	ErrCostOverflow = errors.New("monetary exposure overflows microdollars")
+	ErrClockSkew    = errors.New("budget clock moved backwards")
 )
 
 type Kind string
@@ -36,9 +38,13 @@ const (
 )
 
 type Limits struct {
+	// Lifetime spent-action totals; zero/absent means unlimited. Denied can
+	// forbid a kind without changing the historical meaning of zero.
 	Actions    map[Kind]int
+	Denied     map[Kind]bool
 	CostMicros int64
-	WallClock  time.Duration
+	// Elapsed wall time from the first reservation, including pauses/resumes.
+	WallClock time.Duration
 }
 
 type Request struct {
@@ -54,6 +60,16 @@ type Reservation struct {
 	ReserveMicros *int64    `json:"reserve_micros"`
 	Settled       bool      `json:"settled"`
 	ActualMicros  *int64    `json:"actual_micros"`
+	// Operator ceilings preserve unknown observed cost. They do not become
+	// provider usage, erase a charge, or authorize repeating the action.
+	Reconciliations []Reconciliation `json:"reconciliations,omitempty"`
+}
+
+type Reconciliation struct {
+	ID            string    `json:"id"`
+	At            time.Time `json:"at"`
+	CeilingMicros int64     `json:"ceiling_micros"`
+	Reason        string    `json:"reason"`
 }
 
 type Snapshot struct {
@@ -67,6 +83,33 @@ type Store struct {
 	Dir, Scope string
 	now        func() time.Time
 	persist    func(string, []byte) error
+}
+
+// Inspect reads an existing ledger under its pinned lock. It never initializes
+// budget state or charges an action. The returned maps have no retained owner.
+func (s Store) Inspect(ctx context.Context) (Snapshot, error) {
+	if s.Dir == "" || s.Scope == "" {
+		return Snapshot{}, errors.New("budget directory and scope are required")
+	}
+	path := filepath.Join(s.Dir, "ledger.json")
+	if _, err := os.Lstat(path); err != nil {
+		return Snapshot{}, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	release, err := lock(ctx, filepath.Join(s.Dir, "ledger.lock"))
+	if err != nil {
+		return Snapshot{}, err
+	}
+	defer release()
+	state, err := read(path)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if state.Scope != s.Scope {
+		return Snapshot{}, errors.New("budget scope mismatch")
+	}
+	return state, nil
 }
 
 func validKind(k Kind) bool { return k == Launch || k == DriverStep || k == Fixup || k == CrossReview }
@@ -84,10 +127,18 @@ func (s Store) Reserve(ctx context.Context, req Request, limits Limits) (Snapsho
 			return Snapshot{}, errors.New("invalid action limit")
 		}
 	}
+	for kind := range limits.Denied {
+		if !validKind(kind) {
+			return Snapshot{}, errors.New("invalid denied action kind")
+		}
+	}
 	return s.update(ctx, func(state *Snapshot, now time.Time) error {
 		id := key(req.ID)
 		if _, exists := state.Entries[id]; exists {
 			return ErrReserved
+		}
+		if limits.Denied[req.Kind] {
+			return fmt.Errorf("%w: %s is forbidden", ErrLimit, req.Kind)
 		}
 		if limits.WallClock > 0 && now.Sub(state.StartedAt) >= limits.WallClock {
 			return fmt.Errorf("%w: wall clock", ErrLimit)
@@ -98,22 +149,59 @@ func (s Store) Reserve(ctx context.Context, req Request, limits Limits) (Snapsho
 				count++
 			}
 		}
-		if cap := limits.Actions[req.Kind]; cap > 0 && count >= cap {
+		if ceiling := limits.Actions[req.Kind]; ceiling > 0 && count >= ceiling {
 			return fmt.Errorf("%w: %s", ErrLimit, req.Kind)
 		}
 		if limits.CostMicros > 0 {
 			if req.ReserveMicros == nil {
 				return ErrUnknownCost
 			}
-			exposure, known := state.Exposure()
-			if !known {
-				return ErrUnknownCost
+			exposure, err := state.ExposureError()
+			if err != nil {
+				return err
 			}
 			if exposure > limits.CostMicros || *req.ReserveMicros > limits.CostMicros-exposure {
 				return fmt.Errorf("%w: monetary ceiling", ErrLimit)
 			}
 		}
 		state.Entries[id] = Reservation{Kind: req.Kind, ReservedAt: now, ReserveMicros: copyInt(req.ReserveMicros)}
+		return nil
+	})
+}
+
+// ReconcileUnknown records an explicit operator-supplied conservative ceiling
+// for an unknown observation. The calling operator control MUST obtain the
+// actual decision; this API is not human authentication and must never consume
+// participant-authored frontmatter grants. A known observation is immutable.
+// The decision ID is idempotent; conflicting replay refuses. Every adjustment
+// remains in order, and the original unknown cost and spent action are retained.
+func (s Store) ReconcileUnknown(ctx context.Context, id, decisionID string, ceiling int64, reason string) (Snapshot, error) {
+	if id == "" || strings.TrimSpace(decisionID) == "" || len(decisionID) > 128 || ceiling < 0 || strings.TrimSpace(reason) == "" || len(reason) > 1024 {
+		return Snapshot{}, errors.New("invalid operator cost reconciliation")
+	}
+	return s.update(ctx, func(state *Snapshot, now time.Time) error {
+		k := key(id)
+		entry, exists := state.Entries[k]
+		if !exists {
+			return errors.New("cannot reconcile an unreserved action")
+		}
+		for _, old := range entry.Reconciliations {
+			if old.ID == decisionID {
+				if old.CeilingMicros != ceiling || old.Reason != reason {
+					return errors.New("conflicting operator decision")
+				}
+				return nil
+			}
+		}
+		observed := entry.ReserveMicros
+		if entry.Settled {
+			observed = entry.ActualMicros
+		}
+		if observed != nil {
+			return errors.New("operator reconciliation cannot replace a known monetary observation")
+		}
+		entry.Reconciliations = append(entry.Reconciliations, Reconciliation{ID: decisionID, At: now, CeilingMicros: ceiling, Reason: reason})
+		state.Entries[k] = entry
 		return nil
 	})
 }
@@ -153,24 +241,39 @@ func copyInt(n *int64) *int64 {
 // Exposure is the sum of observed terminal cost and outstanding conservative
 // reservations. It never represents unknown cost as zero or permits overflow.
 func (s Snapshot) Exposure() (int64, bool) {
+	n, err := s.ExposureError()
+	return n, err == nil
+}
+
+func (s Snapshot) ExposureError() (int64, error) {
 	var total int64
 	for _, entry := range s.Entries {
 		n := entry.ReserveMicros
 		if entry.Settled {
 			n = entry.ActualMicros
 		}
-		if n == nil || *n < 0 || *n > math.MaxInt64-total {
-			return 0, false
+		if n == nil && len(entry.Reconciliations) > 0 {
+			n = &entry.Reconciliations[len(entry.Reconciliations)-1].CeilingMicros
+		}
+		if n == nil || *n < 0 {
+			return 0, ErrUnknownCost
+		}
+		if *n > math.MaxInt64-total {
+			return 0, ErrCostOverflow
 		}
 		total += *n
 	}
-	return total, true
+	return total, nil
 }
 
 func (s Store) update(ctx context.Context, change func(*Snapshot, time.Time) error) (Snapshot, error) {
 	if s.Dir == "" || s.Scope == "" {
 		return Snapshot{}, errors.New("budget directory and scope are required")
 	}
+	// Bound lock contention even when a caller supplies Background. A shorter
+	// caller deadline still wins. This does not bound unrelated filesystem I/O.
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	if err := fsutil.MkdirAllResilient(s.Dir, 0o700); err != nil {
 		return Snapshot{}, err
 	}
@@ -190,12 +293,20 @@ func (s Store) update(ctx context.Context, change func(*Snapshot, time.Time) err
 	} else if err != nil {
 		return Snapshot{}, err
 	}
-	if state.Scope != s.Scope || now.Before(state.StartedAt) {
-		return state, errors.New("budget scope or clock mismatch")
+	if state.Scope != s.Scope {
+		return state, errors.New("budget scope mismatch")
+	}
+	if now.Before(state.StartedAt) {
+		return state, ErrClockSkew
 	}
 	for _, entry := range state.Entries {
 		if now.Before(entry.ReservedAt) {
-			return state, errors.New("budget reservation is in the future")
+			return state, ErrClockSkew
+		}
+		for _, adjustment := range entry.Reconciliations {
+			if now.Before(adjustment.At) {
+				return state, ErrClockSkew
+			}
 		}
 	}
 	if err := change(&state, now); err != nil {
@@ -259,6 +370,15 @@ func read(path string) (Snapshot, error) {
 		if err != nil || len(digest) != 32 || !validKind(entry.Kind) || entry.ReservedAt.Before(state.StartedAt) || (entry.ReserveMicros != nil && *entry.ReserveMicros < 0) || (entry.ActualMicros != nil && (*entry.ActualMicros < 0 || !entry.Settled)) {
 			return Snapshot{}, errors.New("invalid budget entry")
 		}
+		seen := map[string]bool{}
+		previous := entry.ReservedAt
+		for _, adjustment := range entry.Reconciliations {
+			if strings.TrimSpace(adjustment.ID) == "" || len(adjustment.ID) > 128 || seen[adjustment.ID] || adjustment.At.Before(previous) || adjustment.CeilingMicros < 0 || strings.TrimSpace(adjustment.Reason) == "" || len(adjustment.Reason) > 1024 {
+				return Snapshot{}, errors.New("invalid operator reconciliation")
+			}
+			seen[adjustment.ID] = true
+			previous = adjustment.At
+		}
 	}
 	return state, nil
 }
@@ -266,11 +386,27 @@ func read(path string) (Snapshot, error) {
 // Reject duplicate keys and case aliases before encoding/json can replace a
 // charged field. Null is allowed only for explicitly unknown monetary values.
 func checkJSON(dec *json.Decoder) error {
+	return checkJSONValue(dec, 0, "")
+}
+
+func checkJSONValue(dec *json.Decoder, depth int, field string) error {
+	if depth > 8 {
+		return errors.New("budget JSON nesting exceeds schema bound")
+	}
 	tok, err := dec.Token()
 	if err != nil {
 		return err
 	}
 	if delim, ok := tok.(json.Delim); ok {
+		if delim == '[' && field == "reconciliations" {
+			for dec.More() {
+				if err := checkJSONValue(dec, depth+1, ""); err != nil {
+					return err
+				}
+			}
+			_, err := dec.Token()
+			return err
+		}
 		if delim != '{' {
 			return errors.New("unexpected budget JSON container")
 		}
@@ -285,17 +421,8 @@ func checkJSON(dec *json.Decoder) error {
 				return errors.New("duplicate or aliased budget field")
 			}
 			seen[name] = true
-			var value json.RawMessage
-			if err := dec.Decode(&value); err != nil {
+			if err := checkJSONValue(dec, depth+1, name); err != nil {
 				return err
-			}
-			if bytes.Equal(value, []byte("null")) && name != "reserve_micros" && name != "actual_micros" {
-				return errors.New("null budget field")
-			}
-			if len(value) > 0 && value[0] == '{' {
-				if err := checkJSON(json.NewDecoder(bytes.NewReader(value))); err != nil {
-					return err
-				}
 			}
 		}
 		_, err = dec.Token()
@@ -306,6 +433,9 @@ func checkJSON(dec *json.Decoder) error {
 		if seen["kind"] {
 			required = []string{"kind", "reserved_at", "reserve_micros", "settled", "actual_micros"}
 		}
+		if seen["id"] {
+			required = []string{"id", "at", "ceiling_micros", "reason"}
+		}
 		for _, name := range required {
 			if !seen[name] {
 				return errors.New("incomplete budget object")
@@ -313,7 +443,13 @@ func checkJSON(dec *json.Decoder) error {
 		}
 		return err
 	}
-	return errors.New("budget state must be an object")
+	if depth == 0 {
+		return errors.New("budget state must be an object")
+	}
+	if tok == nil && field != "reserve_micros" && field != "actual_micros" {
+		return errors.New("null budget field")
+	}
+	return nil
 }
 
 func writeSynced(path string, data []byte) error {

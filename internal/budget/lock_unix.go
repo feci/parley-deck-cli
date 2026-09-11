@@ -6,6 +6,8 @@ import (
 	"errors"
 	"golang.org/x/sys/unix"
 	"os"
+	"parley-deck-cli/internal/fsutil"
+	"path/filepath"
 )
 
 func tryLock(f *os.File) (bool, error) {
@@ -16,3 +18,15 @@ func tryLock(f *os.File) (bool, error) {
 	return err == nil, err
 }
 func unlock(f *os.File) { _ = unix.Flock(int(f.Fd()), unix.LOCK_UN) }
+
+func publishOrigin(staged, path string) error {
+	if err := os.Link(staged, path); err != nil {
+		return err
+	}
+	dir, err := os.Open(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	return fsutil.SyncFile(dir)
+}

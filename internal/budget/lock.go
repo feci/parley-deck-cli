@@ -1,40 +1,64 @@
 package budget
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
+	"sync"
 	"time"
+
+	"parley-deck-cli/internal/fsutil"
 )
 
 // The lock inode is permanent: never unlink it or atomic-replace it. Use a
 // host-local cache because some shared mounts report successful flock without
-// exclusion. This coordinates runtimes on one host, not distributed writers.
+// exclusion. An immutable origin pins the first host/cache path for the ledger;
+// another cache environment or hostname refuses instead of taking a second lock.
+// This is same-origin coordination, not distributed cross-host locking. Cache
+// migration/removal requires quiescent operator maintenance; never delete a
+// live lock inode or its origin file.
 // Kernel ownership is released on exit, without PID files or stale-lock races.
 func lock(ctx context.Context, path string) (func(), error) {
-	canonical, err := filepath.EvalSymlinks(filepath.Dir(path))
+	return lockWithOps(ctx, path, tryLock, unlock)
+}
+
+func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, error), drop func(*os.File)) (func(), error) {
+	canonical, err := filepath.Abs(filepath.Dir(path))
 	if err != nil {
 		return nil, err
 	}
-	canonical, err = filepath.Abs(canonical)
+	canonical, err = filepath.EvalSymlinks(canonical)
 	if err != nil {
 		return nil, err
-	}
-	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
-		canonical = strings.ToLower(canonical)
 	}
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		return nil, err
 	}
 	localDir := filepath.Join(cache, "parley", "budget-locks")
-	if err := os.MkdirAll(localDir, 0o700); err != nil {
+	if err := fsutil.MkdirAllResilient(localDir, 0o700); err != nil {
 		return nil, err
 	}
-	path = filepath.Join(localDir, key(canonical)+".lock")
+	localDir, err = filepath.Abs(localDir)
+	if err != nil {
+		return nil, err
+	}
+	localDir, err = filepath.EvalSymlinks(localDir)
+	if err != nil {
+		return nil, err
+	}
+	// Lowercase on every platform: Linux can mount a case-insensitive filesystem
+	// too. Overlocking distinct case-sensitive paths is safe; underlocking aliases
+	// is not. Resolve symlinks before this conservative key normalization.
+	path = filepath.Join(localDir, key(strings.ToLower(canonical))+".lock")
+	if err := pinLockOrigin(canonical, path); err != nil {
+		return nil, err
+	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, err
@@ -50,7 +74,7 @@ func lock(ctx context.Context, path string) (func(), error) {
 			f.Close()
 			return nil, err
 		}
-		held, err := tryLock(f)
+		held, err := take(f)
 		if err != nil {
 			f.Close()
 			return nil, err
@@ -60,21 +84,22 @@ func lock(ctx context.Context, path string) (func(), error) {
 			// syscall on a filesystem that implements it as a no-op.
 			probe, err := os.OpenFile(path, os.O_RDWR, 0o600)
 			if err != nil {
-				unlock(f)
+				drop(f)
 				f.Close()
 				return nil, err
 			}
-			second, probeErr := tryLock(probe)
+			second, probeErr := take(probe)
 			if second {
-				unlock(probe)
+				drop(probe)
 			}
 			probe.Close()
 			if probeErr != nil || second {
-				unlock(f)
+				drop(f)
 				f.Close()
-				return nil, errors.New("budget lock filesystem does not provide verified exclusion")
+				return nil, fmt.Errorf("budget lock filesystem does not provide verified exclusion at %s: %v", path, probeErr)
 			}
-			return func() { unlock(f); f.Close() }, nil
+			var once sync.Once
+			return func() { once.Do(func() { drop(f); f.Close() }) }, nil
 		}
 		timer := time.NewTimer(20 * time.Millisecond)
 		select {
@@ -85,4 +110,67 @@ func lock(ctx context.Context, path string) (func(), error) {
 		case <-timer.C:
 		}
 	}
+}
+
+// Publish the entire origin atomically before any writer acquires a local lock.
+// A competing bootstrap can either use that exact origin or fail; it cannot
+// silently initialize an independent lock and overwrite the other writer.
+func pinLockOrigin(dir, lockPath string) error {
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		return errors.New("cannot identify budget lock host")
+	}
+	data := []byte("parley-budget-lock/v1\n" + host + "\n" + lockPath + "\n")
+	if len(data) > 16<<10 {
+		return errors.New("budget lock origin exceeds limit")
+	}
+	path := filepath.Join(dir, "lock-origin")
+	check := func() error {
+		info, err := os.Lstat(path)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() || info.Size() > 16<<10 {
+			return errors.New("invalid budget lock origin")
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		opened, err := f.Stat()
+		if err != nil || !os.SameFile(info, opened) {
+			return errors.New("budget lock origin changed during open")
+		}
+		prior, err := io.ReadAll(io.LimitReader(f, (16<<10)+1))
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(prior, data) {
+			return fmt.Errorf("budget lock origin mismatch at %s: different host or cache path; preserve ledger and use its original environment", path)
+		}
+		return nil
+	}
+	if err := check(); !os.IsNotExist(err) {
+		return err
+	}
+	f, err := os.CreateTemp(dir, ".lock-origin-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+	if _, err := f.Write(data); err != nil {
+		return err
+	}
+	if err := fsutil.SyncFile(f); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := publishOrigin(f.Name(), path); err != nil && !os.IsExist(err) {
+		return err
+	}
+	return check()
 }
