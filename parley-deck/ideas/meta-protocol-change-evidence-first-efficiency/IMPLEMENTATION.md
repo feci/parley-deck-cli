@@ -1053,3 +1053,20 @@ implementation-notes/claude-1-binding-review-20260911.md and its native atomic
 siblings there. This is a scoped source review, not final acceptance. Codex
 continues independent implementation on integration; no source files overlap
 with the reviewer. Historical quorum, full-six and exact packet gates remain.
+
+### Review stopped and next driver-budget counterexample — September 11
+
+The new Claude source-review invocation bdeecc5d-0ce0-456d-a363-af62f6c3742f
+actually terminated at the provider weekly limit (6.292s, exit 1, CLI estimate
+USD 0.455252); no canonical review file was produced. Provider reset is reported
+as September 14 06:00 Europe/Berlin. The inbox contains the concrete pending
+recovery choice. No participant process remains active, and no retry or roster
+change is inferred. Inventory now has 34 actual terminal attempts, 17 unknown
+costs, known CLI-estimate subtotal USD 46.1887585 and unknown total.
+
+Codex also reproduced the still-open persistent driver-step gap using a Go
+overlay against production Driver.Run: MaxDriverSteps=1 permits round 2 on the
+first Run and round 3 after resume, observed calls [2 3]. See
+implementation-notes/codex-1-driver-resume-counterexample-20260911.md for exact
+reproduction and required next boundary. This negative probe is separate from
+the passing ordinary suite and confirms that D6/AC-B1 is not yet complete.
