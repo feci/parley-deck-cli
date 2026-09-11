@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 3c6da49
+head-commit: a223a0d
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -1157,3 +1157,41 @@ migration, not a zero-count policy. A synchronous operation may reuse its own
 reservation in nested runner calls, never across a retry/new operation. The
 inclusive final fixup remains reviewable; signoffs and zero-fix reviews do not
 spend a fixup. Preserve current track caps and all independent closure gates.
+
+Documentation allocation before edits: Codex extends the serialized boundary
+to docs/agent-runtime-configuration.md and its own cycle-disposition note below.
+No participant review file or signature is changed.
+
+### Persistent protocol cycle checkpoint — September 11
+
+Source a223a0d persists separate fixup and Phase-2 cross-review policies and
+charged ledgers in the shared idea scope. Cursor deletion, a new driver run,
+ordinary and BLOCK dispatch, and supported typed manual runners cannot reset
+failed charges. Nested children of one synchronous operation share one charge;
+independent operations spend separate charges. The existing track cells remain
+unchanged. The fifth deliberation fixup and third cross-review group are allowed;
+the sixth/fourth are refused. Verification after the final allowed fixup remains
+possible, while an over-cap state or changed frozen cap cannot close.
+
+Unknown historical phases and ambiguous histories require reconciliation.
+Missing track authority cannot activate a new legacy policy. A standalone
+unobserved handoff creates evidence without activating a cycle policy, and a
+cancelled launch retains its cancellation terminal without spawning or charging.
+
+Full Go tests pass (app 104.956s, budget 11.712s, driver 11.907s,
+runner 31.677s); full log SHA256
+f5cbd12d7da2b09eeac900fe5cc641f18c6fffdbae3dd012ee20b61010071e7d.
+Scoped race passes (budget 15.027s, driver 13.494s, runner 58.611s), as do
+vet, Windows app cross-build and isolated shared-volume cycle fixtures.
+Negative probes, exact commands, source manifest, hashes and limits are in
+implementation-notes/codex-1-persistent-cycle-dispositions-20260911.md.
+
+This is a tested persistent-cycle slice, not all of D6/AC-B1/B2. Explicit legacy
+migration, operator extensions, durable semantic action replay, monetary default
+mapping, canonical refusal publication/recovery and independently confirmed
+patch-regression trajectory remain required. Unknown external/manual work
+cannot be inferred from arbitrary prompt text. Fresh independent review,
+actual model concurrency/closure, the exact packet trial, full-six comparative
+pilot, owned final reviews/signatures and elapsed follow-ups remain pending.
+No new model invocation occurred; inventory remains 34 terminal attempts,
+17 unknown costs, USD 46.1887585 known CLI estimates and unknown total.

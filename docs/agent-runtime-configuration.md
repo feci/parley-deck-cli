@@ -306,3 +306,34 @@ by that context. Unsupported ledger schemas
 fail closed: mixed versions are not certified. The 16 MiB ledger ceiling and full
 file rewrite currently bound scalability; no automatic compaction or deletion
 of charge identities is implemented.
+
+## Persistent protocol cycles
+
+The driver and supported typed manual runner calls share a separate durable
+counter for fixups and for Phase-2 cross-review groups. Each synchronous group
+reserves before attempted work; its nested participant launches share that
+charge. A failed attempt remains spent across new runs, cursor deletion and
+consensus BLOCK backedges. Separate operations reserve separately. Phase-6
+reviews, signoffs and verification do not consume a fixup cycle, so the final
+allowed fixup can still be checked. Over-cap state cannot close.
+
+The first saved policy freezes the track ceiling and known carried count. Cycle
+maximum zero means forbidden (fast-track cross-review); this differs from the
+generic launch/step limits, whose zero means unlimited. The existing track
+cells are unchanged: fast 1 fixup / 0 cross reviews, standard 2 / 2, deliberation
+5 / 3. A valid historical prompt without a track preserves the existing bounded
+legacy defaults. Missing or malformed prompts cannot create a legacy grant.
+
+Changing flags or track does not extend a frozen policy. Missing or corrupt
+policy/ledger state, inconsistent carried history, or unclassified previous
+invocations refuse further work. Preserve that state for explicit migration;
+no supported legacy migration or cycle-extension command exists yet.
+Standalone unobserved handoff preparation does not activate or spend a cycle
+policy. An unobserved historical request is not proof that no outside execution
+occurred and can still require reconciliation before first activation.
+
+These counters classify typed runner phases, not arbitrary natural-language
+prompts or commands executed outside Parley. Grouping one live synchronous
+operation does not establish exactly-once execution or durable semantic replay
+across a process crash. The stored accounting and attended controls do not
+authenticate a human against another process with the same filesystem access.
