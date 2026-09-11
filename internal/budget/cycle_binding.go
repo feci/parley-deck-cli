@@ -18,13 +18,15 @@ import (
 // (the fast track has no cross-review rounds). Policy is runtime state, never
 // a grant taken from participant-authored headings or extension frontmatter.
 type CyclePolicy struct {
-	Version  int    `json:"version"`
-	Scope    string `json:"scope"`
-	Idea     string `json:"idea"`
-	IdeaPath string `json:"idea_path"`
-	Kind     Kind   `json:"kind"`
-	Maximum  int    `json:"maximum"`
-	Carried  int    `json:"carried"`
+	Version         int              `json:"version"`
+	Scope           string           `json:"scope"`
+	Idea            string           `json:"idea"`
+	IdeaPath        string           `json:"idea_path"`
+	Kind            Kind             `json:"kind"`
+	Maximum         int              `json:"maximum"`
+	Carried         int              `json:"carried"`
+	OriginalMaximum *int             `json:"original_maximum,omitempty"`
+	Extensions      []CycleExtension `json:"extensions,omitempty"`
 }
 
 type CycleBinding struct {
@@ -43,7 +45,7 @@ func cycleScope(ctx context.Context, root, idea string, kind Kind, history bool)
 
 func readCyclePolicy(path string) (CyclePolicy, error) {
 	var p CyclePolicy
-	data, err := readLockOrigin(path)
+	data, err := readStepHistoryFile(path, 1<<20)
 	if err != nil {
 		return p, err
 	}
@@ -67,10 +69,10 @@ func readCyclePolicy(path string) (CyclePolicy, error) {
 			return p, errors.New("incomplete cycle policy")
 		}
 	}
-	if p.Version != 1 || p.Scope == "" || p.Idea == "" || !strings.HasPrefix(p.IdeaPath, "parley-deck/") || strings.Contains(p.IdeaPath, "\\") || filepath.IsAbs(p.IdeaPath) || filepath.ToSlash(filepath.Clean(p.IdeaPath)) != p.IdeaPath || (p.Kind != Fixup && p.Kind != CrossReview) || p.Maximum < 0 || p.Carried < 0 {
+	if p.Scope == "" || p.Idea == "" || !strings.HasPrefix(p.IdeaPath, "parley-deck/") || strings.Contains(p.IdeaPath, "\\") || filepath.IsAbs(p.IdeaPath) || filepath.ToSlash(filepath.Clean(p.IdeaPath)) != p.IdeaPath || (p.Kind != Fixup && p.Kind != CrossReview) || p.Maximum < 0 || p.Carried < 0 {
 		return p, errors.New("invalid cycle policy")
 	}
-	return p, nil
+	return p, validateCycleExtensions(p, fields)
 }
 
 func LoadCycleBinding(ctx context.Context, root, idea string, kind Kind) (*CycleBinding, error) {
@@ -124,7 +126,7 @@ func EnsureCycleBinding(ctx context.Context, root, idea string, kind Kind, maxim
 		if old.Policy.IdeaPath != relative {
 			return nil, errors.New("cycle idea path differs from frozen scope")
 		}
-		if old.Policy.Maximum != maximum {
+		if old.Policy.InitialMaximum() != maximum {
 			return nil, errors.New("cycle ceiling is frozen; a changed flag or track is not an operator extension")
 		}
 		state, err := old.Store.Inspect(ctx)
@@ -195,6 +197,21 @@ func (b *CycleBinding) Count(s Snapshot) int {
 }
 
 func (b *CycleBinding) Reserve(ctx context.Context, id string) (int, error) {
+	// Serialize policy changes with reservations. A cached binding must observe
+	// the current grant and cannot spend against a changed/corrupt authority.
+	release, err := AcquireResourceGuard(ctx, filepath.Dir(b.Store.Dir))
+	if err != nil {
+		return 0, err
+	}
+	defer release()
+	current, err := b.current()
+	if err != nil {
+		return 0, err
+	}
+	b = current
+	if _, err := b.Inspect(ctx); err != nil {
+		return 0, err
+	}
 	remaining := b.Policy.Maximum - b.Policy.Carried
 	limits := Limits{Actions: map[Kind]int{}, Denied: map[Kind]bool{}}
 	if remaining <= 0 {

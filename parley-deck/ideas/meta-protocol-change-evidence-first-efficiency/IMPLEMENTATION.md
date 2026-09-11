@@ -1141,6 +1141,27 @@ All exact packet/pilot, real-model verifier and owned-signature gates remain.
 No new participant call occurred: inventory remains 34 terminal attempts,
 17 unknown costs, USD 46.1887585 known CLI estimates and unknown total.
 
+### Finite operator cycle-extension allocation before edits — September 11
+
+Codex claims internal/budget/cycle_extension.go and cycle_extension_test.go,
+internal/app/budget_cycle.go and budget_cycle_test.go, plus the existing
+cycle binding/session, driver cycle/budget/consensus/impl and runner cycle files
+and their tests under serialized integration ownership. internal/app/budget.go
+and docs/agent-runtime-configuration.md join this boundary. No other source
+writer is active; independent participant review worktrees remain frozen.
+
+Add an attended explicit operator control with a read-only preview, expected
+policy digest, unique decision identity, finite absolute maximum and reason.
+Retain the immutable original ceiling and every grant in the atomically saved
+policy; keep counts, reservation identities and original clock unchanged.
+Exact decision replay is idempotent, conflicts/stale previews refuse, and a
+failed publication does not imply permission to retry an action. Driver and
+typed manual calls must actually use the recorded grant, preserving track
+contradictions, skipped phases, review independence and all closure gates.
+Implementing this control grants no extension to the active real idea. Legacy
+migration, launch/step extensions and the other D6 obligations remain separate
+required continuation work.
+
 ### Shared fixup/cross-review allocation before edits — September 11
 
 Codex owns new internal/budget/cycle_binding.go, cycle_session.go,

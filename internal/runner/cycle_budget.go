@@ -40,7 +40,7 @@ func groupProtocolCycle(ctx context.Context, root, idea, ideaDir, runID string, 
 			if err == nil && floor > b.Count(state) && !budget.CycleSessionMatches(ctx, b) {
 				err = errors.New("visible cycle history exceeds the shared charged count")
 			}
-			if err == nil && explicit && cap < b.Policy.Maximum {
+			if err == nil && explicit && cap < b.Policy.InitialMaximum() {
 				err = errors.New("current track is stricter than the frozen cycle policy; reconcile before continuing")
 			}
 		}

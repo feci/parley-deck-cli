@@ -54,6 +54,95 @@ func TestCycleFixupFailedAttemptSurvivesNewRunAndCursorDeletion(t *testing.T) {
 	if err != nil || b.Count(state) != 1 {
 		t.Fatalf("shared fixup count: %+v %v", state, err)
 	}
+	preview, err := budget.InspectCycleBudget(context.Background(), root, "demo", budget.Fixup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := budget.ExtendCycleBudget(context.Background(), root, "demo", budget.Fixup, budget.CycleExtensionRequest{DecisionID: "driver-next", ExpectedPolicySHA256: preview.PolicySHA256, Maximum: 2, Reason: "One finite driver fixture cycle"}); err != nil {
+		t.Fatal(err)
+	}
+	fi.calls = nil
+	if _, _, err := makeDriver(filepath.Join(filepath.Dir(runDir), "extended-run")).Advance(context.Background()); err == nil || !contains(fi.calls, "fixup") {
+		t.Fatalf("saved extension did not reach driver: %v %v", err, fi.calls)
+	}
+	fi.calls = nil
+	if _, _, err := makeDriver(filepath.Join(filepath.Dir(runDir), "beyond-extension")).Advance(context.Background()); err == nil || contains(fi.calls, "fixup") {
+		t.Fatalf("driver extension reset count: %v %v", err, fi.calls)
+	}
+}
+
+func TestCycleExtensionPermitsBlockedRoundBeyondOriginalCap(t *testing.T) {
+	ctx := context.Background()
+	parts := []string{"codex", "agy"}
+	ideaDir, runDir := setupIdea(t, parts, "")
+	for n := 1; n <= 4; n++ {
+		writeAll(t, ideaDir, n, parts)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "consensus.md"), []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	fr := &fakeRunner{err: errors.New("failed extended round")}
+	d := newTestDriver(ideaDir, runDir, parts, 3, true, fr)
+	d.cfg.HardCrossReviewCap = 3
+	d.cfg.Consensus = &fakeConsensus{statusSeq: []string{consensus.TriageBlocked}}
+	b, err := budget.EnsureCycleBinding(ctx, d.cfg.Root, "demo", budget.CrossReview, 3, 3, runDir, ideaDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := d.Advance(ctx); err == nil || len(fr.calls) != 0 {
+		t.Fatalf("original cap did not refuse: %v %v", err, fr.calls)
+	}
+	preview, err := b.Inspect(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := budget.ExtendCycleBudget(ctx, d.cfg.Root, "demo", budget.CrossReview, budget.CycleExtensionRequest{DecisionID: "fourth", ExpectedPolicySHA256: preview.PolicySHA256, Maximum: 4, Reason: "One finite BLOCK fixture round"}); err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if _, _, err := d.Advance(ctx); err == nil {
+			t.Fatal("failed extended round passed")
+		}
+	}
+	if len(fr.calls) != 1 || fr.calls[0] != 5 || d.cfg.HardCrossReviewCap != 3 {
+		t.Fatalf("extension was ignored, reset or rewrote base: %v %+v", fr.calls, d.cfg)
+	}
+}
+
+func TestCycleExtensionFinalAllowedFixupCanStillClose(t *testing.T) {
+	ctx := context.Background()
+	parts := []string{"builder", "reviewer"}
+	ideaDir, runDir := setupIdea(t, parts, "auto_implement: true\n")
+	writeFinalValid(t, ideaDir)
+	writeImplWithCycles(t, ideaDir, "implemented", 5)
+	root := filepath.Dir(filepath.Dir(filepath.Dir(ideaDir)))
+	b, err := budget.EnsureCycleBinding(ctx, root, "demo", budget.Fixup, 5, 5, runDir, ideaDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := b.Inspect(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := budget.ExtendCycleBudget(ctx, root, "demo", budget.Fixup, budget.CycleExtensionRequest{DecisionID: "sixth", ExpectedPolicySHA256: preview.PolicySHA256, Maximum: 6, Reason: "Final allowed fixture cycle"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Reserve(ctx, "sixth"); err != nil {
+		t.Fatal(err)
+	}
+	writeImplWithCycles(t, ideaDir, "implemented", 6)
+	if err := os.MkdirAll(filepath.Join(ideaDir, "review", "round-07"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	fi := &fakeImpl{roundComplete: true, checksOK: true, review: ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, ReviewerCount: 2}}
+	d := New(Config{Root: root, IdeaDir: ideaDir, IdeaSlug: "demo", RunDir: runDir, Participants: parts, Events: store.New(runDir), Auto: true, AutoImplement: true, MaxFixupCycles: 5, Impl: fi}, &fakeRunner{})
+	a, _, err := d.Advance(ctx)
+	if err != nil || a != ActionComplete || !contains(fi.calls, "complete") || d.cfg.MaxFixupCycles != 5 {
+		t.Fatalf("extended final cycle stranded or base changed: %s %v %v", a, err, fi.calls)
+	}
 }
 
 type cycleProcessImpl struct {

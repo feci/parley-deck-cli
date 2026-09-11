@@ -194,3 +194,52 @@ func TestCycleCancelledLaunchKeepsTerminalAndNoCharge(t *testing.T) {
 		t.Fatalf("cancelled request charged: %+v %v", s, err)
 	}
 }
+
+func TestCycleExtensionManualFixupUsesSavedFiniteGrant(t *testing.T) {
+	root := t.TempDir()
+	ctx := context.Background()
+	if err := protocol.InitWorkspace(root); err != nil {
+		t.Fatal(err)
+	}
+	declareTestLaunchSource(t, root)
+	idea, err := protocol.CreateIdea(root, "Extended manual fixup", []string{"builder", "reviewer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(idea.Path, "00-prompt.md"), "---\nidea: "+idea.Slug+"\nparticipants: [builder, reviewer]\ntrack: deliberation\n---\nFixture\n")
+	b, err := budget.EnsureCycleBinding(ctx, root, idea.Slug, budget.Fixup, 5, 5, "", idea.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := b.Inspect(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := budget.ExtendCycleBudget(ctx, root, idea.Slug, budget.Fixup, budget.CycleExtensionRequest{DecisionID: "sixth", ExpectedPolicySHA256: preview.PolicySHA256, Maximum: 6, Reason: "One finite manual fixture cycle"}); err != nil {
+		t.Fatal(err)
+	}
+	idea.Participants = []string{"builder"}
+	for i := 0; i < 2; i++ {
+		runID := fmt.Sprintf("extended-%d", i)
+		r := RunFixup(ctx, Options{Root: root, Idea: idea, RunID: runID, Agents: []agents.Discovery{failedCycleAgent("builder")}, Timeout: 5 * time.Second, Store: store.New(filepath.Join(root, protocol.DeckDir, "runs", runID))})
+		if r.ExitError == "" {
+			t.Fatal("failing local child passed")
+		}
+	}
+	started, denied := 0, 0
+	for _, r := range terminalRecords(t, root) {
+		if r.StartedAt != nil {
+			started++
+		}
+		if r.Outcome.FailureClass != nil && *r.Outcome.FailureClass == "budget_refused" {
+			denied++
+		}
+	}
+	if started != 1 || denied != 1 {
+		t.Fatalf("manual grant not finite/usable: started=%d denied=%d", started, denied)
+	}
+	status, err := budget.InspectCycleBudget(ctx, root, idea.Slug, budget.Fixup)
+	if err != nil || status.Spent != 6 {
+		t.Fatalf("manual grant refunded known history: %+v %v", status, err)
+	}
+}

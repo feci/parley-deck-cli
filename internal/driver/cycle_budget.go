@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"parley-deck-cli/internal/budget"
 )
@@ -12,17 +13,42 @@ type cycleRoundRunner struct {
 	cfg Config
 }
 
+func crossReviewBase(cfg Config) int {
+	cap := cfg.MaxRounds
+	if cfg.HardCrossReviewCap > 0 && cfg.HardCrossReviewCap < cap {
+		cap = cfg.HardCrossReviewCap
+	}
+	if cfg.Track == "fast" {
+		cap = 0
+	}
+	return cap
+}
+
+// A recorded finite grant changes only this cycle ceiling. The original track
+// configuration, skipped phases and independent review gates remain intact.
+func (d *Driver) cycleMaximum(ctx context.Context, kind budget.Kind, base int) (int, error) {
+	b, err := budget.LoadCycleBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug, kind)
+	if err != nil {
+		return 0, err
+	}
+	if b == nil {
+		return base, nil
+	}
+	rel, err := filepath.Rel(d.cfg.Root, d.cfg.IdeaDir)
+	if err != nil || filepath.ToSlash(rel) != b.Policy.IdeaPath || base != b.Policy.InitialMaximum() {
+		return 0, fmt.Errorf("%s original cycle policy differs from the current configuration", kind)
+	}
+	if _, err := b.Inspect(ctx); err != nil {
+		return 0, err
+	}
+	return b.Policy.Maximum, nil
+}
+
 func (r cycleRoundRunner) RunRound(ctx context.Context, round int) error {
 	if round <= 1 {
 		return r.RoundRunner.RunRound(ctx, round)
 	}
-	cap := r.cfg.MaxRounds
-	if r.cfg.HardCrossReviewCap > 0 && r.cfg.HardCrossReviewCap < cap {
-		cap = r.cfg.HardCrossReviewCap
-	}
-	if r.cfg.Track == "fast" {
-		cap = 0
-	}
+	cap := crossReviewBase(r.cfg)
 	floor, err := budget.LegacyCycleFloor(r.cfg.IdeaDir, budget.CrossReview)
 	if err != nil {
 		return err

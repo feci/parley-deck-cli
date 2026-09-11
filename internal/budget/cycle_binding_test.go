@@ -50,6 +50,19 @@ func TestCycleBindingSharesCapAcrossGitWorktrees(t *testing.T) {
 			t.Fatalf("fourth linked attempt: %v", err)
 		}
 	}
+	status, err := InspectCycleBudget(ctx, other, "idea", Fixup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExtendCycleBudget(ctx, other, "idea", Fixup, CycleExtensionRequest{DecisionID: "linked-grant", ExpectedPolicySHA256: status.PolicySHA256, Maximum: 4, Reason: "One finite linked-worktree fixture cycle"}); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := first.Reserve(ctx, "linked-fourth"); err != nil || n != 4 {
+		t.Fatalf("linked extension not visible to cached binding: %d %v", n, err)
+	}
+	if _, err := second.Reserve(ctx, "linked-fifth"); !errors.Is(err, ErrLimit) {
+		t.Fatalf("linked extension reset count: %v", err)
+	}
 }
 
 func TestCycleBindingPreservesCarriedCountInclusiveCapAndReplay(t *testing.T) {

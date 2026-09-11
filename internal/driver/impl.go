@@ -137,6 +137,10 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if d.cfg.Impl == nil {
 		return ActionSurfaceOnly, c, nil
 	}
+	maximum, err := d.cycleMaximum(ctx, budget.Fixup, d.cfg.MaxFixupCycles)
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("fix-up policy: %w", err)
+	}
 	round := highestReviewRound(d.cfg.IdeaDir)
 	if round < 1 {
 		round = 1
@@ -152,12 +156,12 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		// and no escalation.
 		if spent, err := d.chargedFixupAttempts(c); err != nil {
 			return ActionEscalated, c, fmt.Errorf("cannot determine how many fix-up attempts have been charged: %w", err)
-		} else if d.cfg.MaxFixupCycles > 0 && spent > d.cfg.MaxFixupCycles {
+		} else if spent > maximum {
 			// STRICTLY greater: at equality AF2 is finishing the Nth allowed cycle, whose
 			// budget is already spent — not starting cycle N+1. Rejecting equality would
 			// strand a legitimate crash recovery at the inclusive boundary (round-04).
 			// Starting the next cycle is still refused by the ordinary branch below.
-			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempt(s) against MaxFixupCycles=%d; escalating instead of opening another review round", spent, d.cfg.MaxFixupCycles)
+			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempt(s) against effective MaxFixupCycles=%d; escalating instead of opening another review round", spent, maximum)
 		}
 		if err := d.archiveReviewConsensus(round); err != nil {
 			return ActionEscalated, c, fmt.Errorf("archive review consensus: %w", err)
@@ -224,8 +228,8 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		if err != nil {
 			return ActionEscalated, c, fmt.Errorf("cannot verify closing fix-up budget: %w", err)
 		}
-		if charged > d.cfg.MaxFixupCycles {
-			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempts against MaxFixupCycles=%d; cannot close", charged, d.cfg.MaxFixupCycles)
+		if charged > maximum {
+			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempts against effective MaxFixupCycles=%d; cannot close", charged, maximum)
 		}
 		if d.cfg.StrictGate {
 			// strict_gate (LE-2): completion requires a FRESH full-scope closing review
@@ -336,9 +340,8 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if err != nil {
 		return ActionEscalated, c, fmt.Errorf("cannot determine how many fix-up attempts have been charged; refusing to spend budget on an unknown count: %w", err)
 	}
-	cycle := charged + 1
-	if cycle > d.cfg.MaxFixupCycles {
-		return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after %d charged attempt(s); attempt %d would exceed MaxFixupCycles=%d; escalating", rs.OutstandingAgreedFixes, charged, cycle, d.cfg.MaxFixupCycles)
+	if charged >= maximum {
+		return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after %d charged attempt(s); attempt %d would exceed MaxFixupCycles=%d; escalating", rs.OutstandingAgreedFixes, charged, uint64(charged)+1, maximum)
 	}
 	if !d.cfg.AutoImplement {
 		return ActionEscalated, c, fmt.Errorf("review has agreed fixes but auto_implement (code-writing) is not enabled; escalating")
@@ -572,7 +575,7 @@ func (d *Driver) chargedFixupAttempts(c Cursor) (int, error) {
 		if err != nil || filepath.ToSlash(relative) != b.Policy.IdeaPath {
 			return 0, errors.New("closing fix-up scope differs from the frozen idea path")
 		}
-		if d.cfg.MaxFixupCycles != b.Policy.Maximum {
+		if d.cfg.MaxFixupCycles != b.Policy.InitialMaximum() {
 			return 0, errors.New("fix-up ceiling differs from the frozen policy; reconcile before continuing")
 		}
 		state, err := b.Store.Inspect(context.Background())

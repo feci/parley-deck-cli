@@ -28,7 +28,7 @@ func CycleSessionMatches(ctx context.Context, b *CycleBinding) bool {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.active && s.binding.Policy == b.Policy && s.binding.Store.Dir == b.Store.Dir && s.binding.Store.Scope == b.Store.Scope
+	return s.active && sameCycleAuthority(s.binding.Policy, b.Policy) && s.binding.Store.Dir == b.Store.Dir && s.binding.Store.Scope == b.Store.Scope
 }
 
 func OpenCycleSession(ctx context.Context, b *CycleBinding) (context.Context, func(), error) {
@@ -45,12 +45,14 @@ func OpenCycleSession(ctx context.Context, b *CycleBinding) (context.Context, fu
 		if !old.active {
 			return ctx, noop, errors.New("cycle session has ended")
 		}
-		if old.binding.Policy != b.Policy || old.binding.Store.Scope != b.Store.Scope || old.binding.Store.Dir != b.Store.Dir {
+		if !sameCycleAuthority(old.binding.Policy, b.Policy) || old.binding.Store.Scope != b.Store.Scope || old.binding.Store.Dir != b.Store.Dir {
 			return ctx, noop, errors.New("nested cycle scope mismatch")
 		}
 		return ctx, noop, nil
 	}
-	s := &cycleSession{binding: *b, active: true}
+	copy := *b
+	copy.Policy = cloneCyclePolicy(b.Policy)
+	s := &cycleSession{binding: copy, active: true}
 	finish := func() { s.mu.Lock(); s.active = false; s.mu.Unlock() }
 	return context.WithValue(ctx, cycleSessionKey{b.Policy.Kind}, s), finish, nil
 }
@@ -79,7 +81,11 @@ func ChargeCycle(ctx context.Context, kind Kind) (int, error) {
 	}
 	if s.attempted {
 		if s.err == nil {
-			state, err := s.binding.Store.Inspect(ctx)
+			current, err := s.binding.current()
+			var state Snapshot
+			if err == nil {
+				state, err = current.Store.Inspect(ctx)
+			}
 			if err == nil && s.binding.Count(state) < s.ordinal {
 				err = errors.New("cycle accounting lost a reserved charge")
 			}

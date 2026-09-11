@@ -94,16 +94,20 @@ func (d *Driver) advanceConsensus(ctx context.Context, c Cursor) (Action, Cursor
 
 	case consensus.TriageBlocked:
 		next := highestRound(d.cfg.IdeaDir) + 1
+		maximum, err := d.cycleMaximum(ctx, budget.CrossReview, crossReviewBase(d.cfg))
+		if err != nil {
+			return ActionEscalated, c, fmt.Errorf("cross-review policy: %w", err)
+		}
 		// The §4.0 per-track cross-review ceiling binds HERE too, not only on the
 		// initially scheduled budget. Without this, a BLOCKed consensus reopens rounds
 		// under MaxRounds alone and walks straight past the printed cap.
-		if d.cfg.HardCrossReviewCap > 0 && next > 1+d.cfg.HardCrossReviewCap {
+		if maximum == d.cfg.HardCrossReviewCap && d.cfg.HardCrossReviewCap > 0 && next > 1+maximum {
 			return ActionEscalated, c, fmt.Errorf(
 				"consensus still blocked after %d cross-review round(s) after round 1; round %d would exceed the §4.0 cap of %d; escalating for human review",
 				next-2, next, d.cfg.HardCrossReviewCap)
 		}
-		if next > 1+d.cfg.MaxRounds {
-			return ActionEscalated, c, fmt.Errorf("consensus still blocked at round %d (MaxRounds=%d); escalating", next, d.cfg.MaxRounds)
+		if next-1 > maximum {
+			return ActionEscalated, c, fmt.Errorf("consensus still blocked at round %d (effective MaxRounds=%d); escalating", next, maximum)
 		}
 		// Open the re-deliberation round FIRST (beyond the cross_review budget,
 		// bounded by MaxRounds). If RunRound fails, the BLOCK state is preserved —
