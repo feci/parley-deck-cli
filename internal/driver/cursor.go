@@ -98,18 +98,8 @@ func (c Cursor) Save(path string) error {
 	if err := f.Close(); err != nil {
 		return fmt.Errorf("close cursor: %w", err)
 	}
-	if err := os.Rename(tmp, path); err != nil {
+	if err := fsutil.ReplaceSyncedFile(tmp, path); err != nil {
 		return fmt.Errorf("commit cursor: %w", err)
-	}
-	// The charge is not acknowledged until the replacement directory entry is
-	// synchronized too. A failure here leaves the conservative charge on disk.
-	dir, err := os.Open(filepath.Dir(path))
-	if err != nil {
-		return fmt.Errorf("open cursor directory: %w", err)
-	}
-	defer dir.Close()
-	if err := fsutil.SyncFile(dir); err != nil {
-		return fmt.Errorf("sync cursor directory: %w", err)
 	}
 	return nil
 }

@@ -547,7 +547,7 @@ func runExecAttempt(parent context.Context, opts Options, agent agents.Discovery
 	defer cancel()
 	ctx = WithLaunchInfo(ctx, LaunchInfo{
 		RunID: opts.RunID, SegmentID: opts.SegmentID, Idea: opts.Idea.Slug,
-		Phase: phaseOrDefault(opts.Phase), AttemptOrdinal: attemptID,
+		Phase: protocolLaunchPhase(opts), AttemptOrdinal: attemptID,
 		RetryOf: base.InvocationID, Store: opts.Store, ArtifactPath: outputPath,
 		Observe: func(record telemetry.Record) { result.InvocationID = record.InvocationID },
 	})
@@ -1036,7 +1036,7 @@ Prior rounds (read these):
 // cancellation: one goroutine Waits, and on ctx cancel the whole group is killed
 // (fixing orphan-on-timeout). Shared by the round path and steer attempts.
 func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, agent agents.Discovery, prompt, stdoutPath, stderrPath string, onStarted func(procctl.Spawned), act *activityTracker, cfg SupervisionConfig, hooks supervisionHooks) (spawned procctl.Spawned, runErr error) {
-	evidence, err := beginLaunch(ctx, root, runID, agent)
+	ctx, prompt, evidence, err := beginProtocolLaunch(ctx, root, runID, agent, prompt)
 	if err != nil {
 		return procctl.Spawned{}, err
 	}

@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: eee04d8
+head-commit: 8ccd1ea
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -13,10 +13,15 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 
 ## Summary of work
 
-Design is merged at 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c with all four
-owned signatures. Production implementation begins here. No production feature,
-live pilot, packet measurement, independent final acceptance or deployment is
-claimed complete. The frozen historical evaluation is preserved.
+The signed design is merged at 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c.
+Implementation is partial on draft PR #73: measured protocol-task launch
+boundaries, live/full context attestation, cursor persistence, fail-closed goal
+checking, packet publication and source-instruction updates are integrated and
+locally tested. Claude's partial independent source reviews are preserved with
+their dispositions. Kimi's timed-out evidence checkpoint remains unintegrated
+after failing independent checks. The exact live experiments, complete launch
+coverage/shared budgets and full independent acceptance remain open. The frozen
+historical evaluation is unchanged.
 
 ## Implementation plan / checklist
 
@@ -142,12 +147,19 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Provision the three claimed CLI worktrees and the sibling skill worktree.
-2. Implement disjoint slices and collect owned handoffs with actual test results.
-3. Integrate and independently review each slice; implement agreed fixes.
-4. Build an uninstalled binary, verify real telemetry, freeze and run experiments.
-5. Populate/verify the single HTML, complete independent acceptance and the
-   protocol review cycle before merging the implementation PR.
+1. Complete Kimi's evidence correction from preserved checkpoint 7f2676f. Fix
+   independently reproduced unrelated-rerun/duplicate-field acceptance and the
+   four failing fixture groups before integration; preserve owner artifacts.
+2. Complete shared per-launch/per-action budget reservation, persistent loop
+   limits, remaining readiness validation and interactive TTY process telemetry.
+3. Reconcile at least 20 actual attempts across launch surfaces. The recovery
+   inventory currently has nine terminal attempts, three with unknown cost.
+4. Obtain the pending historical Hermes-to-Zcode decision and pilot amendment
+   direction. Freeze exact tasks/resource ceilings before either experiment;
+   preserve the signed packet trial and full-six design until lawfully amended.
+5. Finish independent per-slice review and the full Phase-6/7/8 review/signoff
+   cycle. Keep PR #73 and the source-skill changes in draft; no final merge,
+   global installation, immutable-core publication or release is authorized.
 
 ## Recovery / resume
 
@@ -266,12 +278,101 @@ platforms that reject it fail closed and remain unvalidated (including Windows).
 This does not claim same-UID tamper prevention, cross-entrypoint action identities,
 persistent loop counters, or completed per-launch monetary reservations.
 
+### Next serialized launch integration
+
+Codex is wiring the shared renderer into the measured manual launch boundary
+and handoff path in already-claimed runner files. Full context stays mandatory;
+unknown phase/track input is reported by the shadow renderer, never optimized
+away. Authority/publication/secret refusal must produce failed attempt evidence
+without starting a process. This first integration does not cover the remaining
+round/ACP/consult/signoff launch paths; those remain open.
+
+### 2026-09-09 22:45Z — evidence owner timeout and reproduced blockers
+
+Kimi invocation `f7248aa0-d6cc-4dc4-9d69-7341cce6f61d` reached the configured
+30-minute hard deadline (1800.112s), exit 143, failure_class=timeout. It produced
+partial owned code but no handoff. Reported cost and token usage are unknown;
+no quota/spend-cap diagnosis is inferred. The partial work remains preserved.
+
+Codex executed independent probes against the exact evidence source snapshot
+SHA256 `a71f397b8419ba715e3ffa1eea99bb1c6fafd0fe2603f206038252fa5f3c84a5`:
+- A report with no verifier attestation passed merely by supplying another ID.
+- A missing current-tree digest was accepted.
+- A malformed final envelope retained an earlier valid pass envelope.
+- Retargeting an in-root symlink, and changing a file's executable bit, each
+  retained the same tree digest. macOS /var aliasing also caused a false escape.
+The probe is private runtime material; no owner code or artifact was rewritten.
+Source inspection additionally shows the tested digest is taken after execution
+without a before/after stability check, and report synchronization errors are
+suppressed. These are owner fix-up requests, not accepted design deviations.
+
+### Next close-gate hardening
+
+Within the already-owned app/driver files, Codex will make missing, self,
+failed or ambiguous goal-check execution reject closure and require an exact
+PASS token rather than a prefix match. Typed criterion evidence remains a
+separate required gate owned by Kimi; a model's textual PASS cannot replace it.
+
+### 2026-09-10 — measured full-context launch and fail-closed goal check
+
+The manual `agents exec` boundary and interactive handoff now obtain full
+protocol text from the shared renderer, pass exactly the in-memory attested
+bytes, and include the shadow audit in the private prompt. Missing authority,
+secret refusal or failed body publication records a failed invocation without
+spawning a child or writing a handoff prompt. The canonical source is re-read
+for each new attempt; callers cannot overwrite the computed attestation.
+Other exec/ACP/consult/signoff paths still require integration, and this does
+not claim AC-P1 complete.
+
+A real owner recovery was launched through the new boundary: Kimi invocation
+`c16ced7b-14d0-4e82-80d6-0f88d035fb36`, started 2026-09-09 22:47Z, records full
+context with source and packet SHA256
+`317ac8a2279052c827ae31f173949348989cb83047a65545baa2f79a773367e6`.
+Its early owned handoff exists; final outcome is pending. No unknown spend is
+represented as zero.
+
+The goal check now rejects absent/self/unavailable checkers, process errors,
+nonzero exits even with a printed PASS, and ambiguous/reserved/prefix-only
+verdicts. An exact textual PASS is still insufficient to replace typed
+criterion evidence; that integration awaits the evidence owner's corrections.
+Manual-signoff errors also preserve the underlying launch refusal rather than
+replacing it with an empty-signoff validation diagnostic.
+
+Validation after these changes: full `go test ./...` passes; targeted manual/
+handoff/goal-check race tests and app/runner/driver vet pass. The initial full
+suite exposed two legacy manual-handoff fixtures without source metadata; both
+now explicitly declare their test protocol authority and pass. Missing authority
+still has its own rejection fixtures. No independent final verdict is claimed.
+
+### Additional non-overlapping Codex allocation — replacement portability
+
+Claim `internal/fsutil/replace_unix.go`, `replace_windows.go`, and
+`replace_test.go` for a small platform replacement primitive used by the cursor.
+The current POSIX directory-sync sequence cannot be assumed to work through a
+Windows read-only directory handle. Use the existing x/sys/windows dependency's
+MoveFileEx with REPLACE_EXISTING and WRITE_THROUGH there; keep rename + directory
+sync on other platforms. No cross-volume copy fallback. Verify native behavior
+and Windows cross-compilation, with Windows runtime behavior explicitly untested.
+
+### 2026-09-10 — replacement portability validation
+
+`ReplaceSyncedFile` now uses rename plus required directory sync on POSIX, and
+MoveFileEx(REPLACE_EXISTING | WRITE_THROUGH) on Windows without a copy fallback.
+The staged file is synchronized before either replacement. Native fsutil/driver
+suites, shared-volume replacement/cursor tests and vet pass; the Windows fsutil
+test binary cross-compiles. Windows runtime behavior is not tested here. This
+supersedes the earlier deliberate Windows fail-closed limitation of attempting
+to flush an ordinary directory handle; it adds no claim of universal power-loss
+or network-filesystem durability.
+
 ## Outcomes & surprises
 
-Pending production implementation. The separate pilot harness has real passing
-tests on Python 3.9 and 3.11 and independent reviewer reruns, but no live treatment
-has been executed. Claude's prior quota failure is preserved; his post-reset
-signature succeeded on the same requested model without a route change.
+Recovery resumed actual implementation and found additional false acceptance
+paths through independent checks. Integrated changes have the recorded local
+validation below; the Kimi slice is explicitly unintegrated. The separate pilot
+harness passes on Python 3.9 and 3.11 with independent reviewer reruns, but no live
+treatment has executed. Historical quota failures, timed-out attempts and unknown
+usage remain preserved; no missing execution is reclassified as success.
 
 ## Validation evidence
 
@@ -283,3 +384,167 @@ Review against every AC in FINAL.md. Do not count a self-authored pass, an
 unexecuted task, unknown usage, stale tree or missing scope as success. Reviewers
 must exclude their own slice from independent verdicts and verify another
 owner's work directly. Correlated agreement is not a correctness result.
+
+### 2026-09-10 — independent runtime review disposition in progress
+
+Claude's authored partial review of 8b11f1d is preserved verbatim in
+implementation-notes/claude-1-runtime-review-20260910.md (invocation
+48b96bfa-6584-43e8-8c8e-8070eca0bc1e, process exited 0, 438.381 seconds,
+CLI-estimated USD 3.3188955; reported model list includes Opus 5 and Haiku).
+The reviewer inspected source without executing tests; this is not Phase-6
+acceptance. The newer 342fcf0 Windows replacement addresses its directory-handle
+portability concern in code; Windows runtime validation remains open. POSIX
+directory-flush errors remain fatal because ignoring them would weaken durable
+reservation semantics. No universal filesystem durability is claimed.
+
+Codex is correcting the mixed-verdict/trailing-template false PASS, preserving
+safe refusal classes, guarding protocol delimiter collisions, labelling shadow
+counts as unapplied diagnostics, and retaining the file lifetime during Darwin
+fsync fallback. Claude is updating the owned live/embedded LE-7 protocol text
+under already-ratified D3; the old fail-open sentence is a temporary unresolved
+implementation inconsistency, not an accepted deviation from FINAL. Strict or
+auto ideas with unverified goal checks intentionally remain open under D3.
+
+Partial phase mapping, headless-signoff context asymmetry and other launch
+surfaces still need integration. Handoff prompt publication remains separately
+open. The review's redundant cursor switch is harmless and deferred as a NIT.
+
+Runtime-review corrections above pass app, driver, runner and fsutil package
+suites (app 70.646s; runner 18.995s). The regression includes FAIL followed by
+a PASS template, ambiguous-before-PASS, and protocol envelope collision refusal.
+
+### Remaining launch-context integration plan
+
+Codex will apply the same renderer at the actual tracked-command, supervised
+exec and ACP boundaries, removing duplicate manual preparation. Every boundary
+will overwrite caller-supplied context attestation and persist refusals before
+returning without process start. App call sites must not replace the prepared
+stdin afterward. Test fixtures will explicitly supply synthetic source authority;
+missing authority and malicious source remain separate rejection cases. This
+also covers round/review/implementation/fixup/steer/consult/headless-signoff
+execution through their existing shared launch primitives. No optimized packet
+launch or experiment result is introduced. Preflight CommandFor glue remains
+Codex's previously recorded serialized allocation; Hermes source/tests stay owned.
+
+Capability/readiness probes are distinguished from protocol tasks: their bounded
+PONG/runtime-artifact instruction must work before a deck or installed core
+exists. They use an explicit probe-only instrumented boundary, restricted to
+preflight/runtime-probe phases, which replaces caller attestation with
+context_mode=probe-only and no source/body hashes. This interpretation of D4
+keeps every protocol-task builder on the renderer; probe-only is not a full
+context claim. Independent review of this distinction remains required.
+
+### 2026-09-10 — protocol-task launch wiring validated locally
+
+The tracked-command, supervised-exec and ACP boundaries now resolve and attest
+full live protocol bytes per actual attempt. This covers headless signoff,
+round/cross-review, implementation/review/fixup, steer and consult/goal-check
+through existing callers. Caller-supplied attestation is overwritten; direct
+stdin overwrites were removed at app call sites. ACP's real child fixture checks
+that one attested protocol reaches the prompt. Negative command/exec/ACP cases
+record refusal with no process start even if the caller supplies a forged hash.
+
+Round numbers now map to Phase 1/2; design/review consensus signoffs and handoffs
+carry Phase 3/7 and idea identity. Explicit canonical kickoff tracks populate
+shadow metadata; absent/unknown values remain unknown. Consult/steer with no
+conceptual phase remains unknown rather than guessing applicability.
+
+Handoffs publish unique per-invocation prompt names through synchronized staging
+and replacement; later attempts cannot overwrite an earlier attested prompt.
+The stable human instructions use atomic replacement. The regression verifies
+both retained attempts. Runner/app suites pass (19.548s / 72.766s). These are
+facilitator-run tests, not independent final acceptance.
+
+Claude's protocol-text fix at eba3a0a is integrated; the live/default close rule
+now matches D3. Its protocol/packet suites pass under facilitator execution.
+The invocation 2ebe2909-6446-4b67-85ed-c319f391d241 exited 0 after 306.630s,
+CLI-estimated USD 2.4902795 with Opus 5 and Haiku in the reported model list.
+The earlier changelog statement about Codex's stale comment/aggregation refers
+to the owner's reviewed worktree; e2f9d19 already corrected those in integration.
+Separate skill-reference mirroring and review remain open.
+
+### 2026-09-10 — Kimi second timeout and independent check
+
+Invocation c16ced7b-14d0-4e82-80d6-0f88d035fb36 reached its 30-minute deadline
+(1800.905s, exit 143). Usage/cost remain unknown. The early owner note and all
+partial source are checkpointed on the Kimi branch, not merged. The new
+Codex-owned check in implementation-notes/codex-1-kimi-recovery-check-20260910.md
+records four failing fixture groups and two reproduced false-acceptance paths:
+duplicate envelope fields, and unrelated/unbound independent rerun attribution.
+Earlier missing-verifier, malformed-final-envelope, symlink and mode probes now
+reject correctly. No owner-completion or typed-evidence integration is claimed.
+
+At f84560b the full Go suite passes. Focused runner/app race checks, shared-volume
+context/handoff/replacement checks and runner/app/driver/fsutil vet also pass.
+These results do not cover or certify the unintegrated Kimi checkpoint.
+
+### 2026-09-10 — second Claude review disposition
+
+Claude independently reviewed f84560b by source inspection and preserved its
+verdict in implementation-notes/claude-1-context-review-skill-sync-20260910.md.
+It confirms prior mixed-verdict, signoff-context, refusal-diagnosis, Darwin file
+lifetime and Windows-directory-handle findings are addressed; it agrees that
+readiness/runtime probes need a separately labelled no-protocol-task boundary.
+This is partial source review with no reviewer-executed tests or final signoff.
+
+Codex accepts the opening-delimiter finding and adds refusal for both markers.
+The probe boundary now has negative phase-guard and explicit no-hash telemetry
+fixtures. The API remains an internal trusted-caller boundary; a stronger
+constructor that cannot accept free-form task text is a remaining refinement.
+The spawned interactive TTY path still lacks its own process invocation record,
+as separately identified by the reviewer; the unobserved handoff record is not
+misrepresented as that process. Handoff retention and cross-round source-hash
+reconciliation remain follow-ups, with no full launch-coverage acceptance.
+
+Counter-position to Claude's remaining directory-sync MAJOR: an unsupported
+barrier cannot be reported as satisfied for a durable budget reservation.
+Native and this shared-volume filesystem pass; other filesystems that reject
+directory fsync must stop visibly. Windows has a separate implementation.
+Codex claims internal/fsutil/replace_unix_test.go before editing to demonstrate
+that EINVAL/EOPNOTSUPP and real I/O errors all propagate after conservative
+replacement; no silent unsupported-errno success fallback will be introduced.
+This disposition is not a completed review-consensus signature.
+
+Final local edge-case fixes pass runner/fsutil/protocol packages after source
+synchronization. Full-suite evidence remains tied to f84560b; subsequent changes
+have their relevant package checks, not a fabricated full rerun.
+
+Eight unique real recovery terminal records are reconciled in the sibling
+evaluation delivery's runtime-recovery-invocations.json. Five reported CLI
+estimates total USD 16.125529; three costs are unknown, so the total is unknown.
+This does not satisfy the >=20-attempt gate. No roster change, live-pilot
+treatment, packet optimization rollout, release or global installation occurred.
+
+The full separate skill Node suite reached 397 tests: 395 passed and two
+packet-context tests failed on obsolete wording assertions. The owner is
+correcting those tests and clarifying bundled snapshot use as local orientation
+only, not authority for a protocol-task launch. No passing skill-suite claim
+is made before that correction is executed and checked.
+
+### 2026-09-10 — recovery checkpoint ready to resume
+
+All recovery participant invocations have terminated. The final Claude owner
+follow-up 3e0c01f4-bf68-4422-8df4-ade47c2efe26 completed in 161.221s with
+CLI-estimated USD 1.3832965; reported models include Opus 5 and Haiku. The
+reconciled recovery inventory now has nine unique terminal attempts, six known
+estimates totaling USD 17.5088255 and three unknown costs; the overall total
+remains unknown. No >=20-attempt gate is claimed.
+
+The skill source at a5e9fbb is committed and available as draft PR
+https://github.com/feci/parley-deck-skill/pull/8, linked to CLI draft PR #73.
+Full npm test passes: 397 Node tests, 54 Python tests on Python 3.14, and all
+add-on manifest checks. Its six targeted context tests also pass. The earlier
+wording failures are corrected by the owner, with the authored handoff preserved.
+Bundled snapshots are now explicitly local orientation only, not launch authority.
+No globally installed source was changed and neither PR is merged.
+
+The offline report was rebuilt with the final recovery inventory and actual
+partial outcomes; its ten source/provenance tests pass. Desktop/mobile browser
+checks on the recovery report show working section controls, no horizontal
+page overflow, visible unrun pilot status and the frozen assessment hash.
+Subsequent report changes are limited to the final owner/test inventory paragraphs.
+
+Resume from the current-state checklist above. Preserve Kimi checkpoint 7f2676f
+and its independent rejection note. The pending user proposal remains in
+inbox/codex-1-to-user_meta-protocol-change-evidence-first-efficiency_recovery-decisions.md;
+there is no approval of a quorum or experimental-arm change by elapsed time.

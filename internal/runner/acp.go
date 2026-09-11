@@ -30,11 +30,11 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
 	defer cancel()
 	ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
-		Idea: opts.Idea.Slug, Phase: phaseOrDefault(opts.Phase), AttemptOrdinal: attemptID,
+		Idea: opts.Idea.Slug, Phase: protocolLaunchPhase(opts), AttemptOrdinal: attemptID,
 		RetryOf: result.InvocationID, Store: opts.Store, ArtifactPath: outputPath,
 		Observe: func(r telemetry.Record) { result.InvocationID = r.InvocationID },
 	})
-	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent)
+	ctx, prompt, evidence, err := beginProtocolLaunch(ctx, opts.Root, opts.RunID, agent, prompt)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}

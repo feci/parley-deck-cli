@@ -12,7 +12,15 @@ import (
 func SyncFile(file *os.File) error {
 	err := file.Sync()
 	if errors.Is(err, syscall.ENOTTY) {
-		return syscall.Fsync(int(file.Fd()))
+		raw, controlErr := file.SyscallConn()
+		if controlErr != nil {
+			return controlErr
+		}
+		var syncErr error
+		if controlErr = raw.Control(func(fd uintptr) { syncErr = syscall.Fsync(int(fd)) }); controlErr != nil {
+			return controlErr
+		}
+		return syncErr
 	}
 	return err
 }

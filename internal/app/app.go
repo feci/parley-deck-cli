@@ -2170,7 +2170,7 @@ func runHeadlessProbe(ctx context.Context, root, probeDir, runID string, result 
 	prompt := probePrompt(result, outputPath, sentinel)
 	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Phase: "runtime-probe", ArtifactPath: outputPath})
 
-	cmd, cleanup, err := runner.CommandFor(ctx, root, result, prompt)
+	cmd, cleanup, err := runner.ProbeCommandFor(ctx, root, result, prompt)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -2178,9 +2178,6 @@ func runHeadlessProbe(ctx context.Context, root, probeDir, runID string, result 
 		return fmt.Errorf("%s: %w", result.ID, err)
 	}
 	cmd.Dir = root
-	if result.PromptMode == agents.PromptStdin {
-		cmd.Stdin = strings.NewReader(prompt)
-	}
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 	cmd.Stdout = &out

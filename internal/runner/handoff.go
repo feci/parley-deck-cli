@@ -18,6 +18,8 @@ const UsageCaveat = "This is a user-driven interactive handoff. Provider billing
 type HandoffOptions struct {
 	Root               string
 	RunID              string
+	Idea               string
+	Phase              string
 	Agent              agents.Discovery
 	Prompt             string
 	TargetPath         string
@@ -40,8 +42,15 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
 		agent.LaunchMode = agents.LaunchManual
 	}
-	ctx := WithLaunchInfo(context.Background(), LaunchInfo{RunID: opts.RunID, Phase: "handoff",
-		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))})
+	phase := opts.Phase
+	if phase == "" {
+		phase = "handoff"
+	}
+	info := LaunchInfo{RunID: opts.RunID, Idea: opts.Idea, Phase: phase,
+		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))}
+	prompt, protocolContext, contextErr := prepareProtocolPrompt(opts.Root, opts.Prompt, info)
+	info.Context = protocolContext
+	ctx := WithLaunchInfo(context.Background(), info)
 	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent)
 	if err != nil {
 		return HandoffPacket{}, err
@@ -51,6 +60,9 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 			returnedErr = err
 		}
 	}()
+	if contextErr != nil {
+		return HandoffPacket{}, contextErr
+	}
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", opts.Agent.ID)
 	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return HandoffPacket{}, err
@@ -59,13 +71,13 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 	packet = HandoffPacket{
 		InvocationID:     evidence.invocation.ID,
 		Dir:              agentDir,
-		PromptPath:       filepath.Join(agentDir, "handoff-prompt.md"),
+		PromptPath:       filepath.Join(agentDir, "handoff-prompt-"+evidence.invocation.ID+".md"),
 		InstructionsPath: filepath.Join(agentDir, "handoff.md"),
 	}
-	if err := os.WriteFile(packet.PromptPath, []byte(opts.Prompt), 0o644); err != nil {
+	if err := writeHandoffPrompt(packet.PromptPath, []byte(prompt)); err != nil {
 		return HandoffPacket{}, err
 	}
-	if err := os.WriteFile(packet.InstructionsPath, []byte(handoffInstructions(opts, packet)), 0o644); err != nil {
+	if err := fsutil.WriteFileAtomic(packet.InstructionsPath, []byte(handoffInstructions(opts, packet)), 0o644); err != nil {
 		return HandoffPacket{}, err
 	}
 	return packet, nil
@@ -124,4 +136,25 @@ func ExpandInteractiveArgs(args []string, root, promptPath, targetPath string) [
 		out[i] = arg
 	}
 	return out
+}
+
+// Each invocation publishes a distinct synchronized prompt, so resuming a
+// handoff cannot replace the bytes an earlier invocation attested.
+func writeHandoffPrompt(path string, body []byte) error {
+	staged, err := os.CreateTemp(filepath.Dir(path), ".handoff-prompt-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(staged.Name())
+	defer staged.Close()
+	if _, err := staged.Write(body); err != nil {
+		return err
+	}
+	if err := fsutil.SyncFile(staged); err != nil {
+		return err
+	}
+	if err := staged.Close(); err != nil {
+		return err
+	}
+	return fsutil.ReplaceSyncedFile(staged.Name(), path)
 }

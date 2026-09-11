@@ -21,6 +21,7 @@ func measuredFixture(t *testing.T, script string) (string, string) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	writeSourceRoleMetadata(t, root)
 	path := filepath.Join(root, "test-agent")
 	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo fixture; exit 0; fi\n" + script + "\n"
 	if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
@@ -121,5 +122,15 @@ func TestResolveMeasuredAgentReusesRosterMapping(t *testing.T) {
 	}
 	if _, err := resolveMeasuredAgent("../bad", d, nil); err == nil {
 		t.Fatal("unsafe identity accepted")
+	}
+}
+
+func writeSourceRoleMetadata(t *testing.T, root string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(root, protocol.DeckDir, "meta"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "meta", "version.json"), []byte(`{"protocolRole":"source"}`), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }

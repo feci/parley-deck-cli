@@ -54,6 +54,7 @@ func runTelemetryFixture(ctx context.Context, root string, agent agents.Discover
 
 func TestExecTelemetryLifecycleAndUsageEvent(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	sink := store.New(filepath.Join(root, "events"))
 	ctx := WithLaunchInfo(context.Background(), LaunchInfo{RunID: "run-1", SegmentID: "segment-2",
 		Idea: "task-C01", Phase: "review", Store: sink})
@@ -115,6 +116,7 @@ func TestExecTelemetryLifecycleAndUsageEvent(t *testing.T) {
 
 func TestExecTelemetryFailedStartAndUnknownUsage(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	agent := telemetryShell("", false)
 	agent.Path = filepath.Join(root, "missing-executable")
 	if err := runTelemetryFixture(context.Background(), root, agent); err == nil {
@@ -135,6 +137,7 @@ func TestExecTelemetryFailedStartAndUnknownUsage(t *testing.T) {
 
 func TestExecTelemetryProviderErrorCannotBeOverriddenByConsultOutput(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	agent := telemetryShell(`printf '%s\n' '{"type":"result","subtype":"success","is_error":true,"api_error_status":429}'; exit 1`, true)
 	res := RunConsult(context.Background(), ConsultOptions{Root: root, Agent: agent, Timeout: time.Second,
 		StdoutPath: filepath.Join(root, "out"), StderrPath: filepath.Join(root, "err")})
@@ -182,6 +185,7 @@ func TestExecTelemetryPersistenceFailureCannotPass(t *testing.T) {
 
 func TestExecTelemetryUniqueAttemptsAndRetryLineage(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	var previous string
 	for ordinal := 1; ordinal <= 2; ordinal++ {
 		info := LaunchInfo{AttemptOrdinal: ordinal, RetryOf: previous, Observe: func(r telemetry.Record) { previous = r.InvocationID }}
@@ -209,6 +213,7 @@ func TestExecTelemetryUniqueAttemptsAndRetryLineage(t *testing.T) {
 
 func TestExecTelemetryCancelledBeforeStart(t *testing.T) {
 	root := t.TempDir()
+	writeLaunchProtocol(t, root)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if err := runTelemetryFixture(ctx, root, telemetryShell("touch launched", false)); err == nil {

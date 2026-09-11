@@ -30,9 +30,9 @@ type ImplOps interface {
 	Fixup(ctx context.Context, cycle int) error // Phase 8: re-invoke implementer for agreed fixes
 	Complete(ctx context.Context) error         // driver writes IMPLEMENTATION.md status=complete
 	// GoalCheck (LE-7) runs a fresh non-implementer agent to check FINAL.md observable
-	// acceptance criteria before close. Returns (false, detail) only on a confident FAIL;
-	// a checker error/ambiguous verdict returns (true, advisory) — fail-open, since this
-	// is defense-in-depth on top of an already-passed review consensus, not the sole gate.
+	// acceptance criteria before close. Missing, failed or ambiguous execution
+	// returns false: an unavailable checker cannot establish completion. This
+	// remains defense in depth and never replaces typed criterion evidence.
 	GoalCheck(ctx context.Context) (bool, string)
 }
 
@@ -268,7 +268,7 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		}
 		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh
 		// non-implementer agent checks the FINAL.md acceptance criteria. A confident FAIL
-		// escalates; a checker error is advisory (fail-open inside GoalCheck).
+		// or unverified execution escalates; textual PASS cannot replace criterion evidence.
 		if d.cfg.AutoImplement || d.cfg.StrictGate {
 			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))

@@ -39,10 +39,14 @@ func (b *lockedBuffer) Write(p []byte) (int, error) {
 }
 
 func trackedCommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*AgentCommand, func(), error) {
-	evidence, err := beginLaunch(ctx, root, "one-shot", agent)
+	ctx, prompt, evidence, err := beginProtocolLaunch(ctx, root, "one-shot", agent, prompt)
 	if err != nil {
 		return nil, nil, err
 	}
+	return commandForLaunch(ctx, root, agent, prompt, evidence)
+}
+
+func commandForLaunch(ctx context.Context, root string, agent agents.Discovery, prompt string, evidence *launchEvidence) (*AgentCommand, func(), error) {
 	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
 	if err != nil {
 		if cleanup != nil {
@@ -218,4 +222,21 @@ func RunMeasured(parent context.Context, opts ExecOptions) (record telemetry.Rec
 	}
 	returnErr := cmd.Run()
 	return record, returnErr
+}
+
+// ProbeCommandFor instruments a capability/readiness probe that can run before
+// a protocol workspace exists. It carries no task protocol and cannot attest
+// one. Protocol task callers must use CommandFor instead.
+func ProbeCommandFor(ctx context.Context, root string, agent agents.Discovery, prompt string) (*AgentCommand, func(), error) {
+	info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
+	if info.Phase != "preflight" && info.Phase != "runtime-probe" {
+		return nil, nil, errors.New("probe command requires a readiness or runtime-probe phase")
+	}
+	info.Context = telemetry.Context{Mode: "probe-only", FallbackReason: telemetry.String("no-protocol-task")}
+	ctx = WithLaunchInfo(ctx, info)
+	evidence, err := beginLaunch(ctx, root, "probe", agent)
+	if err != nil {
+		return nil, nil, err
+	}
+	return commandForLaunch(ctx, root, agent, prompt, evidence)
 }

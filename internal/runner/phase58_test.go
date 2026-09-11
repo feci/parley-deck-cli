@@ -19,6 +19,7 @@ func TestRunImplementationWritesArtifact(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Impl task", []string{"builder"})
 	if err != nil {
 		t.Fatal(err)
@@ -50,6 +51,7 @@ func TestRunReviewRoundWritesReviews(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Review task", []string{"rev1"})
 	if err != nil {
 		t.Fatal(err)
