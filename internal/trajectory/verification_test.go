@@ -219,7 +219,7 @@ func TestDurableCapturedVerificationRejectsChangedHistory(t *testing.T) {
 	if _, err := ExecuteCapturedVerification(context.Background(), ticket, "verifier-invocation", criteria, t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"request.json", "launch.json", "claim.json", "prepared.json", "step-001.json", "step-003.json", "receipt.json"} {
+	for _, name := range []string{"request.json", "launch.json", "claim.json", "prepared.json", "process-001.json", "process-003.json", "step-001.json", "step-003.json", "receipt.json"} {
 		t.Run(name, func(t *testing.T) {
 			file := filepath.Join(path, name)
 			original := snapshotRead(t, file)
@@ -241,7 +241,7 @@ func TestDurableCapturedVerificationRejectsChangedHistory(t *testing.T) {
 			}
 		})
 	}
-	for _, name := range []string{"step-005.json", "unexpected.json"} {
+	for _, name := range []string{"step-005.json", "process-005.json", "unexpected.json"} {
 		file := filepath.Join(path, name)
 		if err := os.WriteFile(file, []byte("{}\n"), 0600); err != nil {
 			t.Fatal(err)

@@ -331,12 +331,12 @@ func (w *CapturedWorkspace) check(ctx context.Context) error {
 // by replaying execution. The parent must retain every returned partial result.
 // This function itself neither invokes nor authenticates the selected model.
 func VerifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criterion) (Observation, error) {
-	return verifyCaptured(ctx, w, criteria, nil, nil)
+	return verifyCaptured(ctx, w, criteria, nil, nil, nil)
 }
 
 // The journal hooks are private: callers cannot replace source validation or
 // turn an observation-write failure into an accepted execution.
-func verifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criterion, guard func() error, retain func(int, Execution) error) (Observation, error) {
+func verifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criterion, guard func() error, retain func(int, Execution) error, control func(int) evidence.CriterionStartControl) (Observation, error) {
 	if w == nil {
 		return Observation{}, errors.New("captured verification workspace is required")
 	}
@@ -386,7 +386,11 @@ func verifyCaptured(ctx context.Context, w *CapturedWorkspace, criteria []Criter
 			if step.after {
 				root, source, target = w.after, r.After, &p.After[step.index]
 			}
-			execution := evidence.RunCriterionDetailed(ctx, root, c.Name, c.Command, r.Verifier)
+			var startControl evidence.CriterionStartControl
+			if control != nil {
+				startControl = control(ordinal + 1)
+			}
+			execution := evidence.RunCriterionControlled(ctx, root, c.Name, c.Command, r.Verifier, startControl)
 			*target = Execution{Complete: execution.Complete, Record: execution.Record, TreeBeforeSHA256: source.Tree.SHA256}
 			actual, observeErr := Observe(ctx, root)
 			if observeErr == nil {

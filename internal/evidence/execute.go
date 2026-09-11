@@ -85,8 +85,49 @@ type CriterionExecution struct {
 // RunCriterionDetailed uses the same execution and parsing path as RunCriterion
 // and adds typed observation completeness without changing persisted reports.
 func RunCriterionDetailed(ctx context.Context, root, name, command, executor string) CriterionExecution {
+	return RunCriterionControlled(ctx, root, name, command, executor, nil)
+}
+
+// CriterionStartControl serializes a durable stop check, process creation and
+// identity publication. start creates a waiting supervisor, not the material
+// command. The controller calls release only after publishing identity, while
+// still holding its guard. On any error this executor reaps its owned group.
+type CriterionStartControl func(start func() (procctl.Spawned, error), release func() error) error
+
+// The supervisor keeps a stable command and session identity even when the
+// material shell execs another program. Raw commands travel through a private
+// environment value, removed before the material shell starts, never its argv.
+// A caught TERM keeps the leader alive while its child is being terminated.
+const criterionSupervisor = `trap ':' TERM
+IFS= read -r ready || exit 125
+[ "$ready" = go ] || exit 125
+parley_command=$PARLEY_CAPTURED_COMMAND
+unset PARLEY_CAPTURED_COMMAND
+sh -c "$parley_command" </dev/null &
+child=$!
+wait "$child"
+code=$?
+while kill -0 "$child" 2>/dev/null; do
+    wait "$child"
+    code=$?
+done
+exit "$code"`
+
+func RunCriterionControlled(ctx context.Context, root, name, command, executor string, control CriterionStartControl) CriterionExecution {
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	var release, gate *os.File
+	var controlErr error
+	if control != nil {
+		cmd = exec.CommandContext(ctx, "sh", "-c", criterionSupervisor)
+		cmd.Env = append(os.Environ(), "PARLEY_CAPTURED_COMMAND="+command)
+		gate, release, controlErr = os.Pipe()
+		if controlErr == nil {
+			defer gate.Close()
+			defer release.Close()
+			cmd.Stdin = gate
+		}
+	}
 	cmd.Dir = root
 	procctl.SetNewProcessGroup(cmd)
 	cmd.Cancel = func() error {
@@ -104,9 +145,49 @@ func RunCriterionDetailed(ctx context.Context, root, name, command, executor str
 	sink := io.MultiWriter(hasher, capbuf)
 	cmd.Stdout = sink
 	cmd.Stderr = sink
-	runErr := cmd.Start()
+	runErr := controlErr
 	if runErr == nil {
-		runErr = cmd.Wait()
+		if control == nil {
+			runErr = cmd.Start()
+		} else {
+			started, released := false, false
+			runErr = control(func() (procctl.Spawned, error) {
+				if started {
+					return procctl.Spawned{}, errors.New("criterion supervisor already started")
+				}
+				started = true
+				if err := cmd.Start(); err != nil {
+					return procctl.Spawned{}, err
+				}
+				sp := procctl.Capture(cmd, "captured-criterion")
+				if ok, reason := procctl.Attributed(sp); !ok {
+					return sp, fmt.Errorf("criterion supervisor identity unavailable: %s", reason)
+				}
+				return sp, nil
+			}, func() error {
+				if cmd.Process == nil || released {
+					return errors.New("criterion release requires one started supervisor")
+				}
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				released = true
+				_, err := release.WriteString("go\n")
+				return err
+			})
+			if runErr == nil && !released {
+				runErr = errors.New("criterion control did not release its supervisor")
+			}
+			_ = release.Close()
+		}
+	}
+	if cmd.Process != nil {
+		if runErr != nil {
+			_ = procctl.KillGroup(procctl.Spawned{PID: cmd.Process.Pid, PGID: cmd.Process.Pid})
+			_ = cmd.Wait()
+		} else {
+			runErr = cmd.Wait()
+		}
 	}
 	out := capbuf.buf.Bytes()
 
@@ -181,6 +262,12 @@ func RunCriterionDetailed(ctx context.Context, root, name, command, executor str
 		status = StatusNotRun // structured proof that nothing executed
 	}
 	complete := !capbuf.overflow && envelopeInvalid == "" && goTestInvalid == "" && ctx.Err() == nil
+	// POSIX wait encodes a signalled material child as 128+signal. The
+	// supervisor cannot distinguish that from an explicit high exit code;
+	// neither is complete evidence of a patch-induced test regression.
+	if control != nil && ce.ExitCode >= 128 {
+		complete = false
+	}
 	if runErr != nil {
 		var exitErr *exec.ExitError
 		complete = complete && errors.As(runErr, &exitErr) && exitErr.ExitCode() >= 0

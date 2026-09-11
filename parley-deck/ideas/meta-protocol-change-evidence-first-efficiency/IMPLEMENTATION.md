@@ -2244,3 +2244,133 @@ actual operator activation occurred. AC-B2, the six areas, independent current-s
 acceptance, live experiments and final report/follow-up delivery remain incomplete.
 The previously unanswered provider recovery, historical roster/pilot and funding
 choices remain unchanged; no merge/release/deployment/global publication is claimed.
+
+### Ownership claim — independent trajectory runner/helper integration, September 12
+
+Codex-1 owns the new `internal/runner/trajectory_verification.go` and its tests,
+the shared `internal/runner/telemetry.go` launch boundary, new
+`internal/app/trajectory_verify.go` and its tests, the trajectory CLI dispatch,
+minimal journal accessors if required, runtime documentation and
+`implementation-notes/codex-1-trajectory-helper-integration-20260912.md`.
+
+Bind a prepared captured-verification ticket to the instrumented runner before
+spawn, refusing changed origin/run/idea/agent/phase and duplicate launches. Expose
+an explicit selected-verifier command and runtime helper. Freeze the parent
+request before launch, require inherited process attribution, exact original
+criteria and the shared ticket, and invoke the existing durable helper journal.
+The parent must compare observed terminal records and complete retained helper
+receipts, preserving failed/partial attempts and refusing text-only PASS,
+self-verification, replay or changed authority. Tests use actual executable CLI
+fixtures, not provider calls or real operator activation.
+
+This integrates the independent execution path; complete charge-derived trajectory
+evaluation and explicit review/recovery/continuation remain required. Do not reset
+charges or mark AC-B2/overall delivery complete. Historical quorum and unanswered
+recovery/pilot/funding decisions remain intact.
+
+### Ownership extension — nested verifier cancellation, September 12
+
+The initial full suite passed, but the exact-source race run reproduced a
+TERM-resistant criterion surviving verifier cancellation. The outer runner and
+nested criterion used competing termination grace periods; the helper could be
+killed before finishing its own child cleanup. Retain this failed evidence.
+
+Codex-1 additionally owns the criterion-start control hook in
+`internal/evidence/execute.go`, process-control records and stop handling in the
+captured verification journal, and runner cancellation wiring. Register the actual
+criterion under the same shared guard used to request stop, prevent starts after
+that stop and terminate the owned active criterion before stopping its enclosing
+verifier group. Preserve explicit attribution refusal for unknown processes and
+record no acceptance on cancellation. Test the reproduced race and normal execution;
+do not merely rerun the failing checkpoint or weaken the fixture.
+
+
+### Process-control fixture ownership and validation boundary — September 12
+
+The nested-cancellation ownership extension also includes
+`internal/evidence/execute_control_test.go`,
+`internal/trajectory/verification_control_test.go`, the existing journal
+history-substitution tests and the existing app cancellation fixture. New
+claims/steps/receipts use journal version 2; completed version-1 receipts remain
+readable without inventing process-control evidence. The process-control records
+contain stable supervisor identity, not raw material command text.
+
+The previous exact-source race and compiled shared-volume app failures are
+confirmed independently in their complete retained logs. Focused corrected tests
+pass. The first corrected full/race/shared validation is in progress under a new
+manifest; it is not final acceptance. Code review also identified the need to
+preserve incomplete status for signal-like material exits through the stable
+supervisor. Validate that boundary before committing or certifying this change.
+
+
+### Supervisor signal counterexample — September 12
+
+A separate Go overlay test, without changing the source under the in-flight
+full/race/shared run, printed a structured failure and killed its material shell
+with SIGKILL. The stable supervisor returned exit 137; the executor incorrectly
+marked the observation complete. The counterexample failed as expected and is
+retained with its exact overlay/test source under the first corrected validation
+checkpoint. Reject signal-like controlled exits conservatively before accepting
+this integration. A passing ordinary suite does not settle this new boundary.
+
+
+### Independent helper integration and controlled cancellation checkpoint — September 12
+
+The selected-verifier CLI now executes through the actual instrumented headless
+runner and binds the original frozen ticket to its reserved invocation before
+spawn. The helper requires the exact parent request, inherited markers, original
+scope/quorum and durable shared reservation. The parent requires matching observed
+and retained successful terminal telemetry, complete AB/BA helper observations
+and successful publication of the request/terminal/receipt-bound result. A written
+PASS, self-verification, changed authority, failed start/exit, lost receipt or
+lost parent publication cannot produce an accepted assessment.
+
+The reproduced nested-cancellation race is corrected by guarded stop/start
+coordination. A stable waiting supervisor is identified and persisted before
+its material command is released under the shared cycle guard. A durable stop
+prevents later claims/starts; the parent reaps strictly attributed registered
+criterion groups before stopping the enclosing verifier. Required process-write
+failure leaves the material command unstarted. The global procctl attribution
+checks were not weakened. New journal version-2 steps/receipts bind process
+records; version-1 completed journals remain readable without inventing new
+control evidence. Stop-marked or mixed/substituted history refuses acceptance.
+Signal-like controlled exits >=128 remain incomplete, including an explicit 137,
+because the supervisor cannot distinguish those cases from signal termination.
+
+Final validation covers all 376 Go/module files with manifest SHA256
+b9cbd3b1372c7fdc7d560b54134915730d2fc28bc017909683cc6ea6026b2404.
+The full JSON suite passed (237.313s), with all 32 package
+terminal events: 31 tested packages passed and cmd/parley had no tests. The
+six-package race run passed (258.405s); scoped vet passed
+(1.344s). Compiled shared-volume trajectory/runner/driver/
+evidence/app fixtures passed (264.528/
+28.928/1.746/
+0.595/80.785s).
+All thirteen new top-level test entries passed in full, race and their compiled
+shared-volume runs, including both previously failing boundaries. Windows amd64
+trajectory/app cross-builds passed and their PE headers/hashes were checked;
+Windows execution remains unverified. Complete native/shared logs match, contain
+no NUL bytes and no failed-test events in the final runs. The verifier checked the
+unchanged source manifest, test coverage, package terminals and older HTML hash.
+`final-verification.json`, validation/verifier scripts, toolchain identity and
+56 checksummed evidence files remain under
+`.parley-runtime/trajectory-helper-final-validation-20260912/`. Prior cancellation
+failures and the signal counterexample remain distinct retained evidence; none
+is relabelled as a pass by this checkpoint.
+
+These tests use synthetic executable participants, actual parent/helper CLIs and
+real process groups. No model invocation or actual operator activation occurred;
+participant-owned source acceptance remains pending. Same-UID fabrication,
+arbitrary daemonized sessions, abrupt outer-runner death, changed cleanup
+authority and missing/staged source history remain explicit trust/recovery limits.
+All trajectory charges remain pending. Complete charge-derived evaluation,
+resolution-time parent-result reconciliation, retained two-regression review and
+explicit recovery/continuation remain required; AC-B2 and overall delivery of the
+six areas are incomplete. No quorum, historical signature or global roster changed.
+
+The original full-six pilot, exact packet experiment, fresh independent reviews,
+final populated report and actual-delivery-based follow-ups remain binding.
+Previously unanswered Claude recovery, Hermes/Zcode membership/pilot amendment
+and resource-ceiling decisions remain unanswered. The real-model inventory and
+older report are unchanged. No merge, release, deployment, global install or
+immutable-core publication is claimed.

@@ -1105,18 +1105,32 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 		return procctl.Spawned{}, err
 	}
 	sp := procctl.Capture(cmd, marker)
+	var cleanupErr error
+	stopped := false
+	kill := func() {
+		// A captured criterion has its own session. Stop and attribute that
+		// group before killing the model/helper which owns its cleanup.
+		stopped = true
+		childErr := evidence.stopCapturedVerification(ctx)
+		cleanupErr = errors.Join(cleanupErr, childErr, procctl.KillGroup(sp))
+	}
 	if err := evidence.started(cmd.Process.Pid); err != nil {
-		_ = procctl.KillGroup(sp)
+		kill()
 		_ = cmd.Wait()
-		return sp, err
+		return sp, errors.Join(err, cleanupErr)
 	}
 	if onStarted != nil {
 		onStarted(sp)
 	}
 	waitErr := make(chan error, 1)
 	go func() { waitErr <- cmd.Wait() }()
-	kill := func() { _ = procctl.KillGroup(sp) } // reap the whole tree, not just the direct child
-	return sp, waitSupervised(ctx.Done(), ctx.Err, waitErr, kill, act, cfg, hooks)
+	runErr = waitSupervised(ctx.Done(), ctx.Err, waitErr, kill, act, cfg, hooks)
+	if !stopped && (runErr != nil || ctx.Err() != nil) {
+		// The verifier may have crashed while its registered criterion lived.
+		// Its terminal error cannot substitute for descendant cleanup.
+		cleanupErr = evidence.stopCapturedVerification(ctx)
+	}
+	return sp, errors.Join(runErr, cleanupErr)
 }
 
 func openPrivateLog(path string) (*os.File, error) {

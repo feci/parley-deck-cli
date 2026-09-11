@@ -868,9 +868,9 @@ same-UID actor capable of fabricating all mutually consistent artifacts.
 
 The internal trajectory API prepares the paired-execution part of the opt-in
 pilot rule. The CLI policy below now enforces durable capture and refusal at
-driver/manual entrypoints. AC-B2 remains incomplete until the independently
-invoked verifier, durable paired observations and explicit disposition/recovery
-are connected and verified.
+driver/manual entrypoints. The selected-verifier CLI below connects independent
+execution to durable observations. AC-B2 remains incomplete until complete
+charge-derived evaluation and explicit disposition/recovery are connected and verified.
 
 `Freeze` binds separate clean Git baseline/patched snapshots, full commit IDs,
 source-tree hashes, the exact binary patch digest, independent runtime verifier,
@@ -939,10 +939,9 @@ commit, stash, discard, or manufacture a clean snapshot. Run status and exit zer
 are not independent verification. Driver and application completion paths reject
 pending attempts, including after resume or a separate finite budget extension.
 
-This checkpoint provides capture, source restoration and refusal enforcement.
-Every captured attempt currently remains pending. Independent model/helper
-invocation, runtime receipt matching, durable execution publication and explicit
-disposition/recovery must be integrated with the existing paired-execution core
+Capture, source restoration, refusal enforcement and the selected-verifier CLI
+are available. Every captured attempt currently remains pending. Complete
+charge-derived evaluation and explicit disposition/recovery must be integrated
 before the next patch can proceed under this policy. There is no reset/accept/override CLI
 in this checkpoint. Do not enable it on ongoing production work expecting an
 already complete review-and-continue workflow. AC-B2 remains incomplete.
@@ -985,8 +984,8 @@ Restoration supplies source files without creating Git metadata or asserting a
 new commit/ancestry. Use an execution parent outside any existing Git worktree.
 Host permission and symlink semantics must reproduce the archived tree exactly;
 unsupported restoration fails visibly. The captured-source API below can attach
-isolated original Git history when its exact state is reproducible. Binding the
-independent model invocation and durable helper receipt remains separate work.
+isolated original Git history when its exact state is reproducible. The selected
+verifier CLI below binds that execution to its invocation and durable receipt.
 
 If actual source can be observed but its archive cannot be published, the
 terminal record retains that observation with `archive-unavailable`. If actual
@@ -1035,12 +1034,11 @@ can confirm regression; prior failures are inconclusive, and opaque, skipped,
 missing or interrupted output cannot confirm an outcome. Original clean-commit
 comparison and ordinary pass-only completion attestation retain their rules.
 
-These are internal execution APIs, not a complete independent verification CLI.
-They do not invoke a model, authenticate the verifier label, publish a durable
-helper receipt or authorize the next patch. The parent still needs instrumented
-independent model/helper invocation, exact receipt acceptance, durable observations,
-the complete charge-derived expected patch inventory, retained review trigger
-and explicit recovery/disposition. No call to these APIs resolves pending state,
+These internal execution APIs do not themselves invoke a model or authorize
+the next patch. Use the selected-verifier CLI below to bind the durable journal
+to actual instrumented invocation and helper evidence. The complete charge-derived
+expected patch inventory, retained review trigger and explicit recovery/disposition
+still require integration. No call to these APIs resolves pending state,
 resets budget, changes quorum or supplies implementation completion.
 
 
@@ -1062,6 +1060,29 @@ roots and all completed steps; errors retain a bounded failure-stage label.
 Required writes fail closed. Neither a failed terminal write nor a process crash
 makes the original ticket reusable. Failed and partial records stay in place.
 
+New helper claims, steps and receipts use journal version 2. Each step binds an
+immutable `process-NNN.json` record. Under the shared cycle guard, the helper
+checks for a durable stop, starts a waiting supervisor, captures its full process
+identity, persists that identity and releases the material command. A failed
+identity write cannot release the command. The supervisor retains its command
+and session identity when the material shell uses `exec`; the raw command is not
+copied into the process identity. Existing version-1 completed journals remain
+readable, but cannot provide this new process-control evidence.
+The supervisor's material exit values of 128 or greater are conservatively
+incomplete: POSIX wait cannot distinguish a signalled child from an explicit
+numeric exit in that range. Such outcomes cannot prove a patch regression.
+
+On verifier cancellation or watchdog termination, the runner first calls
+`StopCapturedVerification` with a bounded cleanup context independent of the
+cancelled run. Under the same guard, it durably writes `stop.json` and stops
+registered live criterion groups before terminating the enclosing verifier.
+Later helper claims and starts refuse that stop; repeats preserve it. A failed
+verifier exit also requests registered-child cleanup. Process signalling requires
+the original boot, PID/start, group and command to match; identity or authority
+failures are surfaced rather than signalling unknown processes. This covers
+the registered process groups, not arbitrary descendants that daemonize into
+new sessions. Abrupt death of the outer runner still requires explicit recovery.
+
 `ReadCapturedVerification` rechecks original charge/state/archive authority,
 request, launch, claim, preparation, bounded complete journal inventory and the
 receipt. It returns available partial observations with an error when a terminal
@@ -1070,13 +1091,58 @@ files then require explicit recovery inspection. A process killed during a check
 may leave only earlier completed steps plus a claimed unfinished invocation;
 that missing outcome must not be inferred. `prepared.json` retains the private
 workspace locations for later recovery cleanup. Source archives remain retained.
+A stop-marked journal never provides an accepted observation, even if a successful
+receipt existed before the stop. Mixed journal versions or missing/substituted
+process records refuse acceptance.
 
-These APIs do **not** yet wire the selected model into the instrumented runner,
-authenticate inherited process markers, provide an operator retry/recovery flow,
-resolve pending attempts or grant completion/continuation. The caller must bind
-the reserved invocation to its observed process and terminal outcome before
-acceptance. Same-UID artifact fabrication is outside this attribution boundary.
+These APIs do not themselves provide an operator retry/recovery flow, resolve
+pending attempts or grant completion/continuation. The CLI below binds the
+reserved invocation and inherited markers to its observed process and terminal
+outcome before accepting an execution observation. Same-UID artifact fabrication is outside this attribution boundary.
 Requests/receipts contain private local paths; they are not telemetry exports.
 The journal currently requires a POSIX host. Windows cross-compilation is not
 Windows execution support. Existing staged-source/history reconstruction refusals
 remain unchanged.
+
+
+### Independently invoked captured verification
+
+After an opted-in charged attempt has retained both source archives, explicitly
+select an existing non-implementer participant:
+
+```sh
+parley trajectory verify --dir . --idea IDEA --verifier PARTICIPANT --timeout 10m --yes
+```
+
+The command uses that participant's configured headless CLI and the instrumented
+runner. It freezes the exact parent request before launch, including the original
+material commands and unchanged idea quorum. Shared launch reservation happens
+at the common runner boundary before spawn. Different origins, phases, runs,
+participants, unobserved handoffs and duplicate ticket launches refuse. Normal
+launch/step/monetary accounting and full protocol context remain in force. No
+model or participant is silently substituted.
+
+The selected participant must invoke the supplied `trajectory verify-helper`
+command once. The helper requires the exact request bytes/path, inherited
+`PARLEY_RUN_ID`, `PARLEY_AGENT_ID`, `PARLEY_PROC_MARKER`, original named criteria
+and shared ticket. It uses the captured-source journal to execute AB/BA checks.
+The parent accepts an observation only when its actual runner terminal matches
+the persisted terminal and selected identity, the process exited successfully,
+the request/scope/quorum remain unchanged and the complete helper receipt binds
+that invocation. A written PASS, self-verifier, failed process after the helper,
+missing receipt, changed request or failed parent-result write cannot pass.
+Inherited process metadata supplies attribution within the same-UID trust limit;
+it does not authenticate a human or prove model independence cryptographically.
+
+The private parent request, process logs and `parent-result.json` live under
+`.parley-runtime/trajectory-verification/<run-id>/`; requests include original
+commands and local paths, and must not be copied into public telemetry. Shared
+journals retain failed/partial execution history. Reissuing the verify command
+cannot silently retry a reserved attempt. The initial source/index reconstruction
+and POSIX/headless restrictions still apply.
+
+Exit zero reports a complete observed comparison, whose assessment may be a
+regression, no regression or inconclusive. `trajectory_pending` remains true.
+This command does not grant another fixup, close the idea, change quorum or reset
+accounting. Complete ordered trajectory evaluation, retained review escalation,
+operator recovery and continuation remain unfinished.

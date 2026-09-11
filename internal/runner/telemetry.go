@@ -98,6 +98,9 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	structured := metadata.LaunchMode != agents.LaunchACP && telemetry.StructuredArgs(args)
 	l := &launchEvidence{invocation: invocation, collector: telemetry.NewCollector(agent.Adapter(), structured), info: info}
 	l.notify()
+	if err := l.reserveCapturedVerification(ctx, root, handoff); err != nil {
+		return nil, errors.Join(&launchIntegrityError{reason: err.Error()}, l.finish(err, ctx.Err(), nil))
+	}
 	if err := l.reserveBudget(ctx, root, handoff); err != nil {
 		return nil, errors.Join(err, l.finish(err, ctx.Err(), nil))
 	}

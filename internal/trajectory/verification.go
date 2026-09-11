@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/fsutil"
+	"parley-deck-cli/internal/procctl"
 )
 
 // VerificationTicket is private runtime data, not public telemetry. One ticket
@@ -58,6 +60,95 @@ type verificationStep struct {
 	Ordinal        int       `json:"ordinal"`
 	PreviousSHA256 string    `json:"previous_sha256"`
 	Execution      Execution `json:"execution"`
+	ProcessSHA256  string    `json:"process_sha256,omitempty"`
+}
+
+type verificationProcess struct {
+	Version     int             `json:"version"`
+	ClaimSHA256 string          `json:"claim_sha256"`
+	Ordinal     int             `json:"ordinal"`
+	Identity    procctl.Spawned `json:"identity"`
+}
+
+type verificationStop struct {
+	Version      int       `json:"version"`
+	TicketSHA256 string    `json:"ticket_sha256"`
+	LaunchSHA256 string    `json:"launch_sha256"`
+	At           time.Time `json:"at"`
+}
+
+func verificationNotStopped(dir *os.Root) error {
+	if _, err := dir.Lstat("stop.json"); os.IsNotExist(err) {
+		return nil
+	}
+	return errors.New("captured verification is stopped or its stop state is unavailable")
+}
+
+func readVerificationProcess(dir *os.Root, claimSHA string, ordinal int) (verificationProcess, string, error) {
+	var process verificationProcess
+	sha, err := readVerificationArtifact(dir, fmt.Sprintf("process-%03d.json", ordinal), &process)
+	if err != nil {
+		return process, "", err
+	}
+	sp := process.Identity
+	if process.Version != 1 || process.ClaimSHA256 != claimSHA || process.Ordinal != ordinal ||
+		sp.PID <= 0 || sp.PGID != sp.PID || sp.BootID == "" || sp.ProcStart == "" || sp.Command == "" || sp.StartedAt.IsZero() {
+		return process, "", errors.New("invalid captured criterion process identity")
+	}
+	return process, sha, nil
+}
+
+// StopCapturedVerification shares the exact guard with criterion creation and
+// registration. The durable stop prevents any later start. Live groups are
+// signalled only after strict attribution; an unrelated or reused PID refuses.
+// Call before killing the enclosing CLI/helper group, with a cleanup context
+// independent of the cancelled invocation. Repeated stops preserve the first.
+func StopCapturedVerification(ctx context.Context, ticket VerificationTicket, invocation string) error {
+	return withVerification(ctx, ticket, func(dir *os.Root, sha string) error {
+		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
+		if err != nil {
+			return err
+		}
+		var stop verificationStop
+		if _, err = readVerificationArtifact(dir, "stop.json", &stop); os.IsNotExist(err) {
+			stop = verificationStop{1, sha, launchSHA, time.Now().UTC()}
+			_, err = writeVerificationArtifact(dir, "stop.json", stop)
+		}
+		if err != nil {
+			return err
+		}
+		if stop.Version != 1 || stop.TicketSHA256 != sha || stop.LaunchSHA256 != launchSHA || stop.At.IsZero() {
+			return errors.New("captured verification stop binding changed")
+		}
+		var claim verificationClaim
+		claimSHA, err := readVerificationArtifact(dir, "claim.json", &claim)
+		if os.IsNotExist(err) {
+			return nil // stop won before the helper could claim or start anything
+		}
+		if err != nil || claim.Version != 2 || claim.TicketSHA256 != sha || claim.LaunchSHA256 != launchSHA || claim.HelperPID <= 0 {
+			return errors.New("captured verification process control claim unavailable")
+		}
+		for ordinal := 1; ordinal <= 4*len(ticket.Request.Criteria); ordinal++ {
+			process, _, err := readVerificationProcess(dir, claimSHA, ordinal)
+			if os.IsNotExist(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			if !procctl.Alive(process.Identity) {
+				continue
+			}
+			killed, reason, err := procctl.KillTreeAttributed(process.Identity)
+			if err != nil {
+				return err
+			}
+			if !killed {
+				return fmt.Errorf("captured criterion cleanup refused: %s", reason)
+			}
+		}
+		return nil
+	})
 }
 
 type verificationPrepared struct {
@@ -315,11 +406,14 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 	var retained *os.Root
 	stage := "claim"
 	resultErr = withVerification(ctx, ticket, func(dir *os.Root, sha string) error {
+		if err := verificationNotStopped(dir); err != nil {
+			return err
+		}
 		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
 		if err != nil {
 			return err
 		}
-		claim := verificationClaim{1, sha, launchSHA, os.Getpid(), time.Now().UTC()}
+		claim := verificationClaim{2, sha, launchSHA, os.Getpid(), time.Now().UTC()}
 		claimSHA, err := writeVerificationArtifact(dir, "claim.json", claim)
 		if err != nil {
 			return errors.New("verification helper already claimed or claim unavailable; no replay is allowed")
@@ -328,7 +422,7 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 		if err != nil {
 			return err
 		}
-		receipt = VerificationReceipt{Version: 1, TicketSHA256: sha, LaunchSHA256: launchSHA,
+		receipt = VerificationReceipt{Version: 2, TicketSHA256: sha, LaunchSHA256: launchSHA,
 			ClaimSHA256: claimSHA, InvocationID: invocation, HelperPID: claim.HelperPID}
 		return nil
 	})
@@ -344,24 +438,28 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 		_, err := writeVerificationArtifact(retained, "receipt.json", receipt)
 		resultErr = errors.Join(resultErr, err)
 	}()
+	checkAuthority := func(dir *os.Root, sha string) error {
+		if err := verificationNotStopped(dir); err != nil {
+			return err
+		}
+		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
+		if err != nil || launchSHA != receipt.LaunchSHA256 {
+			return errors.New("verification launch authority changed")
+		}
+		var claim verificationClaim
+		claimSHA, err := readVerificationArtifact(dir, "claim.json", &claim)
+		if err != nil || claimSHA != receipt.ClaimSHA256 {
+			return errors.New("verification helper claim changed")
+		}
+		var prepared verificationPrepared
+		preparedSHA, err := readVerificationArtifact(dir, "prepared.json", &prepared)
+		if err != nil || preparedSHA != receipt.PreparedSHA256 {
+			return errors.New("verification source preparation record changed")
+		}
+		return nil
+	}
 	guard := func() error {
-		return withVerification(ctx, ticket, func(dir *os.Root, sha string) error {
-			launchSHA, err := readVerificationLaunch(dir, sha, invocation)
-			if err != nil || launchSHA != receipt.LaunchSHA256 {
-				return errors.New("verification launch authority changed")
-			}
-			var claim verificationClaim
-			claimSHA, err := readVerificationArtifact(dir, "claim.json", &claim)
-			if err != nil || claimSHA != receipt.ClaimSHA256 {
-				return errors.New("verification helper claim changed")
-			}
-			var prepared verificationPrepared
-			preparedSHA, err := readVerificationArtifact(dir, "prepared.json", &prepared)
-			if err != nil || preparedSHA != receipt.PreparedSHA256 {
-				return errors.New("verification source preparation record changed")
-			}
-			return nil
-		})
+		return withVerification(ctx, ticket, checkAuthority)
 	}
 	stage = "preparation"
 	w, err := OpenCaptured(ctx, ticket.Root, ticket.Request, parent)
@@ -375,14 +473,34 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 		return receipt, err
 	}
 	stage = "execution"
+	processSHA := ""
+	control := func(ordinal int) evidence.CriterionStartControl {
+		return func(start func() (procctl.Spawned, error), release func() error) error {
+			processSHA = ""
+			return withVerification(ctx, ticket, func(dir *os.Root, sha string) error {
+				if err := checkAuthority(dir, sha); err != nil {
+					return err
+				}
+				sp, err := start()
+				if err != nil {
+					return err
+				}
+				processSHA, err = writeVerificationArtifact(dir, fmt.Sprintf("process-%03d.json", ordinal), verificationProcess{1, receipt.ClaimSHA256, ordinal, sp})
+				if err != nil {
+					return err
+				}
+				return release()
+			})
+		}
+	}
 	_, resultErr = verifyCaptured(ctx, w, criteria, guard, func(ordinal int, execution Execution) error {
-		step := verificationStep{1, receipt.ClaimSHA256, ordinal, receipt.LastSHA256, execution}
+		step := verificationStep{2, receipt.ClaimSHA256, ordinal, receipt.LastSHA256, execution, processSHA}
 		sha, err := writeVerificationArtifact(retained, fmt.Sprintf("step-%03d.json", ordinal), step)
 		if err == nil {
 			receipt.Steps, receipt.LastSHA256 = ordinal, sha
 		}
 		return err
-	})
+	}, control)
 	if resultErr == nil {
 		stage = "authority"
 		resultErr = guard()
@@ -410,7 +528,7 @@ func ReadCapturedVerification(ctx context.Context, ticket VerificationTicket, in
 		if err != nil {
 			return err
 		}
-		if claim.Version != 1 || claim.TicketSHA256 != ticketSHA || claim.LaunchSHA256 != launchSHA || claim.HelperPID <= 0 || claim.At.IsZero() {
+		if (claim.Version != 1 && claim.Version != 2) || claim.TicketSHA256 != ticketSHA || claim.LaunchSHA256 != launchSHA || claim.HelperPID <= 0 || claim.At.IsZero() {
 			return errors.New("invalid verification helper claim")
 		}
 		previous := ""
@@ -424,8 +542,17 @@ func ReadCapturedVerification(ctx context.Context, ticket VerificationTicket, in
 			if err != nil {
 				return err
 			}
-			if step.Version != 1 || step.Ordinal != ordinal || step.ClaimSHA256 != claimSHA || step.PreviousSHA256 != previous {
+			if step.Version != claim.Version || step.Ordinal != ordinal || step.ClaimSHA256 != claimSHA || step.PreviousSHA256 != previous {
 				return errors.New("verification execution journal has a gap or changed lineage")
+			}
+			if claim.Version == 1 && step.ProcessSHA256 != "" {
+				return errors.New("legacy verification contains mixed process-control history")
+			}
+			if claim.Version == 2 && (step.ProcessSHA256 != "" || step.Execution.Complete) {
+				_, processSHA, err := readVerificationProcess(dir, claimSHA, ordinal)
+				if err != nil || processSHA != step.ProcessSHA256 {
+					return errors.New("verification execution lost its registered process")
+				}
 			}
 			index, offset := (ordinal-1)/4, (ordinal-1)%4
 			if offset == 0 {
@@ -450,7 +577,7 @@ func ReadCapturedVerification(ctx context.Context, ticket VerificationTicket, in
 		if err != nil {
 			return err
 		}
-		names, readErr := entries.Readdirnames(6 + 4*MaxCriteria)
+		names, readErr := entries.Readdirnames(7 + 8*MaxCriteria)
 		closeErr := entries.Close()
 		if errors.Is(readErr, io.EOF) {
 			readErr = nil
@@ -458,26 +585,41 @@ func ReadCapturedVerification(ctx context.Context, ticket VerificationTicket, in
 		if err = errors.Join(readErr, closeErr); err != nil {
 			return err
 		}
-		allowed := map[string]bool{"request.json": true, "launch.json": true, "claim.json": true, "prepared.json": true, "receipt.json": true}
+		allowed := map[string]bool{"request.json": true, "launch.json": true, "claim.json": true, "prepared.json": true, "receipt.json": true, "stop.json": true}
 		for i := 1; i <= steps; i++ {
 			allowed[fmt.Sprintf("step-%03d.json", i)] = true
 		}
-		if len(names) > 5+4*MaxCriteria {
+		if claim.Version == 2 {
+			for i := 1; i <= steps+1 && i <= 4*len(ticket.Request.Criteria); i++ {
+				allowed[fmt.Sprintf("process-%03d.json", i)] = true
+			}
+		}
+		if len(names) > 6+8*MaxCriteria {
 			return errors.New("verification journal exceeds its inventory bound")
 		}
 		for _, name := range names {
 			if !allowed[name] {
 				return errors.New("verification journal contains unexpected or out-of-order artifacts")
 			}
+			for ordinal := 1; ordinal <= steps+1 && ordinal <= 4*len(ticket.Request.Criteria); ordinal++ {
+				if name == fmt.Sprintf("process-%03d.json", ordinal) {
+					if _, _, err := readVerificationProcess(dir, claimSHA, ordinal); err != nil {
+						return err
+					}
+				}
+			}
 		}
 		if _, err = readVerificationArtifact(dir, "receipt.json", &receipt); err != nil {
 			return fmt.Errorf("verification terminal receipt unavailable; retain partial observations: %w", err)
 		}
-		if receipt.Version != 1 || receipt.TicketSHA256 != ticketSHA || receipt.LaunchSHA256 != launchSHA || receipt.ClaimSHA256 != claimSHA || receipt.InvocationID != invocation || receipt.HelperPID != claim.HelperPID || receipt.FinishedAt.Before(claim.At) || receipt.Steps != steps || receipt.LastSHA256 != previous {
+		if receipt.Version != claim.Version || receipt.TicketSHA256 != ticketSHA || receipt.LaunchSHA256 != launchSHA || receipt.ClaimSHA256 != claimSHA || receipt.InvocationID != invocation || receipt.HelperPID != claim.HelperPID || receipt.FinishedAt.Before(claim.At) || receipt.Steps != steps || receipt.LastSHA256 != previous {
 			return errors.New("verification receipt differs from the retained execution journal")
 		}
 		if receipt.FailureStage != "" {
 			return errors.New("verification retained a helper failure; no acceptance or retry is authorized")
+		}
+		if err := verificationNotStopped(dir); err != nil {
+			return err
 		}
 		if !filepath.IsAbs(receipt.BeforeRoot) || !filepath.IsAbs(receipt.AfterRoot) || receipt.BeforeRoot == receipt.AfterRoot || filepath.Dir(receipt.BeforeRoot) != filepath.Dir(receipt.AfterRoot) {
 			return errors.New("verification receipt lacks its distinct prepared source roots")

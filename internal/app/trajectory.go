@@ -14,6 +14,12 @@ import (
 )
 
 func runTrajectory(ctx context.Context, args []string, out, errout io.Writer) int {
+	if len(args) > 0 && args[0] == "verify" {
+		return runTrajectoryVerify(ctx, args[1:], out, errout)
+	}
+	if len(args) > 0 && args[0] == "verify-helper" {
+		return runTrajectoryVerifyHelper(ctx, args[1:], out, errout)
+	}
 	supported, attended := budgetAttendance()
 	return runTrajectoryControl(ctx, args, out, errout, supported && attended)
 }
@@ -22,7 +28,7 @@ func runTrajectory(ctx context.Context, args []string, out, errout io.Writer) in
 // activates capture, never an operator extension or a verification verdict.
 func runTrajectoryControl(ctx context.Context, args []string, out, errout io.Writer, attended bool) int {
 	if len(args) == 0 || (args[0] != "initialize" && args[0] != "configure" && args[0] != "inspect") {
-		fmt.Fprintln(errout, "usage: parley trajectory initialize --dir DIR --idea ID --max-fixups N --yes; parley trajectory configure --dir DIR --idea ID --implementer ID [--policy-sha256 SHA --cycle-policy-sha256 SHA --yes]; parley trajectory inspect --dir DIR --idea ID")
+		fmt.Fprintln(errout, "usage: parley trajectory initialize --dir DIR --idea ID --max-fixups N --yes; parley trajectory configure --dir DIR --idea ID --implementer ID [--policy-sha256 SHA --cycle-policy-sha256 SHA --yes]; parley trajectory inspect --dir DIR --idea ID; parley trajectory verify --dir DIR --idea ID --verifier ID --yes")
 		return 2
 	}
 	f := flag.NewFlagSet("trajectory "+args[0], flag.ContinueOnError)
