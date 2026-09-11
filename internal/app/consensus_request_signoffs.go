@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -480,7 +479,7 @@ func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agen
 	}
 
 	if agents.InteractiveInvokeOrDefault(agent.InteractiveInvoke) == agents.InteractiveInvokeSpawnTTY {
-		if err := runInteractiveTTY(ctx, rootAbs, agent, packet, consensusPath); err != nil {
+		if err := runInteractiveTTY(ctx, rootAbs, agent, prompt, consensusPath); err != nil {
 			return signoffRunResult{}, err
 		}
 	}
@@ -552,21 +551,11 @@ func writeSignoffHandoff(rootAbs, runID string, agent agents.Discovery, prompt, 
 	})
 }
 
-func runInteractiveTTY(ctx context.Context, rootAbs string, agent agents.Discovery, packet runner.HandoffPacket, targetPath string) error {
+func runInteractiveTTY(ctx context.Context, rootAbs string, agent agents.Discovery, prompt, targetPath string) error {
 	if !isTerminal(os.Stdin) || !isTerminal(os.Stdout) {
 		return fmt.Errorf("%s interactive_invoke=spawn-tty requires a terminal", agent.ID)
 	}
-	command := strings.TrimSpace(agent.InteractiveCommand)
-	if command == "" {
-		command = agent.Path
-	}
-	args := runner.ExpandInteractiveArgs(agent.InteractiveArgs, rootAbs, packet.PromptPath, targetPath)
-	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Dir = rootAbs
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := runner.RunInteractive(ctx, rootAbs, agent, prompt, targetPath, os.Stdin, os.Stdout, os.Stderr); err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}

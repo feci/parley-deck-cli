@@ -117,6 +117,17 @@ In the TUI Agents pane, use `h`, `i`, `a`, and `m` to set a session-only launch 
 
 `interactive_invoke = "spawn-tty"` may be used when the command should be started attached to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
 
+Spawning a protocol task requires configured prompt delivery: use
+`interactive_prompt_mode = "file"` with `{prompt_path}` in `interactive_args`, or
+`interactive_prompt_mode = "arg"` with `{prompt}`. The argument template must use
+the selected CLI's actual prompt-file or prompt-argument option. Missing delivery
+refuses the task before spawn; `none` remains valid for print-only handoffs. A
+fresh live protocol is rendered at each process launch, with a separate unique
+invocation from the earlier printed handoff. Terminal descriptors are passed
+unchanged. Process lifecycle and exit are measured; terminal stream content,
+first activity, resolved model and billing remain unobserved. Terminal process
+groups are restored after exit and child groups are terminated on timeout.
+
 Provider billing and usage accounting are determined by the provider and account. Parley only makes the technical mode explicit: headless and ACP are programmatic execution; interactive/manual are user-driven handoff flows.
 
 For `consensus request-signoffs`, manual handoffs return exit code `3` after writing handoff instructions. This means the request is pending human action, not fully complete. After appending the signoff, run `parley resume <run-id>` so Parley validates the append-only change and records completion.

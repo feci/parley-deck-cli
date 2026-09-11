@@ -41,6 +41,9 @@ type launchEvidence struct {
 	info       LaunchInfo
 	once       sync.Once
 	finishErr  error
+	// A terminal's file descriptors must reach the child unchanged. Such a
+	// process has lifecycle evidence but no captured output stream evidence.
+	directTerminal bool
 }
 
 // Integrity errors deliberately do not unwrap an ordinary process exit: a
@@ -102,6 +105,9 @@ func (l *launchEvidence) started(pid int) error {
 func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 	l.once.Do(func() {
 		usage, observation, providerFailure := l.collector.Result()
+		if l.directTerminal {
+			observation.StreamCoverage = "not-observed-terminal"
+		}
 		status, failure := "process-exited", ""
 		if runErr == nil && l.invocation.Snapshot().StartedAt == nil {
 			status = "unobserved-handoff"

@@ -224,6 +224,105 @@ func RunMeasured(parent context.Context, opts ExecOptions) (record telemetry.Rec
 	return record, returnErr
 }
 
+// RunInteractive measures the process separately from a previously printed
+// handoff. It renders a fresh prompt at the process boundary and passes real
+// terminal descriptors directly; wrapping them in a writer would turn them
+// into pipes and break terminal detection and interaction in the child.
+// Stream usage remains explicitly unobserved. The child owns its process group
+// so cancellation reaps its descendants and restores the caller's terminal.
+func RunInteractive(parent context.Context, root string, agent agents.Discovery, prompt, targetPath string, stdin, stdout, stderr *os.File) (returnedErr error) {
+	ctx, cancel := context.WithTimeout(parent, time.Duration(agents.InteractiveTimeoutMSOrDefault(agent.InteractiveTimeoutMS))*time.Millisecond)
+	defer cancel()
+	placeholder := ""
+	switch agents.InteractivePromptModeOrDefault(agent.InteractivePromptMode) {
+	case agents.InteractivePromptFile:
+		placeholder = "{prompt_path}"
+	case agents.InteractivePromptArg:
+		placeholder = "{prompt}"
+	}
+	deliversPrompt := false
+	for _, arg := range agent.InteractiveArgs {
+		if placeholder != "" && strings.Contains(arg, placeholder) {
+			deliversPrompt = true
+		}
+	}
+	if !deliversPrompt {
+		info, _ := ctx.Value(launchInfoKey{}).(LaunchInfo)
+		info.Context = telemetry.Context{Mode: "refused", FallbackReason: telemetry.String("interactive-prompt-delivery-unconfigured")}
+		evidence, err := beginLaunch(WithLaunchInfo(ctx, info), root, "interactive", agent)
+		if err != nil {
+			return err
+		}
+		refusal := &protocolContextError{reason: "interactive-prompt-delivery-unconfigured"}
+		if err := evidence.finish(refusal, ctx.Err(), nil); err != nil {
+			return err
+		}
+		return refusal
+	}
+	ctx, prepared, evidence, err := beginProtocolLaunch(ctx, root, "interactive", agent, prompt)
+	if err != nil {
+		return err
+	}
+	evidence.directTerminal = true
+	var cmd *exec.Cmd
+	defer func() {
+		var code *int
+		if cmd != nil {
+			code = commandExitCode(cmd)
+		}
+		if err := evidence.finish(returnedErr, ctx.Err(), code); err != nil {
+			returnedErr = err
+		}
+	}()
+	if stdin == nil || stdout == nil || stderr == nil {
+		return errors.New("interactive launch requires input, output and error descriptors")
+	}
+	promptPath := filepath.Join(evidence.invocation.Dir, "interactive-prompt.md")
+	if err := writeHandoffPrompt(promptPath, []byte(prepared)); err != nil {
+		return err
+	}
+	command := strings.TrimSpace(agent.InteractiveCommand)
+	if command == "" {
+		command = agent.Path
+	}
+	args := ExpandInteractiveArgs(agent.InteractiveArgs, root, promptPath, targetPath)
+	if placeholder == "{prompt}" {
+		for i := range args {
+			args[i] = strings.ReplaceAll(args[i], "{prompt}", prepared)
+		}
+	}
+	cmd = exec.CommandContext(ctx, command, args...)
+	cmd.Dir = root
+	cmd.Env = append(cleanParticipantEnv(agent.Adapter(), os.Environ()), procctl.MarkerEnv(evidence.info.RunID, agent.ID, evidence.invocation.ID)...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
+	restore, err := procctl.AttachTerminal(cmd, stdin)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := restore(); err != nil {
+			returnedErr = errors.Join(returnedErr, errors.New("cannot restore terminal foreground process group"))
+		}
+	}()
+	// The child PID is its newly created process-group ID even if it exits
+	// before an identity probe can run. Never inherit the parent's group here.
+	cmd.Cancel = func() error {
+		if cmd.Process == nil {
+			return os.ErrProcessDone
+		}
+		return procctl.KillGroup(procctl.Spawned{PID: cmd.Process.Pid, PGID: cmd.Process.Pid})
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	if err := evidence.started(cmd.Process.Pid); err != nil {
+		_ = cmd.Cancel()
+		_ = cmd.Wait()
+		return err
+	}
+	return cmd.Wait()
+}
+
 // ProbeCommandFor instruments a capability/readiness probe that can run before
 // a protocol workspace exists. It carries no task protocol and cannot attest
 // one. Protocol task callers must use CommandFor instead.

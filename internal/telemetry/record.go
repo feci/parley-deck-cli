@@ -58,6 +58,7 @@ type Usage struct {
 }
 
 type Observation struct {
+	StreamCoverage  string `json:"stream_coverage,omitempty"`
 	FirstActivityMS *int64 `json:"first_activity_ms"`
 	StdoutBytes     int64  `json:"stdout_bytes"`
 	StderrBytes     int64  `json:"stderr_bytes"`
@@ -286,6 +287,11 @@ func (i *Invocation) Finish(outcome Outcome) error {
 	}
 	outcome.ArtifactSHA256 = safeHash(outcome.ArtifactSHA256)
 	outcome.ExitCode = clone(outcome.ExitCode)
+	switch outcome.Observation.StreamCoverage {
+	case "", "captured", "not-observed-terminal":
+	default:
+		outcome.Observation.StreamCoverage = "unknown"
+	}
 	outcome.Observation.FirstActivityMS = clone(outcome.Observation.FirstActivityMS)
 	outcome.Usage = CleanUsage(outcome.Usage)
 	now := time.Now().UTC()

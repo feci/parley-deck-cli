@@ -548,3 +548,51 @@ Resume from the current-state checklist above. Preserve Kimi checkpoint 7f2676f
 and its independent rejection note. The pending user proposal remains in
 inbox/codex-1-to-user_meta-protocol-change-evidence-first-efficiency_recovery-decisions.md;
 there is no approval of a quorum or experimental-arm change by elapsed time.
+
+### 2026-09-11 — continued six-priority implementation
+
+The user renewed the instruction to finish all six priorities and resume existing
+work. Integration HEAD a2e7f5d and draft PR #73 were revalidated. The existing
+Hermes-to-Zcode / full-four amendment decision remains pending; unrelated work
+continues with existing owners. No historical FINAL or signatures change.
+
+Codex next works on the remaining interactive spawn-TTY launch telemetry in
+previously claimed runner/launch.go, launch_test.go, handoff.go, handoff_test.go,
+and app/consensus_request_signoffs.go and its tests. Preserve actual terminal
+file descriptors while recording the separate process invocation; do not count
+the unobserved handoff as execution or invent unobserved stream usage. Revalidate
+the live rendered protocol and handoff before the process starts. Test actual
+child success, failed start, timeout cleanup and required evidence failures.
+
+Kimi's preserved 7f2676f checkpoint now has the current integration merged into
+its isolated worktree without conflicts. Retry only its unfinished evidence
+corrections through a newly built, uninstalled measured launcher. All ownership
+boundaries remain unchanged.
+
+Additional non-overlapping Codex allocation before edits: internal/procctl/terminal_unix.go
+and terminal_windows.go for foreground terminal ownership with process-group cleanup.
+The terminal launch keeps actual descriptors; it must also restore the prior foreground
+group after exit and kill only the owned child group on timeout. A constant shell
+no-op used to restore foreground executes no model task and is not agent telemetry.
+
+Additional Codex allocation before editing: docs/agent-runtime-configuration.md
+for the spawn-TTY prompt delivery requirement. A process with no configured
+file/argument delivery cannot claim receipt of the rendered protocol. Print-only
+handoffs remain user-driven; measured protocol-task spawning requires an explicit
+matching prompt placeholder.
+
+The terminal process path now creates its own invocation, re-renders current
+protocol context, and requires a matching file/argument prompt delivery contract.
+It preserves all three real terminal descriptors and explicitly labels stream
+observations unavailable. Unix foreground ownership is restored through the
+os/exec child setup, avoiding process-wide signal-handler mutation; timeouts
+terminate the owned child group. Normal child/failed-start/nonzero/timeout and
+required-evidence failure fixtures pass, as do the relevant signoff/handoff
+checks. A compiled test binary under Python pty.fork verified actual child TTY
+detection, child terminal input and restored-parent terminal input on Darwin.
+An initial harness using go test directly failed because the Go test launcher
+redirects the test binary's stdin; the corrected harness executes the compiled
+binary under the PTY and passes. The failed observation is not discarded.
+Focused race checks and vet passed before the final delivery-contract change;
+current full-suite and independent owner review are still required. Windows
+cross-compilation passed before that final change; Windows runtime is untested.

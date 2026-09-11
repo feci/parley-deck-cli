@@ -5,13 +5,161 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/telemetry"
 )
+
+func interactiveFixture(t *testing.T, root, script string) (agents.Discovery, *os.File) {
+	t.Helper()
+	file, err := os.CreateTemp(root, "terminal-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { file.Close() })
+	agent := telemetryShell(script, false)
+	agent.LaunchMode = agents.LaunchInteractive
+	agent.InteractiveCommand = "/bin/sh"
+	agent.InteractivePromptMode = agents.InteractivePromptFile
+	agent.InteractiveArgs = []string{"-c", script, "fixture", "{prompt_path}"}
+	return agent, file
+}
+
+func TestInteractiveProcessHasDistinctFreshEvidence(t *testing.T) {
+	root := t.TempDir()
+	writeLaunchProtocol(t, root)
+	agent, terminal := interactiveFixture(t, root, `cat "$1"; printf '\nchild output\n'`)
+	packet, err := WriteHandoffPacket(HandoffOptions{Root: root, RunID: "interactive", Agent: agent, Prompt: "old task"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A printed handoff is not the prompt authority of a later process launch.
+	if err := os.WriteFile(packet.PromptPath, []byte("tampered handoff"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ctx := WithLaunchInfo(context.Background(), LaunchInfo{RunID: "interactive", Phase: "consensus"})
+	if err := RunInteractive(ctx, root, agent, "current task", "", terminal, terminal, terminal); err != nil {
+		t.Fatal(err)
+	}
+	output, err := os.ReadFile(terminal.Name())
+	if err != nil || !strings.Contains(string(output), "Mandatory source obligation.") || !strings.Contains(string(output), "current task") || strings.Contains(string(output), "tampered handoff") {
+		t.Fatalf("process prompt: %s; %v", output, err)
+	}
+	records := terminalRecords(t, root)
+	if len(records) != 2 {
+		t.Fatalf("expected handoff plus process, got %d", len(records))
+	}
+	for _, r := range records {
+		if r.InvocationID == packet.InvocationID {
+			if r.StartedAt != nil || r.Outcome.Status != "unobserved-handoff" {
+				t.Fatalf("handoff claimed execution: %+v", r)
+			}
+			continue
+		}
+		if r.StartedAt == nil || r.PID == nil || r.Outcome.ExitCode == nil || *r.Outcome.ExitCode != 0 || r.Outcome.Status != "process-exited" || r.Metadata.Context.Mode != "full" {
+			t.Fatalf("missing process evidence: %+v", r)
+		}
+		if r.Outcome.Observation.StreamCoverage != "not-observed-terminal" || r.Outcome.Observation.FirstActivityMS != nil || r.Outcome.Usage.CostUSD != nil || r.Outcome.Usage.ReportedModel != nil {
+			t.Fatalf("invented terminal observations: %+v", r.Outcome)
+		}
+	}
+}
+
+func TestInteractiveProcessFailureEvidence(t *testing.T) {
+	for _, scenario := range []string{"missing-delivery", "missing-authority", "failed-start", "failed-exit", "timeout", "start-write", "terminal-write"} {
+		t.Run(scenario, func(t *testing.T) {
+			root := t.TempDir()
+			if scenario != "missing-authority" {
+				writeLaunchProtocol(t, root)
+			}
+			script := "exit 7"
+			if scenario == "timeout" || scenario == "start-write" {
+				script = "exec sleep 20"
+			}
+			agent, terminal := interactiveFixture(t, root, script)
+			if scenario == "missing-delivery" {
+				agent.InteractivePromptMode = agents.InteractivePromptNone
+			}
+			if scenario == "failed-start" {
+				agent.InteractiveCommand = filepath.Join(root, "missing")
+			}
+			ctx := WithLaunchInfo(context.Background(), LaunchInfo{Observe: func(r telemetry.Record) {
+				if r.Type == "invocation.requested" && (scenario == "start-write" || scenario == "terminal-write") {
+					name := "started.json"
+					if scenario == "terminal-write" {
+						name = "terminal.json"
+					}
+					if err := os.Mkdir(filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, name), 0o700); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}})
+			if scenario == "timeout" {
+				agent.InteractiveTimeoutMS = 100
+			}
+			if err := RunInteractive(ctx, root, agent, "task", "", terminal, terminal, terminal); err == nil {
+				t.Fatal("invalid process accepted")
+			}
+			if scenario == "terminal-write" {
+				return
+			}
+			records := terminalRecords(t, root)
+			if len(records) != 1 || records[0].Outcome.Status != "failed" {
+				t.Fatalf("missing failure: %+v", records)
+			}
+			want := map[string]string{"missing-delivery": "protocol_context_refused", "missing-authority": "protocol_context_refused", "failed-start": "start_failure", "failed-exit": "process_failure", "timeout": "timeout", "start-write": "telemetry_failure"}[scenario]
+			if got := records[0].Outcome.FailureClass; got == nil || *got != want {
+				t.Fatalf("failure class: %v, want %s", got, want)
+			}
+		})
+	}
+}
+
+func TestInteractiveTimeoutKillsDescendants(t *testing.T) {
+	root := t.TempDir()
+	writeLaunchProtocol(t, root)
+	agent, terminal := interactiveFixture(t, root, `(sleep 2; touch survived) & wait`)
+	agent.InteractiveTimeoutMS = 150
+	if err := RunInteractive(context.Background(), root, agent, "task", "", terminal, terminal, terminal); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("timeout did not fail: %v", err)
+	}
+	time.Sleep(2100 * time.Millisecond)
+	if _, err := os.Stat(filepath.Join(root, "survived")); !os.IsNotExist(err) {
+		t.Fatal("interactive descendant survived cancellation")
+	}
+}
+
+// Run with PARLEY_TTY_TEST=1 under a real controlling PTY. The external harness
+// supplies two lines and a hard deadline: both the child and the restored parent
+// must be able to read the terminal, and all child descriptors must remain TTYs.
+func TestInteractiveRealTerminal(t *testing.T) {
+	if os.Getenv("PARLEY_TTY_TEST") != "1" {
+		t.Skip("requires a controlling PTY harness")
+	}
+	root := t.TempDir()
+	writeLaunchProtocol(t, root)
+	agent, _ := interactiveFixture(t, root, `test -t 0 && test -t 1 && test -t 2 && IFS= read -r answer && test "$answer" = child`)
+	agent.InteractiveTimeoutMS = 5000
+	if err := RunInteractive(context.Background(), root, agent, "task", "", os.Stdin, os.Stdout, os.Stderr); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", `IFS= read -r answer && test "$answer" = parent`)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("parent terminal not restored: %v", err)
+	}
+	r := terminalRecords(t, root)[0]
+	if r.StartedAt == nil || r.Outcome.Observation.StreamCoverage != "not-observed-terminal" {
+		t.Fatalf("missing terminal evidence: %+v", r)
+	}
+}
 
 func TestTrackedCommandForRunAndCombinedOutput(t *testing.T) {
 	for _, combined := range []bool{false, true} {
