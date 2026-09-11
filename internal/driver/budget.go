@@ -9,6 +9,15 @@ import (
 // Each Advance uses a private adapter copy. Concurrent callers never mutate the
 // shared Driver configuration while nested operations reuse one step session.
 func (d *Driver) withStepBudget(ctx context.Context) (context.Context, *Driver, func(), error) {
+	if d.cfg.MaxCostUSD != 0 {
+		monetary, err := budget.LoadLaunchBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug)
+		if err == nil {
+			err = budget.RequireMonetaryBinding(monetary, d.cfg.MaxCostUSD)
+		}
+		if err != nil {
+			return ctx, d, func() {}, err
+		}
+	}
 	b, err := budget.EnsureStepBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug, d.cfg.MaxDriverSteps, d.cfg.MaxWallClock)
 	if err != nil {
 		return ctx, d, func() {}, err

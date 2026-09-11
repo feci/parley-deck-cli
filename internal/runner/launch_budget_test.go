@@ -13,6 +13,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
@@ -92,21 +93,31 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("POSIX fixture commands; Windows cross-build is separate")
 	}
-	for _, policy := range []string{"context", "launch", "step"} {
-		configured := policy == "launch"
+	t.Setenv(config.EnvParleyHome, t.TempDir())
+	t.Setenv(config.EnvAgentConfig, "")
+	for _, policy := range []string{"context", "launch", "step", "monetary"} {
+		configured := policy == "launch" || policy == "monetary"
 		steps := policy == "step"
 		for _, surface := range []string{"manual", "round-process", "consult", "probe", "interactive", "acp"} {
 			name := surface + "-" + policy
 			t.Run(name, func(t *testing.T) {
 				root := t.TempDir()
 				writeLaunchProtocol(t, root)
+				frozen := budget.LaunchPolicy{MaxLaunches: 1}
+				if policy == "monetary" {
+					reserve := int64(1000000)
+					frozen = budget.LaunchPolicy{MaxCostMicros: reserve, ReserveMicros: &reserve}
+					if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "agents.toml"), []byte("[defaults.loop]\nmax_cost_usd = 1\n"), 0600); err != nil {
+						t.Fatal(err)
+					}
+				}
 				ledger := budget.Store{Dir: filepath.Join(t.TempDir(), "shared-ledger"), Scope: "idea:fixture"}
 				limits := budget.Limits{Actions: map[budget.Kind]int{budget.Launch: 1}}
 				ctx := WithLaunchBudget(context.Background(), LaunchBudget{Store: ledger, Limits: limits})
 				// The injected copy must survive both caller mutation and metadata replacement.
 				limits.Actions[budget.Launch] = 100
 				if configured && surface != "acp" {
-					binding, err := budget.ConfigureLaunchBudget(context.Background(), root, "", budget.LaunchPolicy{MaxLaunches: 1})
+					binding, err := budget.ConfigureLaunchBudget(context.Background(), root, "", frozen)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -169,7 +180,7 @@ func TestLaunchBudgetAcrossProcessBoundaries(t *testing.T) {
 						t.Fatal(err)
 					}
 					if configured {
-						binding, err := budget.ConfigureLaunchBudget(context.Background(), root, idea.Slug, budget.LaunchPolicy{MaxLaunches: 1})
+						binding, err := budget.ConfigureLaunchBudget(context.Background(), root, idea.Slug, frozen)
 						if err != nil {
 							t.Fatal(err)
 						}

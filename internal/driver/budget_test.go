@@ -9,6 +9,20 @@ import (
 	"time"
 )
 
+func TestDriverMonetaryLimitRequiresPersistentReservationPolicy(t *testing.T) {
+	parts := []string{"codex", "claude"}
+	ideaDir, runDir := setupIdea(t, parts, "")
+	writeAll(t, ideaDir, 1, parts)
+	appendEvent(t, runDir, "round.completed", "round-01")
+	fr := &fakeRunner{}
+	d := newTestDriver(ideaDir, runDir, parts, 3, true, fr)
+	d.cfg.MaxCostUSD = 1
+	action, _, err := d.Advance(context.Background())
+	if !errors.Is(err, budget.ErrUnknownCost) || action != ActionEscalated || len(fr.calls) != 0 {
+		t.Fatalf("unreserved monetary dispatch: %s %v calls=%v", action, err, fr.calls)
+	}
+}
+
 func TestDriverLifetimeStepCapSurvivesRunAndDirectResume(t *testing.T) {
 	parts := []string{"codex", "claude"}
 	ideaDir, runDir := setupIdea(t, parts, "")

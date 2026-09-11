@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,6 +9,14 @@ import (
 
 	"parley-deck-cli/internal/protocol"
 )
+
+func TestLoopDefaultsMissingExplicitConfigIsNotUnlimited(t *testing.T) {
+	t.Setenv(EnvParleyHome, t.TempDir())
+	t.Setenv(EnvAgentConfig, "missing-required.toml")
+	if _, err := LoadDefaults(t.TempDir()); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("missing explicit configuration must fail instead of silently losing its ceilings: %v", err)
+	}
+}
 
 // LE-5: [defaults.loop] parses and merges into CentralDefaults.
 func TestLoadDefaultsLoopBlock(t *testing.T) {

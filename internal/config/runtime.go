@@ -422,9 +422,6 @@ func LoadDefaults(root string) (CentralDefaults, error) {
 			if item.optional && errors.Is(err, os.ErrNotExist) {
 				continue
 			}
-			if errors.Is(err, os.ErrNotExist) {
-				continue
-			}
 			return out, err
 		}
 		var cfg fileConfig

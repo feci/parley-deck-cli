@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/config"
 )
 
 // LaunchBudget is trusted orchestration policy. It is not read from participant
@@ -85,6 +86,15 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		return &launchBudgetError{cause: err}
+	}
+	defaults, err := config.LoadDefaults(root)
+	if err != nil {
+		// Configuration errors must not silently turn a monetary ceiling off.
+		// Do not copy parser excerpts or configuration contents into diagnostics.
+		return &launchBudgetError{cause: errors.New("cannot read required launch budget defaults; inspect the layered runtime configuration")}
+	}
+	if err := budget.RequireMonetaryBinding(bound, defaults.MaxCostUSD); err != nil {
 		return &launchBudgetError{cause: err}
 	}
 	if bound != nil {

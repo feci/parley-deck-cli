@@ -1249,3 +1249,28 @@ delivery/2026-09-05/{PROGRESS.md,priorities.json,report.html}, and the draft PR
 description. Check retained validation hashes, rebuild the report and run its
 existing tests before publication. Prior browser evidence describes the previous
 report hash; a content refresh does not inherit exact-file browser verification.
+
+### Monetary default mapping allocation — September 11
+
+Codex claims the serialized monetary mapping boundary before edits:
+internal/budget/monetary_binding{,_test}.go, internal/runner/launch_budget.go,
+internal/runner/monetary_defaults_test.go, internal/driver/budget.go and its
+owned tests, internal/config/runtime.go and loop_defaults_test.go, and the
+runtime guide. The current loop-only MaxCostUSD check is insufficient for a
+first manual launch or a new run. Reproduce that with actual local process
+fixtures, then require a matching persistent finite launch policy with an
+explicit conservative reservation before honoring a nonzero configured dollar
+ceiling. Do not invent a per-call price or auto-configure a real grant.
+
+Resolve layered defaults at the common launch boundary using the captured live
+origin, reject unreadable/invalid required configuration, and retain terminal
+refusal evidence. Driver-supplied monetary limits must use the same requirement.
+Explicit zero defaults do not remove a saved policy. Convert configured dollar
+ceilings conservatively to integer microdollars; sub-microdollar, nonfinite,
+negative and overflowing inputs refuse rather than becoming unlimited.
+Validate retries, omitted defaults, shared worktrees, stricter/different frozen
+caps, handoff/no-spawn behavior and local child execution. This does not migrate
+legacy history, issue an extension, or establish independent acceptance.
+Additional test allocation: extend internal/runner/launch_budget_test.go's
+existing six-surface process fixture to run with a configured monetary default,
+an explicit conservative reservation and no launch-count cap.
