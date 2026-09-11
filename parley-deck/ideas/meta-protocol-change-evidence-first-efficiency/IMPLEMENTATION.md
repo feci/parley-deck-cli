@@ -4,7 +4,7 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 195fbed
+head-commit: 3c6da49
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -923,3 +923,27 @@ costs, known CLI-estimate subtotal USD 42.5625535 and unknown total cost. Origin
 records, failed writes and provider-reported internal model usage are retained.
 No participant call remains active at this checkpoint. The exact packet trial,
 full-six pilot and pending quorum/pilot amendment decisions are unchanged.
+
+
+### Serialized report publication allocation — 2026-09-11
+
+Before edits, Codex records a serialized integration override under
+parley-worktrees Sections 5/6 for internal/evidence/report.go, new
+internal/evidence/report_guard.go and report_guard_test.go, and
+internal/app/driver_checks.go and driver_evidence.go. Kimi's canonical own
+source/handoffs remain preserved and no owner source task is concurrent.
+Additional non-overlapping Codex paths: internal/budget/resource_guard.go,
+internal/app/evidence_publication_test.go. Existing evidence_verify.go/tests
+and driver_impl.go allocations cover verifier and Complete wiring.
+
+Plan: reuse the tested pinned host-local budget locking primitive for a
+synchronization-only guard with no monetary accounting. Keep metadata in git
+administration where available (per-report canonical-path identity), and
+initialize a stable local runtime guard before checks in non-git fixtures.
+All cooperative report writers, evidence-table writes and completion publication
+share that guard. Verification publishes with byte-exact compare-and-swap and
+keeps the guard through receipt persistence. A persisted driver acceptance
+binds completion to the report actually reconciled against that receipt.
+Completed reports cannot be overwritten by a delayed writer. No same-UID or
+distributed-host authentication is claimed. Require actual process contention,
+failure/recovery and post-completion tests, then independent source review.
