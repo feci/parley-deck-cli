@@ -10,6 +10,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/trajectory"
@@ -85,6 +86,7 @@ func TestTrajectoryRuntimeManualAndGroupedFixupCaptureActualFailure(t *testing.T
 			if a.Launch == nil || a.Terminal == nil || a.Terminal.Status != "failed" || a.Terminal.ExitCode == nil || *a.Terminal.ExitCode != 7 || a.After == nil || a.After.Clean {
 				t.Fatalf("actual failed patch not retained: %+v", a)
 			}
+			restoreRuntimeAttempt(t, root, idea.Slug, a, "broken\n")
 			records := terminalRecords(t, root)
 			if len(records) != 1 || records[0].InvocationID != a.Launch.InvocationID {
 				t.Fatalf("trajectory not tied to actual instrumented invocation: %+v", records)
@@ -124,6 +126,36 @@ func TestTrajectoryRuntimeInterruptedProcessRetainsDirtyState(t *testing.T) {
 	}
 	if content, err := os.ReadFile(filepath.Join(root, "source")); err != nil || string(content) != "interrupted\n" {
 		t.Fatalf("interrupted patch changed: %q %v", content, err)
+	}
+	restoreRuntimeAttempt(t, root, idea.Slug, a, "interrupted\n")
+}
+
+func restoreRuntimeAttempt(t *testing.T, root, idea string, a trajectory.Attempt, want string) {
+	t.Helper()
+	if a.After == nil || a.AfterArchive == nil {
+		t.Fatal("actual process output lacks a reconstructible archive")
+	}
+	b, err := budget.LoadCycleBinding(context.Background(), root, idea, budget.Fixup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(root, "source"), "later live edit\n")
+	dir := filepath.Join(filepath.Dir(b.Store.Dir), "trajectory-snapshots")
+	restored, err := trajectory.RestoreSnapshot(context.Background(), dir, *a.AfterArchive, *a.After, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, err := evidence.TreeDigest(restored)
+	if err != nil || actual != a.After.Tree.SHA256 {
+		t.Fatal("restored actual child output has another digest", err)
+	}
+	content, err := os.ReadFile(filepath.Join(restored, "source"))
+	if err != nil || string(content) != want {
+		t.Fatalf("lost actual process output after live edit: %q %v", content, err)
+	}
+	content, err = os.ReadFile(filepath.Join(root, "source"))
+	if err != nil || string(content) != "later live edit\n" {
+		t.Fatal("restoring evidence changed the live worktree")
 	}
 }
 

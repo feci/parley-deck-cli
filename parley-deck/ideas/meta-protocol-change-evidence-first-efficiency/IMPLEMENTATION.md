@@ -2036,3 +2036,75 @@ Every captured attempt stays pending until actual independent helper execution,
 durable receipt/decision publication and explicit recovery are integrated.
 All other FINAL obligations, pending recovery decisions and the older bd00188
 HTML report state remain unchanged. No final merge/release/deployment is claimed.
+
+### Reconstructible trajectory source allocation — September 11
+
+Before edits, Codex claims new internal/trajectory/{snapshot.go,snapshot_test.go},
+internal/trajectory/{state.go,state_test.go}, internal/runner/trajectory_test.go,
+internal/app/trajectory_test.go, docs/agent-runtime-configuration.md and the owned
+implementation-notes/codex-1-trajectory-snapshots-dispositions-20260911.md.
+
+Retain bounded private archives of the actual source at activation/precharge and
+terminal capture, including dirty additions, deletions, modes and supported
+relative symlinks. Use archive/tar, os.Root containment and existing synced
+publication. Bind archive bytes to source observations and recheck source drift.
+Restore only into a newly allocated empty private directory, validate paths,
+member types, counts/sizes, links and complete source digests, and never modify
+the live Git index, HEAD, branches or worktree to manufacture a clean snapshot.
+Keep archive bodies private and outside public telemetry/protocol artifacts.
+
+Version persisted trajectory state so old digest-only attempts cannot silently
+claim reconstructible contents. Archive loss/corruption/publication failure must
+leave an explicit unresolved attempt; no invented post-state or acceptance.
+Exercise actual process capture, restore-after-live-edit, removed tracked files,
+untracked files, executable bits, supported links, malformed/truncated archives,
+path traversal, symlink escape, source drift and unchanged user Git state.
+This continues AC-B2 toward independent paired verification. Snapshot restoration
+alone does not invoke a verifier, derive a final verdict or grant continuation.
+
+Before changing Git observation, Codex additionally claims
+internal/trajectory/verify.go. Pass Git's --no-optional-locks for read-only
+snapshot commands so status refreshes cannot rewrite the user's index. The
+ordinary completion evidence contract remains unchanged; trajectory observation
+may explicitly exclude only paths observed absent from the actual working tree,
+while bracketing that deletion with source/status checks.
+
+### Reconstructible trajectory snapshot checkpoint — September 11
+
+Opted-in policy/state v2 now binds private before/after source archives to the
+original reservation and actual model invocation. Dirty additions, deletions,
+modifications, binary files, permission bits and supported relative links remain
+restorable after further live edits. Capture/restore preserve the user's Git
+index, HEAD, refs and live files. Canonical archive bytes, metadata, inventory,
+source digest and restored filesystem are checked; corrupt/missing archives,
+traversal, parent conflicts, unsupported links/types, truncation, trailing data,
+excessive size and source drift refuse. A failed archive publication retains its
+actual terminal/source as archive-unavailable. Old v1 digest-only state is
+explicitly refused with recovery guidance and is not rewritten from current files.
+
+The initial archive serializer incorrectly added a regular-file newline; the
+actual integration failure is retained and corrected. Private temp-directory
+and PAX header construction errors were fixture corrections, also retained.
+Nine new archive and three new state tests pass, plus the updated actual runner
+manual/grouped nonzero/interrupted restoration and CLI archive-loss tests.
+All 366 Go/module files match source manifest
+7675f7dc655644e7e8d3f1c1e24da57a5c8f52caf2d943c26c6fad11e7eb3fd2.
+Full JSON suite PASS (167.333s, all 32 package terminal events), six-package race
+PASS (183.107s), vet PASS (0.865s), Windows amd64 trajectory/app cross-builds PASS,
+and compiled shared-volume trajectory/runner/driver/app fixtures PASS
+(63.183/13.339/2.332/4.923s). All twelve new and three amended top-level tests
+have passed events in both full/race runs. Complete native/shared logs match,
+contain no NUL bytes and no failed test events. final-verification.json and forty
+checksummed evidence files live in the owned snapshot validation directory.
+Windows runtime and current-source independent acceptance remain unverified.
+
+The owned trajectory-snapshots disposition records implementation, trust boundary,
+executed failures/corrections and next integration. Restoration creates source
+files without asserting Git commit ancestry; the verifier still needs isolated
+execution roots explicitly bound to original archived source. Actual independent
+runner/helper invocation, durable receipts/observations, expected charged patch
+inventory evaluation and review/disposition recovery remain open. Every attempt
+stays pending; AC-B2 and the six-area goal are incomplete. No real model call,
+operator activation, final merge/release/deployment, global install or core
+publication occurred. The older bd00188 HTML, historical quorum/full-six pilot,
+Claude rate-limit recovery and unanswered experiment decisions remain unchanged.

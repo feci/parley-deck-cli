@@ -866,10 +866,10 @@ same-UID actor capable of fabricating all mutually consistent artifacts.
 
 ## Patch-regression trajectory execution core
 
-The new internal trajectory API prepares the paired-execution part of the
-opt-in pilot rule. It is not yet exposed as a CLI policy or enforced by the
-ordinary driver/manual paths. AC-B2 remains incomplete until durable policy,
-complete patch-attempt coverage and independently invoked verifier integration
+The internal trajectory API prepares the paired-execution part of the opt-in
+pilot rule. The CLI policy below now enforces durable capture and refusal at
+driver/manual entrypoints. AC-B2 remains incomplete until the independently
+invoked verifier, durable paired observations and explicit disposition/recovery
 are connected and verified.
 
 `Freeze` binds separate clean Git baseline/patched snapshots, full commit IDs,
@@ -939,12 +939,11 @@ commit, stash, discard, or manufacture a clean snapshot. Run status and exit zer
 are not independent verification. Driver and application completion paths reject
 pending attempts, including after resume or a separate finite budget extension.
 
-This checkpoint is **capture and refusal enforcement**, not the completed
-trajectory policy. Every captured attempt currently remains pending. Independent
-model/helper invocation, authenticated-runtime receipt matching, durable execution
-publication, dirty/interrupted snapshot restoration and explicit disposition/
-recovery must be integrated with the existing paired-execution core before the
-next patch can proceed under this policy. There is no reset/accept/override CLI
+This checkpoint provides capture, source restoration and refusal enforcement.
+Every captured attempt currently remains pending. Independent model/helper
+invocation, runtime receipt matching, durable execution publication and explicit
+disposition/recovery must be integrated with the existing paired-execution core
+before the next patch can proceed under this policy. There is no reset/accept/override CLI
 in this checkpoint. Do not enable it on ongoing production work expecting an
 already complete review-and-continue workflow. AC-B2 remains incomplete.
 
@@ -952,3 +951,50 @@ These controls coordinate cooperative runtime writers. Process labels, hashes,
 terminal presence and files under the same user account do not authenticate a
 human or defeat a malicious actor consistently fabricating all state. Independent
 acceptance and actual live experiment results remain separate obligations.
+
+### Retained source archives
+
+Trajectory policy/state v2 requires reconstructible source archives at activation
+and terminal capture. Each exact charge records its before-archive reference;
+the actual invocation retains its after-archive reference alongside the original
+commit, code-tree digest and dirty-status observation. Archives live in the
+private `trajectory-snapshots` directory beside shared cycle accounting. The
+versioned reference contains only SHA256 and length metadata. Archive bodies
+contain private source bytes and must not be copied into telemetry, protocol
+artifacts or public reports.
+
+Capture uses the original Git tracked/untracked inventory, including dirty
+modifications, tracked deletions, untracked additions, binary bytes, file
+permission bits and supported relative symlinks. Ignored files are outside that
+source inventory. A link into ignored or absent source, an absolute/escaping
+link, an unsupported entry or filename, or excessive data refuses capture.
+Archives are bounded to 256 MiB, individual files to 64 MiB and the inventory to
+100,000 entries. These are capture limits, not permission to omit larger files.
+Read-only Git observation disables optional index refresh writes.
+
+The internal `RestoreSnapshot` API verifies the exact canonical tar bytes and
+source binding, then restores into a newly allocated private directory and
+checks the actual filesystem with `evidence.TreeDigest`. It retains regular
+files before creating links and validates component-by-component link resolution.
+Duplicate/unordered paths, traversal, unsupported headers/member types, broken
+links, missing footer, truncation and trailing data refuse. Failure removes only
+the newly allocated restore directory. Existing files, Git index, HEAD and branch
+refs are never restoration targets.
+
+Restoration supplies source files without creating Git metadata or asserting a
+new commit/ancestry. Use an execution parent outside any existing Git worktree.
+Host permission and symlink semantics must reproduce the archived tree exactly;
+unsupported restoration fails visibly. Creating the verifier's isolated Git
+execution roots and binding its independent helper receipt remain separate work.
+
+If actual source can be observed but its archive cannot be published, the
+terminal record retains that observation with `archive-unavailable`. If actual
+source cannot be identified, it records `source-unavailable`. Missing or corrupt
+referenced archives refuse inspection, new fixups and completion. Neither case
+supplies an accepted patch, and a repeated capture does not overwrite a corrupt
+content address. Every attempt remains unresolved.
+
+Old v1 digest-only policies/state are explicitly refused with recovery guidance,
+without changing their bytes. Current files cannot reconstruct a past attempt;
+do not delete old state or relabel it v2. No automatic migration or historical
+archive reconstruction is supplied by this checkpoint.

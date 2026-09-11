@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/budget"
-	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/fsutil"
 )
 
@@ -45,17 +44,20 @@ type Terminal struct {
 	SnapshotError string    `json:"snapshot_error"`
 }
 type Attempt struct {
-	Sequence int                `json:"sequence"`
-	Charge   budget.CycleCharge `json:"charge"`
-	Before   Source             `json:"before"`
-	Launch   *Launch            `json:"launch"`
-	After    *Source            `json:"after"`
-	Terminal *Terminal          `json:"terminal"`
+	Sequence      int                `json:"sequence"`
+	Charge        budget.CycleCharge `json:"charge"`
+	Before        Source             `json:"before"`
+	BeforeArchive SnapshotRef        `json:"before_archive"`
+	Launch        *Launch            `json:"launch"`
+	After         *Source            `json:"after"`
+	AfterArchive  *SnapshotRef       `json:"after_archive"`
+	Terminal      *Terminal          `json:"terminal"`
 }
 type State struct {
-	Version  int       `json:"version"`
-	Policy   Policy    `json:"policy"`
-	Attempts []Attempt `json:"attempts"`
+	Version         int         `json:"version"`
+	Policy          Policy      `json:"policy"`
+	BaselineArchive SnapshotRef `json:"baseline_archive"`
+	Attempts        []Attempt   `json:"attempts"`
 }
 
 func statePath(b budget.CycleBinding) string {
@@ -65,7 +67,10 @@ func sourceValid(s Source) bool {
 	return validCommit(s.Tree.Commit) && validHash(s.Tree.SHA256) && validHash(s.StatusSHA256) && s.Clean == (s.StatusSHA256 == digest(nil))
 }
 func (p Policy) SHA256() (string, error) {
-	if p.Version != 1 || !safeLabel(p.Idea) || p.Scope == "" || p.StartedAt.IsZero() || !safeLabel(p.Implementer) || !sourceValid(p.Baseline) || !p.Baseline.Clean || len(p.Criteria) == 0 || len(p.Criteria) > MaxCriteria {
+	if err := trajectoryVersion(p.Version); err != nil {
+		return "", err
+	}
+	if !safeLabel(p.Idea) || p.Scope == "" || p.StartedAt.IsZero() || !safeLabel(p.Implementer) || !sourceValid(p.Baseline) || !p.Baseline.Clean || len(p.Criteria) == 0 || len(p.Criteria) > MaxCriteria {
 		return "", errors.New("invalid frozen trajectory policy")
 	}
 	seen := map[string]bool{}
@@ -80,6 +85,16 @@ func (p Policy) SHA256() (string, error) {
 		return "", err
 	}
 	return digest(data), nil
+}
+
+func trajectoryVersion(version int) error {
+	if version == 1 {
+		return errors.New("trajectory v1 retained digests only; preserve its history for explicit recovery; current files cannot reconstruct past attempts")
+	}
+	if version != 2 {
+		return errors.New("unsupported trajectory version")
+	}
+	return nil
 }
 
 // Observe brackets the source digest with Git observations. It accepts dirty
@@ -113,7 +128,7 @@ func Observe(ctx context.Context, root string) (Source, error) {
 	if err != nil {
 		return Source{}, err
 	}
-	tree, err := evidence.TreeDigest(root)
+	tree, err := trajectoryTreeDigest(ctx, root)
 	if err != nil {
 		return Source{}, errors.New("trajectory cannot digest the actual source")
 	}
@@ -121,7 +136,7 @@ func Observe(ctx context.Context, root string) (Source, error) {
 	if err != nil {
 		return Source{}, err
 	}
-	tree2, err := evidence.TreeDigest(root)
+	tree2, err := trajectoryTreeDigest(ctx, root)
 	if err != nil {
 		return Source{}, errors.New("trajectory cannot recheck the actual source")
 	}
@@ -150,7 +165,7 @@ func NewPolicy(ctx context.Context, root, idea, implementer string, criteria []C
 	if err != nil {
 		return Policy{}, "", err
 	}
-	p := Policy{Version: 1, Idea: idea, Scope: b.Policy.Scope, StartedAt: ledger.StartedAt, Implementer: implementer, Baseline: source}
+	p := Policy{Version: 2, Idea: idea, Scope: b.Policy.Scope, StartedAt: ledger.StartedAt, Implementer: implementer, Baseline: source}
 	for _, c := range criteria {
 		if strings.TrimSpace(c.Command) == "" || len(c.Command) > 16<<10 || strings.ContainsRune(c.Command, 0) {
 			return Policy{}, "", errors.New("invalid material command")
@@ -222,6 +237,9 @@ func readState(path string) (State, []byte, error) {
 	if err = dec.Decode(&s); err != nil {
 		return s, nil, err
 	}
+	if err = trajectoryVersion(s.Version); err != nil {
+		return s, nil, err
+	}
 	expected, err := canonical(s)
 	if err != nil {
 		return s, nil, err
@@ -236,13 +254,14 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 	if err != nil {
 		return err
 	}
-	if s.Version != 1 || s.Attempts == nil || len(s.Attempts) > MaxPatches || sha != b.Policy.TrajectorySHA256 || s.Policy.Scope != b.Policy.Scope || s.Policy.Idea != b.Policy.Idea || !s.Policy.StartedAt.Equal(ledger.StartedAt) || b.Policy.Carried != 0 || len(s.Attempts) != len(ledger.Entries) {
+	if s.Version != 2 || !s.BaselineArchive.valid() || s.Attempts == nil || len(s.Attempts) > MaxPatches || sha != b.Policy.TrajectorySHA256 || s.Policy.Scope != b.Policy.Scope || s.Policy.Idea != b.Policy.Idea || !s.Policy.StartedAt.Equal(ledger.StartedAt) || b.Policy.Carried != 0 || len(s.Attempts) != len(ledger.Entries) {
 		return errors.New("trajectory policy or complete charged history is missing or changed")
 	}
 	seen := map[string]bool{}
 	before := s.Policy.Baseline
+	beforeArchive := s.BaselineArchive
 	for i, a := range s.Attempts {
-		if a.Sequence != i+1 || seen[a.Charge.EntryKey] || a.Charge.Kind != budget.Fixup || a.Before != before || !sourceValid(a.Before) || !a.Before.Clean {
+		if a.Sequence != i+1 || seen[a.Charge.EntryKey] || a.Charge.Kind != budget.Fixup || a.Before != before || a.BeforeArchive != beforeArchive || !a.BeforeArchive.valid() || !sourceValid(a.Before) || !a.Before.Clean {
 			return errors.New("trajectory has a gap, replay or changed before-state")
 		}
 		seen[a.Charge.EntryKey] = true
@@ -253,7 +272,7 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 			return errors.New("trajectory launch identity changed")
 		}
 		if a.Terminal == nil {
-			if a.After != nil {
+			if a.After != nil || a.AfterArchive != nil {
 				return errors.New("trajectory has a post-state without a terminal observation")
 			}
 		} else {
@@ -261,11 +280,17 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 				return errors.New("invalid trajectory terminal observation")
 			}
 			if a.After == nil {
-				if a.Terminal.SnapshotError != "source-unavailable" {
+				if a.Terminal.SnapshotError != "source-unavailable" || a.AfterArchive != nil {
 					return errors.New("missing actual post-state")
 				}
-			} else if !sourceValid(*a.After) || a.Terminal.SnapshotError != "" {
+			} else if !sourceValid(*a.After) {
 				return errors.New("invalid actual post-state")
+			} else if a.AfterArchive == nil {
+				if a.Terminal.SnapshotError != "archive-unavailable" {
+					return errors.New("post-state lacks its required archive")
+				}
+			} else if !a.AfterArchive.valid() || a.Terminal.SnapshotError != "" {
+				return errors.New("invalid post-state archive")
 			}
 		}
 		// Acceptance/publication is deliberately not inferred from terminal success.
@@ -275,6 +300,9 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 		}
 		if a.After != nil {
 			before = *a.After
+			if a.AfterArchive != nil {
+				beforeArchive = *a.AfterArchive
+			}
 		}
 	}
 	return nil
@@ -295,7 +323,11 @@ func Activate(ctx context.Context, root, expected string, p Policy) error {
 		if actual != p.Baseline {
 			return errors.New("source changed since trajectory preview")
 		}
-		s := State{Version: 1, Policy: p, Attempts: []Attempt{}}
+		archive, err := CaptureSnapshot(ctx, root, snapshotDirectory(b), p.Baseline)
+		if err != nil {
+			return err
+		}
+		s := State{Version: 2, Policy: p, BaselineArchive: archive, Attempts: []Attempt{}}
 		expectedBytes, err := canonical(s)
 		if err != nil {
 			return err
@@ -320,6 +352,7 @@ type Observer struct {
 	Root     string
 	prepared []byte
 	before   Source
+	archive  SnapshotRef
 }
 
 func (o *Observer) BeforeCycle(ctx context.Context, b budget.CycleBinding, ledger budget.Snapshot) error {
@@ -329,6 +362,9 @@ func (o *Observer) BeforeCycle(ctx context.Context, b budget.CycleBinding, ledge
 		return err
 	}
 	if err = validateState(s, b, ledger); err != nil {
+		return err
+	}
+	if err = checkStateSnapshots(ctx, b, s); err != nil {
 		return err
 	}
 	if len(s.Attempts) > 0 {
@@ -342,6 +378,7 @@ func (o *Observer) BeforeCycle(ctx context.Context, b budget.CycleBinding, ledge
 		return errors.New("source differs from the frozen trajectory baseline")
 	}
 	o.before = actual
+	o.archive = s.BaselineArchive
 	o.prepared = data
 	return nil
 }
@@ -358,8 +395,11 @@ func (o *Observer) AfterCycle(ctx context.Context, b budget.CycleBinding, ledger
 	if err != nil {
 		return err
 	}
-	s.Attempts = append(s.Attempts, Attempt{Sequence: len(s.Attempts) + 1, Charge: charge, Before: o.before})
+	s.Attempts = append(s.Attempts, Attempt{Sequence: len(s.Attempts) + 1, Charge: charge, Before: o.before, BeforeArchive: o.archive})
 	if err = validateState(s, b, ledger); err != nil {
+		return err
+	}
+	if err = checkStateSnapshots(ctx, b, s); err != nil {
 		return err
 	}
 	return writeState(statePath(b), s)
@@ -401,6 +441,9 @@ func withState(ctx context.Context, root, idea string, fn func(budget.CycleBindi
 		return err
 	}
 	if err = validateState(s, *b, ledger); err != nil {
+		return err
+	}
+	if err = checkStateSnapshots(ctx, *b, s); err != nil {
 		return err
 	}
 	return fn(*b, ledger, s)
@@ -492,9 +535,17 @@ func (r *Run) Finish(ctx context.Context, status string, exit *int) error {
 			return errors.New("trajectory terminal changed or was already published")
 		}
 		actual, snapshotErr := Observe(ctx, r.root)
+		var archiveErr error
 		a.Terminal = &Terminal{At: time.Now().UTC(), Status: status, ExitCode: exit}
 		if snapshotErr == nil {
 			a.After = &actual
+			archive, err := CaptureSnapshot(ctx, r.root, snapshotDirectory(b), actual)
+			archiveErr = err
+			if err == nil {
+				a.AfterArchive = &archive
+			} else {
+				a.Terminal.SnapshotError = "archive-unavailable"
+			}
 		} else {
 			a.Terminal.SnapshotError = "source-unavailable"
 		}
@@ -503,6 +554,9 @@ func (r *Run) Finish(ctx context.Context, status string, exit *int) error {
 		}
 		if err := writeState(statePath(b), s); err != nil {
 			return err
+		}
+		if archiveErr != nil {
+			return fmt.Errorf("trajectory retained unavailable archive: %w", archiveErr)
 		}
 		if snapshotErr != nil {
 			return fmt.Errorf("trajectory retained an unavailable post-state: %w", snapshotErr)
@@ -513,4 +567,25 @@ func (r *Run) Finish(ctx context.Context, status string, exit *int) error {
 		return errors.New("required trajectory disappeared before terminal publication")
 	}
 	return err
+}
+
+func checkStateSnapshots(ctx context.Context, b budget.CycleBinding, s State) error {
+	dir := snapshotDirectory(b)
+	if err := CheckSnapshot(ctx, dir, s.BaselineArchive, s.Policy.Baseline); err != nil {
+		return fmt.Errorf("baseline archive unavailable: %w", err)
+	}
+	for _, a := range s.Attempts {
+		if err := CheckSnapshot(ctx, dir, a.BeforeArchive, a.Before); err != nil {
+			return fmt.Errorf("before archive unavailable: %w", err)
+		}
+		if a.AfterArchive != nil {
+			if a.After == nil {
+				return errors.New("archive without actual post-state")
+			}
+			if err := CheckSnapshot(ctx, dir, *a.AfterArchive, *a.After); err != nil {
+				return fmt.Errorf("after archive unavailable: %w", err)
+			}
+		}
+	}
+	return nil
 }

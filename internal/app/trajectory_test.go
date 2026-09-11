@@ -95,6 +95,19 @@ func TestTrajectoryCLIExactActivationAndIncompleteClose(t *testing.T) {
 	if code := invoke(true, apply...); code == 0 {
 		t.Fatal("activation replay reset a charged trajectory")
 	}
+	if inspected.Version != 2 || inspected.Policy.Version != 2 || inspected.BaselineArchive.SHA256 == "" || inspected.Attempts[0].BeforeArchive != inspected.BaselineArchive {
+		t.Fatal("CLI inspection lacks reconstructible baseline binding")
+	}
+	archive := filepath.Join(filepath.Dir(b.Store.Dir), "trajectory-snapshots", inspected.BaselineArchive.SHA256+".tar")
+	if err = os.Remove(archive); err != nil {
+		t.Fatal(err)
+	}
+	if code := invoke(false, "inspect", "--dir", root, "--idea", "idea-x"); code == 0 {
+		t.Fatal("CLI reported intact state after archive loss")
+	}
+	if err = ops.Complete(context.Background()); err == nil {
+		t.Fatal("application completion ignored missing archive")
+	}
 }
 func TestTrajectoryCLIRejectsChangedScopeAndNoChecks(t *testing.T) {
 	for _, checks := range []string{"", "checks:\n  - name: unit\n    command: true\n"} {

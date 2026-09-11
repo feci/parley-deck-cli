@@ -188,7 +188,7 @@ func (b *boundedOutput) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 func gitOutput(ctx context.Context, root string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", root, "--no-pager"}, args...)...)
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", root, "--no-pager", "--no-optional-locks"}, args...)...)
 	var out boundedOutput
 	cmd.Stdout = &out
 	// Git diagnostics can contain local paths or source snippets; error

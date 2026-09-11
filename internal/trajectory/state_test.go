@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"parley-deck-cli/internal/budget"
@@ -369,5 +370,140 @@ func TestPersistentTrajectoryLiveHandleRejectsErasedAuthority(t *testing.T) {
 				t.Fatal("live required capture became disabled after authority disappeared")
 			}
 		})
+	}
+}
+
+func TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging(t *testing.T) {
+	for _, kind := range []string{"missing", "corrupt", "rebound", "legacy-v1"} {
+		t.Run(kind, func(t *testing.T) {
+			root, b, p := accountingFixture(t)
+			s, _, err := readState(statePath(*b))
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch kind {
+			case "missing":
+				err = os.Remove(snapshotPath(snapshotDirectory(*b), s.BaselineArchive))
+			case "corrupt":
+				file := snapshotPath(snapshotDirectory(*b), s.BaselineArchive)
+				data := snapshotRead(t, file)
+				data[0] ^= 1
+				err = os.WriteFile(file, data, 0600)
+			case "rebound":
+				s.BaselineArchive.SHA256 = digest([]byte("replacement"))
+				err = writeState(statePath(*b), s)
+			case "legacy-v1":
+				data, _ := canonical(s)
+				var legacy map[string]any
+				if err = json.Unmarshal(data, &legacy); err != nil {
+					t.Fatal(err)
+				}
+				legacy["version"] = 1
+				legacy["policy"].(map[string]any)["version"] = 1
+				delete(legacy, "baseline_archive")
+				data, _ = canonical(legacy)
+				err = os.WriteFile(statePath(*b), data, 0600)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := snapshotRead(t, statePath(*b))
+			_, err = Inspect(context.Background(), root, "fixture")
+			if err == nil {
+				t.Fatal("missing reconstructible baseline accepted")
+			}
+			if kind == "legacy-v1" && !strings.Contains(err.Error(), "v1 retained digests only") {
+				t.Fatalf("old state needs explicit recovery guidance: %v", err)
+			}
+			if err = RequireResolved(context.Background(), root, "fixture"); err == nil {
+				t.Fatal("empty attempt count hid missing baseline")
+			}
+			if _, err = b.Reserve(budget.WithCycleObserver(context.Background(), &Observer{Root: root}), "next"); err == nil {
+				t.Fatal("new work admitted without retained baseline")
+			}
+			ledger, err := b.Store.Inspect(context.Background())
+			if err != nil || len(ledger.Entries) != 0 {
+				t.Fatal("baseline refusal spent an unlaunched charge", err)
+			}
+			if kind == "legacy-v1" {
+				p.Version = 1
+				if _, err = p.SHA256(); err == nil || !strings.Contains(err.Error(), "v1 retained digests only") {
+					t.Fatal("legacy policy silently acquired archive claims")
+				}
+			}
+			if string(before) != string(snapshotRead(t, statePath(*b))) {
+				t.Fatal("refusal rewrote retained source history")
+			}
+		})
+	}
+}
+
+func TestPersistentTrajectoryArchiveFailureRetainsActualTerminal(t *testing.T) {
+	root, b, _ := accountingFixture(t)
+	ctx := chargeFixture(t, root, b)
+	run, err := Begin(ctx, root, "fixture", "builder", "invocation-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Evidence can identify this link, but its ignored target cannot be
+	// reconstructed from the retained source inventory.
+	ignored := filepath.Join(root, ".parley-runtime", "ignored-source")
+	snapshotWrite(t, root, ".parley-runtime/ignored-source", []byte("ignored\n"), 0600)
+	if err = os.Symlink(ignored, filepath.Join(root, "absolute-link")); err != nil {
+		t.Skip(err)
+	}
+	actual, err := Observe(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code := 7
+	if err = run.Finish(context.Background(), "failed", &code); err == nil {
+		t.Fatal("failed archive capture reported success")
+	}
+	s, err := Inspect(context.Background(), root, "fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := s.Attempts[0]
+	if a.After == nil || *a.After != actual || a.AfterArchive != nil || a.Terminal == nil || a.Terminal.SnapshotError != "archive-unavailable" || a.Terminal.ExitCode == nil || *a.Terminal.ExitCode != 7 {
+		t.Fatalf("actual terminal or unavailable archive was lost: %+v", a)
+	}
+	if err = RequireResolved(context.Background(), root, "fixture"); err == nil {
+		t.Fatal("archive failure granted acceptance")
+	}
+}
+
+func TestPersistentTrajectoryLostPostArchiveRefusesInspectionAndClosure(t *testing.T) {
+	root, b, _ := accountingFixture(t)
+	ctx := chargeFixture(t, root, b)
+	run, err := Begin(ctx, root, "fixture", "builder", "invocation-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshotWrite(t, root, "source", []byte("patch\n"), 0600)
+	code := 0
+	if err = run.Finish(context.Background(), "process-exited", &code); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Inspect(context.Background(), root, "fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := s.Attempts[0]
+	if a.AfterArchive == nil {
+		t.Fatal("post-state archive missing")
+	}
+	if err = os.Remove(snapshotPath(snapshotDirectory(*b), *a.AfterArchive)); err != nil {
+		t.Fatal(err)
+	}
+	before := snapshotRead(t, statePath(*b))
+	if _, err = Inspect(context.Background(), root, "fixture"); err == nil {
+		t.Fatal("lost post-state archive reported valid")
+	}
+	if err = RequireResolved(context.Background(), root, "fixture"); err == nil {
+		t.Fatal("lost post-state archive allowed closure")
+	}
+	if string(before) != string(snapshotRead(t, statePath(*b))) {
+		t.Fatal("archive loss rewrote history")
 	}
 }
