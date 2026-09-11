@@ -56,6 +56,8 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 func RunFixup(ctx context.Context, opts Options) Result {
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
+	ctx, finishCycle := groupProtocolCycle(ctx, opts.Root, opts.Idea.Slug, opts.Idea.Path, opts.RunID, budget.Fixup)
+	defer finishCycle()
 
 	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {

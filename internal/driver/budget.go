@@ -17,12 +17,9 @@ func (d *Driver) withStepBudget(ctx context.Context) (context.Context, *Driver, 
 	if err != nil {
 		return ctx, d, finish, err
 	}
-	if b == nil {
-		return ctx, d, finish, nil
-	}
 	copy := *d
 	if d.runner != nil {
-		copy.runner = stepRoundRunner{d.runner}
+		copy.runner = stepRoundRunner{cycleRoundRunner{d.runner, d.cfg}}
 	}
 	if d.cfg.Consensus != nil {
 		copy.cfg.Consensus = stepConsensusOps{d.cfg.Consensus}

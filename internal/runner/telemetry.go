@@ -75,6 +75,12 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	if info.Context.Mode == "" {
 		info.Context.Mode = "unattested"
 	}
+	handoff := len(intent) == 1 && intent[0] == launchHandoff
+	if !handoff {
+		var finishCycle func()
+		ctx, finishCycle = prepareLaunchCycle(ctx, root, info.Idea, info.Phase, info.RunID)
+		defer finishCycle()
+	}
 	metadata := telemetry.Metadata{
 		RunID: info.RunID, SegmentID: info.SegmentID, Idea: info.Idea, Phase: info.Phase,
 		Agent: agent.ID, Adapter: agent.Adapter(), LaunchMode: agents.LaunchModeOrDefault(agent.LaunchMode),
@@ -90,7 +96,7 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	structured := metadata.LaunchMode != agents.LaunchACP && telemetry.StructuredArgs(args)
 	l := &launchEvidence{invocation: invocation, collector: telemetry.NewCollector(agent.Adapter(), structured), info: info}
 	l.notify()
-	if err := l.reserveBudget(ctx, root, len(intent) == 1 && intent[0] == launchHandoff); err != nil {
+	if err := l.reserveBudget(ctx, root, handoff); err != nil {
 		return nil, errors.Join(err, l.finish(err, ctx.Err(), nil))
 	}
 	return l, nil

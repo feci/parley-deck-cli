@@ -58,6 +58,14 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 	if handoff {
 		return nil
 	}
+	if kind, ok := budget.CycleKindForPhase(l.info.Phase); ok {
+		if _, err := budget.ChargeCycle(ctx, kind); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return &launchBudgetError{cause: err}
+		}
+	}
 	stepCtx, finishStep, err := budget.JoinStepSession(ctx, root, l.info.Idea)
 	if err != nil {
 		if ctx.Err() != nil {

@@ -205,6 +205,11 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 	if opts.Round == 0 {
 		opts.Round = 1
 	}
+	if opts.Round > 1 && (opts.Phase == "" || opts.Phase == "deliberation") {
+		var finishCycle func()
+		ctx, finishCycle = groupProtocolCycle(ctx, opts.Root, opts.Idea.Slug, opts.Idea.Path, opts.RunID, budget.CrossReview)
+		defer finishCycle()
+	}
 	if opts.RoundLabel == "" {
 		opts.RoundLabel = "round-01"
 	}

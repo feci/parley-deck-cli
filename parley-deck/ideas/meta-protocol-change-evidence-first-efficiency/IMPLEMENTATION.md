@@ -1140,3 +1140,20 @@ monetary default mapping, canonical refusal evidence and regression trajectory.
 All exact packet/pilot, real-model verifier and owned-signature gates remain.
 No new participant call occurred: inventory remains 34 terminal attempts,
 17 unknown costs, USD 46.1887585 known CLI estimates and unknown total.
+
+### Shared fixup/cross-review allocation before edits — September 11
+
+Codex owns new internal/budget/cycle_binding.go, cycle_session.go,
+cycle_history.go and their tests; new internal/runner/cycle_budget.go and tests;
+and new internal/driver/cycle_budget.go and tests. Existing serialized ownership
+also covers driver.go, budget.go, impl.go, consensus.go, runner.go, phase58.go,
+launch_budget.go, and the budget process fixtures. No other source writer or
+participant model process is active. Frozen review worktrees stay unchanged.
+
+Use one persistent policy/ledger per idea and charged cycle kind, shared across
+manual, driver, resume and BLOCK paths. Preserve current known cursor/marker
+counts as an explicit frozen carried count; ambiguous legacy attempts require
+migration, not a zero-count policy. A synchronous operation may reuse its own
+reservation in nested runner calls, never across a retry/new operation. The
+inclusive final fixup remains reviewable; signoffs and zero-fix reviews do not
+spend a fixup. Preserve current track caps and all independent closure gates.

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/consensus"
 )
 
@@ -219,6 +220,13 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 
 	if rs.OutstandingAgreedFixes == 0 {
+		charged, err := d.chargedFixupAttempts(c)
+		if err != nil {
+			return ActionEscalated, c, fmt.Errorf("cannot verify closing fix-up budget: %w", err)
+		}
+		if charged > d.cfg.MaxFixupCycles {
+			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempts against MaxFixupCycles=%d; cannot close", charged, d.cfg.MaxFixupCycles)
+		}
 		if d.cfg.StrictGate {
 			// strict_gate (LE-2): completion requires a FRESH full-scope closing review
 			// round with zero findings of any severity — certified by the drafter
@@ -343,6 +351,11 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	// returns an error, and a crash in the window between Fixup returning and the cursor
 	// being written. A crash before Fixup is confirmed conservatively spends the
 	// reservation — erring toward one lost cycle rather than an unbounded loop.
+	ctx, cycle, finishCycle, err := d.reserveFixupCycle(ctx, charged)
+	defer finishCycle()
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("reserve shared fix-up cycle: %w", err)
+	}
 	c.FixupCyclesPublished = cycle
 	if err := saveCursor(c, d.cursorPath()); err != nil {
 		return ActionEscalated, c, fmt.Errorf("reserve fix-up cycle %d: %w", cycle, err)
@@ -533,39 +546,42 @@ func gitTreeClean(root string) bool {
 	return strings.TrimSpace(string(out)) == ""
 }
 
-// chargedFixupAttempts reports how many fix-up attempts have been CHARGED — reserved, not
-// necessarily completed: an attempt that errored has still spent one. It is the
-// MAXIMUM of two driver-authored records:
+// chargedFixupAttempts preserves the maximum of the compatibility cursor,
+// driver .fixup-done markers and the shared precharged cycle ledger. The latter
+// survives a new run and deletion of the replaceable cursor/markers, including
+// failures before a completion marker could be written. Unknown accounting
+// refuses work; initial legacy carry is checked before a new binding is created.
 //
-//   - the run cursor's monotonic FixupCyclesPublished, which lives in the RUN directory
-//     and is written inside the fix-up transaction;
-//   - the `.fixup-done` markers under the idea's review rounds.
-//
-// Taking the maximum is what makes it safe ONCE BOTH RECORDS EXIST: deleting markers
-// cannot lower the count because the cursor holds it, deleting the cursor cannot lower it
-// because the markers remain, and forging either can only raise it, which escalates
-// sooner. Between the reservation and the marker — which includes every attempt that
-// errored — the cursor is the ONLY record, and losing it there loses that count. That
-// window is a documented limit, not a claim; closing it needs the trust anchor deferred
-// to `fixup-budget-trust-anchor`.
-//
-// NOTE ON NAMES: the persisted cursor field stays FixupCyclesPublished for on-disk
-// compatibility; every unexported name here says "charged attempt", which is what it is.
-//
-// Two earlier designs were rejected by review for being fail-open in the other
-// direction: counting `## Fix-up cycle N` headings out of the implementer-owned
-// IMPLEMENTATION.md (round-02), and counting the markers alone (round-03). A number that
-// is a safety boundary must not be authored by the party it constrains.
-//
-// A read error is returned, never swallowed: an unknown count must escalate, not restart
-// the budget at zero.
+// The on-disk cursor name FixupCyclesPublished remains for compatibility even
+// though it counts reserved attempts, not only successful publications. Text
+// headings in IMPLEMENTATION.md never determine this safety count.
 func (d *Driver) chargedFixupAttempts(c Cursor) (int, error) {
 	n, err := markedFixupCycles(d.cfg.IdeaDir)
 	if err != nil {
 		return 0, err
 	}
 	if c.FixupCyclesPublished > n {
-		return c.FixupCyclesPublished, nil
+		n = c.FixupCyclesPublished
+	}
+	b, err := budget.LoadCycleBinding(context.Background(), d.cfg.Root, d.cfg.IdeaSlug, budget.Fixup)
+	if err != nil {
+		return 0, err
+	}
+	if b != nil {
+		relative, err := filepath.Rel(d.cfg.Root, d.cfg.IdeaDir)
+		if err != nil || filepath.ToSlash(relative) != b.Policy.IdeaPath {
+			return 0, errors.New("closing fix-up scope differs from the frozen idea path")
+		}
+		if d.cfg.MaxFixupCycles != b.Policy.Maximum {
+			return 0, errors.New("fix-up ceiling differs from the frozen policy; reconcile before continuing")
+		}
+		state, err := b.Store.Inspect(context.Background())
+		if err != nil {
+			return 0, err
+		}
+		if count := b.Count(state); count > n {
+			n = count
+		}
 	}
 	return n, nil
 }
