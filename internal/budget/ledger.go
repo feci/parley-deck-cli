@@ -60,11 +60,14 @@ type Request struct {
 }
 
 type Reservation struct {
-	Kind          Kind      `json:"kind"`
-	ReservedAt    time.Time `json:"reserved_at"`
-	ReserveMicros *int64    `json:"reserve_micros"`
-	Settled       bool      `json:"settled"`
-	ActualMicros  *int64    `json:"actual_micros"`
+	// Typed action identity is additive to retained legacy entries. Older strict
+	// readers refuse this field; an absent legacy field never gains semantics.
+	Action        *ActionIdentity `json:"action,omitempty"`
+	Kind          Kind            `json:"kind"`
+	ReservedAt    time.Time       `json:"reserved_at"`
+	ReserveMicros *int64          `json:"reserve_micros"`
+	Settled       bool            `json:"settled"`
+	ActualMicros  *int64          `json:"actual_micros"`
 	// Operator ceilings preserve unknown observed cost. They do not become
 	// provider usage, erase a charge, or authorize repeating the action.
 	Reconciliations []Reconciliation `json:"reconciliations,omitempty"`
@@ -144,9 +147,16 @@ func (s Store) Reserve(ctx context.Context, req Request, limits Limits) (Snapsho
 			return Snapshot{}, errors.New("invalid denied action kind")
 		}
 	}
+	action, err := actionIdentityFor(ctx, s.Scope, req, limits)
+	if err != nil {
+		return Snapshot{}, err
+	}
 	return s.update(ctx, func(state *Snapshot, now time.Time) error {
 		id := key(req.ID)
-		if _, exists := state.Entries[id]; exists {
+		if old, exists := state.Entries[id]; exists {
+			if (old.Action != nil || action != nil) && !sameOriginalRequest(old, req, action) {
+				return fmt.Errorf("%w: %w", ErrReserved, ErrActionConflict)
+			}
 			return ErrReserved
 		}
 		if limits.Denied[req.Kind] {
@@ -176,7 +186,11 @@ func (s Store) Reserve(ctx context.Context, req Request, limits Limits) (Snapsho
 				return fmt.Errorf("%w: monetary ceiling", ErrLimit)
 			}
 		}
-		state.Entries[id] = Reservation{Kind: req.Kind, ReservedAt: now, ReserveMicros: copyInt(req.ReserveMicros)}
+		entry := Reservation{Kind: req.Kind, ReservedAt: now, ReserveMicros: copyInt(req.ReserveMicros), Action: cloneActionIdentity(action)}
+		if entry.Action != nil {
+			entry.Action.ReservationSHA256 = originalChargeDigest(state.Scope, state.StartedAt, id, entry)
+		}
+		state.Entries[id] = entry
 		return nil
 	})
 }
@@ -388,6 +402,11 @@ func read(path string) (Snapshot, error) {
 		return Snapshot{}, errors.New("incomplete budget state")
 	}
 	for id, entry := range state.Entries {
+		if entry.Action != nil {
+			if err := entry.Action.validate(state.Scope, id, state.StartedAt, entry); err != nil {
+				return Snapshot{}, err
+			}
+		}
 		digest, err := hex.DecodeString(id)
 		if err != nil || len(digest) != 32 || !validKind(entry.Kind) || entry.ReservedAt.Before(state.StartedAt) || (entry.ReserveMicros != nil && *entry.ReserveMicros < 0) || (entry.ActualMicros != nil && (*entry.ActualMicros < 0 || !entry.Settled)) {
 			return Snapshot{}, errors.New("invalid budget entry")

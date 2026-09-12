@@ -77,6 +77,7 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	if info.Context.Mode == "" {
 		info.Context.Mode = "unattested"
 	}
+	ctx = withLaunchActionInput(ctx, info, agent)
 	handoff := len(intent) == 1 && intent[0] == launchHandoff
 	if !handoff {
 		var finishCycle func()

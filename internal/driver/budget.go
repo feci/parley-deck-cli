@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"parley-deck-cli/internal/budget"
+	"path/filepath"
 )
 
 // Each Advance uses a private adapter copy. Concurrent callers never mutate the
@@ -134,4 +135,20 @@ func (o stepImplOps) Complete(ctx context.Context) error {
 		return err
 	}
 	return o.ImplOps.Complete(ctx)
+}
+
+// The reconstructed cursor and runtime controls identify this driver's declared
+// transition input. Current-tree verification is a separate completion gate.
+func (d *Driver) withActionInput(ctx context.Context, c Cursor) context.Context {
+	recipe := struct {
+		Cursor                                                                                                       Cursor
+		Root, Idea, RunID, Track                                                                                     string
+		Participants                                                                                                 []string
+		CrossReviewRounds, MaxRounds, MaxFixupCycles, HardCrossReviewCap, MinReviewers, MaxReviewers, MaxDriverSteps int
+		AutoImplement, StrictGate                                                                                    bool
+		WallClockNS                                                                                                  int64
+		MaxCostUSD                                                                                                   float64
+	}{c, d.cfg.Root, d.cfg.IdeaSlug, filepath.Base(d.cfg.RunDir), d.cfg.Track, append([]string(nil), d.cfg.Participants...), d.cfg.CrossReviewRounds, d.cfg.MaxRounds, d.cfg.MaxFixupCycles, d.cfg.HardCrossReviewCap, d.cfg.MinReviewers, d.cfg.MaxReviewers, d.cfg.MaxDriverSteps, d.cfg.AutoImplement, d.cfg.StrictGate, int64(d.cfg.MaxWallClock), d.cfg.MaxCostUSD}
+	digest, _ := budget.ActionInputDigest(recipe)
+	return budget.InheritActionInput(ctx, budget.ActionInput{Operation: "driver-advance", Basis: "runtime-input", InputSHA256: digest, RunID: filepath.Base(d.cfg.RunDir)})
 }

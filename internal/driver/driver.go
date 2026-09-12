@@ -273,7 +273,7 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	if c.Phase == PhaseDone || c.Phase == PhaseBlocked {
 		return ActionSurfaceOnly, c, nil
 	}
-	ctx, scoped, finishStep, err := d.withStepBudget(ctx)
+	ctx, scoped, finishStep, err := d.withStepBudget(d.withActionInput(ctx, c))
 	if err != nil {
 		return ActionEscalated, c, fmt.Errorf("persistent driver budget: %w", err)
 	}

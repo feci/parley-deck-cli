@@ -39,6 +39,7 @@ func requiredCycleObserver(ctx context.Context, b *CycleBinding) (CycleObserver,
 // CycleCharge identifies the immutable original published reservation. The
 // already-hashed ledger entry key avoids exposing raw caller action strings.
 type CycleCharge struct {
+	ActionSHA256  string    `json:"action_sha256,omitempty"`
 	Scope         string    `json:"scope"`
 	StartedAt     time.Time `json:"started_at"`
 	EntryKey      string    `json:"entry_key"`
@@ -52,10 +53,10 @@ func PublishedCycleCharge(s Snapshot, entryKey string) (CycleCharge, error) {
 	if !ok || !validCycleDecision("entry", "entry", entryKey) || e.Kind != Fixup || s.Scope == "" || s.StartedAt.IsZero() || e.ReservedAt.IsZero() {
 		return CycleCharge{}, errors.New("missing exact fixup reservation")
 	}
-	return CycleCharge{s.Scope, s.StartedAt, entryKey, e.Kind, e.ReservedAt, copyInt(e.ReserveMicros)}, nil
+	return CycleCharge{Scope: s.Scope, StartedAt: s.StartedAt, EntryKey: entryKey, Kind: e.Kind, ReservedAt: e.ReservedAt, ReserveMicros: copyInt(e.ReserveMicros), ActionSHA256: actionIdentityDigest(e.Action)}, nil
 }
 func (c CycleCharge) Check(s Snapshot) error {
-	r := reservationReceipt{scope: c.Scope, id: c.EntryKey, startedAt: c.StartedAt, kind: c.Kind, reservedAt: c.ReservedAt, reserveMicros: copyInt(c.ReserveMicros)}
+	r := reservationReceipt{scope: c.Scope, id: c.EntryKey, startedAt: c.StartedAt, kind: c.Kind, reservedAt: c.ReservedAt, reserveMicros: copyInt(c.ReserveMicros), actionSHA256: c.ActionSHA256}
 	return r.check(s)
 }
 
@@ -72,7 +73,7 @@ func ActiveCycleCharge(ctx context.Context) (CycleCharge, error) {
 		return CycleCharge{}, errors.New("fixup reservation is unavailable")
 	}
 	r := s.receipt
-	c := CycleCharge{r.scope, r.startedAt, r.id, r.kind, r.reservedAt, copyInt(r.reserveMicros)}
+	c := CycleCharge{Scope: r.scope, StartedAt: r.startedAt, EntryKey: r.id, Kind: r.kind, ReservedAt: r.reservedAt, ReserveMicros: copyInt(r.reserveMicros), ActionSHA256: r.actionSHA256}
 	state, err := s.binding.Store.Inspect(ctx)
 	if err != nil {
 		return CycleCharge{}, err

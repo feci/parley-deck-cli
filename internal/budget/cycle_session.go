@@ -12,6 +12,7 @@ import (
 type cycleSessionKey struct{ Kind Kind }
 type cycleRefusalKey struct{ Kind Kind }
 type cycleSession struct {
+	input             ActionInput
 	mu                sync.Mutex
 	binding           CycleBinding
 	receipt           reservationReceipt
@@ -44,6 +45,9 @@ func OpenCycleSession(ctx context.Context, b *CycleBinding) (context.Context, fu
 	if old, ok := ctx.Value(cycleSessionKey{b.Policy.Kind}).(*cycleSession); ok {
 		old.mu.Lock()
 		defer old.mu.Unlock()
+		if err := checkSessionActionInput(ctx, old.input); err != nil {
+			return ctx, noop, err
+		}
 		if !old.active {
 			return ctx, noop, errors.New("cycle session has ended")
 		}
@@ -52,9 +56,10 @@ func OpenCycleSession(ctx context.Context, b *CycleBinding) (context.Context, fu
 		}
 		return ctx, noop, nil
 	}
+	ctx = InheritActionInput(ctx, ActionInput{Operation: string(b.Policy.Kind), Basis: "policy-only", InputSHA256: CyclePolicyDigest(b.Policy)})
 	copy := *b
 	copy.Policy = cloneCyclePolicy(b.Policy)
-	s := &cycleSession{binding: copy, active: true}
+	s := &cycleSession{binding: copy, active: true, input: sessionActionInput(ctx)}
 	finish := func() { s.mu.Lock(); s.active = false; s.mu.Unlock() }
 	return context.WithValue(ctx, cycleSessionKey{b.Policy.Kind}, s), finish, nil
 }
@@ -79,6 +84,11 @@ func ChargeCycle(ctx context.Context, kind Kind) (int, error) {
 		return 0, errors.New("cycle session has ended")
 	}
 	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	if err := checkSessionActionInput(ctx, s.input); err != nil {
+		s.attempted = true
+		s.err = err
 		return 0, err
 	}
 	if s.attempted {

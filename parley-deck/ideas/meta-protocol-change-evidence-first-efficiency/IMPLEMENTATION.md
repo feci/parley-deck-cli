@@ -4,13 +4,34 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 498a21cae3cadccf373208a55df300c62961c525
-validation-source-manifest: ac1589bbf46569489f94ae29cda45c7f7cff4f3fe3ee04c5e4641d97c7e1e002
+checkpoint-base-commit: b3cec48b4f222bce64aa49abba701ff7f72cddb9
+validation-source-manifest: eadb9d9c91d4038e6732c91d9134e2a745c712da03efee12e31ac151e84b3f1e
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
 
 # Evidence-First Delivery
+
+## Durable action identity allocation — September 12, 2026
+
+Before edits, codex-1 claims new `internal/budget/action_identity.go` and
+`internal/budget/action_identity_test.go`; serialized
+`internal/budget/{ledger.go,reservation_receipt.go,reservation_receipt_test.go,step_session.go,cycle_session.go,cycle_binding.go,cycle_observer.go,policy_extension.go}`;
+new `internal/app/budget_action.go` and `internal/app/budget_action_test.go`;
+`internal/app/budget.go`; runner `runner.go`, `phase58.go`, `cycle_budget.go`,
+`launch_budget.go`, `telemetry.go` and new `action_identity.go` / `action_identity_test.go`;
+driver `budget.go`, `driver.go` and new `action_identity_test.go`;
+runtime documentation and the owned note
+`implementation-notes/codex-1-durable-action-identity-20260912.md`.
+These claims are within Codex's runtime ownership and do not permit changing
+participant-owned reviews, signatures, evidence-package implementation or protocol.
+
+Persist logical operation/input identity separately from each spent attempt;
+bind exact read-only replay to original accounting and reject changed payloads.
+Integrate actual step/cycle call sites, retaining legacy records honestly.
+Reading/replaying a receipt must not grant a duplicate execution, replace a
+missing process terminal, reset accounting or claim whole-action completion.
+Recovery of effects after lost parent results remains a distinct required gate.
 
 ## Guard-origin migration allocation — September 12, 2026
 
@@ -70,6 +91,18 @@ evidence; independent current-source acceptance is pending. Missing old
 identities, changed roots, lost journals and stale post-cutover material remain
 explicit recovery limits. Independent current-source model acceptance, other
 interrupted-attempt recovery and durable semantic action replay remain open.
+The current action-identity slice persists declared input and original charge
+identity atomically, with read-only exact accounting replay and conflict refusal.
+It preserves distinct spent attempts, inherited group input, explicit weaker
+policy/manual bases and legacy-unbound records. A reproducer exposed unpinned
+charge fields; the correction binds the original epoch, kind, time and reserve.
+A real fake-child fixup also exposed a missing returned invocation ID, now wired
+through the existing observer. The 392-file source manifest passed full tests
+(220.143s), six-package race (261.187s), vet, four Windows package cross-builds,
+compiled shared budget/app/runner/driver checks, five intended negative overlays
+and actual CLI inspection/replay/refusal checks. Windows runtime and independent
+participant acceptance remain unverified. Receipt replay grants no execution
+and does not recover a missing parent result or unfinished workflow effect.
 The exact packet trial, real twelve-task solo/duo/full-six pilot, final populated
 HTML/ego-browser QA and actual-delivery-based follow-ups are also outstanding.
 No synthetic fixture supplies a live experiment or a participant-owned signature.
@@ -202,14 +235,16 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Reconciliation/continuation is published at 498a21c. The new same-host
-   lock-origin migration slice has passed its final automated validation and is
-   documented in `implementation-notes/codex-1-lock-origin-migration-20260912.md`.
-   Keep current-source acceptance separate from this code checkpoint.
-2. Complete durable semantic action identity across interruption and explicit
-   recovery of orphan reservations, failed
-   verification tickets, lost parent results and unavailable source/index/history.
-   Preserve existing charges and all refusal evidence.
+1. Reconciliation/continuation and same-host lock-origin migration are published
+   through b3cec48. The new durable action accounting identity and receipt replay
+   slice has passed final automated validation; see
+   `implementation-notes/codex-1-durable-action-identity-20260912.md`.
+   Keep independent current-source acceptance separate from this code checkpoint.
+2. Complete workflow-effect recovery for orphan reservations, failed helper
+   tickets, lost parent results, unchanged source and unavailable source/index/history.
+   Accounting receipt replay supplies no execution or completion authority.
+   Preserve all charges and refusal evidence. The next inspected path is recorded
+   in `.parley-runtime/action-effect-recovery-next-20260912.md`.
 3. Obtain fresh participant-owned acceptance of the final code and finish live
    launch-surface coverage plus independent real-model concurrency/closure evidence.
    Claude's latest attempt hit its weekly limit without a review artifact; its
@@ -2764,3 +2799,38 @@ Same-host cache relocation does not solve missing original identities, changed
 repository scopes, large/changed snapshot stores, erased journals or Git history.
 Existing quorum, pilot and funding decisions remain pending; no amendment or
 spending authority is inferred from this checkpoint.
+
+
+## Durable action accounting validation — September 12
+
+The owned slice is implemented and ready for independent review. Source manifest
+`eadb9d9c91d4038e6732c91d9134e2a745c712da03efee12e31ac151e84b3f1e`
+covers 392 Go/module files. Accepted evidence is retained under
+`.parley-runtime/action-identity-final-validation-v2-20260912/`; native copies are
+at `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-action-final-v2-7gzu_ry7`.
+
+Focused PASS 4.879s; full PASS 220.143s; six-package race PASS 261.187s;
+vet PASS; Windows budget/app/runner/driver cross-builds PASS (runtime unverified).
+Compiled shared budget/app/runner/driver selections PASS in
+2.834s / 0.432s / 0.705s / 0.542s. The final verifier checks all 32 package
+terminals, thirteen new top-level tests (twelve substantive and their process
+harness), five intended negative-overlay failures, native/shared log hashes,
+unchanged source, actual CLI receipt replay/refusals and the unchanged historical
+HTML. These are automated implementation checks, not independent participant
+acceptance, live model comparisons or proof of exactly-once workflow effects.
+
+The prior targeted fixture failures and five-field replay counterexample remain
+under `.parley-runtime/action-identity-validation-20260912/`. The first attempted
+final-validation focused run exposed the missing fixup result invocation ID and
+is retained in `.parley-runtime/action-identity-final-validation-20260912/` as a
+failed checkpoint. The final source includes both corrections. No passing result
+from an earlier source is reused to certify this one.
+
+Next required recovery includes missing parent results, consumed/unfinished
+helper tickets, orphan charges and unchanged-source observations. The next map
+identifies the existing parent/request/journal reconstruction path; it adds no
+recovery implementation or permission. New sessions still use distinct spent
+attempt IDs. The original six audit areas, exact packet trial, full-six pilot,
+independent current-source reviews/signatures, final HTML and delivery-based
+follow-ups remain incomplete. No real model invocation or actual operator
+migration occurred; historical quorum, pilot and funding decisions remain open.

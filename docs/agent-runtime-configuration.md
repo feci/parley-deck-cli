@@ -375,6 +375,55 @@ fail closed: mixed versions are not certified. The 16 MiB ledger ceiling and ful
 file rewrite currently bound scalability; no automatic compaction or deletion
 of charge identities is implemented.
 
+## Durable action identity and accounting receipts
+
+New typed reservations retain a version-1 `action` descriptor in the existing
+schema-1 ledger envelope. The descriptor separates the logical operation/input
+from the original unique attempt ID. It binds the accounting scope, effective
+limits and immutable reservation: ledger epoch, entry key, kind, timestamp and
+reserved amount, including the distinction between zero and unknown. Identity
+publication is part of the same locked ledger write as the charge. An identical
+attempt ID is refused as already spent; changed input, kind, reserve or limits
+also reports an action conflict. A new attempt has a new entry and
+consumes another charge, even when its logical input is identical.
+
+The `runtime-input` basis hashes declared runner inputs or the reconstructed
+driver cursor and controls. Runner inputs include the task, selected agents,
+mapping, output controls and bounded hashes of key protocol files. It is a
+declared input fingerprint, not a whole-source-tree attestation. Nested runners
+inherit the outer grouped operation. Lower-level/manual calls use the explicitly
+weaker `launch-metadata` basis; direct step/cycle sessions without a richer outer
+request use `policy-only`. The typed input body is not retained in the ledger.
+Invalid typed input refuses reservation. Changing the input of a live session
+refuses further charges, and restoring the input cannot revive that refused
+session. Later legitimate settlement and operator ceilings preserve the original
+reservation identity.
+
+Inspect existing receipts or re-read an exact original receipt after lost output:
+
+```sh
+parley budget action inspect --ledger /path/to/existing/ledger --scope EXACT_SCOPE
+parley budget action inspect --ledger /path/to/existing/ledger --scope EXACT_SCOPE --entry-key ENTRY_HASH
+parley budget action replay --ledger /path/to/existing/ledger --scope EXACT_SCOPE --entry-key ENTRY_HASH --expected-identity-sha256 ORIGINAL_IDENTITY_HASH
+```
+
+Retain the original identity hash if comparing against an earlier observation.
+A hash freshly obtained after a replacement describes that replacement; these
+hashes do not authenticate a same-UID actor. Inspection is deterministic and
+replay compares the original identity including its reservation commitment.
+Both commands are read-only and require no attended activation. Output always
+states `permission: "none"` and `execution_status: "not-established"`. Missing
+entries/ledgers refuse rather than recreate state. Output failure can safely be
+followed by another exact read.
+
+Historical entries without the new descriptor remain `legacy-unbound`; they
+cannot be retroactively certified or adopted by supplying new action metadata.
+Older strict readers reject the additive field instead of silently dropping it.
+No ledger envelope schema bump or historical rewrite is claimed. Accounting
+replay does not relaunch a process, establish its liveness/terminal, restore a
+missing parent result or recover an unfinished workflow effect. Those require
+separate execution evidence and explicit recovery; receipt replay grants none.
+
 ## Persistent protocol cycles
 
 The driver and supported typed manual runner calls share a separate durable

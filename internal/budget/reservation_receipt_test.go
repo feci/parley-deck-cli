@@ -86,6 +86,11 @@ func TestActiveReservationRejectsChangedOriginalCharge(t *testing.T) {
 				case "replace-id":
 					delete(state.Entries, id)
 					id = key("different-logical-action")
+					// Preserve structural identity consistency so the live receipt,
+					// rather than a malformed ledger, must reject the replacement.
+					if entry.Action != nil {
+						entry.Action.EntrySHA256 = id
+					}
 				case "change-time":
 					entry.ReservedAt = entry.ReservedAt.Add(time.Nanosecond)
 				case "unknown-reserve":
@@ -95,6 +100,9 @@ func TestActiveReservationRejectsChangedOriginalCharge(t *testing.T) {
 					entry.ReserveMicros = &value
 				case "change-epoch":
 					state.StartedAt = state.StartedAt.Add(-time.Second)
+				}
+				if entry.Action != nil {
+					entry.Action.ReservationSHA256 = originalChargeDigest(state.Scope, state.StartedAt, id, entry)
 				}
 				state.Entries[id] = entry
 				publishReservationFixture(t, f.store, state)

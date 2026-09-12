@@ -12,6 +12,7 @@ import (
 // A session groups the nested work of ONE synchronous transition. It is runtime
 // state, not an authorization token for participant artifacts or another call.
 type stepSession struct {
+	input             ActionInput
 	mu                sync.Mutex
 	binding           *StepBinding
 	receipt           reservationReceipt
@@ -34,6 +35,9 @@ func OpenStepSession(ctx context.Context, b *StepBinding) (context.Context, func
 	if old, ok := ctx.Value(stepSessionKey{}).(*stepSession); ok {
 		old.mu.Lock()
 		defer old.mu.Unlock()
+		if err := checkSessionActionInput(ctx, old.input); err != nil {
+			return ctx, noop, err
+		}
 		if !old.active {
 			return ctx, noop, errors.New("driver step session has ended")
 		}
@@ -45,8 +49,9 @@ func OpenStepSession(ctx context.Context, b *StepBinding) (context.Context, func
 	if _, err := b.Check(ctx); err != nil {
 		return ctx, noop, err
 	}
+	ctx = InheritActionInput(ctx, ActionInput{Operation: "driver-step", Basis: "policy-only", InputSHA256: policyDigest(b.Policy.originalPolicy())})
 	binding := *b
-	s := &stepSession{binding: &binding, active: true}
+	s := &stepSession{binding: &binding, active: true, input: sessionActionInput(ctx)}
 	close := func() { s.mu.Lock(); s.active = false; s.mu.Unlock() }
 	return context.WithValue(ctx, stepSessionKey{}, s), close, nil
 }
@@ -65,6 +70,11 @@ func ChargeStep(ctx context.Context) error {
 		return errors.New("driver step session has ended")
 	}
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := checkSessionActionInput(ctx, s.input); err != nil {
+		s.attempted = true
+		s.err = err
 		return err
 	}
 	if s.attempted {

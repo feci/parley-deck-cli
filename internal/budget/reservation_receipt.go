@@ -13,6 +13,7 @@ import (
 // This is a live-session witness, not a cross-process execution/replay token.
 type reservationReceipt struct {
 	scope, id     string
+	actionSHA256  string
 	startedAt     time.Time
 	kind          Kind
 	reservedAt    time.Time
@@ -26,14 +27,14 @@ func newReservationReceipt(state Snapshot, id string, kind Kind) (reservationRec
 	}
 	return reservationReceipt{
 		scope: state.Scope, id: key(id), startedAt: state.StartedAt,
-		kind: kind, reservedAt: entry.ReservedAt, reserveMicros: copyInt(entry.ReserveMicros),
+		kind: kind, reservedAt: entry.ReservedAt, reserveMicros: copyInt(entry.ReserveMicros), actionSHA256: actionIdentityDigest(entry.Action),
 	}, nil
 }
 
 func (r reservationReceipt) check(state Snapshot) error {
 	entry, ok := state.Entries[r.id]
 	if r.id == "" || r.scope != state.Scope || !r.startedAt.Equal(state.StartedAt) || !ok ||
-		entry.Kind != r.kind || !entry.ReservedAt.Equal(r.reservedAt) ||
+		entry.Kind != r.kind || !entry.ReservedAt.Equal(r.reservedAt) || actionIdentityDigest(entry.Action) != r.actionSHA256 ||
 		(entry.ReserveMicros == nil) != (r.reserveMicros == nil) ||
 		(entry.ReserveMicros != nil && *entry.ReserveMicros != *r.reserveMicros) {
 		return errors.New("active accounting session lost or changed its original reservation")

@@ -15,12 +15,14 @@ import (
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // RunImplementation runs Phase 5: it launches a single implementer to produce
 // IMPLEMENTATION.md (and code on a branch) per FINAL.md. opts.Idea.Participants
 // must contain exactly the implementer. Reuses the shared launch machinery.
 func RunImplementation(ctx context.Context, opts Options) Result {
+	ctx = withRunnerActionInput(ctx, opts, "implementation")
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
 
@@ -54,6 +56,7 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 // an ordinary nonzero exit with a valid artifact succeeds with agent_exit
 // (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
+	ctx = withRunnerActionInput(ctx, opts, "fixup")
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
 	ctx, finishCycle := groupProtocolCycle(ctx, opts.Root, opts.Idea.Slug, opts.Idea.Path, opts.RunID, budget.Fixup)
@@ -79,7 +82,9 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
 	cctx = WithLaunchInfo(cctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
-		Idea: opts.Idea.Slug, Phase: "fixup", Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md")})
+		Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1, Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
+		Observe: func(record telemetry.Record) { result.InvocationID = record.InvocationID },
+	})
 
 	// The fix-up runs through the same hardened exec path as every other agent
 	// launch (review fix 4): process group + procctl marker + participant env
@@ -336,6 +341,7 @@ func validateArtifactForPhase(opts Options, outputPath, agentID string) error {
 // the machine-readable Phase-7 contract (outstanding_agreed_fixes). Overwrites
 // any prior draft so each fix-up cycle records the current count.
 func RunReviewConsensus(ctx context.Context, opts Options) Result {
+	ctx = withRunnerActionInput(ctx, opts, "review-consensus")
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
 

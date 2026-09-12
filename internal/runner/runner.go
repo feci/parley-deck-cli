@@ -198,6 +198,7 @@ func (h *Handle) setResults(results []Result) {
 }
 
 func RunRoundOne(ctx context.Context, opts Options) []Result {
+	ctx = withRunnerActionInput(ctx, opts, "round")
 	ctx = withLaunchOrigin(ctx, opts.Root)
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
