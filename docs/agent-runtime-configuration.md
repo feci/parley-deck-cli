@@ -288,12 +288,64 @@ the shared ledger; it is diagnostic metadata, not a credential.
 
 Never delete a live lock inode, its `lock-origin`, or a ledger to recover budget.
 Old v1 origins and relocated ledgers refuse rather than silently repinning.
-There is no supported lock-origin migration/re-pin command yet: preserve all ledger and
-origin files, use the original compatible environment, and keep writers stopped
-if it is unavailable. `budget inspect` remains available for diagnostics. A cache
-filesystem without verified exclusion stops visibly and names its path. Windows
-is cross-compiled; runtime validation is pending. Crashes may leave staging files;
-no automatic sweeper removes files that another writer might still be using.
+Same-host cache relocation is available through `budget origin inspect|apply`
+for an existing resource at the same canonical path. It requires access to the
+original permanent lock and an existing destination lock directory outside the
+protected resource. It cannot relocate a repository/accounting scope, recreate
+a lost original identity, establish remote-host quiescence, or repair missing
+ledger history. Preserve every original lock, origin, witness and migration
+record. A cache filesystem without verified exclusion stops visibly and names
+its path. Windows is cross-compiled; runtime validation is pending. Crashes may
+leave staging files; no automatic sweeper removes files that another writer
+might still be using.
+
+```sh
+parley budget origin inspect --resource /path/to/existing/metadata --target-lock-dir /path/to/existing/local-locks
+parley budget origin apply --resource /path/to/existing/metadata --target-lock-dir /path/to/existing/local-locks --expected-sha256 HASH_FROM_INSPECT --decision-id UNIQUE_DECISION --reason 'Relocate the host-local lock cache' --yes
+```
+
+Inspection is read-only and acquires the existing kernel lock. Its digest binds
+the exact origin, guard-witness presence, destination state and protected file
+hashes/modes. Apply repeats the material check after waiting. The platform's
+actual attended terminal probe is required for apply; there is no `--attended`
+or participant-authored replacement. Attendance and persisted random lock tokens
+are cooperative attribution, not human/machine authentication. The v2 origin
+never recorded an original physical device/inode identifier; migration proves
+exclusion of the currently accessible pinned object, not an invented historical
+inode identity.
+
+Apply first publishes an immutable decision under `lock-origin-migrations/`,
+then creates or reuses the exact destination identity. It holds the original and
+destination kernel locks through origin/witness/completion publication, rechecks
+their held descriptors against the current paths, and never unlinks either lock.
+A contended destination refuses immediately with its resumable decision retained;
+the old-lock wait is bounded by the command's 30-second deadline. Both filesystems
+must pass an independent-descriptor exclusion probe. All ledger bytes, accounting
+epochs, settled charges, unknown costs, reservations and ceilings remain intact.
+
+Migrated authority uses `parley-budget-lock/v3`. Older v2 binaries refuse it;
+new binaries follow it only through a complete, correctly bound migration chain.
+An old waiter retains its exact pre-wait origin and refuses after cutover. A
+missing completion, journal, required witness, or changed resource path blocks
+work. A missing origin with retained migration/ledger continuity also refuses
+bootstrap. Removing old authority files is not a cleanup or recovery procedure.
+
+After interruption or failed output, repeat the exact apply arguments. A finished
+decision returns its original preview, including after later accounting changes
+or additional migrations. An unfinished decision re-acquires both locks and
+finishes only against its captured material. Before v3 origin publication, old
+v2 writers can legitimately continue; if they change accounting, retain the stale
+prepared decision and take a fresh inspection with a new decision ID. This
+explicitly supersedes preparation without resetting any state. After v3 origin
+publication, incomplete authority blocks ordinary writers. Changed protected
+material at that point, unavailable old identity, lost journal, or erased history
+remains a refusal requiring separate recovery; there is no forced reset option.
+
+The material inventory includes descendant files but does not migrate their
+independent locks/scopes. It refuses symlinks/special files and exceeds neither
+10,000 entries, 16 MiB per file nor 64 MiB total; large snapshot stores require a
+separate bounded recovery design. Chains are limited to 127 migrations plus the
+original v2 authority. The operation does not archive history or delete staging.
 
 Synchronization-only resource guards now persist `guard-established`, containing
 their exact origin, before returning permission. They have no ledger whose
@@ -301,8 +353,9 @@ existence could otherwise distinguish first use from lost lock state. A retained
 witness with a missing origin refuses before recreating either the origin or the
 local inode; a conflicting witness also refuses. Failed witness publication
 returns no permission and releases the kernel lock. An unchanged-origin retry can
-finish interrupted publication. This does not implement lock migration or prove
-quiescence: preserve the witness with the origin and cache identity. Existing
+finish interrupted publication. For supported cache relocation, the attended
+origin control above updates this witness under both held locks; preserve it
+with the origin, migration records and cache identities. Existing
 guards acquire the witness on their first successful use by this runtime. Older
 binaries and erasing both the witness and origin are outside this protection.
 The API is cooperative synchronization, not protection against a malicious

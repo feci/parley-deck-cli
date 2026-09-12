@@ -17,6 +17,10 @@ func runBudget(ctx context.Context, args []string, stdout, stderr io.Writer) int
 }
 
 func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr io.Writer, supported, attended bool) int {
+	if len(args) > 1 && args[0] == "origin" && args[1] == "apply" && !supported {
+		fmt.Fprintln(stderr, "budget origin: attended operator control is unavailable on this platform; no origin was migrated")
+		return 2
+	}
 	if len(args) > 1 && args[0] == "migrate" && (args[1] == "apply" || len(args) > 2 && args[1] == "recover" && args[2] == "apply") && !supported {
 		fmt.Fprintln(stderr, "budget migration: attended operator control is unavailable on this platform; no import was activated")
 		return 2
@@ -40,6 +44,9 @@ func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr
 // platform probe; no flag or participant-authored field supplies attendance.
 // As with protocol publication, terminal presence is not human authentication.
 func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writer, attended bool) int {
+	if len(args) > 0 && args[0] == "origin" {
+		return runBudgetOrigin(ctx, args[1:], stdout, stderr, attended)
+	}
 	if len(args) > 0 && args[0] == "migrate" {
 		return runBudgetMigrate(ctx, args[1:], stdout, stderr, attended)
 	}

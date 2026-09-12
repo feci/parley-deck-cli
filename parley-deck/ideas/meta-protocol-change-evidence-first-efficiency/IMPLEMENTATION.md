@@ -4,13 +4,31 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 7d54de924910a22aa228919dc42d7ce3b31c2ae2
-validation-source-manifest: 4c982f04de789ff07fb8ba1508e19402fbc3a0a3c0bf54b61487c1caf8943576
+checkpoint-base-commit: 498a21cae3cadccf373208a55df300c62961c525
+validation-source-manifest: ac1589bbf46569489f94ae29cda45c7f7cff4f3fe3ee04c5e4641d97c7e1e002
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
 
 # Evidence-First Delivery
+
+## Guard-origin migration allocation — September 12, 2026
+
+Before edits, codex-1 claims `internal/budget/lock.go`, new
+`internal/budget/lock_origin_migration.go`,
+`internal/budget/lock_origin_migration_test.go`,
+`internal/app/budget.go`, new `internal/app/budget_origin.go`,
+`internal/app/budget_origin_test.go`, `docs/agent-runtime-configuration.md`, and
+`implementation-notes/codex-1-lock-origin-migration-20260912.md` for same-host,
+same-resource cache relocation. These paths are within Codex's serialized
+runtime ownership and do not modify another participant's artifacts.
+
+The slice must pin exact origin bytes before waiting, retain old and destination
+kernel exclusion through journaled cutover, preserve accounting and witnesses,
+refuse incomplete migrated authority, and support exact recovery/replay. Missing
+old identities, changed resource roots, and remote-host recovery stay refused.
+Only synthetic test resources may be migrated during implementation. No actual
+operator migration is authorized or claimed by this allocation.
 
 ## Summary of work
 
@@ -31,16 +49,27 @@ continuation replay returns its original preview instead of consulting a later
 source. The current snapshot implementation verifies every regular member by
 one additional fresh, contained read matching its copied bytes, identity, size
 and mode, with stable descriptor metadata and post-read name checks. Full archive
-and original-source checks remain required. All planned automated checks pass
-at the latest 381-file source manifest: focused/full/race, vet, Windows builds
+and original-source checks remain required. That snapshot checkpoint passed
+its 381-file source manifest checks: focused/full/race, vet, Windows builds
 and compiled shared trajectory/runner/driver/evidence/app tests. The four new
 reconciliation app tests and eleven snapshot-read tests pass in the applicable
 runs; six negative overlays detect removed protections. Earlier failed runs and
 counterexamples remain retained. This is automated implementation evidence;
 fresh independent current-source acceptance is still pending.
 
-Independent current-source model acceptance, explicit interrupted-attempt recovery,
-safe guard-origin migration and durable semantic action replay remain open.
+The next implemented slice adds attended same-host guard/lock-origin relocation
+with both kernel locks held, exact journaled recovery/replay and preserved ledger
+bytes. The final 385-file manifest passed full tests (210.427s), six-package race
+(247.623s), vet, Windows budget/app cross-builds and compiled shared-volume
+budget/app selections. Eleven substantive new top-level scenarios and their
+child-process harness pass. Five removed-protection overlays fail at their
+intended assertions. A separately compiled unmodified 498a21c production lock
+passed the old-holder/old-waiter/new-writer cutover proof. The actual CLI also
+refuses unattended apply without mutation. This is automated implementation
+evidence; independent current-source acceptance is pending. Missing old
+identities, changed roots, lost journals and stale post-cutover material remain
+explicit recovery limits. Independent current-source model acceptance, other
+interrupted-attempt recovery and durable semantic action replay remain open.
 The exact packet trial, real twelve-task solo/duo/full-six pilot, final populated
 HTML/ego-browser QA and actual-delivery-based follow-ups are also outstanding.
 No synthetic fixture supplies a live experiment or a participant-owned signature.
@@ -173,11 +202,12 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Finish the current exact-source validation and publish the reconciliation/
-   continuation checkpoint to draft PR #73. The owned note is
-   `implementation-notes/codex-1-trajectory-reconciliation-20260912.md`.
-2. Complete safe guard/lock-origin migration, durable semantic action identity
-   across interruption and explicit recovery of orphan reservations, failed
+1. Reconciliation/continuation is published at 498a21c. The new same-host
+   lock-origin migration slice has passed its final automated validation and is
+   documented in `implementation-notes/codex-1-lock-origin-migration-20260912.md`.
+   Keep current-source acceptance separate from this code checkpoint.
+2. Complete durable semantic action identity across interruption and explicit
+   recovery of orphan reservations, failed
    verification tickets, lost parent results and unavailable source/index/history.
    Preserve existing charges and all refusal evidence.
 3. Obtain fresh participant-owned acceptance of the final code and finish live
@@ -2708,3 +2738,29 @@ existing draft PR; the full objective and every remaining gate stay open.
 The user was asked asynchronously about the concrete September 10 historical
 quorum/pilot proposal and experiment ceilings. No approval is inferred from the
 continuation request or elapsed time; the proposal is not a ratified amendment.
+
+## Guard-origin relocation validation — September 12
+
+The allocated slice is implemented and ready for independent review. Current
+source manifest `ac1589bbf46569489f94ae29cda45c7f7cff4f3fe3ee04c5e4641d97c7e1e002`
+covers 385 Go/module files. Final full/race/vet/platform/shared checks passed;
+the final verifier checks all 32 package terminals, all 12 new top-level test
+functions (including the process harness), five intended negative failures,
+native/shared log equality, unchanged source and historical HTML, actual legacy
+compatibility and actual CLI attendance refusal. See the owned note and
+`.parley-runtime/lock-origin-migration-final-validation-20260912/`.
+
+The earlier full pass (214.932s) has source_matches=false because the capacity
+fix landed during that run; it is retained as superseded, not final evidence.
+The accepted final full run is 210.427s on the fixed manifest. No real model call
+or actual operator migration occurred. The live inventory remains 34 terminal
+attempts, 17 unknown costs and USD 46.1887585 known CLI estimates; total unknown.
+No participant artifact/signature or historical evaluation was rewritten.
+
+Next independent work is durable semantic action identity and explicit recovery
+of interrupted/lost-result/helper-ticket/unchanged-source/orphan-reservation
+states. The read-only map is `.parley-runtime/next-semantic-action-recovery-20260912.md`.
+Same-host cache relocation does not solve missing original identities, changed
+repository scopes, large/changed snapshot stores, erased journals or Git history.
+Existing quorum, pilot and funding decisions remain pending; no amendment or
+spending authority is inferred from this checkpoint.

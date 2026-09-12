@@ -21,9 +21,9 @@ import (
 // host-local cache because some shared mounts report successful flock without
 // exclusion. An immutable origin pins the first host/cache path for the ledger;
 // another cache environment or hostname refuses instead of taking a second lock.
-// This is same-origin coordination, not distributed cross-host locking. Cache
-// migration/removal requires quiescent operator maintenance; never delete a
-// live lock inode or its origin file.
+// This is same-origin coordination, not distributed cross-host locking. A
+// same-host cache move uses journaled migration with both kernel locks held.
+// Never delete a live lock inode or its origin file.
 // Kernel ownership is released on exit, without PID files or stale-lock races.
 func lock(ctx context.Context, path string) (func(), error) {
 	return lockWithOps(ctx, path, tryLock, unlock)
@@ -41,6 +41,28 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 	canonical, err = filepath.EvalSymlinks(canonical)
 	if err != nil {
 		return nil, err
+	}
+	prior, readErr := readLockOrigin(filepath.Join(canonical, "lock-origin"))
+	if readErr != nil && !os.IsNotExist(readErr) {
+		return nil, readErr
+	}
+	if bytes.HasPrefix(prior, []byte("parley-budget-lock/v3\n")) {
+		origin, err := resolveMigratedOrigin(canonical, prior)
+		if err != nil {
+			return nil, err
+		}
+		return acquirePinnedKernelLock(ctx, origin.Path, origin.Token, take, drop, func() error {
+			if err := verifyExactLockOrigin(canonical, prior); err != nil {
+				return err
+			}
+			_, err := resolveMigratedOrigin(canonical, prior)
+			return err
+		}, func() error {
+			if ready != nil {
+				return ready(canonical)
+			}
+			return nil
+		})
 	}
 	cache, err := os.UserCacheDir()
 	if err != nil {
@@ -68,13 +90,20 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 		return nil, originErr
 	}
 	if newOrigin {
+		for _, witness := range []string{"ledger-established", originMigrationDirectory} {
+			if _, err := os.Lstat(filepath.Join(canonical, witness)); err == nil {
+				return nil, errors.New("established budget history has no lock origin; preserve retained history; refusing recreation")
+			} else if !os.IsNotExist(err) {
+				return nil, err
+			}
+		}
 		if _, err := os.Lstat(filepath.Join(canonical, resourceGuardWitness)); err == nil {
 			return nil, errors.New("established resource guard has no lock origin; preserve its witness and stop writers; refusing recreation")
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
 		if _, err := os.Lstat(filepath.Join(canonical, "ledger.json")); err == nil {
-			return nil, errors.New("existing budget ledger has no lock origin; preserve charges and stop writers: a supported migration is not yet available")
+			return nil, errors.New("existing budget ledger has no lock origin; preserve charges and stop writers: migration requires the original accessible identity")
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
@@ -91,8 +120,25 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 	if err := pinLockOrigin(canonical, path, token); err != nil {
 		return nil, err
 	}
-	// An established origin never recreates a missing cache inode. A cache
-	// wipe or another environment instead fails before any work is authorized.
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		return nil, errors.New("cannot identify budget lock host")
+	}
+	expected := []byte("parley-budget-lock/v2\n" + host + "\n" + path + "\n" + token + "\n")
+	return acquirePinnedKernelLock(ctx, path, token, take, drop, func() error {
+		return verifyExactLockOrigin(canonical, expected)
+	}, func() error {
+		if ready != nil {
+			return ready(canonical)
+		}
+		return nil
+	})
+}
+
+// The check closure captures authority BEFORE any wait. A waiter cannot adopt
+// an origin observed only after acquisition, including a completed migration.
+func acquirePinnedKernelLock(ctx context.Context, path, token string, take func(*os.File) (bool, error), drop func(*os.File), check, ready func() error) (func(), error) {
+	// Never recreate an established inode, including during migration recovery.
 	f, err := os.OpenFile(path, os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, err
@@ -127,7 +173,7 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 				f.Close()
 				return nil, err
 			}
-			if err := verifyPinnedLockOrigin(canonical, path, token); err != nil {
+			if err := check(); err != nil {
 				drop(f)
 				f.Close()
 				return nil, err
@@ -161,13 +207,13 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 				f.Close()
 				return nil, err
 			}
-			if err := verifyPinnedLockOrigin(canonical, path, token); err != nil {
+			if err := check(); err != nil {
 				drop(f)
 				f.Close()
 				return nil, err
 			}
 			if ready != nil {
-				if err := ready(canonical); err != nil {
+				if err := ready(); err != nil {
 					drop(f)
 					f.Close()
 					return nil, err
@@ -179,7 +225,7 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 					f.Close()
 					return nil, err
 				}
-				if err := verifyPinnedLockOrigin(canonical, path, token); err != nil {
+				if err := check(); err != nil {
 					drop(f)
 					f.Close()
 					return nil, err
@@ -220,6 +266,18 @@ func verifyPinnedLockOrigin(dir, lockPath, token string) error {
 	}
 	expected := []byte("parley-budget-lock/v2\n" + host + "\n" + lockPath + "\n" + token + "\n")
 	if !bytes.Equal(data, expected) {
+		return errors.New("budget lock origin changed before exclusion was established")
+	}
+	return nil
+}
+
+// Verify the exact captured version, destination and journal reference.
+func verifyExactLockOrigin(dir string, expected []byte) error {
+	actual, err := readLockOrigin(filepath.Join(dir, "lock-origin"))
+	if err != nil {
+		return fmt.Errorf("budget lock origin unavailable after acquisition: %w", err)
+	}
+	if !bytes.Equal(actual, expected) {
 		return errors.New("budget lock origin changed before exclusion was established")
 	}
 	return nil
@@ -275,7 +333,7 @@ func pinLockOrigin(dir, lockPath, token string) error {
 					reason = "local lock identity changed or was copied from another environment"
 				}
 			}
-			return fmt.Errorf("budget lock origin mismatch at %s: %s; preserve ledger and use its original compatible environment; a supported migration is not yet available", path, reason)
+			return fmt.Errorf("budget lock origin mismatch at %s: %s; preserve ledger and use its original compatible environment; same-host cache relocation requires budget origin inspect/apply with the original accessible identity", path, reason)
 		}
 		return nil
 	}
@@ -394,7 +452,7 @@ func checkLockOriginLocation(dir, lockPath string) error {
 		reason = "cache path or ledger location changed"
 	}
 	if reason != "" {
-		return fmt.Errorf("budget lock origin mismatch at %s: %s; preserve charges; a supported migration is not yet available", path, reason)
+		return fmt.Errorf("budget lock origin mismatch at %s: %s; preserve charges; same-host cache relocation requires budget origin inspect/apply with the original accessible identity", path, reason)
 	}
 	return nil
 }
