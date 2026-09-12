@@ -869,8 +869,9 @@ same-UID actor capable of fabricating all mutually consistent artifacts.
 The internal trajectory API prepares the paired-execution part of the opt-in
 pilot rule. The CLI policy below now enforces durable capture and refusal at
 driver/manual entrypoints. The selected-verifier CLI below connects independent
-execution to durable observations. AC-B2 remains incomplete until complete
-charge-derived evaluation and explicit disposition/recovery are connected and verified.
+execution to durable observations. Reconciliation derives the complete ordered
+history and retains review/continuation decisions. AC-B2 remains incomplete while
+explicit interrupted-attempt recovery and independent live verification remain open.
 
 `Freeze` binds separate clean Git baseline/patched snapshots, full commit IDs,
 source-tree hashes, the exact binary patch digest, independent runtime verifier,
@@ -939,12 +940,14 @@ commit, stash, discard, or manufacture a clean snapshot. Run status and exit zer
 are not independent verification. Driver and application completion paths reject
 pending attempts, including after resume or a separate finite budget extension.
 
-Capture, source restoration, refusal enforcement and the selected-verifier CLI
-are available. Every captured attempt currently remains pending. Complete
-charge-derived evaluation and explicit disposition/recovery must be integrated
-before the next patch can proceed under this policy. There is no reset/accept/override CLI
-in this checkpoint. Do not enable it on ongoing production work expecting an
-already complete review-and-continue workflow. AC-B2 remains incomplete.
+Capture, source restoration, the selected-verifier CLI and durable reconciliation
+are available. A captured attempt stays pending until the retained parent result
+is reconciled through the control below. Resolved history is rechecked before
+another fixup; dirty after-source needs an explicit clean promotion, and review
+or inconclusive outcomes need an attended decision. Missing source/index/history,
+interrupted reservations and failed verification journals still require separate
+recovery; these commands do not reset or silently retry them. Independent
+current-source acceptance and the live pilot remain required for AC-B2.
 
 These controls coordinate cooperative runtime writers. Process labels, hashes,
 terminal presence and files under the same user account do not authenticate a
@@ -970,6 +973,24 @@ link, an unsupported entry or filename, or excessive data refuses capture.
 Archives are bounded to 256 MiB, individual files to 64 MiB and the inventory to
 100,000 entries. These are capture limits, not permission to omit larger files.
 Read-only Git observation disables optional index refresh writes.
+
+Capture opens a fresh contained root from the original path for each member and
+requires the pinned directory identity. This avoids obsolete directory-handle
+views observed on AppleVirtIOFS without accepting a replacement source root.
+The preceding entry stat pins file identity; the opened descriptor supplies the
+size and permissions copied into the archive. Every regular member then receives
+one fresh, contained verification read, regardless of whether the first descriptor
+reported a timestamp change. It must confirm the same file identity, size, mode
+and exact copied bytes, with descriptor size/mode/mtime stable during verification.
+Root and entry identities are rechecked afterwards. This catches obsolete open
+views while allowing a first-read timestamp transition only when the copied
+material can be established by that stable verification read. A transition in
+verification still refuses; there is no retry loop or source rewrite.
+
+Descriptor size bounds, complete archive/tree digest checks and the final
+unchanged source observation still apply. A stale entry stat cannot truncate a
+larger current file or bypass its size bound. Agreement between the two reads
+cannot replace the original expected tree with a different current tree.
 
 The internal `RestoreSnapshot` API verifies the exact canonical tar bytes and
 source binding, then restores into a newly allocated private directory and
@@ -1036,10 +1057,10 @@ comparison and ordinary pass-only completion attestation retain their rules.
 
 These internal execution APIs do not themselves invoke a model or authorize
 the next patch. Use the selected-verifier CLI below to bind the durable journal
-to actual instrumented invocation and helper evidence. The complete charge-derived
-expected patch inventory, retained review trigger and explicit recovery/disposition
-still require integration. No call to these APIs resolves pending state,
-resets budget, changes quorum or supplies implementation completion.
+to actual instrumented invocation and helper evidence, then reconcile that exact
+retained result with the charged history. These execution APIs alone do not
+resolve pending state, reset budget, change quorum or supply implementation
+completion. Reconciliation and attended continuation are separate controls.
 
 
 ### Durable captured-verification journal (internal API)
@@ -1144,5 +1165,83 @@ and POSIX/headless restrictions still apply.
 Exit zero reports a complete observed comparison, whose assessment may be a
 regression, no regression or inconclusive. `trajectory_pending` remains true.
 This command does not grant another fixup, close the idea, change quorum or reset
-accounting. Complete ordered trajectory evaluation, retained review escalation,
-operator recovery and continuation remain unfinished.
+accounting. Use the controls below to reconcile that retained result and inspect
+ordered history. Missing/failed verification journals remain unresolved; the
+continuation control does not bypass missing evidence.
+
+
+### Reconcile a retained comparison and inspect charged history
+
+Reconciliation re-reads the original private parent request/result, matching
+successful invocation terminal, shared ticket and complete helper journal. It
+recomputes the assessment from actual AB/BA observations and checks the current
+original named criteria and quorum. A caller-provided verdict or filtered patch
+list is never accepted. Preview is read-only:
+
+```sh
+parley trajectory reconcile --dir DIR --idea IDEA --run VERIFIER_RUN
+parley trajectory reconcile --dir DIR --idea IDEA --run VERIFIER_RUN --sha256 PREVIEW_SHA --yes
+parley trajectory history --dir DIR --idea IDEA
+```
+
+This is derived evidence publication, not an operator extension. Apply requires
+the exact preview hash; simultaneous identical applies and later exact replays
+converge on the same retained resolution. Changing the run/preview or losing any
+parent, terminal, receipt, step or process record refuses. Reconciliation writes
+trajectory state version 3 while preserving the original version-2 policy and
+all original attempt bytes/hashes/archives. Older state readers reject version 3;
+do not run older writers against reconciled state.
+
+History derives its complete ordered inventory from the original charged ledger.
+Missing attempts, omitted resolutions or changed ancestry cannot become a clean
+history. Each resolution is revalidated against its retained evidence on later
+inspect, reserve, launch, terminal, continuation and completion boundaries.
+A second consecutive confirmed material regression sets a retained first review
+trigger. Later clean results reset the consecutive count but preserve that first
+trigger. Further consecutive regressions require a new decision covering the
+newly observed sequence. Inconclusive evidence stays visible even when an operator
+explicitly allows another attempt; acknowledgment never changes its outcome.
+
+### Continue with a retained decision and clean source promotion
+
+A normally resolved clean after-source can serve as the next before-source through
+the shared manual/driver/resume observer, subject to the existing budget. If the
+actual after-source was dirty, first commit the identical material content using
+the normal source workflow, then preview the promotion. Parley does not make that
+commit, stash or discard source:
+
+```sh
+parley trajectory continue --dir DIR --idea IDEA
+parley trajectory continue --dir DIR --idea IDEA --sha256 PREVIEW_SHA \
+  --decision-id DECISION --reason REASON --yes
+```
+
+The actual source must be clean, have exactly the retained material tree digest
+and descend from the captured after HEAD. A separate source/archive reference is
+retained for the new before-state; the original dirty after record is unchanged.
+A stale preview, new material change or unavailable original evidence refuses.
+There is at most one continuation decision per sequence; exact replay preserves
+it and does not grant a new attempt or change accounting. Replaying an older
+decision after later patches returns its original preview/hash; it does not
+require or return a new preview of the latest source.
+
+When preview reports `review_pending`, the attended apply also requires
+`--acknowledge-review`. When it reports a pending inconclusive result, it also
+requires `--acknowledge-inconclusive`. Both flags are needed when both conditions
+apply. The platform attendance control gates apply; a headless process cannot
+turn `--yes` into an operator decision. The recorded reason and acknowledgment
+are cooperative operator assertions, not authenticated participant signatures or
+claims that an independent review artifact was authored. Quorum and the ordinary
+review/signoff lifecycle remain intact.
+
+Every subsequent fixup still needs its own existing budget reservation. A failed
+attempt stays charged; promotion, reconciliation and acknowledgment do not add
+budget or reset the accounting epoch. A latest confirmed regression/inconclusive
+outcome, outstanding review, missing evidence or changed current source cannot
+pass the trajectory completion gate. Even a resolved clean trajectory still needs
+all ordinary current-tree whole-implementation evidence and protocol signoffs.
+
+These controls require the original roots and private evidence to remain readable.
+They do not recover a lost parent result, failed helper ticket, unchanged-source
+attempt, missing snapshot/index/history or orphan reservation, and do not authorize
+model retries. Full explicit recovery for those cases remains separate work.

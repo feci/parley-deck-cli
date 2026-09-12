@@ -202,6 +202,10 @@ func CaptureSnapshot(ctx context.Context, root, dir string, want Source) (Snapsh
 		return SnapshotRef{}, err
 	}
 	defer rooted.Close()
+	origin, err := rooted.Stat(".")
+	if err != nil || !origin.IsDir() {
+		return SnapshotRef{}, errors.New("snapshot source root is unavailable")
+	}
 	f, err := os.CreateTemp(dir, ".snapshot-*.tmp")
 	if err != nil {
 		return SnapshotRef{}, err
@@ -225,49 +229,8 @@ func CaptureSnapshot(ctx context.Context, root, dir string, want Source) (Snapsh
 		if err = ctx.Err(); err != nil {
 			return SnapshotRef{}, err
 		}
-		info, err := rooted.Lstat(filepath.FromSlash(name))
-		if err != nil {
-			return SnapshotRef{}, errors.New("source entry disappeared during capture")
-		}
-		switch {
-		case info.Mode().IsRegular():
-			if info.Size() > MaxSnapshotFileBytes {
-				return SnapshotRef{}, errors.New("source file exceeds snapshot bound")
-			}
-			src, err := rooted.Open(filepath.FromSlash(name))
-			if err != nil {
-				return SnapshotRef{}, errors.New("source file cannot be opened within its root")
-			}
-			opened, err := src.Stat()
-			if err != nil || !os.SameFile(info, opened) || !opened.Mode().IsRegular() {
-				src.Close()
-				return SnapshotRef{}, errors.New("source file changed during open")
-			}
-			err = tw.WriteHeader(snapshotHeader("files/"+name, tar.TypeReg, int64(info.Mode().Perm()), info.Size(), ""))
-			if err == nil {
-				_, err = io.CopyN(tw, contextReader{ctx, src}, info.Size())
-			}
-			after, statErr := src.Stat()
-			closeErr := src.Close()
-			if err != nil {
-				return SnapshotRef{}, err
-			}
-			if statErr != nil || closeErr != nil || after.Size() != info.Size() || after.Mode() != info.Mode() || !after.ModTime().Equal(info.ModTime()) {
-				return SnapshotRef{}, errors.New("source file changed during capture")
-			}
-		case info.Mode()&os.ModeSymlink != 0:
-			target, err := rooted.Readlink(filepath.FromSlash(name))
-			if err != nil {
-				return SnapshotRef{}, err
-			}
-			if !validSnapshotLink(name, target) {
-				return SnapshotRef{}, errors.New("snapshot link is absolute, escaping or unsupported")
-			}
-			if err = tw.WriteHeader(snapshotHeader("files/"+name, tar.TypeSymlink, int64(info.Mode().Perm()), 0, target)); err != nil {
-				return SnapshotRef{}, err
-			}
-		default:
-			return SnapshotRef{}, errors.New("snapshot source contains an unsupported entry type")
+		if err = captureSnapshotMember(ctx, root, origin, tw, name); err != nil {
+			return SnapshotRef{}, err
 		}
 	}
 	if err = tw.Close(); err != nil {
@@ -307,6 +270,140 @@ func CaptureSnapshot(ctx context.Context, root, dir string, want Source) (Snapsh
 	}
 	return ref, nil
 }
+
+// AppleVirtIOFS can retain an obsolete view behind a long-lived directory
+// handle. Reopen from the original path for each member, then require the same
+// pinned directory identity before using that fresh, contained view. Opening
+// "." through the old Root can inherit its obsolete view instead.
+func captureSnapshotMember(ctx context.Context, root string, origin os.FileInfo, tw *tar.Writer, name string) error {
+	entryRoot, err := os.OpenRoot(root)
+	if err != nil {
+		return err
+	}
+	defer entryRoot.Close()
+	actual, err := entryRoot.Stat(".")
+	if err != nil || !actual.IsDir() || !os.SameFile(origin, actual) {
+		return errors.New("snapshot source root changed during capture")
+	}
+	info, err := entryRoot.Lstat(filepath.FromSlash(name))
+	if err != nil {
+		return errors.New("source entry disappeared during capture")
+	}
+	switch {
+	case info.Mode().IsRegular():
+		return captureSnapshotRegular(ctx, entryRoot, tw, name, info)
+	case info.Mode()&os.ModeSymlink != 0:
+		target, err := entryRoot.Readlink(filepath.FromSlash(name))
+		if err != nil {
+			return err
+		}
+		if !validSnapshotLink(name, target) {
+			return errors.New("snapshot link is absolute, escaping or unsupported")
+		}
+		return tw.WriteHeader(snapshotHeader("files/"+name, tar.TypeSymlink, int64(info.Mode().Perm()), 0, target))
+	default:
+		return errors.New("snapshot source contains an unsupported entry type")
+	}
+}
+
+func captureSnapshotRegular(ctx context.Context, root *os.Root, tw *tar.Writer, name string, prior os.FileInfo) error {
+	src, err := root.Open(filepath.FromSlash(name))
+	if err != nil {
+		return errors.New("source file cannot be opened within its root")
+	}
+	opened, err := src.Stat()
+	if err != nil || !os.SameFile(prior, opened) || !opened.Mode().IsRegular() {
+		src.Close()
+		return errors.New("source file changed during open")
+	}
+	// Lstat identifies the entry; the descriptor supplies the bytes and their
+	// metadata. The complete archive must still match the frozen material tree.
+	if opened.Size() > MaxSnapshotFileBytes {
+		src.Close()
+		return errors.New("source file exceeds snapshot bound")
+	}
+	err = tw.WriteHeader(snapshotHeader("files/"+name, tar.TypeReg, int64(opened.Mode().Perm()), opened.Size(), ""))
+	copied := sha256.New()
+	if err == nil {
+		_, err = io.CopyN(io.MultiWriter(tw, copied), contextReader{ctx, src}, opened.Size())
+	}
+	after, statErr := src.Stat()
+	closeErr := src.Close()
+	if err != nil {
+		return err
+	}
+	if statErr != nil || closeErr != nil || after.Size() != opened.Size() || after.Mode() != opened.Mode() {
+		return errors.New("source file changed during capture")
+	}
+	return verifySnapshotRegular(ctx, root, name, opened, copied.Sum(nil))
+}
+
+// An open AppleVirtIOFS descriptor can retain old bytes/metadata or receive a
+// later timestamp without a byte change. Always require one fresh, stable read
+// of the same pinned material to confirm the bytes already written to the tar.
+// A transition in that read or any byte/identity/size/mode difference refuses. The
+// entire archive still has to match its original expected tree before publish.
+func verifySnapshotRegular(ctx context.Context, root *os.Root, name string, copiedInfo os.FileInfo, copiedHash []byte) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	origin, err := root.Stat(".")
+	if err != nil {
+		return err
+	}
+	fresh, err := os.OpenRoot(root.Name())
+	if err != nil {
+		return err
+	}
+	defer fresh.Close()
+	actual, err := fresh.Stat(".")
+	if err != nil || !actual.IsDir() || !os.SameFile(origin, actual) {
+		return errors.New("snapshot source root changed during timestamp revalidation")
+	}
+	entry, err := fresh.Lstat(filepath.FromSlash(name))
+	if err != nil || !entry.Mode().IsRegular() || !os.SameFile(copiedInfo, entry) {
+		return errors.New("source file changed before timestamp revalidation")
+	}
+	src, err := fresh.Open(filepath.FromSlash(name))
+	if err != nil {
+		return err
+	}
+	opened, err := src.Stat()
+	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(copiedInfo, opened) || opened.Size() != copiedInfo.Size() || opened.Mode() != copiedInfo.Mode() || opened.Size() > MaxSnapshotFileBytes {
+		src.Close()
+		return errors.New("source file changed during timestamp revalidation open")
+	}
+	verified := sha256.New()
+	_, err = io.CopyN(verified, contextReader{ctx, src}, opened.Size())
+	after, statErr := src.Stat()
+	closeErr := src.Close()
+	if err != nil {
+		return err
+	}
+	if statErr != nil || closeErr != nil || after.Size() != opened.Size() || after.Mode() != opened.Mode() || !after.ModTime().Equal(opened.ModTime()) {
+		return errors.New("source file changed during timestamp revalidation")
+	}
+	if !bytes.Equal(verified.Sum(nil), copiedHash) {
+		return errors.New("source bytes changed during timestamp revalidation")
+	}
+	// Recheck the names as well as the open descriptor: a replaced root or
+	// directory entry must not be hidden by the original still-readable inode.
+	current, err := os.OpenRoot(root.Name())
+	if err != nil {
+		return err
+	}
+	defer current.Close()
+	currentRoot, err := current.Stat(".")
+	if err != nil || !os.SameFile(origin, currentRoot) {
+		return errors.New("snapshot source root changed during timestamp revalidation")
+	}
+	currentFile, err := current.Lstat(filepath.FromSlash(name))
+	if err != nil || !currentFile.Mode().IsRegular() || !os.SameFile(opened, currentFile) || currentFile.Size() != opened.Size() || currentFile.Mode() != opened.Mode() {
+		return errors.New("source file replaced during timestamp revalidation")
+	}
+	return ctx.Err()
+}
+
 func validSnapshotLink(name, target string) bool {
 	if target == "" || len(target) > 4096 || path.IsAbs(target) || strings.ContainsAny(target, "\\:\x00\r\n") {
 		return false

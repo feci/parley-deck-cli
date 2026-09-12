@@ -111,14 +111,18 @@ func (r CapturedRequest) SHA256() (string, error) {
 }
 
 func capturedRequest(s State, verifier string) (CapturedRequest, error) {
+	return capturedRequestAt(s, verifier, len(s.Attempts))
+}
+
+func capturedRequestAt(s State, verifier string, sequence int) (CapturedRequest, error) {
 	sha, err := s.Policy.SHA256()
 	if err != nil {
 		return CapturedRequest{}, err
 	}
-	if len(s.Attempts) == 0 {
+	if sequence < 1 || sequence > len(s.Attempts) {
 		return CapturedRequest{}, errors.New("no charged patch attempt to verify")
 	}
-	a := s.Attempts[len(s.Attempts)-1]
+	a := s.Attempts[sequence-1]
 	if a.Launch == nil || a.Terminal == nil || a.After == nil || a.AfterArchive == nil || a.Terminal.SnapshotError != "" {
 		return CapturedRequest{}, errors.New("charged attempt lacks its actual terminal or retained source")
 	}
@@ -167,7 +171,7 @@ func checkCapturedAuthority(ctx context.Context, root string, r CapturedRequest)
 	}
 	var archiveDir string
 	err = withState(ctx, root, r.Idea, func(b budget.CycleBinding, _ budget.Snapshot, s State) error {
-		current, err := capturedRequest(s, r.Verifier)
+		current, err := capturedRequestAt(s, r.Verifier, r.Sequence)
 		if err != nil {
 			return err
 		}

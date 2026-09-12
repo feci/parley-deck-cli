@@ -318,26 +318,58 @@ func TestTrackedCommandForSeparateStartWait(t *testing.T) {
 	}
 }
 
+// The fixture arms its deadline only after the descendant confirms startup.
+// Mapping the timer's explicit cancellation cause preserves timeout classification.
+type launchDeadlineContext struct{ context.Context }
+
+func (c launchDeadlineContext) Err() error { return context.Cause(c.Context) }
+
 func TestTrackedCommandForTimeoutKillsChildGroup(t *testing.T) {
 	root := t.TempDir()
 	writeLaunchProtocol(t, root)
-	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
-	defer cancel()
+	parent, expire := context.WithCancelCause(context.Background())
+	defer expire(context.Canceled)
+	ctx := launchDeadlineContext{parent}
 	cmd, cleanup, err := trackedCommandFor(ctx, root,
-		telemetryShell("(sleep 1; touch survived) & wait", false), "prompt")
+		telemetryShell("(touch child-ready; while [ ! -e release-survivor ]; do sleep 0.01; done; touch survived) & wait", false), "prompt")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cleanup()
-	if err := cmd.Run(); !errors.Is(err, context.DeadlineExceeded) {
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	readyUntil := time.Now().Add(10 * time.Second)
+	for {
+		if _, err := os.Stat(filepath.Join(root, "child-ready")); err == nil {
+			break
+		} else if !os.IsNotExist(err) {
+			t.Fatal(err)
+		}
+		if time.Now().After(readyUntil) {
+			t.Fatal("descendant did not confirm startup")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	timer := time.AfterFunc(150*time.Millisecond, func() { expire(context.DeadlineExceeded) })
+	defer timer.Stop()
+	if err := cmd.Wait(); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("timeout: %v", err)
+	}
+	// A surviving descendant may write only after its parent has been waited.
+	if err := os.WriteFile(filepath.Join(root, "release-survivor"), nil, 0o600); err != nil {
+		t.Fatal(err)
 	}
 	time.Sleep(time.Second)
 	if _, err := os.Stat(filepath.Join(root, "survived")); !os.IsNotExist(err) {
 		t.Fatal("descendant survived timeout")
 	}
-	r := terminalRecords(t, root)[0]
-	if r.StartedAt == nil || *r.Outcome.FailureClass != "timeout" {
+	records := terminalRecords(t, root)
+	if len(records) != 1 {
+		t.Fatalf("terminal records: %d", len(records))
+	}
+	r := records[0]
+	if r.StartedAt == nil || r.Outcome == nil || r.Outcome.FailureClass == nil || *r.Outcome.FailureClass != "timeout" {
 		t.Fatalf("record: %+v", r)
 	}
 }

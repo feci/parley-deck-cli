@@ -54,10 +54,12 @@ type Attempt struct {
 	Terminal      *Terminal          `json:"terminal"`
 }
 type State struct {
-	Version         int         `json:"version"`
-	Policy          Policy      `json:"policy"`
-	BaselineArchive SnapshotRef `json:"baseline_archive"`
-	Attempts        []Attempt   `json:"attempts"`
+	Version         int            `json:"version"`
+	Policy          Policy         `json:"policy"`
+	BaselineArchive SnapshotRef    `json:"baseline_archive"`
+	Attempts        []Attempt      `json:"attempts"`
+	Resolutions     []Resolution   `json:"resolutions,omitempty"`
+	Continuations   []Continuation `json:"continuations,omitempty"`
 }
 
 func statePath(b budget.CycleBinding) string {
@@ -69,6 +71,9 @@ func sourceValid(s Source) bool {
 func (p Policy) SHA256() (string, error) {
 	if err := trajectoryVersion(p.Version); err != nil {
 		return "", err
+	}
+	if p.Version != 2 {
+		return "", errors.New("unsupported frozen trajectory policy version")
 	}
 	if !safeLabel(p.Idea) || p.Scope == "" || p.StartedAt.IsZero() || !safeLabel(p.Implementer) || !sourceValid(p.Baseline) || !p.Baseline.Clean || len(p.Criteria) == 0 || len(p.Criteria) > MaxCriteria {
 		return "", errors.New("invalid frozen trajectory policy")
@@ -91,7 +96,7 @@ func trajectoryVersion(version int) error {
 	if version == 1 {
 		return errors.New("trajectory v1 retained digests only; preserve its history for explicit recovery; current files cannot reconstruct past attempts")
 	}
-	if version != 2 {
+	if version != 2 && version != 3 {
 		return errors.New("unsupported trajectory version")
 	}
 	return nil
@@ -254,13 +259,37 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 	if err != nil {
 		return err
 	}
-	if s.Version != 2 || !s.BaselineArchive.valid() || s.Attempts == nil || len(s.Attempts) > MaxPatches || sha != b.Policy.TrajectorySHA256 || s.Policy.Scope != b.Policy.Scope || s.Policy.Idea != b.Policy.Idea || !s.Policy.StartedAt.Equal(ledger.StartedAt) || b.Policy.Carried != 0 || len(s.Attempts) != len(ledger.Entries) {
+	if (s.Version != 2 && s.Version != 3) || !s.BaselineArchive.valid() || s.Attempts == nil || len(s.Attempts) > MaxPatches || sha != b.Policy.TrajectorySHA256 || s.Policy.Scope != b.Policy.Scope || s.Policy.Idea != b.Policy.Idea || !s.Policy.StartedAt.Equal(ledger.StartedAt) || b.Policy.Carried != 0 || len(s.Attempts) != len(ledger.Entries) {
 		return errors.New("trajectory policy or complete charged history is missing or changed")
+	}
+	if err := validateTransitions(s); err != nil {
+		return err
 	}
 	seen := map[string]bool{}
 	before := s.Policy.Baseline
 	beforeArchive := s.BaselineArchive
 	for i, a := range s.Attempts {
+		if i > 0 {
+			if len(s.Resolutions) < i {
+				return errors.New("an unverified trajectory attempt was followed by another charge")
+			}
+			prefix := s
+			prefix.Attempts = prefix.Attempts[:i]
+			prefix.Resolutions = prefix.Resolutions[:i]
+			prefix.Continuations = nil
+			for _, c := range s.Continuations {
+				if c.Preview.Sequence <= i {
+					prefix.Continuations = append(prefix.Continuations, c)
+				}
+			}
+			h := trajectoryHistory(prefix)
+			if h.ReviewPending || len(h.InconclusivePending) > 0 {
+				return errors.New("charged history bypassed a trajectory review gate")
+			}
+			if c := continuationAt(s, i); c != nil {
+				before, beforeArchive = c.Preview.Source, c.Archive
+			}
+		}
 		if a.Sequence != i+1 || seen[a.Charge.EntryKey] || a.Charge.Kind != budget.Fixup || a.Before != before || a.BeforeArchive != beforeArchive || !a.BeforeArchive.valid() || !sourceValid(a.Before) || !a.Before.Clean {
 			return errors.New("trajectory has a gap, replay or changed before-state")
 		}
@@ -292,11 +321,6 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 			} else if !a.AfterArchive.valid() || a.Terminal.SnapshotError != "" {
 				return errors.New("invalid post-state archive")
 			}
-		}
-		// Acceptance/publication is deliberately not inferred from terminal success.
-		// Until the independent receipt path is wired, every attempt remains pending.
-		if i+1 < len(s.Attempts) {
-			return errors.New("an unverified trajectory attempt was followed by another charge")
 		}
 		if a.After != nil {
 			before = *a.After
@@ -367,18 +391,26 @@ func (o *Observer) BeforeCycle(ctx context.Context, b budget.CycleBinding, ledge
 	if err = checkStateSnapshots(ctx, b, s); err != nil {
 		return err
 	}
-	if len(s.Attempts) > 0 {
-		return errors.New("trajectory awaits independent patch verification; further fixup is refused")
+	h := trajectoryHistory(s)
+	if h.Unreconciled > 0 || h.ReviewPending || len(h.InconclusivePending) > 0 {
+		return errors.New("trajectory awaits independent reconciliation or an attended review decision; further fixup is refused")
+	}
+	before, archive, err := currentTrajectorySource(s)
+	if err != nil {
+		return err
+	}
+	if !before.Clean {
+		return errors.New("retained dirty patch requires explicit clean source promotion before another fixup")
 	}
 	actual, err := Observe(ctx, o.Root)
 	if err != nil {
 		return err
 	}
-	if actual != s.Policy.Baseline {
+	if actual != before {
 		return errors.New("source differs from the frozen trajectory baseline")
 	}
 	o.before = actual
-	o.archive = s.BaselineArchive
+	o.archive = archive
 	o.prepared = data
 	return nil
 }
@@ -455,14 +487,22 @@ func Inspect(ctx context.Context, root, idea string) (*State, error) {
 }
 func RequireResolved(ctx context.Context, root, idea string) error {
 	return withState(ctx, root, idea, func(_ budget.CycleBinding, _ budget.Snapshot, s State) error {
-		if len(s.Attempts) > 0 {
-			return errors.New("trajectory has an unverified charged patch; independent receipt publication is required before completion or another fixup")
+		h := trajectoryHistory(s)
+		if h.Unreconciled > 0 || h.ReviewPending || len(h.InconclusivePending) > 0 {
+			return errors.New("trajectory has pending independent evidence or review decisions")
+		}
+		if len(s.Resolutions) > 0 && s.Resolutions[len(s.Resolutions)-1].Preview.Assessment.Outcome != NoRegression {
+			return errors.New("latest charged patch has no confirmed clean material outcome")
+		}
+		expected, _, err := currentTrajectorySource(s)
+		if err != nil {
+			return err
 		}
 		actual, err := Observe(ctx, root)
 		if err != nil {
 			return err
 		}
-		if actual != s.Policy.Baseline {
+		if actual != expected {
 			return errors.New("trajectory source changed without a retained charged patch")
 		}
 		return nil
@@ -587,5 +627,10 @@ func checkStateSnapshots(ctx context.Context, b budget.CycleBinding, s State) er
 			}
 		}
 	}
-	return nil
+	for _, c := range s.Continuations {
+		if err := CheckSnapshot(ctx, dir, c.Archive, c.Preview.Source); err != nil {
+			return fmt.Errorf("promoted source archive unavailable: %w", err)
+		}
+	}
+	return checkResolutions(ctx, b, s)
 }

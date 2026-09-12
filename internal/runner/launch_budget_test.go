@@ -280,7 +280,7 @@ func TestLaunchBudgetRetainsFailedAndUnreportedSpend(t *testing.T) {
 				script = "printf 'opaque output\\n'"
 			}
 			if scenario == "timeout-known-cost" {
-				script += "; exec sleep 5"
+				script += "; exec sleep 30"
 			}
 			agent := telemetryShell(script, scenario != "unknown-cost")
 			if scenario == "failed-start" {
@@ -301,7 +301,13 @@ func TestLaunchBudgetRetainsFailedAndUnreportedSpend(t *testing.T) {
 					}
 				}
 			}}
-			_, err := RunMeasured(ctx, ExecOptions{Root: root, Agent: agent, Prompt: "task", Timeout: 300 * time.Millisecond, Info: info})
+			// Accounting-failure cases need enough time to emit their usage; only
+			// the explicitly named timeout case deliberately expires execution.
+			timeout := 30 * time.Second
+			if scenario == "timeout-known-cost" {
+				timeout = 5 * time.Second
+			}
+			_, err := RunMeasured(ctx, ExecOptions{Root: root, Agent: agent, Prompt: "task", Timeout: timeout, Info: info})
 			if scenario == "unknown-cost" {
 				if err != nil {
 					t.Fatal(err)

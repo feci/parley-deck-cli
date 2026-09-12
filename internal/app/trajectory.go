@@ -21,6 +21,9 @@ func runTrajectory(ctx context.Context, args []string, out, errout io.Writer) in
 		return runTrajectoryVerifyHelper(ctx, args[1:], out, errout)
 	}
 	supported, attended := budgetAttendance()
+	if len(args) > 0 && (args[0] == "reconcile" || args[0] == "continue" || args[0] == "history") {
+		return runTrajectoryReconciliation(ctx, args, out, errout, supported && attended)
+	}
 	return runTrajectoryControl(ctx, args, out, errout, supported && attended)
 }
 
@@ -29,6 +32,7 @@ func runTrajectory(ctx context.Context, args []string, out, errout io.Writer) in
 func runTrajectoryControl(ctx context.Context, args []string, out, errout io.Writer, attended bool) int {
 	if len(args) == 0 || (args[0] != "initialize" && args[0] != "configure" && args[0] != "inspect") {
 		fmt.Fprintln(errout, "usage: parley trajectory initialize --dir DIR --idea ID --max-fixups N --yes; parley trajectory configure --dir DIR --idea ID --implementer ID [--policy-sha256 SHA --cycle-policy-sha256 SHA --yes]; parley trajectory inspect --dir DIR --idea ID; parley trajectory verify --dir DIR --idea ID --verifier ID --yes")
+		fmt.Fprintln(errout, "       parley trajectory reconcile --dir DIR --idea ID --run RUN [--sha256 SHA --yes]; parley trajectory history --dir DIR --idea ID; parley trajectory continue --dir DIR --idea ID [--sha256 SHA --decision-id ID --reason REASON --yes] [--acknowledge-review] [--acknowledge-inconclusive]")
 		return 2
 	}
 	f := flag.NewFlagSet("trajectory "+args[0], flag.ContinueOnError)

@@ -4,7 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-head-commit: 9c1990c
+checkpoint-base-commit: 7d54de924910a22aa228919dc42d7ce3b31c2ae2
+validation-source-manifest: 4c982f04de789ff07fb8ba1508e19402fbc3a0a3c0bf54b61487c1caf8943576
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -14,23 +15,39 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ## Summary of work
 
 The signed design is merged at 3a09a0cf2ef938e2456b50ec6eb34a6b5f37038c.
-Implementation is partial on draft PR #73: measured protocol-task launch
-boundaries, live/full context attestation, cursor persistence, fail-closed goal
-checking, packet publication and source-instruction updates are integrated and
-locally tested. Claude's partial independent source reviews are preserved with
-their dispositions. Kimi's completion-transition source is integrated and wired
-through the actual independent helper. The post-completion evidence gate and
-original-contract deletion/restart counterexamples now pass after corrections.
-Readiness schema/capture corrections, shared launch/step/cycle policies, finite
-operator extensions and monetary-default enforcement are integrated. Source
-9c1990c adds attended launch/step extensions without resetting spent history,
-reservation amounts or activation time; cached runtime bindings use the recorded
-grant. It also fixes the reproduced evidence cancellation data race. The original
-expanded race failure is retained alongside the fresh full Go and five-package
-race PASS, scoped vet, Windows cross-build and shared-volume fixtures. Legacy
-migration, safe guard recovery, durable semantic action replay, canonical refusal
-publication/recovery, regression trajectory, actual live experiments and final
-independent acceptance remain open. The frozen historical evaluation is unchanged.
+Implementation remains partial on draft PR #73. Integrated source includes typed
+invocation accounting, actual launch/step/cycle reservations and finite attended
+extensions; original-scope/current-tree completion evidence through an independent
+helper; live-source full/shadow context packets; precise readiness observations
+and buffered-process supervision. Unknown cost, failed attempts, missing authority
+and incomplete evidence remain visible and cannot become success.
+
+The current trajectory slice adds durable reconciliation of every original
+charged patch, rechecking parent request/result, terminal and complete helper
+journal evidence. Separate attended continuation records preserve original dirty
+attempts and charges, retain the first two-regression trigger after corrective
+work and leave acknowledged inconclusive outcomes visible. Historical exact
+continuation replay returns its original preview instead of consulting a later
+source. The current snapshot implementation verifies every regular member by
+one additional fresh, contained read matching its copied bytes, identity, size
+and mode, with stable descriptor metadata and post-read name checks. Full archive
+and original-source checks remain required. All planned automated checks pass
+at the latest 381-file source manifest: focused/full/race, vet, Windows builds
+and compiled shared trajectory/runner/driver/evidence/app tests. The four new
+reconciliation app tests and eleven snapshot-read tests pass in the applicable
+runs; six negative overlays detect removed protections. Earlier failed runs and
+counterexamples remain retained. This is automated implementation evidence;
+fresh independent current-source acceptance is still pending.
+
+Independent current-source model acceptance, explicit interrupted-attempt recovery,
+safe guard-origin migration and durable semantic action replay remain open.
+The exact packet trial, real twelve-task solo/duo/full-six pilot, final populated
+HTML/ego-browser QA and actual-delivery-based follow-ups are also outstanding.
+No synthetic fixture supplies a live experiment or a participant-owned signature.
+The historical evaluation and old HTML remain frozen. The live invocation inventory
+is 34 terminal attempts, 17 unknown costs, USD 46.1887585 known CLI estimates and
+an unknown total. Provider recovery, historical quorum/pilot amendment and resource
+ceilings still need the previously requested decisions.
 
 ## Implementation plan / checklist
 
@@ -156,20 +173,29 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Complete Kimi's mixed package/build-failure correction after the 58-event
-   independent pass. The preceding three issues are fixed in uncommitted owner
-   source; the new masked-exit package-failure probe still requires correction.
-2. Wire the tested shared reservation store into per-launch/per-action budgets,
-   persistent loop limits and manual/driver/resume/BLOCK paths. Complete readiness
-   validation and independent re-review of the corrected terminal process path.
-3. Reconcile at least 20 actual attempts across launch surfaces. The recovery
-   inventory currently has fourteen terminal attempts, five with unknown cost.
-4. Obtain the pending historical Hermes-to-Zcode decision and pilot amendment
-   direction. Freeze exact tasks/resource ceilings before either experiment;
-   preserve the signed packet trial and full-six design until lawfully amended.
-5. Finish independent per-slice review and the full Phase-6/7/8 review/signoff
-   cycle. Keep PR #73 and the source-skill changes in draft; no final merge,
-   global installation, immutable-core publication or release is authorized.
+1. Finish the current exact-source validation and publish the reconciliation/
+   continuation checkpoint to draft PR #73. The owned note is
+   `implementation-notes/codex-1-trajectory-reconciliation-20260912.md`.
+2. Complete safe guard/lock-origin migration, durable semantic action identity
+   across interruption and explicit recovery of orphan reservations, failed
+   verification tickets, lost parent results and unavailable source/index/history.
+   Preserve existing charges and all refusal evidence.
+3. Obtain fresh participant-owned acceptance of the final code and finish live
+   launch-surface coverage plus independent real-model concurrency/closure evidence.
+   Claude's latest attempt hit its weekly limit without a review artifact; its
+   reported reset is September 14, 06:00 Europe/Berlin. Do not silently replace it.
+4. Resolve historical Hermes/Zcode membership, any explicit full-six pilot amendment
+   and experiment funding/resource ceilings. Preserve the signed scope until an
+   amendment is accepted; current global defaults do not rewrite historical quorum.
+5. Run the exact packet trial: six AB/BA pairs each in phases 1 and 6, three packet
+   canaries plus one full control, with independent recomputation and original
+   ship gates. Run the twelve-task solo/duo/full-six pilot with frozen equal
+   enforceable ceilings, role rotation and two blind nonauthor graders.
+6. Finish all participant-owned reviews/signatures, populate the final offline HTML,
+   verify it through ego-browser and register 14/30-day follow-ups from actual
+   delivery. Keep PR #73 and skill-source changes in draft until their gates pass.
+   No final merge, global installation, immutable-core publication or release is
+   authorized by this implementation task.
 
 ## Recovery / resume
 
@@ -2374,3 +2400,311 @@ Previously unanswered Claude recovery, Hermes/Zcode membership/pilot amendment
 and resource-ceiling decisions remain unanswered. The real-model inventory and
 older report are unchanged. No merge, release, deployment, global install or
 immutable-core publication is claimed.
+
+
+### Ownership claim — durable trajectory reconciliation and continuation, September 12
+
+Codex-1 owns new trajectory reconciliation/state transition code and tests,
+shared parent-request/result types used by the existing helper CLI, the existing
+captured-request/journal authority helpers, trajectory state validation and
+snapshot checks, CLI dispatch/control and runtime documentation.
+
+Re-read the exact retained parent request/result, observed terminal binding and
+complete helper journal at reconciliation and subsequent runtime boundaries.
+Derive ordered assessment coverage from every original charged attempt; never
+accept a caller-filtered patch list. Preserve attempt hashes and original dirty
+after captures. Record separate clean source promotion when the actual committed
+source has identical material bytes and valid ancestry. Keep the first confirmed
+two-regression trigger durable, and require an attended exact decision to continue
+past review or inconclusive evidence without resetting charges or asserting a
+clean outcome. Manual/driver/resume reservations must use the same checked state.
+
+Use real synthetic executable participants and fresh-process CLI tests. Preserve
+failed/partial reservations and all existing source/index/history refusals. These
+changes do not satisfy independent current-source model acceptance, authorize the
+live experiments, change quorum, or permit final merge/release/global publication.
+
+
+### Reconciliation test extension and frozen validation — September 12
+
+The four new executable app tests passed in 39.723s after adding simultaneous
+fresh-process reconciliation, exact continuation replay, current criterion/quorum
+substitution and retained-state mutation counterexamples. Evidence remains in
+`.parley-runtime/trajectory-reconcile-extended-20260912/`. No new model call or
+actual operator activation occurred.
+
+Codex-1 additionally owns
+`implementation-notes/codex-1-trajectory-reconciliation-20260912.md` for this slice.
+Full-suite, six-package race, scoped vet, Windows cross-build and compiled
+shared-volume validation are running under the new 380-file source manifest
+ff1228819ee604db1f1f9974ad5eec1a50af807ee50905dca66253f19affbbf0.
+This is a validation-in-progress record, not final acceptance. The current
+Go/module files remain frozen until these results have been inspected.
+
+
+### Reconciliation validation correction — September 12
+
+The first frozen 380-file run passed the full suite (273.402s), six-package race
+(298.428s), Windows cross-builds and shared trajectory/runner/driver/evidence/app
+fixtures (256.787/30.621/1.665/0.596/172.201s). Vet failed because the moved
+helper-request alias was initialized without field names. Its complete failed
+log and the passing behavioral logs remain in the original validation directory.
+A separate overlay with named fields passed vet without changing the source
+under those running tests.
+
+After all first-checkpoint processes terminated, the named-field correction was
+applied. CLI usage now lists reconciliation/history/continuation and optional
+acknowledgment flags. Only those two Go files differ from the preceding manifest.
+A separate corrected source manifest and validation directory preserve the first
+checkpoint as a vet failure rather than relabeling it as a full pass.
+
+
+### Historical continuation replay correction — September 12
+
+Before starting the corrected full validation, source review found that the CLI
+computed the latest continuation preview before applying an older exact decision
+replay. This could refuse an otherwise valid replay on a later dirty source, or
+return the later preview alongside an earlier successfully replayed decision.
+The existing three-patch executable test now exercises an exact first-decision
+replay after the third patch and requires the original preview and unchanged
+state. Retain its counterexample before correcting the return/control path.
+Codex-1 owns that narrow CLI/API correction within the existing claimed files.
+The keyed-only corrected validation directory has not executed any test; a new
+final manifest will cover this additional behavioral correction.
+
+The historical replay counterexample failed in 22.397s with the expected later-
+source refusal. Returning the original preview from guarded apply/replay corrected
+that behavior; all four focused app tests passed in 39.472s. Final validation now
+uses the new 380-file source manifest 646ce1882aa32959f8c45344e265c4fe55d4e9ced103fef7d7e8271a7c184d10
+under `.parley-runtime/trajectory-reconcile-replay-final-validation-20260912/`.
+The earlier keyed-only directory was superseded before any validation ran.
+
+
+### Existing launch-timeout fixture correction — September 12
+
+At manifest 646ce1882aa32959f8c45344e265c4fe55d4e9ced103fef7d7e8271a7c184d10,
+the full suite failed TestTrackedCommandForTimeoutKillsChildGroup at command
+preparation: its original 150ms context expired before trackedCommandFor returned.
+The failure did not observe a started process or demonstrate surviving descendants.
+The six-package race run passed, as did the reconciliation app tests in full/race.
+Preserve this full-suite failure separately; a passing race run does not erase it.
+
+Codex-1 owns the correction in existing `internal/runner/launch_test.go`. Arm the
+test-owned deadline after the descendant confirms readiness, release a survivor
+canary only after the timed-out parent has been waited, and keep the assertion
+that no descendant writes it. Preserve actual process start and timeout telemetry
+checks. No production supervision, timeout or attribution rule changes here.
+
+The corrected startup-gated fixture passed as an overlay in 2.333s. A separate
+parent-only-kill control failed as expected in 4.158s with a surviving descendant.
+Both complete logs and overlays are retained. Only `internal/runner/launch_test.go`
+changed after the preceding checkpoint; production source is unchanged. Final
+validation now includes this corrected fixture in its shared runner selection and
+explicit test inventory, under manifest a10d0a02e8e68b0498b518778ea29de83b356a9c92080dfbf5678e3f31836504
+and `.parley-runtime/trajectory-reconciliation-validation-20260912/`.
+
+
+### Additional retained validation failures — September 12
+
+The a10d0a02e8e68b0498b518778ea29de83b356a9c92080dfbf5678e3f31836504 full suite
+failed TestLaunchBudgetRetainsFailedAndUnreportedSpend: terminal-write observed
+no cost, and unknown-cost expired during command preparation. That fixture used
+300ms for every scenario, including cases intended to isolate accounting writes
+rather than timeout. The corrected child-group timeout fixture passed. The
+six-package race run passed (297.308s). Shared trajectory, driver, evidence and
+app fixtures passed; shared runner failed while constructing the source fixture
+for TestCapturedVerifierLaunchRejectsChangedBinding/root with the existing
+"source file changed during capture" refusal. This is not a completed validation.
+
+Codex-1 owns the narrow accounting fixture correction in
+`internal/runner/launch_budget_test.go`: allow 30s for non-timeout accounting cases;
+use a deliberate 5s timeout against a 30s sleeper only for timeout-known-cost.
+Preserve cost-settlement and reservation-exposure assertions. An unchanged-source
+overlay passed all five scenarios in 6.352s before applying this fixture change.
+No production accounting or deadline policy changes.
+
+A separate diagnostic-only snapshot overlay retained full stat details if the
+shared capture refusal recurred. Twenty fixed repetitions of the affected root
+fixture passed (41.201s) without reproducing it. These later passes do not explain
+the earlier failure. No production snapshot guard was weakened or changed; the
+original shared-volume refusal remains unclassified and needs further diagnosis.
+All original full/race/shared logs, source manifests and diagnostic overlays remain
+retained. Do not call the validation final, commit/push as verified, or close AC-B2.
+
+
+### Current uncommitted checkpoint — September 12
+
+All test processes for this checkpoint are terminal. The latest targeted runner
+race run passed both corrected fixture families (9.571s), with source manifest
+794900ef5d33ecf8e4568190a9ae84bbba941f185c8b87b7b1d5d42cfb270698
+and evidence under `.parley-runtime/reconciliation-latest-focused-20260912/`.
+The preceding full run failed its accounting fixture, and its shared runner run
+refused source capture in one fixture. All four new reconciliation tests passed
+in that checkpoint's full/race/shared app runs. Complete native/shared logs match
+and have no NUL bytes. The disposition and checksums preserve the failures under
+`.parley-runtime/trajectory-reconciliation-validation-20260912/`; its validation
+is not accepted. The snapshot refusal remains unclassified; no production snapshot
+check was changed and the 20 later diagnostic passes are not an explanation.
+
+No current reconciliation change was committed or pushed. PR #73 and the remote
+branch remain at 7d54de924910a22aa228919dc42d7ce3b31c2ae2. Final validation, fresh
+independent source acceptance and all live/recovery/delivery gates remain open.
+No model invocation, actual operator activation, quorum change or deployment
+occurred. `.parley-runtime/next-guard-origin-recovery-20260912.md` records a
+read-only map for the following migration slice; it is not an implemented or
+approved migration. OpenViking remains unavailable; no shared persistence claimed.
+
+
+### Ownership and evidence — coherent snapshot reads on AppleVirtIOFS, September 12
+
+The mounted shared volume reports AppleVirtIOFS. A controlled standalone probe
+found mismatches between successful writes and subsequent rooted reads (764/2000
+shared trials; 0/2000 native trials). A second probe compared direct-path and
+rooted reads of the same file/inode. An 8000-trial held-root run observed 5957
+stale rooted reads and one before/after metadata mismatch satisfying the exact
+capture-refusal condition; direct-path reads matched all writes. Fresh roots
+opened from the original absolute path had 0 stale reads and 0 capture-guard
+refusals in 8000 trials. Reopening "." through the retained root did not solve it
+(1215 stale reads and 3 capture-guard refusals). Full sources/logs and native
+controls are retained in `.parley-runtime/snapshot-stat-probe-20260912/`.
+
+This reproduces a concrete failure mechanism at the same guard; the original
+single failed fixture retained no per-file stat details, so its exact event
+is not retrospectively proven to have that cause. The older sparse/NUL anomaly
+is separate and remains unclassified.
+
+Codex-1 owns the narrow extraction in `internal/trajectory/snapshot.go`, new
+`internal/trajectory/snapshot_read_test.go`, runtime documentation and this owned
+disposition. For each material entry, reopen a root from its original path and
+require the same pinned directory identity before reading. Keep rooted containment
+and file identity checks. Use the opened file descriptor's size/mode/mtime for
+the copy and post-read stability comparison; the preceding Lstat selects type
+and pins identity, not potentially stale content metadata. Retain descriptor
+bounds, required-close errors, complete archive/tree digest recomputation and
+the final unchanged Source observation. No retries, source rewrites, budget reset
+or relaxed expected source digest are introduced. Verify stale metadata, changed
+inode/root, oversize-after-Lstat and actual source mutation boundaries.
+
+### Snapshot read tests and remaining timestamp instability — September 12
+
+The extraction is formatted and compiled. Six new tests cover real same-inode
+stale metadata, replaced roots/files, a descriptor exceeding the file bound
+after an earlier small stat, size/mtime mutation after descriptor stat, and 128
+exact member reads while retaining an older directory handle. Four independent
+negative overlays fail at the intended assertions when stale copy metadata is
+restored or root/file identity and mtime protections are removed. The production
+source is unchanged by these overlays.
+
+Checkpoint `.parley-runtime/snapshot-read-validation-20260912/` freezes 381 Go/module
+files at manifest 924031c2c7155b71114b8f15ffe854cbb5956c716fac3b9cd961d8a7c0a9d9ac.
+Focused tests passed in 41.113s; shared snapshot tests passed in 8.302s. The full
+suite passed in 263.110s (31 test packages, one command package without tests),
+six-package race tests passed in 287.028s, vet and Windows trajectory/app builds
+passed. Shared runner/driver/evidence/app tests passed, including both corrected
+runner fixture families and all four reconciliation app tests.
+
+The broader shared trajectory suite FAILED at
+`TestCapturedVerificationRechecksDurableAuthorityAndScope/changed-scope` while
+constructing its captured source: `source file changed during capture`.
+All six new read tests passed within that same failed suite. Thirty diagnostic
+repetitions of the affected fixture passed (87.121s) without a captured stat
+failure; they do not explain or erase the earlier event. This checkpoint is not
+accepted final validation and is not a reason to commit/push as verified.
+
+A separate controlled descriptor probe now reproduces another sufficient
+failure mechanism: write once, open/stat, wait 1.2 seconds without another write,
+read/stat the same descriptor. Both fresh-root and absolute-path shared reads
+changed mtime in 6/6 trials, with identical bytes, size and inode. Native-root
+controls changed mtime in 0/6 trials. Repeating with descriptor fsync before the
+first stat gave the same counts. These observations show why fresh roots alone
+cannot guarantee stable timestamps on this mount. They do not prove which stats
+changed in the original failed test, whose refusal did not retain those details.
+The older sparse/NUL anomaly remains separate.
+
+Complete native/shared logs match; the checkpoint disposition retains expected
+negative failures and the unexpected shared-suite failure separately. No mtime
+check, source digest, identity guard or archive bound was relaxed. No blind retry
+or source rewrite was added. All executions are terminal and synthetic; no real
+model invocation or actual operator activation occurred. HEAD/remote remain
+7d54de924910a22aa228919dc42d7ce3b31c2ae2. Final validation, independent current-source
+acceptance, remaining recovery work and all live/delivery gates remain open.
+
+### Ownership and plan — bounded material revalidation, September 12
+
+Codex-1 continues its existing snapshot.go/snapshot_read_test.go allocation.
+First retain an executable counterexample through captureSnapshotRegular with
+a delayed archive write, on native and shared storage. For timestamp-only drift,
+the proposed fix requires one fresh, contained verification read of the bytes
+already copied: identical pinned root/file identity, regular type, size, mode,
+content hash and stable descriptor metadata throughout that verification read.
+Size/mode changes and all I/O errors refuse immediately. A changed second read
+also refuses; there is no loop, model retry, source rewrite or extra budget grant.
+The whole archived tree must still equal the original expected source, followed
+by the final exact source observation. This is material revalidation after an
+ambiguous timestamp transition, not an assertion that timestamps never matter.
+Add counterexamples for changed bytes, root/file replacement, second-read
+mutation, truncation, oversize and cancellation before accepting this boundary.
+
+The first conditional-revalidation checkpoint passed native focused tests but
+failed two shared fixtures. Retained diagnostic archive bytes show the first
+descriptor still returned original content while the absolute path returned
+the changed content; cached mtime did not trigger the conditional second read.
+Codex-1 therefore strengthens the owned implementation to require the one fresh
+verification read for every regular member. No metadata heuristic decides
+whether content verification is needed. The expected-tree fixture will mutate
+before opening its member and explicitly prove it archived different bytes,
+so it tests the full-tree guard rather than assuming what a stale descriptor read.
+
+
+### Stable material revalidation checkpoint — September 12
+
+The delayed-sink production-helper test initially used snapshotWrite, whose
+additional chmod did not reproduce the timestamp transition. That passing
+fixture is retained separately. A plain WriteFile variant then failed on shared
+storage and passed natively. Its diagnostic showed the same 39-byte inode, size
+and mode with descriptor mtime moving from 882341277 to 882430195 nanoseconds
+within the same second. No subsequent source write occurred. Evidence is under
+`.parley-runtime/snapshot-timestamp-write-only-20260912/`; the earlier variant
+remains under `.parley-runtime/snapshot-timestamp-counterexample-20260912/`.
+
+The first conditional revalidation passed native focused tests but failed shared
+fixtures: an open descriptor could retain original bytes and timestamps while
+the absolute path returned replacement bytes. Its diagnostic tar contents and
+frozen source are retained under
+`.parley-runtime/snapshot-revalidation-validation-20260912/`. The source/test
+versions reconstructed for that checkpoint match their original manifest hashes.
+The expected-tree fixture originally failed to establish that it archived the
+changed bytes; it now explicitly checks that precondition before testing the
+whole-tree refusal. No failed checkpoint is relabeled pass.
+
+The final implementation performs exactly one fresh verification read for every
+regular member. It checks contained root and file identity before reading, exact
+copied bytes/size/mode, stable size/mode/mtime during verification, and root/file
+name identity afterwards. A changed verification read, I/O error, replacement,
+truncation, oversize file or canceled context refuses. Agreement between reads
+cannot override the original expected tree or final unchanged source observation.
+There is no retry loop, timestamp tolerance, source rewrite or additional grant.
+This adds one bounded source read per regular member; it is not a performance
+or live-pilot claim.
+
+Accepted automated checkpoint:
+`.parley-runtime/snapshot-stable-read-validation-20260912/`, 381 Go/module files,
+manifest 4c982f04de789ff07fb8ba1508e19402fbc3a0a3c0bf54b61487c1caf8943576.
+Focused tests PASS 42.988s; shared snapshot selection PASS 9.629s; full suite PASS
+262.619s; six-package race PASS 289.588s; vet and Windows trajectory/app builds
+PASS. Compiled shared trajectory/runner/driver/evidence/app selections all PASS
+(254.496s / 36.301s / 1.565s / 0.633s / 160.148s). Windows runtime is unverified.
+The final verifier inventories 30 relevant top-level tests, including all four
+reconciliation tests, eleven snapshot-read tests and both corrected runner test
+families. It checks 32 package terminals (31 test packages plus one command
+package without tests), matching native/shared logs, unchanged source hashes,
+PE amd64 build outputs, six expected negative-overlay failures and the unchanged
+historical HTML. All processes are terminal.
+
+No real model invocation, actual operator activation, final acceptance, live
+experiment, quorum change, merge, release, deployment, global installation or
+core publication occurred. This progress checkpoint can be committed to the
+existing draft PR; the full objective and every remaining gate stay open.
+The user was asked asynchronously about the concrete September 10 historical
+quorum/pilot proposal and experiment ceilings. No approval is inferred from the
+continuation request or elapsed time; the proposal is not a ratified amendment.

@@ -345,7 +345,7 @@ func withVerification(ctx context.Context, ticket VerificationTicket, fn func(*o
 	observed := false
 	err = withState(ctx, root, ticket.Request.Idea, func(b budget.CycleBinding, _ budget.Snapshot, s State) error {
 		observed = true
-		r, err := capturedRequest(s, ticket.Request.Verifier)
+		r, err := capturedRequestAt(s, ticket.Request.Verifier, ticket.Request.Sequence)
 		if err != nil {
 			return err
 		}
@@ -513,12 +513,25 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 // caller must also validate actual runner terminal/identity before using the
 // returned observations; this reader never resolves a trajectory attempt.
 func ReadCapturedVerification(ctx context.Context, ticket VerificationTicket, invocation string) (receipt VerificationReceipt, observation Observation, resultErr error) {
+	resultErr = withVerification(ctx, ticket, func(dir *os.Root, _ string) error {
+		var err error
+		receipt, observation, err = readCapturedVerificationJournal(dir, ticket, invocation)
+		return err
+	})
+	return receipt, observation, resultErr
+}
+
+func readCapturedVerificationJournal(dir *os.Root, ticket VerificationTicket, invocation string) (receipt VerificationReceipt, observation Observation, resultErr error) {
 	requestSHA, err := ticket.Request.SHA256()
 	if err != nil {
 		return receipt, observation, err
 	}
 	observation = Observation{Version: 1, RequestSHA256: requestSHA, Verifier: ticket.Request.Verifier}
-	resultErr = withVerification(ctx, ticket, func(dir *os.Root, ticketSHA string) error {
+	ticketSHA, err := ticket.SHA256()
+	if err != nil {
+		return receipt, observation, err
+	}
+	resultErr = func() error {
 		launchSHA, err := readVerificationLaunch(dir, ticketSHA, invocation)
 		if err != nil {
 			return err
@@ -631,6 +644,6 @@ func ReadCapturedVerification(ctx context.Context, ticket VerificationTicket, in
 		}
 		_, err = AssessCaptured(ticket.Request, observation)
 		return err
-	})
+	}()
 	return receipt, observation, resultErr
 }

@@ -42,6 +42,10 @@ func trajectoryHelperBinary(t *testing.T) string {
 }
 
 func trajectoryHelperFixture(t *testing.T, mode string) (root, trace, journal string, agent agents.Discovery) {
+	return trajectoryHelperFixtureCriteria(t, mode, nil)
+}
+
+func trajectoryHelperFixtureCriteria(t *testing.T, mode string, extra []trajectory.Criterion) (root, trace, journal string, agent agents.Discovery) {
 	t.Helper()
 	t.Setenv("PARLEY_HOME", t.TempDir())
 	t.Setenv("PARLEY_HEADLESS_AGENT_CONFIG", "")
@@ -53,7 +57,15 @@ func trajectoryHelperFixture(t *testing.T, mode string) (root, trace, journal st
 		command = `trap '' TERM; printf '%s\n' "$$" > "$PARLEY_TRAJECTORY_CRITERION_SIGNAL"; exec sleep 40`
 		t.Setenv("PARLEY_TRAJECTORY_CRITERION_SIGNAL", filepath.Join(filepath.Dir(trace), "criterion.pid"))
 	}
-	root, ideaDir := gateScratchRepo(t, "participants: [builder, reviewer]\ntrack: deliberation\nchecks:\n  - name: material\n    command: >\n      "+command+"\n")
+	if mode == "inconclusive" {
+		command = `printf '%s:%s\n' "$PARLEY_AGENT_ID" "$(cat source)" >> "$PARLEY_TRAJECTORY_TRACE"; if [ "$(cat source)" = original ] || [ "$(wc -l < "$PARLEY_TRAJECTORY_TRACE" | tr -d ' ')" = 3 ]; then printf 'PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":0}\n'; else printf 'PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":1}\n'; exit 1; fi`
+	}
+	checks := append([]trajectory.Criterion{{Name: "material", Command: command}}, extra...)
+	frontmatter := "participants: [builder, reviewer]\ntrack: deliberation\nchecks:\n"
+	for _, c := range checks {
+		frontmatter += "  - name: " + c.Name + "\n    command: >\n      " + strings.ReplaceAll(c.Command, "\n", "\n      ") + "\n"
+	}
+	root, ideaDir := gateScratchRepo(t, frontmatter)
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +106,7 @@ exit "$code"
 	if _, err := budget.EnsureCycleBinding(context.Background(), root, "idea-x", budget.Fixup, 5, 0, "", ideaDir); err != nil {
 		t.Fatal(err)
 	}
-	p, expected, err := trajectory.NewPolicy(context.Background(), root, "idea-x", "builder", []trajectory.Criterion{{Name: "material", Command: command}})
+	p, expected, err := trajectory.NewPolicy(context.Background(), root, "idea-x", "builder", checks)
 	if err != nil {
 		t.Fatal(err)
 	}

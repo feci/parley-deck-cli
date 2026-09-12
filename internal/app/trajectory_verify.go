@@ -26,25 +26,8 @@ import (
 	"parley-deck-cli/internal/trajectory"
 )
 
-type trajectoryHelperRequest struct {
-	Version      int                           `json:"version"`
-	Ticket       trajectory.VerificationTicket `json:"ticket"`
-	Participants []string                      `json:"participants"`
-	Criteria     []trajectory.Criterion        `json:"criteria"`
-}
-
-type trajectoryVerificationResult struct {
-	Version           int                    `json:"version"`
-	RunID             string                 `json:"run_id"`
-	RequestPath       string                 `json:"request_path"`
-	RequestSHA256     string                 `json:"request_sha256"`
-	InvocationID      string                 `json:"invocation_id"`
-	TerminalSHA256    string                 `json:"terminal_sha256"`
-	ReceiptSHA256     string                 `json:"receipt_sha256"`
-	Assessment        *trajectory.Assessment `json:"assessment"`
-	FailureStage      string                 `json:"failure_stage"`
-	TrajectoryPending bool                   `json:"trajectory_pending"`
-}
+type trajectoryHelperRequest = trajectory.HelperRequest
+type trajectoryVerificationResult = trajectory.ParentResult
 
 func runTrajectoryVerify(ctx context.Context, args []string, out, errout io.Writer) int {
 	f := flag.NewFlagSet("trajectory verify", flag.ContinueOnError)
@@ -214,7 +197,7 @@ func verifyTrajectoryWithAgent(ctx context.Context, root, idea string, agent age
 	if err != nil {
 		return result, err
 	}
-	req := trajectoryHelperRequest{1, trajectory.VerificationTicket{Version: 1, Root: root, RunID: runID, Request: request}, participants, criteria}
+	req := trajectoryHelperRequest{Version: 1, Ticket: trajectory.VerificationTicket{Version: 1, Root: root, RunID: runID, Request: request}, Participants: participants, Criteria: criteria}
 	if err = checkTrajectoryHelperScope(req); err != nil {
 		return result, err
 	}
