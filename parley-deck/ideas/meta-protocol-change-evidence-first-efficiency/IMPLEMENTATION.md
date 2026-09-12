@@ -4,13 +4,49 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: b3cec48b4f222bce64aa49abba701ff7f72cddb9
-validation-source-manifest: eadb9d9c91d4038e6732c91d9134e2a745c712da03efee12e31ac151e84b3f1e
+checkpoint-base-commit: 433f76dfce2b69b3c18feaafae575ddcb71a8f19
+validation-source-manifest: 93dbaa9a63ed1500b72a71ba6eb154e9859c2e7153b4f19508106dd29077f6cd
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
 
 # Evidence-First Delivery
+
+## Concurrent lock bootstrap correction allocation — September 12, 2026
+
+The parent-recovery full suite exposed a real ordering race in existing budget
+bootstrap: a caller could observe an absent origin before another initial caller
+published its origin and ledger, then misclassify the new ledger as orphaned.
+Before correction, codex-1 claims internal/budget/lock.go and new
+internal/budget/lock_bootstrap_test.go, plus this implementation summary and the
+owned parent-recovery note. Preserve missing-established-origin refusal and all
+pinned-waiter/cutover checks. Add a deterministic concurrent-publication boundary
+test and retain the failed full-suite evidence. Revalidate the final source after
+the correction; do not reclassify the failing run as a pass.
+
+## Lost parent-result recovery allocation — September 12, 2026
+
+Before edits, codex-1 claims new internal/trajectory/parent_recovery.go and
+parent_recovery_test.go; serialized trajectory/reconcile.go, state.go and
+continuation.go; new internal/app/trajectory_parent_recovery.go and
+trajectory_parent_recovery_test.go; app/trajectory.go; runtime documentation;
+and implementation-notes/codex-1-parent-result-recovery-20260912.md.
+These files are within the existing Codex trajectory/runtime ownership. No
+participant artifact, signature, evidence-package implementation or protocol
+may be rewritten by this claim.
+
+Reconstruct a missing/unpublished parent observation only from its original
+request, complete helper journal and successful matching process lifecycle.
+Retain a separate immutable recovery record and the original absence/failure.
+Pin exact inputs for apply/replay, preserve all charges and existing resolutions,
+and support recovery of a lost previously reconciled parent only when the
+reconstructed original facts match its retained digest. Recovery grants no
+execution, budget extension, continuation acknowledgment or final acceptance.
+Do not add a human gate for deterministic recovery of already executed facts;
+keep the existing attended continuation gate. Test real helper/CLI execution,
+conflicting evidence, publication interruption, concurrent replay and later
+history revalidation. Other incomplete-ticket/orphan/unchanged-source recovery
+and the original live/independent audit requirements remain separate obligations.
 
 ## Durable action identity allocation — September 12, 2026
 
@@ -103,6 +139,20 @@ compiled shared budget/app/runner/driver checks, five intended negative overlays
 and actual CLI inspection/replay/refusal checks. Windows runtime and independent
 participant acceptance remain unverified. Receipt replay grants no execution
 and does not recover a missing parent result or unfinished workflow effect.
+The new parent-result recovery slice derives a separate observation from the
+original independently executed request/lifecycle/helper records, preserving
+missing/failed parent publication and all original charges. Exact replay survives
+later legitimate work; new reconciliation pins recovery provenance, while an
+older lost parent must reproduce its original digest and every fact. Contrary
+partial fields, ambiguous structured prefixes, stale previews and changed scope
+or accepted evidence refuse. It grants no execution, budget or continuation.
+Full-suite validation also exposed an existing first-reservation origin-read race;
+a fresh absence check fixes that misclassification while missing/conflicting
+established origins/identities and pinned-waiter checks still refuse. The final
+397-file source passed focused/full/race, vet, five Windows cross-builds and
+compiled shared trajectory/app/budget tests. Eleven new top-level tests and six
+negative overlays are accounted for. Independent participant acceptance is pending.
+See `implementation-notes/codex-1-parent-result-recovery-20260912.md`.
 The exact packet trial, real twelve-task solo/duo/full-six pilot, final populated
 HTML/ego-browser QA and actual-delivery-based follow-ups are also outstanding.
 No synthetic fixture supplies a live experiment or a participant-owned signature.
@@ -235,16 +285,17 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Reconciliation/continuation and same-host lock-origin migration are published
-   through b3cec48. The new durable action accounting identity and receipt replay
-   slice has passed final automated validation; see
-   `implementation-notes/codex-1-durable-action-identity-20260912.md`.
+1. Durable action accounting identity is published through 433f76d. The next
+   parent-result recovery and concurrent lock-bootstrap correction slice has
+   passed final automated validation; see
+   `implementation-notes/codex-1-parent-result-recovery-20260912.md`.
    Keep independent current-source acceptance separate from this code checkpoint.
-2. Complete workflow-effect recovery for orphan reservations, failed helper
-   tickets, lost parent results, unchanged source and unavailable source/index/history.
-   Accounting receipt replay supplies no execution or completion authority.
-   Preserve all charges and refusal evidence. The next inspected path is recorded
-   in `.parley-runtime/action-effect-recovery-next-20260912.md`.
+2. Complete workflow-effect recovery for orphan reservations, failed/consumed
+   helper tickets, unchanged source and unavailable source/index/history.
+   The implemented parent recovery requires a successful matching invocation
+   and complete helper journal. Preserve all charges and refusal evidence;
+   every new execution needs a separately spent attempt. The next read-only map
+   is `.parley-runtime/helper-ticket-recovery-next-20260912.md`.
 3. Obtain fresh participant-owned acceptance of the final code and finish live
    launch-surface coverage plus independent real-model concurrency/closure evidence.
    Claude's latest attempt hit its weekly limit without a review artifact; its
@@ -2834,3 +2885,45 @@ attempt IDs. The original six audit areas, exact packet trial, full-six pilot,
 independent current-source reviews/signatures, final HTML and delivery-based
 follow-ups remain incomplete. No real model invocation or actual operator
 migration occurred; historical quorum, pilot and funding decisions remain open.
+
+
+## Parent-result recovery and concurrent bootstrap validation — September 12
+
+The owned slice is implemented and ready for independent review. Source manifest
+`93dbaa9a63ed1500b72a71ba6eb154e9859c2e7153b4f19508106dd29077f6cd`
+covers 397 Go/module files. Evidence and the final source/log/test verifier are in
+`.parley-runtime/parent-recovery-final-validation-v2-20260912/`; native copies:
+`/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-parent-final-v2-vsch5s7l`.
+
+Focused PASS 124.831s; full PASS 265.057s; six-package race PASS 309.809s;
+vet PASS; five Windows package cross-builds PASS (runtime unverified). Compiled
+shared trajectory/app/budget selections PASS 26.816s / 113.069s / 1.010s.
+The verifier accounts for all 32 package terminals, eleven new top-level tests
+(ten substantive scenarios plus one process harness), six intended negative
+controls, native/shared log equality, stable source and unchanged historical HTML.
+The production CLI actually previews and applies recovery in two concurrent
+processes. These synthetic helper/criterion executions are not live-model trials.
+
+Partial-parent contradiction and decoder-boundary failures remain in the initial
+validation directory. The first full 396-file source run failed an existing
+concurrent-reservation test (274.123s overall) and remains a failed run under
+`.parley-runtime/parent-recovery-final-validation-20260912/`. A deterministic
+concurrent boundary test reproduces its stale absence observation; the correction
+refreshes only that absence and retains original location/identity/kernel checks.
+Missing/conflicting origins or identities cannot be recreated. The fresh final
+source is validated independently of earlier-source passes.
+
+Recovery preserves the original parent publication state, derives original
+independent executions and grants no execution, budget, continuation or acceptance.
+It handles lost already-reconciled parents only when every pinned fact/digest
+matches. New reconciliations also retain the exact recovery record. Other unfinished
+helper-ticket/orphan/unchanged-source and workflow-effect recovery remains open.
+The next inspected map covers existing stop/process/charge boundaries without
+claiming that a missing terminal or dead leader proves all descendants inactive.
+
+Current-source participant acceptance, full live launch/concurrency/closure
+coverage, exact packet experiment, full-six pilot, owned signatures, final HTML
+and delivery-based follow-ups remain incomplete. No participant-owned artifact
+or signature changed. No real model invocation occurred; live inventory remains
+34 terminal attempts, 17 unknown costs, USD 46.1887585 known CLI estimates and an
+unknown total. Historical quorum/pilot/funding decisions remain pending.

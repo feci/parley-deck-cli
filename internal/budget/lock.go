@@ -34,6 +34,10 @@ func lockWithOps(ctx context.Context, path string, take func(*os.File) (bool, er
 }
 
 func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, error), drop func(*os.File), ready func(string) error) (func(), error) {
+	return lockWithBootstrapObserved(ctx, path, take, drop, ready, nil)
+}
+
+func lockWithBootstrapObserved(ctx context.Context, path string, take func(*os.File) (bool, error), drop func(*os.File), ready func(string) error, afterMissingOrigin func()) (func(), error) {
 	canonical, err := filepath.Abs(filepath.Dir(path))
 	if err != nil {
 		return nil, err
@@ -90,22 +94,19 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 		return nil, originErr
 	}
 	if newOrigin {
-		for _, witness := range []string{"ledger-established", originMigrationDirectory} {
-			if _, err := os.Lstat(filepath.Join(canonical, witness)); err == nil {
-				return nil, errors.New("established budget history has no lock origin; preserve retained history; refusing recreation")
-			} else if !os.IsNotExist(err) {
-				return nil, err
+		if afterMissingOrigin != nil {
+			afterMissingOrigin()
+		}
+		if historyErr := missingOriginHistory(canonical); historyErr != nil {
+			// Writers publish their origin before history. A concurrent bootstrap
+			// can finish between our absence read and history inventory. Refresh
+			// that absence before calling the new history orphaned. An existing
+			// origin still needs every normal location/token/kernel check below;
+			// a genuinely missing one is never recreated from the new history.
+			if _, err := os.Lstat(filepath.Join(canonical, "lock-origin")); err != nil {
+				return nil, errors.Join(historyErr, err)
 			}
-		}
-		if _, err := os.Lstat(filepath.Join(canonical, resourceGuardWitness)); err == nil {
-			return nil, errors.New("established resource guard has no lock origin; preserve its witness and stop writers; refusing recreation")
-		} else if !os.IsNotExist(err) {
-			return nil, err
-		}
-		if _, err := os.Lstat(filepath.Join(canonical, "ledger.json")); err == nil {
-			return nil, errors.New("existing budget ledger has no lock origin; preserve charges and stop writers: migration requires the original accessible identity")
-		} else if !os.IsNotExist(err) {
-			return nil, err
+			newOrigin = false
 		}
 	}
 	if !newOrigin {
@@ -133,6 +134,22 @@ func lockWithReady(ctx context.Context, path string, take func(*os.File) (bool, 
 		}
 		return nil
 	})
+}
+
+func missingOriginHistory(dir string) error {
+	for _, witness := range []struct{ name, reason string }{
+		{"ledger-established", "established budget history has no lock origin; preserve retained history; refusing recreation"},
+		{originMigrationDirectory, "established budget history has no lock origin; preserve retained history; refusing recreation"},
+		{resourceGuardWitness, "established resource guard has no lock origin; preserve its witness and stop writers; refusing recreation"},
+		{"ledger.json", "existing budget ledger has no lock origin; preserve charges and stop writers: migration requires the original accessible identity"},
+	} {
+		if _, err := os.Lstat(filepath.Join(dir, witness.name)); err == nil {
+			return errors.New(witness.reason)
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 // The check closure captures authority BEFORE any wait. A waiter cannot adopt

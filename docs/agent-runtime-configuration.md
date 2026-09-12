@@ -1304,6 +1304,60 @@ trigger. Further consecutive regressions require a new decision covering the
 newly observed sequence. Inconclusive evidence stays visible even when an operator
 explicitly allows another attempt; acknowledgment never changes its outcome.
 
+### Recover a lost parent result from retained independent execution
+
+When the selected verifier exited successfully and its complete helper journal
+survived, a missing or interrupted `parent-result.json` need not cause another
+model call. Preview and publish a separate derived observation:
+
+```sh
+parley trajectory recover-parent --dir ORIGINAL_DIR --idea IDEA --run VERIFIER_RUN
+parley trajectory recover-parent --dir ORIGINAL_DIR --idea IDEA --run VERIFIER_RUN \
+  --sha256 PREVIEW_SHA --yes
+```
+
+This deterministic control requires no attended operator decision. It rechecks
+the original private request, exact charged before/after archives, original quorum
+and criterion commands, shared ticket and launch, matching requested/started/
+successful terminal records, and the complete helper receipt, steps and process
+observations. It derives the assessment again from retained AB/BA executions.
+No parent self-verdict or caller-provided invocation can replace these records.
+
+Apply pins the exact preview and writes `parent-recovery.json` beside the original
+request. It preserves the missing parent, empty failed-publication directory or
+original partial/compatible publication-failure bytes. Explicit contrary identity,
+assessment, failure stage or `trajectory_pending: false` refuses, including complete
+fields before a truncated JSON suffix. Unknown/repeated fields, malformed JSON,
+conflicting scalar prefixes, partial structured assessments and ambiguous complete
+encodings require inspection; this control does not guess their missing content.
+Special files, aliases, oversized files and nonempty parent directories refuse.
+A complete successful parent uses ordinary `trajectory reconcile`.
+
+Concurrent identical applies converge on one observation under the cycle guard.
+An exact retry preserves the original preview and record bytes, including after
+output failure, an incomplete persistence barrier, reconciliation or later
+legitimate trajectory work. First apply refuses changed state or evidence since
+preview. A later replay revalidates the original primary facts. If the original
+parent appears or changes after recovery, the conflicting provenance refuses.
+
+Recovery alone changes neither charged history nor its resolution: explicitly run
+`trajectory reconcile` next. A new resolution also pins the recovery record's
+exact bytes. Losing or changing that record cannot be repaired by copying a
+successful parent in its place. An older resolution whose accepted parent was
+lost can be restored only if derivation reproduces all originally pinned facts
+and the original parent digest, including its supported newline encoding. The
+older resolution itself remains unchanged.
+
+Recovery issues no budget, retry, continuation acknowledgment or completion grant.
+Missing/failed helper or invocation records remain unresolved. Incomplete helper
+tickets, orphan reservations and unchanged-source attempts require separate
+recovery work. Content hashes and process records detect mismatches in the retained
+evidence; they do not authenticate a same-UID actor, a human identity or an entire
+source tree beyond the original captured scope. Independent participant acceptance
+of the current implementation remains a separate requirement. The additive
+`recovery_sha256` in reconciliation previews retains state version 3; older strict
+readers refuse the added field and must not write recovered history.
+
 ### Continue with a retained decision and clean source promotion
 
 A normally resolved clean after-source can serve as the next before-source through

@@ -437,6 +437,12 @@ func (o *Observer) AfterCycle(ctx context.Context, b budget.CycleBinding, ledger
 	return writeState(statePath(b), s)
 }
 func withState(ctx context.Context, root, idea string, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
+	return withStateResolutionCheck(ctx, root, idea, checkResolutions, fn)
+}
+
+// Source/charge validation is unconditional. Recovery may reconstruct one exact
+// parent observation while all other retained resolutions are checked normally.
+func withStateResolutionCheck(ctx context.Context, root, idea string, check func(context.Context, budget.CycleBinding, State) error, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
 	b, err := budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
 	if err != nil {
 		return err
@@ -475,7 +481,10 @@ func withState(ctx context.Context, root, idea string, fn func(budget.CycleBindi
 	if err = validateState(s, *b, ledger); err != nil {
 		return err
 	}
-	if err = checkStateSnapshots(ctx, *b, s); err != nil {
+	if err = checkSourceSnapshots(ctx, *b, s); err != nil {
+		return err
+	}
+	if err = check(ctx, *b, s); err != nil {
 		return err
 	}
 	return fn(*b, ledger, s)
@@ -610,6 +619,12 @@ func (r *Run) Finish(ctx context.Context, status string, exit *int) error {
 }
 
 func checkStateSnapshots(ctx context.Context, b budget.CycleBinding, s State) error {
+	if err := checkSourceSnapshots(ctx, b, s); err != nil {
+		return err
+	}
+	return checkResolutions(ctx, b, s)
+}
+func checkSourceSnapshots(ctx context.Context, b budget.CycleBinding, s State) error {
 	dir := snapshotDirectory(b)
 	if err := CheckSnapshot(ctx, dir, s.BaselineArchive, s.Policy.Baseline); err != nil {
 		return fmt.Errorf("baseline archive unavailable: %w", err)
@@ -632,5 +647,5 @@ func checkStateSnapshots(ctx context.Context, b budget.CycleBinding, s State) er
 			return fmt.Errorf("promoted source archive unavailable: %w", err)
 		}
 	}
-	return checkResolutions(ctx, b, s)
+	return nil
 }

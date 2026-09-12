@@ -233,7 +233,7 @@ func validateTransitions(s State) error {
 	}
 	for i, r := range s.Resolutions {
 		p := r.Preview
-		if p.Version != 1 || p.Sequence != i+1 || p.ChargeKey != s.Attempts[i].Charge.EntryKey || !filepath.IsAbs(p.Root) || !runtimeID(p.RunID) || !validHash(p.StateSHA256) || !validHash(p.ParentSHA256) || r.SHA256 != p.SHA256() || r.At.IsZero() || s.Attempts[i].Terminal == nil || r.At.Before(s.Attempts[i].Terminal.At) {
+		if (p.RecoverySHA256 != "" && !validHash(p.RecoverySHA256)) || p.Version != 1 || p.Sequence != i+1 || p.ChargeKey != s.Attempts[i].Charge.EntryKey || !filepath.IsAbs(p.Root) || !runtimeID(p.RunID) || !validHash(p.StateSHA256) || !validHash(p.ParentSHA256) || r.SHA256 != p.SHA256() || r.At.IsZero() || s.Attempts[i].Terminal == nil || r.At.Before(s.Attempts[i].Terminal.At) {
 			return errors.New("resolution changed its charge, preview or chronology")
 		}
 		if p.Assessment.Outcome != Regression && p.Assessment.Outcome != NoRegression && p.Assessment.Outcome != Inconclusive {
