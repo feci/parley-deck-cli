@@ -503,6 +503,37 @@ func archiveHeaderSupported(h *tar.Header) bool {
 // Restore tests compare this with the actual restored filesystem digest. This
 // serialization is part of archive v1's compatibility boundary.
 func inspectSnapshotFile(ctx context.Context, file string, ref SnapshotRef, want Source, destination *os.Root) error {
+	return inspectSnapshotFileWithMember(ctx, file, ref, want, destination, nil)
+}
+
+type selectedSnapshotMember struct {
+	name  string
+	limit int64
+	data  bytes.Buffer
+	found bool
+}
+
+// A selected member is released only after the same complete archive, source,
+// link and stability checks used by restoration. No early successful tar read
+// can hide a corrupt remainder or footer.
+func readSnapshotMember(ctx context.Context, dir string, ref SnapshotRef, want Source, name string, limit int64) ([]byte, error) {
+	if !validSnapshotPath(name) || limit < 1 || limit > MaxSnapshotFileBytes {
+		return nil, errors.New("invalid selected snapshot member or bound")
+	}
+	if err := privateSnapshotDirectory(dir, false); err != nil {
+		return nil, err
+	}
+	selected := &selectedSnapshotMember{name: name, limit: limit}
+	if err := inspectSnapshotFileWithMember(ctx, snapshotPath(dir, ref), ref, want, nil, selected); err != nil {
+		return nil, err
+	}
+	if !selected.found {
+		return nil, errors.New("selected snapshot member is missing")
+	}
+	return selected.data.Bytes(), nil
+}
+
+func inspectSnapshotFileWithMember(ctx context.Context, file string, ref SnapshotRef, want Source, destination *os.Root, selected *selectedSnapshotMember) error {
 	if !ref.valid() || !sourceValid(want) {
 		return errors.New("invalid snapshot reference or source binding")
 	}
@@ -599,6 +630,16 @@ func inspectSnapshotFile(ctx context.Context, file string, ref SnapshotRef, want
 				}
 				output = io.MultiWriter(treeHash, tw, target)
 			}
+			if selected != nil && name == selected.name {
+				if h.Size > selected.limit {
+					if target != nil {
+						target.Close()
+					}
+					return errors.New("selected snapshot member exceeds its bound")
+				}
+				selected.found = true
+				output = io.MultiWriter(output, &selected.data)
+			}
 			copied, copyErr := io.Copy(output, reader)
 			if target != nil {
 				modeErr := target.Chmod(os.FileMode(h.Mode))
@@ -616,6 +657,9 @@ func inspectSnapshotFile(ctx context.Context, file string, ref SnapshotRef, want
 			}
 			members[name] = snapshotMember{kind: tar.TypeReg}
 		case tar.TypeSymlink:
+			if selected != nil && name == selected.name {
+				return errors.New("selected snapshot member is not a regular file")
+			}
 			if h.Size != 0 || !validSnapshotLink(name, h.Linkname) {
 				return errors.New("invalid snapshot symlink")
 			}

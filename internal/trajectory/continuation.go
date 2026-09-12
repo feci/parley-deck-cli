@@ -67,14 +67,16 @@ func trajectoryHistory(s State) History {
 		case NoRegression:
 			h.Decision.Consecutive = 0
 		case Inconclusive:
-			h.Decision.Consecutive = 0
+			if r.Preview.Unchanged == nil {
+				h.Decision.Consecutive = 0
+			}
 			h.Decision.Pending = true
 			c := continuationAt(s, i+1)
 			if c == nil || !c.AcknowledgedInconclusive {
 				h.InconclusivePending = append(h.InconclusivePending, i+1)
 			}
 		}
-		if h.Decision.Consecutive >= 2 {
+		if a.Outcome == Regression && h.Decision.Consecutive >= 2 {
 			h.RequiredReviewSequence = i + 1
 			if !h.Decision.ReviewRequired {
 				h.Decision.ReviewRequired = true
@@ -233,8 +235,15 @@ func validateTransitions(s State) error {
 	}
 	for i, r := range s.Resolutions {
 		p := r.Preview
-		if (p.RecoverySHA256 != "" && !validHash(p.RecoverySHA256)) || p.Version != 1 || p.Sequence != i+1 || p.ChargeKey != s.Attempts[i].Charge.EntryKey || !filepath.IsAbs(p.Root) || !runtimeID(p.RunID) || !validHash(p.StateSHA256) || !validHash(p.ParentSHA256) || r.SHA256 != p.SHA256() || r.At.IsZero() || s.Attempts[i].Terminal == nil || r.At.Before(s.Attempts[i].Terminal.At) {
+		if p.Version != 1 || p.Sequence != i+1 || p.ChargeKey != s.Attempts[i].Charge.EntryKey || !filepath.IsAbs(p.Root) || !validHash(p.StateSHA256) || r.SHA256 != p.SHA256() || r.At.IsZero() || s.Attempts[i].Terminal == nil || r.At.Before(s.Attempts[i].Terminal.At) {
 			return errors.New("resolution changed its charge, preview or chronology")
+		}
+		if p.Unchanged != nil {
+			if err := validateUnchangedPreview(s, p); err != nil {
+				return err
+			}
+		} else if !runtimeID(p.RunID) || !validHash(p.ParentSHA256) || (p.RecoverySHA256 != "" && !validHash(p.RecoverySHA256)) {
+			return errors.New("resolution lacks its original parent binding")
 		}
 		if p.Assessment.Outcome != Regression && p.Assessment.Outcome != NoRegression && p.Assessment.Outcome != Inconclusive {
 			return errors.New("invalid reconciled outcome")

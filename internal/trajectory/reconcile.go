@@ -41,15 +41,16 @@ type ParentResult struct {
 }
 
 type ReconciliationPreview struct {
-	Version        int        `json:"version"`
-	Root           string     `json:"root"`
-	StateSHA256    string     `json:"state_sha256"`
-	Sequence       int        `json:"sequence"`
-	ChargeKey      string     `json:"charge_key"`
-	RunID          string     `json:"run_id"`
-	ParentSHA256   string     `json:"parent_sha256"`
-	Assessment     Assessment `json:"assessment"`
-	RecoverySHA256 string     `json:"recovery_sha256,omitempty"`
+	Version        int                `json:"version"`
+	Root           string             `json:"root"`
+	StateSHA256    string             `json:"state_sha256"`
+	Sequence       int                `json:"sequence"`
+	ChargeKey      string             `json:"charge_key"`
+	RunID          string             `json:"run_id"`
+	ParentSHA256   string             `json:"parent_sha256"`
+	Assessment     Assessment         `json:"assessment"`
+	RecoverySHA256 string             `json:"recovery_sha256,omitempty"`
+	Unchanged      *UnchangedEvidence `json:"unchanged,omitempty"`
 }
 
 func (p ReconciliationPreview) SHA256() string { data, _ := canonical(p); return digest(data) }
@@ -120,29 +121,60 @@ func checkReconciliationScope(dir *os.Root, req HelperRequest) error {
 	if !runtimeID(req.Ticket.Request.Idea) {
 		return errors.New("invalid reconciliation idea path")
 	}
-	f, err := dir.Open(filepath.Join("parley-deck", "ideas", req.Ticket.Request.Idea, "00-prompt.md"))
+	scope, err := readReconciliationScope(dir, req.Ticket.Request.Idea)
 	if err != nil {
 		return err
+	}
+	r := req.Ticket.Request
+	if !slices.Equal(scope.Participants, req.Participants) || !slices.Contains(scope.Participants, r.Implementer) || !slices.Contains(scope.Participants, r.Verifier) || len(scope.Criteria) != len(r.Criteria) || len(req.Criteria) != len(r.Criteria) {
+		return errors.New("reconciliation quorum or material scope changed")
+	}
+	for i, c := range scope.Criteria {
+		if c.Name != r.Criteria[i].Name || digest([]byte(c.Command)) != r.Criteria[i].CommandSHA256 || req.Criteria[i].Name != c.Name || req.Criteria[i].Command != c.Command {
+			return errors.New("reconciliation changed original criterion command or order")
+		}
+	}
+	return nil
+}
+
+type reconciliationScope struct {
+	Participants []string
+	Criteria     []Criterion
+}
+
+func readReconciliationScope(dir *os.Root, idea string) (reconciliationScope, error) {
+	var scope reconciliationScope
+	if !runtimeID(idea) {
+		return scope, errors.New("invalid reconciliation idea path")
+	}
+	f, err := dir.Open(filepath.Join("parley-deck", "ideas", idea, "00-prompt.md"))
+	if err != nil {
+		return scope, err
 	}
 	defer f.Close()
 	info, err := f.Stat()
 	if err != nil || !info.Mode().IsRegular() || info.Size() > 1<<20 {
-		return errors.New("invalid reconciliation scope file")
+		return scope, errors.New("invalid reconciliation scope file")
 	}
 	raw, err := io.ReadAll(io.LimitReader(f, (1<<20)+1))
 	if err != nil || len(raw) > 1<<20 {
-		return errors.New("reconciliation scope exceeds its bound")
+		return scope, errors.New("reconciliation scope exceeds its bound")
 	}
+	return parseReconciliationScope(raw)
+}
+
+func parseReconciliationScope(raw []byte) (reconciliationScope, error) {
+	var scope reconciliationScope
 	lines := strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
 	if len(lines) < 3 || lines[0] != "---" {
-		return errors.New("reconciliation scope lacks frontmatter")
+		return scope, errors.New("reconciliation scope lacks frontmatter")
 	}
 	end := 1
 	for end < len(lines) && lines[end] != "---" {
 		end++
 	}
 	if end == len(lines) {
-		return errors.New("reconciliation scope has unterminated frontmatter")
+		return scope, errors.New("reconciliation scope has unterminated frontmatter")
 	}
 	var fm struct {
 		Participants []string `yaml:"participants"`
@@ -151,20 +183,14 @@ func checkReconciliationScope(dir *os.Root, req HelperRequest) error {
 			Command string `yaml:"command"`
 		} `yaml:"checks"`
 	}
-	if err = yaml.Unmarshal([]byte(strings.Join(lines[1:end], "\n")), &fm); err != nil {
-		return err
+	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:end], "\n")), &fm); err != nil {
+		return scope, err
 	}
-	r := req.Ticket.Request
-	if !slices.Equal(fm.Participants, req.Participants) || !slices.Contains(fm.Participants, r.Implementer) || !slices.Contains(fm.Participants, r.Verifier) || len(fm.Checks) != len(r.Criteria) || len(req.Criteria) != len(r.Criteria) {
-		return errors.New("reconciliation quorum or material scope changed")
+	scope.Participants = fm.Participants
+	for _, c := range fm.Checks {
+		scope.Criteria = append(scope.Criteria, Criterion{strings.TrimSpace(c.Name), strings.TrimSpace(c.Command)})
 	}
-	for i, c := range fm.Checks {
-		name, command := strings.TrimSpace(c.Name), strings.TrimSpace(c.Command)
-		if name != r.Criteria[i].Name || digest([]byte(command)) != r.Criteria[i].CommandSHA256 || req.Criteria[i].Name != name || req.Criteria[i].Command != command {
-			return errors.New("reconciliation changed original criterion command or order")
-		}
-	}
-	return nil
+	return scope, nil
 }
 
 // Derivation reuses the actual requested/started/terminal lifecycle and the
@@ -317,7 +343,7 @@ func compareReconciledParent(actual, original ReconciliationPreview) error {
 func checkResolutions(ctx context.Context, b budget.CycleBinding, s State) error {
 	for _, resolution := range s.Resolutions {
 		p := resolution.Preview
-		actual, err := readParentEvidence(ctx, b, s, p.Root, p.RunID)
+		actual, err := readResolutionEvidence(ctx, b, s, p)
 		if err != nil {
 			return fmt.Errorf("reconciled patch %d lost evidence: %w", p.Sequence, err)
 		}
@@ -328,6 +354,13 @@ func checkResolutions(ctx context.Context, b budget.CycleBinding, s State) error
 		}
 	}
 	return nil
+}
+
+func readResolutionEvidence(ctx context.Context, b budget.CycleBinding, s State, p ReconciliationPreview) (ReconciliationPreview, error) {
+	if p.Unchanged != nil {
+		return unchangedPreview(ctx, b, s, p.Root, p.Sequence)
+	}
+	return readParentEvidence(ctx, b, s, p.Root, p.RunID)
 }
 
 func PreviewReconciliation(ctx context.Context, root, idea, runID string) (ReconciliationPreview, error) {

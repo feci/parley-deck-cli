@@ -1350,13 +1350,64 @@ older resolution itself remains unchanged.
 
 Recovery issues no budget, retry, continuation acknowledgment or completion grant.
 Missing/failed helper or invocation records remain unresolved. Incomplete helper
-tickets, orphan reservations and unchanged-source attempts require separate
-recovery work. Content hashes and process records detect mismatches in the retained
+tickets and orphan reservations require separate recovery work; unchanged-source
+attempts use the distinct control below. Content hashes and process records detect mismatches in the retained
 evidence; they do not authenticate a same-UID actor, a human identity or an entire
 source tree beyond the original captured scope. Independent participant acceptance
 of the current implementation remains a separate requirement. The additive
 `recovery_sha256` in reconciliation previews retains state version 3; older strict
 readers refuse the added field and must not write recovered history.
+
+### Reconcile an actually exited attempt with unchanged material source
+
+A charged attempt can terminate without changing its captured material files.
+It is still spent, and `trajectory verify` correctly refuses to treat identical
+source as a new patch comparison. Record this distinct observation using the
+original charged sequence:
+
+```sh
+parley trajectory reconcile-unchanged --dir ORIGINAL_DIR --idea IDEA --sequence N
+parley trajectory reconcile-unchanged --dir ORIGINAL_DIR --idea IDEA --sequence N \
+  --sha256 PREVIEW_SHA --yes
+```
+
+This deterministic publication requires no attendance. It revalidates the
+original charge, complete before/after source archives and equal material tree
+digests. Commit and Git status metadata remain exactly as originally captured;
+equal material bytes do not imply equal commits. Original quorum and named
+criterion commands come from the retained before-source archive and must match
+both the frozen policy and the current contract. Reading the selected scope file
+still validates the entire archive, footer, links and whole-source digest.
+
+Matching requested, started and terminal invocation records must demonstrate an
+actual normal process exit. A successful zero exit and an observed nonzero
+`process_failure` can be recorded. Missing starts, missing exits, signal exits,
+unobserved handoffs, timeouts, cancellations, provider failures and incomplete
+captures remain unresolved. This observation makes no claim about unobserved or
+escaped descendants, process health before/after those observations, criterion
+success or participant identity.
+
+The typed `unchanged` branch pins the policy, original attempt, archived scope
+and lifecycle hashes; it contains no invented verifier run or parent result.
+Its assessment remains `inconclusive` with every original criterion unresolved.
+It neither increments nor resets consecutive material regressions. Only a newly
+confirmed regression can advance a review trigger; an unchanged attempt cannot
+reopen an already acknowledged trigger by itself.
+
+Apply rechecks the exact preview under the common cycle guard, without running
+commands or spending another reservation. Concurrent identical applies produce
+one resolution. Exact retries preserve original preview and state bytes after
+output/publication failure, continuation and later charged work. Changed or
+missing accepted evidence refuses on replay and on every later state read.
+The additive `unchanged` field retains state version 3; older strict readers
+refuse it and must not write this history.
+
+Continuation still needs the existing attended `--acknowledge-inconclusive`
+decision and any pending review acknowledgment. Neither observation nor that
+acknowledgment grants more budget or proves completion. A latest unchanged
+attempt cannot satisfy the confirmed clean material-outcome completion gate.
+Independent current-source acceptance and ordinary participant signoffs remain
+separate requirements.
 
 ### Continue with a retained decision and clean source promotion
 
@@ -1398,6 +1449,7 @@ pass the trajectory completion gate. Even a resolved clean trajectory still need
 all ordinary current-tree whole-implementation evidence and protocol signoffs.
 
 These controls require the original roots and private evidence to remain readable.
-They do not recover a lost parent result, failed helper ticket, unchanged-source
-attempt, missing snapshot/index/history or orphan reservation, and do not authorize
-model retries. Full explicit recovery for those cases remains separate work.
+Continuation itself does not recover evidence or authorize model retries. The
+separate controls above handle a fully evidenced lost parent result or normally
+exited unchanged-source attempt. Failed helper tickets, missing snapshots/index/
+history and orphan reservations still require explicit recovery work.

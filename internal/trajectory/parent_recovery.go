@@ -263,8 +263,8 @@ func parentRecoveryResolutionCheck(root, runID string) func(context.Context, bud
 	return func(ctx context.Context, b budget.CycleBinding, s State) error {
 		for _, resolution := range s.Resolutions {
 			old := resolution.Preview
-			actual, err := readParentEvidence(ctx, b, s, old.Root, old.RunID)
-			if err != nil && old.Root == root && old.RunID == runID && old.RecoverySHA256 == "" {
+			actual, err := readResolutionEvidence(ctx, b, s, old)
+			if err != nil && old.Unchanged == nil && old.Root == root && old.RunID == runID && old.RecoverySHA256 == "" {
 				dir, e := os.OpenRoot(root)
 				if e != nil {
 					return e

@@ -4,13 +4,35 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 433f76dfce2b69b3c18feaafae575ddcb71a8f19
-validation-source-manifest: 93dbaa9a63ed1500b72a71ba6eb154e9859c2e7153b4f19508106dd29077f6cd
+checkpoint-base-commit: 0585deb665375fed4b16d73ff0013027b22f03b7
+validation-source-manifest: 35558a3f60bc892c15d68cfb063dec9b94ad54e8cbc75573667fec80a9f7cd7a
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
 
 # Evidence-First Delivery
+
+## Unchanged-source reconciliation allocation — September 12, 2026
+
+Before edits, codex-1 claims new internal/trajectory/unchanged.go and
+unchanged_test.go; serialized trajectory/reconcile.go, continuation.go,
+parent_recovery.go and snapshot.go; new app/trajectory_unchanged.go and
+trajectory_unchanged_test.go; app/trajectory.go; runtime docs; and owned note
+implementation-notes/codex-1-unchanged-source-reconciliation-20260912.md.
+No participant artifact, signature, protocol or frozen experiment is changed.
+
+Reconcile an actually terminated charged attempt with identical captured source
+bytes as a distinct observation, not an independently verified patch. Retain its
+charge, full original before/after identities, invocation lifecycle and original
+scope from the retained archive; recheck the current original quorum/criteria.
+Do not invent a verifier run or parent result. Leave material criteria unverified,
+preserve prior regression counts/triggers without adding a regression, and use
+the existing inconclusive continuation acknowledgment. No attendance is added to
+deterministic observation publication. Exact preview/apply/replay must preserve
+historical decisions and refuse drift, missing evidence and changed scope. Verify
+real local process/CLI execution, concurrent apply, later charged history, failure
+and output/publication recovery. The original helper-ticket/orphan recovery and
+all live/independent/final-delivery obligations remain open.
 
 ## Concurrent lock bootstrap correction allocation — September 12, 2026
 
@@ -86,6 +108,23 @@ refuse incomplete migrated authority, and support exact recovery/replay. Missing
 old identities, changed resource roots, and remote-host recovery stay refused.
 Only synthetic test resources may be migrated during implementation. No actual
 operator migration is authorized or claimed by this allocation.
+
+## Unchanged-source reconciliation implementation — September 12, 2026
+
+The allocated slice adds `trajectory reconcile-unchanged --sequence N` with exact
+preview/apply/replay and typed unchanged provenance. It rederives complete original
+source/archive/charge, archived original scope and matching normally exited
+invocation lifecycle. It grants no execution, budget, continuation or acceptance.
+All material criteria remain inconclusive, unchanged attempts preserve regression
+streaks without reopening acknowledged review triggers, and original independent
+patch verification continues to refuse equal material bytes. Historical parent
+recovery and ordinary reads dispatch and revalidate both evidence types.
+
+Final automated validation on 401 Go/module files returned exit zero: focused 155.765s, full 297.826s (32 package terminals), six-package race 352.626s, vet, Windows trajectory/app cross-builds and compiled shared-volume trajectory/app selections (45.861s / 64.312s). Eleven new top-level scenarios are present in focused/full/race and the applicable shared runs. Six removed-protection overlays returned nonzero at their intended assertions. The final verifier checked frozen source/test inventories, native/shared log equality, PE amd64 build headers and the unchanged historical HTML. Windows runtime and independent participant acceptance remain unverified.
+The owned note is
+implementation-notes/codex-1-unchanged-source-reconciliation-20260912.md.
+All whole-goal live experiments, independent acceptance, final report/follow-ups
+and other workflow-effect recovery remain open.
 
 ## Summary of work
 
@@ -285,13 +324,15 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Durable action accounting identity is published through 433f76d. The next
-   parent-result recovery and concurrent lock-bootstrap correction slice has
-   passed final automated validation; see
-   `implementation-notes/codex-1-parent-result-recovery-20260912.md`.
+1. Parent-result recovery and concurrent lock-bootstrap correction are published
+   through 0585deb. The new unchanged-source observation slice has passed final
+   automated validation; see
+   `implementation-notes/codex-1-unchanged-source-reconciliation-20260912.md`.
    Keep independent current-source acceptance separate from this code checkpoint.
 2. Complete workflow-effect recovery for orphan reservations, failed/consumed
-   helper tickets, unchanged source and unavailable source/index/history.
+   helper tickets and unavailable source/index/history. Normally exited unchanged
+   source now has a separate deterministic reconciliation control; incomplete
+   lifecycle/capture cases remain unresolved.
    The implemented parent recovery requires a successful matching invocation
    and complete helper journal. Preserve all charges and refusal evidence;
    every new execution needs a separately spent attempt. The next read-only map
