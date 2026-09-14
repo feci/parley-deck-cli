@@ -63,7 +63,7 @@ type launchIntegrityError struct{ reason string }
 
 func (e *launchIntegrityError) Error() string { return e.reason }
 
-func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
+func launchRequestInfo(ctx context.Context, root, runID string) (string, LaunchInfo) {
 	if origin, ok := ctx.Value(launchOriginKey{}).(string); ok {
 		root = origin
 	}
@@ -77,6 +77,11 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	if info.Context.Mode == "" {
 		info.Context.Mode = "unattested"
 	}
+	return root, info
+}
+
+func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
+	root, info := launchRequestInfo(ctx, root, runID)
 	ctx = withLaunchActionInput(ctx, info, agent)
 	handoff := len(intent) == 1 && intent[0] == launchHandoff
 	if !handoff {
@@ -84,6 +89,21 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 		ctx, finishCycle = prepareLaunchCycle(ctx, root, info.Idea, info.Phase, info.RunID)
 		defer finishCycle()
 	}
+	l, err := recordLaunchRequest(root, agent, info)
+	if err != nil {
+		return nil, err
+	}
+	if err := l.reserveCapturedVerification(ctx, root, handoff); err != nil {
+		return nil, errors.Join(&launchIntegrityError{reason: err.Error()}, l.finish(err, ctx.Err(), nil))
+	}
+	if err := l.reserveBudget(ctx, root, handoff); err != nil {
+		return nil, errors.Join(err, l.finish(err, ctx.Err(), nil))
+	}
+	return l, nil
+}
+
+// Records a request only. It prepares no cycle and reserves no execution.
+func recordLaunchRequest(root string, agent agents.Discovery, info LaunchInfo) (*launchEvidence, error) {
 	metadata := telemetry.Metadata{
 		RunID: info.RunID, SegmentID: info.SegmentID, Idea: info.Idea, Phase: info.Phase,
 		Agent: agent.ID, Adapter: agent.Adapter(), LaunchMode: agents.LaunchModeOrDefault(agent.LaunchMode),
@@ -99,12 +119,6 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 	structured := metadata.LaunchMode != agents.LaunchACP && telemetry.StructuredArgs(args)
 	l := &launchEvidence{invocation: invocation, collector: telemetry.NewCollector(agent.Adapter(), structured), info: info}
 	l.notify()
-	if err := l.reserveCapturedVerification(ctx, root, handoff); err != nil {
-		return nil, errors.Join(&launchIntegrityError{reason: err.Error()}, l.finish(err, ctx.Err(), nil))
-	}
-	if err := l.reserveBudget(ctx, root, handoff); err != nil {
-		return nil, errors.Join(err, l.finish(err, ctx.Err(), nil))
-	}
 	return l, nil
 }
 

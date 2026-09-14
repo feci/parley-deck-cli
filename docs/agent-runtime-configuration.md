@@ -1582,3 +1582,20 @@ Historical attempts without this field retain their existing evidentiary limits;
 they do not retroactively gain intent evidence. These private files contain typed
 metadata and hashes, not source or command bodies. Local hashes are cooperative
 integrity checks, not authentication against another process with the same UID.
+
+### Known protocol refusal before new reservations
+
+When the protocol renderer has already refused a launch, the runner records its
+request and actual unstarted terminal before preparing a cycle or reserving a
+fresh fixup, step, launch or captured-verifier ticket. The refused protocol is
+never supplied to a process. Normal permitted launches retain the existing
+reservation requirements; restoring valid authority permits an ordinary new
+launch, with its own invocation and required spending.
+
+Any reservation already spent by a caller remains spent and unresolved, with its
+original source/launch/terminal fields unchanged. No refund, missing historical
+terminal or completed patch is inferred. A prepared verifier ticket stays
+unconsumed on this known refusal, but an already consumed or incomplete ticket
+is not recovered. This prevents one future refused-after-charge case; it does
+not recover old precharges, abnormal process termination or workflow effects,
+establish descendant inactivity, or permit completion.

@@ -118,15 +118,22 @@ func beginProtocolLaunch(ctx context.Context, root, runID string, agent agents.D
 	prepared, protocolContext, contextErr := prepareProtocolPrompt(root, prompt, info)
 	info.Context = protocolContext
 	ctx = WithLaunchInfo(ctx, info)
-	evidence, err := beginLaunch(ctx, root, runID, agent)
-	if err != nil {
-		return ctx, "", nil, err
-	}
 	if contextErr != nil {
+		// An already refused prompt cannot execute. Retain its request/terminal
+		// before any fresh cycle, step, launch or helper-ticket reservation.
+		origin, requestInfo := launchRequestInfo(ctx, root, runID)
+		evidence, err := recordLaunchRequest(origin, agent, requestInfo)
+		if err != nil {
+			return ctx, "", nil, err
+		}
 		if err := evidence.finish(contextErr, ctx.Err(), nil); err != nil {
 			return ctx, "", nil, err
 		}
 		return ctx, "", nil, contextErr
+	}
+	evidence, err := beginLaunch(ctx, root, runID, agent)
+	if err != nil {
+		return ctx, "", nil, err
 	}
 	return ctx, prepared, evidence, nil
 }

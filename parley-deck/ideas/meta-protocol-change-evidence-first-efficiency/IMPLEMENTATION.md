@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 83eec56fe5c585c6aebac407e54f3e6c2bf79b6c
-validation-source-manifest: b579964cc39ded6b23c8fc41e93a74e3cb1acc39332e6fd6237f1fad1f1e3397
+checkpoint-base-commit: db50dad638fc227c6d8d41e9de3ebef057c3d65c
+validation-source-manifest: 8938e8612351bd7efbbf85df589d0f4fdd541cff178daf9b42f8f6dec195abc2
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3347,3 +3347,76 @@ may inspect/report any related finding. Model claude-opus-5[1m], max effort,
 deep speed, 30-minute deadline, restricted native Read/Glob/Grep/Write tools,
 no shell or tests. This is supporting source review, not a signature, executed
 test verdict or complete-scope acceptance. No invocation is claimed by this plan.
+
+### Ownership before prospective protocol-refusal prevention — September 14
+
+Archive checkpoint db50dad638fc227c6d8d41e9de3ebef057c3d65c is published.
+Codex-1 claims internal/runner/telemetry.go, internal/runner/protocol_context.go,
+new internal/runner/protocol_refusal_precharge_test.go,
+docs/agent-runtime-configuration.md, this IMPLEMENTATION.md, and new owned
+implementation-notes/codex-1-protocol-refusal-precharge-20260914.md. Edits are
+serialized in the existing integration branch/worktree. Claude's supporting
+review is separately running on the frozen archive checkpoint and writes only
+its own new artifact in its native worktree; that boundary is disjoint.
+
+When protocol rendering already refused, record its request and actual unstarted
+terminal before preparing a cycle or reserving any fresh cycle/step/launch/helper
+ticket. Extract request recording from reservation setup without changing normal
+launch ordering. Existing precharges remain spent, byte-identical and unresolved.
+This prevents one future F1 class; it does not reconstruct old absent terminals,
+refund spend, establish descendant inactivity, recover an old helper, grant clean
+acceptance or resolve the remaining abnormal-terminal finding.
+
+Copy the native prototype after checking its diff against this checkpoint.
+Add its three direct fixtures (ignored-cache-only refusal for fresh/precharged
+fixups; prepared verifier ticket). Retain both original fixture failures and
+prototype evidence. Run focused protocol/launch tests and regenerate the three
+removed-gate controls against integrated source. Then freeze and run full Go,
+six-package race, vet, Windows CLI/runner cross-builds, and compiled shared
+runner selections. Do not rerun passed archive checks on unchanged code without
+a new concern; the broader full suite covers integration. Publish as a separate
+checkpoint with its own source manifest and explicit remaining F1 limitations.
+
+Codex-1 additionally claims its own inbox note
+parley-deck/inbox/codex-1-to-all_meta-protocol-change-evidence-first-efficiency_activation-archive-review-limit-20260914.md
+to retain the failed supporting-review attempt. The actual Claude launch returned
+HTTP 429/session limit and no artifact at 18:45:54Z; the provider reports reset at
+22:00 Europe/Berlin. Invocation 5c74cdc3-b106-42fe-b134-d81d4e2fecc9,
+3.336s outer command, exit 1, USD 0 CLI estimate. It is not a review or acceptance.
+All native output was copied only after termination and compared byte-for-byte.
+Live inventory is now 36 terminal attempts, 17 unknown costs, USD 54.424894 known
+CLI estimates; total unknown. No packet/pilot treatment ran. No retry, quorum
+amendment, reviewer withdrawal or model replacement is inferred.
+
+Codex-1 claims new owned implementation-notes/codex-1-history-envelope-20260914.md
+before recording the completed native synthetic F6 probe. No new production/test
+path is claimed for that fixture; it stays in ignored runtime/native storage.
+Its provenance distinguishes actual low-level charges and local process records
+from fixture-assembled resolutions/continuations and production Inspect. The
+30-second refusal remains a failure even though a longer complete read passed.
+
+
+### Prospective protocol-refusal checkpoint — September 14
+
+Manifest 8938e8612351bd7efbbf85df589d0f4fdd541cff178daf9b42f8f6dec195abc2 pins 416 Go/module files. Full Go suite
+PASS 383.281s (all 32 package terminals); six-package race PASS 406.722s; vet PASS.
+Windows production CLI and runner test cross-builds passed; PE amd64 headers
+checked, runtime unverified. Compiled shared runner selection PASS 29.665s.
+Both full/race and shared runs include all three new tests and the five surrounding
+protocol/launch tests. Three intended removed-gate failures, exact source hashes,
+native/shared logs and unchanged old participant review/historical HTML are checked.
+Evidence: .parley-runtime/protocol-refusal-final-validation-20260914/ and
+.parley-runtime/protocol-refusal-development-20260914/.
+
+The separate current-source supporting Claude review failed with HTTP 429/session
+limit, no artifact and USD 0 CLI estimate; it supplies no independent acceptance.
+Live inventory now 36 terminal attempts, 17 unknown costs, USD 54.424894 known estimates;
+total unknown. The original idea quorum and packet/full-six pilot remain frozen.
+
+F6 now has a scoped native maximum-count/maximum-size witness: the 30-second
+Inspect refused at 30.002s; a separate full read returned 128 attempts in 197.013s.
+See owned history-envelope note for fixture assembly, concurrent-load qualification
+and retained compressed inputs. It is not a runner Finish or end-to-end 128-cycle
+measurement. The F6 issue remains unresolved. A narrower cleanup-authority candidate
+passed six focused native-overlay tests in 23.451s, but is not integrated or accepted.
+Full abnormal/old-precharge/helper/workflow recovery and all live/final gates remain open.
