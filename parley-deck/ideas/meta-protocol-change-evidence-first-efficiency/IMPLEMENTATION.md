@@ -324,9 +324,9 @@ The experimental variants and enforceable resource policy are not frozen yet.
 
 ## Current state & next steps
 
-1. Parent-result recovery and concurrent lock-bootstrap correction are published
-   through 0585deb. The new unchanged-source observation slice has passed final
-   automated validation; see
+1. Parent-result recovery, concurrent lock-bootstrap correction and unchanged-source
+   observations are published through 2ab9e82 (local and remote, PR #73).
+   The unchanged-source observation slice passed final automated validation; see
    `implementation-notes/codex-1-unchanged-source-reconciliation-20260912.md`.
    Keep independent current-source acceptance separate from this code checkpoint.
 2. Complete workflow-effect recovery for orphan reservations, failed/consumed
@@ -2968,3 +2968,105 @@ and delivery-based follow-ups remain incomplete. No participant-owned artifact
 or signature changed. No real model invocation occurred; live inventory remains
 34 terminal attempts, 17 unknown costs, USD 46.1887585 known CLI estimates and an
 unknown total. Historical quorum/pilot/funding decisions remain pending.
+
+
+## September 14 continuation and disjoint ownership
+
+User direction: continue the authorized unfinished audit implementation (translated
+from Slovak). Published checkpoint is 2ab9e82f0dd5a885717483a363de9482ae7c938a,
+PR #73, with accepted unchanged-source validation retained locally. The reported
+Claude reset has elapsed; current provider availability will be measured, not inferred.
+
+| Boundary (file set) | Owner | Branch | Worktree | Status |
+| --- | --- | --- | --- | --- |
+| Only new implementation-notes/claude-1-reconciliation-review-20260914.md and its native atomic siblings under this idea | claude-1 | review/meta-protocol-change-evidence-first-efficiency/reconciliation-20260914 | ../worktrees/evidence-first-reconciliation-review | review |
+| internal/budget/cycle_binding.go, cycle_observer.go; new internal/budget/cycle_intent.go, cycle_intent_test.go; internal/trajectory/state.go; new internal/trajectory/reservation_recovery.go, reservation_recovery_test.go; internal/app/trajectory.go; new internal/app/trajectory_reservation_recovery.go, trajectory_reservation_recovery_test.go; docs/agent-runtime-configuration.md; this IMPLEMENTATION.md; new implementation-notes/codex-1-reservation-recovery-20260914.md | codex-1 | integration/meta-protocol-change-evidence-first-efficiency | ../worktrees/evidence-first-integration | claimed |
+
+The Claude checkout freezes source at 2ab9e82 and preserves the older failed
+binding review checkout. This is an independent supporting source review, not
+full-scope Phase-6 acceptance, a signature or an experiment arm. Claude uses its
+existing roster identity, Opus 5 [1m], max effort, restricted native file tools,
+a measured manual launch and a 30-minute process deadline. Codex cannot write
+Claude's artifact. Runtime preparation/canaries remain facilitator-owned ignored
+files. No source write boundary intersects the reviewer artifact.
+
+Reservation recovery plan: preserve a complete precharge intent under the common
+cycle guard before the original Store.Reserve. Pin original entry, epoch, effective
+accounting contract, typed action identity and validated precharge state/archive.
+Recover only an exact missing charged trajectory row, with deterministic preview,
+hash-confirmed apply and exact replay. Preserve intent-without-charge, corrupt or
+partial publications and all failed original attempts. Reconstructing accounting
+must not infer a process terminal, inactivity, acceptance, a refund or permission
+to retry; other helper/execution recovery remains required. Check the original
+source archive and every other original charge/resolution. Refuse missing legacy
+intent rather than guessing from today's source. Validate the charge/observer
+interruption, changed identity/source/scope, replay, publication/output failure
+and competing CLI recovery with real process fixtures.
+
+Historical quorum, full-six pilot, packet gates and experiment funding questions
+remain unchanged and unresolved. No treatment calls are authorized by a guessed
+ceiling. The tool goal still reports an older blocked status; this continuation
+is active work and is not a completion claim or a fresh three-turn blocked audit.
+
+
+### September 14 measured review and reservation implementation checkpoint
+
+Claude invocation dcb0984c-611b-4fe3-8ba5-61182be0642a has published requested
+and started metadata in the new frozen review checkout. Source-review result and
+artifact are pending; provider availability is not inferred from elapsed reset time.
+No old failure/artifact was replaced. The launcher binary was built from 2ab9e82
+in native temporary storage; the exact/atomic-file sandbox canary passed.
+
+The new reservation boundary and deterministic missing-row CLI are implemented.
+Initial focused budget/trajectory checks passed (29.403s). Wider budget/trajectory/
+app integration selection passed (172.754s), including actual concurrent production
+CLI applies, lost-output replay, unchanged observations, parent recovery and captured
+verification. Subsequent source inspection corrected extended-policy compatibility;
+the dedicated original/extended-ceiling test passed (2.526s). Full final validation
+and independent acceptance are still required. Development and accepted final
+checkpoints must remain distinct.
+
+
+### Claude supporting source review completed — September 14
+
+Invocation dcb0984c-611b-4fe3-8ba5-61182be0642a exited 0 after 1563.577s and
+wrote its own supporting source-only review of 2ab9e82. Artifact SHA256:
+cb6143ff207eeddf05d1be49b42a0a035d3e133a3a88de1f0380bc8c837597f0.
+Codex imported those exact bytes from the frozen review checkout without editing
+Claude's content. Only the assigned artifact changed there; native/shared measured
+launch outputs match. This is not review or acceptance of the later reservation
+slice, execution verification or a signoff.
+
+Claude reports F1/F2 MAJOR, F3/F4 MINOR, F5/F6 NIT. F1 covers abnormal or
+refused-after-charge unchanged attempts with no continuation path; it remains an
+explicit owned recovery obligation alongside helper tickets. F2 identifies stale
+preview hashes masking lifecycle-predicate omissions in tests; Codex is testing
+the proposed counterexample before modifying those tests. F3 challenges activation
+quorum binding; F4 concerns non-tracked Git excludes and remains UNVERIFIED in the
+review. F5 narrows provider-failure wording; F6 flags unmeasured guarded history
+cost. Findings are retained verbatim, not dismissed by the facilitator or treated
+as waived by passing tests. Independent review disposition and final scope remain open.
+
+The review reported USD 8.2361355 as a CLI estimate, with Opus 5 [1m] and Haiku 4.5
+usage identities reported separately from the requested Opus configuration. Live
+inventory now has 35 terminal attempts, 17 unknown costs and USD 54.424894 known
+CLI estimates; total unknown. The earlier weekly-limit failure stays counted.
+No packet/pilot treatment calls or quorum changes occurred.
+
+
+### Reservation intent and exact missing-row validation — September 14
+
+Accepted source manifest a5e1f06be6cff9a60322318d2b9dcdb591749ae471ac417c68d46cff97caf1c5
+covers 407 Go/module files. Full PASS 337.880s (32 package terminals), six-package
+race PASS 387.708s, vet PASS, Windows budget/trajectory/app cross-builds PASS;
+Windows runtime unverified. Compiled shared selections PASS 0.556s / 16.633s /
+8.412s. Ten new top-level tests and five intended negative failures are inventoried.
+Native/shared bytes, unchanged source and historical HTML match. See the owned
+reservation note and .parley-runtime/reservation-final-validation-20260914/.
+
+This checkpoint is ready for independent review, not full-scope acceptance.
+Claude's F2 counterexample was actually reproduced: two removed-qualification
+overlays left the original contrary-lifecycle test passing. Its correction is
+next; no prior green run is represented as detecting those missing clauses.
+All helper/abnormal-terminal recovery, quorum/exclude-source findings, live
+experiments, current-source reviews/signatures and delivery/report gates stay open.

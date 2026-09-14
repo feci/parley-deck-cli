@@ -1451,5 +1451,54 @@ all ordinary current-tree whole-implementation evidence and protocol signoffs.
 These controls require the original roots and private evidence to remain readable.
 Continuation itself does not recover evidence or authorize model retries. The
 separate controls above handle a fully evidenced lost parent result or normally
-exited unchanged-source attempt. Failed helper tickets, missing snapshots/index/
-history and orphan reservations still require explicit recovery work.
+exited unchanged-source attempt. The reservation control below handles an exact
+missing charged row with retained precharge intent. Failed helper tickets, missing
+snapshots/index/history and legacy reservations without that intent remain unresolved.
+
+### Recover an original reservation's missing trajectory row
+
+New trajectory reservations retain an exclusive, bounded precharge intent before
+the ledger transaction. It pins the original entry key, accounting epoch, effective
+cycle policy and action input, and the complete validated precharge trajectory with
+source/archive references. The ledger supplies the actual reservation timestamp
+after charging; the intent does not guess it. Each new attempt retains the intent's
+digest. All later state reads recheck the retained intent and original prefix.
+
+```sh
+parley trajectory recover-reservation --dir DIR --idea IDEA --entry ENTRY_SHA256
+parley trajectory recover-reservation --dir DIR --idea IDEA --entry ENTRY_SHA256 \
+  --sha256 PREVIEW_SHA256 --yes
+```
+
+The existing `budget action inspect --ledger DIR --scope SCOPE` control lists
+original `entry_key` values. Use the exact original fixup ledger and scope.
+
+An intent without a matching published charge is reported separately; apply refuses
+and does not reserve a new attempt. For a spent charge, recovery can append exactly
+the missing original attempt to the still-matching precharge state. Every other
+original charge, source archive and resolution must validate. Changed or additional
+charges, a changed state prefix, missing/partial/symlinked intent, missing original
+archives and conflicting previews refuse. Today's changed worktree cannot supply
+the missing original source. Legacy orphan charges without a precharge intent
+cannot be reconstructed by this command.
+
+Preview and apply return `permission: none` and `execution_status: not-established`.
+Recovered attempts have no fabricated launch, after-source or terminal outcome.
+They remain unresolved and block completion and further fixups. Recovery neither
+signals processes nor proves that a dead leader or its descendants are inactive.
+It grants no refund, session, retry, continuation, budget extension or acceptance.
+Reconstructing accounting alone does not finish interrupted workflow recovery.
+
+The operation shares the cycle guard. Identical concurrent applies and exact replay
+after publication/output failure preserve original state bytes and spend. Replay
+of an already recorded attempt returns the same original accounting preview after
+later valid work; it does not rewrite its subsequent launch or terminal evidence.
+There is no attendance requirement because this publishes retained facts only.
+Partial intent publications stay preserved and cannot be overwritten by retry.
+
+The optional `reservation_intent_sha256` attempt field is additive to existing
+trajectory state versions. Older strict readers refuse new histories carrying it.
+Historical attempts without this field retain their existing evidentiary limits;
+they do not retroactively gain intent evidence. These private files contain typed
+metadata and hashes, not source or command bodies. Local hashes are cooperative
+integrity checks, not authentication against another process with the same UID.

@@ -254,15 +254,23 @@ func (b *CycleBinding) reserveWithReceipt(ctx context.Context, id string) (int, 
 			return 0, reservationReceipt{}, err
 		}
 	}
-	remaining := b.Policy.Maximum - b.Policy.Carried
-	limits := Limits{Actions: map[Kind]int{}, Denied: map[Kind]bool{}}
-	if remaining <= 0 {
-		limits.Denied[b.Policy.Kind] = true
-	} else {
-		limits.Actions[b.Policy.Kind] = remaining
-	}
+	limits := cycleLimits(b.Policy)
 	zero := int64(0)
-	state, err := b.Store.Reserve(ctx, Request{ID: id, Kind: b.Policy.Kind, ReserveMicros: &zero}, limits)
+	req := Request{ID: id, Kind: b.Policy.Kind, ReserveMicros: &zero}
+	if prepare, ok := observer.(CycleReservationObserver); ok {
+		before, err := b.Store.Inspect(ctx)
+		if err != nil {
+			return 0, reservationReceipt{}, err
+		}
+		intent, err := newCycleReservationIntent(ctx, *b, before, req, limits)
+		if err != nil {
+			return 0, reservationReceipt{}, err
+		}
+		if err := prepare.PrepareCycleReservation(ctx, *b, before, intent); err != nil {
+			return 0, reservationReceipt{}, err
+		}
+	}
+	state, err := b.Store.Reserve(ctx, req, limits)
 	if err != nil {
 		return 0, reservationReceipt{}, err
 	}

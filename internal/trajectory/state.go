@@ -44,14 +44,15 @@ type Terminal struct {
 	SnapshotError string    `json:"snapshot_error"`
 }
 type Attempt struct {
-	Sequence      int                `json:"sequence"`
-	Charge        budget.CycleCharge `json:"charge"`
-	Before        Source             `json:"before"`
-	BeforeArchive SnapshotRef        `json:"before_archive"`
-	Launch        *Launch            `json:"launch"`
-	After         *Source            `json:"after"`
-	AfterArchive  *SnapshotRef       `json:"after_archive"`
-	Terminal      *Terminal          `json:"terminal"`
+	ReservationIntentSHA256 string             `json:"reservation_intent_sha256,omitempty"`
+	Sequence                int                `json:"sequence"`
+	Charge                  budget.CycleCharge `json:"charge"`
+	Before                  Source             `json:"before"`
+	BeforeArchive           SnapshotRef        `json:"before_archive"`
+	Launch                  *Launch            `json:"launch"`
+	After                   *Source            `json:"after"`
+	AfterArchive            *SnapshotRef       `json:"after_archive"`
+	Terminal                *Terminal          `json:"terminal"`
 }
 type State struct {
 	Version         int            `json:"version"`
@@ -269,6 +270,9 @@ func validateState(s State, b budget.CycleBinding, ledger budget.Snapshot) error
 	before := s.Policy.Baseline
 	beforeArchive := s.BaselineArchive
 	for i, a := range s.Attempts {
+		if a.ReservationIntentSHA256 != "" && !validHash(a.ReservationIntentSHA256) {
+			return errors.New("invalid original reservation intent reference")
+		}
 		if i > 0 {
 			if len(s.Resolutions) < i {
 				return errors.New("an unverified trajectory attempt was followed by another charge")
@@ -373,10 +377,11 @@ func Activate(ctx context.Context, root, expected string, p Policy) error {
 // Observer is one live reservation's snapshot capture. Its methods are called
 // by budget only under the existing common cycle resource guard.
 type Observer struct {
-	Root     string
-	prepared []byte
-	before   Source
-	archive  SnapshotRef
+	intentSHA256 string
+	Root         string
+	prepared     []byte
+	before       Source
+	archive      SnapshotRef
 }
 
 func (o *Observer) BeforeCycle(ctx context.Context, b budget.CycleBinding, ledger budget.Snapshot) error {
@@ -423,11 +428,26 @@ func (o *Observer) AfterCycle(ctx context.Context, b budget.CycleBinding, ledger
 		return errors.New("trajectory changed across reservation; charge remains spent")
 	}
 	o.prepared = nil
-	charge, err := budget.PublishedCycleCharge(ledger, key)
+	dir, err := openIntentRoot(b, false)
 	if err != nil {
 		return err
 	}
-	s.Attempts = append(s.Attempts, Attempt{Sequence: len(s.Attempts) + 1, Charge: charge, Before: o.before, BeforeArchive: o.archive})
+	defer dir.Close()
+	i, sha, err := readReservationIntent(dir, key)
+	if err != nil {
+		return err
+	}
+	if o.intentSHA256 == "" || sha != o.intentSHA256 || !sameJSON(s, i.Before) {
+		return errors.New("original precharge intent is missing or changed; charge remains spent")
+	}
+	a, err := intentAttempt(b, ledger, i, sha)
+	if err != nil {
+		return err
+	}
+	if a.Before != o.before || a.BeforeArchive != o.archive {
+		return errors.New("precharge intent changed the original source")
+	}
+	s.Attempts = append(s.Attempts, a)
 	if err = validateState(s, b, ledger); err != nil {
 		return err
 	}
@@ -625,6 +645,9 @@ func checkStateSnapshots(ctx context.Context, b budget.CycleBinding, s State) er
 	return checkResolutions(ctx, b, s)
 }
 func checkSourceSnapshots(ctx context.Context, b budget.CycleBinding, s State) error {
+	if err := checkReservationIntents(ctx, b, s); err != nil {
+		return err
+	}
 	dir := snapshotDirectory(b)
 	if err := CheckSnapshot(ctx, dir, s.BaselineArchive, s.Policy.Baseline); err != nil {
 		return fmt.Errorf("baseline archive unavailable: %w", err)

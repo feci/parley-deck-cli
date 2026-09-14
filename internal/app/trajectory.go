@@ -14,6 +14,9 @@ import (
 )
 
 func runTrajectory(ctx context.Context, args []string, out, errout io.Writer) int {
+	if len(args) > 0 && args[0] == "recover-reservation" {
+		return runTrajectoryReservationRecovery(ctx, args[1:], out, errout)
+	}
 	if len(args) > 0 && args[0] == "reconcile-unchanged" {
 		return runTrajectoryUnchanged(ctx, args[1:], out, errout)
 	}
@@ -39,6 +42,7 @@ func runTrajectoryControl(ctx context.Context, args []string, out, errout io.Wri
 	if len(args) == 0 || (args[0] != "initialize" && args[0] != "configure" && args[0] != "inspect") {
 		fmt.Fprintln(errout, "usage: parley trajectory initialize --dir DIR --idea ID --max-fixups N --yes; parley trajectory configure --dir DIR --idea ID --implementer ID [--policy-sha256 SHA --cycle-policy-sha256 SHA --yes]; parley trajectory inspect --dir DIR --idea ID; parley trajectory verify --dir DIR --idea ID --verifier ID --yes")
 		fmt.Fprintln(errout, "       parley trajectory recover-parent --dir DIR --idea ID --run RUN [--sha256 SHA --yes]")
+		fmt.Fprintln(errout, "       parley trajectory recover-reservation --dir DIR --idea ID --entry HASH [--sha256 SHA --yes]")
 		fmt.Fprintln(errout, "       parley trajectory reconcile-unchanged --dir DIR --idea ID --sequence N [--sha256 SHA --yes]")
 		fmt.Fprintln(errout, "       parley trajectory reconcile --dir DIR --idea ID --run RUN [--sha256 SHA --yes]; parley trajectory history --dir DIR --idea ID; parley trajectory continue --dir DIR --idea ID [--sha256 SHA --decision-id ID --reason REASON --yes] [--acknowledge-review] [--acknowledge-inconclusive]")
 		return 2
