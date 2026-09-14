@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: ed8b9cbf09efb26ddf3c02f4a640e6873cde3a35
-validation-source-manifest: 0c3b811a827ef84e04856ad79f1e2f6ad7a83884a8afa3dc59401f6f65f65949
+checkpoint-base-commit: 83eec56fe5c585c6aebac407e54f3e6c2bf79b6c
+validation-source-manifest: b579964cc39ded6b23c8fc41e93a74e3cb1acc39332e6fd6237f1fad1f1e3397
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3275,3 +3275,75 @@ refusals before new reservations. F1 abnormal/old precharged process recovery,
 helper/workflow recovery, F6 full envelope, independent reviews/signatures, real
 launch/concurrency/closure evidence, frozen experiments and final HTML/delivery
 follow-ups remain open. The whole audit is incomplete.
+
+
+### Ownership before bounded archive stability correction — September 14
+
+Published F3 checkpoint: 83eec56fe5c585c6aebac407e54f3e6c2bf79b6c. Codex-1
+claims internal/trajectory/snapshot.go; new internal/trajectory/archive_stability.go
+and archive_stability_test.go; docs/agent-runtime-configuration.md; this
+IMPLEMENTATION.md; new implementation-notes/codex-1-archive-stability-20260914.md.
+Same integration branch/worktree. No participant artifact or historical HTML
+is a write target. The source-specific native prototype and all failures remain.
+
+A complete first archive/canonical/tree/hash and link validation must precede
+stability qualification. Retain its descriptor. Original, opened, final-descriptor
+and named-path inode/mode/size must match. A timestamp-only transition permits
+one full strict reread pinned to the original identity; a second transition or
+any failed identity/content/metadata check refuses. No sleep, unbounded retry or
+omitted hash. First-pass emitted bytes are already expected-hash bound; success
+and symlink creation await the strict reread. Existing restore cleanup remains.
+
+Copy and format the reviewed native candidate, inspect the exact diff, run its
+two tests and existing snapshot coverage, then regenerate the six one-predicate
+and two after-hash boundary controls against integrated source. Native-only
+boundary injection must not enter shipped production code. Freeze and validate
+full/race/vet, Windows CLI/trajectory/app cross-builds, compiled shared selections
+and the actual shared 16 MiB/five-attempt history probe. The host cause, complete
+history/size envelope, process recovery, independent review and live final gates
+remain open; this is a bounded availability correction only.
+
+
+### Bounded archive stability checkpoint — September 14
+
+The 415 Go/module files are pinned by manifest b579964cc39ded6b23c8fc41e93a74e3cb1acc39332e6fd6237f1fad1f1e3397.
+Full Go suite PASS (357.367s, all 32 package terminals); six-package race
+PASS (408.239s: budget/app/driver/runner/trajectory/evidence); vet PASS.
+Windows production CLI and trajectory/app test cross-builds passed; PE amd64
+headers checked. Runtime is unverified. The evidence test binary's pre-existing
+syscall.Mkfifo compile failure remains retained in earlier F4 evidence.
+
+Compiled shared trajectory snapshot/quorum selection PASS (62.476s)
+and selected trajectory app tests PASS (77.576s). Actual shared
+16 MiB/five-charged-attempt history fixture PASS (31.16s), using
+test-fixture overlays only; integrated production source has no overlay.
+Five-attempt Inspect samples: 781.839, 840.537, 862.23 ms. This is warm-read,
+single-machine evidence, not the full 128-attempt/256 MiB envelope or cold cache.
+No claim of a 30-second violation follows from it.
+
+The final verifier checks source hashes, all package terminals, both new tests
+and eight scenarios, eight intended negative controls plus the protected boundary
+pass, fixture-only probe provenance, native/shared output equality, Windows
+headers and unchanged participant review/historical HTML. Original shared
+timestamp failures and both original F3 race failures remain retained as failures.
+Evidence: .parley-runtime/archive-stability-final-validation-20260914/ and
+.parley-runtime/archive-stability-development-20260914/.
+
+Source implementation is ready for independent review, not a whole-audit close.
+The F1 known-refusal prevention candidate is still native-only. Full abnormal
+terminal/helper/workflow recovery, F6 envelope, live experiments, original
+quorum/signatures and final HTML/follow-ups remain open.
+
+### Supporting review allocation before invocation — September 14
+
+Claude-1 is allocated only the new owned artifact
+implementation-notes/claude-1-activation-archive-review-20260914.md on branch
+review/meta-protocol-change-evidence-first-efficiency/activation-archive-20260914,
+native worktree /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout. The source will be frozen
+at this archive checkpoint and verified against its 415-file manifest. The
+artifact write boundary does not intersect codex-1's implementation files.
+The participant will inspect F3 and bounded archive stability independently and
+may inspect/report any related finding. Model claude-opus-5[1m], max effort,
+deep speed, 30-minute deadline, restricted native Read/Glob/Grep/Write tools,
+no shell or tests. This is supporting source review, not a signature, executed
+test verdict or complete-scope acceptance. No invocation is claimed by this plan.

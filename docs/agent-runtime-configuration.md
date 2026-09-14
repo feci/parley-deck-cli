@@ -1145,6 +1145,19 @@ referenced archives refuse inspection, new fixups and completion. Neither case
 supplies an accepted patch, and a repeated capture does not overwrite a corrupt
 content address. Every attempt remains unresolved.
 
+Archive stability checks retain the first file descriptor through validation.
+All archive bytes, canonical encoding, complete source digest and links must
+validate before metadata is qualified. Initial/opened/final descriptor and
+named-path identity, mode and size must match. Only a timestamp-only change may
+trigger one full strict reread pinned to that same original file; further
+timestamp drift, replacement, changed content, mode/size drift or a reread error
+refuses. The caller's context still bounds both passes. Restored/member bytes
+already match the expected first-pass hashes, and success or final symlink
+creation waits for the second pass when required. Existing restore cleanup
+removes its newly allocated directory on failure. Archive formats are unchanged.
+This addresses one observed shared-volume timestamp transition without asserting
+its underlying host cause or guaranteeing that all metadata transitions succeed.
+
 Old v1 digest-only policies/state are explicitly refused with recovery guidance,
 without changing their bytes. Current files cannot reconstruct a past attempt;
 do not delete old state or relabel it v2. No automatic migration or historical

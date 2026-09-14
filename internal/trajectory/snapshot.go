@@ -530,6 +530,10 @@ func readSnapshotMember(ctx context.Context, dir string, ref SnapshotRef, want S
 }
 
 func inspectSnapshotFileWithMember(ctx context.Context, file string, ref SnapshotRef, want Source, destination *os.Root, selected *selectedSnapshotMember) error {
+	return inspectSnapshotFileAttempt(ctx, file, ref, want, destination, selected, nil, true)
+}
+
+func inspectSnapshotFileAttempt(ctx context.Context, file string, ref SnapshotRef, want Source, destination *os.Root, selected *selectedSnapshotMember, origin os.FileInfo, allowTimestampTransition bool) error {
 	if !ref.valid() || !sourceValid(want) {
 		return errors.New("invalid snapshot reference or source binding")
 	}
@@ -539,6 +543,9 @@ func inspectSnapshotFileWithMember(ctx context.Context, file string, ref Snapsho
 	}
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() != ref.Bytes {
 		return errors.New("snapshot must be an exact bounded private regular file")
+	}
+	if origin != nil && !sameSnapshotFile(origin, info) {
+		return errors.New("snapshot origin changed before stable verification")
 	}
 	f, err := os.Open(file)
 	if err != nil {
@@ -680,9 +687,12 @@ func inspectSnapshotFileWithMember(ctx context.Context, file string, ref Snapsho
 	if err = validateSnapshotLinks(members); err != nil {
 		return err
 	}
-	after, err := os.Lstat(file)
-	if err != nil || !os.SameFile(info, after) || after.Size() != info.Size() || after.Mode() != info.Mode() || !after.ModTime().Equal(info.ModTime()) {
-		return errors.New("snapshot changed during verification")
+	if err := checkSnapshotFileStability(f, file, info, opened, allowTimestampTransition, func() error {
+		// Keep the first descriptor alive and require the exact same origin.
+		// One fresh pass verifies all bytes with no further timestamp allowance.
+		return inspectSnapshotFileAttempt(ctx, file, ref, want, nil, nil, info, false)
+	}); err != nil {
+		return err
 	}
 	if destination != nil {
 		// All regular files were written before any link is created. No archive
