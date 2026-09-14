@@ -469,14 +469,16 @@ func withState(ctx context.Context, root, idea string, fn func(budget.CycleBindi
 
 // Execution and acceptance retain full source/charge/resolution validation.
 // Parent recovery reconstructs one exact observation while other resolutions
-// are checked normally. The separate stop-only path retains structural authority.
+// are checked normally. Terminal recording and stop control retain structural
+// authority independently of unavailable historical content.
 func withStateResolutionCheck(ctx context.Context, root, idea string, check func(context.Context, budget.CycleBinding, State) error, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
 	return withStateAuthority(ctx, root, idea, true, check, fn)
 }
 
-// Control keeps original charge/state/ticket attribution but does not require
-// unavailable historical source/results merely to stop an already issued ticket.
-// It grants neither new execution nor an accepted resolution.
+// Control keeps original charge/state attribution without requiring old source,
+// reservation-intent or result contents to record a live outcome or stop a ticket.
+// Callers also bind the original launch state or ticket; control grants neither
+// new execution nor an accepted resolution.
 func withStateControl(ctx context.Context, root, idea string, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
 	return withStateAuthority(ctx, root, idea, false, nil, fn)
 }
@@ -565,6 +567,9 @@ type Run struct {
 	charge       budget.CycleCharge
 	invocation   string
 	policySHA256 string
+	// Exact canonical state retained after Begin publishes this launch. This
+	// runtime-only binding supplies no persisted handle or historical replay API.
+	stateSHA256 string
 }
 
 func Begin(ctx context.Context, root, idea, agent, invocation string) (*Run, error) {
@@ -596,10 +601,14 @@ func Begin(ctx context.Context, root, idea, agent, invocation string) (*Run, err
 			return errors.New("source changed between reservation and model launch")
 		}
 		a.Launch = &Launch{invocation, agent}
+		frozen, err := canonical(s)
+		if err != nil {
+			return err
+		}
 		if err = writeState(statePath(b), s); err != nil {
 			return err
 		}
-		run = &Run{root, idea, charge, invocation, expected}
+		run = &Run{root, idea, charge, invocation, expected, digest(frozen)}
 		return nil
 	})
 	if err == nil && expected != "" && run == nil {
@@ -611,14 +620,20 @@ func (r *Run) Finish(ctx context.Context, status string, exit *int) error {
 	if r == nil {
 		return nil
 	}
+	// Retain this actual outcome even if an earlier source/result disappeared.
+	// The frozen live state and original charge still bind publication.
 	observed := false
-	err := withState(ctx, r.root, r.idea, func(b budget.CycleBinding, ledger budget.Snapshot, s State) error {
+	err := withStateControl(ctx, r.root, r.idea, func(b budget.CycleBinding, ledger budget.Snapshot, s State) error {
 		observed = true
 		if b.Policy.TrajectorySHA256 != r.policySHA256 {
 			return errors.New("active trajectory policy changed before terminal publication")
 		}
 		if err := r.charge.Check(ledger); err != nil {
 			return err
+		}
+		frozen, err := canonical(s)
+		if err != nil || r.stateSHA256 == "" || digest(frozen) != r.stateSHA256 {
+			return errors.New("trajectory state changed after the original launch")
 		}
 		a := &s.Attempts[len(s.Attempts)-1]
 		if a.Charge.EntryKey != r.charge.EntryKey || a.Launch == nil || a.Launch.InvocationID != r.invocation || a.Terminal != nil {

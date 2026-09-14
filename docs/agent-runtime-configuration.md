@@ -1163,6 +1163,25 @@ without changing their bytes. Current files cannot reconstruct a past attempt;
 do not delete old state or relabel it v2. No automatic migration or historical
 archive reconstruction is supplied by this checkpoint.
 
+### Recording a live terminal independently of older evidence
+
+`Begin` retains the exact canonical post-launch state hash in its runtime-only
+handle. `Finish` uses the guarded control route to require that same state,
+original policy, complete published ledger and charge/launch/invocation before
+recording the actual outcome and observing/capturing the current post-source.
+It does not reread older archive, reservation-intent or resolution-result contents
+merely to retain this factual terminal. A disappeared historical archive or
+older result therefore does not erase a newly observed outcome.
+
+Changed canonical state or original charges still refuse publication, and terminal
+replay cannot rewrite retained bytes. Failure to observe or archive the current
+source keeps the existing explicit unavailable-source/archive terminal behavior.
+The binding is a live process handle; no persisted handle or historical replay
+API is supplied. Missing historical terminals and incomplete helper outcomes are
+not reconstructed. New execution, reconciliation, reuse, continuation and
+acceptance retain their full evidence requirements. This correction does not
+accelerate general history inspection or prove descendant inactivity.
+
 ### Activation quorum and verification authority
 
 Verification freezes participant identity from `State.BaselineArchive` and the

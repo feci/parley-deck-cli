@@ -103,3 +103,33 @@ publication.log and publication-fixture-archive.json in the same runtime directo
 The live native fixture now holds that pending-state variant. The original
 complete fixture remains in retained-fixtures.tar.gz and the separate original
 state snapshot; neither is relabeled or discarded. F6 remains unresolved.
+
+
+## Integrated prospective terminal-publication correction
+
+The next production implementation freezes the exact canonical post-launch state
+in Begin's runtime-only handle and verifies it with the original policy and
+complete charged ledger before Finish records the actual terminal/current source.
+This removes historical archive/intent/result-content rereads from that factual
+publication path. Execution, reconciliation and acceptance retain full checks;
+there is no reconstructed historical runtime handle or missing terminal.
+
+With only a native test-file overlay, the integrated production Run.Finish
+published the pending 128th attempt in 5.192811625 seconds under the original
+30-second context. All 418 Go/module files matched manifest
+2d4316bf1d6e43873bd0a508529081fb983ea4f14e6fa521cf2b9a12f094ed2f.
+Original charges and all 127 existing resolutions remained unchanged. Successful
+state SHA256 e007bfcabb9526ce419ed91ede98624760d20c16993c5ad967722cf3977d4ea4
+is retained separately; the exact original pending input was restored by the test
+and verified after termination. Evidence:
+.parley-runtime/terminal-authority-development-20260914/envelope-result.json,
+envelope.log, successful-envelope-state.json and fixture-restoration.json.
+
+This responds to F6's publication coupling, using its proposed separation of
+post-exit publication from old evidence reads. General history inspection still
+performs full validation and is not claimed faster. The probe retains its
+fixture-constructed runtime handle, prior assembled history and concurrent-load
+qualifications. It is not an end-to-end 128-cycle runner measurement, a universal
+host deadline bound, historical replay authorization or participant acceptance.
+The original two 30-second failures and the 197-second complete read remain
+historical results; they are not overwritten by this new-source observation.

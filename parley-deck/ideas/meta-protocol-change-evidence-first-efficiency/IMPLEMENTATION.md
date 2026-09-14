@@ -3519,3 +3519,94 @@ and not integrated. Full abnormal/historical terminal, helper custody/recovery,
 workflow effects, F6 general history cost, fresh participant acceptance, live
 launch/concurrency/closure evidence, packet/full-six experiments, final HTML and
 delivery follow-ups remain open. Draft PR only; no final acceptance or merge.
+
+
+### Ownership before prospective terminal-publication correction — September 14
+
+Published baseline: 83d0475fd81acc7a33a66b2a2f1588f1b870aa04. Codex-1 claims
+internal/trajectory/state.go, new internal/trajectory/terminal_authority_test.go,
+docs/agent-runtime-configuration.md, this IMPLEMENTATION.md, new owned
+implementation-notes/codex-1-terminal-authority-20260914.md and the existing owned
+implementation-notes/codex-1-history-envelope-20260914.md for integrated envelope
+provenance. Same integration branch and worktree; changes remain serialized.
+No participant artifacts, other source/test files or historical HTML are claimed.
+
+Integrate the native candidate only after checking its diff against that baseline.
+Begin freezes the exact canonical post-launch state into its runtime-only handle.
+Finish requires the same state, original policy, complete published ledger and
+charge/launch/invocation, but omits old archive/reservation-intent/result contents
+when retaining the actual current outcome and post-source. It must still refuse
+changed original state/charges and terminal replay. Execution, reconciliation and
+acceptance retain all existing full-evidence checks. No historical handle, missing
+terminal, helper receipt or inactivity is reconstructed; no new work/refund is granted.
+
+Retain the four direct authority cases, rerun intended old-route/state-binding
+controls against integrated source, and exercise the same retained 128-attempt /
+256 MiB pending fixture with production source plus only a test-file overlay.
+Freeze a new manifest and run full Go, six-package race, vet, Windows CLI/trajectory
+cross-builds and compiled shared terminal/trajectory selections. Preserve all
+prototype, original deadline and disk-exhaustion failures with their provenance.
+
+
+### Ownership before abnormal-recovery design note — September 14
+
+Codex-1 claims new owned
+implementation-notes/codex-1-abnormal-recovery-proposal-20260914.md for a bounded
+proposal responding to the remaining F1 operator-control gap. No source or test
+change is claimed for this design while terminal-publication validation runs.
+The proposal must distinguish recorded outcomes, explicit operator assertions,
+process-custody evidence, incomplete helper recovery and permission to continue;
+absence of a record or vanished leader is never evidence of descendant inactivity.
+It is a discussion input for participant review, not an implemented recovery grant
+or a rewrite of the signed FINAL, quorum or experiment ceilings.
+
+
+### Planned participant-owned current-source follow-up — September 14
+
+After publishing the terminal checkpoint, allocate a fresh native read-only
+source-review worktree on review/meta-protocol-change-evidence-first-efficiency/
+runtime-authority-20260914 at
+/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout.
+Claude-1 is assigned only its new owned supporting artifact
+implementation-notes/claude-1-runtime-authority-review-20260914.md. The facilitator
+may prepare directories/configuration and exact-byte import, but may not author
+that artifact. Source/test edits and existing participant artifacts are outside
+the participant's write boundary. OS/native tool restrictions and an exact-write
+canary must pass before launch. No invocation is claimed by this plan.
+
+The previous Claude attempt reported a session reset at 22:00 Europe/Berlin;
+do not retry before that reported reset. The follow-up must review the frozen
+published source, explicitly remain source-only/nonacceptance, and independently
+assess runtime stop/terminal authority, related F1/F3/F6 responses and the bounded
+unimplemented abnormal-recovery proposal. Use the existing Claude Opus 5 [1m],
+max effort and 30-minute supporting-review configuration; no experiment ceiling,
+quorum change or finding withdrawal follows from that assignment.
+
+
+### Prospective terminal-publication checkpoint — September 14
+
+Manifest 2d4316bf1d6e43873bd0a508529081fb983ea4f14e6fa521cf2b9a12f094ed2f pins 418 Go/module files.
+Focused 22 tests PASS 46.546s; three intended negative controls retained.
+Integrated production Run.Finish over the exact retained synthetic 128-attempt /
+256 MiB input published in 5.192811625s under its original 30-second context,
+using a test-file-only overlay and fixture-constructed bound runtime handle.
+Original charges/resolutions are preserved and the original pending input was
+restored exactly after successful-state retention. General Inspect still runs
+full validation; original deadline failures retain their original provenance.
+
+Full suite PASS 412.84s (32 package terminals); six-package
+race PASS 463.156s; vet PASS. Full/race ran concurrently
+with independent fixtures. Windows CLI/trajectory cross-builds PASS (PE amd64,
+runtime unverified); compiled shared trajectory selection PASS
+76.562s. Exact source/log hashes, four new
+cases in full/race/shared, all 22 focused tests and unchanged old participant
+review/historical HTML are verified. Evidence is under
+.parley-runtime/terminal-authority-development-20260914/ and
+.parley-runtime/terminal-authority-final-validation-20260914/.
+
+This is an implemented response to F6's publication coupling, not fresh
+participant acceptance or a general history-speed claim. The F1 attended
+abnormal/custody proposal remains unimplemented discussion input. Historical
+terminal/helper/workflow recovery, participant acceptance/signatures, live
+launch/concurrency/closure checks, packet/full-six experiments, final HTML and
+delivery follow-ups remain open. Keep PR draft; no merge or final completion.
