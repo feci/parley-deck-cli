@@ -1,6 +1,7 @@
 package evidence
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -10,13 +11,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 // tree.go computes the tested code-tree identity (evidence-first-efficiency).
 //
 // The digest covers the exact files a reviewer means by "the code tree":
 // tracked files at their working-tree content PLUS real untracked files
-// (git ls-files -c -o --exclude-standard), minus only the explicit evidence
+// (GitSourceInventory; local-only exclusions refuse), minus explicit evidence
 // artifacts passed in `excludeRel` (e.g. the idea's EVIDENCE.json) so that
 // persisting evidence does not invalidate itself. It does NOT exclude the
 // whole deck, all Markdown, or any other broad class. Symlinks that escape
@@ -58,11 +60,21 @@ func TreeDirty(root string) bool {
 // escape check so a symlink resolving through a path alias is judged against
 // the real tree location.
 func TreeDigest(root string, excludeRel ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	return TreeDigestContext(ctx, root, excludeRel...)
+}
+
+// TreeDigestContext is TreeDigest with caller cancellation/deadline propagation.
+func TreeDigestContext(ctx context.Context, root string, excludeRel ...string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	canonicalRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		return "", fmt.Errorf("tree digest: cannot canonicalize root %s: %w", root, err)
 	}
-	files, err := listTreeFiles(root)
+	files, err := listTreeFiles(ctx, root)
 	if err != nil {
 		return "", err
 	}
@@ -73,6 +85,9 @@ func TreeDigest(root string, excludeRel ...string) (string, error) {
 	h := sha256.New()
 	count := 0
 	for _, rel := range files {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
 		if excluded[rel] {
 			continue
 		}
@@ -105,7 +120,7 @@ func TreeDigest(root string, excludeRel ...string) (string, error) {
 			if err != nil {
 				return "", fmt.Errorf("tree digest: %s: %w", rel, err)
 			}
-			content, err := io.ReadAll(f)
+			content, err := io.ReadAll(sourceDigestReader{ctx, f})
 			_ = f.Close()
 			if err != nil {
 				return "", fmt.Errorf("tree digest: %s: %w", rel, err)
@@ -129,8 +144,11 @@ func TreeDigest(root string, excludeRel ...string) (string, error) {
 // `git ls-files -o` omits untracked non-regular entries entirely, which would
 // otherwise let a fifo sit in the tree unidentified. The walk inspects entry
 // TYPES only; ignored regular files remain out of scope exactly as before.
-func rejectUnsupportedEntries(root string) error {
+func rejectUnsupportedEntries(ctx context.Context, root string) error {
 	return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if cancelErr := ctx.Err(); cancelErr != nil {
+			return cancelErr
+		}
 		if err != nil {
 			return err
 		}
@@ -151,34 +169,30 @@ func rejectUnsupportedEntries(root string) error {
 	})
 }
 
-// listTreeFiles returns slash-separated paths relative to root. In a git work
-// tree it uses `git ls-files -c -o --exclude-standard` (tracked + real
-// untracked, honoring .gitignore so dependency/cache directories stay out of
-// scope without broad content-class exclusions). Because that inventory omits
-// untracked NON-regular entries (fifos, sockets, devices) entirely, the git
-// path first cross-checks the working tree for unsupported entry types — an
-// unsupported entry is an error, never silently skipped. Outside git it falls
-// back to a filesystem walk that skips only .git.
-func listTreeFiles(root string) ([]string, error) {
-	if ReviewedCommit(root) != "" {
-		out, err := exec.Command("git", "-C", root, "ls-files", "-c", "-o", "--exclude-standard", "-z").Output()
+// listTreeFiles uses the same checked Git inventory as trajectory capture.
+// A type walk additionally rejects non-regular untracked entries Git omits.
+// Outside a committed Git tree, restoration still uses a .git-pruned walk.
+func listTreeFiles(ctx context.Context, root string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "--no-optional-locks", "rev-parse", "--verify", "HEAD^{commit}")
+	_, gitErr := cmd.Output()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if gitErr == nil {
+		files, err := GitSourceInventory(ctx, root)
 		if err != nil {
-			return nil, fmt.Errorf("git ls-files: %w", err)
-		}
-		if err := rejectUnsupportedEntries(root); err != nil {
 			return nil, err
 		}
-		var files []string
-		for _, p := range strings.Split(string(out), "\x00") {
-			if p != "" {
-				files = append(files, p)
-			}
+		if err := rejectUnsupportedEntries(ctx, root); err != nil {
+			return nil, err
 		}
-		sort.Strings(files)
 		return files, nil
 	}
 	var files []string
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if cancelErr := ctx.Err(); cancelErr != nil {
+			return cancelErr
+		}
 		if err != nil {
 			return err
 		}
@@ -200,4 +214,18 @@ func listTreeFiles(root string) ([]string, error) {
 	}
 	sort.Strings(files)
 	return files, nil
+}
+
+// Regular-file reads observe cancellation without retaining an unbounded Git
+// subprocess. Filesystem system calls themselves still depend on the host.
+type sourceDigestReader struct {
+	ctx context.Context
+	r   io.Reader
+}
+
+func (r sourceDigestReader) Read(p []byte) (int, error) {
+	if err := r.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return r.r.Read(p)
 }

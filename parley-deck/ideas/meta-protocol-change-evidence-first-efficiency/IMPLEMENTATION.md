@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 0585deb665375fed4b16d73ff0013027b22f03b7
-validation-source-manifest: 35558a3f60bc892c15d68cfb063dec9b94ad54e8cbc75573667fec80a9f7cd7a
+checkpoint-base-commit: ed8b9cbf09efb26ddf3c02f4a640e6873cde3a35
+validation-source-manifest: 0c3b811a827ef84e04856ad79f1e2f6ad7a83884a8afa3dc59401f6f65f65949
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3110,3 +3110,89 @@ file and a local info/exclude entry left Observe exactly equal while actual go r
 output changed. This is now an executable counterexample for the next source
 correction, not a reason to claim the source-inventory gate complete. No production
 source-inventory behavior, user Git configuration or participant artifact changed.
+
+
+### Ownership before F4 source-inventory correction — September 14
+
+Codex-1 claims internal/evidence/tree.go; new internal/evidence/source_inventory.go
+and source_inventory_test.go; internal/trajectory/snapshot.go and state.go; new
+internal/trajectory/source_inventory_test.go; docs/agent-runtime-configuration.md;
+this IMPLEMENTATION.md; new implementation-notes/codex-1-source-inventory-20260914.md.
+Branch/worktree remain integration/meta-protocol-change-evidence-first-efficiency
+and ../worktrees/evidence-first-integration. No other participant is writing these
+files. Published starting HEAD is ed8b9cb; historical reviews remain verbatim.
+
+F4 plan: use Git's own project .gitignore semantics and compare that bounded
+tracked/untracked inventory with --exclude-standard. Refuse any difference caused
+by local info/exclude or global core.excludesFile rather than silently omitting
+a build input or automatically copying privately ignored content. Share the
+inventory between evidence digest and trajectory capture; keep explicit project
+ignore scope, original digest encoding and non-Git restoration behavior. This
+is not a claim that project-ignored files cannot influence a build. Untracked
+project ignore files follow Git's semantics; rules are source material when they
+appear in that inventory. No parser reimplementation or user Git configuration
+mutation. Bound output, entries and subprocess duration; honor caller cancellation.
+
+Verify actual hidden-Go behavior now refuses both digest and Observe, including
+local/global exclusions, nested/untracked project rules and negations, tracked
+ignored files, deleted files, Git worktrees, path handling, cancellation and
+limits. Ensure failed capture publishes no archive and restored valid archives
+retain their exact digest. Removed comparison, trajectory binding and bound
+controls must fail at intended assertions. Run focused development checks, then
+full/race/vet/Windows cross-build and compiled shared selections on frozen source.
+No fixture pass substitutes for current-source participant acceptance.
+
+This work addresses Claude F4's executed counterexample, not F1 abnormal terminal
+recovery, F3 activation quorum, F6 history cost or the pending live experiments.
+
+
+### F4 frozen validation and F3 executable scope probe
+
+F4 frozen Go/module inventory has 411 files, SHA256
+0c3b811a827ef84e04856ad79f1e2f6ad7a83884a8afa3dc59401f6f65f65949.
+Seven new tests and five intended negative controls cover local/global private
+exclusions, both independently asserted inventory consumers, actual hidden-Go
+execution, scope-preserving archive restore, bounds and cancellation. Full final
+validation is running; no passing final result is claimed in this entry. The
+first development bound test found a promoted bytes.Buffer.ReadFrom bypass; its
+failed native/shared log remains alongside the corrected focused pass.
+
+The F3 native-only overlay probe subsequently executed a charged quorum-changing
+patch. FreezeCaptured and PrepareCapturedVerification selected replacement other
+while the activation archive retained reviewer. The direct unchangedScope routine
+also accepted the later altered archive against current scope. Probe exit 0 in
+5.077 seconds, native/shared log SHA256
+ccd22bb68c33b841b584c94976ddee5e189004e95a60b71523dbc6029338c95b.
+See .parley-runtime/claude-review-refutations-20260914/F3-counterexample.json.
+It did not complete a second trajectory attempt, run a live verifier or establish
+acceptance. F3 remains open for the next claimed source correction. Source files
+were untouched by the probe; .parley-runtime/activation-quorum-next-20260914.md
+records the inspected design boundary and terminal/stop preservation concerns.
+
+
+### F4 accepted inventory checkpoint and new shared-history limitation
+
+Frozen 411-file source passes full (378.054s, all 32 packages), six-package race
+(407.207s), vet, Windows CLI and trajectory/app cross-builds and compiled shared
+evidence/trajectory/app selections (2.134s / 16.075s / 11.470s). Seven new tests
+and five intended removed-protection failures reconcile with exact native/shared
+bytes. Manifest SHA256
+0c3b811a827ef84e04856ad79f1e2f6ad7a83884a8afa3dc59401f6f65f65949.
+Windows runtime is unverified; the unchanged evidence Windows test compilation
+fails on its pre-existing syscall.Mkfifo reference, retained separately. The
+production Windows CLI does compile the changed evidence code. See the owned
+source-inventory note for exact validation and limits.
+
+The F6 history-cost probe measures guarded read scaling for a 16 MiB archive
+and five actual synthetic unchanged attempts. It does not establish the whole
+allowed envelope. An initial shared run and one of three diagnostic repetitions
+failed at the snapshot stability guard: identical inode/private mode/size and
+full hashes, but a 66835 ns mtime transition. No production check was weakened;
+underlying host cause is unproven. This remains an explicit availability issue,
+not a successful shared performance result or evidence of a 30-second deadline.
+Native and other diagnostic shared measurements remain separate.
+
+F3 activation-quorum implementation, this snapshot timestamp issue, F1 abnormal
+terminal/helper/workflow recovery, fresh independent current-source acceptance,
+real launch/concurrency/closure coverage, frozen experiments, signatures and
+final HTML/delivery observations remain incomplete. The full goal stays open.

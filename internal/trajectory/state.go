@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/fsutil"
 )
 
@@ -136,6 +137,9 @@ func Observe(ctx context.Context, root string) (Source, error) {
 	}
 	tree, err := trajectoryTreeDigest(ctx, root)
 	if err != nil {
+		if errors.Is(err, evidence.ErrLocalSourceExcludes) {
+			return Source{}, evidence.ErrLocalSourceExcludes
+		}
 		return Source{}, errors.New("trajectory cannot digest the actual source")
 	}
 	head2, status2, err := read()
@@ -144,6 +148,9 @@ func Observe(ctx context.Context, root string) (Source, error) {
 	}
 	tree2, err := trajectoryTreeDigest(ctx, root)
 	if err != nil {
+		if errors.Is(err, evidence.ErrLocalSourceExcludes) {
+			return Source{}, evidence.ErrLocalSourceExcludes
+		}
 		return Source{}, errors.New("trajectory cannot recheck the actual source")
 	}
 	if head != head2 || !bytes.Equal(status, status2) || tree != tree2 {

@@ -1069,8 +1069,36 @@ artifacts or public reports.
 
 Capture uses the original Git tracked/untracked inventory, including dirty
 modifications, tracked deletions, untracked additions, binary bytes, file
-permission bits and supported relative symlinks. Ignored files are outside that
-source inventory. A link into ignored or absent source, an absolute/escaping
+permission bits and supported relative symlinks. Git's project `.gitignore` rules
+set the ignored-file scope. Both evidence digests and trajectory snapshots compare
+that inventory with `--exclude-standard`; any disagreement refuses source
+observation. In particular, an untracked file hidden only by `.git/info/exclude`,
+`core.excludesFile` or Git's default global ignore file cannot silently disappear
+from the evidence. Git resolves nested rules, negations and linked-worktree common
+configuration; Parley does not implement a separate ignore-pattern parser.
+
+The refusal identifies the scope problem without publishing private paths,
+patterns or file contents. Make the intended scope explicit in project `.gitignore`
+or remove the local-only exclusion before observing again. Parley neither changes
+Git configuration nor automatically archives privately ignored files. Existing
+tracked files remain in scope even when an ignore rule matches. Untracked project
+ignore files use normal Git semantics and contribute source bytes when included
+in the inventory. Adding a visible project rule is itself a source change.
+
+This is an explicit source-scope boundary: project-ignored files, including an
+ignore file that project rules themselves hide, can still influence a build.
+The gate does not discover every build input, authenticate same-user writers or
+atomically freeze Git configuration. Source stability is rechecked at capture.
+Older archives preserve their original bytes and hashes; this correction cannot
+recover or certify an input omitted by a historical local exclusion. Accepted
+inventory/digest encoding is unchanged. A newly ambiguous live source now refuses.
+
+Each checked Git inventory is bounded to 100,000 paths, 16 MiB of command output
+and 30 seconds, with caller cancellation propagated. A limit refusal is not an
+omission. The legacy `TreeDigest` entry point has a 30-second context; its explicit
+context form follows the caller's deadline, with the same inventory bound. Host
+filesystem calls still depend on the operating system. A link into ignored or
+absent source, an absolute/escaping
 link, an unsupported entry or filename, or excessive data refuses capture.
 Archives are bounded to 256 MiB, individual files to 64 MiB and the inventory to
 100,000 entries. These are capture limits, not permission to omit larger files.

@@ -26,7 +26,7 @@ import (
 
 const MaxSnapshotBytes int64 = 256 << 20
 const MaxSnapshotFileBytes int64 = 64 << 20
-const MaxSnapshotEntries = 100000
+const MaxSnapshotEntries = evidence.MaxSourceInventoryEntries
 
 // SnapshotRef is safe metadata. Tar bodies contain private source material and
 // must never be included in public telemetry or protocol artifacts.
@@ -67,13 +67,9 @@ func validSnapshotPath(name string) bool {
 	return true
 }
 func snapshotInventory(ctx context.Context, root string) ([]string, []string, error) {
-	raw, err := gitOutput(ctx, root, "ls-files", "-c", "-o", "--exclude-standard", "-z")
+	names, err := evidence.GitSourceInventory(ctx, root)
 	if err != nil {
 		return nil, nil, err
-	}
-	names := strings.Split(string(raw), "\x00")
-	if len(names) > MaxSnapshotEntries+1 {
-		return nil, nil, errors.New("source inventory exceeds snapshot bound")
 	}
 	rooted, err := os.OpenRoot(root)
 	if err != nil {
@@ -122,7 +118,7 @@ func trajectoryTreeDigest(ctx context.Context, root string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return evidence.TreeDigest(root, absent...)
+	return evidence.TreeDigestContext(ctx, root, absent...)
 }
 
 type snapshotWriter struct {
