@@ -1140,7 +1140,9 @@ verifier CLI below binds that execution to its invocation and durable receipt.
 
 If actual source can be observed but its archive cannot be published, the
 terminal record retains that observation with `archive-unavailable`. If actual
-source cannot be identified, it records `source-unavailable`. Missing or corrupt
+source cannot be retained under the supplied context, including deadline expiry,
+it records `source-unavailable`. This is an observation limit, not a diagnosis
+that the source does not exist. Missing or corrupt
 referenced archives refuse inspection, new fixups and completion. Neither case
 supplies an accepted patch, and a repeated capture does not overwrite a corrupt
 content address. Every attempt remains unresolved.
@@ -1181,6 +1183,15 @@ API is supplied. Missing historical terminals and incomplete helper outcomes are
 not reconstructed. New execution, reconciliation, reuse, continuation and
 acceptance retain their full evidence requirements. This correction does not
 accelerate general history inspection or prove descendant inactivity.
+
+Both routes still acquire the common cycle guard. Concurrent full-history reads
+hold that guard while validating archives and results; contention can therefore
+exhaust the 30-second terminal or 20-second runner-stop context. Removing direct
+history reads from control publication does not remove that contention path.
+Capturing a current Source identical to an older Source can also republish its
+exact content-addressed archive if missing. No unknown past bytes or missing
+historical outcome are inferred by that content-identical recapture.
+
 
 ### Activation quorum and verification authority
 
@@ -1608,7 +1619,8 @@ integrity checks, not authentication against another process with the same UID.
 
 ### Known protocol refusal before new reservations
 
-When the protocol renderer has already refused a launch, the runner records its
+At the standalone runner boundary, when the protocol renderer has already refused
+a launch, the runner records its
 request and actual unstarted terminal before preparing a cycle or reserving a
 fresh fixup, step, launch or captured-verifier ticket. The refused protocol is
 never supplied to a process. Normal permitted launches retain the existing
@@ -1617,8 +1629,11 @@ launch, with its own invocation and required spending.
 
 Any reservation already spent by a caller remains spent and unresolved, with its
 original source/launch/terminal fields unchanged. No refund, missing historical
-terminal or completed patch is inferred. A prepared verifier ticket stays
-unconsumed on this known refusal, but an already consumed or incomplete ticket
-is not recovered. This prevents one future refused-after-charge case; it does
+terminal or completed patch is inferred. Driver-managed fixups still precharge
+before this boundary, so their known refusals remain a prospective gap. A prepared
+verifier ticket stays unconsumed at the runner API, but trajectory verify has
+already created the single-use directory and its CLI retry cannot reuse that
+ticket. An already consumed or incomplete ticket is not recovered. This prevents
+one standalone refused-after-charge case; it does
 not recover old precharges, abnormal process termination or workflow effects,
 establish descendant inactivity, or permit completion.

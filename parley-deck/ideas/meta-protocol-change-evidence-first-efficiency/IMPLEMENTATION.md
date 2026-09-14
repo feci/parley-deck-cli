@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: db50dad638fc227c6d8d41e9de3ebef057c3d65c
-validation-source-manifest: 8938e8612351bd7efbbf85df589d0f4fdd541cff178daf9b42f8f6dec195abc2
+checkpoint-base-commit: 6f31201c987ecb085921b537d0345e134380ec05
+validation-source-manifest: 2d4316bf1d6e43873bd0a508529081fb983ea4f14e6fa521cf2b9a12f094ed2f
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3610,3 +3610,114 @@ abnormal/custody proposal remains unimplemented discussion input. Historical
 terminal/helper/workflow recovery, participant acceptance/signatures, live
 launch/concurrency/closure checks, packet/full-six experiments, final HTML and
 delivery follow-ups remain open. Keep PR draft; no merge or final completion.
+
+
+### Bounded Kimi proposal review allocation — September 14
+
+Facilitator allocation only: a separate supporting review on frozen production
+commit 6f31201c987ecb085921b537d0345e134380ec05, in
+/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout, branch
+review/meta-protocol-change-evidence-first-efficiency/abnormal-kimi-20260914.
+Kimi-1 remains an original idea participant. Its sole canonical write target is
+implementation-notes/kimi-1-abnormal-recovery-review-20260914.md; only Kimi may
+author that new content. Scope: refute the unimplemented abnormal/custody proposal
+and give concrete source-grounded requirements for an attended control. This is
+not a complete-scope Phase-6 signoff or a new experiment. Global configured
+kimi-code/k3 and max thinking were read back; the old September-5 weekly quota
+failure remains unchanged and is not treated as today's availability result.
+The exact-write OS sandbox must pass its canary before one fresh measured call.
+
+
+Kimi's supporting proposal review completed: invocation
+24a29d05-33c1-4e7b-9d85-0e3c4e479356, exit 0, outer 315.255s. Its exact owned
+artifact SHA256 013d4aff506a556b2b28053b7913c2a19c57f60c8b04a4d4d6683c8149b323ae
+was imported without edits after terminal/source/boundary/native-byte verification.
+Tokens, cost and reported model are unavailable in collected telemetry; requested
+kimi-code/k3/max is not a resolved-model claim. Inventory now 37 terminal attempts,
+18 unknown costs, USD 54.424894 known estimates; total unknown, plus the still
+running Claude source review. No packet/pilot treatment was launched.
+
+Kimi names a real no-launch/no-terminal subclass after ChargeCycle and proposes
+UnchangedEvidence v2 with derived abnormal classes and preserved streaks. Its K5
+claim that every residual custody unknown fails closed at the next source gate is
+not adopted: a point-in-time Observe does not itself fence a later escaped-child
+write. Codex-1 claims runtime-only isolated refutation fixtures and new owned
+implementation-notes/codex-1-abnormal-recovery-review-response-20260914.md before
+recording that check and exact source dispositions. No production/test source
+change is claimed. The supporting review itself reports two read-only orientation
+shell listings (ls/wc), despite the no-shell task instruction; retain this method
+deviation and do not claim full prompt compliance or executed test verification.
+
+
+### Refused-before-start candidate scope — September 14, 20:25Z
+
+Before any candidate edit, codex-1 claims runtime-only native overlays of
+internal/trajectory/unchanged.go and a new internal/trajectory/refused_unchanged_test.go,
+plus an isolated runner test overlay at internal/runner/refused_unchanged_test.go.
+The canonical source is not yet claimed for integration. Scope is deliberately
+bounded to a retained failed/budget_refused terminal with no start, PID or exit
+code and exact original charge/launch/request/source bindings. It excludes
+started failures, missing trajectory launch/terminal, helpers and generic
+start_failure. The budget refusal happens in reserveBudget before invocation
+build/spawn; this boundary must be witnessed through real RunMeasured with a
+fixture-owned spawn marker and actual denied budget. A widened generic abnormal
+variant is not justified by point-in-time source gates or direct-child reaping.
+
+Keep v1 evidence bytes unchanged; a prospective v2 closed class must fail under
+old readers, preserve the all-unresolved assessment and regression streak, and
+retain exact replay/ledger/source/continuation gates. Candidate tests must refuse
+contradictory present-start records, wrong class, changed source and stale previews.
+No experiment, participant acceptance or operator-containment authority follows.
+This scope awaits the pending independent source review before integration.
+
+
+### Completed Claude current-source supporting review — September 14
+
+Claude invocation 515ab844-21d0-420f-a355-58902a72dcfa completed with exit 0 in
+1575.028s. The participant-owned runtime-authority review was imported exactly,
+SHA256 f938961a3ba46b79e2867c089f15a6ebe07df2c8ea45148aea7ad1087e031f0b.
+The sole changed path, all 418 frozen Go/module hashes, native/shared evidence
+and terminal artifact hash/metadata matched. It is a source-only supporting
+review, not independent execution, full Phase-6 acceptance or a signature.
+Reported cost is USD 8.8788985 (CLI estimate); reported model list contains
+claude-haiku-4-5-20251001 and claude-opus-5[1m], with no single resolved model.
+Do not collapse auxiliary/provider-reported usage into an Opus-only identity.
+Inventory: 38 terminal attempts, 18 unknown costs, USD 63.3037925 known CLI
+estimates; total unknown. No live participant invocation remains pending.
+
+Codex-1 claims new owned implementation-notes/codex-1-runtime-authority-response-20260914.md
+before responding to N1-N6 and AP-1-AP-6. N1's driver precharge and CLI ticket
+ordering, N2's shared-guard contention and N3's late live-quorum validation need
+source-grounded dispositions and bounded executable checks. N4-N6 require exact
+wording/test provenance. No participant finding is withdrawn by facilitator
+interpretation; the abnormal-recovery proposal remains unimplemented.
+
+
+Before documentation corrections for Claude N1/N2/N4/N5/N6, codex-1 claims
+docs/agent-runtime-configuration.md and the owned notes
+implementation-notes/codex-1-terminal-authority-20260914.md and
+implementation-notes/codex-1-protocol-refusal-precharge-20260914.md. Changes
+qualify precharged driver/CLI paths, lock contention, content-identical archive
+recapture and unavailable-source labels; no production behavior is changed here.
+
+
+### Supporting reviews and bounded recovery prototype checkpoint — September 14
+
+Both new reviews are imported exactly and independently authored. Claude's
+N1/N2/N3 remain substantive work: higher caller reservation order, shared-guard
+contention and late live-quorum comparison. Owned notes/runtime documentation
+now qualify those boundaries, the ledger-side test description, identical-source
+archive recapture and source-unavailable as an observation limit. See
+implementation-notes/codex-1-runtime-authority-response-20260914.md. No finding
+is withdrawn by the implementer response and no review consensus is claimed.
+
+The runtime-only budget-refused-before-start candidate passed its real denied
+RunMeasured/next-charge witness and its low-level positive replay/history checks
+in the first combined run, which nevertheless FAILED overall (16.326s): compact
+JSON in contradiction fixtures caused early canonical-parser refusal. Initial
+negative cases therefore did not isolate their intended predicates. The original
+source/log are retained. Corrected canonical fixtures passed all 13 contradiction
+cases (14.528s), without rerunning the unchanged accepted positives. All 418
+Go/module files remain byte-identical to 6f31201. Candidate source and terminal
+logs were copied from native storage after completion; no integration or full
+validation is claimed. No participant or local test job remains active.

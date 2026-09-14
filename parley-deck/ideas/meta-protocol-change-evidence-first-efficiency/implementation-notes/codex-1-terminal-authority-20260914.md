@@ -18,8 +18,11 @@ Changed original state or charges refuse; terminal replay cannot replace bytes.
 The current post-source is still observed and archived through the existing
 full capture code. If that observation/capture fails, the existing explicit
 source-unavailable/archive-unavailable terminal is retained with its error.
-No old source or missing terminal is reconstructed from today's tree. Full
-source/result validation remains on execution, reconciliation and acceptance.
+No missing historical terminal or runtime handle is reconstructed. Capturing
+an identical current Source can republish the exact same content-addressed archive
+if that address disappeared; this recreates identical bytes, not an unknown past
+source. Full source/result validation remains on execution, reconciliation and
+acceptance.
 The runtime binding has no persisted-handle or historical-replay API.
 
 ## Direct production-boundary tests
@@ -103,3 +106,23 @@ Inspect/Finish failures retain their own source provenance. No retry was used
 to convert those historical failures into passes. Current-source participant
 review must still decide the F6 disposition. The separate owned abnormal-recovery
 proposal is discussion input, not an implemented operator or custody grant.
+
+
+## Supporting-review qualifications (Claude N2/N4/N5/N6)
+
+Both control routes still wait for the common cycle guard. A concurrent full
+history reader holds it during archive/result validation and can consume the
+30-second Finish or 20-second runner-stop deadline. Direct content rereads have
+been removed, but contention-mediated terminal/stop loss remains possible.
+The deadline magnitude of this contention path has not been measured.
+
+The changed-original-ledger case changes the attempt-side reservation amount
+while retaining the original ledger; it exercises the state-to-ledger mismatch
+check before Finish's callback. It is not an independent mutation test of the
+callback's runtime-handle charge check.
+
+source-unavailable means the current after-source could not be retained under
+the supplied context, including deadline expiry. It is not a diagnosis that the
+underlying source did not exist. The content-identical recapture behavior above
+is established by source reading; the existing changed-source retention case
+does not test that recapture variant. No participant finding is withdrawn here.

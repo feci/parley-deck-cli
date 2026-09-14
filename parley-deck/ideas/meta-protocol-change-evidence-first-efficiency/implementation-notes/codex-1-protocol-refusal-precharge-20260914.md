@@ -21,13 +21,17 @@ is never emitted. Recording failure still returns failure and grants no executio
 
 Existing precharges stay spent and byte-identical, including absent launch and
 terminal fields. They remain unresolved; no refund, historical terminal,
-after-source, helper receipt or independent pass is invented. A previously
-unconsumed verifier ticket remains available after restoring valid authority;
-an already consumed or incomplete ticket is not recovered by this change.
+after-source, helper receipt or independent pass is invented. An in-memory prepared
+verifier ticket remains unconsumed at the runner API after restoring authority.
+The production trajectory verify command cannot reuse it: it creates the
+one-per-charge directory again on retry and refuses. Driver-managed fixups
+likewise precharge before this runner boundary, so known refusals still leave
+those new driver attempts unresolved. Neither production path is recovered or
+prevented by this checkpoint; these are Claude N1 follow-ups.
 
 ## Verification scope
 
-Three new tests exercise the real measured boundary: a fresh refusal spends no
+Three new tests exercise the real standalone runner boundary: a fresh refusal spends no
 cycle/step/launch budget and later ordinary launch does; an existing charge stays
 unchanged and cannot satisfy completion; and a prepared verifier ticket remains
 unconsumed until a valid launch. The fresh/precharged fixtures alter only ignored
