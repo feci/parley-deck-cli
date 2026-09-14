@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 7b351a2860d47a3e640955d550d93065ebbd6836
-validation-source-manifest: a9400d5630b351cc646ddf45ed6f54c8a2f8ae6ad27c02c465d9dd167e81450a
+checkpoint-base-commit: 29361d6fdadd511330c081b9b840a93f250ef52c
+validation-source-manifest: 6149bf1db913498f6b4495eaac24853facd5df0e7c1bb91c37f1e66020ff5995
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3903,3 +3903,201 @@ next-n2-plan.md in the same runtime directory. The narrow abnormal candidate's
 seven predicate controls are separate native-only evidence. Full audit remains
 in-progress, with original quorum/full-six pilot and unresolved numeric ceilings.
 Keep PR draft; no merge or completion claim.
+
+
+### Native-only N2 contention candidate allocation — September 14, 21:22Z
+
+Published baseline 29361d6fdadd511330c081b9b840a93f250ef52c. Before candidate
+edits, codex-1 claims runtime-only native overlays of internal/trajectory/state.go,
+new internal/trajectory/state_validation.go and state_validation_test.go. No
+canonical source/test integration is claimed. The candidate snapshots exact
+structural authority under withStateControl, validates full historical contents
+without the cycle guard, then reacquires and requires identical original
+policy/store/ledger/state before invoking the original callback under guard.
+Control-only operations stay on their current route. A disappearing authority
+at the second read must fail; no automatic retry or reused acceptance is added.
+Move only the already decisive pending-history BeforeCycle refusal ahead of its
+content reads; positive reservation retains full checks.
+
+Native tests must pause a full reader, allow an actual Run.Finish, and reject
+the reader's stale snapshot without its callback. Additional source/ledger/policy
+mutation, failed-evidence, retained callback guard, inactive-authority and early
+pending-refusal cases must be exercised. Original locked source and omitted
+comparison predicates must fail the intended tests. A deterministic paused
+reader proves contention mechanics only, not real 128/256MiB timings or a
+universal deadline. Existing F6 inputs/results, participant artifacts, historical
+HTML, full-goal status and the abnormal candidate remain unchanged.
+
+
+### N2 deterministic replay investigation ownership — 2026-09-14T21:33:21.235636+00:00
+
+The native candidate's four focused tests passed (7.034s), and the two existing
+concurrent production CLI tests passed (10.625s). They do not force overlapping
+authority snapshots. Before further runtime edits, codex-1 claims native-only
+instrumentation of internal/trajectory/state_validation.go and a new overlay
+internal/trajectory/state_validation_replay_test.go. The instrumentation pauses
+one actual public ReconcileUnchanged call after its complete validation, permits
+a second identical public apply to finish, then releases the first. No canonical
+Go files are edited. Preserve all candidate bytes and terminal evidence.
+
+This investigates whether unconditional drift refusal prevents exact replay; no
+regression is claimed before the deterministic result. A bounded complete read
+retry is only a possible response, not current implementation or authorization
+to repeat a model, ticket, charge, publication callback or external action.
+
+
+### N2 replay counterexample and revised native proposal — 2026-09-14T21:35:05.545559+00:00
+
+The forced public ReconcileUnchanged overlap failed as intended in 2.541s:
+"overlapping identical public replay failed trajectory authority changed during
+full evidence validation". The second identical apply succeeded; the first
+failed before reaching its existing exact-replay branch. This refutes the
+original candidate's compatibility claim for that deterministic interleaving.
+The two previously passing unscheduled CLI concurrency tests remain valid
+evidence for their schedules. Original candidate, instrumented source, test,
+terminal logs and all 424 integration source hashes are preserved.
+
+SELF-CORRECTION of the native proposal's unconditional no-retry choice: evaluate
+one bounded complete read-validation retry only when the final comparison
+detects authority drift and no caller callback has run. No validation result
+is reused. No error from evidence validation, disappearance or the caller
+callback is retried. The callback runs at most once, under the final guard,
+after exact store/policy/ledger/state equality. A second drift refuses.
+
+Before edits, codex-1 claims revised native-only overlays of already allocated
+state.go, state_validation.go, state_validation_test.go, plus new
+internal/trajectory/state_validation_retry_test.go and the previously allocated
+state_validation_replay_test.go instrumentation. Tests must prove fresh evidence
+checks, final guarded callback, bounded repeated drift, no callback/error retry,
+disappearing authority refusal and actual public identical replay compatibility.
+This is an implementer proposal awaiting independent review, not a schema,
+protocol, custody, ticket or model retry change. No canonical Go integration yet.
+
+
+N2 revised focused tests passed (12.133s); the exact forced public replay test
+passed (2.499s). First three controls failed at the intended assertions. The
+initial omit-ledger control failed to build (0.206s, unused originalLedger),
+which is not a successful counterexample; preserve it and correct only the
+control scaffold. Accepted controls are not rerun.
+
+Additional native-only ownership: internal/trajectory/state_validation_stop_test.go
+for an actual registered criterion process stopped while a full reader is paused.
+This covers the second live control route implicated by N2. Its old locked-source
+control must fail at the blocked-stop assertion. Exact paths stay native overlays.
+
+
+### N2 canonical integration ownership — 2026-09-14T21:43:32.616409+00:00
+
+All native prototype/control commands are terminal. Six new top-level tests
+have passing evidence (five together 12.133s; registered live stop 5.561s).
+The exact public replay interleaving passes in 2.499s under instrumentation;
+the original no-retry candidate fails that same case in 2.541s. Twelve intended
+predicate controls and the separate old-source registered-stop control (6.476s)
+failed at their intended assertions. Two control compile failures (0.206s unused
+originalLedger, 0.179s unused changed) remain preserved, not counted as witnesses.
+
+Before canonical integration, codex-1 claims these exact eight paths on
+integration/meta-protocol-change-evidence-first-efficiency in the existing
+/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration:
+
+- internal/trajectory/state.go;
+- internal/trajectory/state_validation.go;
+- internal/trajectory/state_validation_test.go;
+- internal/trajectory/state_validation_retry_test.go;
+- internal/trajectory/state_validation_stop_test.go;
+- docs/agent-runtime-configuration.md;
+- this IMPLEMENTATION.md;
+- implementation-notes/codex-1-state-validation-20260914.md.
+
+Integrate the tested native bytes exactly. The public-pause instrumentation stays
+runtime-only. Freeze all Go/module paths for the full suite, six-package race,
+vet, Windows CLI/trajectory/app cross-builds and compiled shared trajectory/app
+checks. Preserve exact source and terminal-log hashes. No independent acceptance
+or full audit completion is implied. Control publication, positive reservation
+and individual caller callbacks still do their own guarded work; general speed
+and universal deadline guarantees remain unclaimed.
+
+
+### Native-only refused-candidate reader compatibility — 2026-09-14T21:49:06.663888+00:00
+
+N2 canonical Go source remains frozen for full validation. Independently,
+codex-1 claims only native overlays of the already allocated candidate
+internal/trajectory/unchanged.go and a new
+internal/runner/refused_compatibility_test.go. Compile a v1-only CLI from the
+current frozen source (N2 included, refused variant absent). On actual
+RunMeasured fixtures, verify an ordinary v1 resolution stays readable and
+the new v2/class observation is refused by the old CLI's inspect, history and
+exact apply routes without modifying original state or ledger. This tests
+old-reader refusal, not seamless mixed-version control or custody. No candidate
+Go integration, model invocation or accepted-positive-only rerun is claimed.
+
+
+Native refused-candidate old-reader compatibility PASS4.794s (v1 CLI build
+0.899s). Two real RunMeasured fixtures cover ordinary exited v1 and actual
+pre-start launch-budget refusal v2. Old CLI inspect/history/exact apply accept
+v1 and refuse v2 with unknown-field class, preserving state/ledger bytes. The
+old binary is from the frozen 428-file N2 source without the new variant.
+Exact native/shared logs, candidate/test/binary hashes verified. This is
+old-reader fail-closed evidence only; mixed-live-handle stop/control behavior,
+full candidate validation and independent acceptance remain open. No canonical
+Go change or model invocation. Evidence: budget-refused-compatibility-20260914/.
+
+
+### N2 full-suite failure investigation — 2026-09-14T21:56:25.179124+00:00
+
+Initial full suite FAILED441.648s: only TestAgentsExecRecordsManualLaunch
+failed (6.28s) with the generic invocation-failed message. All six new N2 tests
+and every other full-suite test passed. Six-package race PASS504.857s, including
+the same manual-launch test and all N2 tests. No log is relabelled as a pass.
+
+The manual fixture sets a 5000ms timeout in writeAgentsLocalConfig and supplies
+no idea/fixup trajectory. The generic failure does not prove a timeout or its
+cause; original fixture temporary evidence is no longer retained. Before edits,
+codex-1 claims only a native diagnostic overlay of internal/app/agents_exec_test.go
+to print the already returned content-free terminal JSON after Run completes.
+Run the failing case once with those diagnostics. If it succeeds, one unchanged
+full-suite rerun without concurrent race load is warranted by this unresolved
+failure; preserve both results and do not rerun the accepted race. No production
+source, timeout, predicate or test assertion is weakened. Vet/cross-build/shared
+checks have not started.
+
+
+The single manual-launch diagnostic run PASSED6.638s: its returned terminal
+records actual process-exited/exit0, artifact hash, 371ms invocation duration.
+The initial failure remains unexplained; this does not establish a timeout or
+repair. No assertion or production source changed. Run one full unmodified
+suite without the competing race run, then remaining vet/cross-build/shared
+checks. The accepted race is reused with its exact original evidence.
+
+
+### N2 validated checkpoint — 2026-09-14T22:06:29.380533+00:00
+
+428-file Go/module manifest: 6149bf1db913498f6b4495eaac24853facd5df0e7c1bb91c37f1e66020ff5995.
+Full unmodified suite PASS 405.883s (31 package passes, CLI no-test-files skip);
+six-package race PASS 504.857s; vet PASS. All six new top-level cases appear in
+both runs. Compiled shared trajectory PASS 60.196s and app PASS 14.357s,
+including actual registered stop and concurrent production CLI applies.
+Windows CLI/trajectory/app cross-builds PASS; PE amd64 checked, runtime unverified.
+Exact native/shared source, control and log hashes and protected participant /
+historical HTML bytes verified by the executable final verifier.
+
+The initial parallel full suite FAILED 441.648s at the existing
+TestAgentsExecRecordsManualLaunch (6.28s, generic invocation failure); every
+other test passed. That case passed in the contemporaneous race, a native-only
+isolated diagnostic run (6.638s, actual 371ms exit0 with artifact hash), and the
+unmodified full rerun without simultaneous race load. The original failure's
+cause remains unresolved; it is preserved and is not relabelled or claimed fixed.
+No source, test assertion or timeout changed between the complete runs.
+The accepted race was not rerun.
+
+Evidence: .parley-runtime/state-validation-final-validation-20260914/.
+Final verification reports the initial failure separately. This is an
+implemented response awaiting independent review; the full audit is incomplete.
+
+Thirteen intended controls (twelve predicates plus actual old-source stop)
+and the deterministic original no-retry public replay failure remain retained,
+along with two control compile failures. N1/N2/N3 have implemented responses
+awaiting independent review; no finding is withdrawn by the implementer.
+Native-only abnormal candidate old-reader compatibility passed 4.794s; mixed
+live handle controls remain open. No model calls, experiments, quorum change
+or full-goal completion. PR stays draft.

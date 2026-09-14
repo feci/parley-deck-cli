@@ -400,12 +400,12 @@ func (o *Observer) BeforeCycle(ctx context.Context, b budget.CycleBinding, ledge
 	if err = validateState(s, b, ledger); err != nil {
 		return err
 	}
-	if err = checkStateSnapshots(ctx, b, s); err != nil {
-		return err
-	}
 	h := trajectoryHistory(s)
 	if h.Unreconciled > 0 || h.ReviewPending || len(h.InconclusivePending) > 0 {
 		return errors.New("trajectory awaits independent reconciliation or an attended review decision; further fixup is refused")
+	}
+	if err = checkStateSnapshots(ctx, b, s); err != nil {
+		return err
 	}
 	before, archive, err := currentTrajectorySource(s)
 	if err != nil {
@@ -472,7 +472,7 @@ func withState(ctx context.Context, root, idea string, fn func(budget.CycleBindi
 // are checked normally. Terminal recording and stop control retain structural
 // authority independently of unavailable historical content.
 func withStateResolutionCheck(ctx context.Context, root, idea string, check func(context.Context, budget.CycleBinding, State) error, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
-	return withStateAuthority(ctx, root, idea, true, check, fn)
+	return withValidatedState(ctx, root, idea, check, fn)
 }
 
 // Control keeps original charge/state attribution without requiring old source,
@@ -480,10 +480,6 @@ func withStateResolutionCheck(ctx context.Context, root, idea string, check func
 // Callers also bind the original launch state or ticket; control grants neither
 // new execution nor an accepted resolution.
 func withStateControl(ctx context.Context, root, idea string, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
-	return withStateAuthority(ctx, root, idea, false, nil, fn)
-}
-
-func withStateAuthority(ctx context.Context, root, idea string, requireSourceEvidence bool, check func(context.Context, budget.CycleBinding, State) error, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
 	b, err := budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
 	if err != nil {
 		return err
@@ -521,14 +517,6 @@ func withStateAuthority(ctx context.Context, root, idea string, requireSourceEvi
 	}
 	if err = validateState(s, *b, ledger); err != nil {
 		return err
-	}
-	if requireSourceEvidence {
-		if err = checkSourceSnapshots(ctx, *b, s); err != nil {
-			return err
-		}
-		if err = check(ctx, *b, s); err != nil {
-			return err
-		}
 	}
 	return fn(*b, ledger, s)
 }

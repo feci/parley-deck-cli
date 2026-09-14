@@ -1184,10 +1184,25 @@ not reconstructed. New execution, reconciliation, reuse, continuation and
 acceptance retain their full evidence requirements. This correction does not
 accelerate general history inspection or prove descendant inactivity.
 
-Both routes still acquire the common cycle guard. Concurrent full-history reads
-hold that guard while validating archives and results; contention can therefore
-exhaust the 30-second terminal or 20-second runner-stop context. Removing direct
-history reads from control publication does not remove that contention path.
+Full historical validation first captures structurally validated policy, ledger
+and trajectory state under the common cycle guard, then releases it while reading
+historical source and resolution contents. It reacquires the guard and requires
+the same store identity, complete policy, ledger and state before invoking the
+caller under the guard. If authority changed, it may restart all reads once,
+before any caller callback. A second change refuses. Missing authority, evidence
+errors and callback errors do not retry. No model, ticket, charge or caller
+publication is repeated by this read retry, and no prior validation is reused.
+This lets identical concurrent applies reach their existing exact-replay checks.
+
+A pending history now refuses a new cycle before historical content reads;
+otherwise eligible reservations still perform their full checks. These changes
+remove the common full-history validation hold from live terminal and stop paths.
+The control operations, positive reservation transaction and individual caller
+callbacks still do their own guarded work. This is not a guarantee that every
+terminal finishes within 30 seconds or every runner stop within 20 seconds, nor
+a fence against later same-UID file writes. The deterministic contention tests
+use small fixtures and paused readers; they are not measurements of a complete
+128-attempt / 256 MiB concurrent workload or a general inspection speedup.
 Capturing a current Source identical to an older Source can also republish its
 exact content-addressed archive if missing. No unknown past bytes or missing
 historical outcome are inferred by that content-identical recapture.
