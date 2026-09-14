@@ -150,6 +150,9 @@ type cycleProcessImpl struct {
 	opts runner.Options
 }
 
+func (f *cycleProcessImpl) PrecheckFixup(ctx context.Context) error {
+	return runner.PrecheckFixup(ctx, f.opts)
+}
 func (f *cycleProcessImpl) Fixup(ctx context.Context, cycle int) error {
 	f.calls = append(f.calls, "fixup")
 	r := runner.RunFixup(ctx, f.opts)

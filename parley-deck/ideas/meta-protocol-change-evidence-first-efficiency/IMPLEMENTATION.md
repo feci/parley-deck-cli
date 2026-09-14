@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: fbeac7910be3535dfbcfbf411535ffb359efab46
-validation-source-manifest: 7474a4fdc3befca4db92b02a1a71614a9facc34b0a3202ce69497d9dd125ca51
+checkpoint-base-commit: 7b351a2860d47a3e640955d550d93065ebbd6836
+validation-source-manifest: a9400d5630b351cc646ddf45ed6f54c8a2f8ae6ad27c02c465d9dd167e81450a
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3795,3 +3795,111 @@ remain open. The new full guarded read does not fence later edits or recover
 consumed tickets. No schema, protocol, quorum, pilot or custody authority changes.
 The separate budget-refused candidate remains native-only. Full audit status
 remains in-progress and PR #73 remains draft.
+
+
+### Ownership before N1 higher-caller refusal prevention — September 14, 20:59Z
+
+N3 is published at 7b351a2860d47a3e640955d550d93065ebbd6836 with all planned
+validation terminal. Before source edits, codex-1 claims:
+
+- internal/runner/protocol_context.go and new protocol_precheck_test.go;
+- internal/runner/phase58.go;
+- internal/driver/impl.go, impl_test.go, cycle_budget_test.go and new protocol_precheck_test.go;
+- internal/app/driver_impl.go, trajectory_verify.go and new protocol_precheck_test.go;
+- docs/agent-runtime-configuration.md, this IMPLEMENTATION.md and new owned
+  implementation-notes/codex-1-caller-protocol-precheck-20260914.md.
+
+Factor the existing real unstarted protocol-refusal record into shared runner
+glue. A successful precheck creates no invocation/reservation and never replaces
+the actual launch attestation. A mandatory ImplOps.PrecheckFixup method uses the
+same selected runner implementer and runs before driver reserveFixupCycle,
+ChargeStep/ChargeCycle and fixup-counter publication. Its embedded step wrapper
+must not charge. The verifier CLI checks before PrepareCapturedVerification and
+retains the actual refusal invocation/terminal in its separately failed parent
+result, leaving per-charge helper authority absent.
+
+Use cache-only refusal fixtures so original material source remains unchanged.
+Exercise real Driver.Advance and verifier CLI callers, the production adapter,
+restoration with ordinary required spending, and refusal after a successful
+precheck. Predicate-removal controls must catch the intended ordering. Preserve
+historical/racing precharges and all previous failed evidence. Initial zero-use
+bindings/contract pins may exist; no claim of absent initialization state.
+Higher cross-review charging, consumed helper recovery, abnormal evidence-version
+changes and N2 contention remain distinct, unclosed work.
+
+
+### N1 focused evidence and frozen validation — September 14, 21:07Z
+
+Four new top-level cases now have passing evidence: retained precheck refusal /
+late launch recheck (initial run), real Driver.Advance before caller charging
+(corrected driver run, 2.474s), actual verifier CLI before one-use ticket creation
+and production adapter implementer selection (corrected app run). Restoration
+permits the actual charged fixup and original independent AB/BA helper execution.
+Two failed combined commands (5.356s, 9.662s) are preserved: wrong fixture cycle
+maximum and a cache helper that assumed only one phase's body. Production gates
+were unchanged by their correction. Driver now matches the source-defined
+five-cycle deliberation policy; app uses the renderer's exact BodyPath.
+
+Five source-overlay controls failed at intended higher-caller/launch assertions:
+omit driver precheck (1.782s), omit CLI precheck (4.841s), omit actual refusal
+record (1.702s), omit actual-launch refusal (2.138s), wrong production adapter
+participants (2.592s). The CLI control propagates its source overlay to the real
+child CLI build. All original source files remain unchanged by controls.
+
+Full Go / six-package race validation is now running over the frozen source,
+followed by vet, Windows CLI/trajectory/runner/driver/app cross-builds and compiled
+shared runner/driver/app selections. Evidence roots:
+.parley-runtime/caller-precheck-development-20260914/ and
+.parley-runtime/caller-precheck-final-validation-20260914/.
+Do not edit source while these checks run. No independent acceptance or full-goal
+completion is implied; historical/racing charges, helper recovery and N2 remain.
+
+
+### Native-only abnormal-candidate predicate controls — September 14, 21:10Z
+
+While N1 production source is frozen, codex-1 claims only runtime control scripts
+and native overlays of the already allocated candidate unchanged.go and
+refused_unchanged_test.go. Remove individual pre-start class/start/PID/exit and
+closed-version predicates and run only the corresponding existing contradiction
+case. The candidate remains unintegrated; no accepted positive is rerun and no
+shared production/test source is changed. These controls do not settle old-reader
+compatibility, custody or independent acceptance.
+
+Seven native-only candidate controls failed at their intended contradiction
+assertions: wrong class (2.327s), present StartedAt (2.222s), present PID (2.211s),
+present exit code (2.560s), present started.json (2.533s), mixed v1 (2.649s) and
+unknown version (2.477s). Exact native/shared terminal hashes match, and all
+424 production Go/module hashes remain frozen. No positive case was rerun.
+Evidence: budget-refused-prototype-20260914/predicate-results.json and
+predicate-native-dir.txt. Candidate integration and old-reader/mixed-version
+compatibility are still unclaimed; no recovered historical outcome is invented.
+
+
+### N1 validated implementation checkpoint — September 14, 21:17Z
+
+Known protocol refusal now precedes driver-managed fixup step/cycle charging
+and verifier CLI per-charge ticket creation. The shared precheck retains the
+actual unstarted refusal and binds its terminal hash in the failed parent result;
+actual launch still checks
+again. Restoration permits the real charged fixup and original independent
+AB/BA helper flow. Initial bindings/cursor/contract pinning may still occur.
+This is prevention for those callers, not historical or racing-precharge recovery.
+
+424-file manifest a9400d5630b351cc646ddf45ed6f54c8a2f8ae6ad27c02c465d9dd167e81450a.
+Full suite PASS385.297s (31 package passes + CLI skip), six-package race
+PASS443.866s, vet PASS. All four new top-level tests appear in full/race/shared
+selections. Compiled shared runner PASS7.176s, driver PASS2.947s, app PASS79.724s.
+Windows CLI/trajectory/runner/driver/app cross-builds PASS; PE amd64 checked,
+runtime unverified. Five intended negatives and two earlier fixture-failure
+commands retain their exact source/log provenance. Participant reviews and
+historical HTML remain byte-identical. All N1 test/build jobs are terminal.
+
+See implementation-notes/codex-1-caller-protocol-precheck-20260914.md and
+.parley-runtime/caller-precheck-final-validation-20260914/final-verification.json.
+No participant finding is withdrawn by this implementer checkpoint. N1/N3 now
+have implemented responses awaiting independent review; N2 still needs a
+contention response. Its concrete unimplemented read/recheck/refutation plan is
+next-n2-plan.md in the same runtime directory. The narrow abnormal candidate's
+seven predicate controls are separate native-only evidence. Full audit remains
+in-progress, with original quorum/full-six pilot and unresolved numeric ceilings.
+Keep PR draft; no merge or completion claim.

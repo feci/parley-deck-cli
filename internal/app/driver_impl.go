@@ -466,6 +466,10 @@ func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []stri
 	}, o.out, o.out)
 }
 
+func (o driverImplOps) PrecheckFixup(ctx context.Context) error {
+	return runner.PrecheckFixup(ctx, o.withParticipants(o.implementer))
+}
+
 func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 	fmt.Fprintf(o.out, "driver: running fix-up cycle %d via %s ...\n", cycle, o.implementer)
 	r := runner.RunFixup(ctx, o.withParticipants(o.implementer))

@@ -50,6 +50,19 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 	return RunRoundOne(ctx, opts)
 }
 
+// PrecheckFixup uses RunFixup's selected implementer and protocol scope without
+// opening a step/cycle or segment. The actual launch still checks authority.
+func PrecheckFixup(ctx context.Context, opts Options) error {
+	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
+	if len(selected) == 0 {
+		return errors.New("no implementer available in participants")
+	}
+	return PrecheckProtocolLaunch(ctx, opts.Root, selected[0], LaunchInfo{
+		RunID: opts.RunID, Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1,
+		Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
+	})
+}
+
 // RunFixup runs a Phase 8 fix-up: it re-invokes the implementer to apply the
 // agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Success
 // requires the updated IMPLEMENTATION.md to validate (ValidateFixupArtifact);

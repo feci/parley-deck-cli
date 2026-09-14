@@ -29,6 +29,7 @@ type ImplOps interface {
 	DraftReviewConsensus(ctx context.Context, round int) error // Phase 7: draft review/consensus.md
 	ReviewStatus() (ReviewStatus, error)                       // review-mode triage + outstanding_agreed_fixes
 	RequestReviewSignoffs(ctx context.Context, missing []string) error
+	PrecheckFixup(ctx context.Context) error    // refuse known protocol failure before caller reservations
 	Fixup(ctx context.Context, cycle int) error // Phase 8: re-invoke implementer for agreed fixes
 	Complete(ctx context.Context) error         // driver writes IMPLEMENTATION.md status=complete
 	// GoalCheck (LE-7) runs a fresh non-implementer agent to check FINAL.md observable
@@ -352,6 +353,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 	if !gitTreeClean(d.cfg.Root) {
 		return ActionEscalated, c, fmt.Errorf("git working tree is dirty; refusing to run a fix-up")
+	}
+	if err := d.cfg.Impl.PrecheckFixup(ctx); err != nil {
+		return ActionEscalated, c, fmt.Errorf("fix-up protocol precheck: %w", err)
 	}
 	// RESERVE the attempt before the code-writing call, not after it. Round-04 showed that
 	// spending it afterwards leaves two ways to get it back for free: a Fixup that

@@ -24,6 +24,7 @@ type fakeImpl struct {
 	reviewErr     error
 	goalFail      bool
 	fixupErr      bool
+	onPrecheck    func(context.Context) error
 	onOpenReview  func(round int)
 	onDraft       func()
 	onComplete    func()
@@ -66,6 +67,12 @@ func (f *fakeImpl) DraftReviewConsensus(ctx context.Context, round int) error {
 func (f *fakeImpl) ReviewStatus() (ReviewStatus, error) { return f.review, f.reviewErr }
 func (f *fakeImpl) RequestReviewSignoffs(ctx context.Context, missing []string) error {
 	f.calls = append(f.calls, "request-signoffs")
+	return nil
+}
+func (f *fakeImpl) PrecheckFixup(ctx context.Context) error {
+	if f.onPrecheck != nil {
+		return f.onPrecheck(ctx)
+	}
 	return nil
 }
 func (f *fakeImpl) Fixup(ctx context.Context, cycle int) error {

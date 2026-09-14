@@ -1636,13 +1636,25 @@ never supplied to a process. Normal permitted launches retain the existing
 reservation requirements; restoring valid authority permits an ordinary new
 launch, with its own invocation and required spending.
 
+Driver-managed fixups also precheck the same selected implementer's protocol
+before charging the caller's step/cycle and publishing its fixup count. The
+mandatory internal adapter method spends nothing; initial zero-use budget
+bindings and contract/cursor initialization may still exist. A successful check
+creates no invocation and is never reusable launch attestation. The actual runner
+still renders and checks again immediately before its own launch boundary.
+
+The trajectory verifier CLI prechecks protocol before creating the per-charge
+single-use ticket. A known refusal retains its actual unstarted invocation and
+terminal hash in a separate failed parent result with failure_stage
+protocol-precheck. It leaves the ticket opportunity available for a later
+ordinary invocation after valid authority is restored. The result's request_path
+is the intended path; no request file or request hash is published on this refusal.
+This is prevention before ticket creation, not reuse of an existing ticket.
+
 Any reservation already spent by a caller remains spent and unresolved, with its
-original source/launch/terminal fields unchanged. No refund, missing historical
-terminal or completed patch is inferred. Driver-managed fixups still precharge
-before this boundary, so their known refusals remain a prospective gap. A prepared
-verifier ticket stays unconsumed at the runner API, but trajectory verify has
-already created the single-use directory and its CLI retry cannot reuse that
-ticket. An already consumed or incomplete ticket is not recovered. This prevents
-one standalone refused-after-charge case; it does
-not recover old precharges, abnormal process termination or workflow effects,
-establish descendant inactivity, or permit completion.
+original source/launch/terminal fields unchanged. A protocol change after the
+precheck can still refuse at actual launch and leave a caller's reservation or
+prepared ticket spent/unusable. Higher cross-review caller charging is outside
+this fixup/verification precheck. No refund, missing historical terminal,
+completed patch, recovered consumed/incomplete ticket, descendant inactivity or
+workflow-effect recovery is inferred.

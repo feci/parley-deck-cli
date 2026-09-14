@@ -119,23 +119,43 @@ func beginProtocolLaunch(ctx context.Context, root, runID string, agent agents.D
 	info.Context = protocolContext
 	ctx = WithLaunchInfo(ctx, info)
 	if contextErr != nil {
-		// An already refused prompt cannot execute. Retain its request/terminal
-		// before any fresh cycle, step, launch or helper-ticket reservation.
-		origin, requestInfo := launchRequestInfo(ctx, root, runID)
-		evidence, err := recordLaunchRequest(origin, agent, requestInfo)
-		if err != nil {
-			return ctx, "", nil, err
-		}
-		if err := evidence.finish(contextErr, ctx.Err(), nil); err != nil {
-			return ctx, "", nil, err
-		}
-		return ctx, "", nil, contextErr
+		return ctx, "", nil, retainProtocolRefusal(ctx, root, runID, agent, contextErr)
 	}
 	evidence, err := beginLaunch(ctx, root, runID, agent)
 	if err != nil {
 		return ctx, "", nil, err
 	}
 	return ctx, prepared, evidence, nil
+}
+
+// PrecheckProtocolLaunch lets a higher caller refuse known invalid authority
+// before spending its own reservation. Success creates no invocation and is not
+// reusable attestation: beginProtocolLaunch must still render at actual launch.
+// Refusal retains the actual unstarted request/terminal through info.Observe.
+func PrecheckProtocolLaunch(ctx context.Context, root string, agent agents.Discovery, info LaunchInfo) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	_, protocolContext, err := prepareProtocolPrompt(root, "", info)
+	if err == nil {
+		return nil
+	}
+	info.Context = protocolContext
+	return retainProtocolRefusal(WithLaunchInfo(ctx, info), root, info.RunID, agent, err)
+}
+
+func retainProtocolRefusal(ctx context.Context, root, runID string, agent agents.Discovery, contextErr error) error {
+	// This path never calls beginLaunch: known refusal cannot consume cycle,
+	// step, launch or helper-ticket authority. Existing caller precharges remain.
+	origin, requestInfo := launchRequestInfo(ctx, root, runID)
+	evidence, err := recordLaunchRequest(origin, agent, requestInfo)
+	if err != nil {
+		return err
+	}
+	if err = evidence.finish(contextErr, ctx.Err(), nil); err != nil {
+		return err
+	}
+	return contextErr
 }
 
 func protocolLaunchPhase(opts Options) string {

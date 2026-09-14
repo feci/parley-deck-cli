@@ -204,6 +204,16 @@ func verifyTrajectoryWithAgent(ctx context.Context, root, idea string, agent age
 			resultErr = errors.Join(resultErr, err)
 		}
 	}()
+	var observed telemetry.Record
+	launchInfo := runner.LaunchInfo{RunID: runID, Idea: idea,
+		Phase: runner.CapturedVerificationPhase, Store: store.New(filepath.Join(dir, "run")),
+		Observe: func(record telemetry.Record) { observed = record }}
+	stage = "protocol-precheck"
+	if err = runner.PrecheckProtocolLaunch(ctx, root, agent, launchInfo); err != nil {
+		retainTrajectoryVerifierTerminal(root, &result, observed.InvocationID, observed)
+		return result, err
+	}
+	stage = "preparation"
 	req.Ticket, err = trajectory.PrepareCapturedVerification(ctx, root, idea, agent.ID, runID)
 	if err != nil {
 		return result, err
@@ -223,10 +233,7 @@ func verifyTrajectoryWithAgent(ctx context.Context, root, idea string, agent age
 	if err != nil {
 		return result, err
 	}
-	var observed telemetry.Record
-	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Idea: idea,
-		Phase: runner.CapturedVerificationPhase, Store: store.New(filepath.Join(dir, "run")),
-		Observe: func(record telemetry.Record) { observed = record }})
+	ctx = runner.WithLaunchInfo(ctx, launchInfo)
 	quote := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'" }
 	command := quote(executable) + " trajectory verify-helper --request " + quote(result.RequestPath) + " --request-sha256 " + quote(result.RequestSHA256)
 	prompt := fmt.Sprintf(`You are %s, the selected independent execution verifier for idea %s.
@@ -236,14 +243,7 @@ Verifier command: %s
 	stage = "launch"
 	res := runner.RunConsult(ctx, runner.ConsultOptions{Root: root, Agent: agent, Prompt: prompt,
 		Timeout: timeout, StdoutPath: filepath.Join(dir, "agent.stdout.log"), StderrPath: filepath.Join(dir, "agent.stderr.log"), Progress: progress})
-	result.InvocationID = res.InvocationID
-	if trajectoryPathID(res.InvocationID) {
-		var terminal telemetry.Record
-		terminalRaw, err := readVerificationJSON(filepath.Join(root, ".parley-runtime", "invocations", res.InvocationID, "terminal.json"), &terminal)
-		if err == nil && sameVerificationJSON(terminal, observed) {
-			result.TerminalSHA256 = sha256Hex(string(terminalRaw))
-		}
-	}
+	retainTrajectoryVerifierTerminal(root, &result, res.InvocationID, observed)
 	if res.ExitError != "" || res.AgentExit != 0 || result.TerminalSHA256 == "" ||
 		observed.SchemaVersion != telemetry.SchemaVersion || observed.Type != "invocation.terminal" ||
 		observed.InvocationID != res.InvocationID || observed.Metadata.RunID != runID || observed.Metadata.Idea != idea ||
@@ -295,6 +295,17 @@ func runTrajectoryVerifyHelper(ctx context.Context, args []string, out, errout i
 	}
 	fmt.Fprintln(out, "Trajectory helper execution receipt recorded; trajectory remains pending.")
 	return 0
+}
+
+func retainTrajectoryVerifierTerminal(root string, result *trajectoryVerificationResult, invocation string, observed telemetry.Record) {
+	result.InvocationID = invocation
+	if trajectoryPathID(invocation) {
+		var terminal telemetry.Record
+		terminalRaw, err := readVerificationJSON(filepath.Join(root, ".parley-runtime", "invocations", invocation, "terminal.json"), &terminal)
+		if err == nil && sameVerificationJSON(terminal, observed) {
+			result.TerminalSHA256 = sha256Hex(string(terminalRaw))
+		}
+	}
 }
 
 func executeTrajectoryHelper(ctx context.Context, path, expectedSHA string) error {
