@@ -3196,3 +3196,82 @@ F3 activation-quorum implementation, this snapshot timestamp issue, F1 abnormal
 terminal/helper/workflow recovery, fresh independent current-source acceptance,
 real launch/concurrency/closure coverage, frozen experiments, signatures and
 final HTML/delivery observations remain incomplete. The full goal stays open.
+
+
+### Ownership before activation-quorum correction — September 14
+
+Published F4 checkpoint: 46e2a7e3c13d8017b2814f9d14a3b3903259bc35. Codex-1
+claims new internal/trajectory/activation_quorum.go and activation_quorum_test.go;
+internal/trajectory/captured.go, verification.go, reconcile.go and unchanged.go;
+docs/agent-runtime-configuration.md; this IMPLEMENTATION.md; new
+implementation-notes/codex-1-activation-quorum-20260914.md. Same integration branch
+and worktree. No participant artifact, signature or roster authority is claimed.
+
+Derive original members from the existing activation baseline archive. Require
+valid unique participant IDs including the original implementer; bind captured
+before/after membership and selected verifier to it. Check helper-request quorum
+at reconciliation and unchanged before-scope against the same original members.
+Keep policy/archive encoding unchanged. This pins activation, not unobserved
+earlier Phase-0 history. Missing legacy scope refuses; no fabricated migration
+or implicit permission to amend the original quorum.
+
+Do not attach live-scope equality to generic state inspection or terminal capture:
+a bad first patch must still retain its actual terminal/source and original spend.
+Check cleanup interactions explicitly. Original criteria remain separately frozen
+by Policy.Criteria; this change does not require the lower-level activation API's
+prompt to carry a checks list that it previously accepted as explicit arguments.
+
+Validate actual charged quorum changes, replacement/widening/reordering/removal,
+independent verifier membership, malformed/missing archived members, unchanged
+later scope, helper-request substitution and valid replay. Assert the exact gate
+so a later refusal cannot mask a removed baseline predicate. Run focused checks
+and then freeze source for meaningful full/race/shared/cross-build validation.
+The separate shared archive timestamp issue and broader recovery/live gates
+remain open and must not be hidden by this correction.
+
+
+### Additional fixture ownership after frozen F3 race failures — September 14
+
+The original frozen full suite passed. The six-package race run failed in
+TestEvidenceVerifierProductionClosure/self at TempDir removal: .git directory
+not empty. Three targeted diagnostic repetitions passed, but one bounded whole
+app race follow-up failed at the same cleanup in stale-code-after-helper. Both
+native/shared logs are retained. Git trace shows detached automatic maintenance;
+the exact original cause remains unproven and is not relabeled a passing run.
+
+Codex-1 additionally claims internal/app/driver_evidence_test.go before editing.
+Make fixture Git maintenance synchronous through repo-local autoDetach settings,
+so fixture commands do not deliberately launch detached maintenance past their
+lifetime. Do not skip tests, relax evidence assertions, delete failed evidence,
+change production Git behavior or alter machine-global settings. Validate the
+configuration's actual command trace, then the full app suite and app race suite.
+Retain the prior whole-source manifest and record the new test-fixture manifest
+separately; production sources remain identical to the frozen F3 checkpoint.
+
+
+### Activation-quorum implementation checkpoint — September 14
+
+Implemented baseline membership binding and all eight direct guard tests.
+Original full Go suite passed (386.936s, all 32 packages). Two original
+race attempts failed only at app fixture Git cleanup and are retained. A
+separately claimed test-only synchronous-maintenance correction then passed
+all 19 closure scenarios (46.238s), full app
+(325.648s) and full app race (381.325s).
+The other five race packages passed on unchanged sources. No original failed
+run is relabeled green. Diagnostic Git trace shows 82 --no-detach maintenance
+launches after the fixture correction; original failure causality is unproven.
+Current source manifest 413: af06bf307cda40187c6186db95a9f9351eca75d16babd944aba36d025b45c5fa.
+Vet, Windows CLI/trajectory/app cross-builds and compiled shared quorum/app
+selections passed. Windows runtime and evidence test-binary portability remain
+unverified as detailed in the owned activation-quorum note. Eight intended
+removed-protection failures, native/shared log equality and unchanged historical
+HTML/participant review are retained. No source/schema/roster/signature history
+was rewritten to establish this gate.
+
+The activation-time F3 implementation is ready for independent re-review; the
+finding is not claimed withdrawn. Shared archive timestamp correction remains
+native-prototype only, as does prospective prevention of already-known protocol
+refusals before new reservations. F1 abnormal/old precharged process recovery,
+helper/workflow recovery, F6 full envelope, independent reviews/signatures, real
+launch/concurrency/closure evidence, frozen experiments and final HTML/delivery
+follow-ups remain open. The whole audit is incomplete.

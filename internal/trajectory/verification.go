@@ -104,7 +104,10 @@ func readVerificationProcess(dir *os.Root, claimSHA string, ordinal int) (verifi
 // Call before killing the enclosing CLI/helper group, with a cleanup context
 // independent of the cancelled invocation. Repeated stops preserve the first.
 func StopCapturedVerification(ctx context.Context, ticket VerificationTicket, invocation string) error {
-	return withVerification(ctx, ticket, func(dir *os.Root, sha string) error {
+	// Preserve the original structural ticket/launch/history checks for cleanup.
+	// A newly detected quorum violation cannot grant execution, but stopping an
+	// already issued ticket does not require that additional permission.
+	return withVerificationAuthority(ctx, ticket, false, func(dir *os.Root, sha string) error {
 		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
 		if err != nil {
 			return err
@@ -309,6 +312,9 @@ func PrepareCapturedVerification(ctx context.Context, root, idea, verifier, runI
 		if err != nil {
 			return err
 		}
+		if _, err := checkCapturedActivationQuorum(ctx, b, s, r); err != nil {
+			return err
+		}
 		ticket = VerificationTicket{Version: 1, Root: root, RunID: runID, Request: r}
 		if _, err = ticket.SHA256(); err != nil {
 			return err
@@ -334,6 +340,10 @@ func PrepareCapturedVerification(ctx context.Context, root, idea, verifier, runI
 // exact prepared ticket under the shared cycle guard. Caller-provided metadata
 // cannot substitute an unpersisted request or a different origin worktree.
 func withVerification(ctx context.Context, ticket VerificationTicket, fn func(*os.Root, string) error) error {
+	return withVerificationAuthority(ctx, ticket, true, fn)
+}
+
+func withVerificationAuthority(ctx context.Context, ticket VerificationTicket, requireQuorum bool, fn func(*os.Root, string) error) error {
 	want, err := ticket.SHA256()
 	if err != nil {
 		return err
@@ -348,6 +358,11 @@ func withVerification(ctx context.Context, ticket VerificationTicket, fn func(*o
 		r, err := capturedRequestAt(s, ticket.Request.Verifier, ticket.Request.Sequence)
 		if err != nil {
 			return err
+		}
+		if requireQuorum {
+			if _, err := checkCapturedActivationQuorum(ctx, b, s, r); err != nil {
+				return err
+			}
 		}
 		current := ticket
 		current.Request = r

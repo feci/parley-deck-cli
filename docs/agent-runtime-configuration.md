@@ -1150,6 +1150,35 @@ without changing their bytes. Current files cannot reconstruct a past attempt;
 do not delete old state or relabel it v2. No automatic migration or historical
 archive reconstruction is supplied by this checkpoint.
 
+### Activation quorum and verification authority
+
+Verification freezes participant identity from `State.BaselineArchive` and the
+original `Policy.Baseline`. The original implementer and at least one independent
+participant must appear exactly once, using valid stable IDs. Selected verifiers
+must belong to that activation quorum. Before/after archived memberships, helper
+request membership and unchanged-attempt scope are compared against it. Request
+freezing, ticket preparation, reuse/execution and reconciliation enforce this
+permission separately from structural ticket identity. A later patch cannot
+silently change who verifies it.
+
+The existing policy and archive encodings are unchanged; original criteria stay
+bound by `Policy.Criteria`. Lower-level callers supplying explicit criteria are
+not required to retrofit a checks-list syntax solely for this membership check.
+Missing/malformed legacy membership or conflicting archived evidence refuses;
+there is no fabricated historical migration or automatic quorum amendment.
+The archive proves activation-time bytes, not a Phase-0 state it never captured.
+Historical inconsistent resolutions now fail normal revalidation.
+
+A quorum-changing first attempt still records its actual terminal, captured
+source and spent charge. Ordinary inspection does not replace that failure with
+success. Stopping an already issued ticket retains the original ticket, invocation,
+launch, history and process-attribution checks without requiring new quorum-based
+execution permission. Stop replay preserves the first stop and does not create
+an execution or acceptance. The existing cleanup dependency on all historical
+state/evidence remains: missing or inconsistent older resolved history may still
+block stop and requires separate recovery. This is not general helper recovery or
+a claim that all descendants of an old ticket have exited.
+
 ### Charge-bound execution of captured worktrees
 
 `FreezeCaptured` reads the complete shared trajectory authority and freezes the
@@ -1402,12 +1431,14 @@ parley trajectory reconcile-unchanged --dir ORIGINAL_DIR --idea IDEA --sequence 
 This deterministic publication requires no attendance. It revalidates the
 original charge, complete before/after source archives and equal material tree
 digests. Commit and Git status metadata remain exactly as originally captured;
-equal material bytes do not imply equal commits. The quorum and named criterion commands for this attempt come from its retained
-before-source archive. Criterion names/commands must match the frozen policy;
-the quorum and criteria must match the current contract. This does not pin quorum
-to Phase 0 or activation: an earlier patch can change the prompt membership before
-this attempt. The protocol still requires original membership; activation-time
-quorum enforcement remains a separate open implementation requirement. Reading the selected scope file
+equal material bytes do not imply equal commits. Original membership now comes
+from the retained activation baseline archive. The selected verifier and both
+captured patch archives must retain that exact ordered quorum; replacement,
+removal, widening or reordering does not become a new verification authority.
+Unchanged attempts compare their before-archive membership with the same baseline,
+then require current quorum and named criterion commands to match the original
+attempt scope. This pins the earliest source the trajectory actually retained,
+not an earlier Phase-0 history absent from the archive. Reading the selected scope file
 still validates the entire archive, footer, links and whole-source digest.
 
 Matching requested, started and terminal invocation records must demonstrate an

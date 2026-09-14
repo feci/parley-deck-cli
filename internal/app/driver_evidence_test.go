@@ -25,6 +25,10 @@ func gateScratchRepo(t *testing.T, checksYAML string) (root, ideaDir string) {
 	t.Helper()
 	root = t.TempDir()
 	gateGit(t, root, "init", "-q")
+	// Git may detach automatic maintenance after a commit. Keep fixture work
+	// synchronous so it cannot recreate .git entries during TempDir cleanup.
+	gateGit(t, root, "config", "maintenance.autoDetach", "false")
+	gateGit(t, root, "config", "gc.autoDetach", "false")
 	ideaDir = filepath.Join(root, "parley-deck", "ideas", "idea-x")
 	if err := os.MkdirAll(ideaDir, 0o755); err != nil {
 		t.Fatal(err)

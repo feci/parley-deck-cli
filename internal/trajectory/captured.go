@@ -150,9 +150,13 @@ func capturedRequestAt(s State, verifier string, sequence int) (CapturedRequest,
 // cannot replace the actual attempt. This freezes a request, not acceptance.
 func FreezeCaptured(ctx context.Context, root, idea, verifier string) (CapturedRequest, error) {
 	var request CapturedRequest
-	err := withState(ctx, root, idea, func(_ budget.CycleBinding, _ budget.Snapshot, s State) error {
+	err := withState(ctx, root, idea, func(b budget.CycleBinding, _ budget.Snapshot, s State) error {
 		var err error
 		request, err = capturedRequest(s, verifier)
+		if err != nil {
+			return err
+		}
+		_, err = checkCapturedActivationQuorum(ctx, b, s, request)
 		return err
 	})
 	if err != nil {
@@ -178,6 +182,9 @@ func checkCapturedAuthority(ctx context.Context, root string, r CapturedRequest)
 		actual, err := current.SHA256()
 		if err != nil || actual != want {
 			return errors.New("original charge, source, scope or invocation changed after comparison freeze")
+		}
+		if _, err := checkCapturedActivationQuorum(ctx, b, s, current); err != nil {
+			return err
 		}
 		archiveDir = snapshotDirectory(b)
 		return nil

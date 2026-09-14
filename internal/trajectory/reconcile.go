@@ -163,18 +163,26 @@ func readReconciliationScope(dir *os.Root, idea string) (reconciliationScope, er
 	return parseReconciliationScope(raw)
 }
 
-func parseReconciliationScope(raw []byte) (reconciliationScope, error) {
-	var scope reconciliationScope
+func reconciliationFrontmatter(raw []byte) ([]byte, error) {
 	lines := strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n")
 	if len(lines) < 3 || lines[0] != "---" {
-		return scope, errors.New("reconciliation scope lacks frontmatter")
+		return nil, errors.New("reconciliation scope lacks frontmatter")
 	}
 	end := 1
 	for end < len(lines) && lines[end] != "---" {
 		end++
 	}
 	if end == len(lines) {
-		return scope, errors.New("reconciliation scope has unterminated frontmatter")
+		return nil, errors.New("reconciliation scope has unterminated frontmatter")
+	}
+	return []byte(strings.Join(lines[1:end], "\n")), nil
+}
+
+func parseReconciliationScope(raw []byte) (reconciliationScope, error) {
+	var scope reconciliationScope
+	frontmatter, err := reconciliationFrontmatter(raw)
+	if err != nil {
+		return scope, err
 	}
 	var fm struct {
 		Participants []string `yaml:"participants"`
@@ -183,7 +191,7 @@ func parseReconciliationScope(raw []byte) (reconciliationScope, error) {
 			Command string `yaml:"command"`
 		} `yaml:"checks"`
 	}
-	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:end], "\n")), &fm); err != nil {
+	if err := yaml.Unmarshal(frontmatter, &fm); err != nil {
 		return scope, err
 	}
 	scope.Participants = fm.Participants
@@ -233,6 +241,13 @@ func deriveParentEvidence(ctx context.Context, b budget.CycleBinding, s State, r
 	r, err := capturedRequestAt(s, req.Ticket.Request.Verifier, req.Ticket.Request.Sequence)
 	if err != nil || !sameJSON(r, req.Ticket.Request) {
 		return derived, errors.New("parent evidence differs from its original charged patch")
+	}
+	members, err := checkCapturedActivationQuorum(ctx, b, s, r)
+	if err != nil {
+		return derived, err
+	}
+	if !slices.Equal(req.Participants, members) {
+		return derived, errors.New("helper request differs from the original activation quorum")
 	}
 	if err = checkReconciliationScope(dir, req); err != nil {
 		return derived, err

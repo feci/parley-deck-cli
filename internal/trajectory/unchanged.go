@@ -86,6 +86,13 @@ func unchangedScope(ctx context.Context, b budget.CycleBinding, s State, a Attem
 	if err != nil {
 		return "", err
 	}
+	members, err := activationQuorum(ctx, b, s)
+	if err != nil {
+		return "", err
+	}
+	if !slices.Equal(original.Participants, members) {
+		return "", errors.New("unchanged before-source differs from the original activation quorum")
+	}
 	if len(original.Participants) < 2 || !slices.Contains(original.Participants, s.Policy.Implementer) || len(original.Criteria) != len(s.Policy.Criteria) {
 		return "", errors.New("archived original scope differs from the frozen policy")
 	}
