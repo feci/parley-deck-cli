@@ -74,3 +74,32 @@ increasing a deadline alone is not claimed to resolve the issue.
 The whole test passed in 245.771 seconds because it explicitly permits a proven
 30-second timeout followed by complete verification. Its PASS is not a claim
 that the 30-second production-sized deadline succeeded. F6 remains unresolved.
+
+
+## Direct terminal-publication boundary probe
+
+A separate native test subsequently called production Run.Finish with the same
+30-second context over the retained fixture. The test removed only the final
+resolution/continuation from its test-owned state, leaving 127 resolutions and a
+pending 128th charged attempt, then constructed the runtime handle in the fixture.
+No production code was overlaid. Run.Finish failed after 30.0037795 seconds with
+`after archive unavailable: context deadline exceeded`; pending state remained
+byte-identical and no trajectory terminal was published. This reproduces the
+publication boundary failure, while retaining the original Inspect observations.
+It is not an end-to-end runner launch or permission to replay historical work.
+
+The outer test PASS in 30.984 seconds means its expected failure assertions passed.
+All 416 Go/module files matched the original manifest. Native/shared result logs
+and fixture archives matched after termination. Evidence is publication-result.json,
+publication.log and publication-fixture-archive.json in the same runtime directory.
+
+- Original complete-state SHA256:
+  d6911908bbeb89c856b10e25e773e38a3c324a3eea741750f7b3df8e277abc3f.
+- Pending-state SHA256, unchanged by failed Finish:
+  e6e6d8cc0599abdd03ca28af460f148b88966ed24ac5048fb7d3b5b0617913cf.
+- retained-after-publication-probe.tar.gz: 1,000,312 bytes, SHA256
+  584e2ad6aae7827f48ce2ae3ff5af5fa3558360e7024db4780ef4a5417da5a6f.
+
+The live native fixture now holds that pending-state variant. The original
+complete fixture remains in retained-fixtures.tar.gz and the separate original
+state snapshot; neither is relabeled or discarded. F6 remains unresolved.

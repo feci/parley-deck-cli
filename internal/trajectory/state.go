@@ -467,9 +467,21 @@ func withState(ctx context.Context, root, idea string, fn func(budget.CycleBindi
 	return withStateResolutionCheck(ctx, root, idea, checkResolutions, fn)
 }
 
-// Source/charge validation is unconditional. Recovery may reconstruct one exact
-// parent observation while all other retained resolutions are checked normally.
+// Execution and acceptance retain full source/charge/resolution validation.
+// Parent recovery reconstructs one exact observation while other resolutions
+// are checked normally. The separate stop-only path retains structural authority.
 func withStateResolutionCheck(ctx context.Context, root, idea string, check func(context.Context, budget.CycleBinding, State) error, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
+	return withStateAuthority(ctx, root, idea, true, check, fn)
+}
+
+// Control keeps original charge/state/ticket attribution but does not require
+// unavailable historical source/results merely to stop an already issued ticket.
+// It grants neither new execution nor an accepted resolution.
+func withStateControl(ctx context.Context, root, idea string, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
+	return withStateAuthority(ctx, root, idea, false, nil, fn)
+}
+
+func withStateAuthority(ctx context.Context, root, idea string, requireSourceEvidence bool, check func(context.Context, budget.CycleBinding, State) error, fn func(budget.CycleBinding, budget.Snapshot, State) error) error {
 	b, err := budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
 	if err != nil {
 		return err
@@ -508,11 +520,13 @@ func withStateResolutionCheck(ctx context.Context, root, idea string, check func
 	if err = validateState(s, *b, ledger); err != nil {
 		return err
 	}
-	if err = checkSourceSnapshots(ctx, *b, s); err != nil {
-		return err
-	}
-	if err = check(ctx, *b, s); err != nil {
-		return err
+	if requireSourceEvidence {
+		if err = checkSourceSnapshots(ctx, *b, s); err != nil {
+			return err
+		}
+		if err = check(ctx, *b, s); err != nil {
+			return err
+		}
 	}
 	return fn(*b, ledger, s)
 }

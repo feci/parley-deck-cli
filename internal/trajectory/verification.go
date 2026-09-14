@@ -104,9 +104,9 @@ func readVerificationProcess(dir *os.Root, claimSHA string, ordinal int) (verifi
 // Call before killing the enclosing CLI/helper group, with a cleanup context
 // independent of the cancelled invocation. Repeated stops preserve the first.
 func StopCapturedVerification(ctx context.Context, ticket VerificationTicket, invocation string) error {
-	// Preserve the original structural ticket/launch/history checks for cleanup.
-	// A newly detected quorum violation cannot grant execution, but stopping an
-	// already issued ticket does not require that additional permission.
+	// Preserve original policy, charge/state and ticket/launch/process authority.
+	// Stopping an issued ticket does not require unavailable historical source
+	// or accepted-result bytes, and never grants another execution or acceptance.
 	return withVerificationAuthority(ctx, ticket, false, func(dir *os.Root, sha string) error {
 		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
 		if err != nil {
@@ -343,7 +343,7 @@ func withVerification(ctx context.Context, ticket VerificationTicket, fn func(*o
 	return withVerificationAuthority(ctx, ticket, true, fn)
 }
 
-func withVerificationAuthority(ctx context.Context, ticket VerificationTicket, requireQuorum bool, fn func(*os.Root, string) error) error {
+func withVerificationAuthority(ctx context.Context, ticket VerificationTicket, requireExecutionEvidence bool, fn func(*os.Root, string) error) error {
 	want, err := ticket.SHA256()
 	if err != nil {
 		return err
@@ -353,13 +353,17 @@ func withVerificationAuthority(ctx context.Context, ticket VerificationTicket, r
 		return errors.New("verification origin is unavailable or no longer canonical")
 	}
 	observed := false
-	err = withState(ctx, root, ticket.Request.Idea, func(b budget.CycleBinding, _ budget.Snapshot, s State) error {
+	readStateAuthority := withState
+	if !requireExecutionEvidence {
+		readStateAuthority = withStateControl
+	}
+	err = readStateAuthority(ctx, root, ticket.Request.Idea, func(b budget.CycleBinding, _ budget.Snapshot, s State) error {
 		observed = true
 		r, err := capturedRequestAt(s, ticket.Request.Verifier, ticket.Request.Sequence)
 		if err != nil {
 			return err
 		}
-		if requireQuorum {
+		if requireExecutionEvidence {
 			if _, err := checkCapturedActivationQuorum(ctx, b, s, r); err != nil {
 				return err
 			}

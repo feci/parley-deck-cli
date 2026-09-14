@@ -3420,3 +3420,102 @@ and retained compressed inputs. It is not a runner Finish or end-to-end 128-cycl
 measurement. The F6 issue remains unresolved. A narrower cleanup-authority candidate
 passed six focused native-overlay tests in 23.451s, but is not integrated or accepted.
 Full abnormal/old-precharge/helper/workflow recovery and all live/final gates remain open.
+
+### Ownership before existing-ticket cleanup authority correction — September 14
+
+Published baseline: d5d57e14d5ed5a2b68876070cd0e9f5f6b72ef77. Codex-1 claims
+internal/trajectory/state.go, internal/trajectory/verification.go, new
+internal/trajectory/verification_cleanup_test.go, docs/agent-runtime-configuration.md,
+this IMPLEMENTATION.md and new owned
+implementation-notes/codex-1-cleanup-authority-20260914.md. The existing owned
+history-envelope note may receive the new direct publication probe result after
+its process terminates. Same integration branch/worktree; no participant artifact
+or historical HTML is a write target.
+
+An already issued ticket must still be stoppable if referenced historical archive
+bytes or resolution content become unavailable. Retain canonical policy/state,
+the complete published charged ledger, structural transitions and exact original
+ticket/request/launch/claim/process attribution under the existing cycle guard.
+Only that stop path may omit full historical source/resolution reads. Ordinary
+execution, ticket reuse, reconciliation and acceptance still require full evidence.
+Do not repair missing/changed structural records, infer descendant inactivity,
+refund charges, reuse tickets or invent helper/terminal/criterion outcomes.
+
+The native candidate passed six focused tests in 23.451s plus a direct original-ledger
+test in 2.403s. Restoring the old stop route failed at the intended missing-archive
+assertion (2.177s); removing structural ledger validation failed at the intended
+rewritten-charge assertion (2.072s). Preserve these as prototype evidence only.
+Copy the candidate with accurate comments and place its four new tests in the
+new claimed file; keep existing test files unchanged. Regenerate those controls
+against integrated code. Freeze and validate full Go, six-package race, vet,
+Windows CLI/trajectory cross-builds and compiled shared cleanup/verification tests.
+Record remaining structural-history, helper-custody and complete-recovery limits.
+
+
+### Native-only terminal-retention prototype boundary — September 14
+
+While the cleanup checkpoint's Go/module source is frozen for validation,
+Codex-1 may create native runtime-only overlays and tests for a prospective
+terminal-recording authority split. No integrated Go file changes during that
+validation. The candidate changes only Run.Finish's guarded state route, retaining
+canonical policy, full ledger, original charge/launch/invocation and structural
+validation while recording the actual current outcome/source independently of
+unavailable older source or resolution bytes. It grants no execution, retry,
+refund, historical reconstruction or acceptance. Actual publication, missing
+old evidence, original-ledger refusal, terminal replay and the retained full-size
+history need direct evidence before integration is considered. Prototype source,
+logs and original failures remain separate from the published checkpoint.
+
+
+Native terminal-retention prototype evidence: three authority cases PASS 6.065s
+(actual exit-7 with missing old archive; missing earlier result; original-ledger
+refusal). The original route produces two intended missing-evidence failures
+(1.624s / 2.386s). An initial unused-import compile failure is preserved.
+On the retained synthetic 128-attempt / 256 MiB fixture, the candidate's actual
+Run.Finish published in 4.1848765s under the original 30-second context, retained
+all original charges and left 127 resolutions unchanged. The successful state
+is preserved separately; the test restored the exact original pending input,
+SHA256 e6e6d8cc0599abdd03ca28af460f148b88966ed24ac5048fb7d3b5b0617913cf.
+This is a native source overlay and fixture-constructed runtime handle, with
+concurrent Go validation. No integration, independent acceptance, full-history
+Inspect speedup or end-to-end historical recovery is claimed. Evidence lives in
+.parley-runtime/terminal-authority-prototype-20260914/.
+
+
+Cleanup scope precision: the omitted checkSourceSnapshots also contains the
+separate retained-reservation-intent content check. The original intent hash
+remains in the exact ticket-bound attempt; complete published charges and
+structural state still validate. The runtime documentation and owned note now
+state that boundary explicitly. No source/test code was changed during validation.
+
+
+The prospective terminal prototype now additionally freezes the exact canonical
+state in its runtime-only handle at Begin. Finish requires that same state hash
+before retaining a terminal; a changed intent reference cannot silently replace
+original history. Four authority cases pass (7.791s), and removing this new hash
+check produces the intended changed-state failure (2.243s). The full-size fixture
+with that bound candidate publishes in 4.020197291s; original pending input is
+restored exactly and the new successful-state bytes are retained separately.
+The initial route-only candidate, its failures/results and this refinement stay
+separate. This remains native-only while cleanup validation runs.
+
+
+### Existing-ticket cleanup checkpoint — September 14
+
+Manifest 19fc844af60bcc3795139ed9bbeb15e0942431f7233b2a2e12669bfb536f36a3 pins 417 Go/module files.
+Full suite retry PASS 359.222s (all 32 package terminals);
+six-package race PASS 422.705s; vet PASS. Windows CLI and
+trajectory cross-builds PASS (PE amd64 checked, runtime unverified). Compiled
+shared cleanup/verification selection PASS 36.021s.
+All eight focused tests, four intended negatives, exact source/log hashes and
+unchanged old participant review/historical HTML are verified. Initial full-suite
+disk-exhaustion failure (53.801s) remains retained; only rebuildable Go cache was
+cleared before the unchanged-source retry. Evidence: cleanup-authority-development
+and cleanup-authority-final-validation directories dated 20260914 in .parley-runtime.
+
+This checkpoint grants only original-ticket stop authority after unavailable
+historical content. Native terminal-retention prototypes are separately retained
+and not integrated. Full abnormal/historical terminal, helper custody/recovery,
+workflow effects, F6 general history cost, fresh participant acceptance, live
+launch/concurrency/closure evidence, packet/full-six experiments, final HTML and
+delivery follow-ups remain open. Draft PR only; no final acceptance or merge.

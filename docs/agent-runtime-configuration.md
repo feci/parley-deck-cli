@@ -1185,12 +1185,16 @@ Historical inconsistent resolutions now fail normal revalidation.
 A quorum-changing first attempt still records its actual terminal, captured
 source and spent charge. Ordinary inspection does not replace that failure with
 success. Stopping an already issued ticket retains the original ticket, invocation,
-launch, history and process-attribution checks without requiring new quorum-based
-execution permission. Stop replay preserves the first stop and does not create
-an execution or acceptance. The existing cleanup dependency on all historical
-state/evidence remains: missing or inconsistent older resolved history may still
-block stop and requires separate recovery. This is not general helper recovery or
-a claim that all descendants of an old ticket have exited.
+launch and process-attribution checks without requiring new quorum-based
+execution permission. Its guarded state read retains canonical policy, the complete
+published charged ledger and structural transitions, but omits historical archive,
+reservation-intent content and resolution-content reads. Missing old archive or terminal bytes therefore do
+not prevent stopping an already issued ticket. Missing or inconsistent structural
+authority still refuses; changed original charges cannot authorize a stop.
+Stop replay preserves the first stop and does not create execution, a helper
+outcome or acceptance. Execution, ticket reuse, reconciliation and acceptance
+retain full source/result checks. This is not general helper recovery or a claim
+that all descendants of an old ticket have exited.
 
 ### Charge-bound execution of captured worktrees
 
