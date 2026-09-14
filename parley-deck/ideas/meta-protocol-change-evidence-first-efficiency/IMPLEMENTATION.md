@@ -4,8 +4,8 @@ status: in-progress
 implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
-checkpoint-base-commit: 6f31201c987ecb085921b537d0345e134380ec05
-validation-source-manifest: 2d4316bf1d6e43873bd0a508529081fb983ea4f14e6fa521cf2b9a12f094ed2f
+checkpoint-base-commit: fbeac7910be3535dfbcfbf411535ffb359efab46
+validation-source-manifest: 7474a4fdc3befca4db92b02a1a71614a9facc34b0a3202ce69497d9dd125ca51
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -3721,3 +3721,77 @@ cases (14.528s), without rerunning the unchanged accepted positives. All 418
 Go/module files remain byte-identical to 6f31201. Candidate source and terminal
 logs were copied from native storage after completion; no integration or full
 validation is claimed. No participant or local test job remains active.
+
+
+### Ownership before N3 prelaunch helper-scope correction — September 14
+
+Published baseline fbeac7910be3535dfbcfbf411535ffb359efab46. Codex-1 claims
+new internal/trajectory/helper_scope.go and helper_scope_test.go,
+internal/app/trajectory_verify.go, existing internal/app/trajectory_verify_test.go
+(for a backward-compatible fixture membership argument), new
+internal/app/trajectory_quorum_test.go, docs/agent-runtime-configuration.md,
+this IMPLEMENTATION.md and new owned
+implementation-notes/codex-1-helper-scope-20260914.md before edits.
+
+Reuse the existing strict reconciliation scope decoder and activation-quorum
+checks in an exported read-only helper-scope precheck. Bind the exact original
+request to current guarded state/ledger/archives; compare ordered helper and live
+membership and exact named criteria before ticket creation, before helper
+execution and before acceptance. Existing final reconciliation checks remain.
+No parser rewrite, schema change, ticket reuse, execution, new acceptance or
+custody grant is introduced by the check. It can refuse a known mismatch early;
+it does not fence external edits after the check or solve N1/N2 contention.
+
+Tests must exercise actual captured attempts with live widened/reordered
+membership and a YAML-comment/parser divergence, prove no ticket/model/criterion
+execution was consumed, preserve state and ledger, and permit the valid original
+helper flow after restoring exact scope. Direct tests must refuse changed
+original requests and criteria. Predicate-removal controls must fail at the
+intended assertions. Freeze source for full Go, six-package race, vet, Windows
+CLI/trajectory/app cross-builds and compiled shared app/trajectory selections.
+
+
+### Next N1 source plan while N3 validation is frozen — September 14
+
+No N1 source edit is integrated. The concrete next plan is retained in
+.parley-runtime/helper-scope-final-validation-20260914/next-n1-plan.md.
+It factors recorded protocol refusal into a shared precheck, calls it before
+driver reserveFixupCycle through a mandatory ImplOps method and production
+adapter, and calls it before the verifier CLI's PrepareCapturedVerification.
+The authoritative actual launch check remains. The driver step wrapper embeds
+ImplOps and must promote the precheck without ChargeStep. Initial zero-use
+bindings/contract pins may still be created; the intended guarantee concerns
+new charges and the fixup counter, not absence of all initialization files.
+
+N3 full/race/vet/Windows/shared validation owns the current frozen source until
+it terminates. Claim N1's exact source/test/doc files before candidate edits and
+keep N1 separate from the native budget-refused evidence-version proposal.
+
+
+### N3 validated implementation checkpoint — September 14, 20:53Z
+
+CheckHelperScope binds the supplied request to its original charged attempt,
+pins ordered membership to activation and reuses the strict reconciliation
+scope/criteria decoder before ticket preparation, helper execution and parent
+acceptance. Known mismatches preserve the original ticket opportunity; restoring
+the original prompt permits actual independent AB/BA criterion execution.
+The helper-entrypoint fixture also refuses a coordinated live/request change
+before claim, preparation, process, step or receipt publication.
+
+Frozen 421-file Go/module manifest:
+7474a4fdc3befca4db92b02a1a71614a9facc34b0a3202ce69497d9dd125ca51.
+Focused three top-level tests PASS 11.538s; three intended predicate-removal
+failures retained. Full suite PASS 416.466s (31 package passes, CLI no-tests
+skip); six-package race PASS 465.572s; vet PASS. Windows CLI/trajectory/app
+cross-builds PASS, PE amd64 checked, runtime unverified. Compiled shared-volume
+trajectory PASS 45.755s and app PASS 66.566s. Exact source/native/shared logs,
+all three new tests, unchanged participant reviews and historical HTML checked.
+See implementation-notes/codex-1-helper-scope-20260914.md and runtime evidence
+under helper-scope-development-20260914/ and helper-scope-final-validation-20260914/.
+
+This responds to N3 for independent review; it does not withdraw Claude's finding
+or grant acceptance. N1 higher-caller ordering and N2 shared-guard contention
+remain open. The new full guarded read does not fence later edits or recover
+consumed tickets. No schema, protocol, quorum, pilot or custody authority changes.
+The separate budget-refused candidate remains native-only. Full audit status
+remains in-progress and PR #73 remains draft.

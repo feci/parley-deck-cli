@@ -1204,6 +1204,15 @@ freezing, ticket preparation, reuse/execution and reconciliation enforce this
 permission separately from structural ticket identity. A later patch cannot
 silently change who verifies it.
 
+The verifier CLI also checks the full ordered live/helper membership against
+that retained activation membership before creating a ticket and before helper
+execution or parent-result acceptance. It reuses the strict reconciliation YAML
+and named-criterion parser. A disagreement with the workspace parser, including
+a trailing-comment list interpreted differently, refuses before a known mismatch
+can consume verification authority. The original captured request, current live
+commands and order must still match. This early read does not fence later edits
+or recover old tickets; final reconciliation retains its own full check.
+
 The existing policy and archive encodings are unchanged; original criteria stay
 bound by `Policy.Criteria`. Lower-level callers supplying explicit criteria are
 not required to retrofit a checks-list syntax solely for this membership check.

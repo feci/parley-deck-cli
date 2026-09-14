@@ -46,6 +46,10 @@ func trajectoryHelperFixture(t *testing.T, mode string) (root, trace, journal st
 }
 
 func trajectoryHelperFixtureCriteria(t *testing.T, mode string, extra []trajectory.Criterion) (root, trace, journal string, agent agents.Discovery) {
+	return trajectoryHelperFixtureScope(t, mode, extra, "[builder, reviewer]")
+}
+
+func trajectoryHelperFixtureScope(t *testing.T, mode string, extra []trajectory.Criterion, members string) (root, trace, journal string, agent agents.Discovery) {
 	t.Helper()
 	t.Setenv("PARLEY_HOME", t.TempDir())
 	t.Setenv("PARLEY_HEADLESS_AGENT_CONFIG", "")
@@ -61,7 +65,7 @@ func trajectoryHelperFixtureCriteria(t *testing.T, mode string, extra []trajecto
 		command = `printf '%s:%s\n' "$PARLEY_AGENT_ID" "$(cat source)" >> "$PARLEY_TRAJECTORY_TRACE"; if [ "$(cat source)" = original ] || [ "$(wc -l < "$PARLEY_TRAJECTORY_TRACE" | tr -d ' ')" = 3 ]; then printf 'PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":0}\n'; else printf 'PARLEY-EVIDENCE {"executed_cases":1,"failed_cases":1}\n'; exit 1; fi`
 	}
 	checks := append([]trajectory.Criterion{{Name: "material", Command: command}}, extra...)
-	frontmatter := "participants: [builder, reviewer]\ntrack: deliberation\nchecks:\n"
+	frontmatter := "participants: " + members + "\ntrack: deliberation\nchecks:\n"
 	for _, c := range checks {
 		frontmatter += "  - name: " + c.Name + "\n    command: >\n      " + strings.ReplaceAll(c.Command, "\n", "\n      ") + "\n"
 	}

@@ -98,27 +98,8 @@ func trajectoryMaterialScope(root, idea, implementer, verifier string) ([]string
 	return current.Participants, criteria, nil
 }
 
-func checkTrajectoryHelperScope(req trajectoryHelperRequest) error {
-	if req.Version != 1 {
-		return errors.New("unsupported trajectory helper request")
-	}
-	if _, err := req.Ticket.SHA256(); err != nil {
-		return err
-	}
-	r := req.Ticket.Request
-	participants, criteria, err := trajectoryMaterialScope(req.Ticket.Root, r.Idea, r.Implementer, r.Verifier)
-	if err != nil {
-		return err
-	}
-	if !slices.Equal(participants, req.Participants) || !sameVerificationJSON(criteria, req.Criteria) || len(criteria) != len(r.Criteria) {
-		return errors.New("trajectory helper quorum or material scope changed")
-	}
-	for i, c := range criteria {
-		if c.Name != r.Criteria[i].Name || sha256Hex(c.Command) != r.Criteria[i].CommandSHA256 {
-			return errors.New("trajectory helper criteria differ from the original frozen scope")
-		}
-	}
-	return nil
+func checkTrajectoryHelperScope(ctx context.Context, req trajectoryHelperRequest) error {
+	return trajectory.CheckHelperScope(ctx, req)
 }
 
 func trajectoryRuntime(root string) (string, error) {
@@ -198,7 +179,7 @@ func verifyTrajectoryWithAgent(ctx context.Context, root, idea string, agent age
 		return result, err
 	}
 	req := trajectoryHelperRequest{Version: 1, Ticket: trajectory.VerificationTicket{Version: 1, Root: root, RunID: runID, Request: request}, Participants: participants, Criteria: criteria}
-	if err = checkTrajectoryHelperScope(req); err != nil {
+	if err = checkTrajectoryHelperScope(ctx, req); err != nil {
 		return result, err
 	}
 	base, err := trajectoryRuntime(root)
@@ -277,7 +258,7 @@ Verifier command: %s
 	if err != nil || sha256Hex(string(current)) != result.RequestSHA256 || !sameVerificationJSON(retained, req) {
 		return result, errors.New("trajectory helper request changed after launch")
 	}
-	if err = checkTrajectoryHelperScope(req); err != nil {
+	if err = checkTrajectoryHelperScope(ctx, req); err != nil {
 		return result, err
 	}
 	receipt, observation, err := trajectory.ReadCapturedVerification(ctx, req.Ticket, res.InvocationID)
@@ -336,7 +317,7 @@ func executeTrajectoryHelper(ctx context.Context, path, expectedSHA string) erro
 	if os.Getenv("PARLEY_RUN_ID") != req.Ticket.RunID || os.Getenv("PARLEY_AGENT_ID") != req.Ticket.Request.Verifier || !trajectoryPathID(invocation) {
 		return errors.New("trajectory helper must run inside its selected verifier invocation")
 	}
-	if err = checkTrajectoryHelperScope(req); err != nil {
+	if err = checkTrajectoryHelperScope(ctx, req); err != nil {
 		return err
 	}
 	_, err = trajectory.ExecuteCapturedVerification(ctx, req.Ticket, invocation, req.Criteria, "")
