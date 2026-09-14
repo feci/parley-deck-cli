@@ -1374,16 +1374,24 @@ parley trajectory reconcile-unchanged --dir ORIGINAL_DIR --idea IDEA --sequence 
 This deterministic publication requires no attendance. It revalidates the
 original charge, complete before/after source archives and equal material tree
 digests. Commit and Git status metadata remain exactly as originally captured;
-equal material bytes do not imply equal commits. Original quorum and named
-criterion commands come from the retained before-source archive and must match
-both the frozen policy and the current contract. Reading the selected scope file
+equal material bytes do not imply equal commits. The quorum and named criterion commands for this attempt come from its retained
+before-source archive. Criterion names/commands must match the frozen policy;
+the quorum and criteria must match the current contract. This does not pin quorum
+to Phase 0 or activation: an earlier patch can change the prompt membership before
+this attempt. The protocol still requires original membership; activation-time
+quorum enforcement remains a separate open implementation requirement. Reading the selected scope file
 still validates the entire archive, footer, links and whole-source digest.
 
 Matching requested, started and terminal invocation records must demonstrate an
 actual normal process exit. A successful zero exit and an observed nonzero
 `process_failure` can be recorded. Missing starts, missing exits, signal exits,
-unobserved handoffs, timeouts, cancellations, provider failures and incomplete
-captures remain unresolved. This observation makes no claim about unobserved or
+unobserved handoffs, timeouts, cancellations, classified structured provider failures and
+incomplete captures remain unresolved. A plain-text provider error can instead be
+classified as ordinary process failure; this control does not independently infer
+the provider cause from text. These abnormal or refused-after-charge unchanged
+attempts currently block further fixups and continuation, with no supported recovery
+control for that class. A complete timeout terminal does not make it recoverable;
+helper/process recovery is still required. This observation makes no claim about unobserved or
 escaped descendants, process health before/after those observations, criterion
 success or participant identity.
 

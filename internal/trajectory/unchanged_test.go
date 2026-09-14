@@ -229,10 +229,11 @@ func TestUnchangedReconciliationRejectsMissingAndContraryEvidence(t *testing.T) 
 			mutate(&altered)
 			data, _ := canonical(altered)
 			snapshotWrite(t, inv, "terminal.json", data, 0600)
+			_, previewErr := PreviewUnchanged(ctx, root, "fixture", 1)
 			_, err := ReconcileUnchanged(ctx, root, "fixture", 1, p.SHA256())
 			snapshotWrite(t, inv, "terminal.json", original, 0600)
-			if err == nil {
-				t.Fatal("contrary process lifecycle accepted")
+			if previewErr == nil || err == nil {
+				t.Fatal("contrary process lifecycle accepted by fresh preview or apply")
 			}
 		})
 	}

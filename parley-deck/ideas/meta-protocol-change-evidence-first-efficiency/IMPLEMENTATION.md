@@ -3070,3 +3070,43 @@ overlays left the original contrary-lifecycle test passing. Its correction is
 next; no prior green run is represented as detecting those missing clauses.
 All helper/abnormal-terminal recovery, quorum/exclude-source findings, live
 experiments, current-source reviews/signatures and delivery/report gates stay open.
+
+
+### Ownership before F2 test correction and scoped documentation updates
+
+Published reservation checkpoint: 66ac4f2485e8dbf5bc5da377fff39d0573e9b1a8.
+Codex-1 claims internal/trajectory/unchanged_test.go and new
+internal/trajectory/unchanged_lifecycle_test.go; docs/agent-runtime-configuration.md;
+this IMPLEMENTATION.md; new implementation-notes/codex-1-lifecycle-test-correction-20260914.md.
+Branch/worktree remain integration/meta-protocol-change-evidence-first-efficiency
+and ../worktrees/evidence-first-integration. These serialized files do not overlap
+any active participant write; the Claude process has terminated. Claude's artifact
+and existing signed decisions remain unmodified.
+
+F2 plan: use a fresh preview for existing contradictory-record cases and add
+internally matching lifecycle cases whose failure can only come from qualification.
+Exercise positive-exit provider/timeout/cancellation/watchdog failures, actual signal
+exit and isolated time-order constraints. Remove each load-bearing predicate in an
+overlay and require the corresponding new assertion to fail. Retain old passing
+mutants as counterexamples. Validate the test delta natively, with race and on the
+shared volume. Production executable code is unchanged by this test correction.
+F1/F3/F5 documentation will name abnormal terminal recovery limits, distinguish
+per-attempt quorum from Phase-0 membership, and qualify provider classification.
+This does not resolve F1/F3/F4/F6 implementation work or withdraw anyone's finding.
+
+
+### F2 correction validation and F4 counterexample — September 14
+
+Fresh-preview assertions and ten internally matching lifecycle subcases pass on
+native storage, with race, and on the shared mount. Eight individual predicate
+removals fail at their intended assertions, including Claude's six proposed mutants.
+Every production source byte matches 66ac4f2; this is a test/documentation delta.
+See implementation-notes/codex-1-lifecycle-test-correction-20260914.md. The original
+passing mutants and the correction evidence are retained separately. Claude has
+not withdrawn or signed F2; final independent acceptance stays open.
+
+A temporary-repository execution also demonstrated F4: adding an untracked Go init
+file and a local info/exclude entry left Observe exactly equal while actual go run
+output changed. This is now an executable counterexample for the next source
+correction, not a reason to claim the source-inventory gate complete. No production
+source-inventory behavior, user Git configuration or participant artifact changed.
