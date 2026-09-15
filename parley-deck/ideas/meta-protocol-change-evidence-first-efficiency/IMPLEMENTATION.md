@@ -4139,3 +4139,29 @@ Owner kimi-1; branch `feature/meta-protocol-change-evidence-first-efficiency/kim
 
 
 Codex-owned reporting claim before writing: `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/codex-1-managed-continuation-20260915.md`, on the existing integration branch/worktree. This records imported source/probe evidence, rejected Zcode output and current disjoint candidate allocations; no source or completion-status change.
+
+
+### User experiment ceilings — 2026-09-15T20:56:31.364385+00:00
+
+User direction (translated from Slovak shorthand): "15 minutes. USD15." This answered the explicit question for total experiment USD and minutes per task per arm. Record USD15 TOTAL for live experiments, and15minutes for each task in each arm. The limit is prospective experiment scope, not already-incurred implementation/review costs. No treatment has started. Historical quorum/pilot amendment remains unanswered; experiment manifests, enforceable accounting including unknown-cost policy, and frozen inputs still require preparation before calls.
+
+
+### Authorized prospective quorum and pilot amendment — 2026-09-15T21:02:46.745978+00:00
+
+User direction: "Yes, both proposed steps." Translated from Slovak. The question explicitly proposed replacing Hermes with Zcode for the remaining original audit, keeping Codex as organizer with Claude, Kimi and Zcode, and opening an amendment from the full-six pilot to full-four while preserving history, twelve tasks, equal ceilings, blind grading and the separate packet experiment. This answer resolves the September 10 recovery-decisions escalation.
+
+Effective prospectively from this recorded decision, the remaining audit quorum is [codex-1, claude-1, kimi-1, zcode-1]. Historical Hermes work and signatures remain attributed to Hermes; Zcode must catch up and author its own current review and signatures. Earlier observer artifacts do not become signatures. The original 00-prompt.md, FINAL.md and completed rounds remain byte-preserved; their four-name list describes the historical design quorum. Use this explicit user waiver for the remaining manually facilitated workflow, never infer it from machine roster state. The machine codex-1 row is currently inactive; this user authorization assigns the organizer without mutating that global configuration or claiming that the running session switched models.
+
+The user authorizes preparing a new amendment idea, not pretending its independent analyses/signatures or treatment calls already exist. Codex claims before edits: new `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/00-prompt.md` and `round-01/codex-1.md`, its eventual owned consensus/FINAL drafts after participant review, and an exact-byte archive move of the resolved `parley-deck/inbox/codex-1-to-user_meta-protocol-change-evidence-first-efficiency_recovery-decisions.md` to `parley-deck/inbox/archived/`. This is an explicit amendment to D8/AC-X1, not a rewrite of the frozen FINAL. Participant artifacts will be claimed separately before their launches.
+
+USD 15 is the total prospective live-experiment ceiling across the pilot, packet trial and experiment grading; 15 minutes is the wall-clock ceiling for one task in one pilot arm, shared across that arm's participants and workflow. Implementation/review work is outside this experiment budget. No treatment has started. Monetary feasibility, enforceable per-cell reservations, independent grader selection and frozen inputs remain to be resolved in the amendment. Unknown monetary spend is never treated as zero.
+
+Amendment worktree allocation: codex-1 owns `/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment` on `idea/meta-protocol-change-evidence-first-efficiency-v2`, based on published f0e7d7b; only the two new v2 prompt/owned round files are written there in this step. Original audit implementation remains on its existing integration branch.
+
+Codex additionally claims v2 `source-context/pilot-preparation.md` as an exact-byte copy of the existing public pilot DRAFT, plus `source-context/provenance.json`; no hidden tasks/keys copied.
+
+Codex independent Zcode candidate validation claim: runtime-only overlays/logs in `.parley-runtime/managed-continuation-20260915/zcode-candidate-verification/`, exact original `usage.go` from git, existing candidate tests plus cross-adapter negative control. No candidate source edit/import yet. The participant reports no executed tests because Bash was denied; retain this limitation and verify independently.
+
+### Zcode correction and independent amendment analysis claim — 2026-09-15T21:09:12.489089+00:00
+
+After invocation 07efbf63-7203-4f25-93f3-59f1d4a5a8a1 terminated, zcode-1 retains its native worktree/branch and owns these sequential paths: `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`, `parley-deck/inbox/zcode-1-to-codex-1_usage-parser-correction-20260915.md`, `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/zcode-1.md`. New supporting note and v2 independent round must be authored by Zcode; prior note remains unchanged. Coordinator executed all telemetry tests successfully (3.206s wrapper), then corrected overlay paths to canonical /private paths: exact old source fails actual-envelope assertion; candidate fails all ten other-adapter controls. Initial /var overlay controls were ineffective (one tested the candidate, one executed zero tests), retained separately and not acceptance evidence. gofmt reports the new test file. Do not integrate yet. Source-tool-only correction plus independent v2 analysis; no shell, tests, additional models or experiment calls in this allocation. Ten tools now observed in retained Zcode request schemas, versus 1,873 in the rejected earlier call; Bash calls were denied by its harness.
