@@ -41,7 +41,9 @@ func TestAgentsExecRecordsManualLaunch(t *testing.T) {
 	code := Run([]string{"agents", "exec", "--dir", root, "--agent", "fixture", "--prompt-file", prompt,
 		"--artifact", "answer.md", "--json", "--yes"}, &out, &errOut)
 	if code != 0 {
-		t.Fatalf("code=%d stderr=%s", code, errOut.String())
+		// The --json terminal record is content-free (asserted below) and is the
+		// only retained classification once t.TempDir is removed.
+		t.Fatalf("code=%d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
 	var record telemetry.Record
 	if err := json.Unmarshal(out.Bytes(), &record); err != nil {

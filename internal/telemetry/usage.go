@@ -134,6 +134,71 @@ func reportedUsage(raw map[string]any, source string) Usage {
 	return u
 }
 
+// zcodeEnvelopeUsage recognizes the terminal envelope the zcode CLI actually
+// prints: a JSON object with sessionId and turnId strings and a usage object of
+// camelCase counters, no type field, no cost, and no model identity. Binding
+// requires the envelope signature plus at least one usable counter, so numeric
+// echo text or unrelated shapes never yield usage. The projection block
+// (contextUsed, contextWindow, totalTokenCount) is live session state, not
+// billable usage, and is deliberately not read; totals are taken verbatim
+// because totalTokens already includes the cache read/write split.
+func zcodeEnvelopeUsage(event map[string]any, source string) (Usage, bool) {
+	if word(event["sessionId"]) == "" || word(event["turnId"]) == "" {
+		return Usage{}, false
+	}
+	raw := object(event["usage"])
+	if raw == nil {
+		return Usage{}, false
+	}
+	u := Usage{Source: source, CostBasis: "unavailable", Coverage: "reported",
+		InputTokens: count(raw["inputTokens"]), OutputTokens: count(raw["outputTokens"]),
+		CacheReadTokens: count(raw["cacheReadTokens"]), CacheWriteTokens: count(raw["cacheWriteTokens"]),
+		TotalTokens: count(raw["totalTokens"])}
+	if u.InputTokens == nil && u.OutputTokens == nil && u.TotalTokens == nil {
+		return Usage{}, false
+	}
+	return u, true
+}
+
+// consumeZcodeEnvelopeTail retries the tail after non-JSON warning preamble
+// lines, accepting only the zcode envelope shape, and runs for the zcode
+// adapter only. A generic object behind a preamble stays unparsed, so this
+// never widens the other formats.
+func (c *Collector) consumeZcodeEnvelopeTail() {
+	offset := 0
+	for offset <= len(c.tail) {
+		end := bytes.IndexByte(c.tail[offset:], '\n')
+		line := c.tail[offset:]
+		if end >= 0 {
+			line = c.tail[offset : offset+end]
+		}
+		if trimmed := bytes.TrimSpace(line); len(trimmed) > 0 && trimmed[0] == '{' {
+			candidate := c.tail[offset:]
+			if len(candidate) > parserLimit {
+				return
+			}
+			decoder := json.NewDecoder(bytes.NewReader(candidate))
+			decoder.UseNumber()
+			var event map[string]any
+			if decoder.Decode(&event) != nil {
+				return
+			}
+			var trailing any
+			if decoder.Decode(&trailing) != io.EOF {
+				return
+			}
+			if u, ok := zcodeEnvelopeUsage(event, "zcode.reported-usage"); ok {
+				c.usage = u
+			}
+			return
+		}
+		if end < 0 {
+			return
+		}
+		offset += end + 1
+	}
+}
+
 func (c *Collector) consume(data []byte) {
 	data = bytes.TrimSpace(data)
 	if len(data) == 0 || data[0] != '{' || len(data) > parserLimit {
@@ -213,8 +278,16 @@ func (c *Collector) consume(data []byte) {
 		}
 		c.steps[identity] = u
 	default:
-		// A recognized terminal usage envelope is admissible. ACP used/size
-		// snapshots deliberately do not match this shape or become billed usage.
+		// A recognized terminal usage envelope is admissible for the zcode
+		// adapter only; every other adapter keeps the typed-event path below
+		// exactly as before. ACP used/size snapshots deliberately do not match
+		// this shape or become billed usage.
+		if c.adapter == "zcode" {
+			if u, ok := zcodeEnvelopeUsage(event, "zcode.reported-usage"); ok {
+				c.usage = u
+				return
+			}
+		}
 		if kind != "result" && kind != "usage" {
 			return
 		}
@@ -243,6 +316,9 @@ func (c *Collector) Result() (Usage, Observation, string) {
 			c.consume(c.line)
 		}
 		c.consume(c.tail)
+		if c.adapter == "zcode" && c.usage.Source == "" && len(c.steps) == 0 {
+			c.consumeZcodeEnvelopeTail()
+		}
 	}
 	u := c.usage
 	if c.adapter == "opencode" && c.ambiguousSteps {

@@ -276,6 +276,112 @@ func RecoverReservation(ctx context.Context, root, idea, entry, expected string)
 }
 
 func recoverReservation(ctx context.Context, root, idea, entry, expected string, apply bool, persist func(string, State) error) (ReservationRecoveryPreview, error) {
+	return recoverReservationChecked(ctx, root, idea, entry, expected, apply, checkStateSnapshots, persist)
+}
+
+// reservationRecovery is one guarded structural observation. A missing charged
+// row is already appended, so content checks read the history publication keeps.
+type reservationRecovery struct {
+	binding budget.CycleBinding
+	ledger  budget.Snapshot
+	raw     []byte
+	state   State
+	missing bool
+	preview ReservationRecoveryPreview
+}
+
+func (r reservationRecovery) same(o reservationRecovery) bool {
+	return r.binding.Store.Dir == o.binding.Store.Dir && r.binding.Store.Scope == o.binding.Store.Scope &&
+		sameJSON(r.binding.Policy, o.binding.Policy) && sameJSON(r.ledger, o.ledger) && bytes.Equal(r.raw, o.raw) &&
+		r.missing == o.missing && sameJSON(r.state, o.state) && r.preview.SHA256() == o.preview.SHA256()
+}
+
+// withReservationRecovery checks original identity, intent, complete policy,
+// ledger and state under the common cycle guard, and runs fn under that guard.
+// It reads no historical source or resolution contents.
+func withReservationRecovery(ctx context.Context, root, idea, entry string, fn func(reservationRecovery, *os.Root) error) error {
+	b, err := budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
+	if err != nil {
+		return err
+	}
+	if b == nil {
+		return errors.New("original cycle policy is missing")
+	}
+	wait, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	release, err := budget.AcquireResourceGuard(wait, filepath.Dir(b.Store.Dir))
+	if err != nil {
+		return err
+	}
+	defer release()
+	b, err = budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
+	if err != nil {
+		return err
+	}
+	if b == nil {
+		return errors.New("original cycle policy disappeared")
+	}
+	r := reservationRecovery{binding: *b}
+	if r.ledger, err = b.Store.Inspect(ctx); err != nil {
+		return err
+	}
+	s, raw, err := readState(statePath(*b))
+	if err != nil {
+		return err
+	}
+	dir, err := openIntentRoot(*b, false)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	i, sha, err := readReservationIntent(dir, entry)
+	if err != nil {
+		return err
+	}
+	if i.Root != root {
+		return errors.New("recovery worktree differs from the original intent")
+	}
+	if err = validateIntentBefore(*b, r.ledger, i); err != nil {
+		return err
+	}
+	if err = compareIntentPrefix(s, i); err != nil {
+		return err
+	}
+	r.raw = raw
+	r.preview = ReservationRecoveryPreview{Version: 1, Root: root, Idea: idea, EntryKey: entry, IntentSHA256: sha, BeforeSHA256: i.BeforeSHA256, Status: "intent-without-published-charge", Permission: "none", ExecutionStatus: "not-established"}
+	if _, charged := r.ledger.Entries[entry]; charged {
+		a, err := intentAttempt(*b, r.ledger, i, sha)
+		if err != nil {
+			return err
+		}
+		r.preview.Status, r.preview.Attempt = "charged-observation", &a
+		r.missing = len(s.Attempts) == len(i.Before.Attempts)
+		if r.missing {
+			if digest(raw) != i.BeforeSHA256 || len(r.ledger.Entries) != len(s.Attempts)+1 {
+				return errors.New("recovery may repair only this exact missing charged row")
+			}
+			s.Attempts = append(s.Attempts, a)
+		} else {
+			old := s.Attempts[a.Sequence-1]
+			if old.ReservationIntentSHA256 != sha || !sameJSON(old.Charge, a.Charge) || old.Before != a.Before || old.BeforeArchive != a.BeforeArchive {
+				return errors.New("existing charged row differs from the original recovery")
+			}
+		}
+	}
+	if err = validateState(s, *b, r.ledger); err != nil {
+		return err
+	}
+	r.state = s
+	return fn(r, dir)
+}
+
+// Full historical reads release the cycle guard needed by live terminal
+// publication and ticket stop, including for a live charged row. The exact
+// preview check and publication run only under a second guard, after complete
+// policy, ledger, state bytes, retained intent and preview are unchanged. One
+// authority drift may restart all reads, preserving exact replay after a
+// concurrent apply; evidence, identity and publication errors are never retried.
+func recoverReservationChecked(ctx context.Context, root, idea, entry, expected string, apply bool, check func(context.Context, budget.CycleBinding, State) error, persist func(string, State) error) (ReservationRecoveryPreview, error) {
 	var p ReservationRecoveryPreview
 	root, err := canonicalRoot(root)
 	if err != nil {
@@ -284,108 +390,49 @@ func recoverReservation(ctx context.Context, root, idea, entry, expected string,
 	if !runtimeID(idea) || !validHash(entry) || apply && !validHash(expected) {
 		return p, errors.New("reservation recovery requires exact original identity and preview")
 	}
-	b, err := budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
-	if err != nil {
-		return p, err
-	}
-	if b == nil {
-		return p, errors.New("original cycle policy is missing")
-	}
-	wait, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	release, err := budget.AcquireResourceGuard(wait, filepath.Dir(b.Store.Dir))
-	if err != nil {
-		return p, err
-	}
-	defer release()
-	b, err = budget.LoadCycleBinding(ctx, root, idea, budget.Fixup)
-	if err != nil {
-		return p, err
-	}
-	if b == nil {
-		return p, errors.New("original cycle policy disappeared")
-	}
-	ledger, err := b.Store.Inspect(ctx)
-	if err != nil {
-		return p, err
-	}
-	s, raw, err := readState(statePath(*b))
-	if err != nil {
-		return p, err
-	}
-	dir, err := openIntentRoot(*b, false)
-	if err != nil {
-		return p, err
-	}
-	defer dir.Close()
-	i, sha, err := readReservationIntent(dir, entry)
-	if err != nil {
-		return p, err
-	}
-	if i.Root != root {
-		return p, errors.New("recovery worktree differs from the original intent")
-	}
-	if err = validateIntentBefore(*b, ledger, i); err != nil {
-		return p, err
-	}
-	if err = compareIntentPrefix(s, i); err != nil {
-		return p, err
-	}
-	p = ReservationRecoveryPreview{Version: 1, Root: root, Idea: idea, EntryKey: entry, IntentSHA256: sha, BeforeSHA256: i.BeforeSHA256, Permission: "none", ExecutionStatus: "not-established"}
-	if _, charged := ledger.Entries[entry]; !charged {
-		if err = validateState(s, *b, ledger); err != nil {
+	for attempt := 0; ; attempt++ {
+		var original reservationRecovery
+		if err = withReservationRecovery(ctx, root, idea, entry, func(r reservationRecovery, _ *os.Root) error {
+			original = r
+			return nil
+		}); err != nil {
 			return p, err
 		}
-		if err = checkStateSnapshots(ctx, *b, s); err != nil {
+		p = original.preview
+		if err = check(ctx, original.binding, original.state); err != nil {
 			return p, err
 		}
-		p.Status = "intent-without-published-charge"
-		if apply {
-			return p, errors.New("no matching spent charge exists; recovery grants no reservation or retry")
+		changed := false
+		err = withReservationRecovery(ctx, root, idea, entry, func(r reservationRecovery, dir *os.Root) error {
+			if !r.same(original) {
+				changed = true
+				return errors.New("reservation recovery authority changed during full evidence validation")
+			}
+			if !apply {
+				return nil
+			}
+			if r.preview.Attempt == nil {
+				return errors.New("no matching spent charge exists; recovery grants no reservation or retry")
+			}
+			if r.preview.SHA256() != expected {
+				return errors.New("reservation recovery changed since its exact preview")
+			}
+			if err := syncIntent(dir, entry); err != nil {
+				return err
+			}
+			if r.missing {
+				return persist(statePath(r.binding), r.state)
+			}
+			// Complete a failed durability barrier without rewriting the original bytes.
+			f, err := dir.Open("trajectory.json")
+			if err != nil {
+				return err
+			}
+			return errors.Join(fsutil.SyncFile(f), f.Close(), syncVerificationDirectory(dir))
+		})
+		if changed && attempt == 0 {
+			continue
 		}
-		return p, nil
-	}
-	a, err := intentAttempt(*b, ledger, i, sha)
-	if err != nil {
 		return p, err
 	}
-	p.Status, p.Attempt = "charged-observation", &a
-	missing := len(s.Attempts) == len(i.Before.Attempts)
-	if missing {
-		if digest(raw) != i.BeforeSHA256 || len(ledger.Entries) != len(s.Attempts)+1 {
-			return p, errors.New("recovery may repair only this exact missing charged row")
-		}
-		s.Attempts = append(s.Attempts, a)
-	} else {
-		old := s.Attempts[a.Sequence-1]
-		if old.ReservationIntentSHA256 != sha || !sameJSON(old.Charge, a.Charge) || old.Before != a.Before || old.BeforeArchive != a.BeforeArchive {
-			return p, errors.New("existing charged row differs from the original recovery")
-		}
-	}
-	if err = validateState(s, *b, ledger); err != nil {
-		return p, err
-	}
-	if err = checkStateSnapshots(ctx, *b, s); err != nil {
-		return p, err
-	}
-	if !apply {
-		return p, nil
-	}
-	if p.SHA256() != expected {
-		return p, errors.New("reservation recovery changed since its exact preview")
-	}
-	if err = syncIntent(dir, entry); err != nil {
-		return p, err
-	}
-	if missing {
-		err = persist(statePath(*b), s)
-	} else {
-		// Complete a failed durability barrier without rewriting the original bytes.
-		f, openErr := dir.Open("trajectory.json")
-		if openErr != nil {
-			return p, openErr
-		}
-		err = errors.Join(fsutil.SyncFile(f), f.Close(), syncVerificationDirectory(dir))
-	}
-	return p, err
 }

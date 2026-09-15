@@ -5,12 +5,52 @@ implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
 checkpoint-base-commit: 29361d6fdadd511330c081b9b840a93f250ef52c
-validation-source-manifest: 6149bf1db913498f6b4495eaac24853facd5df0e7c1bb91c37f1e66020ff5995
+validation-source-manifest: c9b436f7d8bbd0f3fe16b818f6f48e752a7a434e8a1cc670d22e2df8579cd18f
+validation-status: failed
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
 
 # Evidence-First Delivery
+
+## Current continuation — September 15, 2026
+
+The user approved the prospective remaining quorum: codex-1 organizer, claude-1,
+kimi-1 and zcode-1 replacing Hermes. The original kickoff, signed FINAL, historical
+rounds and signatures remain unchanged. The explicit waiver governs remaining
+manual facilitation; no old captured scope or signature is relabelled. Pilot
+amendment design is open as draft PR #74, with owned Codex and Zcode round-01
+artifacts; Claude and Kimi submissions and all signoffs remain pending.
+
+User limits are USD 15 TOTAL for future live experiments, including grading and
+retries, and 15 minutes per task-arm shared across participants and workflow.
+No treatment experiment has started. The original twelve tasks and separate
+packet experiment remain required; feasibility and enforced spend/grading policy
+must be resolved before freeze and calls.
+
+Five candidate Go files are integrated in this working tree: Claude R1/R2 recovery
+lock/diagnostic changes and Zcode's corrected usage parser/tests. Their430-file
+source manifest matches the isolated native combined validation exactly. Build
+and focused controls passed. Combined full validation failed after 1548.977s;
+race and vet were not run. All 430 source/module hashes stayed unchanged.
+Full current-source independent acceptance and the whole audit remain incomplete.
+R1 supporting review retains MINOR/NIT items. Zcode appended its own exact
+test digest and narrower causal disposition on a successful targeted retry.
+The prior correction attempt failed without output; its cause stays unknown.
+
+Kimi's recovery implementation attempt hit provider quota and produced no code or
+artifact; approximate reset01:51 CEST September16. Claude's telemetry review and
+amendment attempt hit its session limit, reset02:30 CEST September16, with no
+artifacts. They remain in quorum. No automatic retry, exclusion or model change.
+The verifier-refusal recovery slice and wider historical/workflow recovery,
+remaining scoped findings, exact live trials, final HTML and delivery follow-ups
+are still open. Fifty-one terminal measured CLI attempts are retained:28 unknown
+monetary costs, USD78.2014655 known CLI estimates; total cost unknown.
+
+Latest exact runtime handoff:
+`.parley-runtime/managed-continuation-20260915/handoff.json`.
+Historical sections below remain the execution record; newer decisions above
+and in the final appended sections supersede earlier pending-decision status.
 
 ## Unchanged-source reconciliation allocation — September 12, 2026
 
@@ -4165,3 +4205,31 @@ Codex independent Zcode candidate validation claim: runtime-only overlays/logs i
 ### Zcode correction and independent amendment analysis claim — 2026-09-15T21:09:12.489089+00:00
 
 After invocation 07efbf63-7203-4f25-93f3-59f1d4a5a8a1 terminated, zcode-1 retains its native worktree/branch and owns these sequential paths: `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`, `parley-deck/inbox/zcode-1-to-codex-1_usage-parser-correction-20260915.md`, `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/zcode-1.md`. New supporting note and v2 independent round must be authored by Zcode; prior note remains unchanged. Coordinator executed all telemetry tests successfully (3.206s wrapper), then corrected overlay paths to canonical /private paths: exact old source fails actual-envelope assertion; candidate fails all ten other-adapter controls. Initial /var overlay controls were ineffective (one tested the candidate, one executed zero tests), retained separately and not acceptance evidence. gofmt reports the new test file. Do not integrate yet. Source-tool-only correction plus independent v2 analysis; no shell, tests, additional models or experiment calls in this allocation. Ten tools now observed in retained Zcode request schemas, versus 1,873 in the rejected earlier call; Bash calls were denied by its harness.
+
+Coordinator sequential candidate correction claim — 2026-09-15T21:20:02.605857+00:00: after Zcode invocation abb0ea55-1af2-4ea6-8b7a-c322f51df32c terminated and all four owned outputs were snapshotted, Codex claims the single assertion in `internal/telemetry/zcode_usage_test.go` in the existing Zcode native checkout. The new negative cases incorrectly expect an empty Source; Result intentionally normalizes it to `unavailable`. All ten cases failed solely on that expectation; the independently authored numeric-leak probe passed all ten. Correct the assertion to the existing unavailable contract, preserving original failed source/logs and participant notes; do not weaken numeric/cost/coverage checks. Re-run telemetry on corrected bytes before independent review. No integration yet.
+
+### Claude independent telemetry review and amendment claim — 2026-09-15T21:21:52.631309+00:00
+
+After R1/R2 invocation 20d32972-9b5b-4239-b426-065495c03f39 terminated and owned source/artifacts were snapshotted, claude-1 reuses its native worktree/branch for read-only review of exact Zcode candidate overlays plus its independent v2 analysis. Exact writes: `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/claude-1-zcode-usage-review-20260915.md`, `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/claude-1.md`; scratch only under `.parley-runtime/work/`. No source changes or edits to any prior note. Candidate source overlay hashes94cd6d4f (usage.go) andf9ca76ac (test) are supplied; coordinator changed only empty Source expectation to the pre-existing unavailable normalization. Original failed tests/control logs preserved. Run focused telemetry/negative controls only, no full suite or real model experiment. The unrelated R1 registered-stop case passed under coordinator default environment (6.1s wrapper/4.707s Go package); its restricted-environment failures remain unexplained.
+
+### Kimi implementation launch unavailable — 2026-09-15T21:23:26.543197+00:00
+
+Invocation f071a935-befd-42ab-b20f-a5d34f5a85bd reached the30-minute process deadline (exit143/normalized timeout) without any source change or owned artifact. Its retained337-byte stdout had already reported APIProviderRateLimitError, HTTP429: K3 quota100%, reset after2h59m17s, retry delay10757000ms. Keep both facts: provider quota was observed, and the process ultimately timed out while waiting. No recovery candidate or tests exist from this call. Approximate reset23:51Z September15/01:51 CEST September16; verify after reset, do not repeatedly relaunch now. Kimi remains in the user-authorized quorum; no model substitution, automatic exclusion, acceptance or refund. Verifier-refusal implementation remains open. Claude and Zcode may continue disjoint work; final v2 signoff and full audit closure still require the actual quorum.
+
+### Zcode independent R1/R2 review claim — 2026-09-15T21:25:21.631305+00:00
+
+After its correction/amendment invocation terminated, zcode-1 reuses its native worktree for read-only source review of the frozen Claude R1/R2 candidate. Exact new owned output: `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/zcode-1-r1r2-review-20260915.md`. It may append SELF-CORRECTION only to its own existing v2 `round-01/zcode-1.md` regarding unverifiable spend bounds and rotation; old prefix and prior snapshot must remain unchanged. No source edits, shell or tests by Zcode; coordinator runs independent native tests separately. No full-scope acceptance or signature. Kimi remains quota-unavailable and in quorum.
+
+### Claude supporting review unavailable — 2026-09-15T21:29:28.306559+00:00
+
+Invocation60c845b1-c0b9-446d-8742-3869d939d6f5 exited1 after248.657s wrapper with rate-limit, no source drift, no owned review and no v2 round. Provider result reports session limit resetting02:30am Europe/Berlin (September16). Its JSON says subtype success but is_error=true; normalized terminal correctly remains failed. USD1.595971 is a CLI estimate, not an invoice. Do not retry until the reset or count this as a review. Together with Kimi quota, final four-person quorum work waits for provider availability. Zcode remains available and is source-reviewing R1/R2; CodeX independent R1 tests passed11.727s and old-guarded control failed20.288s at intended contention assertions. Source remains unintegrated pending review.
+
+### Combined native candidate validation claim — 2026-09-15T21:33:51.201738+00:00
+
+Codex claims isolated validation branch `validation/evidence-first-combined-20260915` in the now-terminal Kimi checkout `/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout` (its original source remained unchanged after quota refusal). Exact copied Go paths: `internal/trajectory/reservation_recovery.go`, `internal/trajectory/reservation_recovery_validation_test.go`, `internal/app/agents_exec_test.go`, `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`. Sources come from retained byte-bound Claude and final Zcode candidate snapshots. This assembles430Go/module files for combined validation while source integration and current full-scope model acceptance remain pending. Run full Go suite then trajectory/telemetry/app race suite serially, followed by vet, with no real model calls. Compiler cache and build scratch use shared runtime storage because native disk is low; test source/worktree and default test temp roots remain native. Preserve all failures; this validation does not waive unavailable reviewers, v2 quorum, live trials or delivery.
+
+Zcode owner correction claim before launch: new `parley-deck/inbox/zcode-1-to-codex-1_r1r2-review-correction-20260915.md` and append-only SELF-CORRECTION to `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/zcode-1-r1r2-review-20260915.md`, same native worktree, after prior review terminal. Correct malformed copied test hash and narrow unsupported causal exclusion; no source, tests, other artifacts or signatures. Previous review bytes and hash retained.
+
+### Integration working-tree claim — 2026-09-15T21:48:40.451044+00:00
+
+Codex sequentially imports the retained Claude R1/R2 and corrected Zcode telemetry candidates into the existing integration working tree: `internal/trajectory/reservation_recovery.go`, `internal/trajectory/reservation_recovery_validation_test.go`, `internal/app/agents_exec_test.go`, `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`. Exact hashes are the same430Go/module manifest already under combined native validation. This is working-tree integration, not current-source Phase6 acceptance or completion. Source review retains all MINOR/NIT items and its unresolved owner-corrected hash attribution; Claude/Kimi review availability remains limited. Keep historical protocol, kickoff, FINALs, rounds/signatures and HTML unchanged. Do not publish a success claim unless combined commands finish successfully; failures remain evidence.
