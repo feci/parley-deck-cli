@@ -4101,3 +4101,41 @@ awaiting independent review; no finding is withdrawn by the implementer.
 Native-only abnormal candidate old-reader compatibility passed 4.794s; mixed
 live handle controls remain open. No model calls, experiments, quorum change
 or full-goal completion. PR stays draft.
+
+
+### Managed continuation allocation — 2026-09-15T20:26:30.384618+00:00
+
+User direction (translated from Slovak): conserve tokens, primarily manage others, and invite Claude, Kimi and Zcode. Resume the existing audit; no new idea or reset. Codex coordinates integration. Machine roster currently marks codex-1 inactive, but the user organizer instruction remains codex-1; no global config is changed. Claude Opus 5 [1m] max, Kimi K3 config effort, and Zcode GLM 5.3 config effort are selected. Zcode is a supporting observer, not a historical quorum replacement. Original quorum and frozen pilot remain unchanged.
+
+| Owner | Exact artifact boundary | Branch | Native worktree | Status |
+| --- | --- | --- | --- | --- |
+| claude-1 | `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/claude-1-current-hardening-review-20260915.md` | `review/meta-protocol-change-evidence-first-efficiency/managed-claude-1-20260915` | `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout` | claimed; source-only supporting analysis |
+| kimi-1 | `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/kimi-1-recovery-next-slice-20260915.md` | `review/meta-protocol-change-evidence-first-efficiency/managed-kimi-1-20260915` | `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout` | claimed; source-only supporting analysis |
+| zcode-1 | `parley-deck/inbox/zcode-1-to-codex-1_evidence-first-completion-map-20260915.md` | `review/meta-protocol-change-evidence-first-efficiency/managed-zcode-1-20260915` | `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout` | claimed; source-only supporting analysis |
+
+Each participant authors its own artifact. No source edits, tests, signatures, treatment experiments or final acceptance in this allocation. One measured 30-minute call each, full live protocol; stdout/stderr captured via native PIPE and inspected only after command termination. Exact source hashes verified before and after; source stays at 39107b138e77de064f21fec4aafa6073887c2783. Prior failures remain retained. OpenViking scoped recall returned no matching context. Packaged protocol drift is expected for source role; metadata sync dry-run made no changes.
+
+Zcode initial launch 30292ee0-2a1d-4413-991f-d8051cc025f1 exited before artifact creation: installed runtime rejects --allowed-tools although its help advertises it. Original terminal/private logs retained, unknown usage stays unknown. One corrected launch replaces that option with documented --disallowed-tools Bash,Task; edit mode and exact-artifact OS write restriction stay. This is launcher repair within the requested Zcode delegation, not a model/quorum change.
+
+
+### Kimi recovery reachability probe claim — 2026-09-15T20:34:13.160320+00:00
+
+Codex allocates a native-only probe to kimi-1 before edits: exact test `internal/runner/verification_refused_reachability_test.go` and owned artifact `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/kimi-1-recovery-reachability-20260915.md`; branch `probe/meta-protocol-change-evidence-first-efficiency/kimi-recovery-20260915`; worktree `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout`. Scratch build/log files only under `.parley-runtime/work/` in that worktree. No existing production/test files may change. Purpose: actual public runner budget-denied helper launch and authority/handle counterexamples to the new source proposal. No model/pilot treatment, recovery permission, ticket retry, or source integration is implied. Focused tests only; source remains frozen.
+
+
+### Zcode usage-parser implementation claim — 2026-09-15T20:47:19.177489+00:00
+
+User-invited supporting contributor zcode-1 owns a native candidate in `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout`, branch `feature/meta-protocol-change-evidence-first-efficiency/zcode-usage-20260915`: `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`, `parley-deck/inbox/zcode-1-to-codex-1_usage-parser-20260915.md`. No integration source changes are authorized by this allocation. Exact worktree-local `zcode.json` disables MCP, subagents, skills, memory and plugins to reduce unnecessary context; global settings remain unchanged. Original observer call exited0 but left an empty artifact and invoked internal helpers contrary to its brief. It supplies no valid review. Preserved real CLI stdout reports aggregate usage that normalized telemetry omitted; this allocation addresses AC-T1/T3 with focused parser tests. All prior logs/artifacts remain preserved.
+
+
+### claude-1-fix exact candidate claim — 2026-09-15T20:51:03.692834+00:00
+
+Owner claude-1; branch `feature/meta-protocol-change-evidence-first-efficiency/claude-1-fix-20260915`; native worktree `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout`; exact paths: `internal/trajectory/reservation_recovery.go`, `internal/trajectory/reservation_recovery_validation_test.go`, `internal/app/agents_exec_test.go`, `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/claude-1-reservation-validation-candidate-20260915.md`. Original source frozen at39107b1. Native-only candidate, not integrated. File-set intersection checked empty against the other candidate and Zcode telemetry slice. Scratch only under `.parley-runtime/work/`. Participant owns its note; existing reviews remain unchanged. Run focused source-grounded tests/controls, preserve failed logs uniquely, no full-suite reruns or real model experiments.
+
+
+### kimi-1-recovery exact candidate claim — 2026-09-15T20:51:09.209892+00:00
+
+Owner kimi-1; branch `feature/meta-protocol-change-evidence-first-efficiency/kimi-1-recovery-20260915`; native worktree `/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout`; exact paths: `internal/trajectory/verification.go`, `internal/trajectory/verification_recovery.go`, `internal/trajectory/verification_recovery_test.go`, `internal/runner/verification_refused_recovery_test.go`, `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/kimi-1-verifier-refusal-recovery-candidate-20260915.md`. Original source frozen at39107b1. Native-only candidate, not integrated. File-set intersection checked empty against the other candidate and Zcode telemetry slice. Scratch only under `.parley-runtime/work/`. Participant owns its note; existing reviews remain unchanged. Run focused source-grounded tests/controls, preserve failed logs uniquely, no full-suite reruns or real model experiments.
+
+
+Codex-owned reporting claim before writing: `parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/codex-1-managed-continuation-20260915.md`, on the existing integration branch/worktree. This records imported source/probe evidence, rejected Zcode output and current disjoint candidate allocations; no source or completion-status change.
