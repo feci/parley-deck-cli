@@ -214,6 +214,8 @@ func (h *Handle) runSteerAgent(ctx context.Context, agent agents.Discovery, req 
 	}
 	attemptCtx, cancel := context.WithTimeout(parent, timeoutForAgent(h.opts.Timeout, agent))
 	defer cancel()
+	attemptCtx = WithLaunchInfo(attemptCtx, LaunchInfo{RunID: h.opts.RunID,
+		SegmentID: seg, Idea: h.opts.Idea.Slug, Phase: "steer", Store: h.opts.Store, ArtifactPath: replyPath})
 	h.register(req.AgentID, seg, "steer", steerID, cancel)
 	_, err := execAgentProcess(attemptCtx, h.opts.Root, h.opts.RunID, req.AgentID, h.opts.RunID+":"+req.AgentID+":"+steerID, agent, prompt, stdoutPath, stderrPath, nil, nil, supervisionForAgent(agent, timeoutForAgent(h.opts.Timeout, agent)), supervisionHooks{})
 	killed := h.finish(req.AgentID)

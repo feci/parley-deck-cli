@@ -1,0 +1,135 @@
+---
+agent: codex-1
+idea: meta-protocol-change-evidence-first-efficiency
+date: 2026-09-14
+source-base: db50dad638fc227c6d8d41e9de3ebef057c3d65c
+source-manifest: 8938e8612351bd7efbbf85df589d0f4fdd541cff178daf9b42f8f6dec195abc2
+status: observed-unresolved
+---
+
+# Full-size synthetic history exceeds the publication-sized deadline
+
+Production Inspect over a native fixture with 128 charged attempts and a snapshot
+of exactly 268,435,456 bytes refused after 30.002206667 seconds:
+`after archive unavailable: context deadline exceeded`.
+The same complete state passed Inspect with a separate 600-second deadline in
+197.012724208 seconds and returned all 128 attempts. The 30-second attempt remains
+failed; the longer read establishes that complete verification of this fixture
+can succeed, without converting that timeout into a passing publication.
+
+## What was executed
+
+The Go test binary was compiled with a single native-only test-file overlay,
+history_envelope_probe_test.go. No production source was overlaid. All 416
+Go/module source hashes remained identical to the manifest above. The fixture
+uses budget.Store.Reserve for 128 real local reservations and launches 128 real
+`sh -c 'exit 0'` processes, recording each requested/started/terminal lifecycle
+through telemetry. It then assembles resolution and continuation structures in
+the test fixture and subjects them to production structural checks and Inspect.
+
+This is not the production end-to-end 128-cycle workflow, a model treatment,
+an independent participant's verification, a cold-cache benchmark or an
+uncontended throughput claim. Other Go validation ran during the measurement.
+No monetary/task-arm experiment ceilings are inferred from this synthetic test.
+
+The source tree's four ballast files were sized so the canonical tar reaches
+the exact 256 MiB maximum while every member remains within 64 MiB. The history
+reuses identical source/archive references across its unchanged attempts and
+acknowledged continuations. Distinct large archives and other resolution shapes
+could have different costs; this is one valid maximum-count/maximum-size case,
+not an exhaustive performance bound over every permitted history.
+
+## Why this matters and what remains unmeasured
+
+internal/trajectory/state.go:withStateResolutionCheck always calls
+checkSourceSnapshots and the resolution checker before the requested operation.
+checkSourceSnapshots inspects the baseline, every before/after archive and each
+promoted continuation archive. internal/trajectory/unchanged.go:unchangedScope
+also reads each before-scope and activation quorum through full archive readers.
+The current code repeats these validations for identical references.
+
+internal/runner/telemetry.go supplies a 30-second context to trajectory Finish.
+The probe exercises production Inspect with that same duration, not a direct
+runner Finish call or complete process-to-publication failure. Transfer to that
+larger workflow still needs an explicit boundary check. This result does not
+prove the original shared-volume timestamp cause or any process inactivity.
+
+Potential changes need to preserve original charge/state authority and current
+acceptance checks. Reusing validated archives within one guarded read requires
+careful file-identity/stability handling. Separating factual terminal/stop
+recording from permission to execute or accept may avoid requiring all historical
+evidence merely to retain a real outcome. Neither option is implemented here;
+increasing a deadline alone is not claimed to resolve the issue.
+
+## Retained evidence
+
+- .parley-runtime/history-envelope-probe-20260914/probe-result.json and probe.log.
+- Native test source, overlay, compiled binary and original fixture directory:
+  /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-history-envelope-fyfjg2_i.
+- retained-fixtures.tar.gz preserves the complete fixture tree after termination,
+  including source, archives, ledger and lifecycle records: 922,940 compressed
+  bytes, SHA256 9dda0159795dac5aac0ca299f69133eec1de635ea418ab24bbd269af8cc58257.
+- Native/shared log and retained-fixture archive bytes were compared equal.
+
+The whole test passed in 245.771 seconds because it explicitly permits a proven
+30-second timeout followed by complete verification. Its PASS is not a claim
+that the 30-second production-sized deadline succeeded. F6 remains unresolved.
+
+
+## Direct terminal-publication boundary probe
+
+A separate native test subsequently called production Run.Finish with the same
+30-second context over the retained fixture. The test removed only the final
+resolution/continuation from its test-owned state, leaving 127 resolutions and a
+pending 128th charged attempt, then constructed the runtime handle in the fixture.
+No production code was overlaid. Run.Finish failed after 30.0037795 seconds with
+`after archive unavailable: context deadline exceeded`; pending state remained
+byte-identical and no trajectory terminal was published. This reproduces the
+publication boundary failure, while retaining the original Inspect observations.
+It is not an end-to-end runner launch or permission to replay historical work.
+
+The outer test PASS in 30.984 seconds means its expected failure assertions passed.
+All 416 Go/module files matched the original manifest. Native/shared result logs
+and fixture archives matched after termination. Evidence is publication-result.json,
+publication.log and publication-fixture-archive.json in the same runtime directory.
+
+- Original complete-state SHA256:
+  d6911908bbeb89c856b10e25e773e38a3c324a3eea741750f7b3df8e277abc3f.
+- Pending-state SHA256, unchanged by failed Finish:
+  e6e6d8cc0599abdd03ca28af460f148b88966ed24ac5048fb7d3b5b0617913cf.
+- retained-after-publication-probe.tar.gz: 1,000,312 bytes, SHA256
+  584e2ad6aae7827f48ce2ae3ff5af5fa3558360e7024db4780ef4a5417da5a6f.
+
+The live native fixture now holds that pending-state variant. The original
+complete fixture remains in retained-fixtures.tar.gz and the separate original
+state snapshot; neither is relabeled or discarded. F6 remains unresolved.
+
+
+## Integrated prospective terminal-publication correction
+
+The next production implementation freezes the exact canonical post-launch state
+in Begin's runtime-only handle and verifies it with the original policy and
+complete charged ledger before Finish records the actual terminal/current source.
+This removes historical archive/intent/result-content rereads from that factual
+publication path. Execution, reconciliation and acceptance retain full checks;
+there is no reconstructed historical runtime handle or missing terminal.
+
+With only a native test-file overlay, the integrated production Run.Finish
+published the pending 128th attempt in 5.192811625 seconds under the original
+30-second context. All 418 Go/module files matched manifest
+2d4316bf1d6e43873bd0a508529081fb983ea4f14e6fa521cf2b9a12f094ed2f.
+Original charges and all 127 existing resolutions remained unchanged. Successful
+state SHA256 e007bfcabb9526ce419ed91ede98624760d20c16993c5ad967722cf3977d4ea4
+is retained separately; the exact original pending input was restored by the test
+and verified after termination. Evidence:
+.parley-runtime/terminal-authority-development-20260914/envelope-result.json,
+envelope.log, successful-envelope-state.json and fixture-restoration.json.
+
+This responds to F6's publication coupling, using its proposed separation of
+post-exit publication from old evidence reads. General history inspection still
+performs full validation and is not claimed faster. The probe retains its
+fixture-constructed runtime handle, prior assembled history and concurrent-load
+qualifications. It is not an end-to-end 128-cycle runner measurement, a universal
+host deadline bound, historical replay authorization or participant acceptance.
+The original two 30-second failures and the 197-second complete read remain
+historical results; they are not overwritten by this new-source observation.

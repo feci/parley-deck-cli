@@ -20,6 +20,9 @@ type SpawnOptions struct {
 	WorkingDir string
 	// Env is the full environment for the child. Pass empty for os.Environ.
 	Env []string
+	// StderrObserver observes received bytes without persisting their content.
+	// It must be non-blocking and safe for concurrent observation calls.
+	StderrObserver io.Writer
 }
 
 // Process is a spawned ACP child plus the wired stdio streams.
@@ -79,7 +82,11 @@ func Spawn(ctx context.Context, opts SpawnOptions) (*Process, error) {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
-		_, _ = io.Copy(p.stderrBuf, stderr)
+		var sink io.Writer = p.stderrBuf
+		if opts.StderrObserver != nil {
+			sink = io.MultiWriter(opts.StderrObserver, sink)
+		}
+		_, _ = io.Copy(sink, stderr)
 	}()
 	return p, nil
 }
@@ -99,6 +106,16 @@ func (p *Process) PID() int {
 		return 0
 	}
 	return p.cmd.Process.Pid
+}
+
+// ExitCode is valid only after Stop or Wait has returned. It does not infer an
+// exit code from an ACP prompt result or a context cancellation.
+func (p *Process) ExitCode() *int {
+	if p.cmd.ProcessState == nil {
+		return nil
+	}
+	code := p.cmd.ProcessState.ExitCode()
+	return &code
 }
 
 // Stop closes stdin (giving the agent a chance to exit), waits up to

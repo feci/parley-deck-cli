@@ -1,0 +1,242 @@
+# Protocol packet applicability map — parley-deck/COOPERATION.md
+#
+# Ratified by ideas/meta-protocol-change-phase-packet-and-fixup-budget/FINAL.md ("Never cut")
+# and ideas/meta-protocol-change-evidence-first-efficiency/FINAL.md (D4, "Packet Never-Cut").
+#
+# THIS FILE IS PROTOCOL. Changing a classification is a §7 protocol change and needs a
+# meta-protocol-change idea; no generator can prove a classification is semantically right.
+# The conservative default is `always`. `parley protocol packet check` proves only structure:
+# every heading block of the live source is classified exactly once, every conditional entry
+# names the trigger that requires reading the full source, every `requires` resolves, and the
+# never-cut list below is honored. A heading with no entry is UNKNOWN applicability: it is
+# included, `packet check` fails, and an optimized packet falls back to full context.
+#
+# Locator = the heading line, whitespace-collapsed (a repeated heading gets " #2").
+# include: always | when | on-demand.  `when` lists phases/tracks/transports/flags (any match
+# includes).  Known flags: protocol_change (derived from a meta-protocol-change-* slug),
+# strict_gate, auto_implement, pipeline.
+schema: parley.packet-applicability/v1
+source: parley-deck/COOPERATION.md
+blocks:
+  - locator: "# COOPERATION.md — Multi-Agent Cooperation Protocol"
+    include: always                                  # identity header: workspace, transport, sync stamp
+  - locator: "## Quickstart — start here (developers & first-timers)"
+    include: always
+  - locator: "## 0. Choose the transport"
+    include: always                                  # universal invariants: files canonical, non-solo
+  - locator: "## 1. Scope and purpose"
+    include: always
+  - locator: "### Non-solo execution requirement"
+    include: always                                  # never cut: non-solo close guard
+  - locator: "### Participant sizing and lenses"
+    include: always
+  - locator: "### Internal helpers"
+    include: always
+  - locator: "## 2. Active agents (roster)"
+    include: always                                  # generated roster view; stable agent IDs
+  - locator: "## 3. Directory layout"
+    include: always
+  - locator: "## 4. Protocol — phases of an idea"
+    include: always
+  - locator: "### 4.0 — Track selection (conditional rigor)"
+    include: always                                  # never cut: §4.0 overrides and invariants
+  - locator: "### 4.0.1 — Loop-engineering rules (LE-N), in plain English"
+    include: always
+  - locator: "### Phase 0 — Kickoff"
+    include: when
+    phases: [0]
+    trigger: "creating or amending ideas/<slug>/00-prompt.md, its frontmatter, track or participants"
+  - locator: "### Phase 1 — Round 1 (independent analysis)"
+    include: when
+    phases: [1]
+    trigger: "writing or judging a round-01 artifact"
+  - locator: "### Phase 2 — Cross-review rounds (2, 3, …)"
+    include: when
+    phases: [2]
+    trigger: "writing or judging a round-02+ cross-review artifact, the silence rule, or a cross-review cap"
+  - locator: "### Phase 3 — Consensus"
+    include: when
+    phases: [3, 4]
+    trigger: "drafting, signing or blocking consensus.md"
+  - locator: "### Phase 4 — Finalization"
+    include: when
+    phases: [4]
+    trigger: "drafting FINAL.md or closing an idea"
+  - locator: "### Phase 5 — Implementation"
+    include: when
+    phases: [5, 8]
+    trigger: "writing IMPLEMENTATION.md, a plan gate, checks, or an implementation commit"
+  - locator: "### Phase 6 — Code review rounds"
+    include: when
+    phases: [6, 7, 8]
+    requires: ["#### Review briefs and dispositions"]
+    trigger: "writing a review/round-NN artifact, a finding, a severity or a brief"
+  - locator: "#### Review briefs and dispositions"
+    include: when
+    phases: [6, 7, 8]
+    trigger: "a review brief, a known-finding disposition, or a disputed finding"
+  - locator: "### Phase 7 — Review consensus"
+    include: when
+    phases: [7, 8]
+    trigger: "drafting or signing review/consensus.md"
+  - locator: "### Phase 8 — Fix-up"
+    include: when
+    phases: [7, 8]
+    requires: ["#### Strict review gate (optional)", "#### Stopping judgment"]
+    trigger: "applying agreed fixes, a fix-up cycle, a fix-up cap, or a close decision"
+  - locator: "#### Strict review gate (optional)"
+    include: when
+    phases: [7, 8]
+    flags: [strict_gate]
+    trigger: "00-prompt.md declares strict_gate: true, or a close decision is being made"
+  - locator: "#### Stopping judgment"
+    include: when
+    phases: [7, 8]
+    trigger: "any close, cap or trajectory decision on an implementation"
+  - locator: "### Escalation to user (any phase)"
+    include: always                                  # never cut: the escalation mechanism
+  - locator: "## 5. Quorum and async participation"
+    include: always
+  - locator: "## 6. Conflict-avoidance mechanics"
+    include: always                                  # never cut: rule 3, status re-read, English-only
+  - locator: "## 7. Changing this protocol"
+    include: when
+    flags: [protocol_change]
+    trigger: "the idea changes COOPERATION.md, this map, the skill instructions or the global core (a meta-protocol-change-* slug)"
+  - locator: "## 8. Inbox (lightweight channel)"
+    include: always
+  - locator: "### Consults"
+    include: always
+  - locator: "## 10. TL;DR"
+    include: always
+  - locator: "## 9. Session-start checklist for every agent"
+    include: always
+  - locator: "### 9.0 Pre-idea readiness check (facilitator, before opening a new idea)"
+    include: always                                  # carries the per-agent checklist and the packet attestation rule
+  - locator: "## 11. Transport mechanics"
+    include: always
+  - locator: "### 11.A — Local directory"
+    include: when
+    transports: [local-dir]
+    trigger: "the deck header names Transport: local-dir"
+  - locator: "### 11.B — GitHub Pull Requests"
+    include: when
+    transports: [github-pr]
+    trigger: "the deck header names Transport: github-pr"
+  - locator: "### 11.C — GitLab Merge Requests"
+    include: when
+    transports: [gitlab-mr]
+    trigger: "the deck header names Transport: gitlab-mr"
+  - locator: "## Appendix A — Adopting this protocol in a new project"
+    include: on-demand
+    trigger: "bootstrapping the protocol into a new project"
+  - locator: "## 12. Pipeline blocks & action stages"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.1 Block model"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.2 Canonical stage artifacts"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.3 Manifest (`pipelines/<slug>/pipeline.yaml`)"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.4 Execution boundary (hard rule)"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.5 Seeding contract"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.6 Durable state and effects ledger"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.7 Idempotency and reconcile"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.8 Gates and autonomy (supervised-first)"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.9 Capability dispatch"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.10 Execute sub-phase (action blocks)"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.11 Monitoring loop-closure"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "### 12.12 Compatibility"
+    include: when
+    flags: [pipeline]
+    trigger: "the idea declares a pipeline or action block (§4.0 pipeline trigger)"
+  - locator: "## 13. Retrospective optimization"
+    include: on-demand
+    trigger: "a retro pass, a harness-layer change proposal, or a parley learn playbook"
+  - locator: "### 13.1 What a retro pass is"
+    include: on-demand
+    trigger: "a retro pass, a harness-layer change proposal, or a parley learn playbook"
+  - locator: "### 13.2 Harness layers — what a proposal may change, and how"
+    include: on-demand
+    trigger: "a retro pass, a harness-layer change proposal, or a parley learn playbook"
+  - locator: "### 13.3 Acceptance gate"
+    include: on-demand
+    trigger: "a retro pass, a harness-layer change proposal, or a parley learn playbook"
+  - locator: "### 13.4 Guardrails"
+    include: on-demand
+    trigger: "a retro pass, a harness-layer change proposal, or a parley learn playbook"
+  - locator: "### 13.5 Playbooks (distilled retro output)"
+    include: on-demand
+    trigger: "a retro pass, a harness-layer change proposal, or a parley learn playbook"
+  - locator: "## 14. Automated outer loop (loop engineering) — the human brake"
+    include: always                                  # never cut: §14 in every packet
+  - locator: "### 14.1 What an automated loop MAY do"
+    include: always
+  - locator: "### 14.2 What an automated loop MUST NOT do without a recorded human or full-quorum gate"
+    include: always
+  - locator: "### 14.3 Fail-safe"
+    include: always
+  - locator: "## 15. Verification integrity"
+    include: when
+    phases: [1, 2, 3, 4, 5, 6, 7, 8]
+    trigger: "any verification verdict, challenge, exemption claim, or acceptance decision"
+  - locator: "### 15.1 Scope, ownership, location"
+    include: when
+    phases: [1, 2, 3, 4, 5, 6, 7, 8]
+    trigger: "any verification verdict, challenge, exemption claim, or acceptance decision"
+  - locator: "### 15.2 Provenance"
+    include: when
+    phases: [1, 2, 3, 4, 5, 6, 7, 8]
+    trigger: "any verification verdict, challenge, exemption claim, or acceptance decision"
+  - locator: "### 15.3 Conflicting verdicts"
+    include: when
+    phases: [1, 2, 3, 4, 5, 6, 7, 8]
+    trigger: "any verification verdict, challenge, exemption claim, or acceptance decision"
+  - locator: "### 15.4 Exemption-claim admissibility"
+    include: when
+    phases: [1, 2, 3, 4, 5, 6, 7, 8]
+    trigger: "any verification verdict, challenge, exemption claim, or acceptance decision"
+  - locator: "### 15.5 Role concentration"
+    include: when
+    phases: [1, 2, 3, 4, 6, 7]
+    trigger: "drafting consensus.md or FINAL.md as facilitator, or any procedural close call in Phase 5/8"
+  - locator: "### 15.6 Alternatives and correlated agreement"
+    include: when
+    phases: [1, 2, 3, 4, 6, 7]
+    trigger: "an ## Existing alternatives section, an ALT- disposition, or a correlated-agreement statement in Phase 5/8"
+  - locator: "### 15.7 Per-track binding"
+    include: when
+    phases: [1, 2, 3, 4, 5, 6, 7, 8]
+    trigger: "any verification verdict, challenge, exemption claim, or acceptance decision"

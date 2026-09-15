@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/track"
@@ -82,7 +84,7 @@ type Config struct {
 	// per user from ~/.parley [defaults.loop], overridable by `run` flags.
 	MaxDriverSteps int           // total progress Advances before escalation
 	MaxWallClock   time.Duration // total run wall-clock budget (distinct from the per-tick roundDeadline)
-	MaxCostUSD     float64       // total external-backend cost budget (best-effort, telemetry-gated; LE-6)
+	MaxCostUSD     float64       // observed invocation cost ceiling; unknown accounting stops (LE-6)
 	Out            io.Writer     // progress output (nil → discard)
 	// Track-aware config (idea track-aware-driver): the §4.0 rigor track derived
 	// from 00-prompt `track:` and the reviewer bounds it implies. Track is the
@@ -243,6 +245,7 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	prev, err := LoadCursor(d.cursorPath())
 	switch {
 	case err == nil:
+		c.ChecksContractSHA256 = prev.ChecksContractSHA256
 		if prev.FixupCyclesPublished > c.FixupCyclesPublished {
 			c.FixupCyclesPublished = prev.FixupCyclesPublished
 		}
@@ -266,6 +269,30 @@ func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
 	// decides. See autoDriveEnabled.
 	if !d.autoDriveEnabled() {
 		return ActionSurfaceOnly, c, nil
+	}
+	if c.Phase == PhaseDone || c.Phase == PhaseBlocked {
+		return ActionSurfaceOnly, c, nil
+	}
+	ctx, scoped, finishStep, err := d.withStepBudget(d.withActionInput(ctx, c))
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("persistent driver budget: %w", err)
+	}
+	defer finishStep()
+	d = scoped
+	pin, err := ObserveChecksContract(d.cfg.IdeaDir, c.ChecksContractSHA256)
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("original completion scope: %w", err)
+	}
+	if pin != "" {
+		if err := evidence.PinChecksContract(ctx, d.cfg.IdeaDir, pin); err != nil {
+			return ActionEscalated, c, fmt.Errorf("pin original contract before agent work: %w", err)
+		}
+	}
+	if pin != c.ChecksContractSHA256 {
+		c.ChecksContractSHA256 = pin
+		if err := saveCursor(c, d.cursorPath()); err != nil {
+			return ActionEscalated, c, fmt.Errorf("pin checks before agent work: %w", err)
+		}
 	}
 	switch c.Phase {
 	case PhaseRound:
@@ -330,6 +357,9 @@ func (d *Driver) advanceRound(ctx context.Context, c Cursor) (Action, Cursor, er
 		if err := d.runner.RunRound(ctx, next); err != nil {
 			return ActionEscalated, c, fmt.Errorf("run %s: %w", roundLabel(next), err)
 		}
+	}
+	if err := budget.ChargeStep(ctx); err != nil {
+		return ActionEscalated, c, err
 	}
 	if err := setIdeaStatus(d.cfg.IdeaDir, roundLabel(next)); err != nil {
 		return ActionEscalated, c, fmt.Errorf("set idea status: %w", err)

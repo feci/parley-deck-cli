@@ -10,7 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // ImplOps is the agent-launch seam for Parley Deck Phases 5-8 (consensus D1). The
@@ -27,13 +29,21 @@ type ImplOps interface {
 	DraftReviewConsensus(ctx context.Context, round int) error // Phase 7: draft review/consensus.md
 	ReviewStatus() (ReviewStatus, error)                       // review-mode triage + outstanding_agreed_fixes
 	RequestReviewSignoffs(ctx context.Context, missing []string) error
+	PrecheckFixup(ctx context.Context) error    // refuse known protocol failure before caller reservations
 	Fixup(ctx context.Context, cycle int) error // Phase 8: re-invoke implementer for agreed fixes
 	Complete(ctx context.Context) error         // driver writes IMPLEMENTATION.md status=complete
 	// GoalCheck (LE-7) runs a fresh non-implementer agent to check FINAL.md observable
-	// acceptance criteria before close. Returns (false, detail) only on a confident FAIL;
-	// a checker error/ambiguous verdict returns (true, advisory) — fail-open, since this
-	// is defense-in-depth on top of an already-passed review consensus, not the sole gate.
+	// acceptance criteria before close. Missing, failed or ambiguous execution
+	// returns false: an unavailable checker cannot establish completion. This
+	// remains defense in depth and never replaces typed criterion evidence.
 	GoalCheck(ctx context.Context) (bool, string)
+}
+
+// CompletionEvidenceOps is required to close a named checks contract. Older
+// adapters without an actual independent execution path fail closed for that
+// contract; a goal-check verdict cannot substitute for the missing operation.
+type CompletionEvidenceOps interface {
+	VerifyCompletionEvidence(context.Context) (bool, string)
 }
 
 // ReviewStatus wraps the review-mode consensus summary plus the machine-readable
@@ -129,6 +139,10 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if d.cfg.Impl == nil {
 		return ActionSurfaceOnly, c, nil
 	}
+	maximum, err := d.cycleMaximum(ctx, budget.Fixup, d.cfg.MaxFixupCycles)
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("fix-up policy: %w", err)
+	}
 	round := highestReviewRound(d.cfg.IdeaDir)
 	if round < 1 {
 		round = 1
@@ -144,12 +158,12 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		// and no escalation.
 		if spent, err := d.chargedFixupAttempts(c); err != nil {
 			return ActionEscalated, c, fmt.Errorf("cannot determine how many fix-up attempts have been charged: %w", err)
-		} else if d.cfg.MaxFixupCycles > 0 && spent > d.cfg.MaxFixupCycles {
+		} else if spent > maximum {
 			// STRICTLY greater: at equality AF2 is finishing the Nth allowed cycle, whose
 			// budget is already spent — not starting cycle N+1. Rejecting equality would
 			// strand a legitimate crash recovery at the inclusive boundary (round-04).
 			// Starting the next cycle is still refused by the ordinary branch below.
-			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempt(s) against MaxFixupCycles=%d; escalating instead of opening another review round", spent, d.cfg.MaxFixupCycles)
+			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempt(s) against effective MaxFixupCycles=%d; escalating instead of opening another review round", spent, maximum)
 		}
 		if err := d.archiveReviewConsensus(round); err != nil {
 			return ActionEscalated, c, fmt.Errorf("archive review consensus: %w", err)
@@ -212,6 +226,13 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	}
 
 	if rs.OutstandingAgreedFixes == 0 {
+		charged, err := d.chargedFixupAttempts(c)
+		if err != nil {
+			return ActionEscalated, c, fmt.Errorf("cannot verify closing fix-up budget: %w", err)
+		}
+		if charged > maximum {
+			return ActionEscalated, c, fmt.Errorf("fix-up budget exceeded: %d charged attempts against effective MaxFixupCycles=%d; cannot close", charged, maximum)
+		}
 		if d.cfg.StrictGate {
 			// strict_gate (LE-2): completion requires a FRESH full-scope closing review
 			// round with zero findings of any severity — certified by the drafter
@@ -247,9 +268,10 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		// pre-review/post-fixup runs do not prove HEAD when review closes with zero agreed
 		// fixes. Scoped to the list shape so scalar/absent `checks:` is unchanged. Fails
 		// closed (can only veto a close, never auto-pass), independent of strict_gate.
-		if _, isList, cerr := ReadChecksContract(d.cfg.IdeaDir); cerr != nil {
+		_, hadNamedChecks, cerr := ReadChecksContract(d.cfg.IdeaDir)
+		if cerr != nil {
 			return ActionEscalated, c, fmt.Errorf("completion contract invalid: %w", cerr)
-		} else if isList {
+		} else if hadNamedChecks {
 			if ok, detail := d.cfg.Impl.RunChecks(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("completion contract not satisfied at HEAD (checks: list):\n%s", strings.TrimSpace(detail))
 			}
@@ -268,11 +290,32 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		}
 		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh
 		// non-implementer agent checks the FINAL.md acceptance criteria. A confident FAIL
-		// escalates; a checker error is advisory (fail-open inside GoalCheck).
+		// or unverified execution escalates; textual PASS cannot replace criterion evidence.
 		if d.cfg.AutoImplement || d.cfg.StrictGate {
 			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
 				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))
 			}
+		}
+		// Re-read after the goal-check, the last model operation before closure.
+		// Removing the original list cannot bypass its independent evidence gate.
+		_, hasNamedChecks, cerr := ReadChecksContract(d.cfg.IdeaDir)
+		if cerr != nil {
+			return ActionEscalated, c, fmt.Errorf("completion contract changed or invalid: %w", cerr)
+		}
+		if _, err := ObserveChecksContract(d.cfg.IdeaDir, c.ChecksContractSHA256); err != nil {
+			return ActionEscalated, c, fmt.Errorf("original completion scope changed: %w", err)
+		}
+		if hadNamedChecks || hasNamedChecks {
+			verifier, ok := d.cfg.Impl.(CompletionEvidenceOps)
+			if !ok {
+				return ActionEscalated, c, errors.New("named checks require an independent verifier execution; adapter does not provide it")
+			}
+			if ok, detail := verifier.VerifyCompletionEvidence(ctx); !ok {
+				return ActionEscalated, c, fmt.Errorf("independent completion evidence refused:\n%s", strings.TrimSpace(detail))
+			}
+		}
+		if err := trajectory.RequireResolved(ctx, d.cfg.Root, d.cfg.IdeaSlug); err != nil {
+			return ActionEscalated, c, fmt.Errorf("patch trajectory blocks completion: %w", err)
 		}
 		// DONE (D5): the driver — not the implementer — writes status=complete.
 		if err := d.cfg.Impl.Complete(ctx); err != nil {
@@ -302,9 +345,8 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if err != nil {
 		return ActionEscalated, c, fmt.Errorf("cannot determine how many fix-up attempts have been charged; refusing to spend budget on an unknown count: %w", err)
 	}
-	cycle := charged + 1
-	if cycle > d.cfg.MaxFixupCycles {
-		return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after %d charged attempt(s); attempt %d would exceed MaxFixupCycles=%d; escalating", rs.OutstandingAgreedFixes, charged, cycle, d.cfg.MaxFixupCycles)
+	if charged >= maximum {
+		return ActionEscalated, c, fmt.Errorf("review still has %d agreed fixes after %d charged attempt(s); attempt %d would exceed MaxFixupCycles=%d; escalating", rs.OutstandingAgreedFixes, charged, uint64(charged)+1, maximum)
 	}
 	if !d.cfg.AutoImplement {
 		return ActionEscalated, c, fmt.Errorf("review has agreed fixes but auto_implement (code-writing) is not enabled; escalating")
@@ -312,11 +354,19 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if !gitTreeClean(d.cfg.Root) {
 		return ActionEscalated, c, fmt.Errorf("git working tree is dirty; refusing to run a fix-up")
 	}
+	if err := d.cfg.Impl.PrecheckFixup(ctx); err != nil {
+		return ActionEscalated, c, fmt.Errorf("fix-up protocol precheck: %w", err)
+	}
 	// RESERVE the attempt before the code-writing call, not after it. Round-04 showed that
 	// spending it afterwards leaves two ways to get it back for free: a Fixup that
 	// returns an error, and a crash in the window between Fixup returning and the cursor
 	// being written. A crash before Fixup is confirmed conservatively spends the
 	// reservation — erring toward one lost cycle rather than an unbounded loop.
+	ctx, cycle, finishCycle, err := d.reserveFixupCycle(ctx, charged)
+	defer finishCycle()
+	if err != nil {
+		return ActionEscalated, c, fmt.Errorf("reserve shared fix-up cycle: %w", err)
+	}
 	c.FixupCyclesPublished = cycle
 	if err := saveCursor(c, d.cursorPath()); err != nil {
 		return ActionEscalated, c, fmt.Errorf("reserve fix-up cycle %d: %w", cycle, err)
@@ -507,39 +557,42 @@ func gitTreeClean(root string) bool {
 	return strings.TrimSpace(string(out)) == ""
 }
 
-// chargedFixupAttempts reports how many fix-up attempts have been CHARGED — reserved, not
-// necessarily completed: an attempt that errored has still spent one. It is the
-// MAXIMUM of two driver-authored records:
+// chargedFixupAttempts preserves the maximum of the compatibility cursor,
+// driver .fixup-done markers and the shared precharged cycle ledger. The latter
+// survives a new run and deletion of the replaceable cursor/markers, including
+// failures before a completion marker could be written. Unknown accounting
+// refuses work; initial legacy carry is checked before a new binding is created.
 //
-//   - the run cursor's monotonic FixupCyclesPublished, which lives in the RUN directory
-//     and is written inside the fix-up transaction;
-//   - the `.fixup-done` markers under the idea's review rounds.
-//
-// Taking the maximum is what makes it safe ONCE BOTH RECORDS EXIST: deleting markers
-// cannot lower the count because the cursor holds it, deleting the cursor cannot lower it
-// because the markers remain, and forging either can only raise it, which escalates
-// sooner. Between the reservation and the marker — which includes every attempt that
-// errored — the cursor is the ONLY record, and losing it there loses that count. That
-// window is a documented limit, not a claim; closing it needs the trust anchor deferred
-// to `fixup-budget-trust-anchor`.
-//
-// NOTE ON NAMES: the persisted cursor field stays FixupCyclesPublished for on-disk
-// compatibility; every unexported name here says "charged attempt", which is what it is.
-//
-// Two earlier designs were rejected by review for being fail-open in the other
-// direction: counting `## Fix-up cycle N` headings out of the implementer-owned
-// IMPLEMENTATION.md (round-02), and counting the markers alone (round-03). A number that
-// is a safety boundary must not be authored by the party it constrains.
-//
-// A read error is returned, never swallowed: an unknown count must escalate, not restart
-// the budget at zero.
+// The on-disk cursor name FixupCyclesPublished remains for compatibility even
+// though it counts reserved attempts, not only successful publications. Text
+// headings in IMPLEMENTATION.md never determine this safety count.
 func (d *Driver) chargedFixupAttempts(c Cursor) (int, error) {
 	n, err := markedFixupCycles(d.cfg.IdeaDir)
 	if err != nil {
 		return 0, err
 	}
 	if c.FixupCyclesPublished > n {
-		return c.FixupCyclesPublished, nil
+		n = c.FixupCyclesPublished
+	}
+	b, err := budget.LoadCycleBinding(context.Background(), d.cfg.Root, d.cfg.IdeaSlug, budget.Fixup)
+	if err != nil {
+		return 0, err
+	}
+	if b != nil {
+		relative, err := filepath.Rel(d.cfg.Root, d.cfg.IdeaDir)
+		if err != nil || filepath.ToSlash(relative) != b.Policy.IdeaPath {
+			return 0, errors.New("closing fix-up scope differs from the frozen idea path")
+		}
+		if d.cfg.MaxFixupCycles != b.Policy.InitialMaximum() {
+			return 0, errors.New("fix-up ceiling differs from the frozen policy; reconcile before continuing")
+		}
+		state, err := b.Store.Inspect(context.Background())
+		if err != nil {
+			return 0, err
+		}
+		if count := b.Count(state); count > n {
+			n = count
+		}
 	}
 	return n, nil
 }

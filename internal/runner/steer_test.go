@@ -20,6 +20,7 @@ func newSteerHandle(t *testing.T, agentID string, headlessArgs []string) (*Handl
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Steer task", []string{agentID})
 	if err != nil {
 		t.Fatal(err)

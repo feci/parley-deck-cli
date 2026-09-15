@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -15,10 +16,12 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
+	"parley-deck-cli/internal/evidence"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/track"
+	"parley-deck-cli/internal/trajectory"
 )
 
 // driverImplOps is the production driver.ImplOps adapter (driver-impl-phase). It
@@ -26,14 +29,15 @@ import (
 // only on the driver.ImplOps interface, so internal/driver never imports
 // internal/app.
 type driverImplOps struct {
-	base        runner.Options // the round-01 runOpts (Root, RunID, Store, Agents, Idea, Timeout)
-	root        string
-	ideaSlug    string
-	ideaDir     string
-	implementer string   // FINAL drafter / first participant
-	reviewers   []string // non-implementer participants
-	drafter     string   // review-consensus drafter (facilitator)
-	out         io.Writer
+	base            runner.Options // the round-01 runOpts (Root, RunID, Store, Agents, Idea, Timeout)
+	root            string
+	ideaSlug        string
+	ideaDir         string
+	implementer     string   // FINAL drafter / first participant
+	reviewers       []string // non-implementer participants
+	drafter         string   // review-consensus drafter (facilitator)
+	out             io.Writer
+	verificationCLI string // internal process-fixture seam; empty uses this running CLI
 }
 
 func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, participants []string, out io.Writer) driver.ImplOps {
@@ -370,42 +374,41 @@ func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
 
 // GoalCheck (LE-7) runs a fresh non-implementer agent (the review drafter) to check the
 // FINAL.md acceptance criteria before close, reusing the consult execution path with a
-// verdict prompt. Fail-open on checker error/ambiguity: only a confident FAIL returns
-// (false, …) so a broken checker never blocks an already-review-clean idea.
+// verdict prompt. Missing, self, failed or ambiguous execution cannot establish
+// completion. A textual pass remains defense in depth, not criterion evidence.
 func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	checker := o.drafter
 	// CF6: GoalCheck must use a non-implementer checker. The upstream guards
 	// (ReviewerCount < 2 under auto; OpenReviewRound under strict) already prevent
 	// the drafter==implementer fallback from reaching here, but enforce the contract
-	// locally too — never run the implementer as its own goal checker; fail open.
-	if checker == o.implementer {
-		fmt.Fprintf(o.out, "driver: goal-check skipped — no independent checker (drafter is the implementer) (advisory)\n")
-		return true, "advisory: goal-check has no independent checker"
+	// locally too — never run the implementer as its own goal checker.
+	if checker == "" || checker == o.implementer {
+		return false, "goal-check has no independent checker"
 	}
-	agent, ok := o.discoveryFor(checker)
-	if !ok {
-		fmt.Fprintf(o.out, "driver: goal-check skipped — checker %q not discovered (advisory)\n", checker)
-		return true, "advisory: goal-check checker unavailable"
+	agent, err := agents.ResolveParticipant(checker, o.base.Agents, rosterMappingFor(o.root))
+	if err != nil {
+		return false, "goal-check checker unavailable"
 	}
 	fmt.Fprintf(o.out, "driver: goal-done check via %s ...\n", checker)
 	dir := filepath.Join(o.root, protocol.DeckDir, "runs", o.base.RunID, "agents", checker)
-	_ = os.MkdirAll(dir, 0o755)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return false, "goal-check cannot create its evidence directory"
+	}
+	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: o.base.RunID,
+		Idea: o.ideaSlug, Phase: "goal-check", Store: o.base.Store})
 	res := runner.RunConsult(ctx, runner.ConsultOptions{
 		Root:  o.root,
 		Agent: agent,
-		// CF3: the goal-check is an advisory fail-open gate, so bound it tightly.
-		// Without an explicit timeout it inherits the agent's full timeout (15-30m);
-		// a hung checker would then block the driver tick for that long instead of
-		// failing open quickly. 2 minutes is ample for a single verdict.
+		// Keep the existing bounded one-shot deadline. A timeout leaves
+		// completion unverified and halts instead of silently passing.
 		Timeout:    2 * time.Minute,
 		Prompt:     runner.BuildGoalCheckPrompt(agent, o.base.Idea),
 		StdoutPath: filepath.Join(dir, "goal-check.stdout.log"),
 		StderrPath: filepath.Join(dir, "goal-check.stderr.log"),
 		Progress:   o.out,
 	})
-	if res.ExitError != "" {
-		fmt.Fprintf(o.out, "driver: goal-check inconclusive (checker error: %s) — proceeding (advisory)\n", res.ExitError)
-		return true, "advisory: goal-check checker error"
+	if res.ExitError != "" || res.AgentExit != 0 {
+		return false, "goal-check checker failed; completion is unverified"
 	}
 	switch parseGoalVerdict(res.Answer) {
 	case "FAIL":
@@ -413,15 +416,15 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	case "PASS":
 		return true, ""
 	default:
-		fmt.Fprintf(o.out, "driver: goal-check inconclusive (no clear verdict) — proceeding (advisory)\n")
-		return true, "advisory: goal-check inconclusive"
+		return false, "goal-check inconclusive; completion is unverified"
 	}
 }
 
-// parseGoalVerdict extracts the last GOAL-CHECK verdict from a goal-check answer
-// (case-insensitive). Returns "PASS", "FAIL", or "" (ambiguous / none).
+// parseGoalVerdict accepts PASS only when every stated verdict is an exact PASS.
+// A failure is sticky; any unknown verdict makes a pass ambiguous. A trailing
+// format example therefore cannot erase an earlier failure or reservation.
 func parseGoalVerdict(answer string) string {
-	verdict := ""
+	seenPass, seenFail, ambiguous := false, false, false
 	for _, line := range strings.Split(answer, "\n") {
 		t := strings.ToUpper(strings.TrimSpace(line))
 		// CF2: strip leading markdown / quote wrappers (heading, bold, blockquote,
@@ -431,22 +434,26 @@ func parseGoalVerdict(answer string) string {
 		if !strings.HasPrefix(t, "GOAL-CHECK:") {
 			continue
 		}
-		// CF4: reset on every matched verdict line so the LAST verdict wins — a
-		// trailing ambiguous line (e.g. "GOAL-CHECK: RE-EVALUATING") must clear a
-		// prior PASS/FAIL back to ambiguous rather than leaving it stuck.
-		verdict = ""
 		rest := strings.TrimSpace(strings.TrimPrefix(t, "GOAL-CHECK:"))
 		// CF2: a bolded/quoted marker ("**GOAL-CHECK:** FAIL") leaves "** FAIL" in
 		// rest — strip the leading wrapper run before the PASS/FAIL prefix check.
-		rest = strings.TrimLeft(rest, "*`\"'_ ")
+		rest = strings.Trim(rest, "*`\"'_ ")
 		switch {
-		case strings.HasPrefix(rest, "PASS"):
-			verdict = "PASS"
+		case rest == "PASS":
+			seenPass = true
 		case strings.HasPrefix(rest, "FAIL"):
-			verdict = "FAIL"
+			seenFail = true
+		default:
+			ambiguous = true
 		}
 	}
-	return verdict
+	if seenFail {
+		return "FAIL"
+	}
+	if seenPass && !ambiguous {
+		return "PASS"
+	}
+	return ""
 }
 
 func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []string) error {
@@ -457,6 +464,10 @@ func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []stri
 		ParticipantsRaw: strings.Join(missing, ","),
 		Yes:             true,
 	}, o.out, o.out)
+}
+
+func (o driverImplOps) PrecheckFixup(ctx context.Context) error {
+	return runner.PrecheckFixup(ctx, o.withParticipants(o.implementer))
 }
 
 func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
@@ -472,10 +483,77 @@ func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 // write by the orchestrator (NOT an implementer agent), so an implementer cannot
 // short-circuit review (consensus D5).
 func (o driverImplOps) Complete(ctx context.Context) error {
+	return evidence.WithReportWriter(ctx, o.ideaDir, func(_ *evidence.ReportWriter) error { return o.completeWithWriter(ctx) })
+}
+
+func (o driverImplOps) completeWithWriter(ctx context.Context) error {
+	if err := trajectory.RequireResolved(ctx, o.root, o.ideaSlug); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	pin := ""
+	if o.base.Store.Enabled() {
+		cursor, err := driver.LoadCursor(filepath.Join(o.base.Store.Directory(), "driver.json"))
+		if err == nil {
+			pin = cursor.ChecksContractSHA256
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	contract, err := driver.ObserveChecksContract(o.ideaDir, pin)
+	if err != nil {
+		return err
+	} else if contract != "" {
+		if runtime.GOOS == "windows" {
+			return fmt.Errorf("independent evidence completion requires a POSIX execution host; Windows runtime is not supported")
+		}
+		if err := o.requireAcceptedVerification(); err != nil {
+			return err
+		}
+		gate := o.EvidenceCloseGate(o.drafter)
+		if !gate.Allowed {
+			return fmt.Errorf("independent evidence changed before completion: %s", strings.Join(gate.Reasons, "; "))
+		}
+	}
 	path := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
+	}
+	if contract != "" {
+		completed, _, err := evidence.TransitionStatusToComplete(data)
+		if err != nil {
+			return err
+		}
+		report, err := evidence.Load(o.ideaDir)
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(o.root, path)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		if err := verifyValidationEvidence(data, rel, report); err != nil {
+			return err
+		}
+		beforeRest, _, err := splitValidationEvidence(data)
+		if err != nil {
+			return err
+		}
+		if report.ExtraDigests[rel] != sha256Hex(string(beforeRest)) {
+			return fmt.Errorf("implementation changed before completion write")
+		}
+		afterRest, _, err := splitValidationEvidence(completed)
+		if err != nil {
+			return err
+		}
+		if reasons := evidence.VerifyCompletionTransition(report, rel, report.ExtraDigests[rel], afterRest, o.drafter); len(reasons) > 0 {
+			return fmt.Errorf("completion status was not independently authorized: %s", strings.Join(reasons, "; "))
+		}
+		return writeVerificationBytes(path, completed)
 	}
 	lines := strings.Split(string(data), "\n")
 	inFrontmatter := false
@@ -501,11 +579,7 @@ func (o driverImplOps) Complete(ctx context.Context) error {
 	if !replaced {
 		return fmt.Errorf("%s has no frontmatter status field", path)
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, path)
+	return writeVerificationBytes(path, []byte(strings.Join(lines, "\n")))
 }
 
 func roundDirLabel(n int) string { return fmt.Sprintf("round-%02d", n) }
