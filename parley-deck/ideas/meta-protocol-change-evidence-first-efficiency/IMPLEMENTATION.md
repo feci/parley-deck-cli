@@ -6,7 +6,7 @@ started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
 checkpoint-base-commit: 29361d6fdadd511330c081b9b840a93f250ef52c
 validation-source-manifest: c9b436f7d8bbd0f3fe16b818f6f48e752a7a434e8a1cc670d22e2df8579cd18f
-validation-status: failed
+validation-status: passed
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -28,15 +28,14 @@ No treatment experiment has started. The original twelve tasks and separate
 packet experiment remain required; feasibility and enforced spend/grading policy
 must be resolved before freeze and calls.
 
-Five candidate Go files are integrated in this working tree: Claude R1/R2 recovery
-lock/diagnostic changes and Zcode's corrected usage parser/tests. Their430-file
-source manifest matches the isolated native combined validation exactly. Build
-and focused controls passed. Combined full validation failed after 1548.977s;
-race and vet were not run. All 430 source/module hashes stayed unchanged.
+Five candidate Go files are committed and published: Claude R1/R2 recovery
+lock/diagnostic changes and Zcode's corrected usage parser/tests. The unchanged 430-file Go/module source passed full validation (554.398s), six-package race (659.592s) and vet (1.247s). All source hashes remained unchanged. Compilation, cache, executables and test temporary roots were native. These three checks used no diagnostic overlay, test wrapper, assertion change or enlarged deadline.
 Full current-source independent acceptance and the whole audit remain incomplete.
-R1 supporting review retains MINOR/NIT items. Zcode appended its own exact
-test digest and narrower causal disposition on a successful targeted retry.
-The prior correction attempt failed without output; its cause stays unknown.
+Earlier full-suite failures remain preserved. Go 1.27 GOTMPDIR fixture inheritance
+was reproduced and corrected in the validation setup; later closure, toolchain
+and process failures retain their actual evidence and causal limits. Zcode
+appended its own corrected digest and narrower causal disposition, preserving
+its original review. Supporting MINOR/NIT findings remain open.
 
 Kimi's recovery implementation attempt hit provider quota and produced no code or
 artifact; approximate reset01:51 CEST September16. Claude's telemetry review and
@@ -4233,3 +4232,8 @@ Zcode owner correction claim before launch: new `parley-deck/inbox/zcode-1-to-co
 ### Integration working-tree claim — 2026-09-15T21:48:40.451044+00:00
 
 Codex sequentially imports the retained Claude R1/R2 and corrected Zcode telemetry candidates into the existing integration working tree: `internal/trajectory/reservation_recovery.go`, `internal/trajectory/reservation_recovery_validation_test.go`, `internal/app/agents_exec_test.go`, `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`. Exact hashes are the same430Go/module manifest already under combined native validation. This is working-tree integration, not current-source Phase6 acceptance or completion. Source review retains all MINOR/NIT items and its unresolved owner-corrected hash attribution; Claude/Kimi review availability remains limited. Keep historical protocol, kickoff, FINALs, rounds/signatures and HTML unchanged. Do not publish a success claim unless combined commands finish successfully; failures remain evidence.
+
+
+## Verifier-refusal candidate allocation — September 16, 2026
+
+Kimi's terminal provider-quota attempt produced no source changes or artifact. The facilitator releases that unimplemented candidate allocation and assigns the same missing implementation slice to zcode-1, without changing Kimi's quorum or review obligations. Separate branch feature/meta-protocol-change-evidence-first-efficiency/zcode-verifier-recovery-20260916 at /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout starts from published candidate commit 6962f2af9b6e46548588c5152285e6808f3d6f7f. Exact owned files: internal/trajectory/verification.go, internal/trajectory/verification_recovery.go, internal/trajectory/verification_recovery_test.go, internal/runner/verification_refused_recovery_test.go, parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/zcode-1-verifier-refusal-recovery-candidate-20260916.md. Current integrated validation source is immutable during this candidate. No other implementation agent is running. Zcode implements a new explicit recovery operation; no treatment experiment, signature, automatic retry, refund, or global configuration change is authorized by this allocation.
