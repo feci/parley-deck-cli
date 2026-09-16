@@ -354,6 +354,16 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 	if !gitTreeClean(d.cfg.Root) {
 		return ActionEscalated, c, fmt.Errorf("git working tree is dirty; refusing to run a fix-up")
 	}
+	// N1 MAJOR-1: admit the legitimate fix-up cycle binding (charge-free) BEFORE
+	// the protocol precheck, so a free refusal receipt cannot poison a fresh,
+	// never-bound fix-up scope's first binding. Existing unmigrated history still
+	// refuses here — admission is hoisted, not forgiven: no receipt is ignored,
+	// nothing is auto-migrated, and neither the cap nor any classification
+	// changes. reserveFixupCycle below re-ensures the same binding and charges it.
+	admitCtx := budget.WithCycleObserver(ctx, &trajectory.Observer{Root: d.cfg.Root})
+	if _, err := budget.EnsureCycleBinding(admitCtx, d.cfg.Root, d.cfg.IdeaSlug, budget.Fixup, d.cfg.MaxFixupCycles, charged, d.cfg.RunDir, d.cfg.IdeaDir); err != nil {
+		return ActionEscalated, c, fmt.Errorf("fix-up accounting: %w", err)
+	}
 	if err := d.cfg.Impl.PrecheckFixup(ctx); err != nil {
 		return ActionEscalated, c, fmt.Errorf("fix-up protocol precheck: %w", err)
 	}

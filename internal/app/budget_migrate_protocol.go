@@ -15,6 +15,13 @@ type protocolMigrationOptions struct {
 	Total, Steps, Cycles                                           int
 	Wall                                                           time.Duration
 	Writers, Yes                                                   bool
+	// Declared and DeclaredRuns are passed through verbatim. The accounting
+	// package binds each entry to an actual registration and stat class, or to
+	// an actual run directory's exact recursive file set, and refuses an
+	// available, undeclared, unregistered or otherwise unreadable worktree and a
+	// stale, divergent or actually identifiable run.
+	Declared     []string
+	DeclaredRuns []string
 }
 
 func runBudgetMigrateProtocol(ctx context.Context, verb string, o protocolMigrationOptions, visited map[string]bool, stdout, stderr io.Writer, attended bool) int {
@@ -23,7 +30,9 @@ func runBudgetMigrateProtocol(ctx context.Context, verb string, o protocolMigrat
 		fmt.Fprintln(stderr, "protocol migration requires --idea and --kind step, fixup or cross-review")
 		return 2
 	}
-	allowed := map[string]bool{"dir": true, "idea": true, "idea-path": true, "kind": true}
+	// Both declarations are accepted on the read-only preview and on the
+	// attended apply that must replay them exactly, and nowhere else.
+	allowed := map[string]bool{"dir": true, "idea": true, "idea-path": true, "kind": true, "declare-unavailable-worktree": true, "declare-unscoped-run": true}
 	if verb == "apply" {
 		for _, name := range []string{"expected-history-sha256", "decision-id", "reason", "started-at", "total-actions", "writers-stopped", "yes"} {
 			allowed[name] = true
@@ -43,7 +52,7 @@ func runBudgetMigrateProtocol(ctx context.Context, verb string, o protocolMigrat
 	var result any
 	var err error
 	if verb == "inspect" {
-		result, err = budget.InspectProtocolMigration(ctx, o.Root, o.Idea, kind, o.IdeaPath)
+		result, err = budget.InspectProtocolMigrationDeclarations(ctx, o.Root, o.Idea, kind, o.IdeaPath, o.Declared, o.DeclaredRuns)
 	} else {
 		if !attended {
 			fmt.Fprintln(stderr, "protocol migration requires an attended terminal and the operator's explicit accounting decision")
@@ -61,7 +70,7 @@ func runBudgetMigrateProtocol(ctx context.Context, verb string, o protocolMigrat
 			fmt.Fprintln(stderr, "protocol migration apply requires --total-actions, --started-at, --expected-history-sha256, --decision-id, --reason, --writers-stopped, --yes and explicit ceilings (--max-steps/--wall-clock or --max-cycles)")
 			return 2
 		}
-		result, err = budget.MigrateProtocolBudget(ctx, o.Root, o.Idea, kind, budget.ProtocolMigrationRequest{ExpectedHistorySHA256: o.History, DecisionID: o.Decision, Reason: o.Reason, IdeaPath: o.IdeaPath, StartedAt: at, TotalActions: o.Total, Maximum: maximum, WallClockNS: int64(wall), WritersStopped: o.Writers})
+		result, err = budget.MigrateProtocolBudget(ctx, o.Root, o.Idea, kind, budget.ProtocolMigrationRequest{ExpectedHistorySHA256: o.History, DecisionID: o.Decision, Reason: o.Reason, IdeaPath: o.IdeaPath, StartedAt: at, TotalActions: o.Total, Maximum: maximum, WallClockNS: int64(wall), WritersStopped: o.Writers, DeclaredUnavailable: o.Declared, DeclaredUnscopedRuns: o.DeclaredRuns})
 	}
 	if err != nil {
 		fmt.Fprintf(stderr, "budget migrate %s %s: %v\n", o.Kind, verb, err)

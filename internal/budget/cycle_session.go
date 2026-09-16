@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"sync"
 )
@@ -119,4 +120,53 @@ func ChargeCycle(ctx context.Context, kind Kind) (int, error) {
 	}
 	s.ordinal, s.receipt, s.err = s.binding.reserveWithReceipt(ctx, "cycle:"+hex.EncodeToString(id[:]))
 	return s.ordinal, s.err
+}
+
+// PreflightCycleCharge is a read-only, non-mutating preflight (MINOR-1 known
+// cross-resource exhaustion): it reports whether the cycle charge this context
+// would attempt at the given binding is already KNOWN to refuse from
+// NEW-RESERVATION exhaustion, so a caller about to spend a DIFFERENT budget
+// first (a driver step) can refuse for free. It charges nothing, persists
+// nothing, takes no resource guard and never refunds; reserveWithReceipt under
+// the guard remains the only charging authority.
+//
+// It mirrors ChargeCycle's reuse semantics rather than a naive
+// current-count-only check: a live session of this kind that already charged
+// successfully for this logical action stays reusable at the cap (nil), and a
+// session with a cached refusal replays it. Only a charge that would be a NEW
+// reservation compares the binding's current count with its frozen maximum
+// (a zero maximum forbids the operation, exactly as cycleLimits denies it).
+//
+// The coverage is deliberately no wider than that. A cached SUCCESSFUL session
+// is replayed as nil WITHOUT ChargeCycle's attempted-branch revalidation
+// (checkProtocolMigrationCharges, receipt.check, the lost-reserved-charge
+// guard), and a deferred refusal under cycleRefusalKey — which ChargeCycle
+// checks first — is not consulted (unreachable from the current call sites).
+// A refusal that only materializes at the real ChargeCycle stays spent: a
+// different budget charged between this preflight and the refusal is not
+// refunded. Concurrent exhaustion after this preflight still refuses at
+// ChargeCycle, and an actual failed attempt stays spent. A nil binding
+// charges nothing, so there is nothing to refuse.
+func PreflightCycleCharge(ctx context.Context, b *CycleBinding) error {
+	if b == nil {
+		return nil
+	}
+	if s, ok := ctx.Value(cycleSessionKey{b.Policy.Kind}).(*cycleSession); ok {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if !s.active {
+			return errors.New("cycle session has ended")
+		}
+		if s.attempted {
+			return s.err
+		}
+	}
+	state, err := b.Store.Inspect(ctx)
+	if err != nil {
+		return err
+	}
+	if b.Count(state) >= b.Policy.Maximum {
+		return fmt.Errorf("%w: %s protocol cycles", ErrLimit, b.Policy.Kind)
+	}
+	return nil
 }

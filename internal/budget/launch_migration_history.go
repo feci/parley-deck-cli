@@ -40,6 +40,12 @@ type HistoricalLaunch struct {
 	ObservationBasis string    `json:"observation_basis"`
 }
 
+// UnavailableRoots, UnscopedRuns and HistoryCoverage are present only when a
+// request-scoped operator declaration admitted an unreadable registration or an
+// unidentifiable run. All three are omitempty, so an undeclared inventory
+// marshals exactly as before and keeps its digest; an already-applied import
+// therefore still reads in a new binary. The reverse does not hold: an older
+// binary rejects these fields as unknown once they are non-empty.
 type LaunchMigrationInventory struct {
 	Version             int                `json:"version"`
 	Scope               string             `json:"scope"`
@@ -50,7 +56,99 @@ type LaunchMigrationInventory struct {
 	Earliest            *time.Time         `json:"earliest"`
 	LegacyStartFloor    int                `json:"legacy_start_floor"`
 	HasCanonicalHistory bool               `json:"has_canonical_history"`
+	UnavailableRoots    []UnavailableRoot  `json:"unavailable_roots,omitempty"`
+	UnscopedRuns        []UnscopedRun      `json:"unscoped_runs,omitempty"`
+	HistoryCoverage     string             `json:"history_coverage,omitempty"`
 	HistorySHA256       string             `json:"history_sha256"`
+}
+
+// DeclaredIncomplete marks an inventory whose enumeration is knowingly partial.
+const DeclaredIncomplete = "declared-incomplete"
+
+// Declared run directories live under this canonical relative prefix.
+const unscopedRunPrefix = "parley-deck/runs/"
+
+// UnscopedRun records one historical run directory the operator declared as
+// holding no recoverable idea identity, for a single request.
+//
+// It is the opposite retention rule from UnavailableRoot, and deliberately so:
+// an unavailable worktree is unreadable, so it can supply no source at all,
+// while an unscoped run is readable and only its identity is unknown. Its bytes
+// therefore stay in Sources — they are evidence of themselves, and the existing
+// re-read-and-compare covers them — and it is excluded from scope-counted
+// evidence alone.
+//
+// Copies counts copies of one identical file set and is never an action count.
+// History is always unknown and is never zero. Earliest records the run's own
+// earliest event time because it is useful to an operator; it is deliberately
+// not folded into the inventory's Earliest, which is this idea's accounting
+// epoch authority and must not be derived from a run of unknown identity.
+type UnscopedRun struct {
+	Path     string     `json:"path"`
+	SHA256   string     `json:"sha256"`
+	Roots    []string   `json:"roots"`
+	Copies   int        `json:"copies"`
+	History  string     `json:"history"`
+	Earliest *time.Time `json:"earliest"`
+}
+
+type unscopedRunDeclaration struct{ path, sha256 string }
+
+// Canonical declaration form: "<relative-run-directory>=<64-hex manifest
+// digest>", sorted and deduplicated, so an unsorted, duplicated, nil or
+// empty-slice spelling of the same decision is one exact replay.
+func normalizeDeclaredUnscopedRuns(declared []string) ([]string, error) {
+	parsed, err := parseDeclaredUnscopedRuns(declared)
+	if err != nil || len(parsed) == 0 {
+		return nil, err
+	}
+	canonical := make([]string, 0, len(parsed))
+	for _, d := range parsed {
+		canonical = append(canonical, d.path+"="+d.sha256)
+	}
+	return canonical, nil
+}
+
+func parseDeclaredUnscopedRuns(declared []string) ([]unscopedRunDeclaration, error) {
+	if len(declared) == 0 {
+		return nil, nil
+	}
+	if len(declared) > maxMigrationItems {
+		return nil, errors.New("too many declared-unscoped historical runs")
+	}
+	seen := map[string]string{}
+	parsed := make([]unscopedRunDeclaration, 0, len(declared))
+	for _, value := range declared {
+		path, digest, split := strings.Cut(value, "=")
+		if !split || !validUnscopedRunPath(path) || !validCycleDecision("run", "run", digest) {
+			return nil, fmt.Errorf("declared-unscoped run must be %s<name>=<64-hex manifest digest>: %q", unscopedRunPrefix, value)
+		}
+		if old, exists := seen[path]; exists {
+			// Two digests for one path are two different claims about the same
+			// bytes. Neither can be chosen here.
+			if old != digest {
+				return nil, fmt.Errorf("declared-unscoped run carries two different manifest digests: %s", path)
+			}
+			continue
+		}
+		seen[path] = digest
+		parsed = append(parsed, unscopedRunDeclaration{path, digest})
+	}
+	sort.Slice(parsed, func(a, b int) bool { return parsed[a].path < parsed[b].path })
+	return parsed, nil
+}
+
+// A declared path names exactly one run directory inside the deck, canonically
+// and relatively. No normalization, traversal or nesting widens the match.
+func validUnscopedRunPath(path string) bool {
+	if path == "" || filepath.IsAbs(path) || strings.ContainsAny(path, "\\\x00\r\n") {
+		return false
+	}
+	if filepath.ToSlash(filepath.Clean(path)) != path || !strings.HasPrefix(path, unscopedRunPrefix) {
+		return false
+	}
+	name := strings.TrimPrefix(path, unscopedRunPrefix)
+	return name != "" && name != "." && name != ".." && !strings.Contains(name, "/")
 }
 
 func migrationDigest(v any) string {
@@ -69,6 +167,35 @@ type migrationScanner struct {
 	seen   map[string]HistoricalLaunch
 	starts map[string]time.Time
 	ctx    context.Context
+	// declaredRuns maps a canonical relative run directory to the manifest
+	// digest one request declared for it; unscopedRows accumulates the retained
+	// row per declared directory across the visible copies that hold it.
+	declaredRuns map[string]string
+	unscopedRows map[string]*UnscopedRun
+}
+
+// recordUnscopedRun merges one visible copy into its retained row. Copies is a
+// count of copies of one identical file set, never a count of actions.
+func (s *migrationScanner) recordUnscopedRun(path, digest, root string, earliest *time.Time) error {
+	row := s.unscopedRows[path]
+	if row == nil {
+		if len(s.unscopedRows) >= maxMigrationItems {
+			return errors.New("too many declared-unscoped historical runs")
+		}
+		row = &UnscopedRun{Path: path, SHA256: digest, History: UnknownHistory}
+		s.unscopedRows[path] = row
+	}
+	for _, old := range row.Roots {
+		if old == root {
+			return nil
+		}
+	}
+	row.Roots = append(row.Roots, root)
+	row.Copies = len(row.Roots)
+	if earliest != nil && (row.Earliest == nil || earliest.Before(*row.Earliest)) {
+		row.Earliest = earliest
+	}
+	return nil
 }
 
 func migrationDirectory(root, relative string) error {
@@ -133,12 +260,42 @@ func (s *migrationScanner) earlier(at time.Time) error {
 // InspectLaunchMigration has no mutation path. Complete metadata for matching
 // invocations is mandatory; absence of a terminal is not proof of a dead process.
 func InspectLaunchMigration(ctx context.Context, root, idea string) (LaunchMigrationInventory, error) {
-	_, scope, roots, err := launchScope(ctx, root, idea, true)
+	return InspectLaunchMigrationDeclared(ctx, root, idea, nil)
+}
+
+// InspectLaunchMigrationDeclared admits the registrations named in one
+// request-scoped declaration as explicitly unknown history. Declared paths are
+// never walked and never enter Roots or Sources, so they contribute no source,
+// launch, floor or count: the inventory states that its coverage is incomplete
+// instead of reading an unreadable worktree as empty.
+func InspectLaunchMigrationDeclared(ctx context.Context, root, idea string, declared []string) (LaunchMigrationInventory, error) {
+	return inspectLaunchMigrationDeclarations(ctx, root, idea, declared, nil)
+}
+
+// inspectLaunchMigrationDeclarations carries both request-scoped declarations
+// into one inspection. With both nil it is exactly InspectLaunchMigration, and
+// an undeclared inventory keeps its exact bytes and digest. A declared
+// unavailable root supplies no source, launch, floor or count; a declared
+// unscoped run keeps its readable bytes as sources and loses only its place in
+// identity-scoped counting. Both state that the coverage is incomplete rather
+// than reading an unknown as an absence.
+func inspectLaunchMigrationDeclarations(ctx context.Context, root, idea string, declared, unscopedRuns []string) (LaunchMigrationInventory, error) {
+	_, scope, roots, unavailable, err := launchScopeDeclared(ctx, root, idea, true, declared)
+	if err != nil {
+		return LaunchMigrationInventory{}, err
+	}
+	runs, err := parseDeclaredUnscopedRuns(unscopedRuns)
 	if err != nil {
 		return LaunchMigrationInventory{}, err
 	}
 	sort.Strings(roots)
-	s := migrationScanner{i: LaunchMigrationInventory{Version: 1, Scope: scope, Idea: idea, Roots: roots, Sources: []MigrationSource{}, Launches: []HistoricalLaunch{}}, seen: map[string]HistoricalLaunch{}, starts: map[string]time.Time{}, ctx: ctx}
+	s := migrationScanner{i: LaunchMigrationInventory{Version: 1, Scope: scope, Idea: idea, Roots: roots, Sources: []MigrationSource{}, Launches: []HistoricalLaunch{}}, seen: map[string]HistoricalLaunch{}, starts: map[string]time.Time{}, ctx: ctx, declaredRuns: map[string]string{}, unscopedRows: map[string]*UnscopedRun{}}
+	for _, d := range runs {
+		s.declaredRuns[d.path] = d.sha256
+	}
+	if len(unavailable) > 0 {
+		s.i.UnavailableRoots = unavailable
+	}
 	for _, origin := range roots {
 		paths := []string{".parley-runtime/invocations", "parley-deck/runs"}
 		if idea != "" {
@@ -160,6 +317,25 @@ func InspectLaunchMigration(ctx context.Context, root, idea string) (LaunchMigra
 				return s.i, err
 			}
 		}
+	}
+	// A declaration binds a run this inspection actually saw. A path present in
+	// no visible root is a stale declaration, not an unknown-identity row.
+	for _, d := range runs {
+		if s.unscopedRows[d.path] == nil {
+			return s.i, fmt.Errorf("declared-unscoped run is not present in any visible root: %s", d.path)
+		}
+	}
+	if len(s.unscopedRows) > 0 {
+		rows := make([]UnscopedRun, 0, len(s.unscopedRows))
+		for _, row := range s.unscopedRows {
+			sort.Strings(row.Roots)
+			rows = append(rows, *row)
+		}
+		sort.Slice(rows, func(a, b int) bool { return rows[a].Path < rows[b].Path })
+		s.i.UnscopedRuns = rows
+	}
+	if len(s.i.UnavailableRoots) > 0 || len(s.i.UnscopedRuns) > 0 {
+		s.i.HistoryCoverage = DeclaredIncomplete
 	}
 	for id := range s.starts {
 		if launch, exists := s.seen[id]; exists && launch.Classification == "retained-pre-start-refusal" {
@@ -450,7 +626,21 @@ func (s *migrationScanner) runs(root, idea string) error {
 		return err
 	}
 	for _, entry := range entries {
-		rel := "parley-deck/runs/" + entry.Name() + "/"
+		rel := unscopedRunPrefix + entry.Name() + "/"
+		// A declaration binds this directory's exact recursive file set in every
+		// visible copy, so an added, deleted or changed file refuses here, before
+		// any of it is read as evidence. Only declared directories are hashed.
+		declaredPath := unscopedRunPrefix + entry.Name()
+		declaredDigest, declared := s.declaredRuns[declaredPath]
+		if declared {
+			digest, err := RunDirectoryManifestDigest(filepath.Join(base, entry.Name()))
+			if err != nil {
+				return err
+			}
+			if digest != declaredDigest {
+				return fmt.Errorf("declared-unscoped run differs at %s: %s", root, declaredPath)
+			}
+		}
 		raw, err := s.file(root, rel+"events.jsonl", 16<<20)
 		if os.IsNotExist(err) {
 			if _, e := os.Lstat(filepath.Join(base, entry.Name(), "driver.json")); e == nil || !os.IsNotExist(e) {
@@ -508,7 +698,11 @@ func (s *migrationScanner) runs(root, idea string) error {
 				return errors.New("historical event has no type")
 			}
 			for _, name := range []string{"idea", "idea_slug"} {
-				if err := bind(e.Data[name], name == "idea" && e.Type == "run.created"); err != nil {
+				// An undeclared run keeps this refusal verbatim and at its exact
+				// site. A declared one is only exempt from the missing-key case:
+				// a malformed or conflicting identity still refuses below,
+				// because that is evidence of identity, not the absence of it.
+				if err := bind(e.Data[name], !declared && name == "idea" && e.Type == "run.created"); err != nil {
 					return err
 				}
 			}
@@ -519,6 +713,31 @@ func (s *migrationScanner) runs(root, idea string) error {
 		}
 		if err := scan.Err(); err != nil {
 			return err
+		}
+		if declared {
+			// Only an actually unrecoverable identity is declarable. A recovered
+			// name refuses, exactly as a readable declared-unavailable worktree
+			// does: a declaration admits an unknown, it never overrides evidence.
+			if identity != "" {
+				return fmt.Errorf("declared-unscoped run has a recoverable idea identity: %s is %s", declaredPath, identity)
+			}
+			var earliest *time.Time
+			for _, e := range events {
+				if e.Time.IsZero() || e.Time.After(time.Now().UTC()) {
+					return errors.New("historical accounting timestamp is missing or in the future")
+				}
+				at := e.Time.UTC()
+				if earliest == nil || at.Before(*earliest) {
+					earliest = &at
+				}
+			}
+			if err := s.recordUnscopedRun(declaredPath, declaredDigest, root, earliest); err != nil {
+				return err
+			}
+			// Nothing below this point runs for a declared run: no epoch is
+			// contributed, no agent.started is harvested, no legacy start floor
+			// is bumped, and no zero count is asserted anywhere for it.
+			continue
 		}
 		if identity == "" && (len(events) > 0 || len(cursor) > 0) {
 			return errors.New("historical run needs an explicit recoverable idea identity")

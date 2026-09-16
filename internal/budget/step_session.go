@@ -118,6 +118,51 @@ func ChargeStep(ctx context.Context) error {
 	return s.err
 }
 
+// PreflightStepCharge is a read-only, non-mutating preflight (MINOR-1 known
+// cross-resource exhaustion): it reports whether the step charge this context
+// would attempt is already KNOWN to refuse from NEW-RESERVATION exhaustion,
+// so a caller about to spend a DIFFERENT budget first (a protocol cycle) can
+// refuse for free instead of spending and only then hitting the step
+// authority. It charges nothing, persists nothing and never refunds.
+//
+// It mirrors ChargeStep's authority and reuse semantics rather than a naive
+// current-count-only check: a live session that already charged successfully
+// for this logical action stays reusable at the inclusive cap (nil), and a
+// session with a cached refusal replays it. Only a context whose charge would
+// be a NEW reservation probes the binding's own non-mutating Check (the same
+// validation OpenStepSession runs before opening).
+//
+// The coverage is deliberately no wider than that. A cached SUCCESSFUL session
+// is replayed as nil WITHOUT ChargeStep's attempted-branch revalidation
+// (Current(), the runtime inspect, receipt.check, checkTime), so a session
+// whose lifetime wall clock has since expired or whose accounting state has
+// since degraded still passes this preflight and refuses only at the real
+// ChargeStep; that LATE refusal stays spent — a different budget charged
+// between this preflight and the refusal is not refunded. Widening the
+// attempted-session branch was rejected: it risks false refusals on a session
+// the charge path would in fact honour. With neither a session nor a binding
+// there is nothing to know and the charge path stays the authority:
+// concurrent exhaustion after this preflight still refuses at
+// OpenStepSession/ChargeStep, and an actual failed attempt stays spent.
+func PreflightStepCharge(ctx context.Context, b *StepBinding) error {
+	if s, ok := ctx.Value(stepSessionKey{}).(*stepSession); ok {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if !s.active {
+			return errors.New("driver step session has ended")
+		}
+		if s.attempted {
+			return s.err
+		}
+		b = s.binding
+	}
+	if b == nil {
+		return nil
+	}
+	_, err := b.Check(ctx)
+	return err
+}
+
 // JoinStepSession is used by manual protocol runners. It loads an existing
 // binding; it does not invent a policy or overwrite runtime/operator limits.
 func JoinStepSession(ctx context.Context, root, idea string) (context.Context, func(), error) {

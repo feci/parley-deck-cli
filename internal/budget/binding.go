@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -53,12 +54,83 @@ type LaunchBinding struct {
 	Store  Store
 }
 
+// Declarable stat classes for a registered worktree whose working directory is
+// gone. Any other stat error stays a hard refusal: an unreadable path is not an
+// established absence, so it can never be declared away.
+const (
+	UnavailableMissing      = "stat-enoent"
+	UnavailableNotDirectory = "stat-not-directory"
+	// UnknownHistory is the only admissible history value for a declared row.
+	// It is never a count and never zero.
+	UnknownHistory = "unknown"
+)
+
+// UnavailableRoot records one registered worktree the operator declared
+// unavailable for a single request. It is request-scoped: it is an argument to
+// one decision, never repository state, and no ordinary bootstrap reads one.
+type UnavailableRoot struct {
+	Path        string `json:"path"`
+	Observation string `json:"observation"`
+	History     string `json:"history"`
+}
+
+// Canonical declaration form: absolute verbatim porcelain paths, sorted and
+// deduplicated, so an exact replay cannot split on ordering, repetition or the
+// difference between a nil and an empty list.
+func normalizeDeclaredUnavailable(declared []string) ([]string, error) {
+	if len(declared) == 0 {
+		return nil, nil
+	}
+	if len(declared) > maxWorktreeRegistration {
+		return nil, errors.New("too many declared-unavailable worktrees")
+	}
+	seen := map[string]bool{}
+	canonical := make([]string, 0, len(declared))
+	for _, path := range declared {
+		if path == "" || !filepath.IsAbs(path) || strings.ContainsAny(path, "\x00\n\r") {
+			return nil, fmt.Errorf("declared-unavailable worktree must be a verbatim absolute registered path: %q", path)
+		}
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		canonical = append(canonical, path)
+	}
+	sort.Strings(canonical)
+	return canonical, nil
+}
+
+// Declared paths are compared verbatim against the registered porcelain value.
+// No normalization, symlink resolution or case folding widens the match.
+func isDeclaredUnavailable(declared []string, worktree string) bool {
+	for _, path := range declared {
+		if path == worktree {
+			return true
+		}
+	}
+	return false
+}
+
 // Scope location is independent of run IDs and linked-worktree paths. A deck
 // nested in a repository retains its prefix, so unrelated decks do not collide.
 // Non-Git roots use local runtime storage and do not claim cross-root sharing.
 func launchScope(ctx context.Context, root, idea string, inspectHistory bool) (dir, scope string, roots []string, err error) {
+	dir, scope, roots, _, err = launchScopeDeclared(ctx, root, idea, inspectHistory, nil)
+	return
+}
+
+// launchScopeDeclared is launchScope plus one request-scoped operator
+// declaration. With a nil declaration it is exactly launchScope, which is what
+// every ordinary Ensure/Configure caller passes: unavailable history stays a
+// refusal for them. A declared path is retained as an explicitly unknown row
+// and is excluded from roots, so it contributes no evidence, floor or count.
+func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory bool, declared []string) (dir, scope string, roots []string, missing []UnavailableRoot, err error) {
 	if idea == "." || idea == ".." || strings.ContainsAny(idea, "/\\\x00\n\r") {
-		return "", "", nil, errors.New("invalid launch budget idea")
+		return "", "", nil, nil, errors.New("invalid launch budget idea")
+	}
+	declared, err = normalizeDeclaredUnavailable(declared)
+	if err != nil {
+		return
 	}
 	root, err = filepath.Abs(root)
 	if err != nil {
@@ -72,6 +144,12 @@ func launchScope(ctx context.Context, root, idea string, inspectHistory bool) (d
 	base := filepath.Join(root, ".parley-runtime", "launch-budgets")
 	prefix := ""
 	roots = []string{root}
+	// A declaration is only meaningful against enumerated Git registrations. It
+	// is refused, not silently ignored, anywhere it could not be checked.
+	if len(declared) > 0 && (!inspectHistory || gitErr != nil) {
+		err = errors.New("declared-unavailable worktrees require enumerated Git worktree history")
+		return
+	}
 	if gitErr == nil {
 		gitDir := strings.TrimSpace(string(common))
 		gitDir, err = filepath.EvalSymlinks(gitDir)
@@ -92,13 +170,37 @@ func launchScope(ctx context.Context, root, idea string, inspectHistory bool) (d
 				return
 			}
 			roots = nil
+			registered := map[string]bool{}
 			for _, field := range strings.Split(string(out), "\x00") {
 				if strings.HasPrefix(field, "worktree ") {
 					worktree := strings.TrimPrefix(field, "worktree ")
+					registered[worktree] = true
 					// Missing/unavailable worktrees are unknown history. A nested deck
 					// that does not exist in an accessible worktree has no local files
 					// to migrate; it still inherits the common policy if later created.
-					if info, e := os.Stat(worktree); e != nil || !info.IsDir() {
+					info, e := os.Stat(worktree)
+					observation := ""
+					if e == nil && !info.IsDir() {
+						observation = UnavailableNotDirectory
+					} else if os.IsNotExist(e) {
+						observation = UnavailableMissing
+					}
+					if isDeclaredUnavailable(declared, worktree) {
+						// Bind the actual stat class, not the operator's word for it.
+						// Non-ENOENT errors are never declarable, and a path that is
+						// readable again refuses rather than migrating over evidence.
+						if observation == "" {
+							if e != nil {
+								err = fmt.Errorf("historical worktree is unavailable: %s", worktree)
+							} else {
+								err = fmt.Errorf("declared-unavailable worktree is available again: %s", worktree)
+							}
+							return
+						}
+						missing = append(missing, UnavailableRoot{worktree, observation, UnknownHistory})
+						continue
+					}
+					if e != nil || !info.IsDir() {
 						err = fmt.Errorf("historical worktree is unavailable: %s", worktree)
 						return
 					}
@@ -112,6 +214,15 @@ func launchScope(ctx context.Context, root, idea string, inspectHistory bool) (d
 					roots = append(roots, candidate)
 				}
 			}
+			// A declaration binds a retained registration. A path Git no longer
+			// registers is a stale registry, not an unknown history row.
+			for _, path := range declared {
+				if !registered[path] {
+					err = fmt.Errorf("declared-unavailable worktree is not a retained registration: %s", path)
+					return
+				}
+			}
+			sort.Slice(missing, func(a, b int) bool { return missing[a].Path < missing[b].Path })
 		}
 	} else {
 		if ctx.Err() != nil {

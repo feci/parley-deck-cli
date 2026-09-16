@@ -735,9 +735,32 @@ participant. Unknown phases, unobserved handoffs and pre-start launch refusals
 remain visible for reconciliation. A launch refusal does not prove that no
 protocol charge preceded it. Prose and participant headings do not supply totals.
 
-After stopping all writers and reconciling the complete history, an attended
-operator supplies an explicit **total**, including observed, failed, partial and
-unobserved historical protocol attempts:
+A read-only preview normally refuses unavailable worktrees or historical runs
+whose idea identity cannot be established. For protocol accounting only, an
+explicit operator decision can retain those sources as unknown coverage:
+
+- Repeat `--declare-unavailable-worktree PATH` for each registered worktree whose
+  history is unavailable. The path must match a real Git registration and an
+  unavailable stat class; an available or unregistered path is refused.
+- Repeat `--declare-unscoped-run parley-deck/runs/NAME=SHA256` for a readable run
+  with **absent** idea identity. The digest binds the complete bounded recursive
+  file manifest, not only its events file. Every visible copy must agree. An
+  identifiable, conflicting, malformed, changed or divergent run is refused.
+
+Supply the exact same declarations on inspect and the later attended apply.
+The preview reports incomplete coverage and a lower bound based only on surviving
+visible/scoped evidence. Readable unknown sources stay in the inventory; neither
+flag asserts zero activity, assigns an idea to old evidence, selects a total, or
+changes repository-wide bootstrap policy. Ordinary callers still refuse.
+The package-level `InspectRunIdentities` diagnostic can enumerate exact manifest
+values without granting authority; it withholds declarations the strict scan
+would reject and records the reason in `uncertainty`. This diagnostic has no
+separate product CLI command. Its report is not an action count or apply token.
+
+After stopping all writers and reconciling the history, including an explicit
+accounting choice for any declared unknown coverage, an attended operator supplies
+an explicit **total**, including observed, failed, partial and unobserved historical
+protocol attempts:
 
 ```sh
 parley budget migrate apply --kind step --dir DIR --idea IDEA \
@@ -784,7 +807,7 @@ timestamps record the declared accounting epoch, not invented observed child
 starts. Their zero monetary values represent protocol counts only; provider
 prices and unknown costs remain in the independent launch ledger. Import does
 not reconstruct durable semantic operation identities for exactly-once execution.
-Existing active scopes, malformed or unavailable history and lock-origin recovery
+Existing active scopes, malformed or undeclared unavailable history and lock-origin recovery
 require separate reconciliation. Changed inactive imports use the control below.
 The same attendance, stopped-writer, hash-authentication, file-size and
 mixed-version limitations as launch import apply.

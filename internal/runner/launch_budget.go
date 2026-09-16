@@ -61,39 +61,17 @@ type launchBudgetError struct{ cause error }
 func (e *launchBudgetError) Error() string { return fmt.Sprintf("launch budget refused: %v", e.cause) }
 func (e *launchBudgetError) Unwrap() error { return e.cause }
 
+// Non-mutating preflight first (N1): the binding/defaults/monetary and
+// explicit-policy validations only read state, so a launch that is already
+// known to be invalid refuses before any cycle or step reservation. This is
+// NOT an atomic all-budget transaction — concurrent late drift or exhaustion
+// between preflight and charge still refuses at the charge, and an already
+// charged actual failed attempt stays spent. The launch Reserve itself stays
+// after cycle/step admission; no refunds are invented.
 func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff bool) error {
 	policy, enabled := ctx.Value(launchBudgetKey{}).(LaunchBudget)
 	if handoff {
 		return nil
-	}
-	if kind, ok := budget.CycleKindForPhase(l.info.Phase); ok {
-		if _, err := budget.ChargeCycle(ctx, kind); err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			return &launchBudgetError{cause: err}
-		}
-		if kind == budget.Fixup {
-			capture, err := trajectory.Begin(ctx, root, l.info.Idea, l.invocation.Snapshot().Metadata.Agent, l.invocation.ID)
-			if err != nil {
-				return &launchBudgetError{cause: err}
-			}
-			l.trajectory = capture
-		}
-	}
-	stepCtx, finishStep, err := budget.JoinStepSession(ctx, root, l.info.Idea)
-	if err != nil {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		return &launchBudgetError{cause: err}
-	}
-	defer finishStep()
-	if err := budget.ChargeStep(stepCtx); err != nil {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		return &launchBudgetError{cause: err}
 	}
 	bound, err := budget.LoadLaunchBinding(ctx, root, l.info.Idea)
 	if err != nil {
@@ -131,6 +109,52 @@ func (l *launchEvidence) reserveBudget(ctx context.Context, root string, handoff
 		// policy. The persisted binding is authoritative for this launch scope.
 		policy = LaunchBudget{Store: bound.Store, Limits: bound.Policy.Limits(), ReserveMicros: bound.Policy.ReserveMicros}
 		enabled = true
+	}
+	if kind, ok := budget.CycleKindForPhase(l.info.Phase); ok {
+		// MINOR-1: a KNOWN exhausted driver-step budget refuses for free BEFORE
+		// the cycle charge. The preflight only reads known state — it charges,
+		// migrates and refunds nothing; JoinStepSession/ChargeStep below stays
+		// the authority for reuse and for late races, which stay spent.
+		steps, err := budget.LoadStepBinding(ctx, root, l.info.Idea)
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return &launchBudgetError{cause: err}
+		}
+		if err := budget.PreflightStepCharge(ctx, steps); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return &launchBudgetError{cause: err}
+		}
+		if _, err := budget.ChargeCycle(ctx, kind); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return &launchBudgetError{cause: err}
+		}
+		if kind == budget.Fixup {
+			capture, err := trajectory.Begin(ctx, root, l.info.Idea, l.invocation.Snapshot().Metadata.Agent, l.invocation.ID)
+			if err != nil {
+				return &launchBudgetError{cause: err}
+			}
+			l.trajectory = capture
+		}
+	}
+	stepCtx, finishStep, err := budget.JoinStepSession(ctx, root, l.info.Idea)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &launchBudgetError{cause: err}
+	}
+	defer finishStep()
+	if err := budget.ChargeStep(stepCtx); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &launchBudgetError{cause: err}
 	}
 	if !enabled {
 		return nil

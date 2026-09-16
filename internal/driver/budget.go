@@ -42,7 +42,27 @@ func (d *Driver) withStepBudget(ctx context.Context) (context.Context, *Driver, 
 
 type stepRoundRunner struct{ RoundRunner }
 
+// N1: consult the optional read-only precheck BEFORE the step charge (and so
+// also before the nested cycle charge in cycleRoundRunner) so a known
+// invalid-protocol launch refuses for free. Adapters without the seam are
+// unchanged; the real launch still re-renders and may refuse late (spent).
+// N1 MAJOR-1: admit the legitimate cross-review cycle binding (charge-free)
+// BEFORE the precheck, so a free refusal on a fresh scope cannot poison its
+// first binding; existing unmigrated history still refuses at admission.
 func (o stepRoundRunner) RunRound(ctx context.Context, n int) error {
+	if err := admitCrossReviewCycle(ctx, o.RoundRunner, n); err != nil {
+		return err
+	}
+	if err := precheckRoundLaunch(ctx, o.RoundRunner, n); err != nil {
+		return err
+	}
+	// MINOR-1: once the cycle binding is admitted, a KNOWN exhausted
+	// cross-review cycle refuses for free BEFORE the step charge; a refusal
+	// the read-only preflight cannot know (a late race) still surfaces at the
+	// nested ChargeCycle and stays spent.
+	if err := preflightRunnerCycle(ctx, o.RoundRunner, n); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
@@ -52,18 +72,27 @@ func (o stepRoundRunner) RunRound(ctx context.Context, n int) error {
 type stepConsensusOps struct{ ConsensusOps }
 
 func (o stepConsensusOps) Draft(ctx context.Context) error {
+	if err := precheckConsensusDraft(ctx, o.ConsensusOps); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
 	return o.ConsensusOps.Draft(ctx)
 }
 func (o stepConsensusOps) DraftFinal(ctx context.Context) error {
+	if err := precheckConsensusFinal(ctx, o.ConsensusOps); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
 	return o.ConsensusOps.DraftFinal(ctx)
 }
 func (o stepConsensusOps) RequestSignoffs(ctx context.Context, missing []string) error {
+	if err := precheckConsensusSignoffs(ctx, o.ConsensusOps, missing); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
@@ -79,24 +108,36 @@ func (o stepConsensusOps) Reopen(ctx context.Context, reason string) error {
 type stepImplOps struct{ ImplOps }
 
 func (o stepImplOps) Implement(ctx context.Context) error {
+	if err := precheckImplementation(ctx, o.ImplOps); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
 	return o.ImplOps.Implement(ctx)
 }
-func (o stepImplOps) OpenReviewRound(ctx context.Context, n int) error {
+func (o stepImplOps) OpenReviewRound(ctx context.Context, round int) error {
+	if err := precheckReviewLaunch(ctx, o.ImplOps, round); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
-	return o.ImplOps.OpenReviewRound(ctx, n)
+	return o.ImplOps.OpenReviewRound(ctx, round)
 }
-func (o stepImplOps) DraftReviewConsensus(ctx context.Context, n int) error {
+func (o stepImplOps) DraftReviewConsensus(ctx context.Context, round int) error {
+	if err := precheckReviewConsensus(ctx, o.ImplOps, round); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
-	return o.ImplOps.DraftReviewConsensus(ctx, n)
+	return o.ImplOps.DraftReviewConsensus(ctx, round)
 }
 func (o stepImplOps) RequestReviewSignoffs(ctx context.Context, missing []string) error {
+	if err := precheckReviewSignoffs(ctx, o.ImplOps, missing); err != nil {
+		return err
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return err
 	}
@@ -115,6 +156,9 @@ func (o stepImplOps) RunChecks(ctx context.Context) (bool, string) {
 	return o.ImplOps.RunChecks(ctx)
 }
 func (o stepImplOps) GoalCheck(ctx context.Context) (bool, string) {
+	if err := precheckGoalCheck(ctx, o.ImplOps); err != nil {
+		return false, err.Error()
+	}
 	if err := budget.ChargeStep(ctx); err != nil {
 		return false, err.Error()
 	}

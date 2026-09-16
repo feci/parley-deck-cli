@@ -24,6 +24,11 @@ type ProtocolCountEvidence struct {
 	Floor int    `json:"floor"`
 }
 
+// LowerBoundBasis is present only when a declaration admitted unreadable
+// registrations or unidentifiable runs. It distinguishes a floor over a
+// knowingly partial enumeration from the operator's separately decided
+// TotalActions, which this package never infers. Absent means the floor covers
+// every registered worktree and every visible run.
 type ProtocolMigrationInventory struct {
 	Version              int                      `json:"version"`
 	Scope                string                   `json:"scope"`
@@ -33,9 +38,36 @@ type ProtocolMigrationInventory struct {
 	History              LaunchMigrationInventory `json:"history"`
 	Earliest             *time.Time               `json:"earliest"`
 	LowerBound           int                      `json:"lower_bound"`
+	LowerBoundBasis      string                   `json:"lower_bound_basis,omitempty"`
 	Evidence             []ProtocolCountEvidence  `json:"evidence"`
 	UngroupedInvocations []string                 `json:"ungrouped_invocations"`
 	HistorySHA256        string                   `json:"history_sha256"`
+}
+
+// The bases a declared import may claim. Each spelling names one combined
+// reason the enumeration is knowingly partial. SurvivingVisibleFloor keeps its
+// exact value and its exact meaning, so an already-saved declared-unavailable
+// import stays byte-identical; the other two exist only for a declaration kind
+// that could not be expressed before.
+const (
+	SurvivingVisibleFloor = "surviving-visible-worktrees-only"
+	ScopedRunsFloor       = "scoped-run-history-only"
+	SurvivingScopedFloor  = "surviving-visible-worktrees-and-scoped-run-history-only"
+)
+
+// lowerBoundBasis is the single token this inventory's coverage requires. An
+// undeclared inventory has none, and an inventory declaring both kinds may not
+// claim either kind alone.
+func lowerBoundBasis(history LaunchMigrationInventory) string {
+	switch {
+	case len(history.UnavailableRoots) > 0 && len(history.UnscopedRuns) > 0:
+		return SurvivingScopedFloor
+	case len(history.UnavailableRoots) > 0:
+		return SurvivingVisibleFloor
+	case len(history.UnscopedRuns) > 0:
+		return ScopedRunsFloor
+	}
+	return ""
 }
 
 func (i ProtocolMigrationInventory) digest() string {
@@ -69,6 +101,25 @@ func protocolMigrationScope(ctx context.Context, root, idea string, kind Kind) (
 // not an inferred count of all past actions. TotalActions is a separate explicit
 // operator reconciliation. The optional idea path supports nested pipeline ideas.
 func InspectProtocolMigration(ctx context.Context, root, idea string, kind Kind, ideaPath string) (ProtocolMigrationInventory, error) {
+	return InspectProtocolMigrationDeclared(ctx, root, idea, kind, ideaPath, nil)
+}
+
+// InspectProtocolMigrationDeclared carries one request-scoped declaration into
+// the same inspection. Declared registrations are retained as unknown-history
+// rows inside the digest; they add no evidence, so the derived floor is a floor
+// over the surviving visible worktrees alone and says so.
+func InspectProtocolMigrationDeclared(ctx context.Context, root, idea string, kind Kind, ideaPath string, declared []string) (ProtocolMigrationInventory, error) {
+	return InspectProtocolMigrationDeclarations(ctx, root, idea, kind, ideaPath, declared, nil)
+}
+
+// InspectProtocolMigrationDeclarations carries both request-scoped declarations
+// into the same inspection. A declared unavailable registration is retained as
+// an unknown-history row and supplies no source; a declared unscoped run keeps
+// its readable bytes as sources and is excluded from identity-scoped counting
+// alone, adding no evidence row and — just as importantly — no zero. Either
+// declaration makes the derived floor a floor over a knowingly partial
+// enumeration, and the inventory says which partiality it has.
+func InspectProtocolMigrationDeclarations(ctx context.Context, root, idea string, kind Kind, ideaPath string, declared, unscopedRuns []string) (ProtocolMigrationInventory, error) {
 	_, scope, err := protocolMigrationScope(ctx, root, idea, kind)
 	if err != nil {
 		return ProtocolMigrationInventory{}, err
@@ -77,11 +128,11 @@ func InspectProtocolMigration(ctx context.Context, root, idea string, kind Kind,
 	if err != nil {
 		return ProtocolMigrationInventory{}, err
 	}
-	history, err := InspectLaunchMigration(ctx, root, idea)
+	history, err := inspectLaunchMigrationDeclarations(ctx, root, idea, declared, unscopedRuns)
 	if err != nil {
 		return ProtocolMigrationInventory{}, err
 	}
-	i := ProtocolMigrationInventory{Version: 1, Scope: scope, Idea: idea, IdeaPath: relative, Kind: kind, History: history, Earliest: history.Earliest, Evidence: []ProtocolCountEvidence{}, UngroupedInvocations: []string{}}
+	i := ProtocolMigrationInventory{Version: 1, Scope: scope, Idea: idea, IdeaPath: relative, Kind: kind, History: history, Earliest: history.Earliest, Evidence: []ProtocolCountEvidence{}, UngroupedInvocations: []string{}, LowerBoundBasis: lowerBoundBasis(history)}
 	// Re-read bounded sources against their hashes. This detects changes while
 	// deriving counts and bounds the total of ordinary plus nested-idea sources.
 	scanner := migrationScanner{i: history, ctx: ctx}
@@ -242,6 +293,11 @@ func InspectProtocolMigration(ctx context.Context, root, idea string, kind Kind,
 				}
 			}
 		}
+		// A declared unscoped run arrives here too — its bytes were retained, so
+		// they are re-read and hash-checked above like any other source — and it
+		// leaves with identity "". This filter is the whole of its exclusion: it
+		// adds no evidence row under any rule, and in particular no
+		// published-action-floor of zero. Nothing here asserts a count for it.
 		if identity != idea {
 			continue
 		}

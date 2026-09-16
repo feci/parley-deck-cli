@@ -23,9 +23,10 @@ const (
 	WorktreeIndeterminate = "indeterminate"
 )
 
-// History coverage is a classification, never a count. This stage records only
-// whether a registration's local history is readable here; it never counts,
-// caps or attests anything, so an unavailable worktree cannot read as zero.
+// History coverage is a location classification, never a count or a readability
+// guarantee. Local means only that the registered path exists as a directory;
+// Git metadata and historical contents have not been inspected. This stage never
+// counts, caps or attests history, so an unavailable worktree cannot read as zero.
 const (
 	WorktreeHistoryLocal   = "local"
 	WorktreeHistoryUnknown = "unknown"

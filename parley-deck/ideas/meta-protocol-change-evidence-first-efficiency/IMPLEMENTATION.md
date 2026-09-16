@@ -5,8 +5,8 @@ implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
 checkpoint-base-commit: 29361d6fdadd511330c081b9b840a93f250ef52c
-validation-source-manifest: 7ff997e3f92313b33920bafae9460de027f51ab6dae90a69670d56449863f84b
-validation-status: recovery-checkpoint-passed-independent-acceptance-pending
+validation-source-manifest: 98af53bea7d1c3e320bf3bb302e44b7e1a8f18a6779d3364f2c50f90eb15251f
+validation-status: composed-checks-passed-whole-audit-acceptance-pending
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -15,80 +15,61 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 
 ## Current continuation — September 16, 2026
 
-Codex organizes the user-authorized prospective quorum Claude, Kimi and Zcode.
-Historical Hermes contributions, FINALs, signatures and the live protocol remain
-unchanged. Amendment draft PR #74 has all four round-01 files and Codex round-02;
-three peer round-02 requests were refused before provider spawn. No consensus or
-FINAL exists for the amendment.
+Codex organizes the approved prospective Claude/Kimi/Zcode quorum. Historical Hermes
+artifacts, FINALs, signatures and the live protocol remain unchanged. Draft PR74 retains
+all four round-01 files and Codex round-02; no peer round-02, consensus or FINAL exists.
 
-The complete recovery source is now integrated: 444 Go/module files, with the
-450-file validation snapshot and exact import manifest retained under
-`.parley-runtime/managed-continuation-20260915/complete-recovery-validation/`.
-Focused checks passed41 test/subtest events49.134s and full tests passed2566
-1252.274s. The original six-package race command FAILED on trajectory's10m package
-deadline; five other packages passed. An unchanged-source trajectory-only rerun
-with20m passed456 events735.476s, then vet passed1.537s. Thus all six race packages
-pass across two commands; the original failed command is not relabeled. Earlier
-omitted-fixture failures remain preserved. See the coordinator recovery-validation
-JSON for commands and log digests. Complete current-source independent acceptance
-is still pending.
+This draft now integrates the458-Go/module N1 and history candidate,29Go changes beyond
+the published444-file recovery checkpoint. Prelaunch checks mirror real skip, overwrite
+and blocked-consensus gates. Fresh cycle admission precedes refusal telemetry; known
+new-reservation exhaustion is checked before spending another resource. Cached-session
+revalidation and late-race refusals still occur at real charging; nothing refunds or
+claims atomicity. Claude independently found no MAJOR/CRITICAL N1 source issue. Kimi
+corrected its two MINOR items; the blocked-signoff before-control fails the new test.
 
-This source adds refused-verifier recovery, a bound actual runner/helper relaunch,
-immutable recovered-parent publication and a read-only worktree inventory. Two
-real inventory calls showed27 registrations, two missing/unknown, identical JSON,
-and unchanged registration bytes. The later inventory comment clarification and N1 precharge candidate remain
-separate. Kimi corrected its app fixture and independently supports the runner
-skip/overwrite correction. The combined 451-Go/module candidate passed 28 focused
-events and 1,049 affected-package events; its race command was deliberately
-cancelled after an independent MAJOR finding, and vet was not run in that batch.
-The MAJOR concerns fresh cycle admission before free refused-precheck receipts;
-the earlier manually prebound fixture misses production order. Known exhaustion
-of one resource spending another remains MINOR-1. A narrower Kimi correction is
-active; no N1 integration or acceptance is claimed. Its preceding correction
-attempt failed the CLI's 30-step limit without tracked changes or an owned note.
-The review's false broad-PASS testimony remains preserved pending owner correction.
+Request-scoped migration declarations retain unavailable registered roots as unknown
+and bind unscoped runs to their entire file-set digest. Ordinary bootstrap still refuses.
+Read-only identity discovery withholds declarations the strict scanner would reject,
+retaining each unknown row and an explanation. No product command was added for the
+identity helper. Kimi independently reviewed the history candidate's nine axes and found
+the corrected helper-advice MINOR. No full-branch independent acceptance is claimed.
 
-Claude completed a request-scoped declared-unavailable migration candidate. On a
-separate 446-Go/module snapshot, budget full/race (490 events each), new and
-existing app migration controls (17 and 14 events each, full/race), and vet passed.
-The two-boundary pre-change CLI control compiled and failed its two behavioral
-checks. The candidate remains unintegrated and needs independent source review.
-The real read-only v2 preview still refuses: an old run has no recoverable idea
-identity. A diagnostic scan found 150 visible run instances; all 25 identity
-problems are copies of one retained 117-byte May 10 run.created record. It remains
-unknown-scope history, not zero activity; no historical file or registration was
-changed. Claude is preparing a narrowly scoped remedy before any concrete unknown
-history/count decision. No count, migration apply or real round retry occurred.
+Validation is composed, with every failed command preserved: the combined456Go full
+suite passed30packages and failed only the obsolete driver step-count assertion. After
+the intended-expectation correction and history tests/helper, budget+driver full suites
+passed700events, focused83passed and six-package race passed. The last app blocked-signoff
+and comment-only delta passed all-package compile,23app checks,23app race checks and vet.
+This is not a claim that a single full ./... command passed on the final exact tree.
+Exact commands, timings, source/log digests and before-controls are in
+implementation-notes/codex-1-final-source-validation-20260916.json.
 
-Zcode's grouped amendment launcher timed out after 30 minutes, leaving two Go
-files and no note. An immutable recovery-source control failed compilation on a
-field-name mismatch and a discovery-seam signature. A bounded owner correction
-is active. No actual amendment round was launched. All three tasks are source
-preparation or diagnosis, separate from experiment spending.
+The local grouped launcher passed13fake checks,13race checks and vet on the assembled
+source; restoring its older production file fails all four added behavioral controls.
+The actual candidate CLI's read-only history preview passed with325retained sources,
+visible floor1, two unknown roots, one unknown-scope run in25copies and three ungrouped
+pre-start refusals. Registration bytes and the empty budget inventory were unchanged.
+The concrete launcher preview correctly refuses missing cycle authority before discovery.
+The proposal and exact digests are in codex-1-concrete-amendment-proposal-20260916.md/json.
+Operator total/epoch/unknown-coverage approval is pending; N=1 is only a proposed choice,
+not a verified exact historical total. No migration or actual round has run. Original
+maximum3 and one shared900-second round deadline remain unchanged.
 
-USD15 TOTAL covers prospective pilot, packet, grading, calibration and retries;
-implementation/source-review spending is separate.900 seconds is shared across
-each task-arm, including packet arms. Twelve tasks, three pilot arms, full pilot
-context, blind nonauthor grading and the separate exact28-call packet experiment
-remain required. Provider spending upper bounds are still unproven. No treatment
-or experiment freeze has started.
+Claude's R3 optional NIT is proposed for disclosed deferral, not marked fixed or signed
+off. The four-person protocol review must still ratify its disposition and complete the
+remaining independent acceptance work. Retained failures, including source-author
+timeouts and fixture corrections, are explained in the supplement notes.
 
-Accounting checkpoint at 2026-09-16 03:26 UTC: 77 normalized stopped terminal
-attempts plus one stopped attempt missing its terminal; 48 terminal costs plus
-that incomplete attempt are unknown. Known CLI estimates total USD106.6742915;
-total spend is unknown. Three pre-provider refusals and the three subsequent
-active source tasks are separate. Gateway UI and public-source research has not
-established a scoped enforceable invoice cap; detailed evidence is in the gateway
-budget observation note. No treatment or freeze has started.
+The prospective experiment budget remains USD15 TOTAL across12tasks×3arms, the separate
+exact28-call packet trial, grading, probes and retries;900seconds is shared per task-arm.
+Provider invoice/spending enforcement remains unproven. No freeze or treatment started.
+The continuation inventory has89normalized stopped terminals plus1missing terminal;
+57terminal costs plus that missing terminal's cost are unknown. Known CLI estimates total
+USD120.320013; total spend is unknown. Implementation/source review is separately counted.
 
-The September16 offline report remains a partial checkpoint. Its current tests
-and print controls retain their exact report hashes; final report/ego-browser QA
-and delivery-based14/30-day follow-ups remain required. No follow-up clock has
-started. PRs#73/#74 remain draft/open. No release, global installation, core
-publication, deployment, merge or closure is authorized or claimed.
-
-Exact live invocations and next actions are in
-`.parley-runtime/managed-continuation-20260915/handoff.json`.
+The September16 offline HTML is a partial checkpoint. Final report/ego-browser QA and
+14/30-day follow-ups from actual final delivery remain outstanding. PRs73/74 stay draft
+and open. No release, installation, core publication, deployment, merge or closure.
+Latest runtime state is .parley-runtime/managed-continuation-20260915/handoff.json.
 
 ## Unchanged-source reconciliation allocation — September 12, 2026
 

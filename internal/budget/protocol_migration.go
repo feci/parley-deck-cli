@@ -9,9 +9,20 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
+// DeclaredUnavailable is the operator's request-scoped statement that these
+// registered worktrees cannot be read and their history is unknown.
+// DeclaredUnscopedRuns is the separate statement that these run directories,
+// identified by their exact recursive file set, prove no idea identity — their
+// bytes are readable and retained; only their scope is unknown. Both are
+// arguments to this one decision: they are retained inside the immutable record
+// for replay and recovery, and no ordinary bootstrap ever consults either.
+//
+// Both are omitempty, so a request carrying neither marshals exactly as before
+// and keeps its digest. An older binary rejects a non-empty new field.
 type ProtocolMigrationRequest struct {
 	ExpectedHistorySHA256 string    `json:"expected_history_sha256"`
 	DecisionID            string    `json:"decision_id"`
@@ -22,6 +33,117 @@ type ProtocolMigrationRequest struct {
 	Maximum               int       `json:"maximum"`
 	WallClockNS           int64     `json:"wall_clock_ns"`
 	WritersStopped        bool      `json:"writers_stopped"`
+	DeclaredUnavailable   []string  `json:"declared_unavailable,omitempty"`
+	DeclaredUnscopedRuns  []string  `json:"declared_unscoped_runs,omitempty"`
+}
+
+// Both declarations agree with the retained rows in both directions, and the
+// inventory's coverage statement names exactly the combined basis its rows
+// require. An undeclared inventory may claim no incomplete coverage at all.
+func checkDeclarations(i ProtocolMigrationInventory, declared, unscoped []string) error {
+	if err := checkDeclaredUnavailable(i, declared); err != nil {
+		return err
+	}
+	if err := checkDeclaredUnscopedRuns(i, unscoped); err != nil {
+		return err
+	}
+	basis := lowerBoundBasis(i.History)
+	if basis == "" {
+		if i.History.HistoryCoverage != "" || i.LowerBoundBasis != "" {
+			return errors.New("undeclared protocol inventory claims incomplete history coverage")
+		}
+		return nil
+	}
+	if i.History.HistoryCoverage != DeclaredIncomplete || i.LowerBoundBasis != basis {
+		return errors.New("declared protocol inventory does not record its incomplete coverage")
+	}
+	return nil
+}
+
+// A declared unscoped import must state exactly what it could not identify. The
+// declaration and the retained rows agree in both directions, every row binds
+// its declared manifest digest to at least one actual root with unknown
+// history, and — the opposite of a declared unavailable worktree — the run's
+// readable bytes are still retained as sources. The exclusion is from
+// identity-scoped counting, never structural.
+func checkDeclaredUnscopedRuns(i ProtocolMigrationInventory, declared []string) error {
+	canonical, err := normalizeDeclaredUnscopedRuns(declared)
+	if err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(canonical, declared) && len(declared) != 0 {
+		return errors.New("declared-unscoped runs are not in canonical sorted deduplicated form")
+	}
+	rows := i.History.UnscopedRuns
+	if len(rows) != len(canonical) {
+		return errors.New("declared-unscoped runs differ from the retained unknown-identity rows")
+	}
+	for n, row := range rows {
+		if row.Path+"="+row.SHA256 != canonical[n] || row.History != UnknownHistory || row.Copies != len(row.Roots) || row.Copies == 0 {
+			return errors.New("unknown-identity row lost its declared run, manifest digest, unknown history or observed copies")
+		}
+		for _, origin := range row.Roots {
+			if !retainedMigrationSource(i.History.Sources, origin, row.Path+"/events.jsonl") {
+				return errors.New("declared-unscoped run lost the readable source it was retained for")
+			}
+		}
+	}
+	return nil
+}
+
+func retainedMigrationSource(sources []MigrationSource, root, path string) bool {
+	for _, source := range sources {
+		if source.Root == root && source.Path == path {
+			return true
+		}
+	}
+	return false
+}
+
+// A declared import must state exactly what it could not read. The declaration
+// and the retained rows agree in both directions, every row binds an admissible
+// stat class with unknown history, declared paths supply no source or root, and
+// the floor announces that it covers the surviving visible worktrees only.
+func checkDeclaredUnavailable(i ProtocolMigrationInventory, declared []string) error {
+	canonical, err := normalizeDeclaredUnavailable(declared)
+	if err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(canonical, declared) && len(declared) != 0 {
+		return errors.New("declared-unavailable worktrees are not in canonical sorted deduplicated form")
+	}
+	rows := i.History.UnavailableRoots
+	if len(rows) != len(canonical) {
+		return errors.New("declared-unavailable worktrees differ from the retained unknown-history rows")
+	}
+	for n, row := range rows {
+		if row.Path != canonical[n] || row.History != UnknownHistory || row.Observation != UnavailableMissing && row.Observation != UnavailableNotDirectory {
+			return errors.New("unknown-history row lost its declared path, stat class or unknown history")
+		}
+	}
+	// The coverage statement is one combined fact over both declaration kinds
+	// and is checked by checkDeclarations, which owns it for exactly that
+	// reason: this clause can only see its own kind.
+	if len(rows) == 0 {
+		return nil
+	}
+	// No evidence may be claimed from a path declared unreadable.
+	for _, row := range rows {
+		inside := func(path string) bool {
+			return path == row.Path || strings.HasPrefix(path, row.Path+string(filepath.Separator))
+		}
+		for _, origin := range i.History.Roots {
+			if inside(origin) {
+				return errors.New("declared-unavailable worktree supplied a readable history root")
+			}
+		}
+		for _, source := range i.History.Sources {
+			if inside(source.Root) {
+				return errors.New("declared-unavailable worktree supplied a history source")
+			}
+		}
+	}
+	return nil
 }
 
 type protocolMigrationRecord struct {
@@ -41,6 +163,9 @@ func protocolMigrationInitial(i ProtocolMigrationInventory, r ProtocolMigrationR
 		return s, errors.New("invalid protocol accounting decision, epoch, total or ceiling")
 	}
 	if _, err := protocolMigrationPath(i.Idea, i.IdeaPath); err != nil {
+		return s, err
+	}
+	if err := checkDeclarations(i, r.DeclaredUnavailable, r.DeclaredUnscopedRuns); err != nil {
 		return s, err
 	}
 	if floor, err := protocolEvidenceFloor(i.Kind, i.Evidence); err != nil || floor != i.LowerBound {
@@ -177,6 +302,16 @@ func migrateProtocolBudget(ctx context.Context, root, idea string, kind Kind, r 
 		return PolicyStatus{}, err
 	}
 	r.StartedAt = r.StartedAt.UTC()
+	// Canonicalize both declarations here, at the one boundary, so an unsorted,
+	// duplicated, nil or empty-slice spelling of the same decision is one exact
+	// replay, not a conflicting one. A new declaration kind is canonicalized
+	// beside the old one and never on a separate path.
+	if r.DeclaredUnavailable, err = normalizeDeclaredUnavailable(r.DeclaredUnavailable); err != nil {
+		return PolicyStatus{}, err
+	}
+	if r.DeclaredUnscopedRuns, err = normalizeDeclaredUnscopedRuns(r.DeclaredUnscopedRuns); err != nil {
+		return PolicyStatus{}, err
+	}
 	if !r.WritersStopped || !validCycleDecision(r.DecisionID, r.Reason, r.ExpectedHistorySHA256) {
 		return PolicyStatus{}, errors.New("protocol migration requires exact history and an explicit stopped-writer decision")
 	}
@@ -193,7 +328,7 @@ func migrateProtocolBudget(ctx context.Context, root, idea string, kind Kind, r 
 				return PolicyStatus{}, errors.New("existing protocol accounting requires recovery, not first import")
 			}
 		}
-		i, err := InspectProtocolMigration(ctx, root, idea, kind, r.IdeaPath)
+		i, err := InspectProtocolMigrationDeclarations(ctx, root, idea, kind, r.IdeaPath, r.DeclaredUnavailable, r.DeclaredUnscopedRuns)
 		if err != nil {
 			return PolicyStatus{}, err
 		}
@@ -232,7 +367,7 @@ func migrateProtocolBudget(ctx context.Context, root, idea string, kind Kind, r 
 	if err := refusePendingRecovery(dir); err != nil {
 		return PolicyStatus{}, err
 	}
-	i, err := InspectProtocolMigration(ctx, root, idea, kind, r.IdeaPath)
+	i, err := InspectProtocolMigrationDeclarations(ctx, root, idea, kind, r.IdeaPath, r.DeclaredUnavailable, r.DeclaredUnscopedRuns)
 	if err != nil {
 		return PolicyStatus{}, err
 	}
@@ -314,7 +449,12 @@ func migrateProtocolBudget(ctx context.Context, root, idea string, kind Kind, r 
 	} else {
 		return PolicyStatus{}, err
 	}
-	latest, err := InspectProtocolMigration(ctx, root, idea, kind, r.IdeaPath)
+	// The pre-activation re-inspection carries both declarations: a declared
+	// path that became readable, lost its registration or changed stat class,
+	// and a declared run whose file set gained, lost or changed a byte in any
+	// copy, recovered an identity or vanished from every root, refuse here,
+	// before the activation witness is written.
+	latest, err := InspectProtocolMigrationDeclarations(ctx, root, idea, kind, r.IdeaPath, r.DeclaredUnavailable, r.DeclaredUnscopedRuns)
 	if err != nil {
 		return PolicyStatus{}, err
 	}

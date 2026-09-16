@@ -3,13 +3,31 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"parley-deck-cli/internal/budget"
 )
+
+// repeatedFlag collects one operator declaration per occurrence, verbatim and
+// in order. Normalization (sorting, deduplication, path validation) belongs to
+// the accounting package, which is also where the declaration is checked
+// against actual Git registrations and stat classes.
+type repeatedFlag []string
+
+func (r *repeatedFlag) String() string { return strings.Join(*r, ", ") }
+
+func (r *repeatedFlag) Set(value string) error {
+	if value == "" {
+		return errors.New("declared worktree path is empty")
+	}
+	*r = append(*r, value)
+	return nil
+}
 
 func runBudgetMigrate(ctx context.Context, args []string, stdout, stderr io.Writer, attended bool) int {
 	if len(args) > 0 && args[0] == "recover" {
@@ -39,6 +57,10 @@ func runBudgetMigrate(ctx context.Context, args []string, stdout, stderr io.Writ
 	reserve := f.Int64("reserve-micros", -1, "conservative reservation per future launch; absent = unknown")
 	wall := f.Duration("wall-clock", -1, "absolute lifetime from started-at, including prior work; 0 = unlimited")
 	yes := f.Bool("yes", false, "apply this exact attended migration decision")
+	var declared repeatedFlag
+	f.Var(&declared, "declare-unavailable-worktree", "repeatable: a registered worktree path whose history is unknown for this protocol decision only; never stored as repository state")
+	var declaredRuns repeatedFlag
+	f.Var(&declaredRuns, "declare-unscoped-run", "repeatable: parley-deck/runs/<name>=<64-hex manifest digest> for a readable run that proves no idea identity, for this protocol decision only; never stored as repository state")
 	if err := f.Parse(args[1:]); err != nil {
 		return 2
 	}
@@ -49,11 +71,11 @@ func runBudgetMigrate(ctx context.Context, args []string, stdout, stderr io.Writ
 	visited := map[string]bool{}
 	f.Visit(func(f *flag.Flag) { visited[f.Name] = true })
 	if *kind != "launch" {
-		return runBudgetMigrateProtocol(ctx, args[0], protocolMigrationOptions{Root: *root, Idea: *idea, IdeaPath: *ideaPath, Kind: *kind, History: *history, Decision: *decision, Reason: *reason, Started: *started, Total: *total, Steps: *steps, Cycles: *cycles, Wall: *wall, Writers: *writers, Yes: *yes}, visited, stdout, stderr, attended)
+		return runBudgetMigrateProtocol(ctx, args[0], protocolMigrationOptions{Root: *root, Idea: *idea, IdeaPath: *ideaPath, Kind: *kind, History: *history, Decision: *decision, Reason: *reason, Started: *started, Total: *total, Steps: *steps, Cycles: *cycles, Wall: *wall, Writers: *writers, Yes: *yes, Declared: declared, DeclaredRuns: declaredRuns}, visited, stdout, stderr, attended)
 	}
-	for _, name := range []string{"idea-path", "total-actions", "max-steps", "max-cycles"} {
+	for _, name := range []string{"idea-path", "total-actions", "max-steps", "max-cycles", "declare-unavailable-worktree", "declare-unscoped-run"} {
 		if visited[name] {
-			fmt.Fprintln(stderr, "launch migration does not accept protocol accounting flags")
+			fmt.Fprintln(stderr, "launch migration does not accept protocol accounting flags; a declared-unavailable worktree or unscoped run is a protocol inspect/apply decision only")
 			return 2
 		}
 	}

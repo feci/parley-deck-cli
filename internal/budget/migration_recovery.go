@@ -83,6 +83,13 @@ type recoveryBase struct {
 	policy                                         any
 	launch                                         *launchMigrationRecord
 	protocol                                       *protocolMigrationRecord
+	// declared and unscoped are the original import's request-scoped
+	// declarations, read back from the immutable record. Recovery re-inspects
+	// the same history, so without both a declared import could never be
+	// recovered — and a declaration silently dropped here would re-inspect a
+	// different history and refuse, or worse, a narrower one.
+	declared []string
+	unscoped []string
 }
 
 func launchRecoveryBase(dir string, r launchMigrationRecord) recoveryBase {
@@ -100,7 +107,8 @@ func protocolRecoveryBase(dir string, r protocolMigrationRecord) recoveryBase {
 	return recoveryBase{dir: dir, scope: r.Initial.Scope, idea: r.Inventory.Idea,
 		ideaPath: r.Inventory.IdeaPath, digest: digest, decisionID: r.Request.DecisionID,
 		kind: r.Inventory.Kind, at: r.RecordedAt, count: r.Request.TotalActions,
-		initial: r.Initial, policy: protocolMigrationPolicy(r, digest), protocol: &r}
+		initial: r.Initial, policy: protocolMigrationPolicy(r, digest), protocol: &r,
+		declared: r.Request.DeclaredUnavailable, unscoped: r.Request.DeclaredUnscopedRuns}
 }
 
 func loadRecoveryBase(ctx context.Context, root, idea string, kind Kind) (recoveryBase, error) {
@@ -469,7 +477,7 @@ func observeMigrationRecovery(ctx context.Context, root, idea string, kind Kind)
 				o.preview.MinimumAccountedActions = i.LegacyStartFloor
 			}
 		} else {
-			i, err := InspectProtocolMigration(ctx, root, idea, kind, b.ideaPath)
+			i, err := InspectProtocolMigrationDeclarations(ctx, root, idea, kind, b.ideaPath, b.declared, b.unscoped)
 			if err != nil {
 				return o, err
 			}

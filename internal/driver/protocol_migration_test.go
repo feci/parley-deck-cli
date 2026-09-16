@@ -114,12 +114,9 @@ func TestProtocolMigrationDriverNestedActualChildrenAndBlockResume(t *testing.T)
 				r    budget.ProtocolMigrationRequest
 			}{{budget.DriverStep, step}, {budget.CrossReview, cycle}} {
 				s, err := budget.MigrateProtocolBudget(ctx, root, "demo", tc.kind, tc.r)
+				// The failed real launch stays spent. A later BLOCK attempt
+				// sees the already exhausted cycle before spending another step.
 				want := 3
-				if tc.kind == budget.DriverStep {
-					// A new BLOCK attempt spends its step before the nested cycle
-					// refusal. The refusal cannot refund that attempted work.
-					want = stepLimit
-				}
 				if err != nil || s.Spent != want || !s.StartedAt.Equal(tc.r.StartedAt) {
 					t.Fatalf("nested operation counted per child or refunded: %+v %v", s, err)
 				}
