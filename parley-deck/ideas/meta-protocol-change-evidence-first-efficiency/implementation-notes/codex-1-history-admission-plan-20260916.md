@@ -61,3 +61,11 @@ clone scope or uncharged direct CLI is used to evade the current refusal.
 
 No experimental treatment has started. USD 15 total prospective experiment
 spending and 900 seconds per task-arm remain separate from software work.
+
+
+## Subsequent source-design status
+
+Claude's `claude-1-history-admission-design-20260916.md` is a proposal only. It withdraws its earlier durable repository-wide attestation approach in favor of declarations scoped to one existing migration request. Nothing has been implemented or applied. Its example commands name the ORIGINAL idea in the integration worktree; they must not be used for the actual blocked amendment operation, whose target is `meta-protocol-change-evidence-first-efficiency-v2` in `evidence-first-amendment`. The proposal also needs independent examination of step-budget admission before one cross-review migration can be represented as sufficient. Kimi is reviewing these two scope/completeness issues and the digest/recovery mechanics. No operator-ready command or count recommendation is being presented yet.
+
+
+Claude has now written its own `claude-1-history-admission-correction-20260916.md`, explicitly withdrawing the wrong original-idea command and the permanence sentence. Kimi's primary source review established that the direct grouped runner loads a step binding and treats absence as a no-op; the coordinator's tentative extra-step-gate concern does not apply to that path. The planned operation is one direct call through the existing `runner.RunRound` instrumented launch path, not `continue --auto`/driver activation. A concrete launcher still needs to be prepared and checked with fake agents before any real round; this statement does not invoke it or override any existing policy. Driver activation would require its separate step authority first. New declared-history records also require the new binary; an older binary will reject their new fields. No declaration implementation or operator decision exists yet.

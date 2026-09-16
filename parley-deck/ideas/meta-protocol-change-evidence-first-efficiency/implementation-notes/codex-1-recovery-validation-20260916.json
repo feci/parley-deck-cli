@@ -1,0 +1,68 @@
+{
+  "agent": "codex-1",
+  "idea": "meta-protocol-change-evidence-first-efficiency",
+  "date": "2026-09-16",
+  "status": "partial-validation-of-unintegrated-candidate",
+  "source_manifest_sha256": "7ff997e3f92313b33920bafae9460de027f51ab6dae90a69670d56449863f84b",
+  "source_files": 450,
+  "go_module_files": 444,
+  "checks": [
+    {
+      "name": "focused",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-p",
+        "1",
+        "-json",
+        "./internal/budget",
+        "./internal/app",
+        "./internal/protocol",
+        "./internal/protocolpacket",
+        "-run",
+        "Test(Worktree|BudgetWorktree|.*Verifier.*(Publication|Recovery)|VersionFileMatchesBinaryVersion|ProtocolPacketCheckPassesOnThisRepository|EmbeddedDefaultMatchesLiveDeck|NoSection2AsAStoreInstructions|LiveMapIsCompleteHonorsNeverCutAndRendersEveryPhase|OptimizedPacketIsVerbatimAndIndexIsCompleteAndDisjoint|DefaultIsFullContextWithShadowPacket|DetectedSecretRefusesWithoutBodyOrPacketHash|NeverCutViolationIsReported)"
+      ],
+      "exit": 0,
+      "seconds": 49.134,
+      "source_unchanged": true,
+      "failed_tests": [],
+      "test_pass_events": 41,
+      "stderr": "",
+      "stdout_sha256": "68bae1411790c31278d25b762a4abff16e649df4e00121d4c9656807e441d0da",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "full",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-p",
+        "1",
+        "-json",
+        "./..."
+      ],
+      "exit": 0,
+      "seconds": 1252.274,
+      "source_unchanged": true,
+      "failed_tests": [],
+      "test_pass_events": 2566,
+      "stderr": "",
+      "stdout_sha256": "110ec48c4f6a125cea005bb60c420c6d79cb3a6f124f44ce4c5ca8141328fc62",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "not_covered": [
+    "later inventory comment-only clarification",
+    "active N1 implementation",
+    "missing-history migration implementation",
+    "whole-audit independent acceptance",
+    "live packet or pilot treatment"
+  ],
+  "limitations": [
+    "race running and vet queued; no result claimed yet",
+    "prior failed fixture-omitting snapshot retained",
+    "provider-free tests do not consume prospective treatment budget"
+  ]
+}
