@@ -13,43 +13,61 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 
 # Evidence-First Delivery
 
-## Current continuation — September 15, 2026
+## Current continuation — September 16, 2026
 
-The user approved the prospective remaining quorum: codex-1 organizer, claude-1,
-kimi-1 and zcode-1 replacing Hermes. The original kickoff, signed FINAL, historical
-rounds and signatures remain unchanged. The explicit waiver governs remaining
-manual facilitation; no old captured scope or signature is relabelled. Pilot
-amendment design is open as draft PR #74, with owned Codex and Zcode round-01
-artifacts; Claude and Kimi submissions and all signoffs remain pending.
+The remaining manual quorum is user-authorized: codex-1 organizes claude-1,
+kimi-1 and zcode-1, prospectively replacing Hermes. Historical kickoff, FINAL,
+rounds, signatures, captured scopes and live protocol remain unchanged. Draft
+amendment #74 now contains owned Codex, Zcode and Kimi round-01 artifacts;
+Kimi appended its own correction while preserving its original bytes. Claude's
+independent round is queued for the recorded 00:30 UTC provider reset. All
+cross-review, consensus and finalization gates remain open.
 
-User limits are USD 15 TOTAL for future live experiments, including grading and
-retries, and 15 minutes per task-arm shared across participants and workflow.
-No treatment experiment has started. The original twelve tasks and separate
-packet experiment remain required; feasibility and enforced spend/grading policy
-must be resolved before freeze and calls.
+USD 15 TOTAL covers prospective experiment spending, including pilot, packet,
+grading, experiment-specific calibration and retries. Implementation/review
+spending is separate. The 15-minute shared task-arm elapsed ceiling also binds
+packet task/arms. No treatment has started. Twelve tasks, three arms, full pilot
+context, blind grading and the separate exact packet experiment remain required.
+Observed-cost multipliers and post-overrun stopping do not establish a hard
+provider-spending upper bound. Current Kimi documentation describes step/retry,
+background and provider-specific output controls omitted from CLI help; their
+actual effect on the configured route and monetary feasibility remain unverified.
+Kimi completed its source audit. Five local client controls observed the output
+parameter, Read-only tool advertisement, step caps and controlled HTTP500 attempt
+caps. They do not prove actual provider billing or constitute treatment trials.
 
-Five candidate Go files are committed and published: Claude R1/R2 recovery
-lock/diagnostic changes and Zcode's corrected usage parser/tests. The unchanged 430-file Go/module source passed full validation (554.398s), six-package race (659.592s) and vet (1.247s). All source hashes remained unchanged. Compilation, cache, executables and test temporary roots were native. These three checks used no diagnostic overlay, test wrapper, assertion change or enlarged deadline.
-Full current-source independent acceptance and the whole audit remain incomplete.
-Earlier full-suite failures remain preserved. Go 1.27 GOTMPDIR fixture inheritance
-was reproduced and corrected in the validation setup; later closure, toolchain
-and process failures retain their actual evidence and causal limits. Zcode
-appended its own corrected digest and narrower causal disposition, preserving
-its original review. Supporting MINOR/NIT findings remain open.
+The published 430-file Go/module source (manifest
+c9b436f7d8bbd0f3fe16b818f6f48e752a7a434e8a1cc670d22e2df8579cd18f)
+passed build, full Go tests (554.398s), six-package race (659.592s) and vet
+(1.247s). These checks do not cover the separate verifier-recovery candidate.
+Earlier failed runs and narrower diagnostic controls remain retained, with their
+original causal limits. Full current-source independent acceptance is pending.
 
-Kimi's recovery implementation attempt hit provider quota and produced no code or
-artifact; approximate reset01:51 CEST September16. Claude's telemetry review and
-amendment attempt hit its session limit, reset02:30 CEST September16, with no
-artifacts. They remain in quorum. No automatic retry, exclusion or model change.
-The verifier-refusal recovery slice and wider historical/workflow recovery,
-remaining scoped findings, exact live trials, final HTML and delivery follow-ups
-are still open. Fifty-one terminal measured CLI attempts are retained:28 unknown
-monetary costs, USD78.2014655 known CLI estimates; total cost unknown.
+The isolated verifier-refusal candidate now revalidates retained refused bytes,
+and its earlier focused trajectory/runner controls passed after disclosed test
+corrections. The next parent-lineage candidate failed its clean positive path:
+it applies the ordinary request-before-reservation timing predicate to a recovery
+that necessarily precedes the replacement request. Its 195.018s focused command
+is retained as failed; runner linkage separately failed on native disk exhaustion.
+Zcode is now correcting the chronology and implementing a narrow real runner
+launch under the immutable recovery's intended invocation ID. This is isolated,
+unintegrated source. Attended app CLI wiring and wider recovery remain open.
 
-Latest exact runtime handoff:
-`.parley-runtime/managed-continuation-20260915/handoff.json`.
-Historical sections below remain the execution record; newer decisions above
-and in the final appended sections supersede earlier pending-decision status.
+The September 16 offline report is a partial checkpoint, not final delivery. Its
+print canvas defect was reproduced and fixed with old/new/return controls; earlier
+29 browser checks remain bound to the preserved prior report hash. Ten report
+tests and three print controls cover the current report hash. Physical paper/PDF
+pagination and final scope-complete report/QA remain pending. All 156 historical
+assessment/report files and 88 protected protocol/history files were preserved.
+No 14/30-day follow-up clock has started.
+
+Implementation PR #73 and amendment PR #74 remain draft/open. No release, global
+install, core publication, production deployment, merge or closure is authorized
+or claimed. Original acceptance criteria, scoped findings, independent reviews,
+exact experiments and delivery-based follow-ups remain required. The exact
+current invocations, hashes, accounting and next actions are in
+`.parley-runtime/managed-continuation-20260915/handoff.json`; completed evidence
+and superseded observations remain in the dated implementation notes below.
 
 ## Unchanged-source reconciliation allocation — September 12, 2026
 
