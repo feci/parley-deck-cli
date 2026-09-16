@@ -36,20 +36,35 @@ is still pending.
 This source adds refused-verifier recovery, a bound actual runner/helper relaunch,
 immutable recovered-parent publication and a read-only worktree inventory. Two
 real inventory calls showed27 registrations, two missing/unknown, identical JSON,
-and unchanged registration bytes. The later inventory comment clarification and
-N1 precharge candidate remain separate. Zcode's N1 implementation timed out;
-coordinator skip/overwrite and fixture corrections have meaningful before/after
-controls. Kimi's app slice compiled; one combined app fixture failed while26 test
-or subtest events passed. Its own correction and independent skip review are in
-progress. None of those later files is covered by this recovery checkpoint.
+and unchanged registration bytes. The later inventory comment clarification and N1 precharge candidate remain
+separate. Kimi corrected its app fixture and independently supports the runner
+skip/overwrite correction. The combined 451-Go/module candidate passed 28 focused
+events and 1,049 affected-package events; its race command was deliberately
+cancelled after an independent MAJOR finding, and vet was not run in that batch.
+The MAJOR concerns fresh cycle admission before free refused-precheck receipts;
+the earlier manually prebound fixture misses production order. Known exhaustion
+of one resource spending another remains MINOR-1. A narrower Kimi correction is
+active; no N1 integration or acceptance is claimed. Its preceding correction
+attempt failed the CLI's 30-step limit without tracked changes or an owned note.
+The review's false broad-PASS testimony remains preserved pending owner correction.
 
-Claude is implementing a minimum request-scoped declared-unavailable protocol
-migration candidate, based on its corrected design and Kimi's independent review.
-No real declaration, count, migration apply or retry is authorized by that source
-work. Unknown history remains unknown; ordinary bootstrap must keep refusing.
-The intended eventual round launcher is one direct instrumented RunRound call,
-keeping all four members and skipping Codex's existing artifact. Backup/count
-clarification remains pending; no cap or scope bypass is permitted.
+Claude completed a request-scoped declared-unavailable migration candidate. On a
+separate 446-Go/module snapshot, budget full/race (490 events each), new and
+existing app migration controls (17 and 14 events each, full/race), and vet passed.
+The two-boundary pre-change CLI control compiled and failed its two behavioral
+checks. The candidate remains unintegrated and needs independent source review.
+The real read-only v2 preview still refuses: an old run has no recoverable idea
+identity. A diagnostic scan found 150 visible run instances; all 25 identity
+problems are copies of one retained 117-byte May 10 run.created record. It remains
+unknown-scope history, not zero activity; no historical file or registration was
+changed. Claude is preparing a narrowly scoped remedy before any concrete unknown
+history/count decision. No count, migration apply or real round retry occurred.
+
+Zcode's grouped amendment launcher timed out after 30 minutes, leaving two Go
+files and no note. An immutable recovery-source control failed compilation on a
+field-name mismatch and a discovery-seam signature. A bounded owner correction
+is active. No actual amendment round was launched. All three tasks are source
+preparation or diagnosis, separate from experiment spending.
 
 USD15 TOTAL covers prospective pilot, packet, grading, calibration and retries;
 implementation/source-review spending is separate.900 seconds is shared across
@@ -58,10 +73,13 @@ context, blind nonauthor grading and the separate exact28-call packet experiment
 remain required. Provider spending upper bounds are still unproven. No treatment
 or experiment freeze has started.
 
-Stopped real CLI inventory:72 normalized terminal attempts plus one stopped
-attempt missing its terminal;44 terminal costs plus that incomplete attempt are
-unknown. Known CLI estimates totalUSD97.7811085; total spend is unknown. Three
-pre-provider refusals and two current source tasks are counted separately.
+Accounting checkpoint at 2026-09-16 03:26 UTC: 77 normalized stopped terminal
+attempts plus one stopped attempt missing its terminal; 48 terminal costs plus
+that incomplete attempt are unknown. Known CLI estimates total USD106.6742915;
+total spend is unknown. Three pre-provider refusals and the three subsequent
+active source tasks are separate. Gateway UI and public-source research has not
+established a scoped enforceable invoice cap; detailed evidence is in the gateway
+budget observation note. No treatment or freeze has started.
 
 The September16 offline report remains a partial checkpoint. Its current tests
 and print controls retain their exact report hashes; final report/ego-browser QA
