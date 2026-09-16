@@ -4294,3 +4294,18 @@ September 16 continuation: attended Kimi recovery candidate completed; immutable
 
 
 September 16 allocation: Claude owns the read-only MRW-1 inventory first stage in the native verifier candidate: budget/worktree_inventory.go and tests, app/budget_worktree.go and tests, app/budget.go dispatch, and its new worktree-inventory candidate note. It enumerates unavailable registrations as unknown and produces a stable preview digest; no attestation/apply, bootstrap bypass, counter reset, pruning or root recreation. User backup clarification remains pending. Coordinator validates after the author finishes; active app tests and other reviewers use immutable separate source snapshots.
+
+## Explicit four-person pilot allocation preparation — 2026-09-16T04:54:19.570622+00:00
+
+Kimi owns only `.parley-runtime/pilot-allocation-candidate-20260916/pilot_analysis.py`, `.parley-runtime/pilot-allocation-candidate-20260916/test_pilot_analysis.py`
+in the idle native candidate root `/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout`, plus its new own implementation note.
+The evaluation directory is not a Git repository; its two current scripts are copied
+with hashes before editing. No overlap with Go source or any active participant.
+Codex owns validation and eventual exact import into the existing evaluation scripts.
+Add opt-in explicit-table validation for the authorized prospective four-person arm,
+preserving the original six-person/default API and summaries. The displayed round-02
+table is an unratified test fixture, not a freeze or authorization to measure. Preserve
+all12tasks/3arms, original inputs/hidden keys, no model experiment, no budget mutation.
+
+
+September 16 allocation preparation completed: Kimi stopped; Codex reproduced and corrected explicit-input shape errors, retained the original note/source, and imported the exact two tested evaluation scripts. All 35 pilot analysis/grading/acceptance tests passed in an isolated Python environment; 30 actual old/new six-person outputs matched; the new boundary before-control failed as expected. Eight historical pilot files and 17 other Python scripts are unchanged. See `implementation-notes/codex-1-pilot-allocation-validation-20260916.md`, its JSON and reviewable patch. This remains unratified preparation; no experiment, freeze, cycle migration, amendment round launch or whole-audit acceptance.
