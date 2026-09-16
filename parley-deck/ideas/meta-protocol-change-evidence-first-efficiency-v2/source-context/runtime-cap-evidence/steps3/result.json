@@ -1,0 +1,75 @@
+{
+  "completed_at": "2026-09-16T00:24:57.674323+00:00",
+  "native": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-4g87zg1j",
+  "exit": 1,
+  "timeout": false,
+  "seconds": 1.204,
+  "requests": 3,
+  "request_summaries": [
+    {
+      "path": "/v1/chat/completions",
+      "model": "local-cap-fixture",
+      "max_completion_tokens": 17,
+      "max_tokens": null,
+      "tools": [
+        "Read"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "local-cap-fixture",
+      "max_completion_tokens": 17,
+      "max_tokens": null,
+      "tools": [
+        "Read"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "local-cap-fixture",
+      "max_completion_tokens": 17,
+      "max_tokens": null,
+      "tools": [
+        "Read"
+      ]
+    }
+  ],
+  "case": "steps3",
+  "observed_tool_result": true,
+  "scope": "local fake endpoint and CLI wire configuration only; no external provider, no treatment, no billing proof",
+  "env": {
+    "KIMI_CODE_HOME": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-4g87zg1j/data",
+    "KIMI_MODEL_NAME": "local-cap-fixture",
+    "KIMI_MODEL_PROVIDER_TYPE": "kimi",
+    "KIMI_MODEL_BASE_URL": "http://127.0.0.1:58390/v1",
+    "KIMI_MODEL_MAX_COMPLETION_TOKENS": "17",
+    "KIMI_LOOP_MAX_STEPS_PER_TURN": "3",
+    "KIMI_LOOP_MAX_ATTEMPTS_PER_STEP": "1",
+    "KIMI_CODE_INFINITE_RETRY": "false",
+    "KIMI_CODE_BACKGROUND_PRINT_BACKGROUND_MODE": "exit",
+    "KIMI_CODE_BACKGROUND_KEEP_ALIVE_ON_EXIT": "false",
+    "KIMI_CODE_NO_AUTO_UPDATE": "true",
+    "KIMI_DISABLE_TELEMETRY": "true",
+    "KIMI_CODE_BUILTIN_PRODUCT_SKILLS": "false"
+  },
+  "command": [
+    "/usr/bin/sandbox-exec",
+    "-f",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-4g87zg1j/task.sb",
+    "/Users/tomasfecko/.kimi-code/bin/kimi",
+    "--agent-file",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-4g87zg1j/fixture-agent.md",
+    "--skills-dir",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-4g87zg1j/empty-skills",
+    "--output-format",
+    "stream-json",
+    "-p",
+    "Return LOCAL_FIXTURE_DONE. This is a local protocol transport fixture."
+  ],
+  "stdout.log_sha256": "fc4eef21368581286bb31499c03fb34973454430464d107ebf28fd31bd28f11e",
+  "stderr.log_sha256": "8972b8f1338427f39e1039f61b2c2a743b8caaec75adcce88eb87a1dfde208cd",
+  "requests.json_sha256": "a8eeef7c5f593692d7b853afcfcff2de9fa76ca8ab66af09bb6cc2557f16635e",
+  "canary.log_sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+  "task.sb_sha256": "2e54d046024a6555b6348675644edb81e46dcbe1f8549a21c87f8a4773d85d65",
+  "fixture-agent.md_sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+}

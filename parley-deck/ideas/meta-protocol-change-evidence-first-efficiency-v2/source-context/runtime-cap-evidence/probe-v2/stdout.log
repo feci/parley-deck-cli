@@ -1,0 +1,3 @@
+{"role":"meta","type":"system.version","version":"0.42.0"}
+{"role":"assistant","content":"LOCAL_FIXTURE_DONE"}
+{"role":"meta","type":"session.resume_hint","session_id":"session_c484e972-26ca-4e3d-b2ff-a403b8dce729","command":"kimi -r session_c484e972-26ca-4e3d-b2ff-a403b8dce729","content":"To resume this session: kimi -r session_c484e972-26ca-4e3d-b2ff-a403b8dce729"}

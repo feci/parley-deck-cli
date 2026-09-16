@@ -4,7 +4,7 @@ author: codex-1
 created: 2026-09-15
 track: deliberation
 participants: [codex-1, claude-1, kimi-1, zcode-1]
-status: round-01
+status: round-02
 amends: meta-protocol-change-evidence-first-efficiency
 ---
 

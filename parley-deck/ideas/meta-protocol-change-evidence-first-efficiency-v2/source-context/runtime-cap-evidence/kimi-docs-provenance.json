@@ -1,0 +1,72 @@
+{
+  "recorded_at": "2026-09-16T00:19:39.086314+00:00",
+  "tool": "ego-browser nodejs background fetch; no browser taskspace/window was opened",
+  "installed_cli_version_observed": "0.42.0",
+  "docs_entrypoint": "exact URL in CLI help",
+  "sources": [
+    {
+      "url": "https://moonshotai.github.io/kimi-code/",
+      "retrieved_status": 200,
+      "html": "kimi-docs-index.html",
+      "html_sha256": "3917724ac9695fd9719b90edcf327509f33a3816a2e8656ca2972880cc415687",
+      "text": "kimi-docs-index.txt",
+      "text_sha256": "172874e9913da10b9734ea711e7771fbaf517f9112407450f86da077c491b694",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/guides/getting-started",
+      "retrieved_status": 200,
+      "html": "kimi-docs-0.html",
+      "html_sha256": "a99026f2403aa106093b4bfce6a113c70e288140e15b57ac89e53e9d2a0e24cc",
+      "text": "kimi-docs-0.txt",
+      "text_sha256": "a7e3fa36b47d82be193359c3a3cc7fc51af9098042c05a3b56403cb4662ea31e",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/customization/agents",
+      "retrieved_status": 200,
+      "html": "kimi-docs-1.html",
+      "html_sha256": "9bdc9ad345e4f6d4e6116143df2bb365474ca85b29687e480e61124538d92477",
+      "text": "kimi-docs-1.txt",
+      "text_sha256": "5fa2125b5a87feb66b71d46ae3cb525d7d356780bf74b0f2b0eb27ff2dab98a7",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/configuration/config-files.html",
+      "retrieved_status": 200,
+      "html": "kimi-config-files.html",
+      "html_sha256": "a5318dd97fa4400b6e2ae7524c9cf370ba0495a15a166cd60b423090334afa2b",
+      "text": "kimi-config-files.txt",
+      "text_sha256": "f1cd4ec8f3a74004c46b140b101a6a12a89f7fe8709652857b4194e19f3e62bb",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/configuration/providers.html",
+      "retrieved_status": 200,
+      "html": "kimi-providers.html",
+      "html_sha256": "0de9250fa03395f183ae7fc565721ce88db61e1375980f968e2ea761a70ef579",
+      "text": "kimi-providers.txt",
+      "text_sha256": "5e47df7bfa52b6324a373a0e90a798a92946843e284ad75164ea59759383b4f3",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/configuration/env-vars.html",
+      "retrieved_status": 200,
+      "html": "kimi-env-vars.html",
+      "html_sha256": "3f98278ebd76dfdb44dccdd7a5b1c8f3de08f7c14c1abad0f0e974a88a6bcc44",
+      "text": "kimi-env-vars.txt",
+      "text_sha256": "878604b6f5e5aaf39026e1a29be73b35a024193a1a482faac234fd5df3122ffa",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    },
+    {
+      "url": "https://moonshotai.github.io/kimi-code/en/configuration/overrides.html",
+      "retrieved_status": 200,
+      "html": "kimi-overrides.html",
+      "html_sha256": "90af83b2539e6d7955be7c8d8deb382f3f4f93a1ce552f983f2a4538cb39df7d",
+      "text": "kimi-overrides.txt",
+      "text_sha256": "535a7eaaec08982109fa8bc69ad0e6304b7a54f49577e40e4d2b2683bb9d9342",
+      "extraction": "Python HTMLParser text excluding script/style; HTML retained as primary response"
+    }
+  ],
+  "scope": "documentation evidence only, no runtime provider/cost enforcement proven"
+}

@@ -1,0 +1,2 @@
+error: failed to run prompt: loop.max_steps_exceeded: Turn exceeded maxSteps=2. If max_steps_per_turn is too small, raise it in config.toml (loop_control.max_steps_per_turn), or run "/update-config" to update it, then "/reload".
+See log: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-ydlrlk1m/data/logs/kimi-code.log

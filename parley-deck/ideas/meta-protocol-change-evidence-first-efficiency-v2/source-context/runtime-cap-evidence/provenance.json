@@ -1,0 +1,291 @@
+{
+  "at": "2026-09-16T00:52:00.663985+00:00",
+  "purpose": "common source evidence for all phase2 reviewers; not an experiment freeze",
+  "published_go_only": true,
+  "unintegrated_recovery_source_included": false,
+  "files": [
+    {
+      "source": "internal/runner/launch_budget.go",
+      "copy": "internal__runner__launch_budget.go.txt",
+      "sha256": "2dac078ef5b237787b326cdd21654e67a437fbe599b999cff7a088c670276ab9",
+      "provenance": "published integration HEAD c8d501c5ad0c7ceed9a8adf187a72f2cfb5b2eaf"
+    },
+    {
+      "source": "internal/runner/telemetry.go",
+      "copy": "internal__runner__telemetry.go.txt",
+      "sha256": "2d5fc4168f24cae6d85954c6bbef5178cc084b6a61351158cc6a9ac13a3d3507",
+      "provenance": "published integration HEAD c8d501c5ad0c7ceed9a8adf187a72f2cfb5b2eaf"
+    },
+    {
+      "source": "internal/budget/monetary_binding.go",
+      "copy": "internal__budget__monetary_binding.go.txt",
+      "sha256": "f2df1bd9ab348f931489a6396a5e85ccbc958956a3ee5406ef3f126864cbfad1",
+      "provenance": "published integration HEAD c8d501c5ad0c7ceed9a8adf187a72f2cfb5b2eaf"
+    },
+    {
+      "source": "internal/budget/binding.go",
+      "copy": "internal__budget__binding.go.txt",
+      "sha256": "5a2abca654e7190adf08de6a68d4eb39d4a8023e036c4adde41298db4e5e2ff0",
+      "provenance": "published integration HEAD c8d501c5ad0c7ceed9a8adf187a72f2cfb5b2eaf"
+    },
+    {
+      "source": "internal/budget/ledger.go",
+      "copy": "internal__budget__ledger.go.txt",
+      "sha256": "1fd789c2877d1d20694c6d150019082898d6dbd1c75400e2fca459fd9eb3306a",
+      "provenance": "published integration HEAD c8d501c5ad0c7ceed9a8adf187a72f2cfb5b2eaf"
+    },
+    {
+      "source": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/codex-1-kimi-cap-controls-20260916.json",
+      "copy": "parley-deck__ideas__meta-protocol-change-evidence-first-efficiency__implementation-notes__codex-1-kimi-cap-controls-20260916.json",
+      "sha256": "b2865d3834545b762a1e52993a3a14599dd84fe2e30bf8312d4b01da2e6259d6",
+      "provenance": "published integration HEAD c8d501c5ad0c7ceed9a8adf187a72f2cfb5b2eaf"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/result.json",
+      "copy": "probe-v2/result.json",
+      "sha256": "67d4820bd92377b65b8d253bd08e3d72f8e41675abcdef19aa72a9f0402ebc5e",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/stdout.log",
+      "copy": "probe-v2/stdout.log",
+      "sha256": "7beaa6a11a2ec7e9c682b5e5dad7209911241298d9ceb9f4d6e92e7ec1ac8951",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/stderr.log",
+      "copy": "probe-v2/stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/requests.json",
+      "copy": "probe-v2/requests.json",
+      "sha256": "1354bc6e735fbd7aaef2202af1ac71e99e1a582f68d473e5e81060da8a95b0bf",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/canary.log",
+      "copy": "probe-v2/canary.log",
+      "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/task.sb",
+      "copy": "probe-v2/task.sb",
+      "sha256": "ad8b6fbdc489158668891874feab1bdcf68da450c720c9cf6b4ba308b45501ec",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/fixture-agent.md",
+      "copy": "probe-v2/fixture-agent.md",
+      "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/result.json",
+      "copy": "steps2/result.json",
+      "sha256": "afe1c394c7894b2d4d9c7481570aac8c39c03077107b03db5f5786b7bd9e8491",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/stdout.log",
+      "copy": "steps2/stdout.log",
+      "sha256": "a29de3a38768df1cd6236f36fe1b09cc639a23d6c40129d17440fbe952250f63",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/stderr.log",
+      "copy": "steps2/stderr.log",
+      "sha256": "fb79fd6733a4bfd164dc8efff30178c26bff4a9a83ccc0161457387a83ef06ac",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/requests.json",
+      "copy": "steps2/requests.json",
+      "sha256": "bc3c304511e8ec2450f171413abcc4f90f5aeab7a5f78a8d6a31332db9606220",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/canary.log",
+      "copy": "steps2/canary.log",
+      "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/task.sb",
+      "copy": "steps2/task.sb",
+      "sha256": "925f817b85aeb147133149f5f13232fc9008a31af26cc2bba497f3f51e83f9e2",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/fixture-agent.md",
+      "copy": "steps2/fixture-agent.md",
+      "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/result.json",
+      "copy": "steps3/result.json",
+      "sha256": "0d5e7aed51ca33e32af2edc7839a1acbd19198fd7373c7ea100f28bbff92c532",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/stdout.log",
+      "copy": "steps3/stdout.log",
+      "sha256": "fc4eef21368581286bb31499c03fb34973454430464d107ebf28fd31bd28f11e",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/stderr.log",
+      "copy": "steps3/stderr.log",
+      "sha256": "8972b8f1338427f39e1039f61b2c2a743b8caaec75adcce88eb87a1dfde208cd",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/requests.json",
+      "copy": "steps3/requests.json",
+      "sha256": "a8eeef7c5f593692d7b853afcfcff2de9fa76ca8ab66af09bb6cc2557f16635e",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/canary.log",
+      "copy": "steps3/canary.log",
+      "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/task.sb",
+      "copy": "steps3/task.sb",
+      "sha256": "2e54d046024a6555b6348675644edb81e46dcbe1f8549a21c87f8a4773d85d65",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/fixture-agent.md",
+      "copy": "steps3/fixture-agent.md",
+      "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/result.json",
+      "copy": "retry1/result.json",
+      "sha256": "c5f34f025cb185c82c5c2b35d079cbbe57cc222ce8586a2d0d67096f0494dc24",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/stdout.log",
+      "copy": "retry1/stdout.log",
+      "sha256": "9debbbf15c1c8895997c49c6ceca2181aead16f3df87426759797ba07f3caacd",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/stderr.log",
+      "copy": "retry1/stderr.log",
+      "sha256": "20c9b2711bfb10ee6f905e8a6cf8c1805af75c57cdfe7f9a290955c4993c9d1e",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/requests.json",
+      "copy": "retry1/requests.json",
+      "sha256": "4de869681c6f4ae90b791ff9402767815e51dba19268f7980aae63beda2c2f24",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/canary.log",
+      "copy": "retry1/canary.log",
+      "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/task.sb",
+      "copy": "retry1/task.sb",
+      "sha256": "77d3800fba77d6dfe7b5fcefa145940e74e66080d3608dce190ca3c698115217",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/fixture-agent.md",
+      "copy": "retry1/fixture-agent.md",
+      "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/result.json",
+      "copy": "retry2/result.json",
+      "sha256": "eb39f645f258194ca9eb22f4ade3c9cdea61e4e3e7a52b32054f565b9833cd02",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/stdout.log",
+      "copy": "retry2/stdout.log",
+      "sha256": "e2c3bdf276d641bab008a6152fe9e35a4f4c5af7d18ebc6c99cf66b1a94a93fe",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/stderr.log",
+      "copy": "retry2/stderr.log",
+      "sha256": "db12092f967a40108a6ed4c49ac690803afb64b42463f53f473a9224a92583fd",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/requests.json",
+      "copy": "retry2/requests.json",
+      "sha256": "753865e25cda65f38b03802898fe849a945190310357840f71fe19c6c3a2afc6",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/canary.log",
+      "copy": "retry2/canary.log",
+      "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/task.sb",
+      "copy": "retry2/task.sb",
+      "sha256": "260a78968f624883a4c7d4dd291a53fe16003c49ba6c665fa787c57f718e9ef9",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/fixture-agent.md",
+      "copy": "retry2/fixture-agent.md",
+      "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9",
+      "provenance": "local CLI fixture, no external provider or treatment/billing proof"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/run-kimi-local-cap-probe-v2.py",
+      "copy": "run-kimi-local-cap-probe-v2.py",
+      "sha256": "a38e7b9a369a5009ca6b53a56a6084bbd6d95d1474e1be237cd80fc175b9f64a",
+      "provenance": "exact retained probe source or public documentation capture"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/run-kimi-local-cap-cases.py",
+      "copy": "run-kimi-local-cap-cases.py",
+      "sha256": "e97014a1b0804bbba5057cf1c10fc0cd2d66b7f012939c35f9751bf2ff0bff19",
+      "provenance": "exact retained probe source or public documentation capture"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-docs-provenance.json",
+      "copy": "kimi-docs-provenance.json",
+      "sha256": "1021f7936ed69d5555b536a6af93312c011f0effa79eadff59a12d6ff2f385e7",
+      "provenance": "exact retained probe source or public documentation capture"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-config-files.txt",
+      "copy": "kimi-config-files.txt",
+      "sha256": "f1cd4ec8f3a74004c46b140b101a6a12a89f7fe8709652857b4194e19f3e62bb",
+      "provenance": "exact retained probe source or public documentation capture"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-env-vars.txt",
+      "copy": "kimi-env-vars.txt",
+      "sha256": "878604b6f5e5aaf39026e1a29be73b35a024193a1a482faac234fd5df3122ffa",
+      "provenance": "exact retained probe source or public documentation capture"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-providers.txt",
+      "copy": "kimi-providers.txt",
+      "sha256": "5e47df7bfa52b6324a373a0e90a798a92946843e284ad75164ea59759383b4f3",
+      "provenance": "exact retained probe source or public documentation capture"
+    }
+  ],
+  "scope_limits": "Controlled local kimi transport observes clamp parameter17, Read-only advertisement, step caps2/3 and HTTP500 attempt caps1/2. Real k3 provider honoring, input/compaction/background bounds, model pricing/billing and full USD15 campaign feasibility remain unverified. The original invalid literal-IP sandbox setup is retained in integration runtime; it launched no CLI/provider."
+}

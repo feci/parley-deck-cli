@@ -1,0 +1,94 @@
+[
+  {
+    "id": "C01",
+    "category": "code",
+    "title": "Strict duration parser",
+    "contract": "All rejected inputs raise ValueError. ASCII outer whitespace means space, tab, LF, CR, VT and FF. The output is a Python int, not bool. Fractional syntax may occur with any accepted unit, but the resulting milliseconds must be integral. No maximum input length is imposed beyond ordinary resource limits.",
+    "task": "Implement parse_duration(value: str) -> int returning milliseconds using only the Python standard library. Accepted grammar after trimming ASCII outer whitespace: one or more ASCII digits, optionally a decimal point followed by 1-3 digits, then exactly ms, s, or m. Fractional results must be integral milliseconds; reject otherwise. Reject signs, exponent notation, non-ASCII digits, non-strings, empty values, NaN/infinity, bare numbers, internal whitespace, repeated units, and values over 86,400,000 ms. Zero is allowed. Do not use binary floating point. Return a complete solution.py with this function and concise tests.",
+    "output_kind": "python-file",
+    "target": "solution.py"
+  },
+  {
+    "id": "C02",
+    "category": "code",
+    "title": "Half-open interval subtraction",
+    "contract": "base and each cut must be list or tuple pairs. cuts itself must be a list or tuple; reject other containers with ValueError. Every invalid value raises ValueError. Return a list of two-element lists of integer coordinates, coalescing touching output intervals into maximal intervals. Integers are unbounded Python ints; booleans are not integers for this contract.",
+    "task": "Implement subtract_intervals(base, cuts) using Python standard library. base and every cut are two-element integer (not bool) pairs [start,end] with start <= end. Raise ValueError for any malformed pair. Return sorted disjoint nonempty half-open intervals representing base minus the union of cuts. Cuts may be unsorted, nested, repeated, touching, outside base, or empty. Empty base returns [] but does not waive validation of cuts. Do not mutate inputs. Avoid iterating across the coordinate range. Return solution.py and concise tests.",
+    "output_kind": "python-file",
+    "target": "solution.py"
+  },
+  {
+    "id": "C03",
+    "category": "code",
+    "title": "Idempotent usage reconciliation",
+    "contract": "events must be a list or tuple and each event a dict, otherwise ValueError. Unknown or missing kind is ignored. Known kinds require a nonempty invocation_id; terminal requires cost_usd. A non-null cost must match ASCII digits optionally followed by a dot and one or more ASCII digits, without signs or whitespace. Cost comparison is numeric: '1.00' and '1' are the same terminal cost; null versus any number conflicts. Ignore extra fields. Decimal arithmetic must remain exact even when totals exceed the default Decimal context precision.",
+    "task": "Implement reconcile(events) returning a dictionary with attempts, terminal_attempts, unresolved_attempts, known_cost_usd, unknown_cost_attempts. Events are dictionaries with invocation_id (nonempty str), kind (requested or terminal), and terminal-only cost_usd (nonnegative decimal string or null). Replayed identical events are idempotent. Conflicting terminal events for one ID raise ValueError. Terminal without requested is allowed and counts one attempt. Requested without terminal is unresolved and has unknown cost. Terminal null cost is unknown, not zero. Return known_cost_usd as an exact normalized decimal string, with zero rendered '0'. Reject malformed known kinds and invalid costs including booleans, negative, NaN and exponent notation; ignore other event kinds without reading their fields. Do not infer usage from agent names or sum context-window snapshots. Return solution.py and concise tests.",
+    "output_kind": "python-file",
+    "target": "solution.py"
+  },
+  {
+    "id": "C04",
+    "category": "code",
+    "title": "Tenant-scoped permission evaluation",
+    "contract": "IDs and tenants must be nonempty strings. grants must be a list or tuple; otherwise return false. All six named grant fields must exist. tenant, subject_id and resource_id must be nonempty strings. Unknown actions and effects do not match; do not stringify values. Invalid subject or resource types return false. Return a bool.",
+    "task": "Implement may_access(subject, resource, grants, now) -> bool in Python. subject/resource are dictionaries containing string id and tenant. Return false on missing/invalid fields. A grant is a dict with tenant, subject_id, resource_id, action, effect, expires_at. Match tenant to BOTH subject and resource, exact subject_id, resource_id equal exact resource id or '*', and action exactly 'read'. expires_at is null (no expiry) or a non-bool integer Unix second; a grant is active only when now < expires_at. now must be a non-bool integer or return false. Ignore malformed grants. A matching active deny overrides any allow regardless of list order; otherwise at least one matching active allow is needed. Unknown effects never allow. Do not mutate inputs. Return solution.py with concise tests.",
+    "output_kind": "python-file",
+    "target": "solution.py"
+  },
+  {
+    "id": "R01",
+    "category": "review",
+    "title": "Refund transaction review",
+    "task": "Review this PostgreSQL transaction: BEGIN; SELECT status, amount, account_id FROM payments WHERE id=$1; application rejects if status='refunded'; UPDATE accounts SET balance=balance+$amount WHERE id=$account_id; UPDATE payments SET status='refunded' WHERE id=$1; COMMIT. Endpoint caller supplies tenant_id but the queries above do not use it. On network timeout the client retries the same payment ID. Identify material defects with concrete interleavings or inputs, propose a minimal repair and tests, and state what is NOT proved by a test that calls the endpoint twice sequentially. Do not invent additional schema constraints.",
+    "output_kind": "review"
+  },
+  {
+    "id": "R02",
+    "category": "review",
+    "title": "Archive extraction review",
+    "task": "Review this Python snippet: for member in archive.infolist(): target = root / member.filename; if str(target).startswith(str(root)): archive.extract(member, root). Assume ZIP files are untrusted, root may already contain symlinks, and the process has write access outside root. Explain which actual safety checks are missing and which claims depend on the extraction library's own behavior. Propose a safe extraction policy with bounded resources and adversarial tests. Avoid claiming that lexical normalization alone defeats symlink races.",
+    "output_kind": "review"
+  },
+  {
+    "id": "R03",
+    "category": "review",
+    "title": "Completion gate review",
+    "task": "Review this pseudo-code: results = run_checks(); if all(r.exit_code == 0 for r in results): try: write_evidence(results); except OSError: warn(); checker = first(participants); verdict = ask(checker, 'Did we finish?'); if verdict != 'FAIL': status = 'complete'. A skipped test runner may return exit 0. participants may start with the implementer. Code may change between checks and ask. Requirements include migration, rollback and deployment, but results only test the parser. Give prioritized findings, concrete counterexamples, minimal corrected control flow and acceptance tests. Do not infer deployment from a commit.",
+    "output_kind": "review"
+  },
+  {
+    "id": "R04",
+    "category": "review",
+    "title": "Benchmark trend review",
+    "task": "An evaluation counts 1,000 idea directories: 280 are copied worktrees. April has 80 older ideas, August 500 newer ideas; 90% of April ideas and 60% of August ideas have review files. August ideas have twice the median words. Agent names are recorded, but actual models, token usage and cost are mostly absent. The evaluator concludes 'models got worse, the protocol is 2x less efficient, and the best agent is the one writing most words'. Review every causal leap, propose defensible descriptive KPIs and a small prospective experiment. Do not replace the missing data with guessed prices or identity.",
+    "output_kind": "review"
+  },
+  {
+    "id": "D01",
+    "category": "design",
+    "title": "Backward-compatible field migration",
+    "task": "A SaaS service must replace customer.full_name with given_name/family_name while old and new clients coexist for 30 days. Names cannot always be split safely. The database has 4 million rows, writes continue, two application versions may run during deploy, and rollback must work. Design a staged rollout, data invariants, compatibility behavior, backfill strategy, verification and rollback conditions. State unresolved product choices rather than inventing a universal name parser. Deliver a concrete bounded plan, not a list of frameworks.",
+    "output_kind": "design"
+  },
+  {
+    "id": "D02",
+    "category": "design",
+    "title": "Webhook exactly-once claim",
+    "task": "Design a webhook processor that receives duplicate and out-of-order events. Event IDs are unique only within a tenant. One transaction updates local inventory; an external shipping API may time out after accepting a request. There is no distributed transaction and the shipping API supports a merchant-supplied idempotency key. Define data model, transaction boundaries, retry/reconciliation, ordering policy, crash recovery and observability. Explain the precise guarantee instead of claiming end-to-end exactly-once without assumptions.",
+    "output_kind": "design"
+  },
+  {
+    "id": "D03",
+    "category": "design",
+    "title": "Bounded multi-agent review",
+    "task": "A high-risk change touches authentication, billing and a shared API. Six candidate agents exist, two use the same underlying model. You have 20 minutes of elapsed time and a $12 estimated spend ceiling. One provider reports no cost and one CLI buffers all output until exit. Design team selection, independent proposals, scope ownership, review and escalation, budget accounting, liveness checks and completion evidence. Preserve all selected quorum members unless the operator explicitly changes the roster. Give a practical policy for unknown cost; do not call it zero or infer a hang from silence.",
+    "output_kind": "design"
+  },
+  {
+    "id": "D04",
+    "category": "design",
+    "title": "Phase-scoped policy context",
+    "task": "A 1,400-line cooperation policy contains phase rules, cross-cutting safety requirements, transport-specific appendices and a recently added unclassified normative section. A renderer wants to send only review-relevant text. Design source authority, block classification, complete omission evidence, dependency handling, cache invalidation, failure behavior and an experiment testing both speed and missed obligations. Do not use a stale packaged policy when live authority is unavailable, and do not declare a speed win from shorter text alone.",
+    "output_kind": "design"
+  }
+]

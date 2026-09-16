@@ -1,0 +1,2 @@
+{"role":"meta","type":"system.version","version":"0.42.0"}
+{"role":"meta","type":"turn.step.retrying","failed_attempt":1,"next_attempt":2,"max_attempts":2,"delay_ms":565.58060311394,"error_name":"APIStatusError","error_message":"500 controlled local transient error","status_code":500}
