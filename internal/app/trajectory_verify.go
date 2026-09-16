@@ -234,12 +234,8 @@ func verifyTrajectoryWithAgent(ctx context.Context, root, idea string, agent age
 		return result, err
 	}
 	ctx = runner.WithLaunchInfo(ctx, launchInfo)
-	quote := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'" }
-	command := quote(executable) + " trajectory verify-helper --request " + quote(result.RequestPath) + " --request-sha256 " + quote(result.RequestSHA256)
-	prompt := fmt.Sprintf(`You are %s, the selected independent execution verifier for idea %s.
-Invoke the exact helper command below once from this invocation. It runs the original material checks against the archived before/after sources in AB/BA order and retains actual observations. Do not edit code, scope, requests, journals, receipts or signatures. Do not substitute a written PASS or manually populated evidence. Preserve inherited PARLEY_RUN_ID, PARLEY_AGENT_ID and PARLEY_PROC_MARKER. If the helper fails, report the actual failure and stop; do not retry. After it returns, report its outcome briefly and stop. This records an observation; it does not grant trajectory continuation or completion. Process attribution is not human authentication.
-Verifier command: %s
-`, agent.ID, idea, command)
+	command := trajectoryVerifierHelperCommand(executable, result.RequestPath, result.RequestSHA256)
+	prompt := trajectoryVerifierPrompt(agent.ID, idea, command)
 	stage = "launch"
 	res := runner.RunConsult(ctx, runner.ConsultOptions{Root: root, Agent: agent, Prompt: prompt,
 		Timeout: timeout, StdoutPath: filepath.Join(dir, "agent.stdout.log"), StderrPath: filepath.Join(dir, "agent.stderr.log"), Progress: progress})
@@ -279,6 +275,23 @@ Verifier command: %s
 	result.ReceiptSHA256 = sha256Hex(string(append(encoded, '\n')))
 	result.Assessment = &assessment
 	return result, nil
+}
+
+// trajectoryVerifierHelperCommand is the exact helper invocation both the
+// original verify and the recovered relaunch hand to the selected verifier.
+func trajectoryVerifierHelperCommand(executable, requestPath, requestSHA256 string) string {
+	quote := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'" }
+	return quote(executable) + " trajectory verify-helper --request " + quote(requestPath) + " --request-sha256 " + quote(requestSHA256)
+}
+
+// trajectoryVerifierPrompt is the exact verifier instruction shared by the
+// original verify and the recovered relaunch; the helper command line format is
+// load-bearing for the helper extraction contract.
+func trajectoryVerifierPrompt(agentID, idea, command string) string {
+	return fmt.Sprintf(`You are %s, the selected independent execution verifier for idea %s.
+Invoke the exact helper command below once from this invocation. It runs the original material checks against the archived before/after sources in AB/BA order and retains actual observations. Do not edit code, scope, requests, journals, receipts or signatures. Do not substitute a written PASS or manually populated evidence. Preserve inherited PARLEY_RUN_ID, PARLEY_AGENT_ID and PARLEY_PROC_MARKER. If the helper fails, report the actual failure and stop; do not retry. After it returns, report its outcome briefly and stop. This records an observation; it does not grant trajectory continuation or completion. Process attribution is not human authentication.
+Verifier command: %s
+`, agentID, idea, command)
 }
 
 func runTrajectoryVerifyHelper(ctx context.Context, args []string, out, errout io.Writer) int {

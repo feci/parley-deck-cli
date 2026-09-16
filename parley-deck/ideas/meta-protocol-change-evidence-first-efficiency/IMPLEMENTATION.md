@@ -5,8 +5,8 @@ implementer: codex-1
 started: 2026-09-05
 branch: parley-deck-cli#integration/meta-protocol-change-evidence-first-efficiency
 checkpoint-base-commit: 29361d6fdadd511330c081b9b840a93f250ef52c
-validation-source-manifest: c9b436f7d8bbd0f3fe16b818f6f48e752a7a434e8a1cc670d22e2df8579cd18f
-validation-status: passed
+validation-source-manifest: 7ff997e3f92313b33920bafae9460de027f51ab6dae90a69670d56449863f84b
+validation-status: recovery-checkpoint-passed-independent-acceptance-pending
 design-pr: https://github.com/feci/parley-deck-cli/pull/72
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 ---
@@ -15,59 +15,62 @@ implementation-pr: https://github.com/feci/parley-deck-cli/pull/73
 
 ## Current continuation — September 16, 2026
 
-The remaining manual quorum is user-authorized: codex-1 organizes claude-1,
-kimi-1 and zcode-1, prospectively replacing Hermes. Historical kickoff, FINAL,
-rounds, signatures, captured scopes and live protocol remain unchanged. Draft
-amendment #74 now contains owned Codex, Zcode and Kimi round-01 artifacts;
-Kimi appended its own correction while preserving its original bytes. Claude's
-independent round is queued for the recorded 00:30 UTC provider reset. All
-cross-review, consensus and finalization gates remain open.
+Codex organizes the user-authorized prospective quorum Claude, Kimi and Zcode.
+Historical Hermes contributions, FINALs, signatures and the live protocol remain
+unchanged. Amendment draft PR #74 has all four round-01 files and Codex round-02;
+three peer round-02 requests were refused before provider spawn. No consensus or
+FINAL exists for the amendment.
 
-USD 15 TOTAL covers prospective experiment spending, including pilot, packet,
-grading, experiment-specific calibration and retries. Implementation/review
-spending is separate. The 15-minute shared task-arm elapsed ceiling also binds
-packet task/arms. No treatment has started. Twelve tasks, three arms, full pilot
-context, blind grading and the separate exact packet experiment remain required.
-Observed-cost multipliers and post-overrun stopping do not establish a hard
-provider-spending upper bound. Current Kimi documentation describes step/retry,
-background and provider-specific output controls omitted from CLI help; their
-actual effect on the configured route and monetary feasibility remain unverified.
-Kimi completed its source audit. Five local client controls observed the output
-parameter, Read-only tool advertisement, step caps and controlled HTTP500 attempt
-caps. They do not prove actual provider billing or constitute treatment trials.
+The complete recovery source is now integrated: 444 Go/module files, with the
+450-file validation snapshot and exact import manifest retained under
+`.parley-runtime/managed-continuation-20260915/complete-recovery-validation/`.
+Focused checks passed41 test/subtest events49.134s and full tests passed2566
+1252.274s. The original six-package race command FAILED on trajectory's10m package
+deadline; five other packages passed. An unchanged-source trajectory-only rerun
+with20m passed456 events735.476s, then vet passed1.537s. Thus all six race packages
+pass across two commands; the original failed command is not relabeled. Earlier
+omitted-fixture failures remain preserved. See the coordinator recovery-validation
+JSON for commands and log digests. Complete current-source independent acceptance
+is still pending.
 
-The published 430-file Go/module source (manifest
-c9b436f7d8bbd0f3fe16b818f6f48e752a7a434e8a1cc670d22e2df8579cd18f)
-passed build, full Go tests (554.398s), six-package race (659.592s) and vet
-(1.247s). These checks do not cover the separate verifier-recovery candidate.
-Earlier failed runs and narrower diagnostic controls remain retained, with their
-original causal limits. Full current-source independent acceptance is pending.
+This source adds refused-verifier recovery, a bound actual runner/helper relaunch,
+immutable recovered-parent publication and a read-only worktree inventory. Two
+real inventory calls showed27 registrations, two missing/unknown, identical JSON,
+and unchanged registration bytes. The later inventory comment clarification and
+N1 precharge candidate remain separate. Zcode's N1 implementation timed out;
+coordinator skip/overwrite and fixture corrections have meaningful before/after
+controls. Kimi's app slice compiled; one combined app fixture failed while26 test
+or subtest events passed. Its own correction and independent skip review are in
+progress. None of those later files is covered by this recovery checkpoint.
 
-The isolated verifier-refusal candidate now revalidates retained refused bytes,
-and its earlier focused trajectory/runner controls passed after disclosed test
-corrections. The next parent-lineage candidate failed its clean positive path:
-it applies the ordinary request-before-reservation timing predicate to a recovery
-that necessarily precedes the replacement request. Its 195.018s focused command
-is retained as failed; runner linkage separately failed on native disk exhaustion.
-Zcode is now correcting the chronology and implementing a narrow real runner
-launch under the immutable recovery's intended invocation ID. This is isolated,
-unintegrated source. Attended app CLI wiring and wider recovery remain open.
+Claude is implementing a minimum request-scoped declared-unavailable protocol
+migration candidate, based on its corrected design and Kimi's independent review.
+No real declaration, count, migration apply or retry is authorized by that source
+work. Unknown history remains unknown; ordinary bootstrap must keep refusing.
+The intended eventual round launcher is one direct instrumented RunRound call,
+keeping all four members and skipping Codex's existing artifact. Backup/count
+clarification remains pending; no cap or scope bypass is permitted.
 
-The September 16 offline report is a partial checkpoint, not final delivery. Its
-print canvas defect was reproduced and fixed with old/new/return controls; earlier
-29 browser checks remain bound to the preserved prior report hash. Ten report
-tests and three print controls cover the current report hash. Physical paper/PDF
-pagination and final scope-complete report/QA remain pending. All 156 historical
-assessment/report files and 88 protected protocol/history files were preserved.
-No 14/30-day follow-up clock has started.
+USD15 TOTAL covers prospective pilot, packet, grading, calibration and retries;
+implementation/source-review spending is separate.900 seconds is shared across
+each task-arm, including packet arms. Twelve tasks, three pilot arms, full pilot
+context, blind nonauthor grading and the separate exact28-call packet experiment
+remain required. Provider spending upper bounds are still unproven. No treatment
+or experiment freeze has started.
 
-Implementation PR #73 and amendment PR #74 remain draft/open. No release, global
-install, core publication, production deployment, merge or closure is authorized
-or claimed. Original acceptance criteria, scoped findings, independent reviews,
-exact experiments and delivery-based follow-ups remain required. The exact
-current invocations, hashes, accounting and next actions are in
-`.parley-runtime/managed-continuation-20260915/handoff.json`; completed evidence
-and superseded observations remain in the dated implementation notes below.
+Stopped real CLI inventory:72 normalized terminal attempts plus one stopped
+attempt missing its terminal;44 terminal costs plus that incomplete attempt are
+unknown. Known CLI estimates totalUSD97.7811085; total spend is unknown. Three
+pre-provider refusals and two current source tasks are counted separately.
+
+The September16 offline report remains a partial checkpoint. Its current tests
+and print controls retain their exact report hashes; final report/ego-browser QA
+and delivery-based14/30-day follow-ups remain required. No follow-up clock has
+started. PRs#73/#74 remain draft/open. No release, global installation, core
+publication, deployment, merge or closure is authorized or claimed.
+
+Exact live invocations and next actions are in
+`.parley-runtime/managed-continuation-20260915/handoff.json`.
 
 ## Unchanged-source reconciliation allocation — September 12, 2026
 

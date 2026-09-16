@@ -53,6 +53,11 @@ func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writ
 	if len(args) > 0 && args[0] == "migrate" {
 		return runBudgetMigrate(ctx, args[1:], stdout, stderr, attended)
 	}
+	// Read-only and therefore ungated: it inspects registrations and never
+	// prunes, recovers or attests one.
+	if len(args) > 0 && args[0] == "worktree" {
+		return runBudgetWorktree(ctx, args[1:], stdout, stderr)
+	}
 	if len(args) > 0 && (args[0] == "launch" || args[0] == "step") {
 		return runBudgetPolicy(ctx, args[0], args[1:], stdout, stderr, attended)
 	}
@@ -66,6 +71,7 @@ func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writ
 		fmt.Fprintln(stderr, "read-only action receipts: parley budget action inspect|replay --ledger DIR --scope ID [options]")
 		fmt.Fprintln(stderr, "legacy launch accounting: parley budget migrate inspect|apply --kind launch --dir DIR [--idea ID] [options]")
 		fmt.Fprintln(stderr, "runtime policy controls: parley budget launch|step inspect|extend --dir DIR [--idea ID] [options]")
+		fmt.Fprintln(stderr, "read-only worktree registrations: parley budget worktree inspect --dir DIR")
 		fmt.Fprintln(stderr, "usage: parley budget inspect|reconcile --ledger DIR --scope ID [options]; parley budget configure --dir DIR [--idea ID] --max-launches N --max-cost-micros N --wall-clock D --yes; parley budget cycle inspect|extend --dir DIR --idea ID --kind fixup|cross-review [options]")
 		return 2
 	}

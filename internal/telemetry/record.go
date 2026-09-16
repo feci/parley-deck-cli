@@ -159,22 +159,22 @@ func NewID() (string, error) {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", raw[0:4], raw[4:6], raw[6:8], raw[8:10], raw[10:16]), nil
 }
 
-func Begin(directory string, metadata Metadata) (*Invocation, error) {
-	id, err := NewID()
-	if err != nil {
-		return nil, err
-	}
+// openInvocationStore ensures the shared invocations directory exists and is a
+// real directory — never a symlink alias of another location.
+func openInvocationStore(directory string) error {
 	if err := fsutil.MkdirAllResilient(directory, 0o700); err != nil {
-		return nil, fmt.Errorf("create telemetry directory: %w", err)
+		return fmt.Errorf("create telemetry directory: %w", err)
 	}
 	info, err := os.Lstat(directory)
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		return nil, errors.New("telemetry directory must be a real directory")
+		return errors.New("telemetry directory must be a real directory")
 	}
-	dir := filepath.Join(directory, id)
-	if err := os.Mkdir(dir, 0o700); err != nil {
-		return nil, fmt.Errorf("reserve invocation directory: %w", err)
-	}
+	return nil
+}
+
+// newInvocation persists the requested record for a directory this caller
+// exclusively created; the identifier is already validated by the constructor.
+func newInvocation(dir, id string, metadata Metadata) (*Invocation, error) {
 	warnings := []string{}
 	metadata = cleanMetadata(metadata, &warnings)
 	now := time.Now()
@@ -186,6 +186,61 @@ func Begin(directory string, metadata Metadata) (*Invocation, error) {
 		return nil, fmt.Errorf("persist requested invocation before launch: %w", err)
 	}
 	return i, nil
+}
+
+func Begin(directory string, metadata Metadata) (*Invocation, error) {
+	id, err := NewID()
+	if err != nil {
+		return nil, err
+	}
+	if err := openInvocationStore(directory); err != nil {
+		return nil, err
+	}
+	dir := filepath.Join(directory, id)
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("reserve invocation directory: %w", err)
+	}
+	return newInvocation(dir, id, metadata)
+}
+
+// ValidBoundInvocationID reports whether id is acceptable for BeginBound: a
+// safe telemetry label that is also exactly one path element, so the invocation
+// directory it names can neither escape the shared invocations directory nor
+// alias another entry through separators or dot segments.
+func ValidBoundInvocationID(id string) bool {
+	return SafeLabel(id) != nil && !strings.ContainsAny(id, `/\`) && id != "." && id != ".."
+}
+
+// BeginBound allocates the invocation under a caller-bound identifier instead
+// of a fresh random one. It exists for exactly one trusted bridge: an immutable
+// launch authority (a captured-verification recovery) pins the invocation ID
+// before the launch exists, and the real process runner must execute under that
+// pinned ID. It is not a general caller-chosen-ID facility; ordinary launches
+// keep using Begin, and nothing here authenticates the binder — the binding
+// authority is validated by the caller that recovered the launch. Safety mirrors
+// Begin with two added invariants: the bound ID must be a single safe path
+// element (ValidBoundInvocationID), and the invocation directory must be
+// exclusively created fresh — an already existing directory, file or symlink at
+// that name (a replay, a collision or a planted alias) is refused, never
+// overwritten and never reused. Later lifecycle records (started/terminal) are
+// written by the returned Invocation under the same exclusive-write discipline
+// as an ordinary launch.
+func BeginBound(directory, id string, metadata Metadata) (*Invocation, error) {
+	if !ValidBoundInvocationID(id) {
+		return nil, errors.New("bound invocation identifier must be a safe single path element")
+	}
+	if err := openInvocationStore(directory); err != nil {
+		return nil, err
+	}
+	dir := filepath.Join(directory, id)
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		return nil, fmt.Errorf("exclusively create bound invocation directory: %w", err)
+	}
+	info, err := os.Lstat(dir)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return nil, errors.New("bound invocation directory must be a real fresh directory")
+	}
+	return newInvocation(dir, id, metadata)
 }
 
 func cleanMetadata(m Metadata, warnings *[]string) Metadata {

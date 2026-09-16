@@ -401,3 +401,251 @@ func PreviewParentRecovery(ctx context.Context, root, idea, runID string) (Paren
 func RecoverParent(ctx context.Context, root, idea, runID, expected string) (ParentRecoveryPreview, error) {
 	return parentRecovery(ctx, root, idea, runID, expected, true, publishParentRecovery)
 }
+
+const recoveredParentName = "parent-recovered.json"
+
+// RecoveredParentPreview ties the retained ORIGINAL pre-start budget-refusal
+// parent failure to the fully observed replacement/helper lineage produced
+// after the explicit verifier-launch recovery. It never overwrites, deletes or
+// relaxes the original failed result: Original pins that result's retained
+// bytes and exact decoded facts, Recovery pins the validated immutable
+// verifier-launch recovery identity, and Derived pins the freshly re-derived
+// replacement lifecycle and assessment. This is a separate mechanism from the
+// missing-parent recovery above: the original here is a complete, retained
+// failure, not a missing or interrupted publication.
+type RecoveredParentPreview struct {
+	Version        int                      `json:"version"`
+	Root           string                   `json:"root"`
+	Idea           string                   `json:"idea"`
+	RunID          string                   `json:"run_id"`
+	StateSHA256    string                   `json:"state_sha256"`
+	Original       ParentObservation        `json:"original"`
+	OriginalResult ParentResult             `json:"original_result"`
+	Recovery       CapturedRecoveryIdentity `json:"recovery"`
+	Derived        ParentDerivation         `json:"derived"`
+	ParentSHA256   string                   `json:"parent_sha256"`
+}
+
+func (p RecoveredParentPreview) SHA256() string { raw, _ := canonical(p); return digest(raw) }
+
+// RecoveredParentRecord is the immutable recovered parent observation. Once
+// published it is validated against live evidence on every read and replayed,
+// never rewritten; a stale, deleted or contradictory original or replacement
+// lineage fails every fresh preview, reconciliation and later state guard.
+type RecoveredParentRecord struct {
+	Version     int                    `json:"version"`
+	Preview     RecoveredParentPreview `json:"preview"`
+	SHA256      string                 `json:"sha256"`
+	RecoveredAt time.Time              `json:"recovered_at"`
+}
+
+func readRecoveredParent(dir *os.Root, base string) (RecoveredParentRecord, string, error) {
+	var r RecoveredParentRecord
+	sha, err := readReconciliationJSON(dir, filepath.Join(base, recoveredParentName), &r)
+	return r, sha, err
+}
+
+// validateRecoveredParent requires the retained observation to reproduce the
+// complete freshly validated lineage: the exact verifier-launch recovery
+// identity, the fresh replacement derivation, the canonical new parent digest,
+// AND the retained original failed parent result — byte-identical and still
+// exactly the pre-start budget refusal of the recovery's refused invocation.
+// Every check runs on each fresh preview, explicit reconciliation and later
+// state-guard re-derivation, so post-publication mutation or deletion of the
+// original result, the replacement lifecycle, the journal recovery or the
+// record itself fails closed.
+func validateRecoveredParent(dir *os.Root, base, root string, s State, derived ParentDerivation, effective verificationEffectiveLaunch, r RecoveredParentRecord) error {
+	p := r.Preview
+	if r.Version != 1 || p.Version != 1 || !validHash(p.StateSHA256) || r.SHA256 != p.SHA256() || r.RecoveredAt.IsZero() || r.RecoveredAt.Before(derived.CompletedAt) {
+		return errors.New("invalid recovered parent observation")
+	}
+	if !effective.Recovered {
+		return errors.New("recovered parent observation requires an explicit verifier-launch recovery")
+	}
+	identity := capturedRecoveryIdentity(effective)
+	if p.Root != root || p.Idea != s.Policy.Idea || p.RunID != derived.Result.RunID || !filepath.IsAbs(p.Root) ||
+		filepath.Join(p.Root, base, "request.json") != derived.Result.RequestPath || p.Recovery != identity ||
+		!sameJSON(p.Derived, derived) || p.ParentSHA256 != originalParentDigest(s, p.Root, p.RunID, derived.Result) {
+		return errors.New("recovered parent observation differs from the complete validated lineage")
+	}
+	var original ParentResult
+	originalSHA, err := readReconciliationJSON(dir, filepath.Join(base, "parent-result.json"), &original)
+	if err != nil {
+		return errors.New("recovered parent observation lost its original refused parent result")
+	}
+	if p.Original != (ParentObservation{Kind: "failed-budget-refusal", SHA256: originalSHA}) || !sameJSON(original, p.OriginalResult) {
+		return errors.New("original refused parent result changed after recovery")
+	}
+	if original.Version != 1 || original.RunID != derived.Result.RunID ||
+		original.RequestPath != derived.Result.RequestPath || original.RequestSHA256 != derived.Result.RequestSHA256 ||
+		original.InvocationID != effective.Recovery.RefusedInvocationID ||
+		original.TerminalSHA256 != effective.Recovery.RefusedTerminalSHA256 ||
+		original.ReceiptSHA256 != "" || original.Assessment != nil ||
+		original.FailureStage != "launch" || !original.TrajectoryPending {
+		return errors.New("original retained result is not the exact pre-start budget refusal")
+	}
+	return nil
+}
+
+// newRecoveredParentPreview derives the observation preview from live evidence.
+// The derivation requires the complete replacement lifecycle and helper
+// journal; without them the preview is unavailable and nothing is published.
+// The retained original must be exactly the pre-start budget-refusal failure
+// the recovery repaired — a successful, missing, interrupted or unrelated
+// parent result refuses instead of being conflated with the missing-parent
+// recovery or silently relaxed.
+func newRecoveredParentPreview(ctx context.Context, b budget.CycleBinding, s State, root, runID string) (RecoveredParentPreview, error) {
+	var p RecoveredParentPreview
+	derived, effective, err := deriveParentEvidenceWithLaunch(ctx, b, s, root, runID)
+	if err != nil {
+		return p, err
+	}
+	if !effective.Recovered {
+		return p, errors.New("recovered parent observation requires an explicit verifier-launch recovery")
+	}
+	dir, err := os.OpenRoot(root)
+	if err != nil {
+		return p, err
+	}
+	defer dir.Close()
+	base := filepath.Join(".parley-runtime", "trajectory-verification", runID)
+	var original ParentResult
+	originalSHA, err := readReconciliationJSON(dir, filepath.Join(base, "parent-result.json"), &original)
+	if err != nil {
+		return p, errors.New("recovered parent observation requires the retained original refused parent result")
+	}
+	if original.Version != 1 || original.RunID != runID ||
+		original.RequestPath != derived.Result.RequestPath || original.RequestSHA256 != derived.Result.RequestSHA256 ||
+		original.InvocationID != effective.Recovery.RefusedInvocationID ||
+		original.TerminalSHA256 != effective.Recovery.RefusedTerminalSHA256 ||
+		original.ReceiptSHA256 != "" || original.Assessment != nil ||
+		original.FailureStage != "launch" || !original.TrajectoryPending {
+		return p, errors.New("original retained result is not the exact pre-start budget refusal")
+	}
+	raw, _ := canonical(s)
+	return RecoveredParentPreview{Version: 1, Root: root, Idea: s.Policy.Idea, RunID: runID, StateSHA256: digest(raw),
+		Original: ParentObservation{Kind: "failed-budget-refusal", SHA256: originalSHA}, OriginalResult: original,
+		Recovery: capturedRecoveryIdentity(effective), Derived: derived,
+		ParentSHA256: originalParentDigest(s, root, runID, derived.Result)}, nil
+}
+
+func syncRecoveredParent(dir *os.Root, base string) error {
+	f, err := dir.Open(filepath.Join(base, recoveredParentName))
+	if err != nil {
+		return err
+	}
+	err = errors.Join(fsutil.SyncFile(f), f.Close())
+	if err != nil {
+		return err
+	}
+	parent, err := dir.Open(base)
+	if err != nil {
+		return err
+	}
+	return errors.Join(fsutil.SyncFile(parent), parent.Close())
+}
+
+// publishRecoveredParent writes the immutable observation with the same
+// stage-fsync-rename discipline as the missing-parent recovery. A retained
+// record is validated and replayed by the caller; it is never rewritten here.
+func publishRecoveredParent(dir *os.Root, base string, r RecoveredParentRecord) error {
+	raw, err := canonical(r)
+	if err != nil || len(raw) > 1<<20 {
+		return errors.New("recovered parent observation exceeds its publication bound")
+	}
+	var token [16]byte
+	if _, err = rand.Read(token[:]); err != nil {
+		return err
+	}
+	stage := filepath.Join(base, ".parent-recovered-"+hex.EncodeToString(token[:])+".tmp")
+	f, err := dir.OpenFile(stage, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		return err
+	}
+	defer dir.Remove(stage)
+	_, writeErr := f.Write(raw)
+	if err = errors.Join(writeErr, fsutil.SyncFile(f), f.Close()); err != nil {
+		return err
+	}
+	if err = dir.Rename(stage, filepath.Join(base, recoveredParentName)); err != nil {
+		return err
+	}
+	return syncRecoveredParent(dir, base)
+}
+
+func recoveredParent(ctx context.Context, root, idea, runID, expected string, apply bool) (RecoveredParentPreview, error) {
+	var result RecoveredParentPreview
+	root, err := canonicalRoot(root)
+	if err != nil {
+		return result, err
+	}
+	if !runtimeID(idea) || !runtimeID(runID) || apply && !validHash(expected) {
+		return result, errors.New("recovered parent observation requires exact idea/run and preview identity")
+	}
+	err = withState(ctx, root, idea, func(b budget.CycleBinding, _ budget.Snapshot, s State) error {
+		dir, err := os.OpenRoot(root)
+		if err != nil {
+			return err
+		}
+		defer dir.Close()
+		base := filepath.Join(".parley-runtime", "trajectory-verification", runID)
+		retained, _, err := readRecoveredParent(dir, base)
+		if err == nil {
+			derived, effective, e := deriveParentEvidenceWithLaunch(ctx, b, s, root, runID)
+			if e != nil {
+				return e
+			}
+			if e = validateRecoveredParent(dir, base, root, s, derived, effective, retained); e != nil {
+				return e
+			}
+			if apply && expected != retained.SHA256 {
+				return errors.New("recovered parent observation replay changed its original preview")
+			}
+			if apply {
+				if e = syncRecoveredParent(dir, base); e != nil {
+					return e
+				}
+			}
+			result = retained.Preview
+			return nil
+		}
+		if !os.IsNotExist(err) {
+			return err
+		}
+		p, err := newRecoveredParentPreview(ctx, b, s, root, runID)
+		if err != nil {
+			return err
+		}
+		if apply {
+			if expected != p.SHA256() {
+				return errors.New("recovered parent evidence or state changed since preview")
+			}
+			if err = publishRecoveredParent(dir, base, RecoveredParentRecord{1, p, expected, time.Now().UTC()}); err != nil {
+				return err
+			}
+		}
+		result = p
+		return nil
+	})
+	if err == nil && result.Version == 0 {
+		err = errors.New("trajectory is not active")
+	}
+	return result, err
+}
+
+// PreviewRecoveredParent derives the exact recovered parent observation from
+// live evidence without writing anything. It is unavailable before the
+// replacement/helper lineage is fully observed.
+func PreviewRecoveredParent(ctx context.Context, root, idea, runID string) (RecoveredParentPreview, error) {
+	return recoveredParent(ctx, root, idea, runID, "", false)
+}
+
+// PublishRecoveredParent writes the immutable recovered parent observation
+// after rechecking the exact preview digest against live evidence. A retained
+// record is validated and replayed (expected must equal its digest), never
+// rewritten; the original failed parent result and every prior record stay
+// byte-for-byte. Publication executes no model and spends, refunds or resets
+// nothing.
+func PublishRecoveredParent(ctx context.Context, root, idea, runID, expected string) (RecoveredParentPreview, error) {
+	return recoveredParent(ctx, root, idea, runID, expected, true)
+}

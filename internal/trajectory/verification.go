@@ -108,7 +108,7 @@ func StopCapturedVerification(ctx context.Context, ticket VerificationTicket, in
 	// Stopping an issued ticket does not require unavailable historical source
 	// or accepted-result bytes, and never grants another execution or acceptance.
 	return withVerificationAuthority(ctx, ticket, false, func(dir *os.Root, sha string) error {
-		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
+		launchSHA, err := readVerificationLaunch(dir, ticket, invocation)
 		if err != nil {
 			return err
 		}
@@ -395,26 +395,139 @@ func withVerificationAuthority(ctx context.Context, ticket VerificationTicket, r
 // ReserveCapturedVerificationLaunch must be called by the instrumented runner
 // with its actual reserved invocation ID before spawning the selected verifier.
 // This API does not authenticate that ID. Integration must enforce its lineage.
+// After an explicit recovery the immutable recovery artifact already reserves
+// exactly its bound invocation: the subsequent launch is separately checked here
+// — only the intended invocation is admitted, with no write, and only while the
+// retained refusal evidence still matches the recovery's binding — and is
+// charged by its own budget boundary afterwards.
 func ReserveCapturedVerificationLaunch(ctx context.Context, ticket VerificationTicket, invocation string) error {
 	if !safeLabel(invocation) || invocation == ticket.Request.InvocationID {
 		return errors.New("independent verifier requires a distinct invocation")
 	}
 	return withVerification(ctx, ticket, func(dir *os.Root, sha string) error {
+		if _, err := readVerificationArtifact(dir, "recovery.json", new(verificationRecovery)); err == nil {
+			_, err = readVerificationLaunch(dir, ticket, invocation)
+			return err
+		} else if !os.IsNotExist(err) {
+			return err
+		}
 		_, err := writeVerificationArtifact(dir, "launch.json", verificationLaunch{1, sha, invocation, time.Now().UTC()})
 		return err
 	})
 }
 
-func readVerificationLaunch(dir *os.Root, ticketSHA, invocation string) (string, error) {
-	var launch verificationLaunch
-	sha, err := readVerificationArtifact(dir, "launch.json", &launch)
+// readVerificationLaunch resolves the effective launch authority for an
+// invocation. Without a recovery it is exactly launch.json's reservation. With
+// one, the retained recovery artifact is validated against the live journal —
+// not trusted: its shape, chronology and invocation distinctness are checked
+// against the actual launch.json bytes, and the bound refusal evidence is
+// revalidated in full, meaning the refused invocation's retained
+// requested/terminal records must still prove the same pre-start budget
+// refusal (semantics, chronology, no started lifecycle) AND their current
+// digests must equal the ones the recovery bound. Post-recovery mutation or
+// deletion of that evidence therefore fails every recovered reserve, stop,
+// read, execute and receipt. Only after that does the refused invocation fail
+// closed as superseded before any write, and only the recovery's intended
+// invocation resolve — to the recovery artifact itself, so claims, receipts
+// and stops bind the complete recovery lineage. Every other invocation still
+// differs from the durable reservation.
+func readVerificationLaunch(dir *os.Root, ticket VerificationTicket, invocation string) (string, error) {
+	ticketSHA, err := ticket.SHA256()
 	if err != nil {
 		return "", err
 	}
-	if launch.Version != 1 || launch.TicketSHA256 != ticketSHA || launch.InvocationID != invocation || !safeLabel(invocation) || launch.At.IsZero() {
-		return "", errors.New("verification invocation differs from its durable reservation")
+	var launch verificationLaunch
+	launchSHA, err := readVerificationArtifact(dir, "launch.json", &launch)
+	if err != nil {
+		return "", err
 	}
-	return sha, nil
+	if launch.Version != 1 || launch.TicketSHA256 != ticketSHA || !safeLabel(launch.InvocationID) || launch.At.IsZero() {
+		return "", errors.New("verification launch reservation is not a valid original authority")
+	}
+	var recovery verificationRecovery
+	recoverySHA, err := readVerificationArtifact(dir, "recovery.json", &recovery)
+	if os.IsNotExist(err) {
+		if launch.InvocationID != invocation || !safeLabel(invocation) {
+			return "", errors.New("verification invocation differs from its durable reservation")
+		}
+		return launchSHA, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	if recovery.Version != 1 || recovery.TicketSHA256 != ticketSHA || recovery.PriorLaunchSHA256 != launchSHA ||
+		recovery.RefusedInvocationID != launch.InvocationID || !runtimeID(recovery.RefusedInvocationID) ||
+		!validHash(recovery.RefusedRequestedSHA256) || !validHash(recovery.RefusedTerminalSHA256) ||
+		!safeLabel(recovery.InvocationID) || recovery.InvocationID == recovery.RefusedInvocationID ||
+		recovery.InvocationID == ticket.Request.InvocationID || recovery.At.IsZero() || recovery.At.Before(launch.At) {
+		return "", errors.New("verification recovery contradicts its original launch reservation")
+	}
+	// Revalidate the exact refusal evidence the recovery binds, against the
+	// bytes retained now: recovery.json alone is never sufficient authority.
+	terminalSHA, requestedSHA, refusedCompletedAt, err := refusedVerificationEvidence(ticket, recovery.RefusedInvocationID, launch.At)
+	if err != nil {
+		return "", err
+	}
+	if requestedSHA != recovery.RefusedRequestedSHA256 || terminalSHA != recovery.RefusedTerminalSHA256 {
+		return "", errors.New("verification recovery no longer matches its retained refused-launch evidence")
+	}
+	// The explicit recovery repairs a fully completed refusal; a retained
+	// recovery claiming to predate that completion contradicts the very
+	// evidence it binds, so every recovered handle fails closed on it.
+	if recovery.At.Before(refusedCompletedAt) {
+		return "", errors.New("verification recovery predates the retained refusal completion")
+	}
+	if invocation == recovery.RefusedInvocationID {
+		return "", errSupersededVerificationInvocation
+	}
+	if invocation == recovery.InvocationID {
+		return recoverySHA, nil
+	}
+	return "", errors.New("verification invocation differs from its durable reservation")
+}
+
+// verificationEffectiveLaunch names the invocation whose observed lifecycle can
+// complete a captured verification, together with the launch authority artifact
+// its helper journal binds: the original launch.json reservation when no
+// recovery exists, or — after an explicit recovery — the immutable recovery
+// artifact itself and its bound replacement invocation.
+type verificationEffectiveLaunch struct {
+	InvocationID    string
+	AuthoritySHA256 string
+	Recovery        verificationRecovery
+	Recovered       bool
+}
+
+// resolveVerificationEffectiveLaunch resolves which invocation a parent
+// derivation must follow. The discovery read of recovery.json only selects
+// which invocation to resolve; every validity decision — the recovery's
+// binding to the actual launch.json bytes, the revalidated refusal evidence,
+// its bound digests and its chronology against the refusal completion — stays
+// in the common authority reader readVerificationLaunch, re-run here for the
+// selected invocation. A malformed, contradictory or evidence-diverged
+// retained recovery therefore fails this resolution exactly as it fails every
+// other recovered handle; no weaker parallel parser is introduced.
+func resolveVerificationEffectiveLaunch(dir *os.Root, ticket VerificationTicket, launch verificationLaunch) (verificationEffectiveLaunch, error) {
+	var recovery verificationRecovery
+	_, err := readVerificationArtifact(dir, "recovery.json", &recovery)
+	if os.IsNotExist(err) {
+		authoritySHA, err := readVerificationLaunch(dir, ticket, launch.InvocationID)
+		if err != nil {
+			return verificationEffectiveLaunch{}, err
+		}
+		return verificationEffectiveLaunch{InvocationID: launch.InvocationID, AuthoritySHA256: authoritySHA}, nil
+	}
+	if err != nil {
+		return verificationEffectiveLaunch{}, err
+	}
+	// The discovered invocation is untrusted selection input only:
+	// readVerificationLaunch re-reads and fully revalidates the retained
+	// recovery record, resolving authority solely for its own bound invocation.
+	authoritySHA, err := readVerificationLaunch(dir, ticket, recovery.InvocationID)
+	if err != nil {
+		return verificationEffectiveLaunch{}, err
+	}
+	return verificationEffectiveLaunch{InvocationID: recovery.InvocationID, AuthoritySHA256: authoritySHA, Recovery: recovery, Recovered: true}, nil
 }
 
 // ExecuteCapturedVerification is the execution half of the independent helper.
@@ -428,7 +541,7 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 		if err := verificationNotStopped(dir); err != nil {
 			return err
 		}
-		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
+		launchSHA, err := readVerificationLaunch(dir, ticket, invocation)
 		if err != nil {
 			return err
 		}
@@ -461,7 +574,7 @@ func ExecuteCapturedVerification(ctx context.Context, ticket VerificationTicket,
 		if err := verificationNotStopped(dir); err != nil {
 			return err
 		}
-		launchSHA, err := readVerificationLaunch(dir, sha, invocation)
+		launchSHA, err := readVerificationLaunch(dir, ticket, invocation)
 		if err != nil || launchSHA != receipt.LaunchSHA256 {
 			return errors.New("verification launch authority changed")
 		}
@@ -551,7 +664,7 @@ func readCapturedVerificationJournal(dir *os.Root, ticket VerificationTicket, in
 		return receipt, observation, err
 	}
 	resultErr = func() error {
-		launchSHA, err := readVerificationLaunch(dir, ticketSHA, invocation)
+		launchSHA, err := readVerificationLaunch(dir, ticket, invocation)
 		if err != nil {
 			return err
 		}
@@ -617,7 +730,7 @@ func readCapturedVerificationJournal(dir *os.Root, ticket VerificationTicket, in
 		if err = errors.Join(readErr, closeErr); err != nil {
 			return err
 		}
-		allowed := map[string]bool{"request.json": true, "launch.json": true, "claim.json": true, "prepared.json": true, "receipt.json": true, "stop.json": true}
+		allowed := map[string]bool{"request.json": true, "launch.json": true, "recovery.json": true, "claim.json": true, "prepared.json": true, "receipt.json": true, "stop.json": true}
 		for i := 1; i <= steps; i++ {
 			allowed[fmt.Sprintf("step-%03d.json", i)] = true
 		}

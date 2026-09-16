@@ -203,6 +203,10 @@ func parseReconciliationScope(raw []byte) (reconciliationScope, error) {
 
 // Derivation reuses the actual requested/started/terminal lifecycle and the
 // complete helper journal. It never executes a command or adopts a self verdict.
+// After an explicit verifier-launch recovery it follows the immutable recovery
+// to its bound replacement invocation: the refused invocation's retained
+// evidence stays mandatory, and the observed lifecycle must belong to the
+// replacement, inside the window the recovery authorizes.
 type ParentDerivation struct {
 	CompletedAt     time.Time    `json:"completed_at"`
 	Sequence        int          `json:"sequence"`
@@ -215,90 +219,129 @@ type ParentDerivation struct {
 }
 
 func deriveParentEvidence(ctx context.Context, b budget.CycleBinding, s State, root, runID string) (ParentDerivation, error) {
+	derived, _, err := deriveParentEvidenceWithLaunch(ctx, b, s, root, runID)
+	return derived, err
+}
+
+// deriveParentEvidenceWithLaunch additionally returns the effective launch
+// authority the derivation followed — the ordinary reservation, or the fully
+// revalidated immutable recovery with its bound replacement invocation — so the
+// recovered-parent-observation validation can bind the exact recovery identity
+// without re-opening the journal or weakening any check.
+func deriveParentEvidenceWithLaunch(ctx context.Context, b budget.CycleBinding, s State, root, runID string) (ParentDerivation, verificationEffectiveLaunch, error) {
 	var derived ParentDerivation
 	if !runtimeID(runID) {
-		return derived, errors.New("invalid verification run identity")
+		return derived, verificationEffectiveLaunch{}, errors.New("invalid verification run identity")
 	}
 	origin, err := canonicalRoot(root)
 	if err != nil || origin != root {
-		return derived, errors.New("verification origin changed")
+		return derived, verificationEffectiveLaunch{}, errors.New("verification origin changed")
 	}
 	originBinding, err := budget.LoadCycleBinding(ctx, root, s.Policy.Idea, budget.Fixup)
 	if err != nil || originBinding == nil || originBinding.Store.Dir != b.Store.Dir || originBinding.Policy.TrajectorySHA256 != b.Policy.TrajectorySHA256 {
-		return derived, errors.New("verification origin differs from shared trajectory authority")
+		return derived, verificationEffectiveLaunch{}, errors.New("verification origin differs from shared trajectory authority")
 	}
 	dir, err := os.OpenRoot(root)
 	if err != nil {
-		return derived, err
+		return derived, verificationEffectiveLaunch{}, err
 	}
 	defer dir.Close()
 	base := filepath.Join(".parley-runtime", "trajectory-verification", runID)
 	var req HelperRequest
 	requestSHA, err := readReconciliationJSON(dir, filepath.Join(base, "request.json"), &req)
 	if err != nil || req.Version != 1 || req.Ticket.Root != root || req.Ticket.RunID != runID {
-		return derived, errors.New("original parent request is unavailable or changed")
+		return derived, verificationEffectiveLaunch{}, errors.New("original parent request is unavailable or changed")
 	}
 	r, err := capturedRequestAt(s, req.Ticket.Request.Verifier, req.Ticket.Request.Sequence)
 	if err != nil || !sameJSON(r, req.Ticket.Request) {
-		return derived, errors.New("parent evidence differs from its original charged patch")
+		return derived, verificationEffectiveLaunch{}, errors.New("parent evidence differs from its original charged patch")
 	}
 	members, err := checkCapturedActivationQuorum(ctx, b, s, r)
 	if err != nil {
-		return derived, err
+		return derived, verificationEffectiveLaunch{}, err
 	}
 	if !slices.Equal(req.Participants, members) {
-		return derived, errors.New("helper request differs from the original activation quorum")
+		return derived, verificationEffectiveLaunch{}, errors.New("helper request differs from the original activation quorum")
 	}
 	if err = checkReconciliationScope(dir, req); err != nil {
-		return derived, err
+		return derived, verificationEffectiveLaunch{}, err
 	}
 	journal, err := openVerificationDirectory(b, r.Charge.EntryKey, false)
 	if err != nil {
-		return derived, err
+		return derived, verificationEffectiveLaunch{}, err
 	}
 	defer journal.Close()
 	var ticket VerificationTicket
 	derived.TicketSHA256, err = readVerificationArtifact(journal, "request.json", &ticket)
 	want, hashErr := req.Ticket.SHA256()
 	if err != nil || hashErr != nil || derived.TicketSHA256 != want {
-		return derived, errors.New("shared verification ticket differs from parent request")
+		return derived, verificationEffectiveLaunch{}, errors.New("shared verification ticket differs from parent request")
 	}
 	var launch verificationLaunch
 	derived.LaunchSHA256, err = readVerificationArtifact(journal, "launch.json", &launch)
 	if err != nil || launch.Version != 1 || launch.TicketSHA256 != want || !runtimeID(launch.InvocationID) || launch.At.IsZero() {
-		return derived, errors.New("original verifier launch is unavailable")
+		return derived, verificationEffectiveLaunch{}, errors.New("original verifier launch is unavailable")
 	}
-	invocation := launch.InvocationID
+	// Follow the immutable recovery to the effective verifier invocation when
+	// one exists. The complete lineage — the retained recovery binding, the
+	// refused evidence with its bound digests, and the recovery/refusal
+	// chronology — is revalidated by the common authority reader, never
+	// trusted here; an ordinary unrecovered journal resolves unchanged.
+	effective, err := resolveVerificationEffectiveLaunch(journal, ticket, launch)
+	if err != nil {
+		return derived, verificationEffectiveLaunch{}, err
+	}
+	invocation := effective.InvocationID
+	if !runtimeID(invocation) {
+		return derived, verificationEffectiveLaunch{}, errors.New("verification invocation differs from its durable reservation")
+	}
+	derived.LaunchSHA256 = effective.AuthoritySHA256
+	// The authority reservation must sit inside the observed launch window it
+	// authorized. An ordinary reservation is made between the request and the
+	// process start (requested <= launch.At <= started). An explicit recovery is
+	// different by construction: it is applied while the replacement invocation
+	// does not exist yet, so the lawful order is original refusal completed <=
+	// recovery.At <= replacement requested <= replacement started <= terminal
+	// completed. The refusal-completion lower bound is already enforced by the
+	// common authority reader (readVerificationLaunch refuses a recovery that
+	// predates the retained refusal completion); here the replacement's request
+	// must not predate the recovery that authorizes it, while requested <=
+	// started <= completed is bound by the terminal record itself. The refused
+	// reservation's own timestamp is never applied to the replacement.
 	var terminal, requested, started telemetry.Record
 	invBase := filepath.Join(".parley-runtime", "invocations", invocation)
 	terminalSHA, err := readReconciliationJSON(dir, filepath.Join(invBase, "terminal.json"), &terminal)
 	if err != nil || terminal.SchemaVersion != telemetry.SchemaVersion || terminal.Type != "invocation.terminal" || terminal.InvocationID != invocation || terminal.Metadata.RunID != runID || terminal.Metadata.Idea != s.Policy.Idea || terminal.Metadata.Agent != r.Verifier || terminal.Metadata.Phase != "trajectory-verification" || terminal.Metadata.LaunchMode != "headless" || terminal.RequestedAt.IsZero() || terminal.StartedAt == nil || terminal.CompletedAt == nil || terminal.PID == nil || *terminal.PID <= 0 || terminal.StartedAt.Before(terminal.RequestedAt) || terminal.CompletedAt.Before(*terminal.StartedAt) || terminal.Outcome == nil || terminal.Outcome.Status != "process-exited" || terminal.Outcome.FailureClass != nil || terminal.Outcome.ExitCode == nil || *terminal.Outcome.ExitCode != 0 {
-		return derived, errors.New("successful observed parent terminal binding is unavailable")
+		return derived, verificationEffectiveLaunch{}, errors.New("successful observed parent terminal binding is unavailable")
 	}
 	derived.RequestedSHA256, err = readReconciliationJSON(dir, filepath.Join(invBase, "requested.json"), &requested)
 	if err != nil || requested.SchemaVersion != terminal.SchemaVersion || requested.Type != "invocation.requested" || requested.InvocationID != invocation || !sameJSON(requested.Metadata, terminal.Metadata) || !requested.RequestedAt.Equal(terminal.RequestedAt) || requested.StartedAt != nil || requested.CompletedAt != nil || requested.PID != nil || requested.Outcome != nil {
-		return derived, errors.New("original requested lifecycle differs from the verifier terminal")
+		return derived, verificationEffectiveLaunch{}, errors.New("original requested lifecycle differs from the verifier terminal")
+	}
+	authorityInLaunchWindow := !launch.At.Before(terminal.RequestedAt) && !launch.At.After(*terminal.StartedAt)
+	if effective.Recovered {
+		authorityInLaunchWindow = !terminal.RequestedAt.Before(effective.Recovery.At)
 	}
 	derived.StartedSHA256, err = readReconciliationJSON(dir, filepath.Join(invBase, "started.json"), &started)
-	if err != nil || started.SchemaVersion != terminal.SchemaVersion || started.Type != "invocation.started" || started.InvocationID != invocation || !sameJSON(started.Metadata, terminal.Metadata) || !started.RequestedAt.Equal(terminal.RequestedAt) || started.StartedAt == nil || !started.StartedAt.Equal(*terminal.StartedAt) || started.PID == nil || *started.PID != *terminal.PID || started.CompletedAt != nil || started.Outcome != nil || launch.At.Before(terminal.RequestedAt) || launch.At.After(*terminal.StartedAt) {
-		return derived, errors.New("original started lifecycle differs from the verifier terminal")
+	if err != nil || started.SchemaVersion != terminal.SchemaVersion || started.Type != "invocation.started" || started.InvocationID != invocation || !sameJSON(started.Metadata, terminal.Metadata) || !started.RequestedAt.Equal(terminal.RequestedAt) || started.StartedAt == nil || !started.StartedAt.Equal(*terminal.StartedAt) || started.PID == nil || *started.PID != *terminal.PID || started.CompletedAt != nil || started.Outcome != nil || !authorityInLaunchWindow {
+		return derived, verificationEffectiveLaunch{}, errors.New("original started lifecycle differs from the verifier terminal")
 	}
 	receipt, observation, err := readCapturedVerificationJournal(journal, ticket, invocation)
 	if err != nil {
-		return derived, err
+		return derived, verificationEffectiveLaunch{}, err
 	}
 	encoded, err := canonical(receipt)
 	if err != nil || receipt.FinishedAt.Before(*terminal.StartedAt) || receipt.FinishedAt.After(*terminal.CompletedAt) {
-		return derived, errors.New("helper receipt is outside its observed invocation")
+		return derived, verificationEffectiveLaunch{}, errors.New("helper receipt is outside its observed invocation")
 	}
 	assessment, err := AssessCaptured(r, observation)
 	if err != nil {
-		return derived, err
+		return derived, verificationEffectiveLaunch{}, err
 	}
 	derived.CompletedAt = *terminal.CompletedAt
 	derived.Sequence, derived.ChargeKey = r.Sequence, r.Charge.EntryKey
 	derived.Result = ParentResult{Version: 1, RunID: runID, RequestPath: filepath.Join(root, base, "request.json"), RequestSHA256: requestSHA, InvocationID: invocation, TerminalSHA256: terminalSHA, ReceiptSHA256: digest(encoded), Assessment: &assessment, TrajectoryPending: true}
-	return derived, nil
+	return derived, effective, nil
 }
 
 func parentPreview(s State, root, runID, parentSHA, recoverySHA string, derived ParentDerivation) ReconciliationPreview {
@@ -309,8 +352,12 @@ func parentPreview(s State, root, runID, parentSHA, recoverySHA string, derived 
 
 // Called under the cycle guard after state/archive validation. Recovery retains
 // a separate provenance record; an ordinary parent continues to bind its bytes.
+// A verifier-launch recovery with its retained failed original parent instead
+// resolves through the immutable recovered parent observation, which is
+// revalidated in full against the fresh derivation and the retained original
+// budget refusal on every read.
 func readParentEvidence(ctx context.Context, b budget.CycleBinding, s State, root, runID string) (ReconciliationPreview, error) {
-	derived, err := deriveParentEvidence(ctx, b, s, root, runID)
+	derived, effective, err := deriveParentEvidenceWithLaunch(ctx, b, s, root, runID)
 	if err != nil {
 		return ReconciliationPreview{}, err
 	}
@@ -326,6 +373,16 @@ func readParentEvidence(ctx context.Context, b budget.CycleBinding, s State, roo
 			return ReconciliationPreview{}, err
 		}
 		return parentPreview(s, root, runID, recovery.Preview.ParentSHA256, recoverySHA, derived), nil
+	}
+	if !os.IsNotExist(err) {
+		return ReconciliationPreview{}, err
+	}
+	recovered, recoveredSHA, err := readRecoveredParent(dir, base)
+	if err == nil {
+		if err = validateRecoveredParent(dir, base, root, s, derived, effective, recovered); err != nil {
+			return ReconciliationPreview{}, err
+		}
+		return parentPreview(s, root, runID, recovered.Preview.ParentSHA256, recoveredSHA, derived), nil
 	}
 	if !os.IsNotExist(err) {
 		return ReconciliationPreview{}, err

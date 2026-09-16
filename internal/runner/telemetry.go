@@ -89,7 +89,16 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 		ctx, finishCycle = prepareLaunchCycle(ctx, root, info.Idea, info.Phase, info.RunID)
 		defer finishCycle()
 	}
-	l, err := recordLaunchRequest(root, agent, info)
+	boundInvocation, err := boundRecoveryInvocation(ctx, info, agent, handoff)
+	if err != nil {
+		return nil, err
+	}
+	var l *launchEvidence
+	if boundInvocation != "" {
+		l, err = recordBoundLaunchRequest(root, agent, info, boundInvocation)
+	} else {
+		l, err = recordLaunchRequest(root, agent, info)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +113,18 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 
 // Records a request only. It prepares no cycle and reserves no execution.
 func recordLaunchRequest(root string, agent agents.Discovery, info LaunchInfo) (*launchEvidence, error) {
+	return recordLaunch(root, agent, info, "")
+}
+
+// recordBoundLaunchRequest is the one trusted recovery variant: the invocation
+// ID was pinned by an immutable captured-verification recovery before this
+// launch existed, so telemetry must allocate exactly that ID, exclusively, or
+// refuse. Every ordinary launch keeps generating a fresh ID.
+func recordBoundLaunchRequest(root string, agent agents.Discovery, info LaunchInfo, boundInvocation string) (*launchEvidence, error) {
+	return recordLaunch(root, agent, info, boundInvocation)
+}
+
+func recordLaunch(root string, agent agents.Discovery, info LaunchInfo, boundInvocation string) (*launchEvidence, error) {
 	metadata := telemetry.Metadata{
 		RunID: info.RunID, SegmentID: info.SegmentID, Idea: info.Idea, Phase: info.Phase,
 		Agent: agent.ID, Adapter: agent.Adapter(), LaunchMode: agents.LaunchModeOrDefault(agent.LaunchMode),
@@ -111,7 +132,14 @@ func recordLaunchRequest(root string, agent agents.Discovery, info LaunchInfo) (
 		RequestedModel: requestedSetting(agent.Model), RequestedEffort: requestedSetting(agent.Reasoning),
 		RequestedSpeed: requestedSetting(agent.Speed),
 	}
-	invocation, err := telemetry.Begin(filepath.Join(root, ".parley-runtime", "invocations"), metadata)
+	directory := filepath.Join(root, ".parley-runtime", "invocations")
+	var invocation *telemetry.Invocation
+	var err error
+	if boundInvocation != "" {
+		invocation, err = telemetry.BeginBound(directory, boundInvocation, metadata)
+	} else {
+		invocation, err = telemetry.Begin(directory, metadata)
+	}
 	if err != nil {
 		return nil, &launchIntegrityError{reason: "cannot persist required launch request"}
 	}
