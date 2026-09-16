@@ -59,14 +59,14 @@ off. The four-person protocol review must still ratify its disposition and compl
 remaining independent acceptance work. Retained failures, including source-author
 timeouts and fixture corrections, are explained in the supplement notes.
 
-The prospective experiment budget remains USD15 TOTAL across12tasks×3arms, the separate
+The prospective experiment budget remains USD 15 TOTAL across12tasks×3arms, the separate
 exact28-call packet trial, grading, probes and retries;900seconds is shared per task-arm.
 Provider invoice/spending enforcement remains unproven. No freeze or treatment started.
 The continuation inventory has89normalized stopped terminals plus1missing terminal;
 57terminal costs plus that missing terminal's cost are unknown. Known CLI estimates total
 USD120.320013; total spend is unknown. Implementation/source review is separately counted.
 
-The September16 offline HTML is a partial checkpoint. Final report/ego-browser QA and
+The September 16 offline HTML is a partial checkpoint. Final report/ego-browser QA and
 14/30-day follow-ups from actual final delivery remain outstanding. PRs73/74 stay draft
 and open. No release, installation, core publication, deployment, merge or closure.
 Latest runtime state is .parley-runtime/managed-continuation-20260915/handoff.json.
@@ -2401,7 +2401,7 @@ opaque outcomes, request/authority/scope substitutions, copied object independen
 source mutation, signalled real-process interruption, staging refusal and unchanged
 criticism. All 368 Go/module files match manifest
 bf97070a3ed66c535b9b49a49e5a79f0a04627ac61274e6a992e862652895970.
-Full JSON suite PASS (167.580s, all 32 package terminal events), six-package race
+Full JSON suite PASS (167. 580s, all 32 package terminal events), six-package race
 PASS (183.213s), vet PASS (1.493s), Windows amd64 trajectory/app cross-builds PASS
 with PE amd64 headers verified. Compiled shared-volume trajectory/runner/driver/
 app fixtures PASS (162.394/10.170/1.652/3.290s). Every new test passed in full,
@@ -2907,7 +2907,7 @@ Accepted automated checkpoint:
 `.parley-runtime/snapshot-stable-read-validation-20260912/`, 381 Go/module files,
 manifest 4c982f04de789ff07fb8ba1508e19402fbc3a0a3c0bf54b61487c1caf8943576.
 Focused tests PASS 42.988s; shared snapshot selection PASS 9.629s; full suite PASS
-262.619s; six-package race PASS 289.588s; vet and Windows trajectory/app builds
+262.619s; six-package race PASS 289. 588s; vet and Windows trajectory/app builds
 PASS. Compiled shared trajectory/runner/driver/evidence/app selections all PASS
 (254.496s / 36.301s / 1.565s / 0.633s / 160.148s). Windows runtime is unverified.
 The final verifier inventories 30 relevant top-level tests, including all four
@@ -4122,7 +4122,7 @@ checks have not started.
 
 
 The single manual-launch diagnostic run PASSED6.638s: its returned terminal
-records actual process-exited/exit0, artifact hash, 371ms invocation duration.
+records actual process-exited/exit 0, artifact hash, 371ms invocation duration.
 The initial failure remains unexplained; this does not establish a timeout or
 repair. No assertion or production source changed. Run one full unmodified
 suite without the competing race run, then remaining vet/cross-build/shared
@@ -4143,7 +4143,7 @@ historical HTML bytes verified by the executable final verifier.
 The initial parallel full suite FAILED 441.648s at the existing
 TestAgentsExecRecordsManualLaunch (6.28s, generic invocation failure); every
 other test passed. That case passed in the contemporaneous race, a native-only
-isolated diagnostic run (6.638s, actual 371ms exit0 with artifact hash), and the
+isolated diagnostic run (6.638s, actual 371ms exit 0 with artifact hash), and the
 unmodified full rerun without simultaneous race load. The original failure's
 cause remains unresolved; it is preserved and is not relabelled or claimed fixed.
 No source, test assertion or timeout changed between the complete runs.
@@ -4202,7 +4202,7 @@ Codex-owned reporting claim before writing: `parley-deck/ideas/meta-protocol-cha
 
 ### User experiment ceilings — 2026-09-15T20:56:31.364385+00:00
 
-User direction (translated from Slovak shorthand): "15 minutes. USD15." This answered the explicit question for total experiment USD and minutes per task per arm. Record USD15 TOTAL for live experiments, and15minutes for each task in each arm. The limit is prospective experiment scope, not already-incurred implementation/review costs. No treatment has started. Historical quorum/pilot amendment remains unanswered; experiment manifests, enforceable accounting including unknown-cost policy, and frozen inputs still require preparation before calls.
+User direction (translated from Slovak shorthand): "15 minutes. USD 15." This answered the explicit question for total experiment USD and minutes per task per arm. Record USD 15 TOTAL for live experiments, and15minutes for each task in each arm. The limit is prospective experiment scope, not already-incurred implementation/review costs. No treatment has started. Historical quorum/pilot amendment remains unanswered; experiment manifests, enforceable accounting including unknown-cost policy, and frozen inputs still require preparation before calls.
 
 
 ### Authorized prospective quorum and pilot amendment — 2026-09-15T21:02:46.745978+00:00
@@ -4233,7 +4233,7 @@ After R1/R2 invocation 20d32972-9b5b-4239-b426-065495c03f39 terminated and owned
 
 ### Kimi implementation launch unavailable — 2026-09-15T21:23:26.543197+00:00
 
-Invocation f071a935-befd-42ab-b20f-a5d34f5a85bd reached the30-minute process deadline (exit143/normalized timeout) without any source change or owned artifact. Its retained337-byte stdout had already reported APIProviderRateLimitError, HTTP429: K3 quota100%, reset after2h59m17s, retry delay10757000ms. Keep both facts: provider quota was observed, and the process ultimately timed out while waiting. No recovery candidate or tests exist from this call. Approximate reset23:51Z September15/01:51 CEST September16; verify after reset, do not repeatedly relaunch now. Kimi remains in the user-authorized quorum; no model substitution, automatic exclusion, acceptance or refund. Verifier-refusal implementation remains open. Claude and Zcode may continue disjoint work; final v2 signoff and full audit closure still require the actual quorum.
+Invocation f071a935-befd-42ab-b20f-a5d34f5a85bd reached the30-minute process deadline (exit143/normalized timeout) without any source change or owned artifact. Its retained337-byte stdout had already reported APIProviderRateLimitError, HTTP429: K3 quota100%, reset after2h59m17s, retry delay10757000ms. Keep both facts: provider quota was observed, and the process ultimately timed out while waiting. No recovery candidate or tests exist from this call. Approximate reset23:51Z September15/01:51 CEST September 16; verify after reset, do not repeatedly relaunch now. Kimi remains in the user-authorized quorum; no model substitution, automatic exclusion, acceptance or refund. Verifier-refusal implementation remains open. Claude and Zcode may continue disjoint work; final v2 signoff and full audit closure still require the actual quorum.
 
 ### Zcode independent R1/R2 review claim — 2026-09-15T21:25:21.631305+00:00
 
@@ -4241,7 +4241,7 @@ After its correction/amendment invocation terminated, zcode-1 reuses its native 
 
 ### Claude supporting review unavailable — 2026-09-15T21:29:28.306559+00:00
 
-Invocation60c845b1-c0b9-446d-8742-3869d939d6f5 exited1 after248.657s wrapper with rate-limit, no source drift, no owned review and no v2 round. Provider result reports session limit resetting02:30am Europe/Berlin (September16). Its JSON says subtype success but is_error=true; normalized terminal correctly remains failed. USD1.595971 is a CLI estimate, not an invoice. Do not retry until the reset or count this as a review. Together with Kimi quota, final four-person quorum work waits for provider availability. Zcode remains available and is source-reviewing R1/R2; CodeX independent R1 tests passed11.727s and old-guarded control failed20.288s at intended contention assertions. Source remains unintegrated pending review.
+Invocation60c845b1-c0b9-446d-8742-3869d939d6f5 exited1 after248.657s wrapper with rate-limit, no source drift, no owned review and no v2 round. Provider result reports session limit resetting02:30am Europe/Berlin (September 16). Its JSON says subtype success but is_error=true; normalized terminal correctly remains failed. USD1.595971 is a CLI estimate, not an invoice. Do not retry until the reset or count this as a review. Together with Kimi quota, final four-person quorum work waits for provider availability. Zcode remains available and is source-reviewing R1/R2; CodeX independent R1 tests passed11.727s and old-guarded control failed20.288s at intended contention assertions. Source remains unintegrated pending review.
 
 ### Combined native candidate validation claim — 2026-09-15T21:33:51.201738+00:00
 
@@ -4251,7 +4251,7 @@ Zcode owner correction claim before launch: new `parley-deck/inbox/zcode-1-to-co
 
 ### Integration working-tree claim — 2026-09-15T21:48:40.451044+00:00
 
-Codex sequentially imports the retained Claude R1/R2 and corrected Zcode telemetry candidates into the existing integration working tree: `internal/trajectory/reservation_recovery.go`, `internal/trajectory/reservation_recovery_validation_test.go`, `internal/app/agents_exec_test.go`, `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`. Exact hashes are the same430Go/module manifest already under combined native validation. This is working-tree integration, not current-source Phase6 acceptance or completion. Source review retains all MINOR/NIT items and its unresolved owner-corrected hash attribution; Claude/Kimi review availability remains limited. Keep historical protocol, kickoff, FINALs, rounds/signatures and HTML unchanged. Do not publish a success claim unless combined commands finish successfully; failures remain evidence.
+Codex sequentially imports the retained Claude R1/R2 and corrected Zcode telemetry candidates into the existing integration working tree: `internal/trajectory/reservation_recovery.go`, `internal/trajectory/reservation_recovery_validation_test.go`, `internal/app/agents_exec_test.go`, `internal/telemetry/usage.go`, `internal/telemetry/zcode_usage_test.go`. Exact hashes are the same430Go/module manifest already under combined native validation. This is working-tree integration, not current-source Phase 6 acceptance or completion. Source review retains all MINOR/NIT items and its unresolved owner-corrected hash attribution; Claude/Kimi review availability remains limited. Keep historical protocol, kickoff, FINALs, rounds/signatures and HTML unchanged. Do not publish a success claim unless combined commands finish successfully; failures remain evidence.
 
 
 ## Verifier-refusal candidate allocation — September 16, 2026
@@ -4280,7 +4280,7 @@ Zcode sequential parent-lineage allocation after all prior CLI and focused check
 Codex offline report print correction claim: templates/delivery-report.html and current delivery/2026-09-16 report generation only. The previous report and its bound checks are preserved under delivery/2026-09-16/revisions/before-print-fix/. Source inspection found draw() returns on the HTML hidden property even when print CSS displays all panels; printing from a non-overview tab can leave stale canvas dimensions. Use actual CSS visibility and redraw on print media transitions, then verify the old/new behavior in ego-browser. This fixes a D8 legibility defect; physical paper/PDF pagination remains a separate limit.
 
 
-September 16 continuation: Kimi's independent v2 round is authored (invocation 3b90ef32-593b-44af-a240-3ea0f008da0c); an owner-only append correction is pending for budget/time authorization, source provenance and reservation-bound arithmetic. This is not amendment consensus or implementation acceptance. Zcode parent recovery remains an isolated active candidate. Prospective experiments remain not-run; USD15 total and 15m per task-arm remain binding.
+September 16 continuation: Kimi's independent v2 round is authored (invocation 3b90ef32-593b-44af-a240-3ea0f008da0c); an owner-only append correction is pending for budget/time authorization, source provenance and reservation-bound arithmetic. This is not amendment consensus or implementation acceptance. Zcode parent recovery remains an isolated active candidate. Prospective experiments remain not-run; USD 15 total and 15m per task-arm remain binding.
 
 September 16 superseding checkpoint: Kimi owner correction is complete; amendment publication is pending verification. Parent recovery tests failed on a recovered chronology predicate; the failed source and evidence are retained. Zcode now owns the correction and real bound runner launch bridge. Runner test linkage separately hit native disk exhaustion. No source integration, app recovery wiring, independent acceptance, experimental freeze or treatment is claimed.
 
@@ -4309,3 +4309,9 @@ all12tasks/3arms, original inputs/hidden keys, no model experiment, no budget mu
 
 
 September 16 allocation preparation completed: Kimi stopped; Codex reproduced and corrected explicit-input shape errors, retained the original note/source, and imported the exact two tested evaluation scripts. All 35 pilot analysis/grading/acceptance tests passed in an isolated Python environment; 30 actual old/new six-person outputs matched; the new boundary before-control failed as expected. Eight historical pilot files and 17 other Python scripts are unchanged. See `implementation-notes/codex-1-pilot-allocation-validation-20260916.md`, its JSON and reviewable patch. This remains unratified preparation; no experiment, freeze, cycle migration, amendment round launch or whole-audit acceptance.
+
+
+September 16 independent execution allocation: Claude owns only its new `implementation-notes/claude-1-current-concurrency-execution-20260916.md` plus private runtime logs. It will execute the existing serial-versus-barrier witness and selected close-gate fixtures against the pinned470-file source snapshot matching the published Go/config files. The launch-root source is stale and explicitly excluded. No source edits, Phase 6 verdict, amendment round, cycle migration, experiment or retry. Current-tree whole-scope acceptance remains pending.
+
+
+September 16 independent execution finished: Claude recorded 15 passing current-source concurrency/close-gate tests and its limitations in `implementation-notes/claude-1-current-concurrency-execution-20260916.md`. No source edit or Phase 6 acceptance. The refreshed partial offline report preserves 156 frozen historical files and passes 10 existing report checks; ego-browser desktop/mobile/low-height, keyboard and settled-print observations are retained, including the initial print-size mismatch. See `codex-1-independent-execution-report-20260916.md` and JSON. Operator count/epoch and experiment spending gates remain unresolved.
