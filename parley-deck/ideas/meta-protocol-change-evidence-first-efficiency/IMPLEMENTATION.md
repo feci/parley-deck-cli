@@ -4315,3 +4315,16 @@ September 16 independent execution allocation: Claude owns only its new `impleme
 
 
 September 16 independent execution finished: Claude recorded 15 passing current-source concurrency/close-gate tests and its limitations in `implementation-notes/claude-1-current-concurrency-execution-20260916.md`. No source edit or Phase 6 acceptance. The refreshed partial offline report preserves 156 frozen historical files and passes 10 existing report checks; ego-browser desktop/mobile/low-height, keyboard and settled-print observations are retained, including the initial print-size mismatch. See `codex-1-independent-execution-report-20260916.md` and JSON. Operator count/epoch and experiment spending gates remain unresolved.
+
+
+### Approved historical import and one grouped amendment round — September 17
+
+The user's explicit N=1/max3/original-epoch approval was applied through the
+attended CLI. Two missing worktrees and one unscoped run remain unknown; no
+history was pruned. One shared900-second round executed, preserved Codex's
+existing round02 and charged exactly one cycle (1 to2 of3). Claude and Kimi
+wrote their own new files. Zcode failed on the installed runtime's unsupported
+--allowed-tools argument; no artifact or retry. The amendment remains incomplete,
+without consensus/signoffs/FINAL. See implementation-notes/codex-1-approved-accounting-round02-20260917.md
+and its JSON for outcomes and accounting. The historical approval wait is resolved;
+provider-spending enforcement and all original acceptance gates remain open.
