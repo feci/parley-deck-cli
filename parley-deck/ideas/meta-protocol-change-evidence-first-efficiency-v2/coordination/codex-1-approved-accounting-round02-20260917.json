@@ -1,0 +1,473 @@
+{
+  "at": "2026-09-17T08:41:04.520995+00:00",
+  "scope": "Approved accounting import and exactly one amendment cross-review group; not implementation acceptance",
+  "authorization": {
+    "N": 1,
+    "maximum": 3,
+    "epoch": "2026-09-15T23:51:55.566717Z",
+    "grouped_rounds": 1,
+    "shared_timeout_seconds": 900,
+    "retry_authorized": false
+  },
+  "migration": {
+    "history_sha256": "9eab849e16330cb33ff0387d43f0fe984ae50a855b94e6c90d6656179ff4c0ab",
+    "decision_id": "user-approved-amendment-accounting-20260917",
+    "migration_sha256": "e4d9d5d21ae10c4cae9fe1bad437bef039735bb0ffc4669924d627ac9393781f",
+    "source_count": 327,
+    "history_coverage": "declared-incomplete",
+    "unavailable_roots": [
+      {
+        "path": "/private/tmp/claude-501/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck/5dc331bd-5ddf-45e0-b6c2-d519d8c05128/scratchpad/f2repo",
+        "observation": "stat-enoent",
+        "history": "unknown"
+      },
+      {
+        "path": "/private/tmp/revert-test2",
+        "observation": "stat-enoent",
+        "history": "unknown"
+      }
+    ],
+    "unscoped_runs": [
+      {
+        "path": "parley-deck/runs/20260510T194003Z",
+        "sha256": "7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6",
+        "roots": [
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout"
+        ],
+        "copies": 25,
+        "history": "unknown",
+        "earliest": "2026-05-10T19:40:03.126637Z"
+      }
+    ]
+  },
+  "round": {
+    "mode": "execute",
+    "ok": false,
+    "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+    "run_id": "grouped-amendment-round02-20260917",
+    "idea": "meta-protocol-change-evidence-first-efficiency-v2",
+    "idea_status": "round-02",
+    "participants": [
+      "codex-1",
+      "claude-1",
+      "kimi-1",
+      "zcode-1"
+    ],
+    "organizer": "codex-1",
+    "peers": [
+      "claude-1",
+      "kimi-1",
+      "zcode-1"
+    ],
+    "artifact_hashes": [
+      {
+        "path": "00-prompt.md",
+        "sha256": "4cb7dd1105a307318cf2ead6d37231dbe6e834654392ab59b871bf2675075395"
+      },
+      {
+        "path": "round-01/codex-1.md",
+        "sha256": "b1fc6f1dbe2d601de104a0aca76ecc8c0b8bcc89b3c12caf2ecaddc7ff1c74ab"
+      },
+      {
+        "path": "round-01/claude-1.md",
+        "sha256": "95689ca42b652d684877e4f435f227fe54f65d5703a5018ddcecd55690392a47"
+      },
+      {
+        "path": "round-01/kimi-1.md",
+        "sha256": "acf1f9df26189a87984101ed59c00cc3d8f173d3f8bd9d39d9add28a00ea3a0d"
+      },
+      {
+        "path": "round-01/zcode-1.md",
+        "sha256": "465f67a93ed402ef23612865efeb3f35ee89e80a5354975d48e7a76089c86e9e"
+      },
+      {
+        "path": "round-02/codex-1.md",
+        "sha256": "c6e26af0221ef4ff9061190f651e39c240a6b2b9433623e9389f0e2c09c3e2d3"
+      }
+    ],
+    "config_hashes": [
+      {
+        "path": "~/.parley/agents.toml",
+        "sha256": "325c051ce8a6b2e804cb0eda8d23f47f296ce5af99c07eb48ee264a0bcc68a40"
+      },
+      {
+        "path": "parley-deck/agents.toml",
+        "sha256": "f52a0a778dcaec611da09d3abeacd38e325f2e559fd0ef13400fb7fee8bd6ad3"
+      },
+      {
+        "path": "-config:/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/concrete-amendment-proposal/agents.toml",
+        "sha256": "35d6706284b22ad772dc16e8b6b8fa14e705ff1d710394b34961e6b31fb4b560"
+      }
+    ],
+    "protocol_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+    "plan_digest": "376afb6340454bda51ef30901aa5389c1a23837246598f36a8b1ab062f8531c2",
+    "binding": {
+      "present": true,
+      "maximum": 3,
+      "initial_maximum": 3,
+      "count": 1,
+      "admissible": true
+    },
+    "resolved": [
+      {
+        "participant": "codex-1",
+        "agent_id": "codex-1",
+        "adapter": "codex",
+        "found": true
+      },
+      {
+        "participant": "claude-1",
+        "agent_id": "claude-1",
+        "adapter": "claude",
+        "found": true
+      },
+      {
+        "participant": "kimi-1",
+        "agent_id": "kimi-1",
+        "adapter": "kimi",
+        "found": true
+      },
+      {
+        "participant": "zcode-1",
+        "agent_id": "zcode-1",
+        "adapter": "zcode",
+        "found": true
+      }
+    ],
+    "results": [
+      {
+        "agent": "codex-1",
+        "skipped": true,
+        "skip_reason": "artifact already exists",
+        "artifact_ok": false,
+        "success": true
+      },
+      {
+        "agent": "claude-1",
+        "invocation_id": "7655603b-b704-4402-8039-9fa1636082d4",
+        "skipped": false,
+        "artifact_ok": true,
+        "success": true
+      },
+      {
+        "agent": "kimi-1",
+        "invocation_id": "7c088702-8358-4fc9-9e34-194ec55cdc69",
+        "skipped": false,
+        "artifact_ok": true,
+        "success": true
+      },
+      {
+        "agent": "zcode-1",
+        "invocation_id": "9df91ee3-669a-4bc0-8739-a00cacabaa82",
+        "skipped": false,
+        "exit_error": "exit status 1",
+        "artifact_ok": false,
+        "success": false
+      }
+    ],
+    "organizer_sha256_after": "c6e26af0221ef4ff9061190f651e39c240a6b2b9433623e9389f0e2c09c3e2d3",
+    "organizer_preserved": true,
+    "cycle_count_before": 1,
+    "cycle_count_after": 2,
+    "error": "grouped round did not succeed for every participant"
+  },
+  "terminals": [
+    {
+      "schema_version": 1,
+      "type": "invocation.terminal",
+      "invocation_id": "7655603b-b704-4402-8039-9fa1636082d4",
+      "metadata": {
+        "run_id": "grouped-amendment-round02-20260917",
+        "segment_id": "segment-0001",
+        "idea": "meta-protocol-change-evidence-first-efficiency-v2",
+        "phase": "round-02",
+        "agent": "claude-1",
+        "adapter": "claude",
+        "launch_mode": "headless",
+        "attempt_ordinal": 1,
+        "retry_of": null,
+        "requested_model": "claude-opus-5[1m]",
+        "requested_effort": "max",
+        "requested_speed": "deep",
+        "context": {
+          "context_mode": "full",
+          "source_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+          "packet_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+          "fallback_reason": null
+        }
+      },
+      "requested_at": "2026-09-17T08:29:36.150331Z",
+      "started_at": "2026-09-17T08:29:38.087522Z",
+      "completed_at": "2026-09-17T08:36:25.601383Z",
+      "duration_ms": 409459,
+      "pid": 1969,
+      "outcome": {
+        "status": "process-exited",
+        "exit_code": 0,
+        "failure_class": null,
+        "artifact_sha256": "13ea3523c42cb7130a9a1475038bbf5c478fde61b9ceaae048ef1052d0bf73e0",
+        "usage": {
+          "input_tokens": 4,
+          "output_tokens": 26853,
+          "cache_read_tokens": 78769,
+          "cache_write_tokens": 97787,
+          "total_tokens": null,
+          "cost_usd": 1.7390245,
+          "reported_model": null,
+          "reported_models": [
+            "claude-haiku-4-5-20251001",
+            "claude-opus-5[1m]"
+          ],
+          "source": "claude.result",
+          "cost_basis": "cli-estimate",
+          "coverage": "reported"
+        },
+        "observation": {
+          "first_activity_ms": 408568,
+          "stdout_bytes": 4649,
+          "stderr_bytes": 0,
+          "parser_input_truncated": false
+        }
+      },
+      "warnings": []
+    },
+    {
+      "schema_version": 1,
+      "type": "invocation.terminal",
+      "invocation_id": "7c088702-8358-4fc9-9e34-194ec55cdc69",
+      "metadata": {
+        "run_id": "grouped-amendment-round02-20260917",
+        "segment_id": "segment-0001",
+        "idea": "meta-protocol-change-evidence-first-efficiency-v2",
+        "phase": "round-02",
+        "agent": "kimi-1",
+        "adapter": "kimi",
+        "launch_mode": "headless",
+        "attempt_ordinal": 1,
+        "retry_of": null,
+        "requested_model": "kimi-code/k3",
+        "requested_effort": "max",
+        "requested_speed": "deep",
+        "context": {
+          "context_mode": "full",
+          "source_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+          "packet_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+          "fallback_reason": null
+        }
+      },
+      "requested_at": "2026-09-17T08:29:36.142461Z",
+      "started_at": "2026-09-17T08:29:37.674829Z",
+      "completed_at": "2026-09-17T08:40:17.339992Z",
+      "duration_ms": 641204,
+      "pid": 1963,
+      "outcome": {
+        "status": "process-exited",
+        "exit_code": 0,
+        "failure_class": null,
+        "artifact_sha256": "d324bae38b4ca984e6288312731ddd6021af290e7a3f645f0966e1ffd8cb444b",
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null,
+          "cache_read_tokens": null,
+          "cache_write_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "reported_model": null,
+          "reported_models": [],
+          "source": "unavailable",
+          "cost_basis": "unavailable",
+          "coverage": "unavailable"
+        },
+        "observation": {
+          "first_activity_ms": 2388,
+          "stdout_bytes": 24168,
+          "stderr_bytes": 0,
+          "parser_input_truncated": false
+        }
+      },
+      "warnings": []
+    },
+    {
+      "schema_version": 1,
+      "type": "invocation.terminal",
+      "invocation_id": "9df91ee3-669a-4bc0-8739-a00cacabaa82",
+      "metadata": {
+        "run_id": "grouped-amendment-round02-20260917",
+        "segment_id": "segment-0001",
+        "idea": "meta-protocol-change-evidence-first-efficiency-v2",
+        "phase": "round-02",
+        "agent": "zcode-1",
+        "adapter": "zcode",
+        "launch_mode": "headless",
+        "attempt_ordinal": 1,
+        "retry_of": null,
+        "requested_model": "zai/glm-5.3",
+        "requested_effort": "max",
+        "requested_speed": "deep",
+        "context": {
+          "context_mode": "full",
+          "source_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+          "packet_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+          "fallback_reason": null
+        }
+      },
+      "requested_at": "2026-09-17T08:29:36.168865Z",
+      "started_at": "2026-09-17T08:29:37.832868Z",
+      "completed_at": "2026-09-17T08:29:38.9967Z",
+      "duration_ms": 2829,
+      "pid": 1966,
+      "outcome": {
+        "status": "failed",
+        "exit_code": 1,
+        "failure_class": "process_failure",
+        "artifact_sha256": null,
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null,
+          "cache_read_tokens": null,
+          "cache_write_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "reported_model": null,
+          "reported_models": [],
+          "source": "unavailable",
+          "cost_basis": "unavailable",
+          "coverage": "unavailable"
+        },
+        "observation": {
+          "first_activity_ms": 2633,
+          "stdout_bytes": 0,
+          "stderr_bytes": 3530,
+          "parser_input_truncated": false
+        }
+      },
+      "warnings": []
+    }
+  ],
+  "unchanged_preexisting_artifacts": [
+    "00-prompt.md",
+    "round-01/codex-1.md",
+    "round-01/claude-1.md",
+    "round-01/kimi-1.md",
+    "round-01/zcode-1.md",
+    "round-02/codex-1.md"
+  ],
+  "worktree_registry_unchanged": true,
+  "accounting": {
+    "normalized_stopped_terminals": 94,
+    "missing_terminal_attempts": 1,
+    "stopped_attempts": 95,
+    "unknown_terminal_costs": 60,
+    "known_cli_estimates_usd": "123.5812645000000002",
+    "new_round_known_cli_estimates_usd": "1.7390245",
+    "total_cost_usd": null,
+    "implementation_review_separate_from_experiment": true
+  },
+  "zcode_diagnosis": {
+    "observed_error": "Unknown option '--allowed-tools'",
+    "distribution": "3.7.7-13",
+    "runtime_reported_version": "0.16.3",
+    "sha256": {
+      "bin/zcode.js": "36b9cb48bb79eab0c568909fb9830750f68f701a5aab16cb181c735909555362",
+      "vendor/zcode.cjs": "3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f",
+      "package.json": "3503bcbfe812aa8a6d663db649ec4b2e4d45571e049ad5d40723798c5200ee8f"
+    },
+    "source_fragments": [
+      {
+        "term": "\"disallowed-tools\":",
+        "found": false,
+        "fragment": ""
+      },
+      {
+        "term": "\"allowed-tools\":",
+        "found": false,
+        "fragment": ""
+      },
+      {
+        "term": "\"settings\":",
+        "found": true,
+        "fragment": "te t.examplePrompts,delete t.examplePrompts_i18n,{...t,name:e.name,version:e.version??wH}}async function yHr(e,t,r){switch(jp(r.signal),e.source){case\"settings\":return{manifest:kHr(e.marketplace)};case\"file\":{let o=JSON.parse(await(0,_l.readFile)(e.path,\"utf8\"));return{manifest:YP(o),sourceRoot:(0,ao.dirname)(e.path)}}case\"directory\":{let o=E4t(e.path);if(!o)throw new Error(`Marketplace manifest not found in directory: ${e.path}`);let n=JSON.parse(await(0,_l.readFile)(o,\"utf8\")),i=YP(n);return r.persist&&await(await axe(e.path,t,i.name,i.raw,r.signal)).finalize(),{manifest:i,sourceRoot:e.path}"
+      },
+      {
+        "term": "allowedTools:",
+        "found": true,
+        "fragment": "es\",ModelStreamIdleTimeout:\"modelStream.idleTimeoutMs\",PermissionMode:\"permission.mode\",PermissionAllowedTools:\"permission.allowedTools\",PermissionDisallowedTools:\"permission.disallowedTools\",PermissionAutoApproveHighRisk:\"permission.autoApproveHighRisk\",PermissionAllowMediumRiskInAuto:\"permission.allowMediumRiskInAuto\",StorageDir:\"storage.dir\",StorageSessionDbPath:\"storage.sessionDbPath\",HttpProxy:\"network.httpProxy\",NoProxy:\"network.noProxy\",CaCertFile:\"network.caCertFile\",HttpTimeout:\"network.timeout\",FeatureCompact:\"features.compact\",FeatureRewind:\"features.rewind\",FeatureSubagent:\"feature"
+      },
+      {
+        "term": "PermissionAllowedTools",
+        "found": true,
+        "fragment": ":\"model.available\",ModelCatalogOverrides:\"modelCatalog.overrides\",ModelStreamIdleTimeout:\"modelStream.idleTimeoutMs\",PermissionMode:\"permission.mode\",PermissionAllowedTools:\"permission.allowedTools\",PermissionDisallowedTools:\"permission.disallowedTools\",PermissionAutoApproveHighRisk:\"permission.autoApproveHighRisk\",PermissionAllowMediumRiskInAuto:\"permission.allowMediumRiskInAuto\",StorageDir:\"storage.dir\",StorageSessionDbPath:\"storage.sessionDbPath\",HttpProxy:\"network.httpProxy\",NoProxy:\"network.noProxy\",CaCertFile:\"network.caCertFile\",HttpTimeout:\"network.timeout\",FeatureCompact:\"features.com"
+      }
+    ],
+    "inference": "Launcher/help advertise allowed-tools, but installed runtime rejects it. Do not merely remove restriction and retry. Validate process-local settings and actual tool restriction offline before proposing retry.",
+    "provider_retry_performed": false
+  },
+  "offline_parser_checks": [
+    {
+      "command": [
+        "/opt/homebrew/bin/zcode",
+        "--help",
+        "--allowed-tools",
+        "Read,Glob,Grep,Write,Edit"
+      ],
+      "exit": 1,
+      "network_denied": true,
+      "writes_denied": true,
+      "provider_prompt": false,
+      "stderr_excerpt": "Unknown option '--allowed-tools'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--allowed-tools\"\n\nzcode 0.16.3\n\nUs"
+    },
+    {
+      "command": [
+        "/opt/homebrew/bin/zcode",
+        "--help",
+        "--disallowed-tools",
+        "Agent,SendMessage,Skill,WebFetch,WebSearch,BrowserUse,TaskOutput,TaskStop,Bash"
+      ],
+      "exit": 0,
+      "network_denied": true,
+      "writes_denied": true,
+      "provider_prompt": false,
+      "stderr_excerpt": ""
+    }
+  ],
+  "whole_audit_complete": false,
+  "treatment_started": false,
+  "final_delivery": false,
+  "runtime_evidence": {
+    "inspect.stdout": "baad21706080f3cdc06957893d29410b29e0bbbc696a0e423558208eb6ad7aef",
+    "apply-command.json": "a6dce6a9486903d34473b72c85bf3527f53dc7bc9aaf35e4edf2240d5cf9f3bf",
+    "apply.stdout": "0fa59b9a738890a5341e2d625a3549ad886e0fa593234a4939aafed57d69f56c",
+    "apply.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "round-command.json": "e36ebedf7082da6288b468294a43430b8bce1a137ef52418c760288bbfa071bd",
+    "round.stdout": "9f2a0a210d54d10796ccbb3c5e141678491c96a8d9384cbee51bd01914336021",
+    "round.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "saved-migration.json": "36e188ac948aa470cc420fa61d4fdf3002837234814b9a8bdb57de6c27642120",
+    "ledger-after-round.json": "88b3e4771373a620db2259df4447a1e0e14f4d0a06ebe33d04937816034f8ef1",
+    "worktrees-before.txt": "aa71a01dce248bbc3bcd7a37a123947cab9ab1db0481c55ade184286d1393a0d",
+    "worktrees-after-round.txt": "aa71a01dce248bbc3bcd7a37a123947cab9ab1db0481c55ade184286d1393a0d"
+  }
+}

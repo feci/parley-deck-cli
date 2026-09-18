@@ -1,0 +1,177 @@
+{
+  "at": "2026-09-16T00:50:50.446675+00:00",
+  "purpose": "remove restricted-CLI source-access asymmetry before amendment cross-review",
+  "copied_exactly": [
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/delivery/2026-09-05/pilot/tasks-draft.json",
+      "copy": "evaluation/tasks-draft.json",
+      "bytes": 10917,
+      "sha256": "f9c239b8f42acfd7497ebb1f6ad714e70326470463ab8316d916d180c400be69",
+      "status": "preparation, not preregistered or treatment input freeze"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/scripts/pilot_grading.py",
+      "copy": "evaluation/pilot_grading.py",
+      "bytes": 7562,
+      "sha256": "9e70e8468cdd1c97b8612e0500ce6752da0ab73c849c0b59f66307e17ab4eed1",
+      "status": "preparation, not preregistered or treatment input freeze"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/scripts/pilot_analysis.py",
+      "copy": "evaluation/pilot_analysis.py",
+      "bytes": 9240,
+      "sha256": "4314131f736203c5d0f1c45f1a609f02264bf5d279ad5d432e7b049fd853aca8",
+      "status": "preparation, not preregistered or treatment input freeze"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/scripts/test_pilot_grading.py",
+      "copy": "evaluation/test_pilot_grading.py",
+      "bytes": 5865,
+      "sha256": "2a514774465dab9777246e0ede1eeeba5de8dd836a8cbf1e344692f5c879926e",
+      "status": "preparation, not preregistered or treatment input freeze"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/scripts/test_pilot_analysis.py",
+      "copy": "evaluation/test_pilot_analysis.py",
+      "bytes": 5201,
+      "sha256": "23929679a183dda83a9c8f3b4c635fa1fdbc977c4e73dac1509f8e9ce77a8c0a",
+      "status": "preparation, not preregistered or treatment input freeze"
+    }
+  ],
+  "hidden_inputs_manifest_only": [
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/delivery/2026-09-05/pilot/grading-key-draft.json",
+      "bytes": 8248,
+      "sha256": "f6d87ca780a7b1adbc59682f4e8b2acd2ac36db2182bfa41688f0ab5577c1e2e",
+      "copy": null,
+      "reason": "hidden evaluation oracle remains outside participant-visible task workspaces; declared interface and hash are sufficient for this design context, not a correctness verdict",
+      "declared_author": "codex-1"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/scripts/pilot_acceptance.py",
+      "bytes": 16729,
+      "sha256": "4113605e439ff5e5b63b6b93fd511666334a1b6119ebfa1addfea3e69b980924",
+      "copy": null,
+      "reason": "hidden evaluation oracle remains outside participant-visible task workspaces; declared interface and hash are sufficient for this design context, not a correctness verdict",
+      "top_level_functions": [
+        "assert_types",
+        "suite_for",
+        "child",
+        "interpreter",
+        "sandbox_profile",
+        "run_candidate",
+        "main"
+      ]
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/scripts/test_pilot_acceptance.py",
+      "bytes": 10278,
+      "sha256": "3aad8f696048f6f7c0416da574774a5b0355543cd1b9c0fee5a3a1f9f831f9dd",
+      "copy": null,
+      "reason": "hidden evaluation oracle remains outside participant-visible task workspaces; declared interface and hash are sufficient for this design context, not a correctness verdict",
+      "top_level_functions": []
+    }
+  ],
+  "task_catalog": [
+    {
+      "id": "C01",
+      "category": "code",
+      "title": "Strict duration parser",
+      "output_kind": "python-file",
+      "author_field": null,
+      "semantic_sha256": "e9468ac8fd910e2307464615b7a8a1910e652afa05e436c3e58623b82069c693"
+    },
+    {
+      "id": "C02",
+      "category": "code",
+      "title": "Half-open interval subtraction",
+      "output_kind": "python-file",
+      "author_field": null,
+      "semantic_sha256": "deeeaf981449de1b2a0798bc8b51822961ed0e2710c9a169a09f59382f096922"
+    },
+    {
+      "id": "C03",
+      "category": "code",
+      "title": "Idempotent usage reconciliation",
+      "output_kind": "python-file",
+      "author_field": null,
+      "semantic_sha256": "ef1bb47511c9d94a6cea5e282421f2d6c3236b632c8af87d83f715555ae97731"
+    },
+    {
+      "id": "C04",
+      "category": "code",
+      "title": "Tenant-scoped permission evaluation",
+      "output_kind": "python-file",
+      "author_field": null,
+      "semantic_sha256": "8c08c1f5525b13a7ad6f269524e26e5fd3fc6404d2e8b1b0fd1b4b7560162172"
+    },
+    {
+      "id": "R01",
+      "category": "review",
+      "title": "Refund transaction review",
+      "output_kind": "review",
+      "author_field": null,
+      "semantic_sha256": "a30ceb35c7fefa0e3aca46f4b58f499d6b53e39285fa566c5884edd9f04f5391"
+    },
+    {
+      "id": "R02",
+      "category": "review",
+      "title": "Archive extraction review",
+      "output_kind": "review",
+      "author_field": null,
+      "semantic_sha256": "99cbd111a62068b2374dbb9f177234664b382ccf903db77d98d9c56f8185466d"
+    },
+    {
+      "id": "R03",
+      "category": "review",
+      "title": "Completion gate review",
+      "output_kind": "review",
+      "author_field": null,
+      "semantic_sha256": "ff12a6cc828d19d8f221018070c3e5389c19b29fe1c4244c7c64356e91d076a0"
+    },
+    {
+      "id": "R04",
+      "category": "review",
+      "title": "Benchmark trend review",
+      "output_kind": "review",
+      "author_field": null,
+      "semantic_sha256": "9b117d9a00788392d70183b725b663b012dd175fbbf33b01144595fb69542b72"
+    },
+    {
+      "id": "D01",
+      "category": "design",
+      "title": "Backward-compatible field migration",
+      "output_kind": "design",
+      "author_field": null,
+      "semantic_sha256": "f443b6b2d9d7511ff00b7f9242d19361a193490e03bfbc468622f41b05ab0372"
+    },
+    {
+      "id": "D02",
+      "category": "design",
+      "title": "Webhook exactly-once claim",
+      "output_kind": "design",
+      "author_field": null,
+      "semantic_sha256": "2eb6fc544088d0459e000827f3ca89dfce63df9b8e14867b74b368976f329642"
+    },
+    {
+      "id": "D03",
+      "category": "design",
+      "title": "Bounded multi-agent review",
+      "output_kind": "design",
+      "author_field": null,
+      "semantic_sha256": "3e50db442e857f30d24f90275a1a983380185d022b504711d4e521652d9c9528"
+    },
+    {
+      "id": "D04",
+      "category": "design",
+      "title": "Phase-scoped policy context",
+      "output_kind": "design",
+      "author_field": null,
+      "semantic_sha256": "616f01b1254673abc8ce9bcc3e273b52ec1e77ceb9193cf3944b9ff34ed3bcd2"
+    }
+  ],
+  "authorship": "Task rows carry no author field. The grading key declares codex-1; the historical harness RESPONSE records Codex changing C02 before freeze. Original FINAL assigns Codex experiments/presentation. These are source-attribution observations, not a reconstructed per-task author log. Freeze must declare the complete author/exposure exclusion set before grader selection.",
+  "acceptance_interface": "python pilot_acceptance.py --task C01|C02|C03|C04 --solution PATH; isolated child, default candidate timeout12s; harness-error versus candidate-start failure is distinguished. Hidden fixtures themselves are not copied here.",
+  "test_status": "Historical RESPONSE lists tests run September5; no fresh test execution or acceptance implied by these exact copies.",
+  "not_frozen": true
+}

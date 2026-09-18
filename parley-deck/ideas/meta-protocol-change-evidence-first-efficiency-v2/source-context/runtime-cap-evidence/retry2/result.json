@@ -1,0 +1,66 @@
+{
+  "completed_at": "2026-09-16T00:25:01.959867+00:00",
+  "native": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-dwsz8rr6",
+  "exit": 1,
+  "timeout": false,
+  "seconds": 1.703,
+  "requests": 2,
+  "request_summaries": [
+    {
+      "path": "/v1/chat/completions",
+      "model": "local-cap-fixture",
+      "max_completion_tokens": 17,
+      "max_tokens": null,
+      "tools": [
+        "Read"
+      ]
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "local-cap-fixture",
+      "max_completion_tokens": 17,
+      "max_tokens": null,
+      "tools": [
+        "Read"
+      ]
+    }
+  ],
+  "case": "retry2",
+  "observed_tool_result": false,
+  "scope": "local fake endpoint and CLI wire configuration only; no external provider, no treatment, no billing proof",
+  "env": {
+    "KIMI_CODE_HOME": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-dwsz8rr6/data",
+    "KIMI_MODEL_NAME": "local-cap-fixture",
+    "KIMI_MODEL_PROVIDER_TYPE": "kimi",
+    "KIMI_MODEL_BASE_URL": "http://127.0.0.1:58399/v1",
+    "KIMI_MODEL_MAX_COMPLETION_TOKENS": "17",
+    "KIMI_LOOP_MAX_STEPS_PER_TURN": "2",
+    "KIMI_LOOP_MAX_ATTEMPTS_PER_STEP": "2",
+    "KIMI_CODE_INFINITE_RETRY": "false",
+    "KIMI_CODE_BACKGROUND_PRINT_BACKGROUND_MODE": "exit",
+    "KIMI_CODE_BACKGROUND_KEEP_ALIVE_ON_EXIT": "false",
+    "KIMI_CODE_NO_AUTO_UPDATE": "true",
+    "KIMI_DISABLE_TELEMETRY": "true",
+    "KIMI_CODE_BUILTIN_PRODUCT_SKILLS": "false"
+  },
+  "command": [
+    "/usr/bin/sandbox-exec",
+    "-f",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-dwsz8rr6/task.sb",
+    "/Users/tomasfecko/.kimi-code/bin/kimi",
+    "--agent-file",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-dwsz8rr6/fixture-agent.md",
+    "--skills-dir",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-dwsz8rr6/empty-skills",
+    "--output-format",
+    "stream-json",
+    "-p",
+    "Return LOCAL_FIXTURE_DONE. This is a local protocol transport fixture."
+  ],
+  "stdout.log_sha256": "e2c3bdf276d641bab008a6152fe9e35a4f4c5af7d18ebc6c99cf66b1a94a93fe",
+  "stderr.log_sha256": "db12092f967a40108a6ed4c49ac690803afb64b42463f53f473a9224a92583fd",
+  "requests.json_sha256": "753865e25cda65f38b03802898fe849a945190310357840f71fe19c6c3a2afc6",
+  "canary.log_sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+  "task.sb_sha256": "260a78968f624883a4c7d4dd291a53fe16003c49ba6c665fa787c57f718e9ef9",
+  "fixture-agent.md_sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+}

@@ -1,0 +1,8 @@
+(version 1)
+(allow default)
+(deny network*)
+(allow network-outbound (remote ip "localhost:58383"))
+(deny file-write* (subpath "/Volumes/My Shared Files/AI_WORKSPACE"))
+(deny file-write* (subpath "/Users/tomasfecko"))
+(deny file-write* (subpath "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T"))
+(allow file-write* (subpath "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-ydlrlk1m"))

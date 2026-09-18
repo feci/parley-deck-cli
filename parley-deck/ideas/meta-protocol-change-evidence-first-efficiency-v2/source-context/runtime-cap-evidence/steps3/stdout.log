@@ -1,0 +1,7 @@
+{"role":"meta","type":"system.version","version":"0.42.0"}
+{"role":"assistant","tool_calls":[{"type":"function","id":"local-read-1","function":{"name":"Read","arguments":"{\"path\":\"fixture.txt\"}"}}]}
+{"role":"tool","tool_call_id":"local-read-1","content":"1\tlocal cap fixture"}
+{"role":"assistant","tool_calls":[{"type":"function","id":"local-read-2","function":{"name":"Read","arguments":"{\"path\":\"fixture.txt\"}"}}]}
+{"role":"tool","tool_call_id":"local-read-2","content":"1\tlocal cap fixture"}
+{"role":"assistant","tool_calls":[{"type":"function","id":"local-read-3","function":{"name":"Read","arguments":"{\"path\":\"fixture.txt\"}"}}]}
+{"role":"tool","tool_call_id":"local-read-3","content":"1\tlocal cap fixture\n\n<system-reminder>\nThe same tool call has been repeated several times in a row. Before making your next call, write one sentence stating what new information you expect it to produce. Then act on that sentence: if it names something this result does not already give you, choose the action that best provides it; otherwise, continue with the evidence you already have.\n</system-reminder>"}

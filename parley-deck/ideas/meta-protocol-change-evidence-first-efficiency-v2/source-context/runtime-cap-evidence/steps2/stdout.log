@@ -1,0 +1,5 @@
+{"role":"meta","type":"system.version","version":"0.42.0"}
+{"role":"assistant","tool_calls":[{"type":"function","id":"local-read-1","function":{"name":"Read","arguments":"{\"path\":\"fixture.txt\"}"}}]}
+{"role":"tool","tool_call_id":"local-read-1","content":"1\tlocal cap fixture"}
+{"role":"assistant","tool_calls":[{"type":"function","id":"local-read-2","function":{"name":"Read","arguments":"{\"path\":\"fixture.txt\"}"}}]}
+{"role":"tool","tool_call_id":"local-read-2","content":"1\tlocal cap fixture"}

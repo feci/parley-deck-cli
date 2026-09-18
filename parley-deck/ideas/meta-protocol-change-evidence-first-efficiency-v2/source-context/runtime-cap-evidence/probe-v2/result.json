@@ -1,0 +1,55 @@
+{
+  "completed_at": "2026-09-16T00:23:27.959207+00:00",
+  "native": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-8u6aop0m",
+  "exit": 0,
+  "timeout": false,
+  "seconds": 1.213,
+  "requests": 1,
+  "request_summaries": [
+    {
+      "path": "/v1/chat/completions",
+      "model": "local-cap-fixture",
+      "max_completion_tokens": 17,
+      "max_tokens": null,
+      "tools": [
+        "Read"
+      ]
+    }
+  ],
+  "scope": "local fake endpoint and CLI wire configuration only; no external provider, no treatment, no billing proof",
+  "env": {
+    "KIMI_CODE_HOME": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-8u6aop0m/data",
+    "KIMI_MODEL_NAME": "local-cap-fixture",
+    "KIMI_MODEL_PROVIDER_TYPE": "kimi",
+    "KIMI_MODEL_BASE_URL": "http://127.0.0.1:58319/v1",
+    "KIMI_MODEL_MAX_COMPLETION_TOKENS": "17",
+    "KIMI_LOOP_MAX_STEPS_PER_TURN": "2",
+    "KIMI_LOOP_MAX_ATTEMPTS_PER_STEP": "1",
+    "KIMI_CODE_INFINITE_RETRY": "false",
+    "KIMI_CODE_BACKGROUND_PRINT_BACKGROUND_MODE": "exit",
+    "KIMI_CODE_BACKGROUND_KEEP_ALIVE_ON_EXIT": "false",
+    "KIMI_CODE_NO_AUTO_UPDATE": "true",
+    "KIMI_DISABLE_TELEMETRY": "true",
+    "KIMI_CODE_BUILTIN_PRODUCT_SKILLS": "false"
+  },
+  "command": [
+    "/usr/bin/sandbox-exec",
+    "-f",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-8u6aop0m/task.sb",
+    "/Users/tomasfecko/.kimi-code/bin/kimi",
+    "--agent-file",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-8u6aop0m/fixture-agent.md",
+    "--skills-dir",
+    "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-cap-local-8u6aop0m/empty-skills",
+    "--output-format",
+    "stream-json",
+    "-p",
+    "Return LOCAL_FIXTURE_DONE. This is a local protocol transport fixture."
+  ],
+  "stdout.log_sha256": "7beaa6a11a2ec7e9c682b5e5dad7209911241298d9ceb9f4d6e92e7ec1ac8951",
+  "stderr.log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "requests.json_sha256": "1354bc6e735fbd7aaef2202af1ac71e99e1a582f68d473e5e81060da8a95b0bf",
+  "canary.log_sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b",
+  "task.sb_sha256": "ad8b6fbdc489158668891874feab1bdcf68da450c720c9cf6b4ba308b45501ec",
+  "fixture-agent.md_sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+}
