@@ -2,13 +2,17 @@ package driver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/store"
 )
 
@@ -30,6 +34,19 @@ func (d *Driver) Run(ctx context.Context) error {
 	}
 	defer release()
 
+	// Persist the policy before the first transition. Saved limits remain
+	// authoritative on a new Run, including when its flags are omitted.
+	binding, err := budget.EnsureStepBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug, d.cfg.MaxDriverSteps, d.cfg.MaxWallClock)
+	if err != nil {
+		return fmt.Errorf("persistent driver budget: %w", err)
+	}
+	if binding != nil {
+		private := *d
+		private.cfg.MaxDriverSteps = binding.Policy.MaxSteps
+		private.cfg.MaxWallClock = time.Duration(binding.Policy.WallClockNS)
+		d = &private
+	}
+
 	deadline := time.Now().Add(roundDeadline)
 	start := time.Now()
 	steps := 0
@@ -41,14 +58,40 @@ func (d *Driver) Run(ctx context.Context) error {
 		default:
 		}
 
+		if binding != nil {
+			binding, err = binding.Current()
+			if err != nil {
+				return fmt.Errorf("refresh lifetime driver policy: %w", err)
+			}
+			d.cfg.MaxDriverSteps = binding.Policy.MaxSteps
+			d.cfg.MaxWallClock = time.Duration(binding.Policy.WallClockNS)
+			state, err := binding.Store.Inspect(ctx)
+			if err != nil {
+				return fmt.Errorf("read lifetime driver budget: %w", err)
+			}
+			steps, start = budget.StepCount(state), state.StartedAt
+		}
+
 		// LE-5: enforce the loop ceilings BEFORE advancing. A breach escalates (durable
 		// inbox note) and halts — it never marks the idea complete.
-		if reason := d.loopBudgetBreach(steps, start); reason != "" {
+		reason, monetaryCeiling := d.runtimeLoopBudgetBreach(ctx, steps, start)
+		if reason != "" {
 			return d.escalateLoopBudget(last, reason)
 		}
 
 		action, c, err := d.Advance(ctx)
 		last = c
+		// Report the durable charge even if the action failed after reserving it.
+		if binding != nil {
+			state, inspectErr := binding.Store.Inspect(ctx)
+			if inspectErr != nil {
+				return fmt.Errorf("read charged driver step: %w", inspectErr)
+			}
+			steps, start = budget.StepCount(state), state.StartedAt
+			if emitErr := d.emitLoopBudget(steps, start, monetaryCeiling); emitErr != nil {
+				return emitErr
+			}
+		}
 		if err != nil {
 			// A runner failure or a malformed event log halts the driver; capture
 			// it in a durable blocking inbox note (consensus D4/AF3), not just
@@ -59,9 +102,11 @@ func (d *Driver) Run(ctx context.Context) error {
 			return err
 		}
 		// LE-5: count progress Advances and record budget burn for the TUI/state.
-		if isProgressAction(action) {
+		if binding == nil && isProgressAction(action) {
 			steps++
-			d.emitLoopBudget(steps, start)
+			if err := d.emitLoopBudget(steps, start, monetaryCeiling); err != nil {
+				return err
+			}
 		}
 		switch action {
 		case ActionPromoted:
@@ -132,8 +177,8 @@ func isProgressAction(a Action) bool {
 }
 
 // loopBudgetBreach returns a non-empty reason when a non-zero loop ceiling is exceeded
-// (LE-5). 0 ceilings are unlimited. Cost is summed best-effort from agent.usage events
-// (LE-6) and is only consulted when MaxCostUSD > 0.
+// (LE-5). 0 ceilings are unlimited. A monetary ceiling requires complete
+// per-invocation prices from agent.usage events and stops on unknown accounting.
 func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 	if d.cfg.MaxDriverSteps > 0 && steps >= d.cfg.MaxDriverSteps {
 		return fmt.Sprintf("driver-step budget exhausted (%d/%d steps)", steps, d.cfg.MaxDriverSteps)
@@ -144,19 +189,73 @@ func (d *Driver) loopBudgetBreach(steps int, start time.Time) string {
 		}
 	}
 	if d.cfg.MaxCostUSD > 0 {
-		if spent := d.loopCostUSD(); spent >= d.cfg.MaxCostUSD {
-			return fmt.Sprintf("cost budget exhausted ($%.2f/$%.2f)", spent, d.cfg.MaxCostUSD)
+		cost := d.loopCost()
+		if !cost.complete {
+			return "cost budget cannot be enforced: " + cost.reason
+		}
+		if cost.usd >= d.cfg.MaxCostUSD {
+			return fmt.Sprintf("cost budget exhausted ($%.2f/$%.2f)", cost.usd, d.cfg.MaxCostUSD)
 		}
 	}
 	return ""
 }
 
+// Saved operator extensions govern the actual loop, including an older runtime
+// configuration naming the original cap. Retain observed usage separately from
+// conservative ledger exposure; neither a new run nor missing usage resets it.
+func (d *Driver) runtimeLoopBudgetBreach(ctx context.Context, steps int, start time.Time) (string, *int64) {
+	b, err := budget.LoadLaunchBinding(ctx, d.cfg.Root, d.cfg.IdeaSlug)
+	if err != nil {
+		return "cannot read persistent launch budget: " + err.Error(), nil
+	}
+	if err := budget.RequireMonetaryBinding(b, d.cfg.MaxCostUSD); err != nil {
+		return err.Error(), nil
+	}
+	if b == nil {
+		return d.loopBudgetBreach(steps, start), nil
+	}
+	status, err := b.Inspect(ctx)
+	if err != nil {
+		return "cannot inspect persistent launch budget: " + err.Error(), nil
+	}
+	var policy budget.LaunchPolicy
+	if err := json.Unmarshal(status.Policy, &policy); err != nil {
+		return "cannot decode persistent launch budget", nil
+	}
+	ceiling := policy.MaxCostMicros
+	copy := *d
+	copy.cfg.MaxCostUSD = 0
+	if reason := copy.loopBudgetBreach(steps, start); reason != "" {
+		return reason, &ceiling
+	}
+	if ceiling > 0 {
+		if status.ExposureMicros == nil {
+			return "cost budget cannot be enforced: monetary exposure is unknown", &ceiling
+		}
+		if *status.ExposureMicros >= ceiling {
+			return fmt.Sprintf("cost budget exhausted (%d/%d microdollars)", *status.ExposureMicros, ceiling), &ceiling
+		}
+	}
+	return "", &ceiling
+}
+
 // emitLoopBudget records budget burn after a progress step so the TUI/state can show it.
 // Cost is always reported for observability (F-T2-2); only enforcement is gated by
 // MaxCostUSD > 0 (in loopBudgetBreach).
-func (d *Driver) emitLoopBudget(steps int, start time.Time) {
-	cost := d.loopCostUSD()
-	_ = d.cfg.Events.Append(store.Event{
+func (d *Driver) emitLoopBudget(steps int, start time.Time, persistentCeiling ...*int64) error {
+	cost := d.loopCost()
+	var total any
+	coverage := "incomplete"
+	if cost.complete {
+		total, coverage = cost.usd, "complete"
+	}
+	maxCost := d.cfg.MaxCostUSD
+	var maxMicros any
+	if len(persistentCeiling) > 0 && persistentCeiling[0] != nil {
+		maxMicros = *persistentCeiling[0]
+		maxCost = float64(*persistentCeiling[0]) / 1_000_000
+	}
+	return d.cfg.Events.Append(store.Event{
 		Time: time.Now().UTC(),
 		Type: "loop.budget",
 		Data: map[string]any{
@@ -165,36 +264,65 @@ func (d *Driver) emitLoopBudget(steps int, start time.Time) {
 			"max_driver_steps":  d.cfg.MaxDriverSteps,
 			"elapsed_ms":        time.Since(start).Milliseconds(),
 			"max_wall_clock_ms": d.cfg.MaxWallClock.Milliseconds(),
-			"cost_usd":          cost,
-			"max_cost_usd":      d.cfg.MaxCostUSD,
+			"cost_usd":          total,
+			"cost_coverage":     coverage,
+			"max_cost_usd":      maxCost,
+			"max_cost_micros":   maxMicros,
 		},
 	})
 }
 
-// loopCostUSD sums cost_usd across agent.usage events (LE-6). Best-effort: the runners do
-// not yet emit agent.usage, so this is 0 in practice until that telemetry lands.
-func (d *Driver) loopCostUSD() float64 {
+type loopCostSummary struct {
+	usd      float64
+	complete bool
+	reason   string
+}
+
+// A normalized usage event identifies one invocation, including a retry. Only
+// identical replays may be deduplicated; a missing price or contradictory replay
+// cannot establish the total against a monetary ceiling.
+func (d *Driver) loopCost() loopCostSummary {
+	if !d.cfg.Events.Enabled() {
+		return loopCostSummary{reason: "run event store is unavailable"}
+	}
 	evs, err := d.cfg.Events.Load()
 	if err != nil {
-		return 0
+		return loopCostSummary{reason: "run event accounting is missing or unreadable"}
 	}
-	total := 0.0
+	result := loopCostSummary{complete: true}
+	seen := map[string]map[string]any{}
 	for _, e := range evs {
 		if e.Type != "agent.usage" {
 			continue
 		}
-		if f, ok := e.Data["cost_usd"].(float64); ok {
-			total += f
+		id, _ := e.Data["invocation_id"].(string)
+		if strings.TrimSpace(id) == "" {
+			return loopCostSummary{reason: "usage event has no invocation identity"}
+		}
+		if prior, ok := seen[id]; ok {
+			if !reflect.DeepEqual(prior, e.Data) {
+				return loopCostSummary{reason: "conflicting usage for one invocation"}
+			}
+			continue
+		}
+		seen[id] = e.Data
+		cost, ok := e.Data["cost_usd"].(float64)
+		if !ok || math.IsNaN(cost) || math.IsInf(cost, 0) || cost < 0 || cost > 1_000_000 {
+			return loopCostSummary{reason: "invocation cost is unknown or invalid"}
+		}
+		result.usd += cost
+		if math.IsInf(result.usd, 0) {
+			return loopCostSummary{reason: "cost total is out of range"}
 		}
 	}
-	return total
+	return result
 }
 
 // escalateLoopBudget writes a durable blocking inbox note when a loop ceiling is hit and
 // halts cleanly (LE-5: budget hit = escalate, never complete).
 func (d *Driver) escalateLoopBudget(c Cursor, reason string) error {
 	d.escalate(c, "loop-budget", fmt.Sprintf(
-		"The auto-driver hit a loop budget and halted rather than continue:\n\n    %s\n\nThis is a safety ceiling (loop engineering: a budget hit escalates, it does not mark the idea complete). Raise the relevant ceiling in ~/.parley [defaults.loop] or via the run flag, or split the work into smaller ideas, then re-run 'parley run --auto'.",
+		"The auto-driver hit a loop budget and halted rather than continue:\n\n    %s\n\nThis is a safety ceiling (loop engineering: a budget hit escalates, it does not mark the idea complete). Preserve the saved policy and charges. A new run or changed flags cannot extend a frozen lifetime ceiling; an explicit operator extension or accounting migration is required before continuing.",
 		reason))
 	return nil
 }

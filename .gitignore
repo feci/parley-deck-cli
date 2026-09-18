@@ -19,3 +19,5 @@ tmp-test-plugin/
 # (a committed graph would go stale AND the hook rebuild would dirty the
 # tree right after every commit, tripping the driver gitTreeClean gate).
 /graphify-out/
+# Private invocation metadata, logs and generated protocol packets.
+/.parley-runtime/

@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,13 +10,17 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/store"
 )
 
 const UsageCaveat = "This is a user-driven interactive handoff. Provider billing and usage accounting are determined by the provider and your account. Headless mode is programmatic execution."
 
 type HandoffOptions struct {
+	Context            context.Context
 	Root               string
 	RunID              string
+	Idea               string
+	Phase              string
 	Agent              agents.Discovery
 	Prompt             string
 	TargetPath         string
@@ -24,29 +29,60 @@ type HandoffOptions struct {
 }
 
 type HandoffPacket struct {
+	InvocationID     string
 	Dir              string
 	PromptPath       string
 	InstructionsPath string
 }
 
-func WriteHandoffPacket(opts HandoffOptions) (HandoffPacket, error) {
+func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr error) {
 	if opts.RunID == "" {
 		return HandoffPacket{}, fmt.Errorf("run id is required for handoff packet")
+	}
+	agent := opts.Agent
+	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
+		agent.LaunchMode = agents.LaunchManual
+	}
+	phase := opts.Phase
+	if phase == "" {
+		phase = "handoff"
+	}
+	info := LaunchInfo{RunID: opts.RunID, Idea: opts.Idea, Phase: phase,
+		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))}
+	prompt, protocolContext, contextErr := prepareProtocolPrompt(opts.Root, opts.Prompt, info)
+	info.Context = protocolContext
+	parent := opts.Context
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx := WithLaunchInfo(parent, info)
+	evidence, err := beginLaunch(ctx, opts.Root, opts.RunID, agent, launchHandoff)
+	if err != nil {
+		return HandoffPacket{}, err
+	}
+	defer func() {
+		if err := evidence.finish(returnedErr, nil, nil); err != nil {
+			returnedErr = err
+		}
+	}()
+	if contextErr != nil {
+		return HandoffPacket{}, contextErr
 	}
 	agentDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID, "agents", opts.Agent.ID)
 	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
 		return HandoffPacket{}, err
 	}
 
-	packet := HandoffPacket{
+	packet = HandoffPacket{
+		InvocationID:     evidence.invocation.ID,
 		Dir:              agentDir,
-		PromptPath:       filepath.Join(agentDir, "handoff-prompt.md"),
+		PromptPath:       filepath.Join(evidence.invocation.Dir, "handoff-prompt.md"),
 		InstructionsPath: filepath.Join(agentDir, "handoff.md"),
 	}
-	if err := os.WriteFile(packet.PromptPath, []byte(opts.Prompt), 0o644); err != nil {
+	if err := writeHandoffPrompt(packet.PromptPath, []byte(prompt)); err != nil {
 		return HandoffPacket{}, err
 	}
-	if err := os.WriteFile(packet.InstructionsPath, []byte(handoffInstructions(opts, packet)), 0o644); err != nil {
+	if err := fsutil.WriteFileAtomic(packet.InstructionsPath, []byte(handoffInstructions(opts, packet)), 0o644); err != nil {
 		return HandoffPacket{}, err
 	}
 	return packet, nil
@@ -66,7 +102,10 @@ func handoffInstructions(opts HandoffOptions, packet HandoffPacket) string {
 	fmt.Fprintf(&b, "# Interactive handoff: %s\n\n", opts.Agent.ID)
 	fmt.Fprintf(&b, "Agent: %s\n", opts.Agent.ID)
 	fmt.Fprintf(&b, "Launch mode: %s\n", agents.LaunchModeOrDefault(opts.Agent.LaunchMode))
-	fmt.Fprintf(&b, "Invoke: %s\n", agents.InteractiveInvokeOrDefault(opts.Agent.InteractiveInvoke))
+	fmt.Fprintf(&b, "Configured invoke: %s\n", agents.InteractiveInvokeOrDefault(opts.Agent.InteractiveInvoke))
+	if agents.InteractiveInvokeOrDefault(opts.Agent.InteractiveInvoke) == "spawn-tty" {
+		b.WriteString("Automatic spawn-tty is supported by `parley consensus request-signoffs` only. Other commands provide a print-only handoff that you must launch yourself. This packet does not record a process launch.\n")
+	}
 	fmt.Fprintf(&b, "Prompt mode: %s\n", agents.InteractivePromptModeOrDefault(opts.Agent.InteractivePromptMode))
 	fmt.Fprintf(&b, "Prompt file: %s\n", packet.PromptPath)
 	fmt.Fprintf(&b, "Target artifact: %s\n", opts.TargetPath)
@@ -105,4 +144,25 @@ func ExpandInteractiveArgs(args []string, root, promptPath, targetPath string) [
 		out[i] = arg
 	}
 	return out
+}
+
+// Each invocation publishes a distinct synchronized prompt, so resuming a
+// handoff cannot replace the bytes an earlier invocation attested.
+func writeHandoffPrompt(path string, body []byte) error {
+	staged, err := os.CreateTemp(filepath.Dir(path), ".handoff-prompt-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(staged.Name())
+	defer staged.Close()
+	if _, err := staged.Write(body); err != nil {
+		return err
+	}
+	if err := fsutil.SyncFile(staged); err != nil {
+		return err
+	}
+	if err := staged.Close(); err != nil {
+		return err
+	}
+	return fsutil.ReplaceSyncedFile(staged.Name(), path)
 }

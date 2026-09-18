@@ -1,0 +1,1357 @@
+{
+  "at": "2026-09-15T22:34:21.423275+00:00",
+  "source_commit": "6962f2af9b6e46548588c5152285e6808f3d6f7f",
+  "source_manifest": {
+    "cmd/parley/main.go": "320fe39da8abe0fc02140c3d0b4556f13d7f54a69fef4bdfe414feeeacd83932",
+    "go.mod": "eda6c8571d4f61d4a2b4b9a59375e1ac60892a43014963d09c2304750cc9f614",
+    "go.sum": "075aa6ab8b51c9369ca50a4c745cc1528a5352f42b9d97b3ed0a3588b6accee9",
+    "internal/acp/client.go": "a618113931765270e5531f40ddb66fca49bd0c588d5e154937cd7c392a5cea77",
+    "internal/acp/client_test.go": "ff23d161b515b02ee3aa8253a35f78fb9be4e85246bd6a2dc1fe7fe14eeef763",
+    "internal/acp/protocol.go": "b2b789af88afa690c0107303dd9b72d829dbfae042469bbb33d2c9952653de7c",
+    "internal/acp/ringbuffer.go": "97400f7837589a50e42a1b07daa772b21b01fb1bce98720f46faf86d756c1d17",
+    "internal/acp/shellenv.go": "ff86f0f366a06ca37958214f7d4d3c78a245892ad4e8dd7b9da286dddc187032",
+    "internal/acp/spawn.go": "61ae3bbd7b96e9e48ee9f8414d497893a72cdba36739c3517291dacc62700d74",
+    "internal/acp/spawn_test.go": "032eba90a2af6fe48aeafc5d8a6b0f43f0022256149189e0254c5d7a111a58bc",
+    "internal/acp/sysproc_unix.go": "681ef586d798fb5b1a3e5d00f8911cd20384b0970ce1c832530bdbf1efa9f4ff",
+    "internal/acp/sysproc_windows.go": "663a1473d742d994e39f1ddd1b167cbe4ac352bb6dbfd8eb7b37249ef2ec5178",
+    "internal/acp/transport.go": "a52d850f0a5b1e549c4d94448f3a83faddf619a23983c69dc6df79f88e40f1ea",
+    "internal/agents/acp_specs.go": "a4287dbb93d0e58e36f7479391aaf4c22c019fdb6981a5cb1b202df520a86582",
+    "internal/agents/acp_specs_test.go": "58746bb593fa8a8afe4bea8d0f5787193aa72baec571454d7aed629770abdf06",
+    "internal/agents/autonomous_test.go": "21f274d28ffbd711e0f961c6a1ec81c3529f9131e13afb009458fd103f72b063",
+    "internal/agents/configmodel.go": "4dfe9831a6db11618b8e5c93e4a0e8f5b297f2915ccd6821da9fedbf00de716a",
+    "internal/agents/configmodel_test.go": "95c5ee23c602e70c84e5369c88f8726ca29965f2c86f89740957d45252be7e97",
+    "internal/agents/discover.go": "bea5a45677174df3e0ceb577f68fd1f748edf57b53798f47bd32e7c51f68b9a9",
+    "internal/agents/launchargs.go": "5bcb228f835fbe2d57e45e88c8c7d1e54151c831b1ace2be6b0c85b7b6e22de6",
+    "internal/agents/launchargs_test.go": "4d44a198cc3f95865e172e147d8acad9c6aa427a41fa25f7973522c9ecd86548",
+    "internal/agents/modelmeta.go": "4aefdc2fc08782a82f6ecab97fcc60d3edd910ff29eda9ffabf00ef549887ac0",
+    "internal/agents/modelmeta_test.go": "8352df2dc22b88067c0cd77213f54dd43d2a8dedad8557dc2c6a93ce4dd04d01",
+    "internal/agents/naming.go": "1cea7c4c5a04725eccc733d22c940e91f93b16bb12e0758ac50e6928411e5d35",
+    "internal/agents/naming_test.go": "282ee31cf913cf5a2208e37096e5bbefcf08dd742845619206dae7d8ee3d649e",
+    "internal/agents/resolve.go": "a62a16a4a9422ddf478f99af9f96236bc8af32db9925b68da3a3534f6f9d3bc4",
+    "internal/agents/resolve_test.go": "f45a4d9b806b5f004aab20884588b5d9c3b54aba68845f7ea7879524edec11da",
+    "internal/app/agents_exec.go": "e893279a19e07216fe2a54f8117a41f748794dc2a12883ff096c14bf096e0ef6",
+    "internal/app/agents_exec_test.go": "28791fbbb50ea69b7aec58859cd1c9d795d8b6c219634f68e9ab40ab798a2732",
+    "internal/app/app.go": "d455ac10f4b8d936545cce21fed5f9b6ab87a836f15e6a039031adc8d75baad8",
+    "internal/app/app_test.go": "b1378e50159af55e7425463613bf44ce008a55fa7724cbad494b0a0058a7a420",
+    "internal/app/budget.go": "9ff64721cc3cdb0e0f7989cd499c782118ddda80596357b3fc6b69d83545dbca",
+    "internal/app/budget_action.go": "fb10fa02ebfa6eb0a097daf640107a04c5a35d6c6b1c3210bc50323432a1d4b6",
+    "internal/app/budget_action_test.go": "3fb7ff645a1b9199137068b665e3d97891a60cee5345b76b4c3f4648358504a3",
+    "internal/app/budget_attended_other.go": "55bd9d4fd26a69f8d50549208f83cb3a648b8c311deb27b908852c5169af335e",
+    "internal/app/budget_attended_windows.go": "12841c13dfde015f6edf63fd715e4fbb56e9498be63b4aa10dc299b25666e3be",
+    "internal/app/budget_configure.go": "be1c2baa8e5eb8172667825e2d39877d94b93658489cd508a6119dc1b10f8ac5",
+    "internal/app/budget_configure_test.go": "e571b9a525df8211e2d19f0c42cabbf6cac17a5836ef1e2e95c566adbf2965ca",
+    "internal/app/budget_cycle.go": "2804a2109554221bb3ac6e9a47b74468cf5edb1e8ca7ccadb20bdbfb1e2646ab",
+    "internal/app/budget_cycle_test.go": "ca8299e6b553d31c766b08d985bb0e9473de12a840ad38e6c2f957a0a335099a",
+    "internal/app/budget_migrate.go": "3cf72e263539e45f69f90d6c66e681f858b475b76d32d9132f06f0eac20e41e7",
+    "internal/app/budget_migrate_protocol.go": "adc3a0f48782ff21a31be05f9d206a6c9f2990e59570b32f5257412e2cf4dcd5",
+    "internal/app/budget_migrate_protocol_test.go": "9f9a41bc6b5acd8f4fe47185804bdedc5ae24fd684bb9753b03479a4fa10743c",
+    "internal/app/budget_migrate_test.go": "0a134f3a90da7888fd98a807a3b79f704f2ca6f670a3021fab49bdf46f075fdf",
+    "internal/app/budget_migration_recovery.go": "468f1c8da63458e1cdafa61c951cb53786a7d62886a8c87fa73afb575091f456",
+    "internal/app/budget_migration_recovery_test.go": "71e919bc22d972a84ec529481f8f11dd4069e88b41839c537bc932c1c7f84b49",
+    "internal/app/budget_origin.go": "96238d4687a1896839b6262adbbdfe62651af76ce80762dc51d11cef1cdfedcc",
+    "internal/app/budget_origin_test.go": "4d9234f73f91662bc0d625f9108e76664d0bfc25c184b78c8465200e2543c196",
+    "internal/app/budget_policy.go": "6ba87c8670305403493a1b7b1765d899cbf5ac815bbd177a4d63623b05b3852c",
+    "internal/app/budget_policy_test.go": "00096b27c7859c9ee0779c932d04889605e95520eff5571c77c5676b809f29fe",
+    "internal/app/budget_test.go": "fa3dc54b366ad97fd3c6ee7649413d1ba13b12fd74b0cc57904ebca58f41e953",
+    "internal/app/classify.go": "ca910342fed0205b4c6733838e5b5f658906f5f113726069323ad1d0a3b7e867",
+    "internal/app/consensus_request_signoffs.go": "182ee1908dabda06186179485997e0f1a8b0c8c79453a12a342c33b43e0b0fe0",
+    "internal/app/consult.go": "4cf9fc0bf738313ba3b7c53002d495905b978d805c68a79f34bceb690e65c31f",
+    "internal/app/consult_test.go": "02317701e65a7909aa5c6abe0ba715b7a7b0f501147b89b454a9eabb4bc49b18",
+    "internal/app/context.go": "8d6fcf7fec9565924a4d49ad4ab48f498e63f40bff94d091eb628ac087d24b5a",
+    "internal/app/driver_checks.go": "a86e3877bcea72be15de29bf8471eecfd18dbb1cfe5d266912fa78e447ecf2fb",
+    "internal/app/driver_checks_test.go": "92fed4750487e571bde5b382113ede4e2b1950febf11125a18211db7507df6b2",
+    "internal/app/driver_consensus.go": "2fcdfb3deccaf70d03a0fc1ccb67882504c9b0b1507f2890d61b3417607cedad",
+    "internal/app/driver_evidence.go": "72ebc6242ad8ce03375efc4f296f57911e30e36a3c24fab8cfb6f8305924545d",
+    "internal/app/driver_evidence_test.go": "b973100606b9334eee05f2c59c3ff70d982b678c2fba695c7c3ae21387c5f3a4",
+    "internal/app/driver_impl.go": "6bcb87e75320d9f03e6dd9f06caaa577633d99809cae3c1e821de2b91e5b5dc8",
+    "internal/app/driver_impl_le_test.go": "2c2fe20cb51449845c80e8d4f4205cb30bb0e27b6f4e8de3da5dc3b64d38be2e",
+    "internal/app/evidence_publication_test.go": "f989be3b3fe810a2ff70f6cf1448796f3d29e31ab3fcf9f99c4bcd176d3bb5bb",
+    "internal/app/evidence_refusals.go": "fb9dddc1bf84bb2f158f083a78129b07f80828701828596fcdc50d44b9eb5fdb",
+    "internal/app/evidence_refusals_test.go": "ed039f567aff44e30beed6b9b710c091d52bde5bfff221138fc4a4fb3b311f71",
+    "internal/app/evidence_table.go": "b7a0569f13aa7bd5e09df56899e0e2c4745f3d1792182e33fdaffeab36c32e76",
+    "internal/app/evidence_table_test.go": "f561744b77b4d4bcc37ee2d99d635ee8c9427e5d83d9ef58e2052cc78e9ae625",
+    "internal/app/evidence_verify.go": "cbc9e0366e4d7f1ac81ca1d39b64ebd9bd55877e29529534e7b71bafe7e68040",
+    "internal/app/evidence_verify_test.go": "6feddf1fe61d1f71e58a43992a8adbb5cffc2dd58377d0ae4186928dd3471c9e",
+    "internal/app/finalprompt_test.go": "42c1646d0f5adadd32a88401fbc94d361a9bcec1f11673ab64f87d06205a0c75",
+    "internal/app/goal_check_test.go": "0b95b245ab9fc63ce888b8882a6f1261b76e3d37ac039d4f89e2346ffb30457c",
+    "internal/app/learn.go": "d7b5dfa286c08e40d118ba5e256ef3a9a0fce3294a3ea6553fcf38162d32a86e",
+    "internal/app/learn_test.go": "b2a6cdde2dda55aadc7b8f49175f18b0e5246c66b5cf60f2b073356f58e6b06f",
+    "internal/app/loop_cmd.go": "6d3361b5d7c257a00f31881e2bd03f4ad64f07c85fcab956b16440b4c72d4a15",
+    "internal/app/loop_cmd_test.go": "2ff2872e49580e19a428224aae10d11ad1b3d648f2ed7e9d32153f73daf9f670",
+    "internal/app/main_test.go": "d8b7a46db356c6d7e27efb8343db48995aab2b79d82a218ee6a18ca12beb672f",
+    "internal/app/overlay_test.go": "4f4410e80472bc45f03864aec4edbf0f3862745e211a394d539b838a99b1de3b",
+    "internal/app/pipeline_cmd.go": "de55f851e367b0e448e6a1c44c84ece31b5a4c524869e0ffbaa70e184eb5be84",
+    "internal/app/pipeline_cmd_test.go": "71bc5927ce9c33907eff08c5e4721c1cd43bb0ab15619020905fae1e21e0839c",
+    "internal/app/pipeline_remediation_test.go": "3941b4fd466b3d8ca30405b958049a34b4dcfe8193e739d82650a629eb5add0d",
+    "internal/app/pipeline_scaffold_test.go": "3dd89e26a8646c4ff9197c05496056a36157c511967157bc4637183ae32c6a49",
+    "internal/app/preflight.go": "bee69fd467e4b0d179dd4207202fd41baaa29592d888e4fe24678dc421130894",
+    "internal/app/preflight_evidence_test.go": "42080b70b2de6fb8de6af43665ee97cef4840905f5e215b383f523edfe618ef9",
+    "internal/app/preflight_hash_test.go": "aebb127193a4dab585a2cb23c05ee4e2c7a348f368dada840d1e812b07e6c241",
+    "internal/app/preflight_liveness.go": "910c3bbcd7d6c6ff50fbd3e7a0d1499eeb0689c48e492d25c4570a19704d762e",
+    "internal/app/preflight_liveness_test.go": "f0ebed29026aad9a94295cb5b9013e750e9cdfffafcf02ea022ff0ca8ab1e13d",
+    "internal/app/preflight_test.go": "d5a2aeec81fe0075b22ba857c5992fb164d6e444224f4d655d3c81550454a186",
+    "internal/app/preset.go": "969b9c917efc9c35d2b4c1bfc6c7591d8fded1240e2c49934483f7c8054e20ce",
+    "internal/app/probe_abs_test.go": "e8eb3e5bfc709b18fd8a5526aaffaaa4156253cc51f6945155e3e0de0228711e",
+    "internal/app/protocol.go": "6008a237485d9d446c7b28d3dd3ca72de50b3e1ec0af87d3ab86a18b34197eda",
+    "internal/app/protocol_packet.go": "72273e22515e7a26fe39443fddab63b448177f02f1ad627d32bbd38566a464a2",
+    "internal/app/protocol_packet_test.go": "6b12c2178f40cc4655fa9de431990c4d938d9c719f0b84c8fa1bfb5c3534727f",
+    "internal/app/protocol_precheck_test.go": "88bd687c242fb836143cd20db6c0a160dff69c0410b1c316f1e9a70633ec921b",
+    "internal/app/protocol_test.go": "8928a55d00632aac8e005b7fe939ebfa20789ad5b62759f0546c99c56fac2d51",
+    "internal/app/retro.go": "e231207011a1fe7e9477112b68064f3d2eef63ccfac64e44ecf1ca2fd97b1081",
+    "internal/app/retro_test.go": "0491d9e7f9f0a71319e4bc0abd1b390aa642a323b2c7d1d738473378bd238115",
+    "internal/app/roster.go": "6f2bb716eebafec3a1c3e38ed25b7ebbbadf1831fcd4de6aa5f0a6749a7bccc2",
+    "internal/app/roster_configread_test.go": "402fc873d980ac06aac6c83d75698d20e33bd7f850a4ed6b4ce68bd9a74abc5f",
+    "internal/app/roster_cycle2_test.go": "a2bf546d7f199e0da164d6a310b798ba97587d5d1b4a816e73a8dcae10ebf636",
+    "internal/app/roster_membership_test.go": "e276a3fcef9b1abb7d9c850596f997a4d56661b00894a159c74b92980f2e2fee",
+    "internal/app/roster_migrate.go": "de0436e78cd6bdf05d6fc36299a909bf0427274677abc80d3e3a259d220c29d7",
+    "internal/app/roster_render.go": "203c57ce5a8420d520f69590936bbe19e12e7864117d35c90665e3edf52e20da",
+    "internal/app/roster_render_test.go": "49210b68cf35a122bc2b018997f6f6773de5d21c9599e82f6e7bb2796c432a86",
+    "internal/app/roster_set.go": "100872f633d36f8e572d9620b07a54eb57a63332525f3c5d2bc1bf9b00617925",
+    "internal/app/roster_set_test.go": "8ce56a35ae5b3d9f3202d592f299daef16f16e3e812883ca1ad77fb181c1ff4e",
+    "internal/app/roster_snapshot_apply.go": "dfb2839abb4a8b2abd951840adf6dc0d220af145bf95149af9e3f0fb2419a429",
+    "internal/app/roster_snapshot_apply_test.go": "05d27d3c126bef67a335a8f8decfa053f755e7ae7b709bf393dde665a31cbc3d",
+    "internal/app/roster_sync.go": "7230dc19ccf0a9e6d8db55e266e88caccd9bc65d4d5738b64c87348a2e1fc758",
+    "internal/app/roster_sync_test.go": "6cd57e0e6b833b4192f91cddb1f159e67cab2851ad10ccd723f4a6de49b18faf",
+    "internal/app/roster_test.go": "30f171c71baebbcf4fba1e7e25ec3c891209df10ad69504ff01788ae5d256759",
+    "internal/app/roster_view.go": "ca03368b65b05731670a885935ec7c93318bb650f6cb2940a85578256a7d51e5",
+    "internal/app/termios_linux.go": "ca097b77d6fb7622bf7cfd211791efa8028037a4bcadd2498316b13121cc42f6",
+    "internal/app/termios_other.go": "7748b49b68d272122ab13303dd71845196dabf9a7080f9c57aa334558eb5d3aa",
+    "internal/app/termios_unix.go": "f4c0d35b7c27f1ccf743023958066a549748cc9cf62762be64fc29ebcc236a0b",
+    "internal/app/trajectory.go": "32b16b02f84a4c7d72d98837be78b98775efccd036dfb29ff35a2e9b67b36686",
+    "internal/app/trajectory_parent_recovery.go": "ecb509a8918d5448c6dd064d0a6ff33eef6ea0b66d2a002726e9adb0aadf2191",
+    "internal/app/trajectory_parent_recovery_test.go": "d152dec31a9cb5996feba3c14a0c75610c4eb24925343b1728531da8d79e97a3",
+    "internal/app/trajectory_quorum_test.go": "2250e5e97d87f3c74af0d80147ad0e5b684a94d77e0669fa40709d9a1e13d9d0",
+    "internal/app/trajectory_reconcile.go": "7af18c084252c9226505fb7b2c7d690102991542bd73c30a1649e8654836e76d",
+    "internal/app/trajectory_reconcile_test.go": "a862ed4b39b720dc7b19d5ed36759f27760a093621c89dc746253fcb1bd41a14",
+    "internal/app/trajectory_reservation_recovery.go": "5fe3c82f0cc0b5fac6c3e67d34654be0f770d93fae35252db7a3e8600e43df35",
+    "internal/app/trajectory_reservation_recovery_test.go": "45cf53a22914cc949f8fab3d16a955f1710a9d7329fb6358ef8c3f1c8ce6f3be",
+    "internal/app/trajectory_test.go": "088ccc5ce0d85e5bf3f4409548a6a9d346952a50d4af87eb9a734b1341a46ddc",
+    "internal/app/trajectory_unchanged.go": "1642d23175e4dee332ffd3abd205c7a6cca68f4f0e784c600858d6d1944b19f1",
+    "internal/app/trajectory_unchanged_test.go": "ee5aade525fd65a8b8e236f036482bf96d0d7d8148009ca79a6ce2e3c95dae43",
+    "internal/app/trajectory_verify.go": "ff666b091bbc26adf39d780be0280b7a04ca45cf132d365c906b6cba30d9c7d6",
+    "internal/app/trajectory_verify_test.go": "dbc20c1e269f344fe26e0116b193537c3a7a7b372fb74388b437c7152774b577",
+    "internal/app/version.go": "876e2b52de9a606393d37da317622d83c16e1169eab8b0855e3ccc7f9b739bef",
+    "internal/app/version_status.go": "88d86ec84f3fa8e78b9905b1ca67a0ee6ec72f50ca961bd543bdf9c3e1a53e29",
+    "internal/app/zcode_verify_test.go": "3d5294600ac1a12fc01a2f0e10904df194ec41c8768950be569b3dc423be04e5",
+    "internal/budget/action_identity.go": "5fcf00c14602d43b36307b07893160ce1fdaf173852be11b92af0eefe6805786",
+    "internal/budget/action_identity_test.go": "1aa0693a34afbcf4c0e32c5769e98e4618a1d3c6d9607afcde0745423af6b79b",
+    "internal/budget/binding.go": "5a2abca654e7190adf08de6a68d4eb39d4a8023e036c4adde41298db4e5e2ff0",
+    "internal/budget/binding_test.go": "db7bbfeebe9a7b001b2efc0f8ee51e015a76f12774e34480a8465eb86d7bce03",
+    "internal/budget/continuity.go": "070b351b701fbd79331163dbc37c76c82a14d8b6ad8399ba3aa148fdc8039833",
+    "internal/budget/continuity_test.go": "5108cd9ddf062ca8a518d80311b3e8ea81a0aab7c333ded522125c31ee01b403",
+    "internal/budget/cycle_binding.go": "cc111e42e530542af7964b5829b8ac8b443ba7311605b8991a4d6d11152ce932",
+    "internal/budget/cycle_binding_test.go": "1bb09c9e73b2915d756711a7d05d3c65f6783de3daf850fea0a40c90ec5708ba",
+    "internal/budget/cycle_extension.go": "1d7cf41255295037bfe08614074bc8f4dbf42d11797fb521d99779f2632b3f00",
+    "internal/budget/cycle_extension_test.go": "b38218cd194b8252c2f7baaa84962b19e619ac4934a7af84ce83d3513cfedc59",
+    "internal/budget/cycle_history.go": "6cf7875c3b7d3718b04f2946a374f92b5e86d2eb57c1304ebdf0d35a94a1f3a8",
+    "internal/budget/cycle_history_test.go": "eca408fc4d66f7da82c78dd1c57c1559ccac1e802019aead80a44c9d224a907d",
+    "internal/budget/cycle_intent.go": "4918e712f91bfc4568164709ef41476fbdb6912a1276bc937bf6c8873cfa176b",
+    "internal/budget/cycle_intent_test.go": "a74455fb0269ae74c92115defd2848a7c444a805b02bb3d043ee82aae3c3c8f4",
+    "internal/budget/cycle_observer.go": "b5aedf8b005f820e19452f2f0498c92711d5a39cfa93cc41040e53e7b6acdd7a",
+    "internal/budget/cycle_observer_test.go": "56494f9c9b84a70b2e7c448a2e526f743fb9c582ac10f5b32bd0d58c6fd96250",
+    "internal/budget/cycle_session.go": "1584c62dca5d31d903ec0fda3d8f0daa9d8e76cfb4488245211ca0b2230e0bc6",
+    "internal/budget/launch_migration.go": "797c21d50b570357c474db0c25c4c14c8f5b356e4d835d29d017dc2a71c23e25",
+    "internal/budget/launch_migration_history.go": "0b9fb405441acad5f386234ebf394f7ce1c67d7f4f1d7b3e2cbc197994989d84",
+    "internal/budget/launch_migration_history_test.go": "4328be3fc9d5b514da543c1e23dda52d76a65f712da3e486236cd939e4e25a28",
+    "internal/budget/launch_migration_test.go": "0ff5d72483dd49f2f52b6666bd78142041b88be3e941546a484fb991ff9307b9",
+    "internal/budget/ledger.go": "1fd789c2877d1d20694c6d150019082898d6dbd1c75400e2fca459fd9eb3306a",
+    "internal/budget/ledger_test.go": "2745c4f4272d3cf699d9cd421f26d1d4117185a47a2647f526b8044a6f6de45d",
+    "internal/budget/lock.go": "c213660c77e715025427d61d749d761a143b531817d8f8a7b884d09bbb5eaadb",
+    "internal/budget/lock_bootstrap_test.go": "c250252e09610bf40cecdca2bc5223de44131e158201e531d1f2421b32f42bdd",
+    "internal/budget/lock_origin_migration.go": "257dcd5f20604dba1481f3a944af0c12b356884442d882abaa64396504994c6c",
+    "internal/budget/lock_origin_migration_test.go": "ac9ce23a5c65993d0d765765f70d0ed6f163b123aed725aab78e5c0838e37910",
+    "internal/budget/lock_unix.go": "3768a2550601abd7261b12f55492f85281fdccd4e357eee11ef1deafa3eebebb",
+    "internal/budget/lock_windows.go": "fd9f532f016c063fa07c8dc5997b6a77b3946760457f04ab151e17125cbbd21d",
+    "internal/budget/migration_recovery.go": "8fa31643387fc6ffce840fe8fb7f8e292151c24739678d2a28b26950e5cd011e",
+    "internal/budget/migration_recovery_test.go": "122c80effd1fb41673940d1b86e519359188b1b9a9498f0c1131d794ba5a0f79",
+    "internal/budget/monetary_binding.go": "f2df1bd9ab348f931489a6396a5e85ccbc958956a3ee5406ef3f126864cbfad1",
+    "internal/budget/monetary_binding_test.go": "77827c6a72d37323425ac33772e93b7b833f4ce75830a4e668366ccd5d14b137",
+    "internal/budget/policy_extension.go": "48dd8ed3629375e20cb221d3f80324867d5eede04a4245c560414c2253047188",
+    "internal/budget/policy_extension_test.go": "d456c8fe269f5d97c227cbccaf6ff334aed7f99c08ad564a934a433193e9582e",
+    "internal/budget/protocol_migration.go": "9423cb07f34e2fe401b1991389395cc0a4ca4e5cf92dc618541559698591176e",
+    "internal/budget/protocol_migration_history.go": "d3ca9f90a84f476f7f92ab397d37df2e3805a12dc18d0c4ab315593150644037",
+    "internal/budget/protocol_migration_history_test.go": "a1ec3e0f6d402081178510cbc2393d64219c3ba6e09d5a6cf1f919e319bdf2e5",
+    "internal/budget/protocol_migration_test.go": "1a6b7a3bd5f339b109df9e80656c4de45066074889573164d7366b3535049d82",
+    "internal/budget/reservation_receipt.go": "af08e6b17246847777eab289a75ba26cba24aa9a839fb80d11fd6da59930ea1d",
+    "internal/budget/reservation_receipt_test.go": "e06024d7f21287b8adcca44256dbd861a41d1644fa4bca702127d9b0e80039e2",
+    "internal/budget/resource_guard.go": "05c5e71e31426b65e3b2b1a4dff7eeb6a51e89e3122f180258b2c45e3662a33e",
+    "internal/budget/resource_guard_test.go": "2f69dc5f72c33257a173b97fd99383d77bb455465b8b1cfb9cb31a70bc0d8f1b",
+    "internal/budget/review_test.go": "701cfa03691c59f8ae03dc0b0f8d37fd6f6f80ad7e8f15b9b610f7861d66322f",
+    "internal/budget/step_binding.go": "a4e2c4513afec23ef291d80ac362d4b60f0d3906fbf1b31614b7fac39deef5f3",
+    "internal/budget/step_binding_test.go": "f29b9679a2b35a2de063556f174278cb8f9fdc84fd57413e7ffedf69feb10c28",
+    "internal/budget/step_history.go": "723880c95b3acbb34a31a8190505cc90e7e5bc4a9de70cb833976c5764d8333b",
+    "internal/budget/step_history_test.go": "272f08ac43c74ca05f7f9db063d453f902bb3cb5e4be8cd21d381a9f8baaaab4",
+    "internal/budget/step_session.go": "683dd860967b47b187b2502bccf1f14c658dd200dd51535146348c482a5d67d5",
+    "internal/budget/step_session_test.go": "fee11c8de08a6fb397754d15a78a884cee659e225c368c2ab5f7bee5d8919fec",
+    "internal/config/loop_defaults_test.go": "8603a5b2b75026803dced5f563dd9a52f76f8e7bdb3cc5220f1d1dc376acdb51",
+    "internal/config/main_test.go": "1b7c5e15eb219dd3de924e28df73a3ccc0fb87c5c55662aad264dbe5bcc64401",
+    "internal/config/roster.go": "c4083581a39f4aa6acff42b6cc36634b8124162de875a2b5b30ba463bd00e7b2",
+    "internal/config/roster_test.go": "3a5b05184ba5e98caf2fb7366fda89d9cf8fbe9875e898bcdac1c68e7c1138bc",
+    "internal/config/runtime.go": "aa6be5d84330c8c63faa392255d9bf6eb5c76673ac19186e6bf011c627b69726",
+    "internal/config/runtime_test.go": "af6799e80b552375c0eea25651fe75d293187c557f231118738037b11836480a",
+    "internal/config/speed_invariance_test.go": "5c7080b768ba3ab75c5ccdd53d79d54365be2629ff0392eaffdc0e6cc7ca280c",
+    "internal/consensus/consensus.go": "a26229a9ca83b6b22baf446671022025537d17e8995952474938ea12ae93a7e5",
+    "internal/consensus/consensus_test.go": "8ea282a46673d7a9ed34ba16f0026cd68d4e8670c55c957de5c9c621cd16c825",
+    "internal/consensus/roundgate_test.go": "6d883435558c02625f09f480d9bf8544df9682973fc82e3832884cd8c81321d4",
+    "internal/driver/action_identity_test.go": "faaa769b42fca293e5a9cf72d30831b26ed3a47e8ffee028ef9d281c9d92a473",
+    "internal/driver/budget.go": "7844808ea7704ced180dcb19295570bdc36398255804eb9e75b6931d47bcc67f",
+    "internal/driver/budget_test.go": "cc72891201379f8a8a9ab25ab2457b6f200b5372ef8c2a30519e846b90f17a83",
+    "internal/driver/checks.go": "160773685068dbad0c262b23911e02e8202f74553e89ec54631320277b8c37f4",
+    "internal/driver/checks_test.go": "bdced449193ebc153410e353c78b559ecd58fc86c36536df17492df30611073f",
+    "internal/driver/close_integrity_test.go": "ec9934c2bc2e46f043e11c9c707feeda742b14a1bacbfd978ae7c8cfaba08a72",
+    "internal/driver/consensus.go": "9c4ac6ab0a64facbbf1b9119acf06168f41aa5592db43f33d229c21afb5f9d03",
+    "internal/driver/consensus_test.go": "70348decba1e751c7e20004cddf3a6db08f514feabbbded877d370303b3fb2ec",
+    "internal/driver/cursor.go": "f895374ae8755156b7b8948d559a52434f211cacd87eefce061e0591439534a9",
+    "internal/driver/cycle_budget.go": "9044fbc6ada852c94ccbf42666a913e7b273da89c9ac6d24c74bdbe09e82de93",
+    "internal/driver/cycle_budget_test.go": "7587265206f282f891b7093db38f1726b1fc96c783637d35c12b32d1e898d86a",
+    "internal/driver/digest.go": "a6826e8f5d6391843ebee21ad22114cb0911cbd877bfdaa3abb445e9ef77be8d",
+    "internal/driver/digest_test.go": "0f7d6f7defcec1ef9e1981b45e43b1553ba2af63602d6c26a6270579d40f4ede",
+    "internal/driver/driver.go": "855b5e0c00f056247e8c160635ab7c7bf2188f0e1ffca77ba7fcf8ef91905fed",
+    "internal/driver/driver_test.go": "5080c5db38d9fb8c57144018aaf60e448fc194bb5d3d526b995516a1a07085ee",
+    "internal/driver/finalgate_test.go": "7993487a7fcf87cfa069aed66da1add539c0c27dd403c3553a7adef6a0ccae1f",
+    "internal/driver/gitprobe_test.go": "59ff18de036af00e5c225197b54bbb2ab55eae26758e5cfe7f1f29daf52ad09c",
+    "internal/driver/impl.go": "275e975844bd0d824379ae03a86b8f3929b4f7eba78384c03a3fa3cd0169da57",
+    "internal/driver/impl_test.go": "9c7c86d95281ccae15b59bdc9bbfe556c848d163aac0f348e48c1cfe176c2f48",
+    "internal/driver/loop.go": "868f3e916d37a91eb587e0e992fd666c63531cc2385ac6b640b83d65cb4a49bc",
+    "internal/driver/loop_budget_test.go": "dd78ded37692a073469a1bef98cb38099e54a0030a69ff7ecc5dcedd26c8fba4",
+    "internal/driver/phase_event_test.go": "ca20778b279d569ba8a10b61e15ab89cf71d72d10fffe0353b54a0dad8cc2238",
+    "internal/driver/proclive_unix.go": "d40fef2a13a60ace643c2359dac74a7fe28e9a39fd329f01ed63e255c003ecc4",
+    "internal/driver/proclive_windows.go": "e2d3c796dc72f94f466a4c0b8ba2d3f6bf6c21d65d2387a9b10169ab27090ad6",
+    "internal/driver/protocol_migration_test.go": "e68333502ac87910bd815bf0d289c94f8ae33bc98689fd2e01ca5b2fc88bd202",
+    "internal/driver/protocol_precheck_test.go": "92dd56695af7946f58d1d7ae8a2b4155eafe546fb125113d9cd74ecb02b36a42",
+    "internal/driver/respondingto_test.go": "dd6436bf2f75dd724f2004f14843b859bc9c24239f157534470ce864d1f5126f",
+    "internal/driver/strict_gate_test.go": "bc574fca59d7beac28a7435b4cdd2c06f40c97a41b662e1824db3685894c7bd8",
+    "internal/driver/track_test.go": "9a307bd15553b6e6fa740c945045be8171a87111aa40f2f82e0f55163549de22",
+    "internal/driver/trajectory_test.go": "131e368fa9b48da5e948e168b3b3eb3051236ea26c01c35c829d7519ffcd9d34",
+    "internal/driver/transport.go": "ab36f638bf31d25024f4c1d0fd985d2aa51b7ad033a5973dc467a2615335b40b",
+    "internal/evidence/completion.go": "8f53de21ec7a77c197c382ce31dffa296ded009aea2fa2a45e26bb5ad41de19d",
+    "internal/evidence/completion_review_test.go": "4708da01c54fa55aed8afb82a22f02f91bd1ede3b9f30c68dd5849475ad5d989",
+    "internal/evidence/completion_test.go": "fefc133d192bb31059c9877f1f61e14fbb668a62c3f8821ce8f9729fc471ceb9",
+    "internal/evidence/contract_pin.go": "1aa0968915c1c844d240f97fab91ec8fde2f61fba550716dde2cf34083c1b7a6",
+    "internal/evidence/evidence.go": "83307b9866aaf5b7b04a929cfd63c4665a8cd53451a787b4249c2d505833c1d5",
+    "internal/evidence/evidence_test.go": "8ecc936335d40ec6392f50ebe90db55b41409002f684eabddcb2cda702af2af3",
+    "internal/evidence/execute.go": "c31f9b559b67af953c9d2c2a024b664aac883d7d6ea3ea0ee50fab4c8ed757d9",
+    "internal/evidence/execute_cancellation_test.go": "e4dbf55651c2b50844f9b9eee2221a4cde0fab2a59fcf9297c73e705816ec141",
+    "internal/evidence/execute_control_test.go": "70060925f52c483ece494e4880d656698670dc126937a820ad4022739ad1cfa9",
+    "internal/evidence/execute_test.go": "3d6db92ca0a90b67c9fb9f05974c493911738eb9b8beb8bf4904eebb7baf4c12",
+    "internal/evidence/execution_observation_test.go": "f4744475d341bb609d9e9ea33b24e9d8c246c5053b1914dd6d2367eb83ff1cb2",
+    "internal/evidence/refusal.go": "33127509e26a803972590db157421ba108a249949b41c9951e5abd4f7b40e80d",
+    "internal/evidence/refusal_test.go": "eb6723b5991dbfaaa245783f2b79d24dcf38eb70d9ffd3599f93ae43f6093199",
+    "internal/evidence/report.go": "99578640da661d793b6e3ac7c1732163128a1e54ee0cad3a192e639fe5d656b9",
+    "internal/evidence/report_guard.go": "87e647c2ff5dbf7d622ad99900a605bc08a43fc50d0f4663c31512ab226cc440",
+    "internal/evidence/report_guard_test.go": "70568753b094ddf95caf941bf7f312f54dfd9f7caec787bf2180b9c26f6607e6",
+    "internal/evidence/source_inventory.go": "dcb5e13e521c45cf8b48fc603d6ad5f66bbf8865128eee26c3802ccf360f313b",
+    "internal/evidence/source_inventory_test.go": "bf83cb94e393504481e2532a1dae9bdfc0c1841764dec4e885c7300d6526b843",
+    "internal/evidence/tree.go": "be8b3d16bfb08ea74c7bb8b7ef639d0b21e8c471617407373083c91068c2e014",
+    "internal/evidence/tree_report_test.go": "1108a604dfcf70a4775bf6ed054c806e6040df97186b5c9dc2831b6ef0369903",
+    "internal/fsutil/fsutil.go": "b72c903ef9bf0e4ecc9f8207fabfe2a87b41692f0bdc0bd209dc05dd9983a507",
+    "internal/fsutil/fsutil_test.go": "ef2479764cf71ce3a235ce73f1c5fc46daab2dd19d904c51e72918ebc3b48bcc",
+    "internal/fsutil/replace_test.go": "6029f1989bc3919290b9b6d51757afc0f689dc85f24744d8be64da1f63faf527",
+    "internal/fsutil/replace_unix.go": "a6bc9159769361d1d7a2e5bdbe132dbb5e7b8efe1f034cb8660e330a657acf98",
+    "internal/fsutil/replace_unix_test.go": "4038d0fdcc35f5a483bc5621dc50d8c6ca4983903d3a863ea77973c719151fe4",
+    "internal/fsutil/replace_windows.go": "20a64a7a45e243dffdc4ca009dbbcbc9aff7aacc81355c94c07604785a661d30",
+    "internal/fsutil/sync_darwin.go": "a222abf5f27eba121be14c670ef8f0e1afca7222a61a517b2dc16431a8606a4f",
+    "internal/fsutil/sync_other.go": "72def6848803525b066ece2cf28f4bc9e9c2653f3508ddb3ef7cb93d27950273",
+    "internal/hitl/hitl.go": "8f75ab2fc04ae4d3fa9867f9855e0bfadbb2d9b89aa0a57c784c6d1d1a7f9fd2",
+    "internal/hitl/hitl_test.go": "72c96562176f69e12220bb32a9013b706d0f183dea2ae7103b3d21a9207b94e2",
+    "internal/loop/loop.go": "5c5490eefab5d8a62ddaecb11d5442e39bf02bb78a510f65bd002563c7e9c66a",
+    "internal/loop/loop_test.go": "1749a5a6e79499267b19df79633e81efac14b8cc7b0cc1291c093eb8ee007a05",
+    "internal/pipeline/dag.go": "7ae060a8fb3b1ff7d5a30ca251581217281808712ff9b73dba17ff21bc11c440",
+    "internal/pipeline/dag_advance_test.go": "1faf17ae04c4a0a4dbed5463061de47cb4941eaa19c90aab49a6b99f34967717",
+    "internal/pipeline/dag_step_test.go": "9829c72c5a30e39c224d00d4848f5a45e89cbf00ab1bedaec1f45b43397332c3",
+    "internal/pipeline/dag_test.go": "868385b6da154590da103f84834d9c0c84a07358770d113abdd2888e2cfc2b08",
+    "internal/pipeline/effects.go": "5d2ade34390c63c85a4b7294762c51dc3de5b4eac8e1b3439443ece9de193edc",
+    "internal/pipeline/effects_test.go": "4ae0d46053052b39b4eb1f930efdf80987c2904667987094db3e8900cde9c465",
+    "internal/pipeline/executor.go": "b7ee274f4e1b657d7a7980edddf10c976496b493c4f40328ff4186b47a08261b",
+    "internal/pipeline/executor_test.go": "d56e89bdd92f9498ebad035180bc09f4911328d541480448b4c9283b54f7368a",
+    "internal/pipeline/gate.go": "7be2191d479430b10be5a4468cea3ecdccf0eaac1d34993924759a3558549216",
+    "internal/pipeline/gate_test.go": "d74fe02b6426eb0166f25f45178b7d7080f9b3175cba66400f2b1b2d3d4e4144",
+    "internal/pipeline/manifest.go": "4b8b9ca8b6f56f5e89780677c008287b97cd7799d57514d0f6d76dd46c904e49",
+    "internal/pipeline/manifest_test.go": "beb15329aa2930e3c791b0ee17e475b2ce277fd3881b8d9af5e6925006f32ca6",
+    "internal/pipeline/provider.go": "ecfb083f3fd9f7b82c65d47f9d53e791e7fa2ed7a970c88647164acd6843eb42",
+    "internal/pipeline/provider_test.go": "a956955e9542cf768a8c2109c8c164e2ca0b8e1126c72cdb812bc4ced6219a26",
+    "internal/pipeline/review.go": "9ac929e4f3cbcd546f192ab6e98c7ec59695cfaa7d5c743c2ab228b1234d0777",
+    "internal/pipeline/review_test.go": "021ac1fe26fe0d4088368f8e50f4458ee4d3495c3ff91dbbe5c8c09551acb67e",
+    "internal/pipeline/run.go": "9eda95f158100256c430b806a78f0a5b155eb5b4d92f43cf00f49d5a98a58150",
+    "internal/pipeline/run_test.go": "5f783fa2748ea259edba91a2542121b31139c2c534f48a484a0438757469da30",
+    "internal/pipeline/watch_eval.go": "1880591fad72a9437ff3f6e6bc4740ae6d964e5cb2a405de9b675b7232e124b3",
+    "internal/pipeline/watcher.go": "c2d358dc9ba3bde5b36e97b1de1c015331d23324dfd4bad00a6b9206b34bfc78",
+    "internal/pipeline/watcher_test.go": "5eaf9fac9ae93f3ff05e266d913d0ac01954aa0e5a62e848aa0dbe96c5580a73",
+    "internal/procctl/procctl.go": "9f00a8386fc2ff86f6a13fd423b8982dd23015dbed11cdb8928acfc85c664d02",
+    "internal/procctl/procctl_darwin.go": "116fdfbc4840e43016d308c6e17756a31737ca5dcaf7b34e0c188cfcb3b5e1aa",
+    "internal/procctl/procctl_linux.go": "754ee1f997f6991f64e0cea6f5ba205537e3395636b109ccbdcbf55bcaadb354",
+    "internal/procctl/procctl_test.go": "9ff119a3b60cf9812bfe4244c2b3fe859414109fc618d31125cbba1db438c287",
+    "internal/procctl/procctl_unix.go": "5a0cb5153e433b05123773541c8b79da7c25eb13a6914b0387165997907b690c",
+    "internal/procctl/procctl_windows.go": "e19d2f4d545dad16da2423b34950ad8798198b5c90838515ebae62442aef7b8c",
+    "internal/procctl/terminal_unix.go": "1390a1e3a540f4a55c7e2ffce585415e7e32ae8c8d3589105cd5ab46c501977c",
+    "internal/procctl/terminal_windows.go": "93bb004c3a9b56cc8d090024e3151bbe3a113f78ec94db03e1e90952c0b776e4",
+    "internal/protocol/drift_test.go": "d96bfcf770734f004343a81e3d4efc93d18565e1d124ce6d1c42da75cb78701a",
+    "internal/protocol/finalsections.go": "989da35e9e382ad157914d633cd52202877b9ed38a32ca79288ba2eab52f120c",
+    "internal/protocol/initheader_test.go": "b1d30276c6cd79ed43f6847e6708498d69ca21e5d83bbf2f8a20c0d28137369e",
+    "internal/protocol/reviewartifact.go": "ecda1949d28825703a55b8fabfada53aae95b1963b8cc4a657fd4babf329e9c2",
+    "internal/protocol/roster.go": "52074e7af4038c48571bebfc4b7cacbf9a08b3f7ca9a3c6d2bd74a87947b909d",
+    "internal/protocol/roster_test.go": "639fbe7e2dc06a8d73ea740a32d87bd3d2c1c77d8246516c4d36ed529ccd6868",
+    "internal/protocol/roundartifact.go": "f14c70f1fabc7182d7a7341a5c5b5727a360e1dbebe239e8b98e69bb50aaf761",
+    "internal/protocol/roundartifact_test.go": "21674c7e7847d79eaf8ac73392e3c2ae31a2cdb08a15076341de7a99201288e2",
+    "internal/protocol/workspace.go": "6f48cb821de24c77a0d059d695aa66f2757b62c77e15609ccded3b1b1aba2835",
+    "internal/protocol/workspace_test.go": "b0ca889f4002ac4c5a022ecf3b82885548f86ae5ed192084e6d79dbb2c7ba1e6",
+    "internal/protocolcore/core.go": "4e6dc42c399d971f36410046cef2737e8a448f1ffc57850a6fc108a7f93b2eee",
+    "internal/protocolcore/lock.go": "ba1919b8bbb6235c8d20f65f20899db0b35337343b97b0166b05f6e1fbe132e4",
+    "internal/protocolcore/nofollow_unix.go": "8eaa876ae8053521e9a70544df2903d247de28fc90f03a0e81aed60b3309c1f0",
+    "internal/protocolcore/nofollow_windows.go": "34fe050086b68fcde02cf03e0568cbdded5152cd24786783f31cc3c0a0676912",
+    "internal/protocolcore/overlay.go": "f7fcdfc76738ec883d9f7d0ec201ac33e20167ad9105a9f64fea5172f3d86eb4",
+    "internal/protocolcore/render.go": "cc9902e89838f0a556cfc4b86a326dc8ee3cec1ad328ceabd9d93398bedffc2a",
+    "internal/protocolcore/render_test.go": "5f1f293828bd3f131b7fff6ba8799edfe9fc2a274810bddc3d6a3102ba2811c4",
+    "internal/protocolpacket/applicability.go": "b0828a440868b0ed69a9cc222415cc29acb431b769a357ed9ac780da352bd146",
+    "internal/protocolpacket/packet.go": "f099a127f35f0fd15f10c0190b4ae74e79eb29c5ece20c4188750e1ca310e4ff",
+    "internal/protocolpacket/packet_test.go": "864685f90e0eb6725e901087d521a41d4c1e196c9464899b0d618a51347e17ba",
+    "internal/protocolpacket/source.go": "bc4ce53a193f1ee01c8674c9eb7847e8acb064c9b56bdc4113e5911b87619dd3",
+    "internal/repomap/repomap.go": "c79b356b65f8b2f5f322ae11fcda339ba833871b91ef86cd3d891a58d588bb69",
+    "internal/repomap/repomap_test.go": "e92d809d2bab8c1f280d2587ec42f2a8ac59e714d931595b399d8264dec41495",
+    "internal/retro/retro.go": "16469216eccdf7a5b0bebb131b0631bb30fd5e83a8ef7e7f288823502b6f8e29",
+    "internal/retro/retro_test.go": "6950e849aa1592e8b1667643ab6e610d2b1e504958919cf918cff9062d5db15c",
+    "internal/runaction/action.go": "9d6b75bceea53b9952f195550f78b8c7b33adc59c13545be661ea69d44a901f7",
+    "internal/runaction/action_test.go": "a684f17667763b5bdaad61b63ffeb12791e85c7f766f94a5081eef65dcbe5fa7",
+    "internal/runaction/nextround_test.go": "9eceaac103df8be54ab364071b82aefdd7c18e1c35c7d7b3dd09379ab19eb06e",
+    "internal/runcontrol/runcontrol.go": "6adb072ce06d2a61697e633e0ad1201cb9537aaf5cbca943f9cdeea0f7ae576d",
+    "internal/runcontrol/runcontrol_test.go": "87068988efab87295677aac8676c811b5b7d253151988bc3112cfb5286a50825",
+    "internal/runmanifest/manifest.go": "4363111720b129600a1ed35db88f5a54a4704ee6836618604efbb14bc347c1fa",
+    "internal/runmanifest/manifest_test.go": "907ff59b3adbf5c8bdd2c7a3187f0a5ab0122aa6fb9b977311c6bb44aadfd170",
+    "internal/runner/acp.go": "e9f4a2fc7d429de36926ce566da456625a391855d64fbc3d6372f999a0db41e3",
+    "internal/runner/acp_test.go": "1f390ca6b2e616568a5f66051c3d324a04ec930330ca8544c202a42e461f8d47",
+    "internal/runner/action_identity.go": "bd82704812f40b6e50deab597b828edbf2febc06063a1b66d1c4c3d488537b9b",
+    "internal/runner/action_identity_test.go": "158d9f491ae3e21098a7fd34663bad25ca1a3145f2056a1adf8b2f1894ecaf79",
+    "internal/runner/buffered_test.go": "58fa61db1cbcbc542e51aff004c4f7433ee69699159c4d47df3e4c8734c18a0b",
+    "internal/runner/consult.go": "d9daed08edad97bd8283879791ac27f50d8aebc3da6d9597972ffbd67fdb211c",
+    "internal/runner/cycle_budget.go": "661698c05b1b7c4fc32afada4cb6fc935d196e1eb7896a1948016b7ccfae0869",
+    "internal/runner/cycle_budget_test.go": "1562bfd2b28e6d60b003461f8fe134acbe744aa490836a577c2d6082b49995a9",
+    "internal/runner/durablekill.go": "5a41d554c175d7f6a2c0e6d60ecf68388fcc486d0272225b728a88e37889dea0",
+    "internal/runner/durablekill_test.go": "0d9e242f4bd4426f117f19731fbba99491dcf08a02a8b18c1200f414b8b6e763",
+    "internal/runner/failclass.go": "bb0d597a837f633d8b4b0cc279082c1a569bda3bb13108f1be629608f82fd531",
+    "internal/runner/handoff.go": "43287acd3bdb9334dc468701cf61a81fd37efc385c108c0e9648055197d6a228",
+    "internal/runner/handoff_test.go": "5fefd6a1cee5cc04341d795416e1da895e1883f4e23debb15a7698d4084e9ab0",
+    "internal/runner/hardening_test.go": "639f9b4ea42a2ab21f8a61cd8334d6e42f257da45c020a66a493f2e8ce6d84d5",
+    "internal/runner/launch.go": "8dc57330281305cbda0e6e4a3368496d942798c6689bc8943eb3b533d1afd273",
+    "internal/runner/launch_budget.go": "2dac078ef5b237787b326cdd21654e67a437fbe599b999cff7a088c670276ab9",
+    "internal/runner/launch_budget_test.go": "2b94b5838925fc534924cd44632f31e5b432e4821a718ae2df5097e441aee413",
+    "internal/runner/launch_migration_test.go": "3bbf4e80f9b1173b3b050a96d14df35643ffe620ce7e5f16c09a098cbbd57cce",
+    "internal/runner/launch_test.go": "93a584c2534058d01cafdec8ed7248be0fd132b4ab5b24af37327f20c0647481",
+    "internal/runner/monetary_defaults_test.go": "9dc6ae14d721c2a81b3bbac823cebc0e5798f8e129b606a0b585fc38db305a44",
+    "internal/runner/phase58.go": "8e7022902edcb2c8aeff676f12faf053b9daef9f673e6819d9e79a86a899d8d2",
+    "internal/runner/phase58_le_test.go": "f94fc5b54c075a8fd9d333fb630aa1188f6f3f28f0bf79e3dffc132bd396097b",
+    "internal/runner/phase58_test.go": "0f67b8cbe32af62d011b1d5cdcad3bebe475c71748a623a739ccec7006fc6ba7",
+    "internal/runner/policy_extension_test.go": "0ed101341d2fb15a1cc53a36fa9a59205d8ea42708a66bbd3599cfc87ccd25e5",
+    "internal/runner/protocol_context.go": "f060a1229b7af63dfe534d088a33f5d1abe96775d3970a223d125ae3c54e6d38",
+    "internal/runner/protocol_context_test.go": "f095a3d0fa8e0993ce43229335f07736612bd417fc0fa2d0fbc3c53aa15bced6",
+    "internal/runner/protocol_migration_test.go": "e0d495caeba861df031f71609b1770a98b19d6cd654859eced4d9a32795287fe",
+    "internal/runner/protocol_precheck_test.go": "bcac3090e57f564f14f08dbdfc54cbecf951c64299e0b5d094885e49cd7585f7",
+    "internal/runner/protocol_refusal_precharge_test.go": "decffd4a9df7a2108945261cdca4d114da4a5992e91c77b04259a167e415d356",
+    "internal/runner/reviewsnapshot.go": "94398a94752ba24e6ce1b8dd457786dd0c261d135ab1d917f6bf8c9acecf8756",
+    "internal/runner/reviewsnapshot_test.go": "d6ef20a8be40431f5232429c39de36af8e97e1e9c612b1c2dec44e55c7f54d78",
+    "internal/runner/round_index.go": "950796a550f920b29248d6a49d26de66e44f04a6b0ae5d120d261eb915cc97f2",
+    "internal/runner/round_index_test.go": "670bcffefc2be6ece2ed14be2d220c571a66f77d56af186ee1e694338155c8d3",
+    "internal/runner/round_test.go": "4ddc0455047248891b05f3b7e23547449a272289351adb827b793f99d29d87fb",
+    "internal/runner/roundonegate_test.go": "0f07a37a1fbabb8e0903952f85fdfbbdfd63aa252210cd943986faaf2636760c",
+    "internal/runner/runner.go": "1dbf74b2e21f162ccb9fa86260ef757680cd2b10e4683b17020f4ef1a02feae1",
+    "internal/runner/runner_test.go": "c889b862f71da1b2e241c95168f744156060f21be08afba280ee143be22f0f25",
+    "internal/runner/steer.go": "707c948af4b7f2ecc602256aa574a76a99c5c83d3f2cba7ab207886d64830299",
+    "internal/runner/steer_test.go": "50506398a7ed7ed62ed7caf8a4a6b18ae74f44d8fe34acf23eea08f9587864c0",
+    "internal/runner/step_budget_test.go": "c03d65ed447cf0d8e1107165da60804e7ab69cabd7474411683aee07bf9cb907",
+    "internal/runner/supervision.go": "f38c5039f4fc7550559cf8badc65a55af50853aa6c056a2854c07b383caec9a5",
+    "internal/runner/telemetry.go": "2d5fc4168f24cae6d85954c6bbef5178cc084b6a61351158cc6a9ac13a3d3507",
+    "internal/runner/telemetry_test.go": "943e66a8ddf9fd4636a4ebacf33b66eea37f7334c095d056345195ba57bb2844",
+    "internal/runner/trajectory_test.go": "ab4e2497c27460068d4646e35c54582e7e44f81315e056529ece06f72f2ecd27",
+    "internal/runner/trajectory_verification.go": "7cf004eb5c43ed18eb7488a8cddeb794502430657cabf8d9faf543b4424beb9e",
+    "internal/runner/trajectory_verification_test.go": "58ec1995e67da8887db0d8760617cbccd46e5f0e192e713f8e197ed1e92202d3",
+    "internal/runner/validation.go": "56e904706c4e2ab5eda4894aeaa4e66a0c6ad62da4628c7b23b9750d87b59a69",
+    "internal/runplan/fasttrack_test.go": "5c739a7a5c119b457ef05f3badbd04000634a306bd40afa6a91209e83ed4b64a",
+    "internal/runplan/runplan.go": "3163651ac1e492b2c09985c5c751b985ada36591046267a249e13bed5cdf8bbd",
+    "internal/runplan/runplan_test.go": "ead5c49782b37a4b629d7cf7cd7af41f135ea932ddde8d9a5b7e874396567137",
+    "internal/runstate/runstate.go": "be52a398de3457b690fdb18ca1ab098a63fc402eb0a01bdd598cd88c05e50f74",
+    "internal/runstate/runstate_test.go": "fe31cb357cd550c81a46c0b006d1d81b9a910e988786948be8696b1c384c355b",
+    "internal/runstate/segment_test.go": "e8ba2f7d4cedf8620ba897159ea6b470df9d2d1fc756729aa6ff31d08ad6ee42",
+    "internal/sessionstore/sessionstore.go": "750b843f26c530074978b1a89ef024665d45858b49a9b68bf88789570a0f01e1",
+    "internal/sessionstore/sessionstore_test.go": "702170ce628a6ff32e73967d119ff8858b60f76e94bedaf34cc3c6cd2efb6f3c",
+    "internal/steer/steer.go": "2a349d36483fb269f4f1523422c36738d3a09b1778d62c9650e844f9b8105d01",
+    "internal/steer/steer_test.go": "61399c96fc9dfaaa40ce73e33f9028f577203d87657fc78e805d56ff3228cde8",
+    "internal/store/events.go": "dfbfdeb64165a05380f1551f5c72fa52abc0b6638831a27b773b19046ec44fcf",
+    "internal/store/events_test.go": "bcab5320bf49ca16f58ea5d47587ffe2c6d1497a0eede8a987da1982ce89cb95",
+    "internal/telemetry/record.go": "ff9f8a25cdc5e0a9c4b639e803dce1a431f59daae004714128d354f8717e0735",
+    "internal/telemetry/record_test.go": "1d61cfe8c7c9e395aa85e47be75db1ed6228093e1deecd5a8361bb346ccf7453",
+    "internal/telemetry/usage.go": "94cd6d4f520376fe7e56114bd5b120ed1536f7dd2de8cc8e20aeb9b84b211f9e",
+    "internal/telemetry/usage_test.go": "e501b32b6f8f00c3fe1c81de91429750dfda777d9daa795e089085b4544a600c",
+    "internal/track/track.go": "33d3bc1a4e11bac84690450fb681aff6dc0498aeb0a59697ee88849e612fbb6e",
+    "internal/track/track_test.go": "7f32da6e60c4ed5f550b5fdf8c4969f08a1189fa70d397e82b8c5e9aaef6e8c7",
+    "internal/trajectory/activation_quorum.go": "6330374ed4b44f13d55eb35441232516cabc686c806cbdc232b6e0d8cff1ce1b",
+    "internal/trajectory/activation_quorum_test.go": "cd6cfead5e4a0484b3b6df869f2476c66143199e4e3fb995935b03378b078625",
+    "internal/trajectory/archive_stability.go": "ca4dd933bb3d5ec9f53b6dcfe2dddbd20dbce4856fc5e3985af5773cea460733",
+    "internal/trajectory/archive_stability_test.go": "eb6a50640fa8d535b1d71e77e456cb1777772338e9bcb74288f9e0b896676325",
+    "internal/trajectory/captured.go": "4504e79e0b0a9ae234dea0d7de4729b49082c0f1603b9b3f7f5846c006390e4e",
+    "internal/trajectory/captured_test.go": "dd166cb521d7c3ff17720b4d5b8576b292d9479477b9ad2de11791f88694d95c",
+    "internal/trajectory/continuation.go": "c67e5a8c9e085eb38afe5e757a51987527d4414755ebfe2e7d32b1c5a5565814",
+    "internal/trajectory/helper_scope.go": "8d8acc358d9ac82503d13e737e70ad7cb2a11e0c2e2eade3226dcdd86b08ca89",
+    "internal/trajectory/helper_scope_test.go": "1d9a174ccf04ad6e72725f3c5ca08616999b33417be0f941e75d04faf87c9163",
+    "internal/trajectory/parent_recovery.go": "89ef222cdad85ace743ae30bd85b5d1296c89c93c10b5e3218b4a1ce41b1b512",
+    "internal/trajectory/parent_recovery_test.go": "3cef002b981a9d7c9c03ec57abd2648e324e3635dfd90a647c206fd3c2876a56",
+    "internal/trajectory/reconcile.go": "4fdf63901981d5989a49588a160f86e241482568edc594e15ac6b01c3a76ac40",
+    "internal/trajectory/reservation_recovery.go": "4f35b839bf8762c8a211c0efc7b60131fd28e16cdcdff0cf04a9c976b5b7ffbb",
+    "internal/trajectory/reservation_recovery_test.go": "5c37af49561d119ac715a923cac6c436b3d9b7f14807853791e4a1fdd4ea90ea",
+    "internal/trajectory/snapshot.go": "baf7904356c17328dda5acbf977b806b4ae775673e724912fe8a7b37e30d328b",
+    "internal/trajectory/snapshot_read_test.go": "559abf0a2d4c7625abacf3d0ea598539f4f6bb8983fc82756c006fe0d65174fa",
+    "internal/trajectory/snapshot_test.go": "ef623ba523067a06ffee8465ddfc1423ee04fa88c323c0d4135eb7b4bf5788d0",
+    "internal/trajectory/source_inventory_test.go": "b45bc42e159f5d913ae69cecd16b86636b56c1c889307df9f9ea4f8dac581df7",
+    "internal/trajectory/state.go": "fc0d89cd164981c86e958c81584ae87bf8cb0b6f9bd0c1630e5cac43df682275",
+    "internal/trajectory/state_test.go": "afb7426602330be429e01b0f1dde9c05bf313cc2178163f1964fddde0fe5e593",
+    "internal/trajectory/state_validation.go": "eb09fa9990f4e5e0449762d8109d9622da9792619952a7c1da8db4a6b8539c7c",
+    "internal/trajectory/state_validation_retry_test.go": "8e56e4e2c5179586b12c98f2fafe4fcf07bceaf499318dfa58c63832afbdedab",
+    "internal/trajectory/state_validation_stop_test.go": "9c73f7a5cabe2dfe9deea6d669956c6ee73c990f01ad4c50e2a34ad6b270af92",
+    "internal/trajectory/state_validation_test.go": "94bf964751a8c56f16b86efa09baa69a7ff5aac181f1b2df2c6ba4b24b43d2f8",
+    "internal/trajectory/terminal_authority_test.go": "6f1787a73b98cd01df96d3c3c896456a257eba17d7d83eccf0fe2e5be1b593d7",
+    "internal/trajectory/trajectory.go": "f137e5bd0b2fcbb2e270404b8aa75e7ea7753abfdb26b0cdc545638a678f523c",
+    "internal/trajectory/trajectory_test.go": "6ae14eaea9e3e1fb97a76e95189a91bb4c6ca098e0b9e81a5e2d44b607da8d0e",
+    "internal/trajectory/unchanged.go": "d2342ae0bdec0f2d3640b973e6eb5846d22691aa2249df287cf470bcb86ffbd1",
+    "internal/trajectory/unchanged_lifecycle_test.go": "c3da7414c836dfa0c1e6c0f5bc32a8af5f148f1889d001727c30b5b45f721548",
+    "internal/trajectory/unchanged_test.go": "b2ff0492f161defd61b6aac6d639dfcd40c0b0e45ab1f36eb430120a19be1336",
+    "internal/trajectory/verification.go": "478f49236ed58ce87ebbeb90a2cb32f2ed798e41e3e943d60b040997ad77b894",
+    "internal/trajectory/verification_cleanup_test.go": "bd69cf2fa15b3b19fc4932638839fa8c74b9d8289f2d6fd16f9d267f52e3f0b1",
+    "internal/trajectory/verification_control_test.go": "5400f8ec5345e2344d5a3af64173398a385970c6b405aa88dc0516b90a474d7c",
+    "internal/trajectory/verification_test.go": "9b5437c02cfdb43e562c51869e82a0e3658804304834ea43ed32c61521d766b7",
+    "internal/trajectory/verify.go": "fe29648f498d3bde46ad04a91ce37e0d3b30c7d5d04e9a3daefc9964434ddbba",
+    "internal/trajectory/verify_test.go": "14b560c57cc4579250ca54a70305656c096d68f2a2e2347421bc631e3ae698a2",
+    "internal/tui/app.go": "619285486ca412826458ee8008fde41679ac1fd703fe9a5c5bac4551e47c4790",
+    "internal/tui/app_test.go": "d6169d23a44e913f619e2f3679a1c8ba3ffcc73a6c62f2ac87154f3a7ad78854",
+    "internal/tui/editor.go": "28ca8939353def474c52341a12ac9a08164bbb25cf73cfd88b873d565bdbe19b",
+    "internal/tui/editor_test.go": "c9a3757c1a6cea27db5eea3e5ec84a6e9b9544f03fbf29217053f71f9f972091",
+    "internal/tui/layout.go": "fe31263b48da5f76bee0a91bddcb86af43b0b415460dae2ea02f5c2918a9e030",
+    "internal/tui/live.go": "4eaef8962e653995d3c0f3f54904bb4dd0ee3f13eaefdc89bd629f600fc5b9f2",
+    "internal/tui/live_test.go": "c3e8d0c60e3444e49a8de9d6f86fa41484c7da3cbcb91660975f98ca0f1346ea",
+    "internal/tui/protocolui.go": "b855dae509c082956e0f100e713aefae2fb4778b330ebe9c6971479c63bd139d",
+    "internal/tui/protosnap.go": "89379e5f83745bcef7e5e180f8c6021f005c8e62acf1957c002ad3ba3e791514",
+    "internal/tui/protosnap_test.go": "7f9ac4c39c7e7db02844165357c92950505d5f946115f4fdc2788edd55b27cd3",
+    "internal/tui/roundsummary.go": "96eba3a5f5ae3899d63a7fb59d39750303074aa3614f86734bd3829e911df544",
+    "internal/tui/roundsummary_test.go": "2c908c37f77e94750808cee0e206f0ad9bcd6a0117271c929b6a40b8b65bfce3",
+    "internal/trajectory/reservation_recovery_validation_test.go": "c6fc513b89f501a8c278eaeae37119940bdfe9669890a5b1c0727f68e789a893",
+    "internal/telemetry/zcode_usage_test.go": "f9ca76ac5c00bacf844bf4d8e4e822c014011c4d31c45857717c49882feab2e8"
+  },
+  "original_full": {
+    "exit": 1,
+    "seconds": 1548.977,
+    "state": "retained failure"
+  },
+  "isolated_fixture_full": {
+    "name": "full",
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-p",
+      "2",
+      "-exec",
+      "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-combined-validation-ek2ys3ra/exec-native.py",
+      "-json",
+      "./..."
+    ],
+    "exit": 1,
+    "seconds": 1106.286,
+    "source_unchanged": true,
+    "stdout_sha256": "997f6b53ff2df23ef6d6d030d5b960174d098dd425c094002765fe63665e1cf6",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "failed": [
+      {
+        "Package": "parley-deck-cli/internal/app",
+        "Test": "TestEvidenceVerifierProductionClosure/real-independent-execution",
+        "Elapsed": 46.79
+      },
+      {
+        "Package": "parley-deck-cli/internal/runaction",
+        "Test": null,
+        "Elapsed": 0.192
+      },
+      {
+        "Package": "parley-deck-cli/internal/app",
+        "Test": "TestEvidenceVerifierProductionClosure/report-persistence-failure-recovery",
+        "Elapsed": 38.13
+      },
+      {
+        "Package": "parley-deck-cli/internal/app",
+        "Test": "TestEvidenceVerifierProductionClosure/receipt-persistence-failure-recovery",
+        "Elapsed": 35.41
+      },
+      {
+        "Package": "parley-deck-cli/internal/telemetry",
+        "Test": null,
+        "Elapsed": 0.011
+      },
+      {
+        "Package": "parley-deck-cli/internal/app",
+        "Test": null,
+        "Elapsed": 601.831
+      }
+    ],
+    "packages": [
+      {
+        "Package": "parley-deck-cli/cmd/parley",
+        "Action": "skip",
+        "Elapsed": 0.012
+      },
+      {
+        "Package": "parley-deck-cli/internal/acp",
+        "Action": "pass",
+        "Elapsed": 1.304
+      },
+      {
+        "Package": "parley-deck-cli/internal/agents",
+        "Action": "pass",
+        "Elapsed": 4.088
+      },
+      {
+        "Package": "parley-deck-cli/internal/budget",
+        "Action": "pass",
+        "Elapsed": 64.597
+      },
+      {
+        "Package": "parley-deck-cli/internal/config",
+        "Action": "pass",
+        "Elapsed": 2.883
+      },
+      {
+        "Package": "parley-deck-cli/internal/consensus",
+        "Action": "pass",
+        "Elapsed": 3.374
+      },
+      {
+        "Package": "parley-deck-cli/internal/driver",
+        "Action": "pass",
+        "Elapsed": 11.111
+      },
+      {
+        "Package": "parley-deck-cli/internal/evidence",
+        "Action": "pass",
+        "Elapsed": 9.574
+      },
+      {
+        "Package": "parley-deck-cli/internal/fsutil",
+        "Action": "pass",
+        "Elapsed": 2.135
+      },
+      {
+        "Package": "parley-deck-cli/internal/hitl",
+        "Action": "pass",
+        "Elapsed": 1.7530000000000001
+      },
+      {
+        "Package": "parley-deck-cli/internal/loop",
+        "Action": "pass",
+        "Elapsed": 1.245
+      },
+      {
+        "Package": "parley-deck-cli/internal/pipeline",
+        "Action": "pass",
+        "Elapsed": 5.622
+      },
+      {
+        "Package": "parley-deck-cli/internal/procctl",
+        "Action": "pass",
+        "Elapsed": 1.351
+      },
+      {
+        "Package": "parley-deck-cli/internal/protocol",
+        "Action": "pass",
+        "Elapsed": 2.948
+      },
+      {
+        "Package": "parley-deck-cli/internal/protocolcore",
+        "Action": "pass",
+        "Elapsed": 1.208
+      },
+      {
+        "Package": "parley-deck-cli/internal/protocolpacket",
+        "Action": "pass",
+        "Elapsed": 1.311
+      },
+      {
+        "Package": "parley-deck-cli/internal/repomap",
+        "Action": "pass",
+        "Elapsed": 0.502
+      },
+      {
+        "Package": "parley-deck-cli/internal/retro",
+        "Action": "pass",
+        "Elapsed": 0.86
+      },
+      {
+        "Package": "parley-deck-cli/internal/runaction",
+        "Action": "fail",
+        "Elapsed": 0.192
+      },
+      {
+        "Package": "parley-deck-cli/internal/runcontrol",
+        "Action": "pass",
+        "Elapsed": 0.7
+      },
+      {
+        "Package": "parley-deck-cli/internal/runmanifest",
+        "Action": "pass",
+        "Elapsed": 0.625
+      },
+      {
+        "Package": "parley-deck-cli/internal/runner",
+        "Action": "pass",
+        "Elapsed": 62.193
+      },
+      {
+        "Package": "parley-deck-cli/internal/runplan",
+        "Action": "pass",
+        "Elapsed": 0.534
+      },
+      {
+        "Package": "parley-deck-cli/internal/runstate",
+        "Action": "pass",
+        "Elapsed": 0.839
+      },
+      {
+        "Package": "parley-deck-cli/internal/sessionstore",
+        "Action": "pass",
+        "Elapsed": 0.563
+      },
+      {
+        "Package": "parley-deck-cli/internal/steer",
+        "Action": "pass",
+        "Elapsed": 0.546
+      },
+      {
+        "Package": "parley-deck-cli/internal/store",
+        "Action": "pass",
+        "Elapsed": 0.456
+      },
+      {
+        "Package": "parley-deck-cli/internal/telemetry",
+        "Action": "fail",
+        "Elapsed": 0.011
+      },
+      {
+        "Package": "parley-deck-cli/internal/track",
+        "Action": "pass",
+        "Elapsed": 0.552
+      },
+      {
+        "Package": "parley-deck-cli/internal/app",
+        "Action": "fail",
+        "Elapsed": 601.831
+      },
+      {
+        "Package": "parley-deck-cli/internal/tui",
+        "Action": "pass",
+        "Elapsed": 2.511
+      },
+      {
+        "Package": "parley-deck-cli/internal/trajectory",
+        "Action": "pass",
+        "Elapsed": 374.701
+      }
+    ]
+  },
+  "fixture_isolation_control": {
+    "native": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-validation-isolation-rfo5ynu0",
+    "binary_sha256": "2f4c8163a22cb0776fa6eeb6ce315df3def2b19d8e62f2b1fabf1216edc1136b",
+    "results": [
+      {
+        "name": "build-budget",
+        "command": [
+          "go",
+          "test",
+          "-c",
+          "-o",
+          "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/validation-isolation-diagnosis/budget.test",
+          "./internal/budget"
+        ],
+        "exit": 0,
+        "seconds": 36.959,
+        "GOTMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/combined-validation/build-tmp",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "shared-test-temp-control",
+        "command": [
+          "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-validation-isolation-rfo5ynu0/budget.test",
+          "-test.v",
+          "-test.count=1",
+          "-test.run=^TestActionIdentityActiveSessionPinsSemanticFields$",
+          "-test.timeout=60s"
+        ],
+        "exit": 1,
+        "seconds": 10.582,
+        "GOTMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/combined-validation/build-tmp",
+        "stdout_sha256": "dbb487a83bca1e00c16e9361b976bbb98cbbc078308fbffa340953c002f47f14"
+      },
+      {
+        "name": "native-test-temp-control",
+        "command": [
+          "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-validation-isolation-rfo5ynu0/budget.test",
+          "-test.v",
+          "-test.count=1",
+          "-test.run=^TestActionIdentityActiveSessionPinsSemanticFields$",
+          "-test.timeout=60s"
+        ],
+        "exit": 0,
+        "seconds": 1.368,
+        "GOTMPDIR": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-validation-isolation-rfo5ynu0/tests",
+        "stdout_sha256": "373751ead7792502b30bed4e565ea5d5c52286cb37b2fc2c9a5127cb3636399b"
+      }
+    ],
+    "source_changes": false
+  },
+  "closure_control_scaffold_failure": {
+    "at": "2026-09-15T22:29:46.669028+00:00",
+    "exit": 1,
+    "seconds": 0.444,
+    "command": [
+      "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-combined-validation-ek2ys3ra/app-diagnostic.test",
+      "-test.v",
+      "-test.count=1",
+      "-test.run=^TestEvidenceVerifierProductionClosure$/^real-independent-execution$",
+      "-test.timeout=4m"
+    ],
+    "binary_sha256": "3ad23b88bfbfab773b840500359f88ccaae7c635d3cd35b0dd186de385443369",
+    "probe": "Only helper error-string diagnostics extended through scratch overlay; no candidate source mutation"
+  },
+  "closure_control_shared": {
+    "at": "2026-09-15T22:30:47.348670+00:00",
+    "exit": 0,
+    "seconds": 32.049,
+    "command": [
+      "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-combined-validation-ek2ys3ra/app-diagnostic.test",
+      "-test.v",
+      "-test.count=1",
+      "-test.run=^TestEvidenceVerifierProductionClosure$/^real-independent-execution$",
+      "-test.timeout=4m"
+    ],
+    "binary_sha256": "3ad23b88bfbfab773b840500359f88ccaae7c635d3cd35b0dd186de385443369",
+    "probe": "Only helper error-string diagnostics extended through scratch overlay; no candidate source mutation"
+  },
+  "closure_control_native": {
+    "name": "native-cache-closure-diagnostic-control",
+    "command": [
+      "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-combined-validation-ek2ys3ra/app-diagnostic.test",
+      "-test.v",
+      "-test.count=1",
+      "-test.run=^TestEvidenceVerifierProductionClosure$/^real-independent-execution$",
+      "-test.timeout=4m"
+    ],
+    "exit": 0,
+    "seconds": 8.646,
+    "source_unchanged": true,
+    "native_free_bytes": 558051328,
+    "stdout_sha256": "081f90582914339b3b0b6a17249dd17fd31a20b5fb637d95fdd2ea97d07e11b0",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "failed": [],
+    "packages": []
+  },
+  "native_validation": {
+    "at": "2026-09-15T23:08:36.071633+00:00",
+    "results": [
+      {
+        "name": "native-cache-closure-diagnostic-control",
+        "command": [
+          "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-combined-validation-ek2ys3ra/app-diagnostic.test",
+          "-test.v",
+          "-test.count=1",
+          "-test.run=^TestEvidenceVerifierProductionClosure$/^real-independent-execution$",
+          "-test.timeout=4m"
+        ],
+        "exit": 0,
+        "seconds": 8.646,
+        "source_unchanged": true,
+        "native_free_bytes": 558051328,
+        "stdout_sha256": "081f90582914339b3b0b6a17249dd17fd31a20b5fb637d95fdd2ea97d07e11b0",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": []
+      },
+      {
+        "name": "full",
+        "command": [
+          "go",
+          "test",
+          "-count=1",
+          "-p",
+          "2",
+          "-json",
+          "./..."
+        ],
+        "exit": 0,
+        "seconds": 554.398,
+        "source_unchanged": true,
+        "native_free_bytes": 469450752,
+        "stdout_sha256": "254e36eef2da6630f6e4b3774f7b785528c220578b4065c92a811e6ca65a0d8c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": [
+          {
+            "Package": "parley-deck-cli/cmd/parley",
+            "Action": "skip",
+            "Elapsed": 0.018
+          },
+          {
+            "Package": "parley-deck-cli/internal/acp",
+            "Action": "pass",
+            "Elapsed": 0.514
+          },
+          {
+            "Package": "parley-deck-cli/internal/agents",
+            "Action": "pass",
+            "Elapsed": 1.494
+          },
+          {
+            "Package": "parley-deck-cli/internal/budget",
+            "Action": "pass",
+            "Elapsed": 56.277
+          },
+          {
+            "Package": "parley-deck-cli/internal/config",
+            "Action": "pass",
+            "Elapsed": 1.049
+          },
+          {
+            "Package": "parley-deck-cli/internal/consensus",
+            "Action": "pass",
+            "Elapsed": 2.101
+          },
+          {
+            "Package": "parley-deck-cli/internal/driver",
+            "Action": "pass",
+            "Elapsed": 12.061
+          },
+          {
+            "Package": "parley-deck-cli/internal/evidence",
+            "Action": "pass",
+            "Elapsed": 5.204
+          },
+          {
+            "Package": "parley-deck-cli/internal/fsutil",
+            "Action": "pass",
+            "Elapsed": 0.624
+          },
+          {
+            "Package": "parley-deck-cli/internal/hitl",
+            "Action": "pass",
+            "Elapsed": 0.374
+          },
+          {
+            "Package": "parley-deck-cli/internal/loop",
+            "Action": "pass",
+            "Elapsed": 0.494
+          },
+          {
+            "Package": "parley-deck-cli/internal/pipeline",
+            "Action": "pass",
+            "Elapsed": 0.76
+          },
+          {
+            "Package": "parley-deck-cli/internal/procctl",
+            "Action": "pass",
+            "Elapsed": 0.597
+          },
+          {
+            "Package": "parley-deck-cli/internal/protocol",
+            "Action": "pass",
+            "Elapsed": 0.712
+          },
+          {
+            "Package": "parley-deck-cli/internal/protocolcore",
+            "Action": "pass",
+            "Elapsed": 1.2770000000000001
+          },
+          {
+            "Package": "parley-deck-cli/internal/protocolpacket",
+            "Action": "pass",
+            "Elapsed": 1.191
+          },
+          {
+            "Package": "parley-deck-cli/internal/repomap",
+            "Action": "pass",
+            "Elapsed": 0.323
+          },
+          {
+            "Package": "parley-deck-cli/internal/retro",
+            "Action": "pass",
+            "Elapsed": 0.473
+          },
+          {
+            "Package": "parley-deck-cli/internal/runaction",
+            "Action": "pass",
+            "Elapsed": 0.295
+          },
+          {
+            "Package": "parley-deck-cli/internal/runcontrol",
+            "Action": "pass",
+            "Elapsed": 0.424
+          },
+          {
+            "Package": "parley-deck-cli/internal/runmanifest",
+            "Action": "pass",
+            "Elapsed": 0.321
+          },
+          {
+            "Package": "parley-deck-cli/internal/runner",
+            "Action": "pass",
+            "Elapsed": 63.746
+          },
+          {
+            "Package": "parley-deck-cli/internal/runplan",
+            "Action": "pass",
+            "Elapsed": 0.432
+          },
+          {
+            "Package": "parley-deck-cli/internal/runstate",
+            "Action": "pass",
+            "Elapsed": 1.008
+          },
+          {
+            "Package": "parley-deck-cli/internal/sessionstore",
+            "Action": "pass",
+            "Elapsed": 0.407
+          },
+          {
+            "Package": "parley-deck-cli/internal/steer",
+            "Action": "pass",
+            "Elapsed": 0.298
+          },
+          {
+            "Package": "parley-deck-cli/internal/store",
+            "Action": "pass",
+            "Elapsed": 0.512
+          },
+          {
+            "Package": "parley-deck-cli/internal/telemetry",
+            "Action": "pass",
+            "Elapsed": 3.105
+          },
+          {
+            "Package": "parley-deck-cli/internal/track",
+            "Action": "pass",
+            "Elapsed": 0.765
+          },
+          {
+            "Package": "parley-deck-cli/internal/trajectory",
+            "Action": "pass",
+            "Elapsed": 357.418
+          },
+          {
+            "Package": "parley-deck-cli/internal/tui",
+            "Action": "pass",
+            "Elapsed": 3.713
+          },
+          {
+            "Package": "parley-deck-cli/internal/app",
+            "Action": "pass",
+            "Elapsed": 551.3
+          }
+        ]
+      },
+      {
+        "name": "race",
+        "command": [
+          "go",
+          "test",
+          "-race",
+          "-count=1",
+          "-p",
+          "2",
+          "-json",
+          "./internal/budget",
+          "./internal/runner",
+          "./internal/driver",
+          "./internal/trajectory",
+          "./internal/app",
+          "./internal/telemetry"
+        ],
+        "exit": 0,
+        "seconds": 659.592,
+        "source_unchanged": true,
+        "native_capture": "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-race-native-capture-72fygg36",
+        "completed_at": "2026-09-15T23:08:36.071633+00:00",
+        "stdout_sha256": "275a63ade538424093dfae16070ba06f814fbfa8aaee6bdc2eee46e71bb9579b",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "invalid_lines": [],
+        "packages": [
+          {
+            "Package": "parley-deck-cli/internal/budget",
+            "Action": "pass",
+            "Elapsed": 80.221
+          },
+          {
+            "Package": "parley-deck-cli/internal/driver",
+            "Action": "pass",
+            "Elapsed": 14.424
+          },
+          {
+            "Package": "parley-deck-cli/internal/runner",
+            "Action": "pass",
+            "Elapsed": 107.099
+          },
+          {
+            "Package": "parley-deck-cli/internal/trajectory",
+            "Action": "pass",
+            "Elapsed": 424.82
+          },
+          {
+            "Package": "parley-deck-cli/internal/telemetry",
+            "Action": "pass",
+            "Elapsed": 3.557
+          },
+          {
+            "Package": "parley-deck-cli/internal/app",
+            "Action": "pass",
+            "Elapsed": 551.099
+          }
+        ],
+        "failed": [],
+        "complete_package_evidence": true,
+        "verified_native_copy": true
+      },
+      {
+        "name": "vet",
+        "command": [
+          "go",
+          "vet",
+          "-p",
+          "2",
+          "./..."
+        ],
+        "exit": 0,
+        "seconds": 1.247,
+        "source_unchanged": true,
+        "native_free_bytes": 334155776,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": []
+      }
+    ]
+  },
+  "author": "codex-1",
+  "recorded_at": "2026-09-15T23:09:53.251519+00:00",
+  "scope": "Coordinator-run Go/module checks; not independent participant acceptance",
+  "source_manifest_sha256": "c9b436f7d8bbd0f3fe16b818f6f48e752a7a434e8a1cc670d22e2df8579cd18f",
+  "prior_native_direct_shared_capture": {
+    "at": "2026-09-15T22:52:55.411780+00:00",
+    "results": [
+      {
+        "name": "native-cache-closure-diagnostic-control",
+        "command": [
+          "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-combined-validation-ek2ys3ra/app-diagnostic.test",
+          "-test.v",
+          "-test.count=1",
+          "-test.run=^TestEvidenceVerifierProductionClosure$/^real-independent-execution$",
+          "-test.timeout=4m"
+        ],
+        "exit": 0,
+        "seconds": 8.646,
+        "source_unchanged": true,
+        "native_free_bytes": 558051328,
+        "stdout_sha256": "081f90582914339b3b0b6a17249dd17fd31a20b5fb637d95fdd2ea97d07e11b0",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": []
+      },
+      {
+        "name": "full",
+        "command": [
+          "go",
+          "test",
+          "-count=1",
+          "-p",
+          "2",
+          "-json",
+          "./..."
+        ],
+        "exit": 0,
+        "seconds": 554.398,
+        "source_unchanged": true,
+        "native_free_bytes": 469450752,
+        "stdout_sha256": "254e36eef2da6630f6e4b3774f7b785528c220578b4065c92a811e6ca65a0d8c",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": [
+          {
+            "Package": "parley-deck-cli/cmd/parley",
+            "Action": "skip",
+            "Elapsed": 0.018
+          },
+          {
+            "Package": "parley-deck-cli/internal/acp",
+            "Action": "pass",
+            "Elapsed": 0.514
+          },
+          {
+            "Package": "parley-deck-cli/internal/agents",
+            "Action": "pass",
+            "Elapsed": 1.494
+          },
+          {
+            "Package": "parley-deck-cli/internal/budget",
+            "Action": "pass",
+            "Elapsed": 56.277
+          },
+          {
+            "Package": "parley-deck-cli/internal/config",
+            "Action": "pass",
+            "Elapsed": 1.049
+          },
+          {
+            "Package": "parley-deck-cli/internal/consensus",
+            "Action": "pass",
+            "Elapsed": 2.101
+          },
+          {
+            "Package": "parley-deck-cli/internal/driver",
+            "Action": "pass",
+            "Elapsed": 12.061
+          },
+          {
+            "Package": "parley-deck-cli/internal/evidence",
+            "Action": "pass",
+            "Elapsed": 5.204
+          },
+          {
+            "Package": "parley-deck-cli/internal/fsutil",
+            "Action": "pass",
+            "Elapsed": 0.624
+          },
+          {
+            "Package": "parley-deck-cli/internal/hitl",
+            "Action": "pass",
+            "Elapsed": 0.374
+          },
+          {
+            "Package": "parley-deck-cli/internal/loop",
+            "Action": "pass",
+            "Elapsed": 0.494
+          },
+          {
+            "Package": "parley-deck-cli/internal/pipeline",
+            "Action": "pass",
+            "Elapsed": 0.76
+          },
+          {
+            "Package": "parley-deck-cli/internal/procctl",
+            "Action": "pass",
+            "Elapsed": 0.597
+          },
+          {
+            "Package": "parley-deck-cli/internal/protocol",
+            "Action": "pass",
+            "Elapsed": 0.712
+          },
+          {
+            "Package": "parley-deck-cli/internal/protocolcore",
+            "Action": "pass",
+            "Elapsed": 1.2770000000000001
+          },
+          {
+            "Package": "parley-deck-cli/internal/protocolpacket",
+            "Action": "pass",
+            "Elapsed": 1.191
+          },
+          {
+            "Package": "parley-deck-cli/internal/repomap",
+            "Action": "pass",
+            "Elapsed": 0.323
+          },
+          {
+            "Package": "parley-deck-cli/internal/retro",
+            "Action": "pass",
+            "Elapsed": 0.473
+          },
+          {
+            "Package": "parley-deck-cli/internal/runaction",
+            "Action": "pass",
+            "Elapsed": 0.295
+          },
+          {
+            "Package": "parley-deck-cli/internal/runcontrol",
+            "Action": "pass",
+            "Elapsed": 0.424
+          },
+          {
+            "Package": "parley-deck-cli/internal/runmanifest",
+            "Action": "pass",
+            "Elapsed": 0.321
+          },
+          {
+            "Package": "parley-deck-cli/internal/runner",
+            "Action": "pass",
+            "Elapsed": 63.746
+          },
+          {
+            "Package": "parley-deck-cli/internal/runplan",
+            "Action": "pass",
+            "Elapsed": 0.432
+          },
+          {
+            "Package": "parley-deck-cli/internal/runstate",
+            "Action": "pass",
+            "Elapsed": 1.008
+          },
+          {
+            "Package": "parley-deck-cli/internal/sessionstore",
+            "Action": "pass",
+            "Elapsed": 0.407
+          },
+          {
+            "Package": "parley-deck-cli/internal/steer",
+            "Action": "pass",
+            "Elapsed": 0.298
+          },
+          {
+            "Package": "parley-deck-cli/internal/store",
+            "Action": "pass",
+            "Elapsed": 0.512
+          },
+          {
+            "Package": "parley-deck-cli/internal/telemetry",
+            "Action": "pass",
+            "Elapsed": 3.105
+          },
+          {
+            "Package": "parley-deck-cli/internal/track",
+            "Action": "pass",
+            "Elapsed": 0.765
+          },
+          {
+            "Package": "parley-deck-cli/internal/trajectory",
+            "Action": "pass",
+            "Elapsed": 357.418
+          },
+          {
+            "Package": "parley-deck-cli/internal/tui",
+            "Action": "pass",
+            "Elapsed": 3.713
+          },
+          {
+            "Package": "parley-deck-cli/internal/app",
+            "Action": "pass",
+            "Elapsed": 551.3
+          }
+        ]
+      },
+      {
+        "name": "race",
+        "command": [
+          "go",
+          "test",
+          "-race",
+          "-count=1",
+          "-p",
+          "2",
+          "-json",
+          "./internal/budget",
+          "./internal/runner",
+          "./internal/driver",
+          "./internal/trajectory",
+          "./internal/app",
+          "./internal/telemetry"
+        ],
+        "exit": 0,
+        "seconds": 684.752,
+        "source_unchanged": true,
+        "native_free_bytes": 335585280,
+        "stdout_sha256": "7540aed0fd010c87c19fe18fa5782ffbff16804572b5c800f711160c119388cd",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": [
+          {
+            "Package": "parley-deck-cli/internal/budget",
+            "Action": "pass",
+            "Elapsed": 76.96
+          },
+          {
+            "Package": "parley-deck-cli/internal/driver",
+            "Action": "pass",
+            "Elapsed": 15.504
+          },
+          {
+            "Package": "parley-deck-cli/internal/runner",
+            "Action": "pass",
+            "Elapsed": 107.304
+          },
+          {
+            "Package": "parley-deck-cli/internal/trajectory",
+            "Action": "pass",
+            "Elapsed": 427.445
+          },
+          {
+            "Package": "parley-deck-cli/internal/telemetry",
+            "Action": "pass",
+            "Elapsed": 3.609
+          }
+        ]
+      },
+      {
+        "name": "vet",
+        "command": [
+          "go",
+          "vet",
+          "-p",
+          "2",
+          "./..."
+        ],
+        "exit": 0,
+        "seconds": 1.247,
+        "source_unchanged": true,
+        "native_free_bytes": 334155776,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "failed": [],
+        "packages": []
+      }
+    ]
+  },
+  "log_integrity_observation": [
+    {
+      "name": "native-cache-closure-diagnostic-control",
+      "recorded_sha256": "081f90582914339b3b0b6a17249dd17fd31a20b5fb637d95fdd2ea97d07e11b0",
+      "current_sha256": "081f90582914339b3b0b6a17249dd17fd31a20b5fb637d95fdd2ea97d07e11b0",
+      "bytes": 271,
+      "nul_bytes": 0,
+      "invalid_lines": []
+    },
+    {
+      "name": "full",
+      "recorded_sha256": "254e36eef2da6630f6e4b3774f7b785528c220578b4065c92a811e6ca65a0d8c",
+      "current_sha256": "254e36eef2da6630f6e4b3774f7b785528c220578b4065c92a811e6ca65a0d8c",
+      "bytes": 2164837,
+      "nul_bytes": 0,
+      "invalid_lines": []
+    },
+    {
+      "name": "race",
+      "recorded_sha256": "7540aed0fd010c87c19fe18fa5782ffbff16804572b5c800f711160c119388cd",
+      "current_sha256": "ab25b047623f8e724172aa3c9b180b8de546a6fdd4c4c37d0699b0d6f18f0736",
+      "bytes": 1714664,
+      "nul_bytes": 1460,
+      "invalid_lines": [
+        {
+          "line": 7502,
+          "bytes": 1530,
+          "nul_bytes": 1460
+        }
+      ]
+    },
+    {
+      "name": "vet",
+      "recorded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "nul_bytes": 0,
+      "invalid_lines": []
+    }
+  ],
+  "protected_history_unchanged": 88,
+  "limits": [
+    "The focused shared-cache closure diagnostic passed too; it did not reproduce or causally explain the earlier full-run closure failure.",
+    "Diagnostic controls use a disclosed helper error-string overlay. Full/race/vet use unmodified source without that overlay or a test-executable wrapper.",
+    "Passing current checks do not erase earlier failed runs or constitute participant signatures, live trial results, a release or deployment."
+  ]
+}

@@ -166,17 +166,19 @@ func (s *ReviewSnapshot) MoveArtifactBack(relPath, canonicalPath string) error {
 	if err := fsutil.MkdirAllResilient(filepath.Dir(canonicalPath), 0o755); err != nil {
 		return err
 	}
-	tmp := canonicalPath + ".snapshot-tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	f, err := os.CreateTemp(filepath.Dir(canonicalPath), ".snapshot-*")
 	if err != nil {
 		return err
 	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	defer f.Close()
 	if _, err := f.Write(data); err != nil {
 		f.Close()
 		_ = os.Remove(tmp)
 		return err
 	}
-	if err := f.Sync(); err != nil {
+	if err := fsutil.SyncFile(f); err != nil {
 		f.Close()
 		_ = os.Remove(tmp)
 		return err
@@ -185,7 +187,7 @@ func (s *ReviewSnapshot) MoveArtifactBack(relPath, canonicalPath string) error {
 		_ = os.Remove(tmp)
 		return err
 	}
-	return os.Rename(tmp, canonicalPath)
+	return fsutil.ReplaceSyncedFile(tmp, canonicalPath)
 }
 
 // Abandon keeps the snapshot directory for manual recovery (a failed artifact

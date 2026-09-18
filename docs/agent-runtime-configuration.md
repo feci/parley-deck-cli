@@ -115,7 +115,20 @@ acp_args = ["..."]
 
 In the TUI Agents pane, use `h`, `i`, `a`, and `m` to set a session-only launch mode override for headless, interactive, ACP, or manual mode. `a` is accepted only when the agent has ACP configured through built-in defaults or local `acp_args`.
 
-`interactive_invoke = "spawn-tty"` may be used when the command should be started attached to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
+`interactive_invoke = "spawn-tty"` starts automatically only from `parley consensus request-signoffs`; other command surfaces currently print a handoff. The automatic path attaches the command to the user's terminal. It is not a PTY automation mode: `parley` must not pipe the task prompt through stdin, scrape terminal output, or drive the session programmatically.
+
+Spawning a protocol task requires configured prompt delivery: use
+`interactive_prompt_mode = "file"` with `{prompt_path}` in `interactive_args`, or
+`interactive_prompt_mode = "arg"` with `{prompt}`. The argument template must use
+the selected CLI's actual prompt-file or prompt-argument option. Prefer file mode:
+argument mode exposes the full protocol and task through the process command line
+and refuses expanded arguments larger than 120 KiB. Missing delivery
+refuses the task before spawn; `none` remains valid for print-only handoffs. A
+fresh live protocol is rendered at each process launch, with a separate unique
+invocation from the earlier printed handoff. Terminal descriptors are passed
+unchanged. Process lifecycle and exit are measured; terminal stream content,
+first activity, resolved model and billing remain unobserved. Terminal process
+groups are restored after exit and child groups are terminated on timeout.
 
 Provider billing and usage accounting are determined by the provider and account. Parley only makes the technical mode explicit: headless and ACP are programmatic execution; interactive/manual are user-driven handoff flows.
 
@@ -216,3 +229,1470 @@ Probe outputs are not source artifacts and are ignored by Git.
 
 See also: [agent-cli-mechanics.md](agent-cli-mechanics.md) — verified per-CLI
 invocation behaviors (stdin/flag gotchas, failure modes) the runner relies on.
+
+
+## Inspecting and reconciling a budget ledger
+
+The durable reservation package and its recovery controls are available in this
+source branch. Automatic launch/action callers are still being integrated; the
+presence of this command does not establish that every launch is budgeted.
+
+Inspect an existing ledger with:
+
+```sh
+parley budget inspect --ledger /absolute/path/to/ledger-directory --scope IDEA
+```
+
+An unknown monetary observation without a retained conservative bound stops a configured cost ceiling. If the operator
+can establish a conservative upper bound, record that exact decision from an
+attended terminal:
+
+```sh
+parley budget reconcile --ledger /absolute/path/to/ledger-directory --scope IDEA   --action-id INVOCATION_OR_ACTION_ID --decision-id UNIQUE_OPERATOR_DECISION   --ceiling-micros 7000000 --reason 'Conservative upper bound established by the operator' --yes
+```
+
+One microdollar is one millionth of USD; `7000000` means a USD 7 conservative
+ceiling. This is a template, not a suggested amount or an authorization. The
+original observed cost remains unknown. The decision is appended to the charged
+entry and the action remains spent. An exact repeat of the same decision is
+idempotent; a conflicting replay refuses. A later decision has a new identity.
+Known monetary observations cannot be rewritten by this recovery command. If a settled attempt has unknown actual cost and a known original reservation, that reservation remains its minimum exposure; reconciliation cannot lower that bound. An explicit
+zero ceiling prints a specific notice: the operator is counting this unknown
+observation as zero exposure; the original cost remains unknown. Decision IDs
+are unique within the charged entry, limited to 128 bytes; reasons to 1024 bytes.
+All decisions are retained in order, subject to the ledger size bound.
+No command reads participant frontmatter as a budget grant.
+
+The terminal requirement is an attended control, not proof of a human identity.
+An agent must not allocate a terminal to manufacture operator authorization.
+It must first obtain the user's concrete decision. Inspection is read-only and
+works without a terminal; it creates no directories, origin or cache locks, even
+for an origin-less ledger or wrong-scope read. It reads one atomically published
+snapshot and may precede a concurrent replacement. A replacement between inspection and opening the file is retried up to four times; continued replacement returns `ErrSnapshotChanged` so the operator can retry. Malformed or missing ledgers are not retried. Windows checks the input
+console with `GetConsoleMode`; Unix accepts a terminal on stdin or stdout. Unsupported targets explicitly report that a ledger originating there has no supported attended recovery or migration yet.
+Windows runtime behavior remains untested; cross-compilation alone is not runtime evidence.
+
+Locks use a verified local kernel lock because some shared filesystems report
+successful `flock` calls without providing exclusion. A permanent local lock
+contains a random 256-bit identity, atomically published before a v2 origin is
+pinned in the shared ledger. The origin records hostname, absolute cache path
+and that identity. Missing established cache locks, differing identity/host/path,
+and existing ledgers without an origin refuse before further mutations. Held
+file descriptors are rechecked against both the pinned token and current inode. On Windows the locked byte is at offset 1 MiB, beyond the bounded identity reads, so the second-handle exclusion probe does not read the locked range.
+The exact pinned origin is also rechecked after acquisition and exclusion probing;
+waiting callers cannot recreate a missing origin or adopt a changed one.
+Paths resolve absolute paths through symlinks and use conservative case folding
+on every OS. This does not authenticate a machine or coordinate cloned identities
+and distributed writers. The origin's local cache path is visible to readers of
+the shared ledger; it is diagnostic metadata, not a credential.
+
+Never delete a live lock inode, its `lock-origin`, or a ledger to recover budget.
+Old v1 origins and relocated ledgers refuse rather than silently repinning.
+Same-host cache relocation is available through `budget origin inspect|apply`
+for an existing resource at the same canonical path. It requires access to the
+original permanent lock and an existing destination lock directory outside the
+protected resource. It cannot relocate a repository/accounting scope, recreate
+a lost original identity, establish remote-host quiescence, or repair missing
+ledger history. Preserve every original lock, origin, witness and migration
+record. A cache filesystem without verified exclusion stops visibly and names
+its path. Windows is cross-compiled; runtime validation is pending. Crashes may
+leave staging files; no automatic sweeper removes files that another writer
+might still be using.
+
+```sh
+parley budget origin inspect --resource /path/to/existing/metadata --target-lock-dir /path/to/existing/local-locks
+parley budget origin apply --resource /path/to/existing/metadata --target-lock-dir /path/to/existing/local-locks --expected-sha256 HASH_FROM_INSPECT --decision-id UNIQUE_DECISION --reason 'Relocate the host-local lock cache' --yes
+```
+
+Inspection is read-only and acquires the existing kernel lock. Its digest binds
+the exact origin, guard-witness presence, destination state and protected file
+hashes/modes. Apply repeats the material check after waiting. The platform's
+actual attended terminal probe is required for apply; there is no `--attended`
+or participant-authored replacement. Attendance and persisted random lock tokens
+are cooperative attribution, not human/machine authentication. The v2 origin
+never recorded an original physical device/inode identifier; migration proves
+exclusion of the currently accessible pinned object, not an invented historical
+inode identity.
+
+Apply first publishes an immutable decision under `lock-origin-migrations/`,
+then creates or reuses the exact destination identity. It holds the original and
+destination kernel locks through origin/witness/completion publication, rechecks
+their held descriptors against the current paths, and never unlinks either lock.
+A contended destination refuses immediately with its resumable decision retained;
+the old-lock wait is bounded by the command's 30-second deadline. Both filesystems
+must pass an independent-descriptor exclusion probe. All ledger bytes, accounting
+epochs, settled charges, unknown costs, reservations and ceilings remain intact.
+
+Migrated authority uses `parley-budget-lock/v3`. Older v2 binaries refuse it;
+new binaries follow it only through a complete, correctly bound migration chain.
+An old waiter retains its exact pre-wait origin and refuses after cutover. A
+missing completion, journal, required witness, or changed resource path blocks
+work. A missing origin with retained migration/ledger continuity also refuses
+bootstrap. Removing old authority files is not a cleanup or recovery procedure.
+
+After interruption or failed output, repeat the exact apply arguments. A finished
+decision returns its original preview, including after later accounting changes
+or additional migrations. An unfinished decision re-acquires both locks and
+finishes only against its captured material. Before v3 origin publication, old
+v2 writers can legitimately continue; if they change accounting, retain the stale
+prepared decision and take a fresh inspection with a new decision ID. This
+explicitly supersedes preparation without resetting any state. After v3 origin
+publication, incomplete authority blocks ordinary writers. Changed protected
+material at that point, unavailable old identity, lost journal, or erased history
+remains a refusal requiring separate recovery; there is no forced reset option.
+
+The material inventory includes descendant files but does not migrate their
+independent locks/scopes. It refuses symlinks/special files and exceeds neither
+10,000 entries, 16 MiB per file nor 64 MiB total; large snapshot stores require a
+separate bounded recovery design. Chains are limited to 127 migrations plus the
+original v2 authority. The operation does not archive history or delete staging.
+
+Synchronization-only resource guards now persist `guard-established`, containing
+their exact origin, before returning permission. They have no ledger whose
+existence could otherwise distinguish first use from lost lock state. A retained
+witness with a missing origin refuses before recreating either the origin or the
+local inode; a conflicting witness also refuses. Failed witness publication
+returns no permission and releases the kernel lock. An unchanged-origin retry can
+finish interrupted publication. For supported cache relocation, the attended
+origin control above updates this witness under both held locks; preserve it
+with the origin, migration records and cache identities. Existing
+guards acquire the witness on their first successful use by this runtime. Older
+binaries and erasing both the witness and origin are outside this protection.
+The API is cooperative synchronization, not protection against a malicious
+same-UID actor who can rewrite all state.
+
+Action ceilings count lifetime attempts, including failed and settled attempts.
+A zero/absent ceiling means unlimited; the internal denied-kind control expresses
+an outright refusal separately. `Limits.RequireKnownCost` can require a known
+conservative reservation without a monetary cap. This cannot invent a provider
+price; an unknown terminal observation remains unknown while its conservative reservation remains charged. Exposure uses the larger of that reservation and the latest operator ceiling until an actual cost is known. Elapsed wall time includes pauses and resume;
+backward clock movement refuses with a specific error. Lock contention is bounded
+by the caller's deadline and a 30-second upper bound; `ErrLockContention` wraps
+the context error after a failed acquisition wait, so callers can distinguish
+contention from an agent timeout. Unrelated filesystem I/O is not interruptible
+by that context. Unsupported ledger schemas
+fail closed: mixed versions are not certified. The 16 MiB ledger ceiling and full
+file rewrite currently bound scalability; no automatic compaction or deletion
+of charge identities is implemented.
+
+## Durable action identity and accounting receipts
+
+New typed reservations retain a version-1 `action` descriptor in the existing
+schema-1 ledger envelope. The descriptor separates the logical operation/input
+from the original unique attempt ID. It binds the accounting scope, effective
+limits and immutable reservation: ledger epoch, entry key, kind, timestamp and
+reserved amount, including the distinction between zero and unknown. Identity
+publication is part of the same locked ledger write as the charge. An identical
+attempt ID is refused as already spent; changed input, kind, reserve or limits
+also reports an action conflict. A new attempt has a new entry and
+consumes another charge, even when its logical input is identical.
+
+The `runtime-input` basis hashes declared runner inputs or the reconstructed
+driver cursor and controls. Runner inputs include the task, selected agents,
+mapping, output controls and bounded hashes of key protocol files. It is a
+declared input fingerprint, not a whole-source-tree attestation. Nested runners
+inherit the outer grouped operation. Lower-level/manual calls use the explicitly
+weaker `launch-metadata` basis; direct step/cycle sessions without a richer outer
+request use `policy-only`. The typed input body is not retained in the ledger.
+Invalid typed input refuses reservation. Changing the input of a live session
+refuses further charges, and restoring the input cannot revive that refused
+session. Later legitimate settlement and operator ceilings preserve the original
+reservation identity.
+
+Inspect existing receipts or re-read an exact original receipt after lost output:
+
+```sh
+parley budget action inspect --ledger /path/to/existing/ledger --scope EXACT_SCOPE
+parley budget action inspect --ledger /path/to/existing/ledger --scope EXACT_SCOPE --entry-key ENTRY_HASH
+parley budget action replay --ledger /path/to/existing/ledger --scope EXACT_SCOPE --entry-key ENTRY_HASH --expected-identity-sha256 ORIGINAL_IDENTITY_HASH
+```
+
+Retain the original identity hash if comparing against an earlier observation.
+A hash freshly obtained after a replacement describes that replacement; these
+hashes do not authenticate a same-UID actor. Inspection is deterministic and
+replay compares the original identity including its reservation commitment.
+Both commands are read-only and require no attended activation. Output always
+states `permission: "none"` and `execution_status: "not-established"`. Missing
+entries/ledgers refuse rather than recreate state. Output failure can safely be
+followed by another exact read.
+
+Historical entries without the new descriptor remain `legacy-unbound`; they
+cannot be retroactively certified or adopted by supplying new action metadata.
+Older strict readers reject the additive field instead of silently dropping it.
+No ledger envelope schema bump or historical rewrite is claimed. Accounting
+replay does not relaunch a process, establish its liveness/terminal, restore a
+missing parent result or recover an unfinished workflow effect. Those require
+separate execution evidence and explicit recovery; receipt replay grants none.
+
+## Persistent protocol cycles
+
+The driver and supported typed manual runner calls share a separate durable
+counter for fixups and for Phase-2 cross-review groups. Each synchronous group
+reserves before attempted work; its nested participant launches share that
+charge. A failed attempt remains spent across new runs, cursor deletion and
+consensus BLOCK backedges. Separate operations reserve separately. Phase-6
+reviews, signoffs and verification do not consume a fixup cycle, so the final
+allowed fixup can still be checked. Over-cap state cannot close.
+
+The first saved policy freezes the track ceiling and known carried count. Cycle
+maximum zero means forbidden (fast-track cross-review); this differs from the
+generic launch/step limits, whose zero means unlimited. The existing track
+cells are unchanged: fast 1 fixup / 0 cross reviews, standard 2 / 2, deliberation
+5 / 3. A valid historical prompt without a track preserves the existing bounded
+legacy defaults. Missing or malformed prompts cannot create a legacy grant.
+
+Changing flags or track does not extend a frozen policy. Missing or corrupt
+policy/ledger state, inconsistent carried history, or unclassified previous
+invocations refuse further work. Historical accounting without a saved policy
+uses the explicit migration control below. A valid existing cycle policy
+can receive the finite operator extension described below.
+Standalone unobserved handoff preparation does not activate or spend a cycle
+policy. An unobserved historical request is not proof that no outside execution
+occurred and can still require reconciliation before first activation.
+
+These counters classify typed runner phases, not arbitrary natural-language
+prompts or commands executed outside Parley. Grouping one live synchronous
+operation does not establish exactly-once execution or durable semantic replay
+across a process crash. The stored accounting and attended controls do not
+authenticate a human against another process with the same filesystem access.
+
+Active step, fixup and cross-review sessions retain the exact immutable charge
+returned by their original ledger publication: scope, accounting start, entry
+identity, kind, reservation time and reserved exposure. Before another nested
+operation, the session checks that same entry. An unchanged aggregate count
+cannot hide a missing or substituted charge. A changed original timestamp,
+reserved amount or accounting start also refuses. Once observed, a refusal stays
+with that live session even if the old bytes later reappear; no new charge is
+created and no accounting is repaired implicitly.
+
+Later separate charges, valid policy extensions, settlement and explicit
+unknown-cost reconciliation may proceed while the original reservation stays
+unchanged. The last allowed active group can still finish under its own charge,
+subject to the existing lifetime clock. The witness is captured from the actual
+publication result rather than a later read that could adopt a replaced entry.
+This protects live session continuity; it does not add durable cross-process
+semantic operation identity, permission to retry a crashed action or human
+authentication. Cooperative writers must preserve original charges.
+
+### Inspecting and extending a cycle ceiling
+
+Inspect the existing policy without creating runtime state or changing it:
+
+```sh
+parley budget cycle inspect --dir /absolute/workspace --idea IDEA --kind fixup
+```
+
+The JSON result includes `policy_sha256`, the original/effective maximum,
+recorded extensions, spent count, ledger path and original activation time.
+Use `--kind cross-review` for the separate Phase-2 policy. This is a snapshot;
+concurrent work can spend more cycles after inspection.
+
+After deciding on a finite absolute maximum, the operator can record it from
+an attended terminal:
+
+```sh
+parley budget cycle extend --dir /absolute/workspace --idea IDEA --kind fixup \
+  --expected-policy-sha256 HASH_FROM_INSPECTION --decision-id UNIQUE_DECISION \
+  --max-cycles 6 --reason 'Operator reason for this finite grant' --yes
+```
+
+This is a command template, not approval to extend any real idea. `6` means a
+total maximum of six charged attempts, including all previous failed attempts;
+it does not add six attempts. The maximum must exceed the current maximum and
+spent count. Zero/unlimited and the largest platform integer are rejected. An
+extension cannot enable a skipped phase whose original cycle maximum is zero.
+No participant frontmatter supplies attendance, a decision or an extension.
+
+The expected hash addresses canonical policy JSON and protects against a stale
+policy preview; it does not freeze the changing spent count. Each decision ID
+is unique within that cycle policy. An exact replay returns the current policy
+without another grant or rewrite, including after later extensions. Reusing
+the ID with different values or submitting a new ID against an old policy hash
+refuses. A failure after atomic publication may have recorded the decision:
+inspect first or replay the exact decision, never assume that work can be retried.
+
+The first extension advances the policy to schema v2 while retaining its
+original maximum, carried count, scope and ordered grant history. The ledger,
+spent action identities and activation clock are unchanged. Reservations and
+extension publication share the existing resource guard. Driver, BLOCK and
+typed manual calls read the effective grant while retaining the original
+track configuration, non-solo, strict review and evidence gates. Existing v1
+policies remain readable; an older binary refuses an extended v2 policy rather
+than ignoring its fields. Mixed-version continued execution is not certified.
+
+Decisions are bounded to 128 per policy, with IDs of at most 128 bytes, reasons
+of at most 1024 bytes and a 1 MiB policy limit. Hash links make changes and replay
+checkable; they do not authenticate a human or prevent a process with the same
+filesystem access from rewriting an entire history. The attendance check has
+the same limitations as `budget reconcile`; do not allocate a terminal to
+manufacture user authorization. Launch/step extensions have their separate
+controls below. Historical launch/step/cycle import has the separate controls
+described below; lock-origin recovery remains open.
+
+### Mapping a configured dollar ceiling to launch reservations
+
+`[defaults.loop].max_cost_usd` is checked at the common process launch boundary,
+including manual calls, rounds/reviews, consults, preflight, interactive execution
+and ACP. The layered runtime configuration is read from the live origin of a
+disposable review checkout. A nonzero driver `MaxCostUSD` also requires the same
+persistent policy before dispatch. A run-local usage total alone cannot authorize
+the first call or reset spend in another run.
+
+A positive dollar default requires an existing launch policy for the same idea
+(or the shared auxiliary scope for calls with no idea), naming its original or
+another recorded finite `max_cost_micros` and an explicit conservative
+`reserve_micros`. The effective current grant governs execution. Establish that
+policy using the attended `budget configure` control before the first execution.
+The dollar default is a total ceiling; it supplies no per-call reservation or
+provider price. If the policy/reservation is absent or the requested finite cap
+does not match any recorded version,
+execution refuses with a terminal `budget_refused` record. Existing invocation
+history can require the explicit launch migration below before a first policy
+can be configured; deleting that evidence is not recovery.
+
+Dollar ceilings are converted through the configured float's shortest decimal
+representation to whole microdollars, rounding down so conversion does not raise
+the ceiling. For example, USD 12.5 maps to 12500000 microdollars. A positive amount
+below one microdollar, negative/nonfinite input or int64 overflow refuses rather
+than becoming unlimited. The reservation remains operator-supplied; this does
+not guarantee that a provider cannot charge more than that declared bound.
+
+Zero or omitted defaults do not disable a saved policy. The usual configuration
+layering still applies before a policy exists: an explicit deck zero overrides a
+machine default. Missing explicitly selected configuration, unreadable files and
+parse failures cannot silently disable a budget. Standalone handoff preparation
+does not activate or charge a policy; its eventual execution must pass the normal
+launch boundary. Unknown terminal prices remain unknown, with conservative
+reservations retained as exposure. A changed default does not extend a policy.
+
+### Extending launch and driver-step policies
+
+Inspect an existing policy, its current count/exposure, original activation time
+and canonical hash without initializing runtime state:
+
+```sh
+parley budget launch inspect --dir DIR --idea IDEA
+parley budget step inspect --dir DIR --idea IDEA
+```
+
+Launch inspection may omit `--idea` to address the auxiliary launch scope. A
+step policy always requires an idea. After deciding on an explicit extension,
+use an attended terminal and supply every absolute ceiling for that policy:
+
+```sh
+parley budget launch extend --dir DIR --idea IDEA \
+  --max-launches N --max-cost-micros MICROS --wall-clock DURATION \
+  --expected-policy-sha256 HASH --decision-id UNIQUE_ID --reason 'Operator reason' --yes
+parley budget step extend --dir DIR --idea IDEA \
+  --max-steps N --wall-clock DURATION \
+  --expected-policy-sha256 HASH --decision-id UNIQUE_ID --reason 'Operator reason' --yes
+```
+
+These are templates, not permission to extend a real policy. At least one finite
+ceiling must increase. Unchanged zero axes retain their original unlimited
+meaning; an extension cannot change a finite axis to zero or lower another axis.
+An increased action ceiling must exceed spent attempts; an increased monetary
+ceiling must exceed recorded exposure; an increased duration must exceed elapsed
+time since original activation. Unknown exposure must be reconciled before a
+monetary increase. Increasing only another axis preserves that unknown exposure
+and does not make it spendable under a monetary cap. Launch durations use whole
+milliseconds; step durations retain nanosecond resolution.
+
+The first extension creates a v2 policy with original ceilings and an ordered,
+bounded decision history. Every decision records its prior canonical policy
+hash, absolute ceilings, spent count, known/unknown exposure, original activation
+time, decision time and reason. The charged ledger and per-launch reservation
+amount remain unchanged. Changing a reservation or migrating legacy authority
+is a separate operation, not an extension. Existing v1 policies remain readable;
+old readers refuse v2 rather than ignore its extension fields.
+
+Policy hashes freeze a preview of policy, not subsequent spend. Publication
+holds both the policy resource guard and the ledger lock, so reservations,
+settlement and cost reconciliation cannot race the recorded grant exposure.
+Exact replay returns the current policy without another grant, even after later
+decisions; conflicting ID reuse or a stale new decision refuses. Publication or
+output failure can leave an applied grant: inspect or replay the exact decision
+before attempting work. Never delete history or assume a failed command refunded it.
+
+Cached bindings and resumed driver/manual paths load the effective grant. Runtime
+configuration and trusted launch contexts may still reference the original or a
+recorded intermediate policy; an unrecorded value is not an extension. Nested
+children retain their one charged transition. The loop uses persistent monetary
+exposure while reporting observed usage separately. These controls neither waive
+protocol/review gates nor establish exactly-once execution of semantic actions.
+
+Histories allow 128 decisions per policy and at most 1 MiB of JSON. Decision IDs
+are at most 128 bytes, reasons 1024 bytes; integer overflows and clock regression
+refuse. Attendance and hash chains are not human authentication against another
+process with the same filesystem access. No unattended override exists.
+
+### Importing historical launch accounting
+
+When invocation history predates a saved launch policy, including a retained
+pre-start `budget_refused` request, inspect it without initializing budget state:
+
+```sh
+parley budget migrate inspect --kind launch --dir DIR --idea IDEA
+```
+
+Omit `--idea` only for the auxiliary launch scope. Inspection inventories all
+available linked Git worktrees, invocation metadata, historical run events and
+cursors, and the idea's canonical artifacts. It returns source hashes, unique
+attempts and original observed-cost bases, the earliest observed timestamp, a
+minimum additional legacy launch count, and one canonical `history_sha256`.
+It stores no prompts, logs or artifact contents in the import record. Missing
+worktrees, conflicting idea identities/copies, nonterminal or malformed records,
+directory/file aliases and out-of-bounds sources refuse.
+
+After stopping writers and reviewing the inventory, supply an explicit operator
+decision through an attended terminal:
+
+```sh
+parley budget migrate apply --kind launch --dir DIR --idea IDEA \
+  --expected-history-sha256 HASH --decision-id UNIQUE_ID \
+  --reason 'Operator explanation and legacy accounting basis' \
+  --started-at ORIGINAL_RFC3339_EPOCH --additional-launches N \
+  --max-launches TOTAL --max-cost-micros MICROS --wall-clock DURATION \
+  --reserve-micros MICROS_PER_FUTURE_LAUNCH --writers-stopped --yes
+```
+
+This template supplies no real operator decision. `--additional-launches` is an
+explicit assertion about work preceding complete invocation telemetry, including
+failed attempts; zero must be stated explicitly. Its value must meet the observed
+legacy start floor. Artifact prose does not establish that count. `--started-at`
+must be the original accounting epoch, no later than any observed history. All
+three ceilings are explicit lifetime totals, including imported work and pauses;
+zero has the usual unlimited launch/step meaning. A positive monetary cap requires
+an explicit conservative per-future-launch reservation no larger than the cap.
+The reservation may be omitted when no monetary cap applies; it remains unknown.
+
+Each unique recognized attempt is imported as spent, including ordinary failed
+starts. Known observations round upward to whole microdollars; the retained
+terminal hash and original cost basis distinguish a CLI estimate from an invoice.
+Unknown observed costs stay unknown. Additional legacy attempts have both unknown
+observed cost and unknown reservation, with IDs
+`legacy-migration:<decision-id>:<zero-based-index>`. They require explicit monetary
+reconciliation before a monetary cap permits new work. No future reservation is
+retroactively assigned to an old attempt. Unobserved handoffs remain potentially
+spent with unknown cost.
+
+Only typed pre-start `budget_refused` or `protocol_context_refused` failures with
+consistent metadata and no process/observed work are exempt from the launch count.
+Their source records and inventory entries remain retained. Positive token/cost,
+output, activity or contradictory start evidence refuses that exemption. A real
+process fixture covers refusal, preserved history, activation, actual child
+execution, subsequent cap refusals and replay across new runs; it calls no model.
+
+Migration writes an immutable versioned decision/inventory/initial-ledger record,
+the ledger and its continuity witness, and a hash-bound policy, then activates a
+final marker. Readers refuse partial publication. Exact replay recovers unchanged
+partial state or returns current active state while preserving later spend,
+reconciliations and extensions. Stale/conflicting decisions cannot overwrite an
+existing policy, ledger or import. A missing previously active policy is an error.
+Output failure may follow successful activation: inspect or replay the exact
+decision. Deleting evidence or retrying a different decision is not recovery.
+
+The history hash is checked before and under the publication guard and again
+before activation. Detected concurrent historical changes leave the import
+inactive for recovery. The stopped-writers assertion and hashes do not coordinate
+uncooperative external writers or authenticate a human with shared filesystem
+access. Keep writers stopped throughout the operation. Unknown/inconsistent
+history still requires reconciliation. Changed inactive imports use the explicit
+recovery control below; original import replay never replaces their decision.
+
+The inventory allows 10,000 sources/actions and 64 MiB total source bytes; the
+import record is limited to 8 MiB. Individual metadata, event and artifact reads
+are bounded too. Required zero-valued fields must remain explicitly present.
+Old readers reject the new migration reference rather than ignore it. Windows
+is cross-compiled only. Lock-origin relocation/re-pin and semantic action replay
+remain separate unfinished controls.
+
+### Importing historical driver steps and protocol cycles
+
+Historical protocol counts have their own import. A child invocation is not a
+driver step or a whole cross-review group. Inspect one accounting kind at a time:
+
+```sh
+parley budget migrate inspect --kind step --dir DIR --idea IDEA
+parley budget migrate inspect --kind fixup --dir DIR --idea IDEA
+parley budget migrate inspect --kind cross-review --dir DIR --idea IDEA
+```
+
+For a nested pipeline idea, supply its canonical relative `--idea-path`, such as
+`parley-deck/pipelines/PIPELINE/blocks/BLOCK/idea`, on both inspect and apply.
+The inventory binds those artifacts as well as normal idea/run/invocation sources
+in all available worktrees. Reading it creates no accounting state.
+
+The observed `lower_bound` is a floor, not complete lifetime accounting. Distinct
+published driver transitions add across runs; identical observations and copied
+runs are counted once. Conflicting copies refuse. Lifetime/run counters overlap
+those events and therefore contribute a maximum, not an additional sum. Distinct
+completed fixup marker paths are counted across worktrees; round/cursor counters
+provide further floors. A fixup phase event may finish an already charged cycle
+after a crash, so it cannot establish a new fixup for every event. Typed child
+attempts establish at most one ungrouped action; they are never charged once per
+participant. Unknown phases, unobserved handoffs and pre-start launch refusals
+remain visible for reconciliation. A launch refusal does not prove that no
+protocol charge preceded it. Prose and participant headings do not supply totals.
+
+A read-only preview normally refuses unavailable worktrees or historical runs
+whose idea identity cannot be established. For protocol accounting only, an
+explicit operator decision can retain those sources as unknown coverage:
+
+- Repeat `--declare-unavailable-worktree PATH` for each registered worktree whose
+  history is unavailable. The path must match a real Git registration and an
+  unavailable stat class; an available or unregistered path is refused.
+- Repeat `--declare-unscoped-run parley-deck/runs/NAME=SHA256` for a readable run
+  with **absent** idea identity. The digest binds the complete bounded recursive
+  file manifest, not only its events file. Every visible copy must agree. An
+  identifiable, conflicting, malformed, changed or divergent run is refused.
+
+Supply the exact same declarations on inspect and the later attended apply.
+The preview reports incomplete coverage and a lower bound based only on surviving
+visible/scoped evidence. Readable unknown sources stay in the inventory; neither
+flag asserts zero activity, assigns an idea to old evidence, selects a total, or
+changes repository-wide bootstrap policy. Ordinary callers still refuse.
+The package-level `InspectRunIdentities` diagnostic can enumerate exact manifest
+values without granting authority; it withholds declarations the strict scan
+would reject and records the reason in `uncertainty`. This diagnostic has no
+separate product CLI command. Its report is not an action count or apply token.
+
+After stopping all writers and reconciling the history, including an explicit
+accounting choice for any declared unknown coverage, an attended operator supplies
+an explicit **total**, including observed, failed, partial and unobserved historical
+protocol attempts:
+
+```sh
+parley budget migrate apply --kind step --dir DIR --idea IDEA \
+  --expected-history-sha256 HASH --decision-id UNIQUE_ID --reason 'Accounting basis' \
+  --started-at RFC3339 --total-actions TOTAL_STEPS \
+  --max-steps LIFETIME_CEILING --wall-clock LIFETIME_DURATION --writers-stopped --yes
+
+parley budget migrate apply --kind fixup --dir DIR --idea IDEA \
+  --expected-history-sha256 HASH --decision-id UNIQUE_ID --reason 'Accounting basis' \
+  --started-at RFC3339 --total-actions TOTAL_FIXUPS \
+  --max-cycles LIFETIME_CEILING --writers-stopped --yes
+```
+
+Use `--kind cross-review` for cross-review groups with the same cycle arguments.
+These templates do not authorize any real accounting decision. Zero totals must
+be explicit and cannot be below observed floors. Unlike launch import's
+`--additional-launches`, `--total-actions` includes all reconciled protocol work.
+The original epoch cannot follow any observed history; step inventory also derives
+an earlier origin from reported elapsed time. Wall time includes pauses. Importing
+an already exhausted or over-cap history preserves it without permitting new work.
+Step maximum zero means unlimited; cycle maximum zero forbids the operation.
+
+Choose ceilings consistent with the intended runtime configuration before apply.
+Migration records the operator's accounting policy; it does not rewrite or validate
+the idea's track configuration. The driver still requires the original cycle
+ceiling to match its configuration, and typed manual calls reject a stricter
+current track. Importing a larger ceiling cannot bypass a fast-track exclusion.
+A mismatched frozen policy may therefore be unusable; changing its file, deleting
+it or replaying a different decision is not supported recovery. Use the separate
+finite extension control for a valid active policy when an extension is authorized.
+
+Publication retains an immutable decision/inventory/initial ledger, ledger
+continuity, the referenced policy and a final activation marker. Exact replay
+recovers unchanged partial publication and returns current active state with
+later charges and grants intact. Source changes before activation leave it
+inactive. Required persisted zero/nullable fields remain explicit. Runtime readers
+check every imported entry and the original epoch, including cached nested
+sessions; replacing an imported identity while retaining the aggregate count
+refuses. An output error can follow successful publication: inspect or replay the
+exact decision before attempting work.
+
+Entries use `protocol-migration:<kind>:<decision-id>:<index>` identities. Their
+timestamps record the declared accounting epoch, not invented observed child
+starts. Their zero monetary values represent protocol counts only; provider
+prices and unknown costs remain in the independent launch ledger. Import does
+not reconstruct durable semantic operation identities for exactly-once execution.
+Existing active scopes, malformed or undeclared unavailable history and lock-origin recovery
+require separate reconciliation. Changed inactive imports use the control below.
+The same attendance, stopped-writer, hash-authentication, file-size and
+mixed-version limitations as launch import apply.
+
+### Recovering changed inactive imports
+
+An import that stopped before activation can be reconciled with subsequently
+observed history using the same control for launch, step, fixup and cross-review
+accounting. Preview is read-only and requires neither attendance nor a lock:
+
+```sh
+parley budget migrate recover inspect --kind launch --dir DIR --idea IDEA
+parley budget migrate recover inspect --kind step --dir DIR --idea IDEA
+```
+
+The preview includes the import directory, original decision, last recovery
+decision if present, exact import-state and current-history hashes, retained
+charges, original policy and minimum explicit accounting count. An active import
+is marked active and its current history is not rescanned; the history hash is
+empty because a new recovery is not applicable. Its latest exact decision may
+still be replayed to obtain current status, including later charges/extensions.
+
+With all affected writers stopped, the operator supplies a concrete decision:
+
+```sh
+parley budget migrate recover apply --kind launch --dir DIR --idea IDEA \
+  --expected-import-sha256 IMPORT_SHA --expected-history-sha256 HISTORY_SHA \
+  --decision-id DECISION --reason REASON --started-at ORIGINAL_OR_EARLIER_TIME \
+  --additional-launches PRE_TELEMETRY_TOTAL --writers-stopped --yes
+
+parley budget migrate recover apply --kind fixup --dir DIR --idea IDEA \
+  --expected-import-sha256 IMPORT_SHA --expected-history-sha256 HISTORY_SHA \
+  --decision-id DECISION --reason REASON --started-at ORIGINAL_OR_EARLIER_TIME \
+  --total-actions HISTORICAL_CYCLE_TOTAL --writers-stopped --yes
+```
+
+Use `--total-actions` for step and cross-review as well. Counts are absolute
+historical totals, not newly granted work. They cannot decrease below either
+retained operator accounting or the observed lower bound. Launch recovery unions
+unique observed attempts with the retained charges and the explicit total for
+pre-telemetry work. Existing attempt identities are not charged again. Anonymous
+operator counts are not automatically matched to newly discovered
+invocation IDs; without a proven mapping both are conservatively retained.
+This is distinct from the count of actually observed unique model invocations.
+Previous observations, including their unknown costs and timestamps, remain unchanged;
+conflicting terminal observations refuse even if the monetary amount is equal.
+Previously recorded charges survive a historical source disappearing, while
+unavailable roots or malformed current sources still refuse inspection. Recovery
+does not recreate missing raw source files. Protocol totals remain an explicit
+operator assertion because old child invocations lack reliable cycle identities.
+
+The original `migration.json` and policy ceilings are preserved. A bounded,
+hash-linked `migration-recovery.json` journal records each decision, observed file
+hashes, typed history and resulting accounting snapshot. The original accounting
+epoch can move earlier to include discovered work; it can never move later or
+extend the original lifetime allowance. No ceiling/reservation flag is accepted.
+Separate policy extension controls remain required after activation.
+
+Apply holds the existing resource guard, checks both preview hashes and publishes
+the journal before ledger/policy completion. Only a retained original or recovery
+checkpoint can be advanced; unknown ledger changes cannot be overwritten. The
+final versioned activation marker binds the original import and complete journal.
+Older readers reject this marker. Do not run older writers against recovered
+state. Removing the journal invalidates activation; it is not a reset mechanism.
+
+Interrupted publication can replay the exact last decision shown by preview,
+including its original expected hashes. A change in live history needs a new
+decision ID and fresh preview hashes; the earlier decision and charges stay in
+the journal. Exact active replay preserves later charges and policy extensions.
+An active import cannot be replaced by a new recovery. There are at most 32
+recovery decisions in a journal, with a 16 MiB journal bound and the existing
+history/action limits. Raw prompts, commands and source contents are not copied
+into recovery records. These are cooperative accounting and operator-attendance
+controls, not human authentication or distributed writer exclusion. Origin
+migration, semantic action replay and independent implementation acceptance
+remain separate requirements. Windows runtime remains unverified.
+
+### Retaining and recovering independent verification refusals
+
+A refused driver verification retains a bounded observation before attempting
+canonical publication. A helper that returns a failure also retains its own
+observation, even if its parent has stopped. The frozen request includes its
+unique attempt directory identity; helper and driver observations share its
+request digest without becoming two model invocations. An absent helper result
+alone does not prove that its process terminated.
+
+Records contain observer and failure stage, safe optional idea/run/verifier/
+invocation labels, available request/report/receipt hashes and actual helper
+criterion statuses with command hashes. They contain no raw commands, output,
+provider diagnostics, prompts or environment. Unsafe labels become explicit
+nulls. Stage codes identify the failing boundary; detailed local diagnostics
+remain in the original private runtime artifacts.
+
+Pending observations live below the worktree's Git administration directory in
+`parley-evidence-guards/<scope>/refusals/`. They do not require root runtime ignore
+rules or a functioning report lock to be retained. A helper does not commit: the
+parent publishes this attempt's observations, or the operator recovers an exact
+record after interruption. Inspecting creates no files:
+
+```sh
+parley evidence refusals inspect --dir DIR --idea IDEA
+parley evidence refusals recover --dir DIR --idea IDEA --expected-sha256 SHA
+```
+
+Use the full `sha256` returned by inspect. Recovery validates the exact canonical
+JSON bytes, takes the existing evidence publication guard and writes
+`parley-deck/ideas/IDEA/verification-refusals/SHA.json`. It commits only that path
+and verifies the committed bytes. Unrelated staged/working changes remain intact.
+Exact replay verifies the existing commit without adding one. Under the same
+guard, recovery removes interrupted canonical staging files only when their
+names bind the selected digest and their bytes are a prefix of that exact retained
+record. Unrelated or divergent staging remains unresolved. Conflicting bytes
+or duplicate observation identities with different content refuse; later
+observations and pending source files are preserved. All valid exact copies of
+one observation coalesce in the inventory.
+
+A commit or publication failure remains a failed verification with recoverable
+pending history. Inspect distinguishes canonical presence from verified Git
+commit. Invalid, interrupted or unreadable entries remain visible and block
+verification; digest-bound recovery can still publish other intact records but
+cannot invent the lost content. A missing original lock or changed lock origin
+continues to refuse publication: this command does not recreate or migrate it.
+Restore the original compatible environment where possible. Complete loss of
+pending administration and local history cannot be reconstructed by this control.
+
+Refusal files are included in the normal source-tree digest, with no new
+exclusion. Publication therefore requires fresh checks before another independent
+verification. Uncommitted or incomplete observations block verification and final
+acceptance. Recovery never executes criteria, invokes a model, grants a budget,
+changes a signature or issues acceptance. Failed report/receipt writes require
+both exact-record recovery (if publication failed) and fresh checks before retry.
+
+Independent closure still requires Git and a POSIX execution host. Non-Git
+observations have only local persistence, including local runtime-origin metadata;
+they cannot claim Git durability or enable non-Git independent closure. Windows
+cross-compilation alone does not certify runtime support. These are cooperative
+same-UID records, not cryptographic authentication of an agent or protection from
+deletion of all local/committed history. Canonical failures from concurrent work
+can invalidate a tested tree; rerun verification rather than rebasing old evidence.
+
+### Integrity of the human validation table
+
+Named checks now render the `## Validation evidence` section from the actual
+original typed criterion records. The visible caption distinguishes those
+executions from independent acceptance. Counts retain `unknown` values, timing
+is shown in milliseconds, and diagnostics stay scrubbed and bounded. Markdown
+labels are escaped and diagnostic fences exceed embedded backtick runs. Text
+normalization matches JSON persistence, including truncated Unicode diagnostics.
+
+`EVIDENCE.json` binds the exact managed section under the additional ExtraDigests
+key `<relative IMPLEMENTATION.md path>#validation-evidence/v1`. The independent
+helper and final closure path both recompute that digest and reconstruct the
+expected table from the original records. Changing a table and updating its hash
+alone cannot make a different claim match the actual records. Request/report/
+receipt binding and independently executed criterion reconciliation still apply.
+The table never supplies its own independent verifier or deployment claim.
+
+CommonMark parsing (pinned Goldmark dependency) identifies actual top-level
+level-two sections, including ATX and setext forms. Fenced/indented examples,
+comments, raw HTML blocks, list/blockquote headings and level-three subheadings
+remain outside the managed section. Duplicate managed sections refuse rather
+than selecting one silently. A following level-one or level-two heading ends
+the section; all remaining document bytes stay bound exactly. A missing section
+is initialized before command execution. Unclosed Markdown contexts that would
+hide the generated section refuse publication.
+
+The non-evidence remainder is now pinned before commands run and compared after
+execution. A command that changes that scope fails the cycle and retains a typed
+report with the original scope binding. The authorized status transition remains
+the only permitted change to those bound bytes at completion. CRLF documents
+retain their line endings and the table remains bound after the exact status flip.
+
+Older reports without the section binding require fresh checks and independent
+verification; no self-authored hash upgrades an old acceptance. Changed, deleted,
+rehashed but inconsistent, or ambiguous tables veto closure. Table checks are
+vetoes alongside original scope, typed outcome and independent execution checks.
+The parent CLI enforcing final closure must be upgraded before relying on this
+new control; older binaries do not enforce an additional map key themselves.
+This remains cooperative runtime attribution, not authentication against a
+same-UID actor capable of fabricating all mutually consistent artifacts.
+
+## Patch-regression trajectory execution core
+
+The internal trajectory API prepares the paired-execution part of the opt-in
+pilot rule. The CLI policy below now enforces durable capture and refusal at
+driver/manual entrypoints. The selected-verifier CLI below connects independent
+execution to durable observations. Reconciliation derives the complete ordered
+history and retains review/continuation decisions. AC-B2 remains incomplete while
+explicit interrupted-attempt recovery and independent live verification remain open.
+
+`Freeze` binds separate clean Git baseline/patched snapshots, full commit IDs,
+source-tree hashes, the exact binary patch digest, independent runtime verifier,
+ordered patch ancestry and a fixed material criterion scope. Requests retain
+command hashes instead of raw commands. `Verify` uses the existing criterion
+executor twice on each snapshot in AB/BA order, rechecking both snapshots and
+patch identity around every command. Partial observations are retained in its
+return value on failure. The additive `RunCriterionDetailed` API distinguishes
+complete observed failures from interrupted processes, capture overflow and
+malformed structured output without changing ordinary persisted evidence reports.
+
+`Assess` derives a material regression from a stable structured pass-to-fail
+transition. Opaque, missing, skipped, zero-case, contradictory, self-attributed
+or unstable evidence cannot supply a confirmation. Pre-existing failures and
+reduced passing coverage cannot establish a clean patch. `Evaluate` requires
+the full ordered expected patch list separately from observations; a clean
+intervening patch breaks the consecutive count, while the first two-confirmation
+review trigger remains recorded even if later input includes a clean patch.
+Missing observations, sequence gaps, changed scope and replayed patches refuse.
+
+The future orchestrator must bind that expected list to every real opted-in
+patch attempt, select the actual non-implementer verifier and verify its invocation
+and retained helper output. An empty caller-supplied list is not evidence that no
+real patch occurred. These APIs do not independently authenticate identities,
+persist/approve an opt-in policy, reconcile interrupted model work, authorize
+completion, change quorum or release the two-regression review requirement.
+The frozen commands must implement the original material acceptance criteria;
+this bounded comparison does not prove universal causation or test adequacy.
+
+### Persistent opt-in trajectory capture (integration in progress)
+
+The experimental trajectory policy now persists beside the shared fixup budget.
+Linked worktrees and new runs use the same policy, reservation identities and
+attempt inventory. It is opt-in and requires a fresh, uncharged fixup policy:
+existing imported or charged histories cannot be adopted as an empty experiment.
+The initial fixup ceiling must match the selected protocol track.
+
+From an attended terminal, initialize the original ceiling, preview the exact
+source/material-scope policy, then activate using both returned hashes:
+
+```sh
+parley trajectory initialize --dir . --idea IDEA --max-fixups 5 --yes
+parley trajectory configure --dir . --idea IDEA --implementer AGENT
+parley trajectory configure --dir . --idea IDEA --implementer AGENT \
+  --policy-sha256 SHA_FROM_PREVIEW --cycle-policy-sha256 CYCLE_SHA_FROM_PREVIEW --yes
+parley trajectory inspect --dir . --idea IDEA
+```
+
+The first command above uses the deliberation fixup ceiling; use the actual
+track ceiling for the idea. Configuration reads the original named `checks`
+contract and requires a clean exact Git worktree. The preview contains command
+hashes, not raw commands. Activation does not invoke a model or grant completion.
+A partial initialization requires exact activation replay; deleting a reference
+while retaining its state cannot silently disable the capture requirement.
+Older readers reject the newly referenced policy instead of running unobserved.
+
+At the common precharge boundary, a required observer records the exact original
+reservation and actual before-state before permission to execute. Failed observer
+publication leaves the charge spent. A ledger entry absent from the trajectory
+is unknown history and refuses further work. Before model launch, the runner
+binds the charge to the actual invocation and frozen implementer. Normal failure,
+failed start and interrupted process paths retain their actual terminal and
+post-state observations. Dirty output stays dirty; an unavailable digest is
+explicitly retained without substituting the expected source. Capture does not
+commit, stash, discard, or manufacture a clean snapshot. Run status and exit zero
+are not independent verification. Driver and application completion paths reject
+pending attempts, including after resume or a separate finite budget extension.
+
+Capture, source restoration, the selected-verifier CLI and durable reconciliation
+are available. A captured attempt stays pending until the retained parent result
+is reconciled through the control below. Resolved history is rechecked before
+another fixup; dirty after-source needs an explicit clean promotion, and review
+or inconclusive outcomes need an attended decision. Missing source/index/history,
+interrupted reservations and failed verification journals still require separate
+recovery; these commands do not reset or silently retry them. Independent
+current-source acceptance and the live pilot remain required for AC-B2.
+
+These controls coordinate cooperative runtime writers. Process labels, hashes,
+terminal presence and files under the same user account do not authenticate a
+human or defeat a malicious actor consistently fabricating all state. Independent
+acceptance and actual live experiment results remain separate obligations.
+
+### Retained source archives
+
+Trajectory policy/state v2 requires reconstructible source archives at activation
+and terminal capture. Each exact charge records its before-archive reference;
+the actual invocation retains its after-archive reference alongside the original
+commit, code-tree digest and dirty-status observation. Archives live in the
+private `trajectory-snapshots` directory beside shared cycle accounting. The
+versioned reference contains only SHA256 and length metadata. Archive bodies
+contain private source bytes and must not be copied into telemetry, protocol
+artifacts or public reports.
+
+Capture uses the original Git tracked/untracked inventory, including dirty
+modifications, tracked deletions, untracked additions, binary bytes, file
+permission bits and supported relative symlinks. Git's project `.gitignore` rules
+set the ignored-file scope. Both evidence digests and trajectory snapshots compare
+that inventory with `--exclude-standard`; any disagreement refuses source
+observation. In particular, an untracked file hidden only by `.git/info/exclude`,
+`core.excludesFile` or Git's default global ignore file cannot silently disappear
+from the evidence. Git resolves nested rules, negations and linked-worktree common
+configuration; Parley does not implement a separate ignore-pattern parser.
+
+The refusal identifies the scope problem without publishing private paths,
+patterns or file contents. Make the intended scope explicit in project `.gitignore`
+or remove the local-only exclusion before observing again. Parley neither changes
+Git configuration nor automatically archives privately ignored files. Existing
+tracked files remain in scope even when an ignore rule matches. Untracked project
+ignore files use normal Git semantics and contribute source bytes when included
+in the inventory. Adding a visible project rule is itself a source change.
+
+This is an explicit source-scope boundary: project-ignored files, including an
+ignore file that project rules themselves hide, can still influence a build.
+The gate does not discover every build input, authenticate same-user writers or
+atomically freeze Git configuration. Source stability is rechecked at capture.
+Older archives preserve their original bytes and hashes; this correction cannot
+recover or certify an input omitted by a historical local exclusion. Accepted
+inventory/digest encoding is unchanged. A newly ambiguous live source now refuses.
+
+Each checked Git inventory is bounded to 100,000 paths, 16 MiB of command output
+and 30 seconds, with caller cancellation propagated. A limit refusal is not an
+omission. The legacy `TreeDigest` entry point has a 30-second context; its explicit
+context form follows the caller's deadline, with the same inventory bound. Host
+filesystem calls still depend on the operating system. A link into ignored or
+absent source, an absolute/escaping
+link, an unsupported entry or filename, or excessive data refuses capture.
+Archives are bounded to 256 MiB, individual files to 64 MiB and the inventory to
+100,000 entries. These are capture limits, not permission to omit larger files.
+Read-only Git observation disables optional index refresh writes.
+
+Capture opens a fresh contained root from the original path for each member and
+requires the pinned directory identity. This avoids obsolete directory-handle
+views observed on AppleVirtIOFS without accepting a replacement source root.
+The preceding entry stat pins file identity; the opened descriptor supplies the
+size and permissions copied into the archive. Every regular member then receives
+one fresh, contained verification read, regardless of whether the first descriptor
+reported a timestamp change. It must confirm the same file identity, size, mode
+and exact copied bytes, with descriptor size/mode/mtime stable during verification.
+Root and entry identities are rechecked afterwards. This catches obsolete open
+views while allowing a first-read timestamp transition only when the copied
+material can be established by that stable verification read. A transition in
+verification still refuses; there is no retry loop or source rewrite.
+
+Descriptor size bounds, complete archive/tree digest checks and the final
+unchanged source observation still apply. A stale entry stat cannot truncate a
+larger current file or bypass its size bound. Agreement between the two reads
+cannot replace the original expected tree with a different current tree.
+
+The internal `RestoreSnapshot` API verifies the exact canonical tar bytes and
+source binding, then restores into a newly allocated private directory and
+checks the actual filesystem with `evidence.TreeDigest`. It retains regular
+files before creating links and validates component-by-component link resolution.
+Duplicate/unordered paths, traversal, unsupported headers/member types, broken
+links, missing footer, truncation and trailing data refuse. Failure removes only
+the newly allocated restore directory. Existing files, Git index, HEAD and branch
+refs are never restoration targets.
+
+Restoration supplies source files without creating Git metadata or asserting a
+new commit/ancestry. Use an execution parent outside any existing Git worktree.
+Host permission and symlink semantics must reproduce the archived tree exactly;
+unsupported restoration fails visibly. The captured-source API below can attach
+isolated original Git history when its exact state is reproducible. The selected
+verifier CLI below binds that execution to its invocation and durable receipt.
+
+If actual source can be observed but its archive cannot be published, the
+terminal record retains that observation with `archive-unavailable`. If actual
+source cannot be retained under the supplied context, including deadline expiry,
+it records `source-unavailable`. This is an observation limit, not a diagnosis
+that the source does not exist. Missing or corrupt
+referenced archives refuse inspection, new fixups and completion. Neither case
+supplies an accepted patch, and a repeated capture does not overwrite a corrupt
+content address. Every attempt remains unresolved.
+
+Archive stability checks retain the first file descriptor through validation.
+All archive bytes, canonical encoding, complete source digest and links must
+validate before metadata is qualified. Initial/opened/final descriptor and
+named-path identity, mode and size must match. Only a timestamp-only change may
+trigger one full strict reread pinned to that same original file; further
+timestamp drift, replacement, changed content, mode/size drift or a reread error
+refuses. The caller's context still bounds both passes. Restored/member bytes
+already match the expected first-pass hashes, and success or final symlink
+creation waits for the second pass when required. Existing restore cleanup
+removes its newly allocated directory on failure. Archive formats are unchanged.
+This addresses one observed shared-volume timestamp transition without asserting
+its underlying host cause or guaranteeing that all metadata transitions succeed.
+
+Old v1 digest-only policies/state are explicitly refused with recovery guidance,
+without changing their bytes. Current files cannot reconstruct a past attempt;
+do not delete old state or relabel it v2. No automatic migration or historical
+archive reconstruction is supplied by this checkpoint.
+
+### Recording a live terminal independently of older evidence
+
+`Begin` retains the exact canonical post-launch state hash in its runtime-only
+handle. `Finish` uses the guarded control route to require that same state,
+original policy, complete published ledger and charge/launch/invocation before
+recording the actual outcome and observing/capturing the current post-source.
+It does not reread older archive, reservation-intent or resolution-result contents
+merely to retain this factual terminal. A disappeared historical archive or
+older result therefore does not erase a newly observed outcome.
+
+Changed canonical state or original charges still refuse publication, and terminal
+replay cannot rewrite retained bytes. Failure to observe or archive the current
+source keeps the existing explicit unavailable-source/archive terminal behavior.
+The binding is a live process handle; no persisted handle or historical replay
+API is supplied. Missing historical terminals and incomplete helper outcomes are
+not reconstructed. New execution, reconciliation, reuse, continuation and
+acceptance retain their full evidence requirements. This correction does not
+accelerate general history inspection or prove descendant inactivity.
+
+Full historical validation first captures structurally validated policy, ledger
+and trajectory state under the common cycle guard, then releases it while reading
+historical source and resolution contents. It reacquires the guard and requires
+the same store identity, complete policy, ledger and state before invoking the
+caller under the guard. If authority changed, it may restart all reads once,
+before any caller callback. A second change refuses. Missing authority, evidence
+errors and callback errors do not retry. No model, ticket, charge or caller
+publication is repeated by this read retry, and no prior validation is reused.
+This lets identical concurrent applies reach their existing exact-replay checks.
+
+A pending history now refuses a new cycle before historical content reads;
+otherwise eligible reservations still perform their full checks. These changes
+remove the common full-history validation hold from live terminal and stop paths.
+The control operations, positive reservation transaction and individual caller
+callbacks still do their own guarded work. This is not a guarantee that every
+terminal finishes within 30 seconds or every runner stop within 20 seconds, nor
+a fence against later same-UID file writes. The deterministic contention tests
+use small fixtures and paused readers; they are not measurements of a complete
+128-attempt / 256 MiB concurrent workload or a general inspection speedup.
+Capturing a current Source identical to an older Source can also republish its
+exact content-addressed archive if missing. No unknown past bytes or missing
+historical outcome are inferred by that content-identical recapture.
+
+
+### Activation quorum and verification authority
+
+Verification freezes participant identity from `State.BaselineArchive` and the
+original `Policy.Baseline`. The original implementer and at least one independent
+participant must appear exactly once, using valid stable IDs. Selected verifiers
+must belong to that activation quorum. Before/after archived memberships, helper
+request membership and unchanged-attempt scope are compared against it. Request
+freezing, ticket preparation, reuse/execution and reconciliation enforce this
+permission separately from structural ticket identity. A later patch cannot
+silently change who verifies it.
+
+The verifier CLI also checks the full ordered live/helper membership against
+that retained activation membership before creating a ticket and before helper
+execution or parent-result acceptance. It reuses the strict reconciliation YAML
+and named-criterion parser. A disagreement with the workspace parser, including
+a trailing-comment list interpreted differently, refuses before a known mismatch
+can consume verification authority. The original captured request, current live
+commands and order must still match. This early read does not fence later edits
+or recover old tickets; final reconciliation retains its own full check.
+
+The existing policy and archive encodings are unchanged; original criteria stay
+bound by `Policy.Criteria`. Lower-level callers supplying explicit criteria are
+not required to retrofit a checks-list syntax solely for this membership check.
+Missing/malformed legacy membership or conflicting archived evidence refuses;
+there is no fabricated historical migration or automatic quorum amendment.
+The archive proves activation-time bytes, not a Phase-0 state it never captured.
+Historical inconsistent resolutions now fail normal revalidation.
+
+A quorum-changing first attempt still records its actual terminal, captured
+source and spent charge. Ordinary inspection does not replace that failure with
+success. Stopping an already issued ticket retains the original ticket, invocation,
+launch and process-attribution checks without requiring new quorum-based
+execution permission. Its guarded state read retains canonical policy, the complete
+published charged ledger and structural transitions, but omits historical archive,
+reservation-intent content and resolution-content reads. Missing old archive or terminal bytes therefore do
+not prevent stopping an already issued ticket. Missing or inconsistent structural
+authority still refuses; changed original charges cannot authorize a stop.
+Stop replay preserves the first stop and does not create execution, a helper
+outcome or acceptance. Execution, ticket reuse, reconciliation and acceptance
+retain full source/result checks. This is not general helper recovery or a claim
+that all descendants of an old ticket have exited.
+
+### Charge-bound execution of captured worktrees
+
+`FreezeCaptured` reads the complete shared trajectory authority and freezes the
+original policy, exact charge/attempt, invocation, original material criterion
+hashes, selected non-implementer verifier, source observations and both archive
+references. An unfinished capture or unchanged source cannot establish a new
+patch regression. This request preserves actual commit and dirty status; it does
+not convert uncommitted output into a synthetic clean commit.
+
+`OpenCaptured` restores the two archives into newly allocated private roots and
+attaches separate local copies of original Git object history. Each copy is
+detached at its actual recorded commit. Local clone uses no hardlinks or checkout
+filters and an empty hook template. Source/index/HEAD/branch files in the original
+repository are never write targets. The exact original source digest, commit and
+status observation must match each reproduced root before it can execute.
+Git object storage is checked before/after copying against 512 MiB and 100,000
+entries; alternates, symlink/special object entries and excess data refuse.
+
+The retained archive covers source files, not arbitrary historical Git index
+blobs or an independent backup of every Git object. A staged-state difference,
+missing recorded commit or otherwise unreproducible original Source refuses;
+the current index, a new commit or an invented clean status cannot fill the gap.
+Retaining staged index/object authority and explicit recovery for these states
+remain required integration work. Verification parents must be outside existing
+Git repositories; partial preparation removes only newly allocated directories.
+
+`VerifyCaptured` rechecks durable authority and both full source observations
+around actual original criterion executions in AB/BA order. Each workspace
+handle is single-use. Partial outputs and actual post-source hashes are returned
+on drift/interruption; a caller must retain those failures. `AssessCaptured`
+reuses the existing structured criterion assessment: a stable new material failure
+can confirm regression; prior failures are inconclusive, and opaque, skipped,
+missing or interrupted output cannot confirm an outcome. Original clean-commit
+comparison and ordinary pass-only completion attestation retain their rules.
+
+These internal execution APIs do not themselves invoke a model or authorize
+the next patch. Use the selected-verifier CLI below to bind the durable journal
+to actual instrumented invocation and helper evidence, then reconcile that exact
+retained result with the charged history. These execution APIs alone do not
+resolve pending state, reset budget, change quorum or supply implementation
+completion. Reconciliation and attended continuation are separate controls.
+
+
+### Durable captured-verification journal (internal API)
+
+`trajectory.PrepareCapturedVerification` freezes a `VerificationTicket` before
+launch. The private ticket binds the canonical origin worktree, driver run,
+selected non-implementer and complete `CapturedRequest`. Shared cycle storage
+reserves `trajectory-verifications/<original-charge-key>/` once. An existing
+reservation, including an interrupted or incomplete write, refuses replacement.
+The directory and files must pass persistence barriers before work proceeds.
+
+`ReserveCapturedVerificationLaunch` records one distinct invocation before
+spawn; `ExecuteCapturedVerification` exclusively claims its helper before source
+preparation or commands. The helper records both prepared source roots before
+execution. Each actual AB/BA execution gets an ordered, hash-linked immutable
+step record. A terminal receipt binds request, launch, helper claim, prepared
+roots and all completed steps; errors retain a bounded failure-stage label.
+Required writes fail closed. Neither a failed terminal write nor a process crash
+makes the original ticket reusable. Failed and partial records stay in place.
+
+New helper claims, steps and receipts use journal version 2. Each step binds an
+immutable `process-NNN.json` record. Under the shared cycle guard, the helper
+checks for a durable stop, starts a waiting supervisor, captures its full process
+identity, persists that identity and releases the material command. A failed
+identity write cannot release the command. The supervisor retains its command
+and session identity when the material shell uses `exec`; the raw command is not
+copied into the process identity. Existing version-1 completed journals remain
+readable, but cannot provide this new process-control evidence.
+The supervisor's material exit values of 128 or greater are conservatively
+incomplete: POSIX wait cannot distinguish a signalled child from an explicit
+numeric exit in that range. Such outcomes cannot prove a patch regression.
+
+On verifier cancellation or watchdog termination, the runner first calls
+`StopCapturedVerification` with a bounded cleanup context independent of the
+cancelled run. Under the same guard, it durably writes `stop.json` and stops
+registered live criterion groups before terminating the enclosing verifier.
+Later helper claims and starts refuse that stop; repeats preserve it. A failed
+verifier exit also requests registered-child cleanup. Process signalling requires
+the original boot, PID/start, group and command to match; identity or authority
+failures are surfaced rather than signalling unknown processes. This covers
+the registered process groups, not arbitrary descendants that daemonize into
+new sessions. Abrupt death of the outer runner still requires explicit recovery.
+
+`ReadCapturedVerification` rechecks original charge/state/archive authority,
+request, launch, claim, preparation, bounded complete journal inventory and the
+receipt. It returns available partial observations with an error when a terminal
+is missing or failed. Changed original authority also refuses; preserved private
+files then require explicit recovery inspection. A process killed during a check
+may leave only earlier completed steps plus a claimed unfinished invocation;
+that missing outcome must not be inferred. `prepared.json` retains the private
+workspace locations for later recovery cleanup. Source archives remain retained.
+A stop-marked journal never provides an accepted observation, even if a successful
+receipt existed before the stop. Mixed journal versions or missing/substituted
+process records refuse acceptance.
+
+These APIs do not themselves provide an operator retry/recovery flow, resolve
+pending attempts or grant completion/continuation. The CLI below binds the
+reserved invocation and inherited markers to its observed process and terminal
+outcome before accepting an execution observation. Same-UID artifact fabrication is outside this attribution boundary.
+Requests/receipts contain private local paths; they are not telemetry exports.
+The journal currently requires a POSIX host. Windows cross-compilation is not
+Windows execution support. Existing staged-source/history reconstruction refusals
+remain unchanged.
+
+
+### Independently invoked captured verification
+
+After an opted-in charged attempt has retained both source archives, explicitly
+select an existing non-implementer participant:
+
+```sh
+parley trajectory verify --dir . --idea IDEA --verifier PARTICIPANT --timeout 10m --yes
+```
+
+The command uses that participant's configured headless CLI and the instrumented
+runner. It freezes the exact parent request before launch, including the original
+material commands and unchanged idea quorum. Shared launch reservation happens
+at the common runner boundary before spawn. Different origins, phases, runs,
+participants, unobserved handoffs and duplicate ticket launches refuse. Normal
+launch/step/monetary accounting and full protocol context remain in force. No
+model or participant is silently substituted.
+
+The selected participant must invoke the supplied `trajectory verify-helper`
+command once. The helper requires the exact request bytes/path, inherited
+`PARLEY_RUN_ID`, `PARLEY_AGENT_ID`, `PARLEY_PROC_MARKER`, original named criteria
+and shared ticket. It uses the captured-source journal to execute AB/BA checks.
+The parent accepts an observation only when its actual runner terminal matches
+the persisted terminal and selected identity, the process exited successfully,
+the request/scope/quorum remain unchanged and the complete helper receipt binds
+that invocation. A written PASS, self-verifier, failed process after the helper,
+missing receipt, changed request or failed parent-result write cannot pass.
+Inherited process metadata supplies attribution within the same-UID trust limit;
+it does not authenticate a human or prove model independence cryptographically.
+
+The private parent request, process logs and `parent-result.json` live under
+`.parley-runtime/trajectory-verification/<run-id>/`; requests include original
+commands and local paths, and must not be copied into public telemetry. Shared
+journals retain failed/partial execution history. Reissuing the verify command
+cannot silently retry a reserved attempt. The initial source/index reconstruction
+and POSIX/headless restrictions still apply.
+
+Exit zero reports a complete observed comparison, whose assessment may be a
+regression, no regression or inconclusive. `trajectory_pending` remains true.
+This command does not grant another fixup, close the idea, change quorum or reset
+accounting. Use the controls below to reconcile that retained result and inspect
+ordered history. Missing/failed verification journals remain unresolved; the
+continuation control does not bypass missing evidence.
+
+
+### Reconcile a retained comparison and inspect charged history
+
+Reconciliation re-reads the original private parent request/result, matching
+successful invocation terminal, shared ticket and complete helper journal. It
+recomputes the assessment from actual AB/BA observations and checks the current
+original named criteria and quorum. A caller-provided verdict or filtered patch
+list is never accepted. Preview is read-only:
+
+```sh
+parley trajectory reconcile --dir DIR --idea IDEA --run VERIFIER_RUN
+parley trajectory reconcile --dir DIR --idea IDEA --run VERIFIER_RUN --sha256 PREVIEW_SHA --yes
+parley trajectory history --dir DIR --idea IDEA
+```
+
+This is derived evidence publication, not an operator extension. Apply requires
+the exact preview hash; simultaneous identical applies and later exact replays
+converge on the same retained resolution. Changing the run/preview or losing any
+parent, terminal, receipt, step or process record refuses. Reconciliation writes
+trajectory state version 3 while preserving the original version-2 policy and
+all original attempt bytes/hashes/archives. Older state readers reject version 3;
+do not run older writers against reconciled state.
+
+History derives its complete ordered inventory from the original charged ledger.
+Missing attempts, omitted resolutions or changed ancestry cannot become a clean
+history. Each resolution is revalidated against its retained evidence on later
+inspect, reserve, launch, terminal, continuation and completion boundaries.
+A second consecutive confirmed material regression sets a retained first review
+trigger. Later clean results reset the consecutive count but preserve that first
+trigger. Further consecutive regressions require a new decision covering the
+newly observed sequence. Inconclusive evidence stays visible even when an operator
+explicitly allows another attempt; acknowledgment never changes its outcome.
+
+### Recover a lost parent result from retained independent execution
+
+When the selected verifier exited successfully and its complete helper journal
+survived, a missing or interrupted `parent-result.json` need not cause another
+model call. Preview and publish a separate derived observation:
+
+```sh
+parley trajectory recover-parent --dir ORIGINAL_DIR --idea IDEA --run VERIFIER_RUN
+parley trajectory recover-parent --dir ORIGINAL_DIR --idea IDEA --run VERIFIER_RUN \
+  --sha256 PREVIEW_SHA --yes
+```
+
+This deterministic control requires no attended operator decision. It rechecks
+the original private request, exact charged before/after archives, original quorum
+and criterion commands, shared ticket and launch, matching requested/started/
+successful terminal records, and the complete helper receipt, steps and process
+observations. It derives the assessment again from retained AB/BA executions.
+No parent self-verdict or caller-provided invocation can replace these records.
+
+Apply pins the exact preview and writes `parent-recovery.json` beside the original
+request. It preserves the missing parent, empty failed-publication directory or
+original partial/compatible publication-failure bytes. Explicit contrary identity,
+assessment, failure stage or `trajectory_pending: false` refuses, including complete
+fields before a truncated JSON suffix. Unknown/repeated fields, malformed JSON,
+conflicting scalar prefixes, partial structured assessments and ambiguous complete
+encodings require inspection; this control does not guess their missing content.
+Special files, aliases, oversized files and nonempty parent directories refuse.
+A complete successful parent uses ordinary `trajectory reconcile`.
+
+Concurrent identical applies converge on one observation under the cycle guard.
+An exact retry preserves the original preview and record bytes, including after
+output failure, an incomplete persistence barrier, reconciliation or later
+legitimate trajectory work. First apply refuses changed state or evidence since
+preview. A later replay revalidates the original primary facts. If the original
+parent appears or changes after recovery, the conflicting provenance refuses.
+
+Recovery alone changes neither charged history nor its resolution: explicitly run
+`trajectory reconcile` next. A new resolution also pins the recovery record's
+exact bytes. Losing or changing that record cannot be repaired by copying a
+successful parent in its place. An older resolution whose accepted parent was
+lost can be restored only if derivation reproduces all originally pinned facts
+and the original parent digest, including its supported newline encoding. The
+older resolution itself remains unchanged.
+
+Recovery issues no budget, retry, continuation acknowledgment or completion grant.
+Missing/failed helper or invocation records remain unresolved. Incomplete helper
+tickets and orphan reservations require separate recovery work; unchanged-source
+attempts use the distinct control below. Content hashes and process records detect mismatches in the retained
+evidence; they do not authenticate a same-UID actor, a human identity or an entire
+source tree beyond the original captured scope. Independent participant acceptance
+of the current implementation remains a separate requirement. The additive
+`recovery_sha256` in reconciliation previews retains state version 3; older strict
+readers refuse the added field and must not write recovered history.
+
+### Reconcile an actually exited attempt with unchanged material source
+
+A charged attempt can terminate without changing its captured material files.
+It is still spent, and `trajectory verify` correctly refuses to treat identical
+source as a new patch comparison. Record this distinct observation using the
+original charged sequence:
+
+```sh
+parley trajectory reconcile-unchanged --dir ORIGINAL_DIR --idea IDEA --sequence N
+parley trajectory reconcile-unchanged --dir ORIGINAL_DIR --idea IDEA --sequence N \
+  --sha256 PREVIEW_SHA --yes
+```
+
+This deterministic publication requires no attendance. It revalidates the
+original charge, complete before/after source archives and equal material tree
+digests. Commit and Git status metadata remain exactly as originally captured;
+equal material bytes do not imply equal commits. Original membership now comes
+from the retained activation baseline archive. The selected verifier and both
+captured patch archives must retain that exact ordered quorum; replacement,
+removal, widening or reordering does not become a new verification authority.
+Unchanged attempts compare their before-archive membership with the same baseline,
+then require current quorum and named criterion commands to match the original
+attempt scope. This pins the earliest source the trajectory actually retained,
+not an earlier Phase-0 history absent from the archive. Reading the selected scope file
+still validates the entire archive, footer, links and whole-source digest.
+
+Matching requested, started and terminal invocation records must demonstrate an
+actual normal process exit. A successful zero exit and an observed nonzero
+`process_failure` can be recorded. Missing starts, missing exits, signal exits,
+unobserved handoffs, timeouts, cancellations, classified structured provider failures and
+incomplete captures remain unresolved. A plain-text provider error can instead be
+classified as ordinary process failure; this control does not independently infer
+the provider cause from text. These abnormal or refused-after-charge unchanged
+attempts currently block further fixups and continuation, with no supported recovery
+control for that class. A complete timeout terminal does not make it recoverable;
+helper/process recovery is still required. This observation makes no claim about unobserved or
+escaped descendants, process health before/after those observations, criterion
+success or participant identity.
+
+The typed `unchanged` branch pins the policy, original attempt, archived scope
+and lifecycle hashes; it contains no invented verifier run or parent result.
+Its assessment remains `inconclusive` with every original criterion unresolved.
+It neither increments nor resets consecutive material regressions. Only a newly
+confirmed regression can advance a review trigger; an unchanged attempt cannot
+reopen an already acknowledged trigger by itself.
+
+Apply rechecks the exact preview under the common cycle guard, without running
+commands or spending another reservation. Concurrent identical applies produce
+one resolution. Exact retries preserve original preview and state bytes after
+output/publication failure, continuation and later charged work. Changed or
+missing accepted evidence refuses on replay and on every later state read.
+The additive `unchanged` field retains state version 3; older strict readers
+refuse it and must not write this history.
+
+Continuation still needs the existing attended `--acknowledge-inconclusive`
+decision and any pending review acknowledgment. Neither observation nor that
+acknowledgment grants more budget or proves completion. A latest unchanged
+attempt cannot satisfy the confirmed clean material-outcome completion gate.
+Independent current-source acceptance and ordinary participant signoffs remain
+separate requirements.
+
+### Continue with a retained decision and clean source promotion
+
+A normally resolved clean after-source can serve as the next before-source through
+the shared manual/driver/resume observer, subject to the existing budget. If the
+actual after-source was dirty, first commit the identical material content using
+the normal source workflow, then preview the promotion. Parley does not make that
+commit, stash or discard source:
+
+```sh
+parley trajectory continue --dir DIR --idea IDEA
+parley trajectory continue --dir DIR --idea IDEA --sha256 PREVIEW_SHA \
+  --decision-id DECISION --reason REASON --yes
+```
+
+The actual source must be clean, have exactly the retained material tree digest
+and descend from the captured after HEAD. A separate source/archive reference is
+retained for the new before-state; the original dirty after record is unchanged.
+A stale preview, new material change or unavailable original evidence refuses.
+There is at most one continuation decision per sequence; exact replay preserves
+it and does not grant a new attempt or change accounting. Replaying an older
+decision after later patches returns its original preview/hash; it does not
+require or return a new preview of the latest source.
+
+When preview reports `review_pending`, the attended apply also requires
+`--acknowledge-review`. When it reports a pending inconclusive result, it also
+requires `--acknowledge-inconclusive`. Both flags are needed when both conditions
+apply. The platform attendance control gates apply; a headless process cannot
+turn `--yes` into an operator decision. The recorded reason and acknowledgment
+are cooperative operator assertions, not authenticated participant signatures or
+claims that an independent review artifact was authored. Quorum and the ordinary
+review/signoff lifecycle remain intact.
+
+Every subsequent fixup still needs its own existing budget reservation. A failed
+attempt stays charged; promotion, reconciliation and acknowledgment do not add
+budget or reset the accounting epoch. A latest confirmed regression/inconclusive
+outcome, outstanding review, missing evidence or changed current source cannot
+pass the trajectory completion gate. Even a resolved clean trajectory still needs
+all ordinary current-tree whole-implementation evidence and protocol signoffs.
+
+These controls require the original roots and private evidence to remain readable.
+Continuation itself does not recover evidence or authorize model retries. The
+separate controls above handle a fully evidenced lost parent result or normally
+exited unchanged-source attempt. The reservation control below handles an exact
+missing charged row with retained precharge intent. Failed helper tickets, missing
+snapshots/index/history and legacy reservations without that intent remain unresolved.
+
+### Recover an original reservation's missing trajectory row
+
+New trajectory reservations retain an exclusive, bounded precharge intent before
+the ledger transaction. It pins the original entry key, accounting epoch, effective
+cycle policy and action input, and the complete validated precharge trajectory with
+source/archive references. The ledger supplies the actual reservation timestamp
+after charging; the intent does not guess it. Each new attempt retains the intent's
+digest. All later state reads recheck the retained intent and original prefix.
+
+```sh
+parley trajectory recover-reservation --dir DIR --idea IDEA --entry ENTRY_SHA256
+parley trajectory recover-reservation --dir DIR --idea IDEA --entry ENTRY_SHA256 \
+  --sha256 PREVIEW_SHA256 --yes
+```
+
+The existing `budget action inspect --ledger DIR --scope SCOPE` control lists
+original `entry_key` values. Use the exact original fixup ledger and scope.
+
+An intent without a matching published charge is reported separately; apply refuses
+and does not reserve a new attempt. For a spent charge, recovery can append exactly
+the missing original attempt to the still-matching precharge state. Every other
+original charge, source archive and resolution must validate. Changed or additional
+charges, a changed state prefix, missing/partial/symlinked intent, missing original
+archives and conflicting previews refuse. Today's changed worktree cannot supply
+the missing original source. Legacy orphan charges without a precharge intent
+cannot be reconstructed by this command.
+
+Preview and apply return `permission: none` and `execution_status: not-established`.
+Recovered attempts have no fabricated launch, after-source or terminal outcome.
+They remain unresolved and block completion and further fixups. Recovery neither
+signals processes nor proves that a dead leader or its descendants are inactive.
+It grants no refund, session, retry, continuation, budget extension or acceptance.
+Reconstructing accounting alone does not finish interrupted workflow recovery.
+
+The operation shares the cycle guard. Identical concurrent applies and exact replay
+after publication/output failure preserve original state bytes and spend. Replay
+of an already recorded attempt returns the same original accounting preview after
+later valid work; it does not rewrite its subsequent launch or terminal evidence.
+There is no attendance requirement because this publishes retained facts only.
+Partial intent publications stay preserved and cannot be overwritten by retry.
+
+The optional `reservation_intent_sha256` attempt field is additive to existing
+trajectory state versions. Older strict readers refuse new histories carrying it.
+Historical attempts without this field retain their existing evidentiary limits;
+they do not retroactively gain intent evidence. These private files contain typed
+metadata and hashes, not source or command bodies. Local hashes are cooperative
+integrity checks, not authentication against another process with the same UID.
+
+### Known protocol refusal before new reservations
+
+At the standalone runner boundary, when the protocol renderer has already refused
+a launch, the runner records its
+request and actual unstarted terminal before preparing a cycle or reserving a
+fresh fixup, step, launch or captured-verifier ticket. The refused protocol is
+never supplied to a process. Normal permitted launches retain the existing
+reservation requirements; restoring valid authority permits an ordinary new
+launch, with its own invocation and required spending.
+
+Driver-managed fixups also precheck the same selected implementer's protocol
+before charging the caller's step/cycle and publishing its fixup count. The
+mandatory internal adapter method spends nothing; initial zero-use budget
+bindings and contract/cursor initialization may still exist. A successful check
+creates no invocation and is never reusable launch attestation. The actual runner
+still renders and checks again immediately before its own launch boundary.
+
+The trajectory verifier CLI prechecks protocol before creating the per-charge
+single-use ticket. A known refusal retains its actual unstarted invocation and
+terminal hash in a separate failed parent result with failure_stage
+protocol-precheck. It leaves the ticket opportunity available for a later
+ordinary invocation after valid authority is restored. The result's request_path
+is the intended path; no request file or request hash is published on this refusal.
+This is prevention before ticket creation, not reuse of an existing ticket.
+
+Any reservation already spent by a caller remains spent and unresolved, with its
+original source/launch/terminal fields unchanged. A protocol change after the
+precheck can still refuse at actual launch and leave a caller's reservation or
+prepared ticket spent/unusable. Higher cross-review caller charging is outside
+this fixup/verification precheck. No refund, missing historical terminal,
+completed patch, recovered consumed/incomplete ticket, descendant inactivity or
+workflow-effect recovery is inferred.

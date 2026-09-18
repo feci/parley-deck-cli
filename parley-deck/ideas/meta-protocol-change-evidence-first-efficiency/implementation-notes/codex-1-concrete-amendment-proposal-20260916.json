@@ -1,0 +1,171 @@
+{
+  "at": "2026-09-16T04:28:21.079075+00:00",
+  "status": "concrete-read-only-proposal-not-authorized",
+  "source": "/private/tmp/pd-supplement-a7b0jns6/source",
+  "validation": "concrete-amendment-proposal-validation/result.json",
+  "history_sha256": "31950020aa1c253ed7bd68c7c42049b1cf1f496f437380d0776b8d712e8cae34",
+  "visible_lower_bound": 1,
+  "basis": "surviving-visible-worktrees-and-scoped-run-history-only",
+  "retained_sources": 325,
+  "unavailable_roots": [
+    "/private/tmp/claude-501/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck/5dc331bd-5ddf-45e0-b6c2-d519d8c05128/scratchpad/f2repo",
+    "/private/tmp/revert-test2"
+  ],
+  "unscoped_run": {
+    "path": "parley-deck/runs/20260510T194003Z",
+    "sha256": "7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6",
+    "observation": "run-identity-absent",
+    "history": "unknown",
+    "copies": 25,
+    "roots": [
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+      "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout"
+    ],
+    "declaration": "parley-deck/runs/20260510T194003Z=7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6",
+    "detail": "no event and no cursor field carries an idea identity"
+  },
+  "ungrouped_invocations": [
+    "4b33cd20-a55f-439a-9b12-8e7d6620586f",
+    "6a75850b-3a95-4f8f-8cc9-ecfbf26f02bd",
+    "6c5431fb-726c-426c-ab12-a73850ebb89e"
+  ],
+  "earliest_scoped_observation": "2026-09-15T23:51:55.566717Z",
+  "suggested_operator_total": 1,
+  "suggested_accounting_epoch": "2026-09-15T23:51:55.566717Z",
+  "operator_total": null,
+  "operator_epoch": null,
+  "operator_authorized": false,
+  "max_cycles": 3,
+  "writer_stop_attested": false,
+  "apply_performed": false,
+  "launcher_plan_digest": "376afb6340454bda51ef30901aa5389c1a23837246598f36a8b1ab062f8531c2",
+  "config_sha256": "35d6706284b22ad772dc16e8b6b8fa14e705ff1d710394b34961e6b31fb4b560",
+  "shared_deadline_seconds": 900,
+  "registry_unchanged": true,
+  "budget_unchanged": true,
+  "budget_files": 0,
+  "commands": [
+    {
+      "name": "build-cli",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/private/tmp/pd-supplement-a7b0jns6/parley",
+        "./cmd/parley"
+      ],
+      "exit": 0,
+      "seconds": 1.69,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": ""
+    },
+    {
+      "name": "build-launcher",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/private/tmp/pd-supplement-a7b0jns6/grouped-amendment-launcher",
+        "./.parley-runtime/grouped-amendment-launcher-20260916"
+      ],
+      "exit": 0,
+      "seconds": 0.389,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": ""
+    },
+    {
+      "name": "build-identities",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/private/tmp/pd-supplement-a7b0jns6/inspect-history",
+        "./.parley-runtime/history-inspect"
+      ],
+      "exit": 0,
+      "seconds": 0.255,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": ""
+    },
+    {
+      "name": "identities",
+      "command": [
+        "/private/tmp/pd-supplement-a7b0jns6/inspect-history",
+        "identities"
+      ],
+      "exit": 0,
+      "seconds": 9.446,
+      "stdout_sha256": "3b52acad9b383d67ba1f26cc5075dcba2c92bda59805dc1e0cc185a610938c95",
+      "stderr": ""
+    },
+    {
+      "name": "cli-migration-preview",
+      "command": [
+        "/private/tmp/pd-supplement-a7b0jns6/parley",
+        "budget",
+        "migrate",
+        "inspect",
+        "--dir",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+        "--idea",
+        "meta-protocol-change-evidence-first-efficiency-v2",
+        "--kind",
+        "cross-review",
+        "--declare-unavailable-worktree",
+        "/private/tmp/claude-501/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck/5dc331bd-5ddf-45e0-b6c2-d519d8c05128/scratchpad/f2repo",
+        "--declare-unavailable-worktree",
+        "/private/tmp/revert-test2",
+        "--declare-unscoped-run",
+        "parley-deck/runs/20260510T194003Z=7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6"
+      ],
+      "exit": 0,
+      "seconds": 5.868,
+      "stdout_sha256": "4af25d62ff8de295b020c3d0a709932c5ce0582def8d0e32bc5fbfcbf4831ae6",
+      "stderr": ""
+    },
+    {
+      "name": "launcher-preview",
+      "command": [
+        "/private/tmp/pd-supplement-a7b0jns6/grouped-amendment-launcher",
+        "-root",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+        "-config",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration/.parley-runtime/managed-continuation-20260915/concrete-amendment-proposal/agents.toml"
+      ],
+      "exit": 1,
+      "seconds": 1.597,
+      "stdout_sha256": "12872df74e93a492086647ca7883539766a199d1a0b7518872244d2257cd0929",
+      "stderr": ""
+    }
+  ],
+  "limitations": [
+    "Suggested total1 is an explicit operator choice for incomplete history, not a verified exact total or assertion of zero unknown activity.",
+    "Suggested epoch uses earliest scoped observation as bookkeeping choice; unknown histories have not been dated or classified.",
+    "All unknown sources and ungrouped refusals stay retained.25copies are one file set, not25actions.",
+    "No actual round, migration, experiment or budget extension has run.",
+    "Exact source and config/history digests must be rechecked immediately before any authorized apply/launch."
+  ]
+}

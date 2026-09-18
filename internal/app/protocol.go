@@ -19,6 +19,8 @@ const protocolUsage = `usage:
   parley protocol status  [--dir DIR] [--json]
   parley protocol render  [--dir DIR] [--dry-run] [--yes]
   parley protocol check   [--dir DIR] [--json]
+  parley protocol packet [--dir DIR] --phase N [--track T] [--json] [--print]
+  parley protocol packet check [--dir DIR] [--json]
   parley protocol publish --version V --from FILE            (attended; requires a TTY)
   parley protocol overlay show   [--dir DIR] [--json]
   parley protocol overlay validate [--dir DIR]
@@ -36,6 +38,8 @@ func runProtocol(args []string, stdout, stderr io.Writer) int {
 	// `parley protocol --help` must print the group's usage and succeed. Falling through to the
 	// unknown-subcommand branch made the documented way to discover this command exit 2.
 	switch sub {
+	case "packet":
+		return runProtocolPacket(rest, stdout, stderr)
 	case "--help", "-h", "help":
 		fmt.Fprintln(stdout, protocolUsage)
 		return 0

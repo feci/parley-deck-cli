@@ -11,15 +11,21 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // RunImplementation runs Phase 5: it launches a single implementer to produce
 // IMPLEMENTATION.md (and code on a branch) per FINAL.md. opts.Idea.Participants
 // must contain exactly the implementer. Reuses the shared launch machinery.
 func RunImplementation(ctx context.Context, opts Options) Result {
+	ctx = withRunnerActionInput(ctx, opts, "implementation")
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+
 	opts.Phase = "implementation"
 	opts.ArtifactName = "IMPLEMENTATION.md"
 	if opts.RoundLabel == "" {
@@ -44,12 +50,31 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 	return RunRoundOne(ctx, opts)
 }
 
+// PrecheckFixup uses RunFixup's selected implementer and protocol scope without
+// opening a step/cycle or segment. The actual launch still checks authority.
+func PrecheckFixup(ctx context.Context, opts Options) error {
+	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
+	if len(selected) == 0 {
+		return errors.New("no implementer available in participants")
+	}
+	return PrecheckProtocolLaunch(ctx, opts.Root, selected[0], LaunchInfo{
+		RunID: opts.RunID, Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1,
+		Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
+	})
+}
+
 // RunFixup runs a Phase 8 fix-up: it re-invokes the implementer to apply the
 // agreed fixes from review/consensus.md and update IMPLEMENTATION.md. Success
 // requires the updated IMPLEMENTATION.md to validate (ValidateFixupArtifact);
 // an ordinary nonzero exit with a valid artifact succeeds with agent_exit
 // (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
+	ctx = withRunnerActionInput(ctx, opts, "fixup")
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+	ctx, finishCycle := groupProtocolCycle(ctx, opts.Root, opts.Idea.Slug, opts.Idea.Path, opts.RunID, budget.Fixup)
+	defer finishCycle()
+
 	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
@@ -69,6 +94,10 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	hardTimeout := timeoutForAgent(opts.Timeout, agent)
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
+	cctx = WithLaunchInfo(cctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
+		Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1, Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
+		Observe: func(record telemetry.Record) { result.InvocationID = record.InvocationID },
+	})
 
 	// The fix-up runs through the same hardened exec path as every other agent
 	// launch (review fix 4): process group + procctl marker + participant env
@@ -325,6 +354,10 @@ func validateArtifactForPhase(opts Options, outputPath, agentID string) error {
 // the machine-readable Phase-7 contract (outstanding_agreed_fixes). Overwrites
 // any prior draft so each fix-up cycle records the current count.
 func RunReviewConsensus(ctx context.Context, opts Options) Result {
+	ctx = withRunnerActionInput(ctx, opts, "review-consensus")
+	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
+	defer finishStep()
+
 	opts.Phase = "review-consensus"
 	opts.ArtifactName = filepath.Join("review", "consensus.md")
 	opts.Overwrite = true

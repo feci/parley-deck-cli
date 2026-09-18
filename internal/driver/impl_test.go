@@ -24,6 +24,7 @@ type fakeImpl struct {
 	reviewErr     error
 	goalFail      bool
 	fixupErr      bool
+	onPrecheck    func(context.Context) error
 	onOpenReview  func(round int)
 	onDraft       func()
 	onComplete    func()
@@ -66,6 +67,12 @@ func (f *fakeImpl) DraftReviewConsensus(ctx context.Context, round int) error {
 func (f *fakeImpl) ReviewStatus() (ReviewStatus, error) { return f.review, f.reviewErr }
 func (f *fakeImpl) RequestReviewSignoffs(ctx context.Context, missing []string) error {
 	f.calls = append(f.calls, "request-signoffs")
+	return nil
+}
+func (f *fakeImpl) PrecheckFixup(ctx context.Context) error {
+	if f.onPrecheck != nil {
+		return f.onPrecheck(ctx)
+	}
 	return nil
 }
 func (f *fakeImpl) Fixup(ctx context.Context, cycle int) error {
@@ -449,6 +456,104 @@ func TestPhaseReviewListChecksVetoCompletion(t *testing.T) {
 	}
 	if contains(fi.calls, "complete") {
 		t.Fatalf("Complete must NOT be called when the contract fails; calls=%v", fi.calls)
+	}
+}
+
+type fakeEvidenceImpl struct {
+	*fakeImpl
+	allow bool
+}
+
+func (f fakeEvidenceImpl) VerifyCompletionEvidence(context.Context) (bool, string) {
+	f.calls = append(f.calls, "independent-evidence")
+	return f.allow, "independent verification fixture"
+}
+
+func TestNamedContractRequiresIndependentEvidenceAdapter(t *testing.T) {
+	for _, name := range []string{"missing-adapter", "verifier-refused", "verified"} {
+		t.Run(name, func(t *testing.T) {
+			ideaDir, runDir, parts := setupReviewPhase(t, "checks:\n  - name: unit\n    command: true\n")
+			if err := os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			fi := &fakeImpl{roundComplete: true, checksOK: true, review: closeReady(consensus.TriageReady, 0, 2)}
+			var ops ImplOps = fi
+			if name != "missing-adapter" {
+				ops = fakeEvidenceImpl{fakeImpl: fi, allow: name == "verified"}
+			}
+			d := newImplDriver(ideaDir, runDir, parts, false, ops)
+			action, _, err := d.Advance(context.Background())
+			if name == "verified" {
+				if err != nil || action != ActionComplete || strings.Join(fi.calls, ",") != "checks,independent-evidence,complete" {
+					t.Fatalf("evidence must immediately precede complete: %s %v %v", action, err, fi.calls)
+				}
+			} else if err == nil || action != ActionEscalated || contains(fi.calls, "complete") {
+				t.Fatalf("missing/refused evidence allowed close: %s %v %v", action, err, fi.calls)
+			}
+		})
+	}
+}
+
+func TestOriginalNamedScopeSurvivesDriverTicks(t *testing.T) {
+	contract := "checks:\n  - name: unit\n    command: true\n  - name: other\n    command: echo check\n"
+	for _, change := range []string{"unchanged", "delete-list", "scalar", "rename", "command", "shrink", "delete-list-and-report"} {
+		t.Run(change, func(t *testing.T) {
+			ideaDir, runDir, parts := setupReviewPhase(t, contract)
+			fi := &fakeImpl{roundComplete: false, checksOK: true, review: closeReady(consensus.TriageReady, 0, 2)}
+			d := newImplDriver(ideaDir, runDir, parts, false, fakeEvidenceImpl{fakeImpl: fi, allow: true})
+			if _, _, err := d.Advance(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+			cursor, err := LoadCursor(filepath.Join(runDir, "driver.json"))
+			if err != nil || len(cursor.ChecksContractSHA256) != 64 {
+				t.Fatalf("scope not pinned before waiting: %+v %v", cursor, err)
+			}
+			path := filepath.Join(ideaDir, "00-prompt.md")
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			updated := string(raw)
+			switch change {
+			case "delete-list", "delete-list-and-report":
+				updated = strings.Replace(updated, contract, "", 1)
+			case "scalar":
+				updated = strings.Replace(updated, contract, "checks: true\n", 1)
+			case "rename":
+				updated = strings.Replace(updated, "name: unit", "name: replacement", 1)
+			case "command":
+				updated = strings.Replace(updated, "command: true", "command: false", 1)
+			case "shrink":
+				updated = strings.Replace(updated, "  - name: other\n    command: echo check\n", "", 1)
+			}
+			if err := os.WriteFile(path, []byte(updated), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if change == "delete-list-and-report" {
+				p := filepath.Join(ideaDir, "EVIDENCE.json")
+				if err := os.WriteFile(p, []byte("old recorded evidence"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Remove(p); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("x"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			fi.roundComplete = true
+			fi.calls = nil
+			// Reconstruct a new driver as on process restart; in-memory history is gone.
+			d = newImplDriver(ideaDir, runDir, parts, false, fakeEvidenceImpl{fakeImpl: fi, allow: true})
+			action, _, err := d.Advance(context.Background())
+			if change == "unchanged" {
+				if err != nil || action != ActionComplete {
+					t.Fatalf("unchanged original scope could not close: %s %v", action, err)
+				}
+			} else if err == nil || action != ActionEscalated || len(fi.calls) != 0 {
+				t.Fatalf("changed original scope reached execution/closure: %s %v calls=%v", action, err, fi.calls)
+			}
+		})
 	}
 }
 

@@ -1,3 +1,86 @@
+## 2026-09-10 — §9 item 1: a `refused` launch is a stop, not a fallback (UNRELEASED)
+Idea: ideas/meta-protocol-change-evidence-first-efficiency/
+Drafted by: claude-1
+Summary: §9 item 1 previously said "Without an attestation, or on `refused`, read all of
+`parley-deck/COOPERATION.md` and record `context_mode=full-fallback`", which read as permission to
+convert a refusal into an ordinary fallback. The item now separates the two outcomes. `full-fallback`
+stays exactly as before: a valid, visible result that reads the live authority in full, records its
+reason, and proceeds. `refused` (unprovable authority, a detected secret) is a **stop** — never emit
+the refused content, never substitute another authority for it (a bundled snapshot, a cached or stale
+copy, a hand-assembled excerpt), never continue that launch on unattested text; resolve at the
+renderer and re-render, or report the blocker. A protocol task launch carrying no attestation is
+unresolved the same way and obtains one from the renderer before the task starts; the read-the-live-
+source fallback applies only where no renderer is reachable. This states FINAL D4's existing rules
+("Missing/unprovable authority blocks rather than substituting a bundled snapshot"; "Detected secrets
+refuse external context emission") at the point an agent acts on them.
+Unchanged: no authority is broadened, no new context mode exists, `full` remains the default, an
+optimized `packet` remains the ratified trial's explicit input, and no
+`meta/packet-applicability.yaml` classification changed (the edit is prose inside the existing
+`### 9.0 Pre-idea readiness check …` block; no heading was touched).
+Mirrored identically into `internal/protocol/defaults/COOPERATION.md` and the parley-deck-skill
+reference copy `skills/parley-deck/references/COOPERATION.md`; `skills/parley-deck/SKILL.md`
+standing instructions carry the matching stop/no-substitution and missing-attestation wording.
+The same commit mirrors the LE-7 close-integrity change below into the skill reference copy,
+superseding that entry's "not yet mirrored into the parley-deck-skill reference copy" status note.
+
+**Status: UNRELEASED.** Deck source, embedded default and skill source only — not published to a
+global core and not in a package release. Checks actually performed: PRIMARY source reads with
+file:line locators. No build, no `go test`, no drift-guard run and no skill add-on hash-manifest
+regeneration — no shell was available in this session; the facilitator regenerates the manifest and
+runs the tests. No signoff, no Phase-6 verdict and no acceptance is claimed.
+
+## 2026-09-10 — §4 LE-7: a goal-done check can withhold a close, never establish one (UNRELEASED)
+Idea: ideas/meta-protocol-change-evidence-first-efficiency/
+Drafted by: claude-1
+Summary: The §4.0.1 LE-7/LE-11 line and the Phase-8 "Close-decision integrity" paragraph no longer
+say the goal-done check is "fail-open on its own error (a broken or inconclusive checker never
+blocks a review-clean idea)". A checker that is missing, is the implementer, or cannot be resolved
+and launched; an execution that fails or exits non-zero; and a verdict that is inconclusive or only
+a pass-with-reservations each now leave completion **unverified** and escalate for a human decision.
+The paragraph also states what the check is NOT: a textual verdict is defense in depth on top of the
+review consensus and never substitutes for the current-tree independent criterion evidence a close
+already requires (this idea's FINAL D3 — a self verdict, a stale code tree, a skipped/no-execution
+report, a missing criterion or a partial original scope cannot close an implementation).
+Unchanged: the check still fires only under `auto_implement` or `strict_gate`; the
+`ACCEPT-WITH-RESERVATIONS` and fewer-than-two-independent-reviewer refusals stand as written; a
+design-only idea keeps the lighter close. No §4.0 track cell, quorum rule, signoff rule or
+`meta/packet-applicability.yaml` classification changed. Mirrored byte-identically into
+`internal/protocol/defaults/COOPERATION.md` (the drift guard requires both copies to match).
+
+**Why:** the in-tree driver already fails closed on exactly these conditions
+(`internal/app/driver_impl.go` `GoalCheck`, whose `false` returns `internal/driver/impl.go` turns
+into `ActionEscalated`), so the protocol text in force asserted the opposite of the code. This entry
+carries the §7 text change that code needed; it does not certify the code. Known remaining gaps,
+owned elsewhere: a stale in-tree comment at `internal/driver/impl.go` still says "fail-open inside
+GoalCheck", and the verdict-aggregation correction is in progress on the codex-1 slice.
+
+**Ratification:** the design is accepted in this idea's `consensus.md` (codex-1, claude-1, hermes-1,
+kimi-1) and D3 states the rule; this is the Phase 5 protocol-text change on the claude-1 slice,
+pending independent review. No signoff, no overall acceptance and no Phase-6 verdict is claimed.
+
+**Status: UNRELEASED.** Deck source plus embedded default only — not published to a global core, not
+in a package release, and not yet mirrored into the parley-deck-skill reference copy (separate
+worktree, outside this slice). Checks actually performed: PRIMARY source reads with file:line
+locators and a line-by-line comparison confirming both protocol copies now carry identical text. No
+build, no `go test`, and no drift-guard run — no shell was available in this session.
+
+## 2026-09-05 — §9 item 1: launch context comes from the shared packet renderer with attestation
+Idea: ideas/meta-protocol-change-evidence-first-efficiency/
+Drafted by: claude-1
+Summary: §9 item 1 now requires an official launch to receive its protocol context from the shared
+renderer (`parley protocol packet`) with an attestation (`context_mode`, `source_sha256`,
+`packet_sha256`, `fallback_reason`) rendered from the live resolved authority, never a bundled
+snapshot; without an attestation an agent reads the full file and records `full-fallback` with the
+reason. Full context stays the default and the ratified packet experiment (phase-packet FINAL §3:
+phases 1 and 6, six matched AB/BA pairs each, three canaries plus a full control, ship at R ≤ 0.50
+in both phases) is unchanged; an optimized packet is that trial's explicit experimental input, not
+an enabled release. `meta/packet-applicability.yaml` is the ratified applicability map and is
+protocol: a classification change is a §7 change. Mirrored into the embedded default and the
+skill reference copy. Runner/handoff prompt wiring is integration-owned and is NOT claimed here.
+
+**Ratification:** design accepted in the idea's consensus.md (codex-1, claude-1, hermes-1, kimi-1);
+this is the Phase 5 source change on the claude-1 slice, pending independent review.
+
 ## 2026-08-07 — §7 blast radius: a core change is not a deck change
 Idea: ideas/meta-protocol-change-global-core-protocol/
 Drafted by: claude-1

@@ -1,0 +1,605 @@
+{
+  "at": "2026-09-16T04:45:21.180359+00:00",
+  "status": "composed-validation-passed-not-whole-audit-acceptance",
+  "source_manifest_sha256": "98af53bea7d1c3e320bf3bb302e44b7e1a8f18a6779d3364f2c50f90eb15251f",
+  "go_module_files": 458,
+  "manifested_files": 470,
+  "imported_go_changes": [
+    {
+      "path": "internal/app/driver_precheck.go",
+      "before": null,
+      "after": "0d63d30ed33f8a982d3ad36791e08eff247e31cc56b33e314293f4bd1cac32cf"
+    },
+    {
+      "path": "internal/app/budget_migrate.go",
+      "before": "3cf72e263539e45f69f90d6c66e681f858b475b76d32d9132f06f0eac20e41e7",
+      "after": "346cb72305f0a53fc67e7fb40fbd97ffd6c51048d5fe8a392d6fce197f537619"
+    },
+    {
+      "path": "internal/app/budget_migrate_protocol.go",
+      "before": "adc3a0f48782ff21a31be05f9d206a6c9f2990e59570b32f5257412e2cf4dcd5",
+      "after": "f4755e943ddc0c10bbfb841b7272bbfed97a0200c6b43ebaa15315e580bc6884"
+    },
+    {
+      "path": "internal/driver/protocol_migration_test.go",
+      "before": "e68333502ac87910bd815bf0d289c94f8ae33bc98689fd2e01ca5b2fc88bd202",
+      "after": "1fa0194d5324c3065f2079eb309d18c4d517df743fb11455bf1e600bfc641d20"
+    },
+    {
+      "path": "internal/driver/launch_precheck_test.go",
+      "before": null,
+      "after": "8cb42c89760702585e73cc0210accee3b18535e25f46a39c09e60001d16e8503"
+    },
+    {
+      "path": "internal/driver/budget.go",
+      "before": "7844808ea7704ced180dcb19295570bdc36398255804eb9e75b6931d47bcc67f",
+      "after": "411ccefa14babda5dce6799c2c0c5fcf3c256c49456919d3a5ec3c0fb2989678"
+    },
+    {
+      "path": "internal/driver/cycle_budget.go",
+      "before": "9044fbc6ada852c94ccbf42666a913e7b273da89c9ac6d24c74bdbe09e82de93",
+      "after": "5c3025a0e1cf688bde2f3f03f5e792c9012c34cbf2297052a3d4a57f00136fec"
+    },
+    {
+      "path": "internal/driver/launch_precheck.go",
+      "before": null,
+      "after": "51601c6f2fe0fd82714a5e426e00b337036b8ee735e919a162b814c3018eb4d7"
+    },
+    {
+      "path": "internal/driver/impl.go",
+      "before": "275e975844bd0d824379ae03a86b8f3929b4f7eba78384c03a3fa3cd0169da57",
+      "after": "669c2ff5cb486473d70a7d23586b8697c9aab50a31b8b8806783c6b828e1e0c1"
+    },
+    {
+      "path": "internal/runner/launch_budget.go",
+      "before": "2dac078ef5b237787b326cdd21654e67a437fbe599b999cff7a088c670276ab9",
+      "after": "4b1776194b68490826716fc18f310a9ce37545dfb008649160feaf2ee43e3e2e"
+    },
+    {
+      "path": "internal/runner/launch_precheck_skip_test.go",
+      "before": null,
+      "after": "a71cd9a1fefc08e5e45ded643766557701ca533a3d5e8c42a374f8b33e8335a2"
+    },
+    {
+      "path": "internal/runner/launch_precheck_test.go",
+      "before": null,
+      "after": "1d9dcac4964d27449d886ca22f917050107cd77b3a61b83df490e1b1a1beefd8"
+    },
+    {
+      "path": "internal/runner/launch_precheck.go",
+      "before": null,
+      "after": "08b45e6577f26219a9df02716799a0c5597226ad0f0ebdf7686f200297be2431"
+    },
+    {
+      "path": "internal/budget/worktree_inventory.go",
+      "before": "1f0ebb4aacc8e0f5da54d07884ef55fe56028d10aae8d86a67fa59d2c009e201",
+      "after": "3091546d50f9c5ae3859c7c9665e3bd22616e7fd92e1edfa1036e265df4caf87"
+    },
+    {
+      "path": "internal/budget/launch_migration_history.go",
+      "before": "0b9fb405441acad5f386234ebf394f7ce1c67d7f4f1d7b3e2cbc197994989d84",
+      "after": "0d9291c6b82733f9d04f73fda465b72c57dc2770e2ce34015fb51fbab171ff79"
+    },
+    {
+      "path": "internal/budget/cycle_session.go",
+      "before": "1584c62dca5d31d903ec0fda3d8f0daa9d8e76cfb4488245211ca0b2230e0bc6",
+      "after": "55b379e5d46116500942bda0e8f137277ad55a9f56b3c71b4cd25907b80783b8"
+    },
+    {
+      "path": "internal/budget/migration_recovery.go",
+      "before": "8fa31643387fc6ffce840fe8fb7f8e292151c24739678d2a28b26950e5cd011e",
+      "after": "96db3c980c9d16faee750b7b86ae98f3922148169aa4344511bd384240c73b62"
+    },
+    {
+      "path": "internal/budget/step_session.go",
+      "before": "683dd860967b47b187b2502bccf1f14c658dd200dd51535146348c482a5d67d5",
+      "after": "4dd9abbd4f6cec1d3d6e3fbc70bf79c04840656a2767a6129509b20dab72f378"
+    },
+    {
+      "path": "internal/budget/protocol_migration_history.go",
+      "before": "d3ca9f90a84f476f7f92ab397d37df2e3805a12dc18d0c4ab315593150644037",
+      "after": "593d14bf2b57311d81ab8eb226d2732ae00ab2399ed90622f2f016085ac5b91c"
+    },
+    {
+      "path": "internal/budget/protocol_migration.go",
+      "before": "9423cb07f34e2fe401b1991389395cc0a4ca4e5cf92dc618541559698591176e",
+      "after": "da291806d1285fca31fee45172394187827fd3216cabe5493843d3e1e518ece1"
+    },
+    {
+      "path": "internal/budget/binding.go",
+      "before": "5a2abca654e7190adf08de6a68d4eb39d4a8023e036c4adde41298db4e5e2ff0",
+      "after": "b06783eec8c00ca67a0577d35fe74a76e3112a09c2c2d7be11ea96cddc4da3f5"
+    },
+    {
+      "path": "internal/app/driver_precheck_test.go",
+      "before": null,
+      "after": "0af8504c14e6557ac38f04713fa961aa21ff65c9da850cd5ba1996913cea187d"
+    },
+    {
+      "path": "internal/runner/launch_budget_preflight_test.go",
+      "before": null,
+      "after": "56e0e278ec056a2ab61ea49a4249bd193f779c7d2bb8e16f36eab14451715c1d"
+    },
+    {
+      "path": "internal/budget/protocol_migration_declared_test.go",
+      "before": null,
+      "after": "6f382df03bc5ec4df85e4af93ad255a01dd75f6d4fe4e6f78b0dfeef7bfefeba"
+    },
+    {
+      "path": "internal/app/budget_migrate_declared_test.go",
+      "before": null,
+      "after": "848efd341d6d00a2ebd2f17308203407065758d1a4968cdc854cb4f58adf0e53"
+    },
+    {
+      "path": "internal/budget/run_identity_inventory.go",
+      "before": null,
+      "after": "dc252f6702532f70ac78568ff4ab96ee01ed3968e6a2896cf59b579250ae670e"
+    },
+    {
+      "path": "internal/budget/protocol_migration_unscoped_test.go",
+      "before": null,
+      "after": "e02d1f15463dcf30429b9e25a7306570f13b1a7aa6dc6c9b875c706d38a9330d"
+    },
+    {
+      "path": "internal/budget/run_identity_eligibility_test.go",
+      "before": null,
+      "after": "c994f6f90bd7b09276a10fc91393ab7a306101556c7645a4c78c047b2319218c"
+    },
+    {
+      "path": "internal/budget/run_identity_inventory_test.go",
+      "before": null,
+      "after": "294fb538697fa736d489fdb341109fbb14b263acae063da6181ec5b7c84e7264"
+    }
+  ],
+  "commands": {
+    "combined-n1-history-validation": {
+      "source_manifest_sha256": "3d3ff70ddd7f489c4366dc8c9d9f409058bab47f62eb4d3df2b69dac8078507b",
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 11.704,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "1ef5f2097076010f0e073ff9a79e83a3e61eff3983c3763d99ed64e8866a9c42",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/driver",
+            "./internal/runner",
+            "./internal/app",
+            "-run",
+            "Test(N1|StepWrappers|DriverPrecheck|Precheck|.*[Pp]reflight|Declared|BudgetMigrateDeclared|.*Unscoped|.*RunIdentit)"
+          ],
+          "exit": 0,
+          "seconds": 18.131,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 68,
+          "stderr": "",
+          "stdout_sha256": "7996b6f7f19664465285d142adefe1762612611580304423c6bb68c686b71d4d",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "full",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./..."
+          ],
+          "exit": 1,
+          "seconds": 1090.049,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestProtocolMigrationDriverNestedActualChildrenAndBlockResume/4",
+            "TestProtocolMigrationDriverNestedActualChildrenAndBlockResume"
+          ],
+          "test_pass_events": 2612,
+          "stderr": "",
+          "stdout_sha256": "de566cd57d910c9f9a96f209b183e9ea0febad9149b4f60763c9856af427de00",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "final-n1-history-supplement": {
+      "source_manifest_sha256": "0e941851b479aed3022749bede98730e006323bf4365b3ef447c664bd9e2cc8b",
+      "complete": true,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 12.251,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "5df17c27d9d1b646c195817de0d24dfc94258825abcecb334e40c236448d3933",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/driver",
+            "./internal/runner",
+            "./internal/app",
+            "-run",
+            "Test(N1|StepWrappers|DriverPrecheck|Precheck|.*[Pp]reflight|ProtocolMigrationDriverNested|.*Unscoped|.*RunIdentit|.*RunDirectory|RunDeclaration|Declared|BudgetMigrateDeclared)"
+          ],
+          "exit": 0,
+          "seconds": 18.437,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 83,
+          "stderr": "",
+          "stdout_sha256": "da9a087c75f9e8af7b034d75eddc175bc8d7d1501a92f6f4b033628b2815f90d",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "changed-full",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/driver"
+          ],
+          "exit": 0,
+          "seconds": 60.669,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 700,
+          "stderr": "",
+          "stdout_sha256": "57628c628bc909a33f693cdb40c820b9ab459180495d3f249fd5bb5d1b93b24c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "race",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/trajectory",
+            "./internal/telemetry",
+            "./internal/runner",
+            "./internal/app",
+            "./internal/driver"
+          ],
+          "exit": 0,
+          "seconds": 1388.771,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 2082,
+          "stderr": "",
+          "stdout_sha256": "1b1dc5c8496426ddb6214a98f9ffda154495d7eb6f76a9b08bd38b02c9e1019a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "vet",
+          "command": [
+            "go",
+            "vet",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 0.636,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "final-source-validation": {
+      "source_manifest_sha256": "98af53bea7d1c3e320bf3bb302e44b7e1a8f18a6779d3364f2c50f90eb15251f",
+      "complete": true,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 11.787,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "66d2292484a29954dc4690b64fd1344d6d10298cac66bba929a7bf167b40f3d3",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused-app",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/app",
+            "-run",
+            "Test.*(Precheck|Signoff)"
+          ],
+          "exit": 0,
+          "seconds": 36.49,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 23,
+          "stderr": "",
+          "stdout_sha256": "dc0eb94c75aa1852afd6bf7aee785733436bbe8ac3f7b8774ba710a9d233b86e",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "race-app",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/app",
+            "-run",
+            "Test.*(Precheck|Signoff)"
+          ],
+          "exit": 0,
+          "seconds": 52.493,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 23,
+          "stderr": "",
+          "stdout_sha256": "e262d1fa3d13ec1d0e0999a6f5e8758f600b18834636878cc18d7ebfba748f3a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "vet",
+          "command": [
+            "go",
+            "vet",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 0.899,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "concrete-amendment-proposal-validation": {
+      "source_manifest_sha256": "1ef4252c884caa62bb215af0018c06e7a94337faa5810763e883c2c9e9be66a1",
+      "complete": true,
+      "checks": [
+        {
+          "name": "launcher-tests",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 2.626,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 13,
+          "stderr": "",
+          "stdout_sha256": "0cf3530509b49cf289a4d33fac3389cde0e1901ac7e9bdbc84b958b1a177bf17",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "launcher-race",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 9.955,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 13,
+          "stderr": "",
+          "stdout_sha256": "7399574ab36f735e799b824ef071789c7edcaaa020b33df3997c81c6cc028720",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "launcher-vet",
+          "command": [
+            "go",
+            "vet",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 0.307,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "blocked-signoff-before-control": {
+      "source_manifest_sha256": "a071b4c9cab019a7aab2b2abc526e0ffa80e1802fe94af7455ac9eaef22d1c14",
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./internal/app"
+          ],
+          "exit": 0,
+          "seconds": 2.626,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "bdfbacae0b28c465926a82503ece14a2a85d25f023718a790ef3172e2071825f",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "behavior",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./internal/app",
+            "-run",
+            "^TestDriverPrecheckReviewSignoffsBlockedConsensusWins$"
+          ],
+          "exit": 1,
+          "seconds": 2.967,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestDriverPrecheckReviewSignoffsBlockedConsensusWins"
+          ],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "b213b2a0cc4f1432c25f6c4203ef03a7549324d26d41951a90c009c2366eb697",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "grouped-launcher-four-gap-before-control": {
+      "source_manifest_sha256": "3de78eb998fd8eb97211393bede91cdefc159d9bbd1de02b26d967d12fd3dd33",
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 1.544,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "52846137ce1597df0c63436f8391a6be418221df848ff8ecc0c5119c86b94ea1",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916",
+            "-run",
+            "Test(RefusesTamperedMigratedLedgerBeforeDiscovery|AmbientConfigLayerBindsDigestAndExplicitOverrideRestoresEnv|ExecuteRunsDiscoveryUnderSharedDeadline|FailedPeerReportsUnsuccessfulWithoutLosingOrganizer)"
+          ],
+          "exit": 1,
+          "seconds": 1.245,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestRefusesTamperedMigratedLedgerBeforeDiscovery",
+            "TestAmbientConfigLayerBindsDigestAndExplicitOverrideRestoresEnv",
+            "TestExecuteRunsDiscoveryUnderSharedDeadline",
+            "TestFailedPeerReportsUnsuccessfulWithoutLosingOrganizer"
+          ],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "6eb0a8df9f3ed28a86e16171a054a00d19cb2e1ca500d56683d83a64f34173b8",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    }
+  },
+  "scope_notes": [
+    "Original full ./... command failed exactly the obsolete driver count expectation;30other packages passed. The failure is preserved.",
+    "Changed budget/driver full suites pass on the458Go source, including new history behavior and corrected intended count.",
+    "Six-package race passes on the458Go source before the final blocked-signoff helper/comment delta; final delta has explicit app focused/race and all-package compile/vet.",
+    "No claim that one full ./... command passed on the final exact tree. Coverage is composed and all source identities are retained.",
+    "Launcher is a tested local organizer tool, not a new product endpoint. No real execution/migration/treatment.",
+    "Claude independent N1 source review is conditional, not full-branch acceptance; R3 optional NIT deferral is a coordinator proposal awaiting protocol review."
+  ]
+}

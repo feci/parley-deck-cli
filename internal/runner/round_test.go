@@ -74,6 +74,7 @@ func TestRunRoundCrossReviewWithHeadlessAgent(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Cross review task", []string{"fake"})
 	if err != nil {
 		t.Fatal(err)
@@ -136,6 +137,7 @@ func TestStdoutFallbackRecoversArtifact(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
+	declareTestLaunchSource(t, root)
 	idea, err := protocol.CreateIdea(root, "Stdout fallback task", []string{"printer"})
 	if err != nil {
 		t.Fatal(err)

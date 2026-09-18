@@ -1,0 +1,361 @@
+{
+  "at": "2026-09-16T05:28:39.775400+00:00",
+  "scope": "Independent execution witness and selected closure fixtures; original audit incomplete",
+  "call": {
+    "agent": "claude-1",
+    "phase": "implementation",
+    "idea": "meta-protocol-change-evidence-first-efficiency",
+    "base_head": "6962f2af9b6e46548588c5152285e6808f3d6f7f",
+    "exit": 0,
+    "seconds": 198.737,
+    "completed_at": "2026-09-16T05:20:43.459163+00:00",
+    "artifact": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/claude-1-current-concurrency-execution-20260916.md",
+    "artifact_exists": true,
+    "artifact_sha256": "b8e87f1dc39affe813b8f4ce76419d735bcec91582be06c104e8562ccd07a05c",
+    "owned_hashes": {
+      "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/claude-1-current-concurrency-execution-20260916.md": "b8e87f1dc39affe813b8f4ce76419d735bcec91582be06c104e8562ccd07a05c"
+    },
+    "tracked_drift": [],
+    "terminal_records": [
+      {
+        "schema_version": 1,
+        "type": "invocation.terminal",
+        "invocation_id": "17562616-b162-467d-99bb-6ece4d001888",
+        "metadata": {
+          "run_id": "claude-1-current-concurrency-execution-20260916",
+          "segment_id": "manual",
+          "idea": "meta-protocol-change-evidence-first-efficiency",
+          "phase": "implementation",
+          "agent": "claude-1",
+          "adapter": "claude",
+          "launch_mode": "headless",
+          "attempt_ordinal": 1,
+          "retry_of": null,
+          "requested_model": "claude-opus-5[1m]",
+          "requested_effort": "max",
+          "requested_speed": "deep",
+          "context": {
+            "context_mode": "full",
+            "source_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+            "packet_sha256": "4519258c96a45515518f44d29f769a5510e32924d1e27ebcf6d04cf554b1937a",
+            "fallback_reason": null
+          }
+        },
+        "requested_at": "2026-09-16T05:17:25.742337Z",
+        "started_at": "2026-09-16T05:17:25.842442Z",
+        "completed_at": "2026-09-16T05:20:43.115296Z",
+        "duration_ms": 197369,
+        "pid": 8180,
+        "outcome": {
+          "status": "process-exited",
+          "exit_code": 0,
+          "failure_class": null,
+          "artifact_sha256": "b8e87f1dc39affe813b8f4ce76419d735bcec91582be06c104e8562ccd07a05c",
+          "usage": {
+            "input_tokens": 28,
+            "output_tokens": 13982,
+            "cache_read_tokens": 806508,
+            "cache_write_tokens": 73939,
+            "total_tokens": null,
+            "cost_usd": 1.5222270000000002,
+            "reported_model": null,
+            "reported_models": [
+              "claude-haiku-4-5-20251001",
+              "claude-opus-5[1m]"
+            ],
+            "source": "claude.result",
+            "cost_basis": "cli-estimate",
+            "coverage": "reported"
+          },
+          "observation": {
+            "first_activity_ms": 197099,
+            "stdout_bytes": 5186,
+            "stderr_bytes": 0,
+            "parser_input_truncated": false
+          }
+        },
+        "warnings": []
+      }
+    ],
+    "stdout_sha256": "e42fc18f2e91eea3b65983a1fd410fac05ac1adf5b0427944cf4cc9768ada72f",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "executed_checks": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-timeout",
+      "8m",
+      "-p",
+      "1",
+      "-json",
+      "./internal/app",
+      "-run",
+      "^(TestSerialVsBarrierConcurrencyFixture|TestEvidenceCloseGate.*)$"
+    ],
+    "cwd": "/private/tmp/pd-check-b1bsdntx/source",
+    "exit": 0,
+    "seconds": 8.338400959037244,
+    "test_pass_events": 15,
+    "failed_tests": [],
+    "concurrency_output": [
+      "fixture: serial=(client:fail,server:fail) barrier=(pass,pass) \u2014 serial execution cannot certify a barrier criterion\n"
+    ],
+    "source_mismatches_after": [],
+    "source_manifest_sha256": "98af53bea7d1c3e320bf3bb302e44b7e1a8f18a6779d3364f2c50f90eb15251f",
+    "logs": {
+      "go-test.stdout": "a61727d6f8f858c07ad95d9e9f420b5731b9587f0ffa3ef6894a494aaf51f80a",
+      "go-test.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "commit_binding": {
+    "at": "2026-09-16T05:25:10.796696+00:00",
+    "executor": "codex-1",
+    "commit": "d86b48b3e4b18b0f4704bc1b1691644145b7c8c3",
+    "matched_go_module_config_paths": 463,
+    "scope": "All Go/module files and the five named source configuration/authority fixtures; not every tracked file",
+    "manifest_paths": 470,
+    "matching_commit_paths": 469,
+    "runtime_only_note": [
+      {
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency/implementation-notes/zcode-1-n1-precharge-candidate-20260916.md",
+        "missing": true
+      }
+    ],
+    "independently_repeated_by_claude": false,
+    "original_overbroad_assertion_failed": true,
+    "evidence": "current-concurrency-commit-binding.json"
+  },
+  "report": {
+    "report": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/delivery/2026-09-16/report.html",
+    "bytes": 564290,
+    "sha256": "8095e018528c9efae4fea5a012e58e449318c5c924b823f4f47783e22e697867",
+    "built_at": "2026-09-16T05:25:35.418431+00:00",
+    "assessment_date": "2026-09-05",
+    "delivery_date": "2026-09-16",
+    "self_contained": true,
+    "language": "en",
+    "document_provenance": {
+      "REPORT": {
+        "source": "assessments/2026-09-05/REPORT.md",
+        "source_language": "sk",
+        "source_sha256": "2889921d6ca0fd4d23c0ebedb8855cab6c9185321758104eea4ef97ce9cba4a1",
+        "presentation": "delivery/2026-09-16/english/REPORT.md",
+        "presentation_language": "en",
+        "presentation_sha256": "493a6d2c31e15ee37a9b232ce7f25a55bdfe92bea82fdddb6948111f03ff9205",
+        "treatment": "translated",
+        "validation": "numeric literals, heading structure and link targets preserved"
+      },
+      "METHOD": {
+        "source": "assessments/2026-09-05/METHOD.md",
+        "source_language": "en",
+        "source_sha256": "bee391c90599036a667d118d8a4c8d142df5c55a3bdf5a9eaa66baa6d07c5454",
+        "presentation": "assessments/2026-09-05/METHOD.md",
+        "presentation_language": "en",
+        "presentation_sha256": "bee391c90599036a667d118d8a4c8d142df5c55a3bdf5a9eaa66baa6d07c5454",
+        "treatment": "unchanged",
+        "validation": "numeric literals, heading structure and link targets preserved"
+      },
+      "KPIS": {
+        "source": "assessments/2026-09-05/KPIS.md",
+        "source_language": "sk",
+        "source_sha256": "03de2a044e6e077e5255d3fa7540ae7ccb6c319d1b07a257c0218d09eafc2f02",
+        "presentation": "delivery/2026-09-16/english/KPIS.md",
+        "presentation_language": "en",
+        "presentation_sha256": "dca2f8fdcfec98ddbbdaf7552f145630c90d6e1ea045da6a45cebacecb6be051",
+        "treatment": "translated",
+        "validation": "numeric literals, heading structure and link targets preserved"
+      },
+      "CASES": {
+        "source": "assessments/2026-09-05/CASES.md",
+        "source_language": "sk",
+        "source_sha256": "08530fe81c24f7d5603425b4aceefcf430cf24767a1a718518878980a4b3d4f8",
+        "presentation": "delivery/2026-09-16/english/CASES.md",
+        "presentation_language": "en",
+        "presentation_sha256": "f25a85c7fba47d91577fe4ff49c367c4fefb0f3f8f9d7b9f1f4a530574ad5d82",
+        "treatment": "translated",
+        "validation": "numeric literals, heading structure and link targets preserved"
+      },
+      "REVIEW-RESPONSE": {
+        "source": "assessments/2026-09-05/REVIEW-RESPONSE.md",
+        "source_language": "en",
+        "source_sha256": "e0a37fa34df138f21f3f6c2eb95f5a4f5fba1e82494caa8f10b2297cb83e4693",
+        "presentation": "assessments/2026-09-05/REVIEW-RESPONSE.md",
+        "presentation_language": "en",
+        "presentation_sha256": "e0a37fa34df138f21f3f6c2eb95f5a4f5fba1e82494caa8f10b2297cb83e4693",
+        "treatment": "unchanged",
+        "validation": "numeric literals, heading structure and link targets preserved"
+      }
+    },
+    "pilot_status": "not-run",
+    "verification_status": "pending"
+  },
+  "report_checkpoint": {
+    "title": "Implementation checkpoint \u2014 whole audit incomplete",
+    "as_of": "2026-09-16T05:22:52.551612+00:00",
+    "status": "partial",
+    "summary": "Codex organizes the remaining audit with Claude, Kimi and Zcode. All four amendment round-01 artifacts and Codex round-02 are present. Peer round-02, consensus and FINAL remain pending; historical accounting migration needs the explicit operator decision. Historical signatures and FINALs remain unchanged.",
+    "inventory_summary": "91 normalized stopped terminal records plus one stopped attempt with a missing terminal; 92 stopped attempts in this continuing-audit inventory. 58 terminal costs plus the missing attempt remain unknown. Known CLI-estimate subtotal: approximately USD 121.842240; total unknown. Three terminal records are pre-start refusals, not launched processes. Historical design calls below are a retained subset, not an additional cohort. No treatment spending.",
+    "source_summary": "Published Go source checkpoint: 7a80db5bd8fbb758bc2f3e6eb056f220936cb6ef; allocation preparation: d86b48b3e4b18b0f4704bc1b1691644145b7c8c3 (draft PR #73). Amendment: 5ecac7b7fb322f4f803f729b77a07e0c12249f40 (draft PR #74). The source snapshot contains 458 Go/module files. This remains a partial report and starts no follow-up clock.",
+    "terminal_attempts": 91,
+    "unknown_cost_attempts": 58,
+    "known_cli_estimate_usd": "121.8422400000000002",
+    "total_cost_usd": null,
+    "active_calls": 0,
+    "integration_head": "d86b48b3e4b18b0f4704bc1b1691644145b7c8c3",
+    "amendment_head": "5ecac7b7fb322f4f803f729b77a07e0c12249f40",
+    "experiment_budget_usd_total": 15,
+    "experiment_minutes_per_task_per_arm": 15,
+    "prospective_quorum": [
+      "codex-1",
+      "claude-1",
+      "kimi-1",
+      "zcode-1"
+    ],
+    "treatment_started": false,
+    "missing_terminal_attempts": 1,
+    "stopped_attempts": 92,
+    "source_commit": "7a80db5bd8fbb758bc2f3e6eb056f220936cb6ef",
+    "final_delivery": false,
+    "followup_clock_started": false
+  },
+  "static_checks": {
+    "report_sha256": "8095e018528c9efae4fea5a012e58e449318c5c924b823f4f47783e22e697867",
+    "existing_tests_targeting_current_report": 10,
+    "failures": 0,
+    "errors": 0,
+    "protected_frozen_files_unchanged": 156,
+    "current_checkpoint_semantics": true,
+    "final_delivery": false
+  },
+  "browser_checks": {
+    "browser": "ego-browser",
+    "task_space": 23,
+    "checked_at": "2026-09-16T05:26:21.230Z",
+    "report_sha256": "8095e018528c9efae4fea5a012e58e449318c5c924b823f4f47783e22e697867",
+    "checks": [
+      {
+        "name": "desktop",
+        "pass": true,
+        "detail": {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "selected": "true",
+          "fresh": true,
+          "partial": true
+        }
+      },
+      {
+        "name": "mobile",
+        "pass": true,
+        "detail": {
+          "width": 390,
+          "scrollWidth": 390,
+          "selected": "true",
+          "fresh": true,
+          "partial": true
+        }
+      },
+      {
+        "name": "low-height",
+        "pass": true,
+        "detail": {
+          "width": 1280,
+          "scrollWidth": 1280,
+          "selected": "true",
+          "fresh": true,
+          "partial": true
+        }
+      },
+      {
+        "name": "keyboard-tab-switch",
+        "pass": true
+      },
+      {
+        "name": "print-nonblank-charts",
+        "pass": false,
+        "detail": {
+          "panels": [
+            {
+              "id": "overview",
+              "display": "block"
+            },
+            {
+              "id": "delivery",
+              "display": "block"
+            },
+            {
+              "id": "pilot",
+              "display": "block"
+            },
+            {
+              "id": "explorer",
+              "display": "block"
+            },
+            {
+              "id": "evidence",
+              "display": "block"
+            },
+            {
+              "id": "document",
+              "display": "block"
+            }
+          ],
+          "charts": [
+            {
+              "id": "words-chart",
+              "width": 555,
+              "height": 240,
+              "displayWidth": 387,
+              "painted": true
+            },
+            {
+              "id": "coverage-chart",
+              "width": 555,
+              "height": 240,
+              "displayWidth": 387,
+              "painted": true
+            }
+          ]
+        }
+      }
+    ],
+    "scope": "Updated checkpoint data: desktop/mobile/low-height implementation view, keyboard section switch and print chart paint/size. Prior filtering checks remain historical; physical PDF pagination not certified.",
+    "final_delivery": false
+  },
+  "settled_print_check": {
+    "browser": "ego-browser",
+    "task_space": 23,
+    "report_sha256": "8095e018528c9efae4fea5a012e58e449318c5c924b823f4f47783e22e697867",
+    "checked_at": "2026-09-16T05:26:50.804Z",
+    "check": "print after observable canvas resize",
+    "pass": true,
+    "detail": [
+      {
+        "id": "words-chart",
+        "width": 387,
+        "display": 387,
+        "painted": true
+      },
+      {
+        "id": "coverage-chart",
+        "width": 387,
+        "display": 387,
+        "painted": true
+      }
+    ],
+    "prior_failure_retained": "current-checkpoint-browser.json",
+    "reason": "Initial immediate observation preceded the asynchronous print canvas resize; no source/content change or synthetic print event."
+  },
+  "report_inputs": {
+    "checkpoint.json": "eb276921eae80df71e12c7d2a969cbfcfbe839c802c2e8e4e7d9b476e8322926",
+    "verification.json": "37670d72c11b5017798aef0c5106f5f92a06f4c7c294092574474de9ae461e7f",
+    "priorities.json": "d20aba539f0d6ba4849e3da83d1a131d2c6d825b6bf4455d2ce8726208212329",
+    "PROGRESS.md": "3735c4a0ab1d0991d6684bab0ceaa365d7f598c08ac530d11a48c462b20d26ff",
+    "checkpoint-inputs.json": "001239431ba665d2bb2a3d2b06edf87815ded33f4c313ecef3252e016b998f61"
+  },
+  "whole_audit_complete": false,
+  "experiment_started": false,
+  "operator_N_approved": false
+}

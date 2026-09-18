@@ -1,0 +1,106 @@
+{
+  "observed_at": "2026-09-16T00:27:39.126950+00:00",
+  "executor": "codex-1",
+  "cli_version": "0.42.0",
+  "kind": "local client configuration controls, not treatment/model/billing evidence",
+  "source_audit_owner": "kimi-1",
+  "source_audit_sha256": "7b4fa0e661656d0e3c78ecac40844b1265b4d175cc750e74f4509451125542b6",
+  "network": "sandbox allows one local listener port; local-connect and denied external-connect canaries passed",
+  "configuration": "process-specific KIMI_CODE_HOME, synthetic kimi transport model local-cap-fixture, dummy key; no roster or configured treatment model changed",
+  "controls": [
+    {
+      "case": "probe-v2",
+      "exit": 0,
+      "seconds": 1.213,
+      "http_requests": 1,
+      "max_completion_tokens_on_every_request": 17,
+      "advertised_tools": [
+        "Read"
+      ],
+      "read_result_observed": false,
+      "expected_stop_observed": true,
+      "result_path": ".parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe-v2/result.json",
+      "result_sha256": "67d4820bd92377b65b8d253bd08e3d72f8e41675abcdef19aa72a9f0402ebc5e",
+      "stdout_sha256": "7beaa6a11a2ec7e9c682b5e5dad7209911241298d9ceb9f4d6e92e7ec1ac8951",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "requests_sha256": "1354bc6e735fbd7aaef2202af1ac71e99e1a582f68d473e5e81060da8a95b0bf"
+    },
+    {
+      "case": "steps2",
+      "exit": 1,
+      "seconds": 1.311,
+      "http_requests": 2,
+      "max_completion_tokens_on_every_request": 17,
+      "advertised_tools": [
+        "Read"
+      ],
+      "read_result_observed": true,
+      "expected_stop_observed": true,
+      "result_path": ".parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps2/result.json",
+      "result_sha256": "afe1c394c7894b2d4d9c7481570aac8c39c03077107b03db5f5786b7bd9e8491",
+      "stdout_sha256": "a29de3a38768df1cd6236f36fe1b09cc639a23d6c40129d17440fbe952250f63",
+      "stderr_sha256": "fb79fd6733a4bfd164dc8efff30178c26bff4a9a83ccc0161457387a83ef06ac",
+      "requests_sha256": "bc3c304511e8ec2450f171413abcc4f90f5aeab7a5f78a8d6a31332db9606220"
+    },
+    {
+      "case": "steps3",
+      "exit": 1,
+      "seconds": 1.204,
+      "http_requests": 3,
+      "max_completion_tokens_on_every_request": 17,
+      "advertised_tools": [
+        "Read"
+      ],
+      "read_result_observed": true,
+      "expected_stop_observed": true,
+      "result_path": ".parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-steps3/result.json",
+      "result_sha256": "0d5e7aed51ca33e32af2edc7839a1acbd19198fd7373c7ea100f28bbff92c532",
+      "stdout_sha256": "fc4eef21368581286bb31499c03fb34973454430464d107ebf28fd31bd28f11e",
+      "stderr_sha256": "8972b8f1338427f39e1039f61b2c2a743b8caaec75adcce88eb87a1dfde208cd",
+      "requests_sha256": "a8eeef7c5f593692d7b853afcfcff2de9fa76ca8ab66af09bb6cc2557f16635e"
+    },
+    {
+      "case": "retry1",
+      "exit": 1,
+      "seconds": 1.168,
+      "http_requests": 1,
+      "max_completion_tokens_on_every_request": 17,
+      "advertised_tools": [
+        "Read"
+      ],
+      "read_result_observed": false,
+      "expected_stop_observed": true,
+      "result_path": ".parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry1/result.json",
+      "result_sha256": "c5f34f025cb185c82c5c2b35d079cbbe57cc222ce8586a2d0d67096f0494dc24",
+      "stdout_sha256": "9debbbf15c1c8895997c49c6ceca2181aead16f3df87426759797ba07f3caacd",
+      "stderr_sha256": "20c9b2711bfb10ee6f905e8a6cf8c1805af75c57cdfe7f9a290955c4993c9d1e",
+      "requests_sha256": "4de869681c6f4ae90b791ff9402767815e51dba19268f7980aae63beda2c2f24"
+    },
+    {
+      "case": "retry2",
+      "exit": 1,
+      "seconds": 1.703,
+      "http_requests": 2,
+      "max_completion_tokens_on_every_request": 17,
+      "advertised_tools": [
+        "Read"
+      ],
+      "read_result_observed": false,
+      "expected_stop_observed": true,
+      "result_path": ".parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-retry2/result.json",
+      "result_sha256": "eb39f645f258194ca9eb22f4ade3c9cdea61e4e3e7a52b32054f565b9833cd02",
+      "stdout_sha256": "e2c3bdf276d641bab008a6152fe9e35a4f4c5af7d18ebc6c99cf66b1a94a93fe",
+      "stderr_sha256": "db12092f967a40108a6ed4c49ac690803afb64b42463f53f473a9224a92583fd",
+      "requests_sha256": "753865e25cda65f38b03802898fe849a945190310357840f71fe19c6c3a2afc6"
+    }
+  ],
+  "failed_setup_retained": ".parley-runtime/managed-continuation-20260915/experiment-cap-discovery/kimi-local-cap-probe/result.json",
+  "limitations": [
+    "Synthetic local transport, not a live k3 provider run or proof of server output enforcement/billing.",
+    "max_completion_tokens=17 is observed on the wire, not proof a real server honors it.",
+    "Tool allowlist is observed as Read-only and Read actually executed; adversarial unadvertised tool dispatch not tested.",
+    "Step caps2/3 and HTTP500 attempt caps1/2 tested; compaction, background-work multiplication and other failure modes are not established.",
+    "No experiment input, grading or packet treatment was used. These five fixture invocations do not enter the real-model attempt inventory.",
+    "Monetary feasibility across the full twelve-task pilot, packet experiment and grading remains unproved."
+  ]
+}

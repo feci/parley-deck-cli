@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"parley-deck-cli/internal/driver"
+	"parley-deck-cli/internal/evidence"
 )
 
 func TestScrubAndTruncate(t *testing.T) {
@@ -37,26 +39,20 @@ func TestScrubAndTruncate(t *testing.T) {
 	}
 }
 
-func TestReplaceSection(t *testing.T) {
-	doc := "# Title\n\n## Summary\n\nx\n\n## Validation evidence\n\nold\n\n## Notes\n\nkeep\n"
-	out := replaceSection(doc, "## Validation evidence", "## Validation evidence\n\nNEW\n")
-	if strings.Contains(out, "old") {
-		t.Fatalf("old content not replaced:\n%s", out)
+func scratchContract(t *testing.T, criteria []driver.CheckCriterion) (string, string) {
+	t.Helper()
+	data, err := yaml.Marshal(struct {
+		Checks []driver.CheckCriterion `yaml:"checks"`
+	}{criteria})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(out, "NEW") || !strings.Contains(out, "## Notes") || !strings.Contains(out, "keep") {
-		t.Fatalf("replaced too much or too little:\n%s", out)
-	}
-	// Absent heading → appended.
-	out2 := replaceSection("# T\n\nbody\n", "## Validation evidence", "## Validation evidence\n\nADDED\n")
-	if !strings.Contains(out2, "ADDED") {
-		t.Fatal("absent section should append")
-	}
+	return gateScratchRepo(t, string(data))
 }
 
 func TestRunChecksContractWritesEvidenceAndVetoes(t *testing.T) {
-	idea := t.TempDir()
-	os.WriteFile(filepath.Join(idea, "IMPLEMENTATION.md"), []byte("---\nidea: x\n---\n\n## Summary of work\n\ndone\n\n## Validation evidence\n\n(pending)\n"), 0o644)
-	o := driverImplOps{ideaDir: idea, root: idea, out: io.Discard}
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "ok", Command: "true"}})
+	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
 
 	pass := []driver.CheckCriterion{{Name: "ok", Command: "true"}}
 	if okPass, _ := o.runChecksContract(context.Background(), pass); !okPass {
@@ -68,11 +64,107 @@ func TestRunChecksContractWritesEvidenceAndVetoes(t *testing.T) {
 	}
 
 	fail := []driver.CheckCriterion{{Name: "boom", Command: "exit 3"}}
-	okFail, detail := o.runChecksContract(context.Background(), fail)
+	failRoot, failIdea := scratchContract(t, fail)
+	failOps := driverImplOps{ideaDir: failIdea, root: failRoot, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
+	okFail, detail := failOps.runChecksContract(context.Background(), fail)
 	if okFail {
 		t.Fatal("failing contract must veto (return false)")
 	}
 	if !strings.Contains(detail, "boom") {
 		t.Fatalf("veto detail should name the failing criterion: %q", detail)
+	}
+}
+
+const passJSONLine = `printf '%s\n' '{"Action":"run","Test":"TestA"}' '{"Action":"pass","Test":"TestA"}' '{"Action":"pass","Package":"x"}'`
+
+// Positive: structured test2json output yields typed evidence with real
+// executed-case counts, persisted to EVIDENCE.json and the markdown table.
+func TestRunChecksContractCountsExecutedCases(t *testing.T) {
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "unit", Command: passJSONLine}})
+	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
+
+	ok, detail := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: passJSONLine}})
+	if !ok {
+		t.Fatalf("structured pass should return true: %s", detail)
+	}
+	report, err := evidence.Load(idea)
+	if err != nil {
+		t.Fatalf("typed report not persisted: %v", err)
+	}
+	if len(report.Records) != 1 || report.Records[0].Command.ExecutedCases != 1 || report.Records[0].Command.Format != evidence.FormatGoTestJSON {
+		t.Fatalf("expected 1 executed case via gotest-json, got %+v", report.Records)
+	}
+	if report.Records[0].Provenance.Executor != "kimi-1" {
+		t.Fatalf("executor provenance missing: %+v", report.Records[0].Provenance)
+	}
+	body, _ := os.ReadFile(filepath.Join(idea, "IMPLEMENTATION.md"))
+	if !strings.Contains(string(body), "| 1/0/0 |") {
+		t.Fatalf("markdown table lacks case counts:\n%s", body)
+	}
+}
+
+// Adversarial: exit 0 with structured proof of ZERO executed cases vetoes the
+// cycle — an empty test run is not a pass.
+func TestRunChecksContractZeroExecutionVetoes(t *testing.T) {
+	zero := `printf '%s\n' '{"Action":"start","Package":"x"}' '{"Action":"pass","Package":"x"}'`
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "unit", Command: zero}})
+	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
+
+	ok, detail := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: zero}})
+	if ok {
+		t.Fatal("zero-execution structured output must veto")
+	}
+	if !strings.Contains(detail, "not-run") {
+		t.Fatalf("veto detail should type the zero-execution verdict: %q", detail)
+	}
+	report, err := evidence.Load(idea)
+	if err != nil || report.Records[0].Command.ExecutedCases != 0 {
+		t.Fatalf("report must record 0 executed cases: %v %+v", err, report)
+	}
+}
+
+// Adversarial: opaque shell output containing the word PASS is exit-code
+// evidence only — never an executed-case count.
+func TestRunChecksContractUnknownOutputNotCertified(t *testing.T) {
+	root, idea := scratchContract(t, []driver.CheckCriterion{{Name: "unit", Command: "echo 'PASS all green'"}})
+	o := driverImplOps{ideaDir: idea, root: root, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
+
+	ok, _ := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: "echo 'PASS all green'"}})
+	if !ok {
+		t.Fatal("shell exit 0 still passes the per-cycle gate")
+	}
+	report, err := evidence.Load(idea)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := report.Records[0].Command
+	if c.Format != evidence.FormatShell || c.ExecutedCases != -1 {
+		t.Fatalf("opaque output must stay shell/unknown: %+v", c)
+	}
+	body, _ := os.ReadFile(filepath.Join(idea, "IMPLEMENTATION.md"))
+	if !strings.Contains(string(body), "| unknown |") {
+		t.Fatalf("markdown table must mark unknown case counts:\n%s", body)
+	}
+}
+
+// Adversarial: an evidence-write failure vetoes the cycle outright — never a
+// warning plus PASS. The fixture carries one in-scope code file so the
+// pre-execution tree digest SUCCEEDS and the veto is exercised at the intended
+// persistence step (an empty digestable tree would fail earlier for the wrong
+// reason).
+func TestRunChecksContractEvidenceWriteFailureVetoes(t *testing.T) {
+	idea := t.TempDir()
+	os.WriteFile(filepath.Join(idea, "IMPLEMENTATION.md"), []byte("---\nidea: x\n---\n\n## Validation evidence\n\n(pending)\n"), 0o644)
+	os.WriteFile(filepath.Join(idea, "code.go"), []byte("package x\n"), 0o644)
+	os.Chmod(idea, 0o555)
+	t.Cleanup(func() { os.Chmod(idea, 0o755) })
+	o := driverImplOps{ideaDir: idea, root: idea, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
+
+	ok, detail := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: "true"}})
+	if ok {
+		t.Fatal("evidence-write failure must veto, not warn-and-pass")
+	}
+	if !strings.Contains(detail, "evidence-write failure") {
+		t.Fatalf("veto detail should name the evidence-write failure: %q", detail)
 	}
 }

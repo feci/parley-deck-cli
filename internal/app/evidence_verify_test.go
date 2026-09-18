@@ -1,0 +1,392 @@
+package app
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
+
+	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/driver"
+	"parley-deck-cli/internal/evidence"
+	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
+)
+
+// Only the prior review consensus is a fixture. RunChecks, the independent
+// agent process, its real CLI helper, all criterion subprocesses and Complete
+// use production implementations through Driver.Advance.
+type evidenceCloseFixtureOps struct {
+	driverImplOps
+	beforeComplete func()
+}
+
+func (o evidenceCloseFixtureOps) Complete(ctx context.Context) error {
+	if o.beforeComplete != nil {
+		o.beforeComplete()
+	}
+	return o.driverImplOps.Complete(ctx)
+}
+
+func (o evidenceCloseFixtureOps) ReviewRoundComplete(int) (bool, error) { return true, nil }
+func (o evidenceCloseFixtureOps) ReviewStatus() (driver.ReviewStatus, error) {
+	return driver.ReviewStatus{Summary: consensus.Summary{Triage: consensus.TriageReady}, ReviewerCount: 2}, nil
+}
+
+func TestEvidenceVerifierProductionClosure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX fixture agent; Windows runtime requires its own execution host")
+	}
+	t.Setenv("PARLEY_HOME", t.TempDir())
+	t.Setenv("PARLEY_HEADLESS_AGENT_CONFIG", "")
+	t.Setenv("PARLEY_AGENT_ID", "")
+	t.Setenv("PARLEY_TEST_VERIFY_MODE", "")
+	binary := filepath.Join(t.TempDir(), "parley fixture")
+	build := exec.Command("go", "build", "-o", binary, "./cmd/parley")
+	build.Dir = filepath.Join("..", "..")
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build actual helper CLI: %v\n%s", err, output)
+	}
+	cases := []struct {
+		name, beforeHelper, afterHelper, mode string
+		self, wantPass, recover               bool
+		beforeComplete                        string
+	}{
+		{name: "real-independent-execution", wantPass: true},
+		{name: "table-changed-before-helper", beforeHelper: "printf '\\nUnverified human claim\\n' >> parley-deck/ideas/idea-x/IMPLEMENTATION.md"},
+		{name: "table-changed-after-helper", afterHelper: "printf '\\nUnverified human claim\\n' >> parley-deck/ideas/idea-x/IMPLEMENTATION.md"},
+		{name: "table-changed-after-acceptance", beforeComplete: "table"},
+		{name: "table-changed-during-helper", mode: "table-edit"},
+		{name: "report-persistence-failure-recovery", beforeHelper: "if [ -f .parley-runtime/inject ]; then chmod 500 parley-deck/ideas/idea-x; fi", recover: true},
+		{name: "receipt-persistence-failure-recovery", beforeHelper: "if [ -f .parley-runtime/inject ]; then for d in .parley-runtime/evidence-verification/attempt-*; do mkdir \"$d/result.json\"; done; fi", recover: true},
+		{name: "report-replaced-after-driver-acceptance", beforeComplete: "report"},
+		{name: "receipt-removed-after-driver-acceptance", beforeComplete: "receipt"},
+		{name: "text-pass-without-helper", beforeHelper: "printf 'GOAL-CHECK: PASS\\n'; exit 0"},
+		{name: "self", self: true},
+		{name: "missing-process", beforeHelper: "exit 7"},
+		{name: "failed-process-after-helper", afterHelper: "exit 7"},
+		{name: "stale-code-after-helper", afterHelper: "printf '\\n// changed after verification\\n' >> src/a.go"},
+		{name: "changed-code-before-helper", beforeHelper: "printf '\\n// changed before verification\\n' >> src/a.go"},
+		{name: "changed-implementation-after-helper", afterHelper: "printf '\\n## Unverified extra scope\\nExtra work claimed\\n' >> parley-deck/ideas/idea-x/IMPLEMENTATION.md"},
+		{name: "skipped-independent-test", mode: "skip"},
+		{name: "masked-package-failure", mode: "package-fail"},
+		{name: "unwritable-report-path", beforeHelper: "mv parley-deck/ideas/idea-x/EVIDENCE.json .parley-runtime/original-report.json; mkdir parley-deck/ideas/idea-x/EVIDENCE.json"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Pipeline deliberately masks go test's exit code. Structured package
+			// failures still must veto closure even if one real test passed.
+			root, ideaDir := gateScratchRepo(t, "checks:\n  - name: unit\n    command: go test -count=1 -json ./src | cat\n")
+			if err := protocol.InitWorkspace(root); err != nil {
+				t.Fatal(err)
+			}
+			declareAppTestSource(t, root)
+			if err := os.WriteFile(filepath.Join(root, ".gitignore"), []byte(".parley-runtime/\nparley-deck/runs/\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(filepath.Join(root, ".parley-runtime"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			fixtureTest := `package src
+import ("fmt"; "os"; "testing")
+func TestActualExecution(t *testing.T) {
+ f, err := os.OpenFile("../.parley-runtime/executions.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+ if err != nil { t.Fatal(err) }
+ fmt.Fprintf(f, "%s:%d\n", os.Getenv("PARLEY_AGENT_ID"), os.Getpid()); f.Close()
+ if os.Getenv("PARLEY_TEST_VERIFY_MODE") == "table-edit" {
+ f,err:=os.OpenFile("../parley-deck/ideas/idea-x/IMPLEMENTATION.md",os.O_WRONLY|os.O_APPEND,0600)
+ if err!=nil{t.Fatal(err)};fmt.Fprintln(f,"Unverified human claim");f.Close()
+}
+ if os.Getenv("PARLEY_TEST_VERIFY_MODE") == "skip" { t.Skip("real skipped verifier fixture") }
+}
+func TestMain(m *testing.M) {
+ code := m.Run()
+ if os.Getenv("PARLEY_TEST_VERIFY_MODE") == "package-fail" { os.Exit(1) }
+ os.Exit(code)
+}
+`
+			if err := os.WriteFile(filepath.Join(root, "src/a_test.go"), []byte(fixtureTest), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			reviewDir := filepath.Join(ideaDir, "review", "round-01")
+			if err := os.MkdirAll(reviewDir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ideaDir, "review", "consensus.md"), []byte("Prior review consensus is supplied by the fixture adapter.\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			script := "#!/bin/sh\ncommand=$(awk '/^Verifier command: / {sub(/^Verifier command: /, \"\"); value=$0} END {print value}')\n" + tc.beforeHelper + "\n" +
+				"export PARLEY_TEST_VERIFY_MODE='" + tc.mode + "'\nsh -c \"$command\"\nresult=$?\n" + tc.afterHelper + "\nprintf 'helper exit %s\\n' \"$result\"\nexit \"$result\"\n"
+			path := filepath.Join(root, "fixture-verifier")
+			if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			gateGit(t, root, "add", "-A")
+			gateGit(t, root, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "fixture inputs")
+			runDir := filepath.Join(root, protocol.DeckDir, "runs", "verification-fixture")
+			var progress bytes.Buffer
+			op := driverImplOps{root: root, ideaDir: ideaDir, ideaSlug: "idea-x", implementer: "implementer", drafter: "reviewer", reviewers: []string{"reviewer"}, out: &progress, verificationCLI: binary,
+				base: runner.Options{Root: root, RunID: "verification-fixture", Store: store.New(runDir), Timeout: 20 * time.Second,
+					Agents: []agents.Discovery{{Spec: agents.Spec{ID: "reviewer", PromptMode: agents.PromptStdin, LaunchMode: agents.LaunchHeadless, HeadlessArgs: []string{"--fixture"}}, Found: true, Path: path}}}}
+			if tc.recover {
+				if err := os.WriteFile(filepath.Join(root, ".parley-runtime/inject"), nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = os.Chmod(ideaDir, 0755) })
+			}
+			if tc.self {
+				op.drafter = op.implementer
+			}
+			wrapped := evidenceCloseFixtureOps{driverImplOps: op}
+			if tc.beforeComplete != "" {
+				wrapped.beforeComplete = func() {
+					if tc.beforeComplete == "report" {
+						report, err := evidence.Load(ideaDir)
+						if err != nil {
+							t.Fatal(err)
+						}
+						report.GeneratedAt = report.GeneratedAt.Add(time.Second)
+						if err := evidence.Save(ideaDir, report); err != nil {
+							t.Fatal(err)
+						}
+					} else if tc.beforeComplete == "table" {
+						path := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+						raw, e := os.ReadFile(path)
+						if e != nil {
+							t.Fatal(e)
+						}
+						changed := strings.Replace(string(raw), "| 1/0/0 |", "| 99/0/0 |", 1)
+						if changed == string(raw) {
+							t.Fatal("table mutation did not land")
+						}
+						if e := os.WriteFile(path, []byte(changed), 0644); e != nil {
+							t.Fatal(e)
+						}
+					} else {
+						paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime", "evidence-verification", "*", "result.json"))
+						if len(paths) != 1 {
+							t.Fatalf("no accepted receipt: %v", paths)
+						}
+						if err := os.Remove(paths[0]); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+			}
+			d := driver.New(driver.Config{Root: root, IdeaDir: ideaDir, IdeaSlug: "idea-x", RunDir: runDir, Participants: []string{"implementer", "reviewer"}, Auto: true, Events: store.New(runDir), Impl: wrapped, Out: io.Discard}, nil)
+			action, _, err := d.Advance(context.Background())
+			impl, readErr := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+			if readErr != nil {
+				t.Fatal(readErr)
+			}
+			if tc.wantPass {
+				if err != nil || action != driver.ActionComplete || !strings.Contains(string(impl), "status: complete") {
+					logs, _ := filepath.Glob(filepath.Join(root, ".parley-runtime", "evidence-verification", "*", "agent.*.log"))
+					for _, p := range logs {
+						data, _ := os.ReadFile(p)
+						t.Logf("fixture log %s: %s", filepath.Base(p), data)
+					}
+					t.Fatalf("real verifier did not close: %s %v\n%s", action, err, progress.String())
+				}
+				if gate := op.EvidenceCloseGate(op.drafter); !gate.Allowed {
+					t.Fatalf("completed document invalidates its evidence: %v", gate.Reasons)
+				}
+				executions, err := os.ReadFile(filepath.Join(root, ".parley-runtime/executions.txt"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				lines := strings.Fields(string(executions))
+				if len(lines) != 2 || !strings.HasPrefix(lines[0], ":") || !strings.HasPrefix(lines[1], "reviewer:") || strings.TrimPrefix(lines[0], ":") == strings.TrimPrefix(lines[1], "reviewer:") {
+					t.Fatalf("not two distinct actual test processes: %q", executions)
+				}
+			} else if err == nil || action != driver.ActionEscalated || strings.Contains(string(impl), "status: complete") {
+				t.Fatalf("invalid verification closed: %s %v\n%s", action, err, progress.String())
+			}
+			if tc.beforeComplete != "" {
+				if tc.beforeComplete == "report" && !strings.Contains(err.Error(), "changed after driver acceptance") {
+					t.Fatalf("wrong refusal: %v", err)
+				}
+				if tc.beforeComplete == "table" && !strings.Contains(err.Error(), "validation evidence") {
+					t.Fatalf("wrong table refusal: %v", err)
+				}
+				if tc.beforeComplete == "receipt" && !strings.Contains(err.Error(), "receipt unavailable") {
+					t.Fatalf("wrong refusal: %v", err)
+				}
+			}
+			if !tc.wantPass && tc.beforeComplete == "" {
+				entries, e := evidence.InspectVerificationRefusals(ideaDir)
+				if e != nil || len(entries) == 0 {
+					t.Fatalf("missing canonical/pending refusal: %+v %v", entries, e)
+				}
+				if tc.name != "report-persistence-failure-recovery" {
+					if e := requireCommittedRefusals(context.Background(), root, ideaDir); e != nil {
+						t.Fatal(e)
+					}
+				}
+				for _, entry := range entries {
+					if entry.Record == nil {
+						t.Fatalf("invalid observation: %+v", entry)
+					}
+					if entry.Record.Observer == "helper" && tc.mode != "" {
+						if len(entry.Record.Executions) != 1 {
+							t.Fatalf("lost helper execution observations: %+v", entry.Record)
+						}
+					}
+				}
+			}
+			if tc.recover {
+				if tc.name == "report-persistence-failure-recovery" {
+					paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime/evidence-verification/*/result.json"))
+					if len(paths) != 1 {
+						t.Fatalf("missing failed helper receipt: %v", paths)
+					}
+					var receipt evidenceVerificationReceipt
+					if _, e := readVerificationJSON(paths[0], &receipt); e != nil {
+						t.Fatal(e)
+					}
+					if len(receipt.Executions) != 1 || !strings.Contains(receipt.Error, "create temp report") {
+						t.Fatalf("not actual post-execution report persistence failure: %+v", receipt)
+					}
+				} else {
+					report, e := evidence.Load(ideaDir)
+					if e != nil || report.CompletionTransition == nil {
+						t.Fatalf("report not retained after receipt persistence failure: %+v %v", report, e)
+					}
+				}
+				if _, e := os.Stat(filepath.Join(runDir, "evidence-accepted.json")); !os.IsNotExist(e) {
+					t.Fatal("failed publication was accepted")
+				}
+				if e := os.Chmod(ideaDir, 0755); e != nil {
+					t.Fatal(e)
+				}
+				if e := os.Remove(filepath.Join(root, ".parley-runtime/inject")); e != nil {
+					t.Fatal(e)
+				}
+				// Recover the exact observations after fixing storage, then execute
+				// fresh checks. Recovery itself cannot synthesize a receipt or pass.
+				pending, e := evidence.InspectVerificationRefusals(ideaDir)
+				if e != nil {
+					t.Fatal(e)
+				}
+				for _, entry := range pending {
+					if e := recoverVerificationRefusal(context.Background(), root, ideaDir, entry.SHA256); e != nil {
+						t.Fatal(e)
+					}
+				}
+				// Fresh checks and a new real helper recover without editing
+				// the frozen old attempt or inventing its missing receipt.
+				retryDir := filepath.Join(root, protocol.DeckDir, "runs", "retry-verification")
+				op.base.RunID = "retry-verification"
+				op.base.Store = store.New(retryDir)
+				retry := driver.New(driver.Config{Root: root, IdeaDir: ideaDir, IdeaSlug: "idea-x", RunDir: retryDir, Participants: []string{"implementer", "reviewer"}, Auto: true, Events: store.New(retryDir), Impl: evidenceCloseFixtureOps{driverImplOps: op}, Out: io.Discard}, nil)
+				action, _, retryErr := retry.Advance(context.Background())
+				if retryErr != nil || action != driver.ActionComplete {
+					t.Fatalf("fresh real verification did not recover: %s %v\n%s", action, retryErr, progress.String())
+				}
+				if gate := op.EvidenceCloseGate(op.drafter); !gate.Allowed {
+					t.Fatalf("recovered completion invalidates evidence: %v", gate.Reasons)
+				}
+			}
+			if !tc.self && !tc.recover && tc.beforeComplete == "" && tc.name != "text-pass-without-helper" && tc.name != "missing-process" {
+				paths, _ := filepath.Glob(filepath.Join(root, ".parley-runtime", "evidence-verification", "*", "result.json"))
+				if len(paths) != 1 {
+					t.Fatalf("expected actual helper receipt, found %v; failure could be unrelated: %v\n%s", paths, err, progress.String())
+				}
+				var receipt evidenceVerificationReceipt
+				if _, err := readVerificationJSON(paths[0], &receipt); err != nil {
+					t.Fatal(err)
+				}
+				if receipt.Agent != "reviewer" || receipt.RunID != "verification-fixture" || receipt.HelperPID == os.Getpid() || receipt.ProcessMarker == "" {
+					t.Fatalf("helper was not a distinct attributed process: %+v", receipt)
+				}
+				if tc.mode != "" {
+					if len(receipt.Executions) != 1 || receipt.Error == "" {
+						t.Fatalf("no actual failed rerun: %+v", receipt)
+					}
+					rec := receipt.Executions[0]
+					if tc.mode == "skip" && (rec.Status != evidence.StatusSkipped || rec.Command.ExecutedCases != 0 || rec.Command.SkippedCases != 1) {
+						t.Fatalf("not the skipped-test failure: %+v", rec)
+					}
+					if tc.mode == "package-fail" && (rec.Status != evidence.StatusFail || rec.Command.ExitCode != 0 || rec.Command.ExecutedCases != 1 || rec.Command.FailedPackages <= 0) {
+						t.Fatalf("not the masked package failure: %+v", rec)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestEvidenceHelperRefusesMissingRuntimeIdentity(t *testing.T) {
+	t.Setenv("PARLEY_RUN_ID", "")
+	t.Setenv("PARLEY_AGENT_ID", "")
+	t.Setenv("PARLEY_PROC_MARKER", "")
+	root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+	canonical, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(canonical, ".parley-runtime", "evidence-verification", "attempt-x")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "request.json")
+	req := evidenceVerificationRequest{Version: 1, AttemptID: "attempt-x", Root: canonical, Idea: "idea-x", RunID: "run", Verifier: "reviewer"}
+	if err := writeVerificationJSON(path, req); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(path)
+	var out, stderr bytes.Buffer
+	if code := runEvidenceVerify(context.Background(), []string{"verify", "--request", path, "--request-sha256", sha256Hex(string(raw))}, &out, &stderr); code != 1 || !strings.Contains(stderr.String(), "inside the selected independent verifier") {
+		t.Fatalf("unattributed helper accepted: %d %s", code, stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(ideaDir, "EVIDENCE.json")); !os.IsNotExist(err) {
+		t.Fatal("unattributed helper wrote report")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "result.json")); !os.IsNotExist(err) {
+		t.Fatal("unattributed helper wrote receipt")
+	}
+}
+
+func TestCompleteRefusesDeletedOriginalContract(t *testing.T) {
+	for _, source := range []string{"prior-report", "cursor-even-after-report-deletion"} {
+		t.Run(source, func(t *testing.T) {
+			root, ideaDir := gateScratchRepo(t, twoCriterionContract())
+			runDir := filepath.Join(root, ".parley-runtime", "original-run")
+			pin, err := driver.ObserveChecksContract(ideaDir, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			op := driverImplOps{root: root, ideaDir: ideaDir, ideaSlug: "idea-x", drafter: "reviewer", implementer: "author", base: runner.Options{Store: store.New(runDir)}}
+			if source != "prior-report" {
+				c := driver.Rebuild(ideaDir, 4)
+				c.ChecksContractSHA256 = pin
+				if err := c.Save(filepath.Join(runDir, "driver.json")); err != nil {
+					t.Fatal(err)
+				}
+			} else if err := os.WriteFile(evidence.ReportPath(ideaDir), []byte("prior evidence"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte("---\nidea: idea-x\n---\n"), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := op.Complete(context.Background()); err == nil {
+				t.Fatal("direct Complete bypassed original named checks")
+			}
+			body, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(body), "status: complete") {
+				t.Fatal("refusal still marked implementation complete")
+			}
+		})
+	}
+}

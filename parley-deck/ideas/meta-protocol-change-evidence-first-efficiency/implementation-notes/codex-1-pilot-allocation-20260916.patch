@@ -1,0 +1,315 @@
+--- a/scripts/pilot_analysis.py
++++ b/scripts/pilot_analysis.py
+@@ -18,7 +18,20 @@
+ STATES = FAILURES | {"not-run", "running", "completed", "ungraded"}
+ 
+ 
+-def allocation(tasks, roster, seed=20260905):
++def allocation(tasks, roster, seed=20260905, *, table=None):
++    """Build the draft allocation.
++
++    Six-person roster: the seeded counterbalanced generator (unchanged). Four-person
++    roster: accepted only with an explicit caller-supplied ``table`` of twelve rows,
++    validated by :func:`_validate_explicit_table`; without one the run is rejected.
++    """
++    if table is not None:
++        rows = _validate_explicit_table(tasks, roster, table)
++        return {"schema": 1, "status": "draft-allocation-not-preregistered", "seed": None,
++                "allocation_method": "explicit-table", "roster": list(roster),
++                "tasks": rows,
++                "limits": "Caller-supplied table; validated for the stated role and order "
++                          "balance only, not a fully crossed model-by-category factorial design."}
+     ids = [task["id"] for task in tasks]
+     if len(ids) != 12 or len(set(ids)) != 12:
+         raise ValueError("Exactly twelve unique task IDs are required")
+@@ -51,6 +64,115 @@
+     return {"schema": 1, "status": "draft-allocation-not-preregistered", "seed": seed,
+             "roster": list(roster), "tasks": rows,
+             "limits": "Balanced overall, not a fully crossed model-by-category factorial design."}
++
++
++def _validate_explicit_table(tasks, roster, table):
++    """Validate a caller-supplied four-person table and return fresh result rows.
++
++    Pure validation: nothing is rebalanced, reseeded, or dropped. Any malformed
++    shape, unknown/duplicate/missing membership, forged index, mutated role, or
++    unbalanced schedule raises ValueError. Returned rows share no mutable state
++    with the caller's tasks, roster, or table.
++    """
++    if (not isinstance(roster, (list, tuple)) or len(roster) != 4 or
++            any(not isinstance(person, str) or not person for person in roster) or
++            len(set(roster)) != 4):
++        raise ValueError("An explicit table requires four distinct nonempty roster IDs")
++    if (not isinstance(tasks, (list, tuple)) or len(tasks) != 12 or
++            any(not isinstance(task, dict) or
++                not isinstance(task.get("id"), str) or not task["id"] or
++                not isinstance(task.get("category"), str) for task in tasks)):
++        raise ValueError("Explicit-table tasks require twelve records with nonempty IDs and categories")
++    if len({task["id"] for task in tasks}) != 12:
++        raise ValueError("Exactly twelve unique task IDs are required")
++    categories = Counter(task.get("category") for task in tasks)
++    if categories != Counter({"code": 4, "review": 4, "design": 4}):
++        raise ValueError("Explicit-table tasks must be exactly four each of code, review and design")
++    if isinstance(table, (str, bytes)) or not isinstance(table, (list, tuple)) or len(table) != 12:
++        raise ValueError("Explicit table must be a sequence of exactly twelve rows")
++    frozen = frozenset(roster)
++    category_by_id = {task["id"]: task.get("category") for task in tasks}
++    seen_tasks = set()
++    orders, positions = Counter(), Counter()
++    solo_counts, duo_roles, full_roles = Counter(), Counter(), Counter()
++    solo_categories = {person: [] for person in roster}
++    duo_pairs, full_pairs = Counter(), Counter()
++    rows = []
++    for position, row in enumerate(table):
++        if not isinstance(row, dict) or set(row) != {"task", "execution_index", "arms"}:
++            raise ValueError("Malformed explicit-table row")
++        index = row["execution_index"]
++        if isinstance(index, bool) or not isinstance(index, int) or index != position:
++            raise ValueError("Execution indexes must be integers 0..11 matching list order")
++        task_id = row["task"]
++        if not isinstance(task_id, str) or task_id not in category_by_id or task_id in seen_tasks:
++            raise ValueError("Explicit table must name each provided task ID exactly once")
++        seen_tasks.add(task_id)
++        arms = row["arms"]
++        if not isinstance(arms, (list, tuple)) or len(arms) != 3:
++            raise ValueError("Each explicit-table row needs exactly three arm cells")
++        by_arm = {}
++        for cell in arms:
++            if not isinstance(cell, dict) or set(cell) != {"arm", "participants", "drafter", "critic"}:
++                raise ValueError("Malformed explicit-table arm cell")
++            arm = cell["arm"]
++            if arm not in ARMS or arm in by_arm:
++                raise ValueError("Each row needs exactly one solo, duo and full cell")
++            participants = cell["participants"]
++            if (not isinstance(participants, (list, tuple)) or
++                    any(not isinstance(person, str) or person not in frozen for person in participants)):
++                raise ValueError("Arm participants must be members of the frozen roster")
++            if len(set(participants)) != len(participants):
++                raise ValueError("Arm participants must be distinct")
++            expected = {"solo": 1, "duo": 2, "full": 4}[arm]
++            if len(participants) != expected:
++                raise ValueError("Arm membership must be one solo, two duo or four full participants")
++            if arm == "full" and frozenset(participants) != frozen:
++                raise ValueError("Every full cell must contain the whole frozen roster")
++            drafter, critic = cell["drafter"], cell["critic"]
++            if drafter not in participants or critic not in participants:
++                raise ValueError("Drafter and critic must be arm participants")
++            if arm == "solo":
++                if drafter != participants[0] or critic != participants[0]:
++                    raise ValueError("Solo drafter and critic must be the solo participant")
++            elif drafter == critic:
++                raise ValueError("Duo and full drafter and critic must differ")
++            by_arm[arm] = cell
++        solo_person = by_arm["solo"]["participants"][0]
++        solo_counts[solo_person] += 1
++        solo_categories[solo_person].append(category_by_id[task_id])
++        duo = by_arm["duo"]
++        duo_roles[("drafter", duo["drafter"])] += 1
++        duo_roles[("critic", duo["critic"])] += 1
++        duo_pairs[(duo["drafter"], duo["critic"])] += 1
++        full = by_arm["full"]
++        full_roles[("drafter", full["drafter"])] += 1
++        full_roles[("critic", full["critic"])] += 1
++        full_pairs[(full["drafter"], full["critic"])] += 1
++        order = tuple(cell["arm"] for cell in arms)
++        orders[order] += 1
++        positions.update((cell["arm"], slot) for slot, cell in enumerate(arms))
++        rows.append({"task": task_id, "execution_index": position,
++                     "arms": [{"arm": cell["arm"], "participants": list(cell["participants"]),
++                               "drafter": cell["drafter"], "critic": cell["critic"]} for cell in arms]})
++    for person in roster:
++        counts = (solo_counts[person], duo_roles[("drafter", person)], duo_roles[("critic", person)],
++                  full_roles[("drafter", person)], full_roles[("critic", person)])
++        if counts != (3, 3, 3, 3, 3):
++            raise ValueError("Explicit table must give each participant three of every named role")
++        if sorted(solo_categories[person]) != ["code", "design", "review"]:
++            raise ValueError("Each participant must solo exactly one task of each category")
++    for first, second in itertools.combinations(roster, 2):
++        if duo_pairs[(first, second)] != 1 or duo_pairs[(second, first)] != 1:
++            raise ValueError("Each unordered duo pair must occur twice in opposite directions")
++    for first, second in itertools.permutations(roster, 2):
++        if full_pairs[(first, second)] != 1:
++            raise ValueError("Each ordered full drafter/critic-lead pair must occur exactly once")
++    if set(orders) != set(itertools.permutations(ARMS)) or any(count != 2 for count in orders.values()):
++        raise ValueError("Each arm ordering must occur exactly twice")
++    if any(positions[(arm, slot)] != 4 for arm in ARMS for slot in range(3)):
++        raise ValueError("Each arm must occupy each ordinal position exactly four times")
++    return rows
+ 
+ 
+ def validate_cells(tasks, cells):
+--- a/scripts/test_pilot_analysis.py
++++ b/scripts/test_pilot_analysis.py
+@@ -6,6 +6,48 @@
+ 
+ TASKS = [{"id": "T%02d" % index} for index in range(12)]
+ ROSTER = ["participant-%d" % index for index in range(6)]
++
++PILOT_TASKS = [
++    {"id": "C01", "category": "code"}, {"id": "C02", "category": "code"},
++    {"id": "C03", "category": "code"}, {"id": "C04", "category": "code"},
++    {"id": "R01", "category": "review"}, {"id": "R02", "category": "review"},
++    {"id": "R03", "category": "review"}, {"id": "R04", "category": "review"},
++    {"id": "D01", "category": "design"}, {"id": "D02", "category": "design"},
++    {"id": "D03", "category": "design"}, {"id": "D04", "category": "design"},
++]
++FOUR_ROSTER = ["claude-1", "codex-1", "kimi-1", "zcode-1"]
++
++# Unratified Codex round-02 counterproposal (v2/round-02/codex-1.md), hardcoded here as a
++# validation fixture only — never a frozen schedule. Columns: task, solo participant,
++# (duo drafter, duo critic), (full drafter, full critic lead), arm order.
++CODEX_ROUND02_ROWS = [
++    ("C01", "claude-1", ("claude-1", "codex-1"), ("claude-1", "codex-1"), ("solo", "duo", "full")),
++    ("R01", "codex-1", ("codex-1", "kimi-1"), ("codex-1", "kimi-1"), ("solo", "full", "duo")),
++    ("D01", "kimi-1", ("kimi-1", "zcode-1"), ("kimi-1", "zcode-1"), ("duo", "solo", "full")),
++    ("C02", "codex-1", ("zcode-1", "claude-1"), ("zcode-1", "claude-1"), ("duo", "full", "solo")),
++    ("R02", "kimi-1", ("claude-1", "kimi-1"), ("claude-1", "kimi-1"), ("full", "solo", "duo")),
++    ("D02", "zcode-1", ("codex-1", "zcode-1"), ("codex-1", "zcode-1"), ("full", "duo", "solo")),
++    ("C03", "kimi-1", ("kimi-1", "claude-1"), ("kimi-1", "claude-1"), ("solo", "duo", "full")),
++    ("R03", "zcode-1", ("zcode-1", "codex-1"), ("zcode-1", "codex-1"), ("solo", "full", "duo")),
++    ("D03", "claude-1", ("codex-1", "claude-1"), ("claude-1", "zcode-1"), ("duo", "solo", "full")),
++    ("C04", "zcode-1", ("kimi-1", "codex-1"), ("codex-1", "claude-1"), ("duo", "full", "solo")),
++    ("R04", "claude-1", ("zcode-1", "kimi-1"), ("kimi-1", "codex-1"), ("full", "solo", "duo")),
++    ("D04", "codex-1", ("claude-1", "zcode-1"), ("zcode-1", "kimi-1"), ("full", "duo", "solo")),
++]
++
++
++def explicit_table():
++    table = []
++    for index, (task, solo, duo, full, order) in enumerate(CODEX_ROUND02_ROWS):
++        cells = {
++            "solo": {"arm": "solo", "participants": [solo], "drafter": solo, "critic": solo},
++            "duo": {"arm": "duo", "participants": list(duo), "drafter": duo[0], "critic": duo[1]},
++            "full": {"arm": "full",
++                     "participants": [full[0], full[1]] + [person for person in FOUR_ROSTER if person not in full],
++                     "drafter": full[0], "critic": full[1]},
++        }
++        table.append({"task": task, "execution_index": index, "arms": [cells[arm] for arm in order]})
++    return table
+ 
+ 
+ class PilotAnalysisTests(unittest.TestCase):
+@@ -91,6 +133,123 @@
+     def test_canonical_hash_stable_across_key_order(self):
+         self.assertEqual(canonical_hash({"x": 1, "y": 2}), canonical_hash({"y": 2, "x": 1}))
+ 
++    def test_explicit_table_fixture_passes_with_roles_and_order_preserved(self):
++        table = explicit_table()
++        result = allocation(PILOT_TASKS, FOUR_ROSTER, table=table)
++        self.assertEqual(result["tasks"], table)
++        self.assertEqual(result["roster"], FOUR_ROSTER)
++        self.assertIsNone(result["seed"])
++        self.assertEqual(result["allocation_method"], "explicit-table")
++        self.assertEqual(result["status"], "draft-allocation-not-preregistered")
++
++    def test_four_person_roster_requires_an_explicit_table(self):
++        with self.assertRaises(ValueError): allocation(PILOT_TASKS, FOUR_ROSTER)
++        with self.assertRaises(ValueError): allocation(PILOT_TASKS, FOUR_ROSTER, seed=7)
++
++    def test_seeded_six_person_output_is_unchanged(self):
++        result = allocation(TASKS, ROSTER)
++        self.assertEqual(set(result), {"schema", "status", "seed", "roster", "tasks", "limits"})
++        self.assertEqual(result["seed"], 20260905)
++        self.assertEqual(result["status"], "draft-allocation-not-preregistered")
++        self.assertEqual(result, allocation(TASKS, ROSTER, table=None))
++
++    def test_six_person_outputs_match_original_golden_hashes(self):
++        # Captured from the pre-change module (SHA256 4314131f736203c5d0f1c45f1a609f02264bf5d279ad5d432e7b049fd853aca8).
++        expected = {
++            0: "27087345e7238d9c73daeed84e513da188f10d51dbf3d95bb63ff2348e6e4a24",
++            7: "b70cd4d572288b925eca561754104294f90d9a33e9f5ecc6176962564cf18485",
++            20260905: "55d6558c1ce536428a02b25caddaa77cae17778a1a256f5e623bd702e0867edc",
++            4294967295: "2fff2cdf2db33ed3b1454bb3f9086ab2ea0851176e757a6aa426e4bb6d38fa63",
++        }
++        for seed, digest in expected.items():
++            with self.subTest(seed=seed):
++                self.assertEqual(canonical_hash(allocation(TASKS, ROSTER, seed)), digest)
++
++    def test_explicit_table_malformed_task_metadata_raises_value_error(self):
++        cases = [None, "abcdefghijkl", {}, PILOT_TASKS[:11]]
++        for malformed in [None, [], {}, {"id": []}, {"id": ""},
++                          {"id": "C01"}, {"id": "C01", "category": []},
++                          {"id": "C01", "category": None},
++                          {"id": True, "category": "code"},
++                          {"id": "C02", "category": "code"}]:
++            cases.append([malformed] + PILOT_TASKS[1:])
++        for tasks in cases:
++            with self.subTest(tasks=tasks), self.assertRaises(ValueError):
++                allocation(tasks, FOUR_ROSTER, table=explicit_table())
++
++    def test_explicit_table_malformed_roster_raises_value_error(self):
++        for roster in [None, "abcd", {}, FOUR_ROSTER[:3] + [{}],
++                       FOUR_ROSTER[:3] + [[]], FOUR_ROSTER[:3] + [None],
++                       FOUR_ROSTER[:3] + [True]]:
++            with self.subTest(roster=roster), self.assertRaises(ValueError):
++                allocation(PILOT_TASKS, roster, table=explicit_table())
++
++    def test_explicit_table_tuple_inputs_are_accepted_and_copied(self):
++        table = explicit_table()
++        for row in table:
++            for cell in row["arms"]:
++                cell["participants"] = tuple(cell["participants"])
++            row["arms"] = tuple(row["arms"])
++        result = allocation(tuple(PILOT_TASKS), tuple(FOUR_ROSTER), table=tuple(table))
++        self.assertEqual(result["tasks"], explicit_table())
++
++    def test_explicit_table_inputs_are_not_mutated(self):
++        tasks = [dict(task) for task in PILOT_TASKS]
++        roster = list(FOUR_ROSTER)
++        table = explicit_table()
++        result = allocation(tasks, roster, table=table)
++        result["tasks"][0]["arms"][0]["participants"].append("mutated")
++        result["roster"].append("mutated")
++        self.assertEqual(table, explicit_table())
++        self.assertEqual(roster, FOUR_ROSTER)
++        self.assertEqual(tasks, PILOT_TASKS)
++
++    def test_explicit_table_tampering_is_rejected(self):
++        cases = []
++        forged = explicit_table(); forged[3]["execution_index"] = 4; cases.append(forged)
++        boolean = explicit_table(); boolean[1]["execution_index"] = True; cases.append(boolean)
++        duplicate = explicit_table(); duplicate[1]["task"] = "C01"; cases.append(duplicate)
++        unknown = explicit_table(); unknown[0]["task"] = "X99"; cases.append(unknown)
++        cases.append(explicit_table()[:11])
++        extra_key = explicit_table(); extra_key[0]["note"] = "extra"; cases.append(extra_key)
++        missing_key = explicit_table(); del missing_key[0]["arms"][0]["critic"]; cases.append(missing_key)
++        stranger = explicit_table(); stranger[0]["arms"][0]["participants"] = ["mallory-1"]; cases.append(stranger)
++        twin = explicit_table()
++        twin[0]["arms"][1]["participants"] = ["claude-1", "claude-1"]
++        twin[0]["arms"][1]["critic"] = "claude-1"
++        cases.append(twin)
++        shrunk = explicit_table(); shrunk[0]["arms"][2]["participants"] = FOUR_ROSTER[:3]; cases.append(shrunk)
++        solo_role = explicit_table(); solo_role[0]["arms"][0]["critic"] = "codex-1"; cases.append(solo_role)
++        same_roles = explicit_table()
++        same_roles[0]["arms"][1]["critic"] = same_roles[0]["arms"][1]["drafter"]
++        cases.append(same_roles)
++        flipped = explicit_table()  # row D03, arms order (duo, solo, full)
++        flipped[8]["arms"][0]["drafter"], flipped[8]["arms"][0]["critic"] = (
++            flipped[8]["arms"][0]["critic"], flipped[8]["arms"][0]["drafter"])
++        cases.append(flipped)
++        hogged = explicit_table()  # row R01, arms order (solo, full, duo)
++        hogged[1]["arms"][0].update(participants=["claude-1"], drafter="claude-1", critic="claude-1")
++        cases.append(hogged)
++        full_pair = explicit_table()  # row D04, arms order (full, duo, solo); full was zcode-1/kimi-1
++        full_pair[11]["arms"][0]["critic"] = "codex-1"
++        cases.append(full_pair)
++        reordered = explicit_table()  # row C01 becomes (duo, solo, full), already used by D01/D03 rows
++        reordered[0]["arms"] = [reordered[0]["arms"][1], reordered[0]["arms"][0], reordered[0]["arms"][2]]
++        cases.append(reordered)
++        for table in cases:
++            with self.subTest(table=table), self.assertRaises(ValueError):
++                allocation(PILOT_TASKS, FOUR_ROSTER, table=table)
++
++    def test_explicit_table_metadata_and_roster_are_checked(self):
++        miscategorized = [dict(task) for task in PILOT_TASKS]
++        miscategorized[3]["category"] = "review"
++        with self.assertRaises(ValueError): allocation(miscategorized, FOUR_ROSTER, table=explicit_table())
++        with self.assertRaises(ValueError): allocation(PILOT_TASKS, FOUR_ROSTER[:3], table=explicit_table())
++        with self.assertRaises(ValueError): allocation(PILOT_TASKS, FOUR_ROSTER[:3] + [""], table=explicit_table())
++        with self.assertRaises(ValueError): allocation(PILOT_TASKS, FOUR_ROSTER[:3] + ["claude-1"], table=explicit_table())
++        with self.assertRaises(ValueError): allocation(PILOT_TASKS, FOUR_ROSTER + ["opencode-1"], table=explicit_table())
++        with self.assertRaises(ValueError): allocation(TASKS, ROSTER, table=explicit_table())
++
+ 
+ if __name__ == "__main__":
+     unittest.main()

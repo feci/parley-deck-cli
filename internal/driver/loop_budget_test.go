@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -68,16 +69,16 @@ func TestEmitLoopBudgetEvent(t *testing.T) {
 	t.Fatal("expected a loop.budget event")
 }
 
-// LE-6: loopCostUSD sums cost_usd across agent.usage events (best-effort).
+// LE-6: the observed total sums identified agent.usage events only.
 func TestLoopCostUSDSumsAgentUsage(t *testing.T) {
 	runDir := t.TempDir()
 	st := store.New(runDir)
-	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"cost_usd": 1.5}})
-	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"cost_usd": 2.25}})
+	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"invocation_id": "attempt-1", "cost_usd": 1.5}})
+	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"invocation_id": "attempt-2", "cost_usd": 2.25}})
 	_ = st.Append(store.Event{Time: time.Now(), Type: "other", Data: map[string]any{"cost_usd": 99.0}})
 	d := New(Config{IdeaSlug: "demo", RunDir: runDir, Events: st}, &fakeRunner{})
-	if got := d.loopCostUSD(); got < 3.74 || got > 3.76 {
-		t.Fatalf("loopCostUSD = %v, want ~3.75 (only agent.usage events count)", got)
+	if got := d.loopCost(); !got.complete || got.usd < 3.74 || got.usd > 3.76 {
+		t.Fatalf("loopCost = %+v, want ~3.75 (only agent.usage events count)", got)
 	}
 }
 
@@ -103,7 +104,7 @@ func TestEscalateLoopBudgetWritesInbox(t *testing.T) {
 func TestEmitLoopBudgetReportsCostWhenUnlimited(t *testing.T) {
 	runDir := t.TempDir()
 	st := store.New(runDir)
-	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"cost_usd": 4.0}})
+	_ = st.Append(store.Event{Time: time.Now(), Type: "agent.usage", Data: map[string]any{"invocation_id": "attempt-1", "cost_usd": 4.0}})
 	d := New(Config{IdeaSlug: "demo", RunDir: runDir, Events: st, MaxCostUSD: 0}, &fakeRunner{})
 	d.emitLoopBudget(1, time.Now())
 	evs, err := store.New(runDir).Load()
@@ -126,17 +127,92 @@ func TestEmitLoopBudgetReportsCostWhenUnlimited(t *testing.T) {
 // F-T2-3: a Run with an already-elapsed wall-clock budget escalates via the inbox note
 // on the first pre-Advance check and never reaches Complete.
 func TestRunEscalatesOnLoopBudget(t *testing.T) {
-	deck := t.TempDir()
-	runDir := filepath.Join(deck, "runs", "r1")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	d := New(Config{IdeaSlug: "demo", RunDir: runDir, Events: store.New(runDir), MaxWallClock: time.Nanosecond}, &fakeRunner{})
+	parts := []string{"codex", "claude"}
+	ideaDir, runDir := setupIdea(t, parts, "")
+	deck := filepath.Dir(filepath.Dir(runDir))
+	d := newTestDriver(ideaDir, runDir, parts, 3, true, &fakeRunner{})
+	d.cfg.MaxWallClock = time.Nanosecond
 	if err := d.Run(context.Background()); err != nil {
 		t.Fatalf("Run should halt cleanly on a budget breach, got err=%v", err)
 	}
 	note := filepath.Join(deck, "inbox", "claude-to-user_demo_loop-budget.md")
 	if _, err := os.Stat(note); err != nil {
 		t.Fatalf("Run must write the loop-budget inbox note on breach: %v", err)
+	}
+}
+
+func TestCostBoundaryDeduplicatesReplayButChargesRetry(t *testing.T) {
+	st := store.New(t.TempDir())
+	first := store.Event{Type: "agent.usage", Data: map[string]any{"invocation_id": "first", "cost_usd": 2.0}}
+	for _, e := range []store.Event{first, first, {Type: "agent.usage", Data: map[string]any{"invocation_id": "retry", "retry_of": "first", "cost_usd": 2.0}}} {
+		if err := st.Append(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d := New(Config{Events: st, MaxCostUSD: 5}, &fakeRunner{})
+	if got := d.loopCost(); !got.complete || got.usd != 4 {
+		t.Fatalf("replay or retry miscounted: %+v", got)
+	}
+	if reason := d.loopBudgetBreach(0, time.Now()); reason != "" {
+		t.Fatalf("duplicate replay prematurely exhausted budget: %s", reason)
+	}
+	d.cfg.MaxCostUSD = 4
+	if reason := d.loopBudgetBreach(0, time.Now()); !strings.Contains(reason, "cost budget exhausted") {
+		t.Fatalf("inclusive monetary ceiling did not stop: %s", reason)
+	}
+}
+
+func TestUnknownCostCannotPassCeilingOrDisplayAsZero(t *testing.T) {
+	for name, events := range map[string][]store.Event{
+		"null":         {{Type: "agent.usage", Data: map[string]any{"invocation_id": "one", "cost_usd": nil}}},
+		"missing":      {{Type: "agent.usage", Data: map[string]any{"invocation_id": "one"}}},
+		"negative":     {{Type: "agent.usage", Data: map[string]any{"invocation_id": "one", "cost_usd": -1.0}}},
+		"text":         {{Type: "agent.usage", Data: map[string]any{"invocation_id": "one", "cost_usd": "0"}}},
+		"unidentified": {{Type: "agent.usage", Data: map[string]any{"cost_usd": 0.0}}},
+		"conflict": {
+			{Type: "agent.usage", Data: map[string]any{"invocation_id": "one", "cost_usd": 1.0}},
+			{Type: "agent.usage", Data: map[string]any{"invocation_id": "one", "cost_usd": 2.0}},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			st := store.New(t.TempDir())
+			for _, e := range events {
+				if err := st.Append(e); err != nil {
+					t.Fatal(err)
+				}
+			}
+			d := New(Config{Events: st, MaxCostUSD: 10}, &fakeRunner{})
+			if reason := d.loopBudgetBreach(0, time.Now()); !strings.Contains(reason, "cannot be enforced") {
+				t.Fatalf("unknown cost passed: %s", reason)
+			}
+			d.cfg.MaxCostUSD = 0
+			if reason := d.loopBudgetBreach(0, time.Now()); reason != "" {
+				t.Fatalf("unlimited monetary budget stopped: %s", reason)
+			}
+			d.emitLoopBudget(1, time.Now())
+			all, err := st.Load()
+			if err != nil {
+				t.Fatal(err)
+			}
+			last := all[len(all)-1]
+			if last.Data["cost_usd"] != nil || last.Data["cost_coverage"] != "incomplete" {
+				t.Fatalf("unknown cost displayed as known: %+v", last)
+			}
+		})
+	}
+}
+
+func TestMissingOrCorruptAccountingStopsMonetaryBoundary(t *testing.T) {
+	for _, corrupt := range []bool{false, true} {
+		dir := t.TempDir()
+		if corrupt {
+			if err := os.WriteFile(filepath.Join(dir, "events.jsonl"), []byte("broken json"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		d := New(Config{Events: store.New(dir), MaxCostUSD: 10}, &fakeRunner{})
+		if reason := d.loopBudgetBreach(0, time.Now()); !strings.Contains(reason, "accounting is missing or unreadable") {
+			t.Fatalf("invalid accounting did not stop: %s", reason)
+		}
 	}
 }

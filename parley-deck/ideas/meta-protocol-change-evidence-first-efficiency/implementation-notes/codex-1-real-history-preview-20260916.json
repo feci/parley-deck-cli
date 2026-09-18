@@ -1,0 +1,1941 @@
+{
+  "agent": "codex-1",
+  "recorded_at": "2026-09-16T04:05:00.954975+00:00",
+  "status": "read-only-candidate-preview-not-operator-decision",
+  "candidate_source": "/private/tmp/pd-check-3j7zezs7/source",
+  "candidate_go_module_files": 448,
+  "candidate_manifest_sha256": "39ffbb9e1c14c2f544c4b0fbbf6a3c7bec9ffdda6847f384096035cbf4abb9aa",
+  "candidate_author_outcome": "Claude invocation de1b732d-8f84-43a5-82c3-2b52a42e8b7c timed out900s; retained source compiled and focused22events passed; broader validation and independent review pending",
+  "registry_unchanged": true,
+  "budget_unchanged": true,
+  "known_budget_files": 0,
+  "inventory": {
+    "version": 1,
+    "scope": "parley-cycles/v1:cross-review:96a0bbd7496f60074c2566dc6fe9c32233567009cdc95024ae12f2913af0a5f9",
+    "idea": "meta-protocol-change-evidence-first-efficiency-v2",
+    "idea_path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+    "kind": "cross-review",
+    "history": {
+      "version": 1,
+      "scope": "parley-launch/v1:80c37f0d63d20d4d203c8c6748ee2ab35cf6b776af58a03b089cd7f9e8e9bc8a",
+      "idea": "meta-protocol-change-evidence-first-efficiency-v2",
+      "roots": [
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+        "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout"
+      ],
+      "sources": [
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/33cefc6c-f74b-4b4f-be3e-b3b1b21d4183/requested.json",
+          "sha256": "3172edeb399f2fffa1542d856cdcd4463d46d451a0b3bb08e4503482f51d83ee"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/33cefc6c-f74b-4b4f-be3e-b3b1b21d4183/started.json",
+          "sha256": "8f11362896a0787c220f487665beb201f541178913e6754761596b6d87e309a1"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/33cefc6c-f74b-4b4f-be3e-b3b1b21d4183/terminal.json",
+          "sha256": "959246fc7edbc4a0a7d7e8c68ba622ce8303c51ae23ce9f380db99e96e96fdf7"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/3b90ef32-593b-44af-a240-3ea0f008da0c/requested.json",
+          "sha256": "8a2565d999ee78b6bbac3f5b11481374f0ec26dc5d3cb7d7caefe19570334222"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/3b90ef32-593b-44af-a240-3ea0f008da0c/started.json",
+          "sha256": "f218f97bb5e21ab8fc9b74745165f757f03416dbea4d317194b55436468e3c53"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/3b90ef32-593b-44af-a240-3ea0f008da0c/terminal.json",
+          "sha256": "12248577dceb34e73661dc53dffc2174a4cbb712011e6d82de1b3c3e0dd0923b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/4b33cd20-a55f-439a-9b12-8e7d6620586f/requested.json",
+          "sha256": "2ac061838df2a2b80957ff92b0c83c1bbf1ec99ff60ecbd794722f640089c5ad"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/4b33cd20-a55f-439a-9b12-8e7d6620586f/terminal.json",
+          "sha256": "fa9f1c3fc5864f5b09f7f15ad0d1e0ce01feac5cd43273f91e40b51cc1d90fdd"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/6a75850b-3a95-4f8f-8cc9-ecfbf26f02bd/requested.json",
+          "sha256": "fa1551117559cad7e58174759169b708eec43d8a31835bab0ad4083bce5217ca"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/6a75850b-3a95-4f8f-8cc9-ecfbf26f02bd/terminal.json",
+          "sha256": "5d4ac48e336751343cefa3d7a59ec985e8300eb55594638dda35344d1e708820"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/6c5431fb-726c-426c-ab12-a73850ebb89e/requested.json",
+          "sha256": "74f6e4a7f2404b7028779ac978115c46f8febe4c7b15a56cd8ba579e3821d6c6"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/6c5431fb-726c-426c-ab12-a73850ebb89e/terminal.json",
+          "sha256": "945cb96ba44bb2e3f808ccf73e74b9d8514a218654697686012d2cba741c4a5a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/c8ff6a7e-631e-4445-b81f-dc713cc7e10b/requested.json",
+          "sha256": "551656b01ea454af9e649e035809a391b15559b3095bd13445ccb173fc8a5406"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/c8ff6a7e-631e-4445-b81f-dc713cc7e10b/started.json",
+          "sha256": "ef5eb7f1d673f5ce0e5353871e17c70dd98d136511893378d694811f05feafed"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": ".parley-runtime/invocations/c8ff6a7e-631e-4445-b81f-dc713cc7e10b/terminal.json",
+          "sha256": "9f8d4ca8e2cbf3bf92f98cf96f0bab523b66198a2012e3a346ea9b910fc97a35"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/00-prompt.md",
+          "sha256": "4cb7dd1105a307318cf2ead6d37231dbe6e834654392ab59b871bf2675075395"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/claude-1.md",
+          "sha256": "95689ca42b652d684877e4f435f227fe54f65d5703a5018ddcecd55690392a47"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/codex-1.md",
+          "sha256": "b1fc6f1dbe2d601de104a0aca76ecc8c0b8bcc89b3c12caf2ecaddc7ff1c74ab"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/kimi-1.md",
+          "sha256": "acf1f9df26189a87984101ed59c00cc3d8f173d3f8bd9d39d9add28a00ea3a0d"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/zcode-1.md",
+          "sha256": "465f67a93ed402ef23612865efeb3f35ee89e80a5354975d48e7a76089c86e9e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-02/codex-1.md",
+          "sha256": "c6e26af0221ef4ff9061190f651e39c240a6b2b9433623e9389f0e2c09c3e2d3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/evaluation/pilot_analysis.py",
+          "sha256": "4314131f736203c5d0f1c45f1a609f02264bf5d279ad5d432e7b049fd853aca8"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/evaluation/pilot_grading.py",
+          "sha256": "9e70e8468cdd1c97b8612e0500ce6752da0ab73c849c0b59f66307e17ab4eed1"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/evaluation/provenance.json",
+          "sha256": "cfbb6fb60103a841794bdce2abb6f050be47ad90aee5d392ea718a089f8a4bcb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/evaluation/tasks-draft.json",
+          "sha256": "f9c239b8f42acfd7497ebb1f6ad714e70326470463ab8316d916d180c400be69"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/evaluation/test_pilot_analysis.py",
+          "sha256": "23929679a183dda83a9c8f3b4c635fa1fdbc977c4e73dac1509f8e9ce77a8c0a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/evaluation/test_pilot_grading.py",
+          "sha256": "2a514774465dab9777246e0ede1eeeba5de8dd836a8cbf1e344692f5c879926e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/pilot-preparation.md",
+          "sha256": "6fe1e8d8ac2b10f3629ff1e37bd62cd6882b0ac9801b567f04b6cfda66a1d243"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/provenance.json",
+          "sha256": "4cfe5f5a538a66cee402c47bda5547ab38847cba06b3faabb4af74d37622398c"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/internal__budget__binding.go.txt",
+          "sha256": "5a2abca654e7190adf08de6a68d4eb39d4a8023e036c4adde41298db4e5e2ff0"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/internal__budget__ledger.go.txt",
+          "sha256": "1fd789c2877d1d20694c6d150019082898d6dbd1c75400e2fca459fd9eb3306a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/internal__budget__monetary_binding.go.txt",
+          "sha256": "f2df1bd9ab348f931489a6396a5e85ccbc958956a3ee5406ef3f126864cbfad1"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/internal__runner__launch_budget.go.txt",
+          "sha256": "2dac078ef5b237787b326cdd21654e67a437fbe599b999cff7a088c670276ab9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/internal__runner__telemetry.go.txt",
+          "sha256": "2d5fc4168f24cae6d85954c6bbef5178cc084b6a61351158cc6a9ac13a3d3507"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/kimi-config-files.txt",
+          "sha256": "f1cd4ec8f3a74004c46b140b101a6a12a89f7fe8709652857b4194e19f3e62bb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/kimi-docs-provenance.json",
+          "sha256": "1021f7936ed69d5555b536a6af93312c011f0effa79eadff59a12d6ff2f385e7"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/kimi-env-vars.txt",
+          "sha256": "878604b6f5e5aaf39026e1a29be73b35a024193a1a482faac234fd5df3122ffa"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/kimi-providers.txt",
+          "sha256": "5e47df7bfa52b6324a373a0e90a798a92946843e284ad75164ea59759383b4f3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/parley-deck__ideas__meta-protocol-change-evidence-first-efficiency__implementation-notes__codex-1-kimi-cap-controls-20260916.json",
+          "sha256": "b2865d3834545b762a1e52993a3a14599dd84fe2e30bf8312d4b01da2e6259d6"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/canary.log",
+          "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/fixture-agent.md",
+          "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/requests.json",
+          "sha256": "1354bc6e735fbd7aaef2202af1ac71e99e1a582f68d473e5e81060da8a95b0bf"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/result.json",
+          "sha256": "67d4820bd92377b65b8d253bd08e3d72f8e41675abcdef19aa72a9f0402ebc5e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/stdout.log",
+          "sha256": "7beaa6a11a2ec7e9c682b5e5dad7209911241298d9ceb9f4d6e92e7ec1ac8951"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/probe-v2/task.sb",
+          "sha256": "ad8b6fbdc489158668891874feab1bdcf68da450c720c9cf6b4ba308b45501ec"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/provenance.json",
+          "sha256": "1395cd1673dfd0e6b8728a5dad270997acceb8f25126bbd3b8e105736a094689"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/canary.log",
+          "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/fixture-agent.md",
+          "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/requests.json",
+          "sha256": "4de869681c6f4ae90b791ff9402767815e51dba19268f7980aae63beda2c2f24"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/result.json",
+          "sha256": "c5f34f025cb185c82c5c2b35d079cbbe57cc222ce8586a2d0d67096f0494dc24"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/stderr.log",
+          "sha256": "20c9b2711bfb10ee6f905e8a6cf8c1805af75c57cdfe7f9a290955c4993c9d1e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/stdout.log",
+          "sha256": "9debbbf15c1c8895997c49c6ceca2181aead16f3df87426759797ba07f3caacd"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry1/task.sb",
+          "sha256": "77d3800fba77d6dfe7b5fcefa145940e74e66080d3608dce190ca3c698115217"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/canary.log",
+          "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/fixture-agent.md",
+          "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/requests.json",
+          "sha256": "753865e25cda65f38b03802898fe849a945190310357840f71fe19c6c3a2afc6"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/result.json",
+          "sha256": "eb39f645f258194ca9eb22f4ade3c9cdea61e4e3e7a52b32054f565b9833cd02"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/stderr.log",
+          "sha256": "db12092f967a40108a6ed4c49ac690803afb64b42463f53f473a9224a92583fd"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/stdout.log",
+          "sha256": "e2c3bdf276d641bab008a6152fe9e35a4f4c5af7d18ebc6c99cf66b1a94a93fe"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/retry2/task.sb",
+          "sha256": "260a78968f624883a4c7d4dd291a53fe16003c49ba6c665fa787c57f718e9ef9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/run-kimi-local-cap-cases.py",
+          "sha256": "e97014a1b0804bbba5057cf1c10fc0cd2d66b7f012939c35f9751bf2ff0bff19"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/run-kimi-local-cap-probe-v2.py",
+          "sha256": "a38e7b9a369a5009ca6b53a56a6084bbd6d95d1474e1be237cd80fc175b9f64a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/canary.log",
+          "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/fixture-agent.md",
+          "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/requests.json",
+          "sha256": "bc3c304511e8ec2450f171413abcc4f90f5aeab7a5f78a8d6a31332db9606220"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/result.json",
+          "sha256": "afe1c394c7894b2d4d9c7481570aac8c39c03077107b03db5f5786b7bd9e8491"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/stderr.log",
+          "sha256": "fb79fd6733a4bfd164dc8efff30178c26bff4a9a83ccc0161457387a83ef06ac"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/stdout.log",
+          "sha256": "a29de3a38768df1cd6236f36fe1b09cc639a23d6c40129d17440fbe952250f63"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps2/task.sb",
+          "sha256": "925f817b85aeb147133149f5f13232fc9008a31af26cc2bba497f3f51e83f9e2"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/canary.log",
+          "sha256": "8d49be40849bd11052b596881c7d47fe1f1f84462d1d742e347ae0b47ee5963b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/fixture-agent.md",
+          "sha256": "4badcdcb1335189e367bfca0fdaa5b38f43244fbabfb578c576dbbd9fe18e3a9"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/requests.json",
+          "sha256": "a8eeef7c5f593692d7b853afcfcff2de9fa76ca8ab66af09bb6cc2557f16635e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/result.json",
+          "sha256": "0d5e7aed51ca33e32af2edc7839a1acbd19198fd7373c7ea100f28bbff92c532"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/stderr.log",
+          "sha256": "8972b8f1338427f39e1039f61b2c2a743b8caaec75adcce88eb87a1dfde208cd"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/stdout.log",
+          "sha256": "fc4eef21368581286bb31499c03fb34973454430464d107ebf28fd31bd28f11e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/runtime-cap-evidence/steps3/task.sb",
+          "sha256": "2e54d046024a6555b6348675644edb81e46dcbe1f8549a21c87f8a4773d85d65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": ".parley-runtime/invocations/bdeecc5d-0ce0-456d-a363-af62f6c3742f/requested.json",
+          "sha256": "3e8e4898bf387c2be3d31632ca670c2727b48286eca1cb9520208490d4e886cc"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/0f89c898-a243-45ee-af79-b1dcadc2182d/requested.json",
+          "sha256": "862c6fea6c582498ca38b8d071ab29475982d28d9f93bc40fb247d89429d689f"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/2ebe2909-6446-4b67-85ed-c319f391d241/requested.json",
+          "sha256": "7d145c80e72e9ebeb3a04beedb572a295694652f6eedf66675689b4283ba4648"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/3e0c01f4-bf68-4422-8df4-ade47c2efe26/requested.json",
+          "sha256": "c3d6bc5e44bc414931a747a111a47869ead77b5f6c9352cf9b5306b38869e301"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/48b96bfa-6584-43e8-8c8e-8070eca0bc1e/requested.json",
+          "sha256": "2f1611e5a3231e8ea937dbb055f061a7b9172e240208682257c95da944633e01"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/a23b2caa-9d10-447e-9a98-3101f9883202/requested.json",
+          "sha256": "159075a43ee53105e5356cdadc99eb98d9289852eb54ce40e0f37af398e92a5f"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/aa4c4736-9315-4d5e-a834-f5f11081fbe0/requested.json",
+          "sha256": "1cf081abab61443d14c9fbabe73ea1951a6a07a23801cf67c8169968e0f2a1cf"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/c2c76401-3236-4084-9313-5f7330743978/requested.json",
+          "sha256": "42cb1c6a9d283cd9f1654a4c8030f13ee0cf7bd8c4f7206989c10fe16b243810"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/f7f50abd-6a63-4594-9395-e3b7170b96ad/requested.json",
+          "sha256": "98b66444c1f4129177dab18f0cd2b080dc5fc8422cfd80245994941fd7cdb0aa"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": ".parley-runtime/invocations/f9743a66-10de-4566-819c-0d317ebf4fa1/requested.json",
+          "sha256": "71508ecaead1126446871b8d6f4847b1e88366b97f91633febd6caba1c47147a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/0d470b30-1a03-4a75-9495-a15fd2e25cfa/requested.json",
+          "sha256": "369f8b810a233342f11fc3f67824dfedf0e5e6bc2faea60937f5cbd9309d1132"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/1c367455-9174-4466-824a-6823fe7c1952/requested.json",
+          "sha256": "891d9dc3aebca17f365f39932cb0305083e990d10d6fd56deb25bbc28648d063"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/5873e61e-0db0-417b-8014-cdfde97813a4/requested.json",
+          "sha256": "115ebe676ed617ab9caf03b7ab8fe57588a70825ed0d41214e90d6090c274373"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/5f2898e8-e980-429a-a967-95f428cf939f/requested.json",
+          "sha256": "3376752701ff84c578bb441d84e998ffdb8d188d2105976177d80d90043cb6d1"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/83525fa6-0c4c-4f99-9d35-3263bf4de69c/requested.json",
+          "sha256": "3a6752c6578410a44216e5eb09ef29c5079c8a9f924ef4bee620b9c7e3d9357d"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/de2694cd-9daa-4cb5-8849-c956778674a6/requested.json",
+          "sha256": "3b07b9f368412c2d71a7b60cb9f730b2f392b74080190bb159a2d290329e41bf"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": ".parley-runtime/invocations/ec3f831a-d901-4fa2-89fa-36fecd1f3c8f/requested.json",
+          "sha256": "2ba6b191dba583e261373d058b6e6f73dc986eb897f007cf6ca2396c406bc841"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/0260cf00-3a4a-4991-b696-e683e7f95211/requested.json",
+          "sha256": "afc7fa5ab2a58a3c2aa0b3e7637bebf2f973ae185f426816d809ca94f1edf31b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/080ef030-fde8-49f6-9bfe-89c179511a91/requested.json",
+          "sha256": "661266e207399224f520abf6a6a250968c006ab15a998374f7edc4f58cb32a31"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/2656c86f-a331-4c77-bc56-fdf5ea6f4898/requested.json",
+          "sha256": "0d2bf7d04aad4cd68db5cd6a693fa5d80992d4ddc42b5c257bf4b1a3ed3e3e68"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/3386e093-9c74-4cd5-a6c9-11c47ee8a8f9/requested.json",
+          "sha256": "aa004d854cf34c36b72ef5ab204dde8dc4194bdd1cb7627e53aae77a54de8ccb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/3b77aee2-9fd1-424c-8cd2-9a05ccd01f27/requested.json",
+          "sha256": "52e29439f4285829efed36d9e9477e9cfe679250f704ebd883c211f280fa3dc6"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/3dabe3df-3e10-4781-8904-3711eae619ca/requested.json",
+          "sha256": "0b0628dbae325d84aaf14a5448be5a252cbb5c1cc8a2d7f0756e3fa905a807a3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/41faabbd-c870-4c1c-b967-0acba52f0e98/requested.json",
+          "sha256": "6ef0cdb302a194cdf300a97c6f5ab2ac38f8971f24814be2e09f5cfe2d5ec8c4"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/46352f2d-9fbf-472e-bc26-e5897eae9a6a/requested.json",
+          "sha256": "0f25d2300d567b849210c5a5d3c4b8286a779f2a08797ea77f0c74344d2c0d38"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/4d45120f-b183-4566-9a66-9625f4c4b2b2/requested.json",
+          "sha256": "e5e755a885864860e5f5b2ba9840dbe85ba232e2533fe754d9f40f12c3f7dfd5"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/5ace7560-f804-4344-957b-23b4e90c6067/requested.json",
+          "sha256": "a59d295e2106d2bedf611fe78e8a0faa752a5bea440ba832489c1eb886168973"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/6e0126fc-30cb-44a7-8b69-04d6ee4f8e85/requested.json",
+          "sha256": "6ed9bdbccf7177700298f06f59bb2861da9e30ab6dfbc97b53062c7c67e70f2e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/72f0596b-4b92-4101-9bc4-58b8195da7bf/requested.json",
+          "sha256": "5ff0734d65ce8e56e4ead90d1c24524b129e6c192c03dfc2af20bc90e88dc19a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/89fca692-1444-4255-a67c-eb91a432c708/requested.json",
+          "sha256": "a453465486c5794b5bbe2ff932e0688879e5a73c971608fdb6719700b2f1988e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/9c85a60d-d2dc-4671-bf08-dde471f90614/requested.json",
+          "sha256": "b700fdb5ccfcaebdcc2a9d199fdfc1c43ae1fc1c4950adb7522cf04f01f3c2e2"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/ab5dfc8a-1b3b-42d8-b077-4d7aa185a487/requested.json",
+          "sha256": "a520316e5ad6f5595d89eaef41e685c82fede1fffef9c9490bf4ee52b256c785"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/b5f95c7f-602d-43d5-8c44-e2858545ed94/requested.json",
+          "sha256": "d8d97ba0c19c818a735999602c0471c07cc3874746901bcd1ebfba0b86ffb5fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/e04e426f-7bdb-4404-bb4b-39a38277d2aa/requested.json",
+          "sha256": "757e3e940bbc283d4ed6397fb670d90541f24ba2a49431ffac3f490c765e91a0"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/e876f9d6-5df1-4f84-bb21-77ed2b7a35c4/requested.json",
+          "sha256": "cfec166e565d437f0dd081e5408a5e03515981408179c6002e40c57efc1d950c"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/f47b7f16-bfdd-4ca7-99af-2b0d70d020f8/requested.json",
+          "sha256": "19998fe2d2d4b46065e99768ac5702e7755bc2ed8f42e89d7974f36a30ecfe50"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/f76b79a7-9187-408b-a97e-4a6e812d1640/requested.json",
+          "sha256": "3d0b5f3ccd9134ebd02bd77bf1db6fd17bc59dc13a0d96f5b7cf9de61bb29cad"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": ".parley-runtime/invocations/f77101c9-71e8-4252-b7f4-5f661f73b2f4/requested.json",
+          "sha256": "48cd37cc110aa469476c6fa5da8597a320f4bed3ea7ba330da75c948b8b58834"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/4e56455d-873e-46bf-90e4-f3a1c5058ee8/requested.json",
+          "sha256": "65a0d3d1e89e4907c34d40717244cef2cbf5633025466e30de86889feea7ef62"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/5f804c35-9cd2-4228-afed-550eeb18a988/requested.json",
+          "sha256": "1764a34de58aea5928abb7a8e66bfc01f343f8e84ca067276f46b63b45c2a24a"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/76b255bb-cb39-4bb3-9cf4-cb3b072aaa84/requested.json",
+          "sha256": "d85c26febe3cfbd87825fa0e74dd1f03664daac46b544193a2f2a073ed405b18"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/80c25f3f-1b50-4f81-9667-275387a04b02/requested.json",
+          "sha256": "5dd155a1ceb1f033e9c0ad53307a6a539fdca87f5d3fb229436583a87c7e0b9e"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/8a20bc00-9de2-409b-be17-39b8d2c56f3a/requested.json",
+          "sha256": "82b73d31f9eed5ca731a06ee574786675aeaf66ad8f77c027dfa513e28cf436b"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/a4e1d24c-6466-4764-96c9-ae83b3e7ec85/requested.json",
+          "sha256": "1329a8fbf2368412ee1ff4ef5511c8f4040570fa98c49bb94920f6a5213a3557"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/c16ced7b-14d0-4e82-80d6-0f88d035fb36/requested.json",
+          "sha256": "3e5a52e38e9ae2da6da7bf2e8ae140116af6d723eea9a2c06c83f37fa56f0044"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/e020e34e-b900-44c5-9fad-70d7baac1a2b/requested.json",
+          "sha256": "6b4e2407fa789d93d781fd1a9152f780043c45920e8a1529000d3e71ec051ee5"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/f7248aa0-d6cc-4dc4-9d69-7341cce6f61d/requested.json",
+          "sha256": "db0a7ddf7772b4522c7d1d8f3a1d3aaa377bd597ea6b7b7bf3dc54bdd03a6b15"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/f750e9ad-b977-44c4-95f3-cc9ce51a77ee/requested.json",
+          "sha256": "3a5df123858fc2160b45f5bb6a333172a8edfdad79fe94060f135cc839ad72ac"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": ".parley-runtime/invocations/fefaab07-cb0a-4f40-9f3f-7f8bdba2b5a1/requested.json",
+          "sha256": "e607b5c8189a4d6f8c95b67ccb8e991a0374085caa10b062ba4125f75ff8a2e4"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": ".parley-runtime/invocations/cf190d54-548d-4840-a5b6-b10f4eb09742/requested.json",
+          "sha256": "fcba9edd6e502ba078f0a7b2503814fdcebb19c6c9d498369c2e19a62fe1f384"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": ".parley-runtime/invocations/dcb0984c-611b-4fe3-8ba5-61182be0642a/requested.json",
+          "sha256": "e4b978c51aae0a25ab91dd197f5dca6510cfbc463ebe2a7bce65bf67051a1461"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": ".parley-runtime/invocations/24a29d05-33c1-4e7b-9d85-0e3c4e479356/requested.json",
+          "sha256": "2f966c7675d8a363437067c10993b398b3352955a974268df484b7dec958e1ac"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": ".parley-runtime/invocations/5c74cdc3-b106-42fe-b134-d81d4e2fecc9/requested.json",
+          "sha256": "122716f08e7cf47f3b5c21657d5a5ddcf5c08b90047ad9cec831efc58605f7c8"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": ".parley-runtime/invocations/20d32972-9b5b-4239-b426-065495c03f39/requested.json",
+          "sha256": "b8305e22029dadab7619b2790f2fff1ace4cb904d3b48c66e19f7cc4eb2db609"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": ".parley-runtime/invocations/60c845b1-c0b9-446d-8742-3869d939d6f5/requested.json",
+          "sha256": "beff1064b5fd222a4d745f5a68eb636461eb2ff0ed0535c199be0f3558f15509"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/00-prompt.md",
+          "sha256": "09f5c22ce573f3d4c27772d45d8e41d8840dc4e034c5f54323025bbe6049b9ca"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/pilot-preparation.md",
+          "sha256": "6fe1e8d8ac2b10f3629ff1e37bd62cd6882b0ac9801b567f04b6cfda66a1d243"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/provenance.json",
+          "sha256": "4cfe5f5a538a66cee402c47bda5547ab38847cba06b3faabb4af74d37622398c"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": ".parley-runtime/invocations/f071a935-befd-42ab-b20f-a5d34f5a85bd/requested.json",
+          "sha256": "3b486ead921616dbc6f2a480097ab5d68acb6bd40a49a88af272874749151f70"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": ".parley-runtime/invocations/2beffa0c-064b-47af-8422-8c907af865bb/requested.json",
+          "sha256": "4e9dc34cb44cc6942d07056abbbf4a8b71fc94d64f2c94976ae1ff6a3209aa1e"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": ".parley-runtime/invocations/877fa867-6255-45ba-a241-bba10dab0b1d/requested.json",
+          "sha256": "ddc20153ee5e1dd0f906758cd7d5f3af4cceba80d530fd09c06ebcf1103cef5e"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": ".parley-runtime/invocations/63aaffc7-621f-41d8-a76e-9f7d753228f7/requested.json",
+          "sha256": "0cbb8889046666713109186788e324b5c7c1da9b6c7d40483a0af20c6bfa5274"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": ".parley-runtime/invocations/30292ee0-2a1d-4413-991f-d8051cc025f1/requested.json",
+          "sha256": "380ee78fd6900aa4ac41843fd35387fdeebbaf2259c5952b4c01bc2c718f5704"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": ".parley-runtime/invocations/b25d8e16-271c-4a1e-8a57-02e176a19934/requested.json",
+          "sha256": "7838576b4437a0e10b46a249b556f5d18e366069dabc7a7ca3e099a8870e2313"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": ".parley-runtime/invocations/515ab844-21d0-420f-a355-58902a72dcfa/requested.json",
+          "sha256": "260f910c6e2fb020f28e9e0c9a89eb54c02e0ce535cb28ec7424626f71558ef3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": ".parley-runtime/invocations/07efbf63-7203-4f25-93f3-59f1d4a5a8a1/requested.json",
+          "sha256": "0ffbb08d83f7c72cc68bd2b7c57beec212c4e030833c155191a702d493b90957"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": ".parley-runtime/invocations/179f3982-87d5-42e4-b732-a7512de962ea/requested.json",
+          "sha256": "2ca0187629e985909644072b4135ee65b0d3c176bf35207ad5a4527f88e90bca"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": ".parley-runtime/invocations/abb0ea55-1af2-4ea6-8b7a-c322f51df32c/requested.json",
+          "sha256": "944f8f7114456985bfab2177bcd566d8488c3e3c990d833e31e1585d20b31778"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": ".parley-runtime/invocations/b288b45b-fcc8-4911-8108-90aa73004272/requested.json",
+          "sha256": "4039bd24cb3e7f79c21f9fb8295c278e66703c981acaf6c7d53f4cd69fadb487"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": ".parley-runtime/invocations/c428c10c-2ea2-47f4-a835-357b025ef5b5/requested.json",
+          "sha256": "f484f387c52fdcae0d63680b12a1f92b112b6696bf6ba33a58a7f20dfa576955"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/00-prompt.md",
+          "sha256": "09f5c22ce573f3d4c27772d45d8e41d8840dc4e034c5f54323025bbe6049b9ca"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/round-01/zcode-1.md",
+          "sha256": "465f67a93ed402ef23612865efeb3f35ee89e80a5354975d48e7a76089c86e9e"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/pilot-preparation.md",
+          "sha256": "6fe1e8d8ac2b10f3629ff1e37bd62cd6882b0ac9801b567f04b6cfda66a1d243"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2/source-context/provenance.json",
+          "sha256": "4cfe5f5a538a66cee402c47bda5547ab38847cba06b3faabb4af74d37622398c"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/06c70e21-91d9-4f85-84dc-a73d1ef9bb21/requested.json",
+          "sha256": "ec68be9a8f6409d22424b368408e0cea3e0462ca275f4d85bc77652512221b1d"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/08cc206d-0731-4746-98e0-b7ee2b8628d5/requested.json",
+          "sha256": "b4ef3713cba55b7dc744c4ce2629d186a5882eaa0dce1a102d61af2601829fbe"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/15b1ca5f-07d1-45bc-9a3e-a3233e2f146b/requested.json",
+          "sha256": "f1edb5e678e4ab581739b97f6d5e8049006f86ebd647e2fde3223ca085781b2f"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/1d612975-13a8-46e8-b162-7f3c1658dda0/requested.json",
+          "sha256": "55d403421f309db66d643c55a09c482eeafb45137f0076c1b29037fb3b16c8d3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/3af0058d-8ed4-447b-827b-05bd339ced31/requested.json",
+          "sha256": "7e38c9327c4c4147ef7b060284a000ca4b088760e1c2fce901cb2558e51e7dc6"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/41520f00-819c-4fb7-bb0b-033d9a462058/requested.json",
+          "sha256": "d896b529dc014dba0f4d0d601604547afd610cf84746aec37ae041caa153ed30"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/49ae62b4-3755-4882-a1f3-3236a425d01e/requested.json",
+          "sha256": "68c65048d663f338b7220592e648659db9c5f2d61b8c8b385f4d354133710a49"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/4e8fd511-a882-43f7-b81f-5ba5918fd045/requested.json",
+          "sha256": "ecb39cd6661a9d26cca1ad40ef3913ae6ccefd26ab984acb394523d3dbcd9f53"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/779d36ec-597c-4b36-afb2-1c11573fd3de/requested.json",
+          "sha256": "f4928888f9ec9b1c940f612e3777e22b7cb7a264e4f1752c7045cf335652aaa2"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/7a943905-eb24-4531-969e-0b818867caa0/requested.json",
+          "sha256": "10d895e880a524dfa4613b084862ba508161df5094d676775743ab0b36ccd6a4"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/8b6206ca-1bed-4102-b232-eb165de25d56/requested.json",
+          "sha256": "c06af4d6c787345e73c384743c9c807b6e99e644187ec0595a186106c28454fc"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/a25c13c6-a152-4852-990d-09b2b779ae33/requested.json",
+          "sha256": "937bd9bcf69f0d5ae1da6bfc9fcdde6526448e8a5ecdc0c2005a952ba8100ea8"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/a3a1b9b2-a3f8-48ac-964d-3bc2c992ba52/requested.json",
+          "sha256": "16f743b223bbe63c3ca528ad5c7dd4eaaf6ba7117af627a0c90944eb3a714f53"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/a513ddc3-6b1d-40f8-bd96-3f2b186eb3bd/requested.json",
+          "sha256": "31d7f9472e73d72579e03510434cf685decf29553bdad6c020191a52237b487c"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/d016c71f-4eab-4c6d-8e15-90df8c8f0f67/requested.json",
+          "sha256": "b9b3b9d727613b4800f602da7fbf86aa2dc340789cc13af9ca966ab399f5eaf1"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/d67f256b-7201-4f81-9b18-fe0114826418/requested.json",
+          "sha256": "189e22436f3366b547a99944b81dd5e8f3370ef11ca92663c69c8b6339480c5d"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/d689a09d-1a39-415f-be29-f8c2d56dfaf4/requested.json",
+          "sha256": "ca25ea3a5ba4937bc715df8da3e237536db5fc29e97c7a0f6c948870bbaec5c3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/de1b732d-8f84-43a5-82c3-2b52a42e8b7c/requested.json",
+          "sha256": "239d903e0edcb31954cdbf5c80eba585769abb3b89ed600e5e74d1ad3ce09e37"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/e0e09c08-d5d8-43e8-9012-f04d82250b5d/requested.json",
+          "sha256": "1c3ae1f9512252c7cbfbfbfdf876752351160951a6d95ecc9a5bb6705690d522"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/ecd4331a-1a10-477a-9de7-ddacb38e0781/requested.json",
+          "sha256": "b7534aa55449074a4e3dd22604a5d0f8927e79345b835e411fffcef78f76c55b"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": ".parley-runtime/invocations/feb014c6-d06a-4d04-b74e-f872656a818b/requested.json",
+          "sha256": "51d5bac0c7517cbf38f1b0a5e884609a3ad57b57fb9a939f13a9e65b9e2c7f16"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": "parley-deck/runs/20260510T194003Z/events.jsonl",
+          "sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": "parley-deck/runs/20260510T201421.063519000Z/events.jsonl",
+          "sha256": "4d385cdcc18f7b433ad00b7c0821258eb5ba8a65ee830b16725b36263b9839fb"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": "parley-deck/runs/20260510T201528.433687000Z/events.jsonl",
+          "sha256": "a3c90f9c15c5636fa007c1a1c344b9c3813bf46fa48c6e1af5468b6cd1381a65"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": "parley-deck/runs/20260602T100714.229215000Z/events.jsonl",
+          "sha256": "ed8952d52528dfcec0f54369811c464b55d4c33d26501cc3cfc995a70c57a398"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": "parley-deck/runs/20260602T191449.681222000Z/events.jsonl",
+          "sha256": "37c8e553986b2a1c85af491d92d6781aec843c71211206a4570f0912962e92e3"
+        },
+        {
+          "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+          "path": "parley-deck/runs/20260602T195452.190862000Z/events.jsonl",
+          "sha256": "5d02af67e9ab10aac50302aac93d754e14e78b13d0d7b0e8ef1370d06b8c69df"
+        }
+      ],
+      "launches": [
+        {
+          "id": "33cefc6c-f74b-4b4f-be3e-b3b1b21d4183",
+          "requested_at": "2026-09-16T00:32:44.413257Z",
+          "terminal_sha256": "959246fc7edbc4a0a7d7e8c68ba622ce8303c51ae23ce9f380db99e96e96fdf7",
+          "classification": "attempt",
+          "observed_micros": 2923398,
+          "observation_basis": "cli-estimate"
+        },
+        {
+          "id": "3b90ef32-593b-44af-a240-3ea0f008da0c",
+          "requested_at": "2026-09-15T23:51:55.566717Z",
+          "terminal_sha256": "12248577dceb34e73661dc53dffc2174a4cbb712011e6d82de1b3c3e0dd0923b",
+          "classification": "attempt",
+          "observed_micros": null,
+          "observation_basis": "unavailable"
+        },
+        {
+          "id": "4b33cd20-a55f-439a-9b12-8e7d6620586f",
+          "requested_at": "2026-09-16T01:05:44.840942Z",
+          "terminal_sha256": "fa9f1c3fc5864f5b09f7f15ad0d1e0ce01feac5cd43273f91e40b51cc1d90fdd",
+          "classification": "retained-pre-start-refusal",
+          "observed_micros": null,
+          "observation_basis": "unavailable"
+        },
+        {
+          "id": "6a75850b-3a95-4f8f-8cc9-ecfbf26f02bd",
+          "requested_at": "2026-09-16T01:05:44.849617Z",
+          "terminal_sha256": "5d4ac48e336751343cefa3d7a59ec985e8300eb55594638dda35344d1e708820",
+          "classification": "retained-pre-start-refusal",
+          "observed_micros": null,
+          "observation_basis": "unavailable"
+        },
+        {
+          "id": "6c5431fb-726c-426c-ab12-a73850ebb89e",
+          "requested_at": "2026-09-16T01:05:44.854009Z",
+          "terminal_sha256": "945cb96ba44bb2e3f808ccf73e74b9d8514a218654697686012d2cba741c4a5a",
+          "classification": "retained-pre-start-refusal",
+          "observed_micros": null,
+          "observation_basis": "unavailable"
+        },
+        {
+          "id": "c8ff6a7e-631e-4445-b81f-dc713cc7e10b",
+          "requested_at": "2026-09-16T00:06:36.869953Z",
+          "terminal_sha256": "9f8d4ca8e2cbf3bf92f98cf96f0bab523b66198a2012e3a346ea9b910fc97a35",
+          "classification": "attempt",
+          "observed_micros": null,
+          "observation_basis": "unavailable"
+        }
+      ],
+      "earliest": "2026-09-15T23:51:55.566717Z",
+      "legacy_start_floor": 0,
+      "has_canonical_history": true,
+      "unavailable_roots": [
+        {
+          "path": "/private/tmp/claude-501/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck/5dc331bd-5ddf-45e0-b6c2-d519d8c05128/scratchpad/f2repo",
+          "observation": "stat-enoent",
+          "history": "unknown"
+        },
+        {
+          "path": "/private/tmp/revert-test2",
+          "observation": "stat-enoent",
+          "history": "unknown"
+        }
+      ],
+      "unscoped_runs": [
+        {
+          "path": "parley-deck/runs/20260510T194003Z",
+          "sha256": "7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6",
+          "roots": [
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+            "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+            "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout"
+          ],
+          "copies": 25,
+          "history": "unknown",
+          "earliest": "2026-05-10T19:40:03.126637Z"
+        }
+      ],
+      "history_coverage": "declared-incomplete",
+      "history_sha256": "7cc16e77218b5f35b9c3d31973115f47a6beab4412ec5b62bb11380fd4bdea27"
+    },
+    "earliest": "2026-09-15T23:51:55.566717Z",
+    "lower_bound": 1,
+    "lower_bound_basis": "surviving-visible-worktrees-and-scoped-run-history-only",
+    "evidence": [
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-amendment",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 1
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-binding-review",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-claude",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-design",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-hermes",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-integration",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-kimi",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-publication-review",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/evidence-first-reconciliation-review",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-editor-composer",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-learn-playbooks",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-roster-presets",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/wt-round-summary",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-abnormal-kimi-review-yaynthio/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-activation-archive-review-b494ygc8/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-claude-1-fix-isiox3ey/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-1-recovery-yjtox8j_/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-kimi-recovery-probe-gd718hjj/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/claude-1/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/kimi-1/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-managed-20260915-_7al2_89/zcode-1/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-runtime-authority-review-1p3cyl4e/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-usage-wyeh_kqf/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      },
+      {
+        "root": "/private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/parley-zcode-verifier-recovery-0iploql5/checkout",
+        "path": "parley-deck/ideas/meta-protocol-change-evidence-first-efficiency-v2",
+        "rule": "structural-driver-marker-floor",
+        "floor": 0
+      }
+    ],
+    "ungrouped_invocations": [
+      "4b33cd20-a55f-439a-9b12-8e7d6620586f",
+      "6a75850b-3a95-4f8f-8cc9-ecfbf26f02bd",
+      "6c5431fb-726c-426c-ab12-a73850ebb89e"
+    ],
+    "history_sha256": "78e90da8db2774408afe7fc8960afcda6ef577eeda9d6afb513e923df482811b"
+  },
+  "identity_report_sha256": "07f93198856cedab999dcab2d956f139aaad76b58614360b67eff5ba7102f86e",
+  "raw_inventory_sha256": "054139e876df438754c566831ce4fd3c896d2e13b58d57a6f2ff6c11fd6fd5f7",
+  "operator_total_actions": null,
+  "operator_started_at": null,
+  "operator_decision_id": null,
+  "writers_stopped_attested": false,
+  "apply_performed": false,
+  "limits": [
+    "Lower bound1 covers surviving visible worktrees and scoped run history only; it is not a reconciled total.",
+    "Two registered worktrees and one unscoped run file-set remain unknown;25 copies are not25 actions.",
+    "Three pre-start refusal invocations remain explicitly ungrouped; no automatic count chosen.",
+    "Original max3 is unchanged; this observation grants no cycle authority, count, budget extension or real launch.",
+    "This digest must be refreshed/rechecked after active source work before any proposed guarded apply."
+  ]
+}

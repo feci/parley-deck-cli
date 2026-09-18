@@ -1,0 +1,684 @@
+{
+  "at": "2026-09-16T04:25:33.088791+00:00",
+  "status": "candidates-not-integrated",
+  "published_head": "b5a44cc45ec283683361d76a0a9e8258ae4bebb2",
+  "artifacts": {
+    "kimi-1-run-declaration-eligibility-fix-20260916": "febeb21bfef702acb04db450601d597cf1795451b7062e59037cd5c7b8858ce3",
+    "zcode-1-grouped-launcher-test-completion-20260916": "228e0f3ac623a0e7d222e8ea8462569ad8cf3afc8ada2f8dba0d7b7afd2bdc17",
+    "claude-1-n1-final-source-review-20260916": "fffe59b242a5bb7d7eed957f8b4cc393ad1c01dc7c208d70d8171a8a68e70977"
+  },
+  "checks": {
+    "combined-n1-history-validation": {
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 11.704,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "1ef5f2097076010f0e073ff9a79e83a3e61eff3983c3763d99ed64e8866a9c42",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/driver",
+            "./internal/runner",
+            "./internal/app",
+            "-run",
+            "Test(N1|StepWrappers|DriverPrecheck|Precheck|.*[Pp]reflight|Declared|BudgetMigrateDeclared|.*Unscoped|.*RunIdentit)"
+          ],
+          "exit": 0,
+          "seconds": 18.131,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 68,
+          "stderr": "",
+          "stdout_sha256": "7996b6f7f19664465285d142adefe1762612611580304423c6bb68c686b71d4d",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "full",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./..."
+          ],
+          "exit": 1,
+          "seconds": 1090.049,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestProtocolMigrationDriverNestedActualChildrenAndBlockResume/4",
+            "TestProtocolMigrationDriverNestedActualChildrenAndBlockResume"
+          ],
+          "test_pass_events": 2612,
+          "stderr": "",
+          "stdout_sha256": "de566cd57d910c9f9a96f209b183e9ea0febad9149b4f60763c9856af427de00",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "unscoped-strict-error-validation": {
+      "complete": true,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./internal/budget",
+            "./internal/app"
+          ],
+          "exit": 0,
+          "seconds": 2.8,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "10fd034185b162d60e2053001b67a0a9b165bee9a1a658c85321a61864b72b39",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/app",
+            "-run",
+            "Test(.*Unscoped|.*RunIdentit|.*RunDirectory|Declared|BudgetMigrateDeclared)"
+          ],
+          "exit": 0,
+          "seconds": 4.511,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 31,
+          "stderr": "",
+          "stdout_sha256": "89dc2b77ef33a1f33f5f8a5c341862de8742942d4a08684af9b693edecf7dfc7",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "unscoped-eligibility-validation": {
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./internal/budget",
+            "./internal/app"
+          ],
+          "exit": 0,
+          "seconds": 2.855,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e6d8af2ea307a306ac83b8e51f0ecbf2df48b02dc9cd345d8c0c2a8ec72b810f",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/app",
+            "-run",
+            "Test(.*Unscoped|.*RunIdentit|.*RunDirectory|RunDeclaration|Declared|BudgetMigrateDeclared)"
+          ],
+          "exit": 1,
+          "seconds": 5.86,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestRunDeclarationEligibilityAdmitsTheValidControl",
+            "TestRunIdentityDiscoveryAndMigrationScannerDisagree"
+          ],
+          "test_pass_events": 32,
+          "stderr": "",
+          "stdout_sha256": "db248f31d1ad6a2e7c843e2cc5d9c64e5006c1a4503b70b0f4d93671c99a8382",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "grouped-launcher-complete-validation": {
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 1.696,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "f9f6093334487b12b697c719f2a06cdbe9f57ed480de966f11c820a68edb14df",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 1,
+          "seconds": 1.781,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestRefusesTamperedMigratedLedgerBeforeDiscovery"
+          ],
+          "test_pass_events": 12,
+          "stderr": "",
+          "stdout_sha256": "37422047a81d1b1fb2d07d9d6baeb88af10137b62b955823e37e586e7ce82a59",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "grouped-launcher-canonical-fixture-validation": {
+      "complete": true,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 2.207,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "692b42a7a2eedd459ef935578db31f0e13bf38394da11123158d027d0e652bf2",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 1.874,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 13,
+          "stderr": "",
+          "stdout_sha256": "555547969cd3de839d083f54696c436564f1d92f1ed6bcc73b89180edcc89dfd",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "race",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 13.528,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 13,
+          "stderr": "",
+          "stdout_sha256": "08b112ca085cb500a403dc3fe2cfeb93d8d0da4c88d54faee3406ec89bd3a967",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "vet",
+          "command": [
+            "go",
+            "vet",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 0.367,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "grouped-launcher-four-gap-before-control": {
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 1.544,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "52846137ce1597df0c63436f8391a6be418221df848ff8ecc0c5119c86b94ea1",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916",
+            "-run",
+            "Test(RefusesTamperedMigratedLedgerBeforeDiscovery|AmbientConfigLayerBindsDigestAndExplicitOverrideRestoresEnv|ExecuteRunsDiscoveryUnderSharedDeadline|FailedPeerReportsUnsuccessfulWithoutLosingOrganizer)"
+          ],
+          "exit": 1,
+          "seconds": 1.245,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestRefusesTamperedMigratedLedgerBeforeDiscovery",
+            "TestAmbientConfigLayerBindsDigestAndExplicitOverrideRestoresEnv",
+            "TestExecuteRunsDiscoveryUnderSharedDeadline",
+            "TestFailedPeerReportsUnsuccessfulWithoutLosingOrganizer"
+          ],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "6eb0a8df9f3ed28a86e16171a054a00d19cb2e1ca500d56683d83a64f34173b8",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "final-source-validation": {
+      "complete": true,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 11.787,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "66d2292484a29954dc4690b64fd1344d6d10298cac66bba929a7bf167b40f3d3",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused-app",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/app",
+            "-run",
+            "Test.*(Precheck|Signoff)"
+          ],
+          "exit": 0,
+          "seconds": 36.49,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 23,
+          "stderr": "",
+          "stdout_sha256": "dc0eb94c75aa1852afd6bf7aee785733436bbe8ac3f7b8774ba710a9d233b86e",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "race-app",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/app",
+            "-run",
+            "Test.*(Precheck|Signoff)"
+          ],
+          "exit": 0,
+          "seconds": 52.493,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 23,
+          "stderr": "",
+          "stdout_sha256": "e262d1fa3d13ec1d0e0999a6f5e8758f600b18834636878cc18d7ebfba748f3a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "vet",
+          "command": [
+            "go",
+            "vet",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 0.899,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "concrete-amendment-proposal-validation": {
+      "complete": true,
+      "checks": [
+        {
+          "name": "launcher-tests",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 2.626,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 13,
+          "stderr": "",
+          "stdout_sha256": "0cf3530509b49cf289a4d33fac3389cde0e1901ac7e9bdbc84b958b1a177bf17",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "launcher-race",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-json",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 9.955,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 13,
+          "stderr": "",
+          "stdout_sha256": "7399574ab36f735e799b824ef071789c7edcaaa020b33df3997c81c6cc028720",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "launcher-vet",
+          "command": [
+            "go",
+            "vet",
+            "./.parley-runtime/grouped-amendment-launcher-20260916"
+          ],
+          "exit": 0,
+          "seconds": 0.307,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "blocked-signoff-before-control": {
+      "complete": false,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./internal/app"
+          ],
+          "exit": 0,
+          "seconds": 2.626,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "bdfbacae0b28c465926a82503ece14a2a85d25f023718a790ef3172e2071825f",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "behavior",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "5m",
+            "-json",
+            "./internal/app",
+            "-run",
+            "^TestDriverPrecheckReviewSignoffsBlockedConsensusWins$"
+          ],
+          "exit": 1,
+          "seconds": 2.967,
+          "source_unchanged": true,
+          "failed_tests": [
+            "TestDriverPrecheckReviewSignoffsBlockedConsensusWins"
+          ],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "b213b2a0cc4f1432c25f6c4203ef03a7549324d26d41951a90c009c2366eb697",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    "final-n1-history-supplement": {
+      "complete": true,
+      "checks": [
+        {
+          "name": "compile",
+          "command": [
+            "go",
+            "test",
+            "-run",
+            "^$",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 12.251,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "5df17c27d9d1b646c195817de0d24dfc94258825abcecb334e40c236448d3933",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "focused",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/driver",
+            "./internal/runner",
+            "./internal/app",
+            "-run",
+            "Test(N1|StepWrappers|DriverPrecheck|Precheck|.*[Pp]reflight|ProtocolMigrationDriverNested|.*Unscoped|.*RunIdentit|.*RunDirectory|RunDeclaration|Declared|BudgetMigrateDeclared)"
+          ],
+          "exit": 0,
+          "seconds": 18.437,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 83,
+          "stderr": "",
+          "stdout_sha256": "da9a087c75f9e8af7b034d75eddc175bc8d7d1501a92f6f4b033628b2815f90d",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "changed-full",
+          "command": [
+            "go",
+            "test",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/driver"
+          ],
+          "exit": 0,
+          "seconds": 60.669,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 700,
+          "stderr": "",
+          "stdout_sha256": "57628c628bc909a33f693cdb40c820b9ab459180495d3f249fd5bb5d1b93b24c",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "race",
+          "command": [
+            "go",
+            "test",
+            "-race",
+            "-count=1",
+            "-timeout",
+            "20m",
+            "-p",
+            "1",
+            "-json",
+            "./internal/budget",
+            "./internal/trajectory",
+            "./internal/telemetry",
+            "./internal/runner",
+            "./internal/app",
+            "./internal/driver"
+          ],
+          "exit": 0,
+          "seconds": 1388.771,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 2082,
+          "stderr": "",
+          "stdout_sha256": "1b1dc5c8496426ddb6214a98f9ffda154495d7eb6f76a9b08bd38b02c9e1019a",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "name": "vet",
+          "command": [
+            "go",
+            "vet",
+            "./..."
+          ],
+          "exit": 0,
+          "seconds": 0.636,
+          "source_unchanged": true,
+          "failed_tests": [],
+          "test_pass_events": 0,
+          "stderr": "",
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    }
+  },
+  "active": {},
+  "accounting": {
+    "normalized_stopped_terminals": 89,
+    "stopped_attempts_including_missing_terminal": 90,
+    "unknown_cost_terminals": 57,
+    "missing_terminal_unknown": 1,
+    "known_cli_estimates_usd": "120.320013",
+    "total_spend": "unknown",
+    "experiment_started": false
+  },
+  "updated_at": "2026-09-16T04:45:17.173314+00:00"
+}

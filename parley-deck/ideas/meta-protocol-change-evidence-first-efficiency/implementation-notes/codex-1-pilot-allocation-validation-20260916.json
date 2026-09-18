@@ -1,0 +1,70 @@
+{
+  "runs": [
+    {
+      "label": "corrected-pilot-suite-isolated",
+      "exit_code": 0,
+      "seconds": 3.716727541992441,
+      "command": [
+        "/private/tmp/pd-pilot-allocation-tos54b3_/venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "-v",
+        "test_pilot_analysis",
+        "test_pilot_grading",
+        "test_pilot_acceptance"
+      ],
+      "cwd": "/private/tmp/pd-pilot-allocation-tos54b3_/source"
+    },
+    {
+      "label": "boundary-before-control",
+      "exit_code": 1,
+      "seconds": 0.04548137518577278,
+      "command": [
+        "/private/tmp/pd-pilot-allocation-tos54b3_/venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "-v",
+        "test_pilot_analysis.PilotAnalysisTests.test_explicit_table_malformed_task_metadata_raises_value_error",
+        "test_pilot_analysis.PilotAnalysisTests.test_explicit_table_malformed_roster_raises_value_error"
+      ],
+      "cwd": "/private/tmp/pd-pilot-allocation-tos54b3_/kimi-before-control"
+    }
+  ],
+  "old_new_exact_output_comparisons": 30,
+  "fixture_matches_codex_round02": true,
+  "round02_sha256": "c6e26af0221ef4ff9061190f651e39c240a6b2b9433623e9389f0e2c09c3e2d3",
+  "candidate_hashes": {
+    "pilot_analysis.py": "37c5c655a13cfeb8d53c309d5fedb9e6b319e8e681ca47389074791e3a7b88e3",
+    "test_pilot_analysis.py": "81e26b2108a486eaec4abc25e448f0c33fb2df6d454155665c7bb8be020e73b8"
+  },
+  "experiment_started": false,
+  "schedule_ratified": false,
+  "retained_initial_suite_failure": "corrected-pilot-suite.stderr: Python3.14 missing PyYAML; 27 tests passed, grading module import failed",
+  "environment": {
+    "python": "3.11.15 (main, May 10 2026, 19:23:07) [Clang 22.1.3 ]",
+    "PyYAML": "6.0.3"
+  },
+  "import": {
+    "at": "2026-09-16T05:07:46.930302+00:00",
+    "evaluation_root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation",
+    "backup": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck-evaluation/.audit-backups/20260916-explicit-allocation",
+    "protected_pilot_files_unchanged": 8,
+    "other_python_scripts_unchanged": 17,
+    "hashes": {
+      "pilot_analysis.py": {
+        "before": "4314131f736203c5d0f1c45f1a609f02264bf5d279ad5d432e7b049fd853aca8",
+        "kimi": "bd2a3ef1d417873b4ec7b0aa5e47d361da961eb41ce66a0a9f196967261e5fee",
+        "after": "37c5c655a13cfeb8d53c309d5fedb9e6b319e8e681ca47389074791e3a7b88e3"
+      },
+      "test_pilot_analysis.py": {
+        "before": "23929679a183dda83a9c8f3b4c635fa1fdbc977c4e73dac1509f8e9ce77a8c0a",
+        "kimi": "c5099d9ef1f984f3bd5d7df8138e2440fc5780af9dd1d144a1aad7a2e1cefb1e",
+        "after": "81e26b2108a486eaec4abc25e448f0c33fb2df6d454155665c7bb8be020e73b8"
+      }
+    },
+    "patch": "codex-1-pilot-allocation-20260916.patch",
+    "kimi_note_sha256": "ed5a0a6a6d3c539a03c2617b98f559e993a812d07f42ed1b5b93ba040c7306aa"
+  }
+}

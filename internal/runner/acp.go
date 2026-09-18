@@ -15,6 +15,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // acpClientName matches what ACP-aware CLIs expect to log; AionUi uses
@@ -25,7 +26,32 @@ const acpClientName = "parley-deck"
 // piping a prompt through one-shot text stdio. The agent is expected to write
 // the canonical artifact file (outputPath) via its own filesystem tools.
 // Streaming session/update notifications are appended to the run's event log.
-func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, result Result, outputPath, stdoutPath, stderrPath, prompt string, attemptID int) Result {
+func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, result Result, outputPath, stdoutPath, stderrPath, prompt string, attemptID int) (returned Result) {
+	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
+	defer cancel()
+	ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
+		Idea: opts.Idea.Slug, Phase: protocolLaunchPhase(opts), AttemptOrdinal: attemptID,
+		RetryOf: result.InvocationID, Store: opts.Store, ArtifactPath: outputPath,
+		Observe: func(r telemetry.Record) { result.InvocationID = r.InvocationID },
+	})
+	ctx, prompt, evidence, err := beginProtocolLaunch(ctx, opts.Root, opts.RunID, agent, prompt)
+	if err != nil {
+		return failEarly(opts, result, err)
+	}
+	// Setup failures have no finishACP call; they still own a terminal record.
+	defer func() {
+		var setupErr error
+		if returned.ExitError != "" {
+			setupErr = errors.New(returned.ExitError)
+		}
+		if err := evidence.finish(setupErr, ctx.Err(), nil); err != nil {
+			returned.ExitError = err.Error()
+			var integrity *launchIntegrityError
+			if errors.As(err, &integrity) {
+				returned.FailureClass = "telemetry_failure"
+			}
+		}
+	}()
 	if agent.ACPArgs == nil && agent.Path != "" {
 		// Defensive: an ACP-mode agent must declare its launch flags; AionUi
 		// defaults to ["--experimental-acp"] for claude when unset. Requiring
@@ -34,19 +60,16 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 		return failEarly(opts, result, fmt.Errorf("agent %s has launch_mode=acp but ACPArgs is empty", agent.ID))
 	}
 
-	stdoutFile, err := os.Create(stdoutPath)
+	stdoutFile, err := openPrivateLog(stdoutPath)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
 	defer stdoutFile.Close()
-	stderrFile, err := os.Create(stderrPath)
+	stderrFile, err := openPrivateLog(stderrPath)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
 	defer stderrFile.Close()
-
-	ctx, cancel := context.WithTimeout(parent, timeoutForAgent(opts.Timeout, agent))
-	defer cancel()
 
 	// Register so Handle.KillAgent can cancel this ACP attempt's context (the same
 	// per-agent kill path as headless agents); deregister on return. The KILLED
@@ -54,18 +77,30 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	opts.tracker.register(agent.ID, opts.SegmentID, "round", "", cancel)
 	defer opts.tracker.finish(agent.ID)
 
-	env := acp.MergedEnv(ctx, nil)
+	env := append(cleanParticipantEnv(agent.Adapter(), acp.MergedEnv(ctx, nil)), procctl.MarkerEnv(opts.RunID, agent.ID, evidence.invocation.ID)...)
 	process, err := acp.Spawn(ctx, acp.SpawnOptions{
-		Command:    agent.Path,
-		Args:       append([]string(nil), agent.ACPArgs...),
-		WorkingDir: opts.Root,
-		Env:        env,
+		Command:        agent.Path,
+		Args:           append([]string(nil), agent.ACPArgs...),
+		WorkingDir:     opts.Root,
+		Env:            env,
+		StderrObserver: evidence.collector.Writer("stderr"),
 	})
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
+	stopped := false
+	defer func() {
+		if !stopped {
+			stopCtx, stopCancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer stopCancel()
+			_ = process.Stop(stopCtx)
+		}
+	}()
+	if err := evidence.started(process.PID()); err != nil {
+		return failEarly(opts, result, err)
+	}
 
-	teeStdout, teeOut := newTeeReader(process.Stdout(), stdoutFile)
+	teeStdout, teeOut := newTeeReader(process.Stdout(), io.MultiWriter(evidence.collector.Writer("stdout"), stdoutFile))
 	transport := acp.NewTransport(teeStdout, &lineWriter{w: process.Stdin(), copy: stdoutFile})
 	handler := &acpRunnerHandler{
 		store:     opts.Store,
@@ -80,7 +115,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 
 	// Capture the durable process identity so a restarted parley can re-attribute
 	// and group-kill this ACP agent (same as the headless path).
-	sp := procctl.CaptureByPID(process.PID(), fmt.Sprintf("%s:%s:%d", opts.RunID, agent.ID, attemptID))
+	sp := procctl.CaptureByPID(process.PID(), evidence.invocation.ID)
 	if appendErr := opts.Store.Append(store.Event{
 		Time: time.Now().UTC(),
 		Type: "agent.started",
@@ -91,7 +126,6 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 			"stderr":      stderrPath,
 			"launch":      agents.LaunchACP,
 			"command":     sp.Command,
-			"acp_args":    agent.ACPArgs,
 			"segment_id":  opts.SegmentID,
 			"attempt_id":  attemptID,
 			"pid":         sp.PID,
@@ -207,7 +241,9 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	case errors.Is(finishErr, errStalled):
 		watchdog = "stalled"
 	}
-	return finishACP(opts, result, agent, process, stderrFile, teeOut, finishErr, handler, watchdog, ctx.Err(), attemptID)
+	returned = finishACP(opts, result, agent, process, stderrFile, teeOut, finishErr, handler, watchdog, ctx.Err(), attemptID, evidence)
+	stopped = true
+	return returned
 }
 
 // finishACP centralises shutdown, stderr capture, artifact validation and
@@ -215,13 +251,16 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 // decision table: a validated artifact overrides an ACP prompt error that
 // happened AFTER the session opened (agent_exit_kind=acp_error); initialize/
 // session-setup errors, watchdog kills, and the hard timeout always fail.
-func finishACP(opts Options, result Result, agent agents.Discovery, process *acp.Process, stderrFile *os.File, teeOut chan struct{}, runErr error, handler *acpRunnerHandler, watchdog string, ctxErr error, attemptID int) Result {
+func finishACP(opts Options, result Result, agent agents.Discovery, process *acp.Process, stderrFile *os.File, teeOut chan struct{}, runErr error, handler *acpRunnerHandler, watchdog string, ctxErr error, attemptID int, evidence *launchEvidence) Result {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	_ = process.Stop(shutdownCtx)
 	<-teeOut
 	if stderrFile != nil {
 		_, _ = io.WriteString(stderrFile, process.Stderr())
+	}
+	if err := evidence.finish(runErr, ctxErr, process.ExitCode()); err != nil {
+		runErr = err
 	}
 
 	result.CompletedAt = time.Now().UTC()
@@ -259,7 +298,8 @@ func finishACP(opts Options, result Result, agent agents.Discovery, process *acp
 	// Artifact-wins (D7): only a post-session prompt error qualifies — and
 	// never a watchdog kill or the outer timeout/cancel.
 	cancellation := watchdog != "" || errors.Is(ctxErr, context.DeadlineExceeded) || errors.Is(ctxErr, context.Canceled)
-	if result.ArtifactOK && !cancellation && runErr != nil && handler != nil && handler.sessionID != "" {
+	var integrity *launchIntegrityError
+	if result.ArtifactOK && !cancellation && runErr != nil && !errors.As(runErr, &integrity) && handler != nil && handler.sessionID != "" {
 		result.AgentExit = 1
 		result.AgentExitKind = "acp_error"
 		result.Warning = combineWarning(result.Warning, "acp prompt error overridden by validated artifact: "+runErr.Error())
