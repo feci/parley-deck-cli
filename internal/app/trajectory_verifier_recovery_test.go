@@ -88,7 +88,13 @@ func refusedVerifierAppFixture(t *testing.T) *verifierRecoveryAppFixture {
 	if _, statErr := os.Stat(filepath.Join(root, ".parley-runtime", "verifier-starts")); !os.IsNotExist(statErr) {
 		t.Fatal("refused verifier launched a process")
 	}
-	base := filepath.Join(root, ".parley-runtime", "trajectory-verification", result.RunID)
+	// Production resolves the workspace root before persisting absolute paths.
+	// macOS temp roots may be spelled /var while their identity is /private/var.
+	canonicalRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := filepath.Join(canonicalRoot, ".parley-runtime", "trajectory-verification", result.RunID)
 	originalRaw, err := os.ReadFile(filepath.Join(base, "parent-result.json"))
 	if err != nil {
 		t.Fatal(err)

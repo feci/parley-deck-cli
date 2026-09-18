@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.48.0 — 2026-09-18
+
+### Added
+
+- Persistent trajectory budgets and attended history migration retain spent attempts and
+  explicitly unknown history across restarts and worktrees.
+- Invocation telemetry records available usage and costs without treating unknown costs as zero.
+- Independent execution evidence, verifier recovery and guarded publication bind completion
+  to the current code tree and declared acceptance criteria.
+- `parley protocol packet` renders live authority with a context attestation. Full context
+  remains the default; shadow diagnostics and optimized packets are experimental.
+- Liveness diagnostics make launch and recovery failures visible.
+
+### Fixed
+
+- Missing, self-issued, failed or inconclusive goal checks withhold automated completion.
+- Admission and reconciliation preserve historical charges and refusal evidence instead of
+  silently granting a fresh budget after incomplete or missing history.
+
+### Release scope and limitations
+
+This release integrates the evidence-first implementation and its hardening. It does not
+claim completion of the empirical audit, its unfinished amendment, the 12-task pilot or the
+packet experiment, and makes no measured performance claim. Missing historical worktrees
+remain unknown. A concurrent helper-scope edit can still consume a verification ticket
+before the later scope check refuses (the disclosed R3 timing-window NIT); spent work is
+retained and this is not evidence of unauthorized acceptance.
+
+## 1.47.0 — 2026-08-29
+
+See the [published release notes](https://github.com/feci/parley-deck-cli/releases/tag/v1.47.0)
+for this earlier release; its detailed entry was not added to this changelog at publication.
+
 ## 1.46.0 — 2026-08-21
 
 A protocol-and-skill audit by six agents, and the fix-up cycles it took to close. 37 findings were

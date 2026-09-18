@@ -12,14 +12,6 @@ import (
 )
 
 // `parley protocol packet` — the phase-scoped protocol context renderer and its check.
-//
-// Registration in runProtocol (internal/app/protocol.go, integration-owned) is a one-line
-// dispatch BEFORE the shared flag set is parsed, because this subcommand owns its flags:
-//
-//	case "packet":
-//		return runProtocolPacket(rest, stdout, stderr)
-//
-// Until that line lands, the command is reachable only through this function.
 const protocolPacketUsage = `usage:
   parley protocol packet [--dir DIR] --phase N [--track T] [--transport X] [--idea SLUG]
                          [--flag F]... [--optimize] [--json] [--print]

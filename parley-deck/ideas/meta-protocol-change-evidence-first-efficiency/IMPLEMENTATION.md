@@ -4328,3 +4328,27 @@ wrote their own new files. Zcode failed on the installed runtime's unsupported
 without consensus/signoffs/FINAL. See implementation-notes/codex-1-approved-accounting-round02-20260917.md
 and its JSON for outcomes and accounting. The historical approval wait is resolved;
 provider-spending enforcement and all original acceptance gates remain open.
+
+
+### User-directed release preparation — September 18, 2026
+
+The user explicitly instructs Codex to finish the latest version, merge the
+prepared work and release it through all existing channels, without new development
+PRs. This supersedes the earlier no-merge/no-release scope restriction. It does not
+turn missing experiments or participant signatures into completed evidence.
+Codex owns the isolated release checkout, VERSION/CHANGELOG/user documentation,
+packaged protocol consistency, release validation, distribution metadata and channel
+verification. Existing participant-owned files and historical FINALs remain intact.
+Release checklist: merge the two prepared branches; finish current-source technical
+checks and independent release review; build all target artifacts; verify package
+payload; publish versions and channel metadata; record actual channel outcomes.
+The experimental pilot/packet results and longitudinal audit follow-ups remain open.
+Native checkout: /private/tmp/parley-release-20260918-3jxrzfsf/cli;
+branch release/1.48.0-20260918; parallel reviewers own report files only.
+
+Release validation completed: full Go suite (2,627 cases including subtests),
+go vet, budget/trajectory/runner/telemetry/protocolpacket race checks and app verifier
+recovery race checks passed. The installer passed 391 Node tests, 54 Python tests,
+payload manifest verification, packaging and isolated install/doctor smoke checks.
+See docs/releases/1.48.0/assessment.md and the participant-authored release reports.
+This release does not close the original audit or its unfinished amendment.
