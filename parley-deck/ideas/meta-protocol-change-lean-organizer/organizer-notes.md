@@ -24,3 +24,16 @@
 - The driver then refused to launch round-02 before any participant launch: cross-review accounting reports unavailable historical worktree `/private/tmp/claude-501/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck/5dc331bd-5ddf-45e0-b6c2-d519d8c05128/scratchpad/f2repo`. Its durable escalation is `inbox/claude-to-user_meta-protocol-change-lean-organizer_driver-error.md` (the driver labels the author `claude`, despite codex-1 organizing this run).
 - Owner authorization: “When the driver cannot do a step, fall back manually and record why in the idea (that gap is evidence for this idea).” We take that manual canonical workflow fallback. No worktree history is pruned, no unknown-history declaration is forged, no budget ledger is reset/relaxed, and no product code is changed to bypass the guard. Manual cross-review count starts at 1 (round-02), within deliberation's 3 cross-review limit; all three participants remain required. Driver status shows terminal/outcome completed for round completion while the idea is still pre-consensus; this is not treated as idea completion.
 - These are operational observations for A–D, not new mandatory implementation scope. Review participants may discuss whether existing validators/status adequately express these situations under scope B.
+
+## Pre-Phase-5 scope check — 2026-09-23
+
+codex-1 inspected FINAL's A–D specification, binding cross-cutting decisions, observable acceptance table, validation/recovery requirements, and the accepted reservation dispositions. Result: PASS under the owner's scope stop rule.
+
+- A retained: declared facilitator runs default to participant-owned implementation/tests/code verification; organizer consumes verdicts/validators; explicit compatibility and owner-role exceptions remain.
+- B retained: deterministic Go digest and bounded blocking wait, default below 30 minutes; raw paths/artifacts canonical; no LLM summaries or universal provider TTL assertion.
+- C retained: role-scoped verbatim facilitator view, computed brief for reorientation, slim core + on-demand references, driver-first instructions.
+- D retained: driver-generated handoff FILE, fresh-session orientation, path-only client-accounting ingestion with explicit attribution, Kimi parser/structured argv (truthful coverage-none when usage is absent).
+- Tests, byte bounds, and drift/parity checks refine the approved product features. No new mandatory agent/process obligation outside A–D was identified. Startup gaps remain evidence/optional hardening.
+- Claude's R-1/R-2 are explicitly carried and concurred with by Kimi and Zcode; consensus remains ACCEPT-WITH-RESERVATIONS, not three unconditional ACCEPTs. No participant blocked.
+- Single implementer: zcode-1, by its pre-Phase-5 inbox claim. Kimi retains FINAL authorship; Claude and Kimi are the independent code reviewers. The claim's sentence saying all signoffs were ✅ is inaccurate; Zcode is asked to self-correct this record during dispatch.
+- Core publication remains owner-only; no TTY bypass. Release remains the organizer's authorized post-Phase-8 action.
