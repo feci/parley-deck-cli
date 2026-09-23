@@ -7,3 +7,5 @@ Source: `/Users/tomasfecko/.codex/sessions/2026/09/23/rollout-2026-09-23T22-18-3
 | Boundary | Accounting timestamp | Input | Cached input | Output | Reasoning | Request events |
 |---|---|---:|---:|---:|---:|---:|
 | Phase 0 → 1 | 2026-09-23T20:24:18.295Z | 1222309 | 1139200 | 7080 | 895 | 21 |
+| Phase 1 → 2 (observed 2026-09-23T20:47:02.464Z) | 2026-09-23T20:47:02.464Z | 1068783 | 901248 | 6985 | 373 | 17 |
+<!-- boundary: Phase 1 → 2 @ 2026-09-23T20:47:02.464Z -->
