@@ -34,7 +34,7 @@ the *client's own* accounting files, and fix the kimi telemetry parser gap. No s
 requires new mandatory participant obligations; the only protocol-text change is the §7-sanctioned
 facilitator role view plus minimal clarifying lines.
 
-## Scope reading and design position
+## Proposed approach
 
 ### A. Organizer does not implement, and does not verify code itself
 
