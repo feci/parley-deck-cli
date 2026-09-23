@@ -1,0 +1,80 @@
+{
+  "columns": [
+    "AGENT",
+    "ADAPTER",
+    "STATE",
+    "INSTALLED",
+    "MODEL",
+    "MODEL-FAMILY",
+    "MODEL-COMPANY",
+    "EFFORT",
+    "SPEED",
+    "AUTO",
+    "STATUS"
+  ],
+  "roster": [
+    {
+      "agent": "claude-1",
+      "adapter": "claude",
+      "state": "active",
+      "installed": true,
+      "model": "claude-opus-5[1m]",
+      "model_family": "Claude Opus",
+      "model_company": "Anthropic",
+      "effort": "max",
+      "speed": "deep",
+      "autonomous": true,
+      "status": [
+        "ok"
+      ]
+    },
+    {
+      "agent": "codex-1",
+      "adapter": "codex",
+      "state": "inactive",
+      "installed": true,
+      "model": "gpt-6-astra",
+      "model_family": "GPT",
+      "model_company": "OpenAI",
+      "effort": "max",
+      "speed": "deep",
+      "autonomous": true,
+      "status": [
+        "inactive"
+      ]
+    },
+    {
+      "agent": "kimi-1",
+      "adapter": "kimi",
+      "state": "active",
+      "installed": true,
+      "model": "kimi-code/k3",
+      "model_family": "Kimi K",
+      "model_company": "Moonshot AI",
+      "effort": "max",
+      "speed": "deep",
+      "autonomous": true,
+      "status": [
+        "effort-from-config"
+      ]
+    },
+    {
+      "agent": "zcode-1",
+      "adapter": "zcode",
+      "state": "active",
+      "installed": true,
+      "model": "zai/glm-5.3",
+      "model_family": "GLM",
+      "model_company": "Zhipu AI",
+      "effort": "max",
+      "speed": "deep",
+      "autonomous": true,
+      "status": [
+        "model-from-config",
+        "effort-from-config"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "scope": "machine"
+}

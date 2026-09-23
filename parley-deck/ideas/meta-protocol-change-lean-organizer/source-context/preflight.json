@@ -1,0 +1,43 @@
+{
+  "freshness": {
+    "role": "source",
+    "deckVersion": "2.12.0",
+    "protocolSha256": "12e4b31cd3f6c1066a97caa7c7cb84213e16429dd43b26de06d4b1c32977aa18",
+    "packagedProtocolSha256": "d45a7e869ceb5ac5f7145cfe2c7beb869f21cf0f0ef0e60f6200b75d3934d703",
+    "skillVersion": "2.12.1",
+    "classification": "source-advisory",
+    "summary": "source — ahead of / independent of packaged skill; advisory only, never writes COOPERATION.md"
+  },
+  "roster": [
+    {
+      "rosterId": "claude-1",
+      "runtime": "/Users/tomasfecko/.local/bin/claude",
+      "version": "2.1.281 (Claude Code)",
+      "available": true,
+      "class": "ready"
+    },
+    {
+      "rosterId": "kimi-1",
+      "runtime": "/Users/tomasfecko/.kimi-code/bin/kimi",
+      "version": "0.42.0",
+      "available": false,
+      "reason": "malformed-reply",
+      "class": "malformed-reply"
+    },
+    {
+      "rosterId": "zcode-1",
+      "runtime": "zcode",
+      "version": "zcode-app-cli 3.7.7-13",
+      "available": true,
+      "class": "ready"
+    }
+  ],
+  "pinged": true,
+  "gates": [
+    {
+      "kind": "resolve-readiness",
+      "detail": "kimi-1 readiness is unresolved (malformed-reply) — investigate and re-check; the agent is not excluded",
+      "confirm": "parley preflight --dir ."
+    }
+  ]
+}
