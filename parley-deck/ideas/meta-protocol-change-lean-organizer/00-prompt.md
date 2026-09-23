@@ -1,6 +1,7 @@
 ---
 idea: meta-protocol-change-lean-organizer
 author: user
+facilitator: codex-1
 created: 2026-09-23
 track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
