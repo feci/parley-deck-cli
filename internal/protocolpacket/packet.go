@@ -36,6 +36,7 @@ const (
 	ClassConditional = "conditional"
 	ClassOnDemand    = "on-demand"
 	ClassUnknown     = "unknown"
+	ClassAudience    = "audience"
 )
 
 // Known request vocabularies. Anything outside them is an unexpected value and falls back.
@@ -59,6 +60,15 @@ type Request struct {
 	// Optimize is the explicit experimental input. False (the default) renders full context
 	// and a shadow packet record; true renders the optimized packet when every guard passes.
 	Optimize bool `json:"optimize"`
+	// Audience (lean-organizer C): participant|facilitator. Empty behaves as
+	// participant. The facilitator audience renders the ratified facilitator reading
+	// set (verbatim blocks + complete omission index) and may never cut below the
+	// never-cut floor. An unrecognized audience falls back to full context with a
+	// stated reason.
+	Audience string `json:"audience,omitempty"`
+	// FacilitatorParticipates mirrors the idea's `facilitator_participates: true`
+	// exception: a signing facilitator keeps FULL context — no audience narrowing.
+	FacilitatorParticipates bool `json:"facilitator_participates,omitempty"`
 }
 
 // Attestation is what a launch record carries about the protocol context it was given.
@@ -67,6 +77,13 @@ type Attestation struct {
 	SourceSHA256   string `json:"source_sha256"`
 	PacketSHA256   string `json:"packet_sha256,omitempty"`
 	FallbackReason string `json:"fallback_reason,omitempty"`
+	// Audience is additive (lean-organizer C): the RESOLVED audience when an
+	// audience-scoped body was rendered; omitted otherwise. Never a top-level
+	// `role` — that name is the deck's protocolRole (packet.go SourceInfo.Role).
+	Audience string `json:"audience,omitempty"`
+	// AudienceFallbackReason states why an audience request fell back to full
+	// context (unknown audience, or facilitator_participates: true).
+	AudienceFallbackReason string `json:"audience_fallback_reason,omitempty"`
 }
 
 // Block is one verbatim heading-delimited slice of the source.
@@ -263,6 +280,26 @@ func Build(src Source, m *Map, req Request) Context {
 		ctx.Request.Flags = req.Flags
 	}
 
+	// Audience resolution (lean-organizer C). `full` remains the default for
+	// everyone: an empty or `participant` audience never narrows. The facilitator
+	// audience is the ratified omission overlay; facilitator_participates: true and
+	// unknown audiences fall back to FULL context with a stated reason — never a
+	// guessed scope.
+	audience := ""
+	if strings.TrimSpace(req.Audience) != "" && req.Audience != "participant" {
+		switch {
+		case req.FacilitatorParticipates:
+			ctx.AudienceFallbackReason = "facilitator-participates"
+		case req.Audience == "facilitator":
+			audience = "facilitator"
+		default:
+			ctx.AudienceFallbackReason = "unknown-audience:" + req.Audience
+		}
+	}
+	if audience != "" {
+		ctx.Audience = audience
+	}
+
 	var reasons []string
 	if req.Phase < 0 || req.Phase > 8 {
 		reasons = append(reasons, "unknown-phase:"+strconv.Itoa(req.Phase))
@@ -333,6 +370,28 @@ func Build(src Source, m *Map, req Request) Context {
 		records[i] = rec
 	}
 
+	// Audience omission pass (lean-organizer C): the facilitator audience removes
+	// its named omission-set blocks BEFORE dependency closure, so a block another
+	// included block `requires` is pulled back in — the audience may only omit what
+	// nothing operationally needs. The never-cut floor is enforced per REQUEST: a
+	// never-cut block is never omitted even when the audience names it.
+	if audience != "" && m != nil {
+		for i, b := range blocks {
+			if !included[i] {
+				continue
+			}
+			trigger, omit := m.audienceOmit(audience, b.Locator)
+			if !omit || neverCutForRequest(b.Locator, req) {
+				continue
+			}
+			included[i] = false
+			records[i].Included = false
+			records[i].Classification = ClassAudience
+			records[i].Why = "omitted for " + audience + " audience"
+			records[i].Trigger = trigger
+		}
+	}
+
 	// Dependency closure: a block pulls in what it requires; an unresolvable requirement is an
 	// unresolved dependency and falls back.
 	if m != nil {
@@ -366,7 +425,10 @@ func Build(src Source, m *Map, req Request) Context {
 	ctx.Index = records
 
 	packetBody := renderPacket(src, ctx.SourceSHA256, req, records)
-	if req.Optimize {
+	// The facilitator audience renders its scoped packet by request (the audience
+	// view is its own ratified surface, distinct from the experimental --optimize
+	// input); every guard that governs --optimize governs it identically.
+	if req.Optimize || audience != "" {
 		if len(reasons) == 0 {
 			ctx.ContextMode = ModePacket
 			ctx.Body = packetBody
@@ -374,6 +436,7 @@ func Build(src Source, m *Map, req Request) Context {
 			ctx.ContextMode = ModeFullFallback
 			ctx.Body = src.Raw
 			ctx.FallbackReason = strings.Join(reasons, "; ")
+			ctx.Audience = ""
 		}
 	} else {
 		ctx.ContextMode = ModeFull
@@ -406,9 +469,13 @@ func renderPacket(src Source, sourceHash string, req Request, records []BlockRec
 	if flags == "" {
 		flags = "-"
 	}
-	fmt.Fprintf(&b, "<!-- parley-protocol-packet context_mode=%s source_sha256=%s phase=%d track=%s transport=%s flags=%s -->\n",
-		ModePacket, sourceHash, req.Phase, req.Track, req.Transport, flags)
-	fmt.Fprintf(&b, "# Protocol packet — phase %d, track %s, transport %s\n\n", req.Phase, req.Track, req.Transport)
+	audience := strings.TrimSpace(req.Audience)
+	if audience == "" || audience == "participant" {
+		audience = "-"
+	}
+	fmt.Fprintf(&b, "<!-- parley-protocol-packet context_mode=%s source_sha256=%s phase=%d track=%s transport=%s flags=%s audience=%s -->\n",
+		ModePacket, sourceHash, req.Phase, req.Track, req.Transport, flags, audience)
+	fmt.Fprintf(&b, "# Protocol packet — phase %d, track %s, transport %s, audience %s\n\n", req.Phase, req.Track, req.Transport, audience)
 	fmt.Fprintf(&b, "Excerpt of the authoritative protocol `%s` (sha256 `%s`). Every block below is verbatim\n", src.Path, sourceHash)
 	b.WriteString("source text in source order. The omission index at the end lists every block not reproduced\n")
 	b.WriteString("here, with the trigger that requires reading the full source. On any doubt, read the full source.\n\n---\n\n")

@@ -160,6 +160,33 @@ func zcodeEnvelopeUsage(event map[string]any, source string) (Usage, bool) {
 	return u, true
 }
 
+// kimiUsageRecord reads a kimi `usage.record` wire record. The counters are the
+// client's own accounting (camelCase buckets); input is derived as inputOther +
+// inputCacheRead because kimi reports no combined input field. Verbatim counters
+// only — nothing is estimated and no cost is claimed.
+func kimiUsageRecord(event map[string]any, source string) Usage {
+	raw := object(event["usage"])
+	if raw == nil {
+		return Usage{}
+	}
+	u := Usage{Source: source, CostBasis: "unavailable", Coverage: "reported",
+		CacheReadTokens:  count(raw["inputCacheRead"]),
+		CacheWriteTokens: count(raw["inputCacheCreation"]),
+		OutputTokens:     count(raw["output"])}
+	if other := count(raw["inputOther"]); other != nil {
+		total := int64(0)
+		if u.CacheReadTokens != nil {
+			total += *u.CacheReadTokens
+		}
+		total += *other
+		u.InputTokens = &total
+	}
+	if u.InputTokens == nil && u.OutputTokens == nil && u.CacheReadTokens == nil {
+		return Usage{}
+	}
+	return u
+}
+
 // consumeZcodeEnvelopeTail retries the tail after non-JSON warning preamble
 // lines, accepting only the zcode envelope shape, and runs for the zcode
 // adapter only. A generic object behind a preamble stays unparsed, so this
@@ -277,6 +304,22 @@ func (c *Collector) consume(data []byte) {
 			c.ambiguousSteps = true
 		}
 		c.steps[identity] = u
+	case "kimi":
+		// Kimi Code (probed live 2026-09-23 on 0.42.0): with the structured
+		// `--output-format stream-json` argv the CLI emits role-tagged envelope
+		// lines; usage arrives as a `usage.record` wire record (plain, or wrapped
+		// in a {"role":"meta"} envelope), carrying the client's own counters
+		// inputOther / inputCacheRead / inputCacheCreation / output. There is no
+		// combined input and no cost: input is the sum of the client's own two
+		// input buckets, totals are the client's counters verbatim, and cost stays
+		// unavailable. kimi 0.42.0 emits usage to its on-disk wire log but NOT to
+		// stdout — live captures legitimately downgrade to coverage "none"; a
+		// fabricated number is never acceptable (lean-organizer D.4).
+		if kind != "usage.record" {
+			return
+		}
+		c.failure = ""
+		c.usage = kimiUsageRecord(event, "kimi.usage-record")
 	default:
 		// A recognized terminal usage envelope is admissible for the zcode
 		// adapter only; every other adapter keeps the typed-event path below

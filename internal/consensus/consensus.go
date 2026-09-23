@@ -537,6 +537,16 @@ func validateDocumentAwaiting(ideaSlug string, known, required []string, review 
 	if declared := strings.Trim(strings.TrimSpace(frontmatterField(doc.Raw, "idea")), `"'`); declared != "" && declared != ideaSlug {
 		summary.Errors = append(summary.Errors, fmt.Sprintf("frontmatter idea=%q but this is the consensus for %q", declared, ideaSlug))
 	}
+	// Phase-3 design consensus must carry the canonical template sections incl. the
+	// §15.5/§15.6 drafter duties. The list is protocol.RequiredConsensusSections — the
+	// SAME slice the driver's drafting prompt and the scaffold generator read — so the
+	// gate cannot drift from the prompt (lean-organizer A.4 parity). Review consensus
+	// keeps its own template and is not checked here.
+	if !review {
+		if missing := protocol.MissingConsensusSections(doc.Raw); len(missing) > 0 {
+			summary.Errors = append(summary.Errors, "missing required consensus section(s): "+strings.Join(missing, ", "))
+		}
+	}
 	signed := map[string]bool{}
 	hasReservations := false
 	hasBlock := false
@@ -812,24 +822,29 @@ reviewed-commit: %s
 <!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
 `, idea.Slug, cycle, by, now.Format("2006-01-02"), opts.ReviewedCommit, roundRel)
 	}
-	return fmt.Sprintf(`---
-idea: %s
-drafted-by: %s
-date: %s
----
+	return designDraftTemplate(idea, by, now, roundRel)
+}
 
-## Agreed decisions
-
-<!-- Review %s and record the decisions participants are signing off. -->
-
-## Agreed trade-offs
-
-## Open items deferred to implementation
-
-## Signoffs
-
-<!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->
-`, idea.Slug, by, now.Format("2006-01-02"), roundRel)
+// designDraftTemplate emits the Phase-3 consensus.md scaffold. The section list is
+// generated from protocol.RequiredConsensusSections (plus the conditional §15.3 duty)
+// rather than retyped, so the scaffold cannot drift from the drafting prompt or the
+// status gate that read the same constant (lean-organizer A.4).
+func designDraftTemplate(idea protocol.IdeaStatus, by string, now time.Time, roundRel string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "---\nidea: %s\ndrafted-by: %s\ndate: %s\n---\n\n", idea.Slug, by, now.Format("2006-01-02"))
+	for _, section := range protocol.RequiredConsensusSections {
+		fmt.Fprintf(&b, "%s\n", section)
+		switch section {
+		case "## Agreed decisions":
+			fmt.Fprintf(&b, "\n<!-- Review %s and record the decisions participants are signing off. -->\n\n", roundRel)
+		case "## Signoffs":
+			b.WriteString("\n<!-- Each agent APPENDS their signoff block. Do NOT edit others' blocks. -->\n\n")
+		default:
+			b.WriteString("\n<fill in>\n\n")
+		}
+	}
+	// The conditional §15.3 section is shown right after the decisions it can affect.
+	return b.String()
 }
 
 // finalTemplate emits the FINAL.md scaffold.
@@ -1066,4 +1081,19 @@ func frontmatterField(raw, key string) string {
 		}
 	}
 	return ""
+}
+
+// ExpectedRoundParticipants exposes the per-round filing set (design = all
+// participants; review = non-implementers per §6) so read-only surfaces such as
+// `parley wait` reuse the SAME resolution instead of forking it
+// (lean-organizer open item 5: do not fork the consensus-side parsing).
+func ExpectedRoundParticipants(ideaDir string, participants []string, review bool) []string {
+	return expectedRoundParticipants(ideaDir, participants, review)
+}
+
+// ResolveImplementer exposes the durable implementer resolution (IMPLEMENTATION.md
+// `implementer`, else FINAL.md `implementer`/`drafted-by`, else participants[0]) for
+// read-only surfaces, same rationale as ExpectedRoundParticipants.
+func ResolveImplementer(ideaDir string, participants []string) string {
+	return resolveImplementer(ideaDir, participants)
 }

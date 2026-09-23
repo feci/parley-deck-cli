@@ -38,10 +38,30 @@ type driverImplOps struct {
 	drafter         string   // review-consensus drafter (facilitator)
 	out             io.Writer
 	verificationCLI string // internal process-fixture seam; empty uses this running CLI
+	roleErr         string // declared-facilitator role deadlock; every role action escalates
+	facilitator     protocol.FacilitatorRole
 }
 
 func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, participants []string, out io.Writer) driver.ImplOps {
-	implementer := resolveImplementer(ideaDir, participants)
+	// Declared-facilitator runs (lean-organizer A): the declared facilitator is
+	// ineligible for every code-facing role — implementer, reviewer, review-consensus
+	// drafter, and (via the drafter) goal-done checker — unless
+	// facilitator_participates: true opted it back in. When the predicate empties the
+	// eligible set the ops carry a role error that every role action escalates with;
+	// the driver NEVER silently falls back to facilitator implementation.
+	role := protocol.ReadFacilitatorRole(ideaDir)
+	roleErr := ""
+	eligible := make([]string, 0, len(participants))
+	for _, p := range participants {
+		if role.IneligibleForRoles(p) {
+			continue
+		}
+		eligible = append(eligible, p)
+	}
+	if role.Declared && !role.Participates && len(eligible) == 0 && len(participants) > 0 {
+		roleErr = fmt.Sprintf("declared facilitator %s is the only participant; a declared-facilitator run needs at least one non-facilitator participant to implement — add a participant or set facilitator_participates: true (escalated, not fallen back)", role.Facilitator)
+	}
+	implementer := resolveImplementer(ideaDir, eligible)
 	// Dedupe to distinct non-implementer IDs (review CF1). Duplicate participant
 	// IDs (e.g. [impl, rev, rev]) would otherwise (a) inflate ReviewerCount so the
 	// LE-11 `< 2` guard passes with a single real reviewer, and (b) make
@@ -49,7 +69,7 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 	// agents/<id>/stdout.log and review/round-NN/<id>.md concurrently (a write race).
 	var reviewers []string
 	seen := make(map[string]bool)
-	for _, p := range participants {
+	for _, p := range eligible {
 		if p != implementer && !seen[p] {
 			seen[p] = true
 			reviewers = append(reviewers, p)
@@ -74,6 +94,7 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 	return driverImplOps{
 		base: base, root: root, ideaSlug: ideaSlug, ideaDir: ideaDir,
 		implementer: implementer, reviewers: reviewers, drafter: drafter, out: out,
+		roleErr: roleErr, facilitator: role,
 	}
 }
 
@@ -190,6 +211,9 @@ func (o driverImplOps) checkModelDiversity() error {
 }
 
 func (o driverImplOps) Implement(ctx context.Context) error {
+	if o.roleErr != "" {
+		return fmt.Errorf("driver: %s", o.roleErr)
+	}
 	fmt.Fprintf(o.out, "driver: implementing via %s ...\n", o.implementer)
 	r := runner.RunImplementation(ctx, o.withParticipants(o.implementer))
 	if !r.Success() {
@@ -251,6 +275,9 @@ func (o driverImplOps) RunChecks(ctx context.Context) (bool, string) {
 }
 
 func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
+	if o.roleErr != "" {
+		return fmt.Errorf("driver: %s", o.roleErr)
+	}
 	if len(o.reviewers) == 0 {
 		return fmt.Errorf("no non-implementer reviewers available")
 	}
@@ -377,6 +404,9 @@ func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
 // verdict prompt. Missing, self, failed or ambiguous execution cannot establish
 // completion. A textual pass remains defense in depth, not criterion evidence.
 func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
+	if o.roleErr != "" {
+		return false, "goal-check unavailable: " + o.roleErr
+	}
 	checker := o.drafter
 	// CF6: GoalCheck must use a non-implementer checker. The upstream guards
 	// (ReviewerCount < 2 under auto; OpenReviewRound under strict) already prevent
@@ -471,6 +501,9 @@ func (o driverImplOps) PrecheckFixup(ctx context.Context) error {
 }
 
 func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
+	if o.roleErr != "" {
+		return fmt.Errorf("driver: %s", o.roleErr)
+	}
 	fmt.Fprintf(o.out, "driver: running fix-up cycle %d via %s ...\n", cycle, o.implementer)
 	r := runner.RunFixup(ctx, o.withParticipants(o.implementer))
 	if !r.Success() {

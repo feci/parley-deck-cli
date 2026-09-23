@@ -81,7 +81,8 @@ func (o driverConsensusOps) Reopen(ctx context.Context, reason string) error {
 // runDrafter invokes the first available headless agent to author the target file
 // per the given prompt. Drafting is a single-agent facilitator action (D6).
 func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string) error {
-	drafter, ok := firstHeadlessAgent(o.discovered, o.participants, rosterMappingFor(o.root))
+	role := protocol.ReadFacilitatorRole(o.ideaDir)
+	drafter, ok := firstEligibleHeadlessAgent(o.discovered, o.participants, rosterMappingFor(o.root), role)
 	if !ok {
 		return fmt.Errorf("no headless idea participant available to draft %s", kind)
 	}
@@ -97,9 +98,21 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 // idea participant (Parley Deck §4/§6: the facilitator-drafter must be a
 // participant of the deliberation, not an arbitrary installed agent — AF2).
 func firstHeadlessAgent(discovered []agents.Discovery, participants []string, mapping map[string]string) (agents.Discovery, bool) {
+	return firstEligibleHeadlessAgent(discovered, participants, mapping, protocol.FacilitatorRole{})
+}
+
+// firstEligibleHeadlessAgent additionally refuses the declared facilitator of a
+// declared-facilitator run (lean-organizer A): the facilitator never drafts consensus
+// or FINAL unless facilitator_participates: true opted it back into participation.
+// With no eligible drafter left it reports !ok so the caller escalates rather than
+// silently falling back to the facilitator.
+func firstEligibleHeadlessAgent(discovered []agents.Discovery, participants []string, mapping map[string]string, role protocol.FacilitatorRole) (agents.Discovery, bool) {
 	// Iterate participants in order and resolve each (roster id via [roster.*] or a
 	// bare family id) so a roster-id deck finds its drafter (composite-agent-naming).
 	for _, p := range participants {
+		if role.IneligibleForRoles(p) {
+			continue
+		}
 		if agent, err := agents.ResolveParticipant(p, discovered, mapping); err == nil {
 			if agent.Found && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
 				return agent, true
@@ -109,25 +122,43 @@ func firstHeadlessAgent(discovered []agents.Discovery, participants []string, ma
 	return agents.Discovery{}, false
 }
 
+// buildConsensusDraftPrompt is generated from protocol.RequiredConsensusSections and
+// protocol.ConditionalConsensusSections — the SAME constants the consensus status gate
+// reads — so the prompt cannot instruct a drafter to produce an artifact the gate
+// rejects (lean-organizer A.4; the previous hardcoding emitted review-cycle headings
+// and none of the §15.3/§15.5/§15.6 duty sections).
 func buildConsensusDraftPrompt(ideaDir, path string) string {
+	var sections strings.Builder
+	for _, section := range protocol.RequiredConsensusSections {
+		sections.WriteString(section)
+		sections.WriteString("\n")
+	}
+	conditions := make([]string, 0, len(protocol.ConditionalConsensusSections))
+	for _, section := range protocol.ConditionalConsensusSections {
+		conditions = append(conditions, "`"+section+"`")
+	}
 	return fmt.Sprintf(`You are the Parley Deck facilitator drafting the consensus.
 
 Read EVERY round artifact under %s/round-*/ (each participant's round files).
 The file %s currently holds a scaffold. OVERWRITE it with the real synthesis of the
 deliberation, keeping this exact structure and the YAML frontmatter:
 
-## Agreed decisions
-(concrete decisions the rounds converged on)
-## Trade-offs accepted
-## Deferred follow-ups
-## Dismissed findings
-## Signoffs
-
+%s
 Under "## Signoffs", leave one HTML comment placeholder line per participant exactly
 like "<!-- <agent-id> appends its signoff below -->" for every participant in the
 idea's 00-prompt.md, and NOTHING else under that heading (the agents append their own
-✅/🟡/❌ blocks later). Be concrete and concise. English only. Write the file now and
-report only the path.`, ideaDir, path)
+✅/🟡/❌ blocks later).
+
+§15 duties that bind on every track (§15.7): "## Drafter position changes" records
+EVERY material change in your position since your most recent round file (or "None"),
+each with an exact prior quotation, the prior position, the new position, and the
+source round path; "## Alternatives disposition" gives one ALT- id per alternative with
+an adopt or reject and the decisive reason; "## Comparison & blind spots" keeps raw
+disagreements visible instead of smoothing them into trade-offs. Additionally add %s
+VERBATIM — quoting each contradictory verdict with its author, tag and evidence and the
+resolution — ONLY when contradictory verdicts exist; absent any conflict that section
+does not exist. Be concrete and concise. English only. Write the file now and
+report only the path.`, ideaDir, path, sections.String(), strings.Join(conditions, " and/or "))
 }
 
 // buildFinalDraftPrompt tells the drafter exactly what the gate will require.

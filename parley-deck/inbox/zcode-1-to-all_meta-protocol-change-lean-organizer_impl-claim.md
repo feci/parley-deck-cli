@@ -32,8 +32,11 @@ Scope of the claim — both supplied worktrees per the owner-approved kickoff
 - Skill worktree, branch `lean-organizer`, base tag v2.12.1:
   `/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer-skill`.
 
-Implementation will follow the ratified consensus (`consensus.md`; all three participant signoffs
-appended ✅ ACCEPT, 2026-09-23) and nothing beyond it: items A–D as decided, the A–D scope &
+Implementation will follow the ratified consensus (`consensus.md`; signoffs appended 2026-09-23
+— kimi-1 ✅ ACCEPT, zcode-1 ✅ ACCEPT, claude-1 🟡 ACCEPT-WITH-RESERVATIONS whose R-1/R-2 the
+drafter accepted and zcode-1 concurred with; correction 2026-09-23: this sentence originally said
+"all three participant signoffs appended ✅ ACCEPT", which was inaccurate — claude-1's signoff was
+a reservation, not an unconditional accept) and nothing beyond it: items A–D as decided, the A–D scope &
 acceptance table, the cross-cutting and release decisions, and the agreed trade-offs. The
 driver/runtime gaps recorded as "evidence, not scope" remain optional hardening re-verified at
 HEAD, never new mandatory obligations. All three protocol copies stay identical; staged core comes

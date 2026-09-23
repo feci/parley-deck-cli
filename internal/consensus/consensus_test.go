@@ -65,6 +65,30 @@ drafted-by: codex
 date: 2026-05-12
 ---
 
+---
+
+## Agreed decisions
+
+Seeded decision.
+
+## Agreed trade-offs
+
+Seeded trade-off.
+
+## Open items deferred to implementation
+
+## Comparison & blind spots
+
+Seeded comparison.
+
+## Drafter position changes
+
+None.
+
+## Alternatives disposition
+
+Seeded disposition.
+
 ## Signoffs
 
 ### Signoff: codex — 2026-05-12
@@ -95,6 +119,30 @@ idea: sample
 drafted-by: codex
 date: 2026-05-12
 ---
+
+---
+
+## Agreed decisions
+
+Seeded decision.
+
+## Agreed trade-offs
+
+Seeded trade-off.
+
+## Open items deferred to implementation
+
+## Comparison & blind spots
+
+Seeded comparison.
+
+## Drafter position changes
+
+None.
+
+## Alternatives disposition
+
+Seeded disposition.
 
 ## Signoffs
 
@@ -204,7 +252,7 @@ func TestReservedFinalizeSucceedsWithOpenItems(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated := strings.Replace(string(data), "## Open items deferred to implementation\n\n## Signoffs", "## Open items deferred to implementation\n\n- codex: carry this reservation into implementation.\n\n## Signoffs", 1)
+	updated := strings.Replace(string(data), "## Open items deferred to implementation\n\n<fill in>\n", "## Open items deferred to implementation\n\n- codex: carry this reservation into implementation.\n", 1)
 	if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -238,6 +286,30 @@ idea: sample
 drafted-by: codex
 date: 2026-05-12
 ---
+
+---
+
+## Agreed decisions
+
+Seeded decision.
+
+## Agreed trade-offs
+
+Seeded trade-off.
+
+## Open items deferred to implementation
+
+## Comparison & blind spots
+
+Seeded comparison.
+
+## Drafter position changes
+
+None.
+
+## Alternatives disposition
+
+Seeded disposition.
 
 ## Signoffs
 

@@ -34,8 +34,28 @@ var ErrNoMap = errors.New("protocolpacket: no applicability map")
 type Map struct {
 	Schema string
 	Blocks []Rule
-	index  map[string]int
+	// Audiences (lean-organizer C) is the optional per-audience omission overlay.
+	// The audience dimension may only OMIT blocks; it can never include a block the
+	// phase/track/transport rules cut, and never below the never-cut floor.
+	Audiences map[string]AudienceSpec
+	index     map[string]int
 }
+
+// AudienceSpec is one audience's omission set: whole blocks, with the trigger that
+// says when to read the full source instead.
+type AudienceSpec struct {
+	Omit []OmitRule `yaml:"omit,omitempty" json:"omit,omitempty"`
+}
+
+// OmitRule removes one block for this audience, carrying the omission-index trigger.
+type OmitRule struct {
+	Locator string `yaml:"locator" json:"locator"`
+	Trigger string `yaml:"trigger" json:"trigger"`
+}
+
+// KnownAudiences is the closed audience vocabulary. `participant` is the default and
+// carries no omissions; `facilitator` is the pure-organizer view.
+var KnownAudiences = []string{"participant", "facilitator"}
 
 // Rule classifies one source block.
 type Rule struct {
@@ -50,9 +70,10 @@ type Rule struct {
 }
 
 type mapDoc struct {
-	Schema string `yaml:"schema"`
-	Source string `yaml:"source"`
-	Blocks []Rule `yaml:"blocks"`
+	Schema    string                  `yaml:"schema"`
+	Source    string                  `yaml:"source"`
+	Blocks    []Rule                  `yaml:"blocks"`
+	Audiences map[string]AudienceSpec `yaml:"audiences,omitempty"`
 }
 
 // ParseMap validates a map document. Unknown keys, a second document, an unknown include
@@ -133,7 +154,76 @@ func ParseMap(raw string) (*Map, error) {
 	if len(m.Blocks) == 0 {
 		return nil, errors.New("applicability map: declares no blocks")
 	}
+	for name, aud := range doc.Audiences {
+		if !contains(KnownAudiences, name) {
+			return nil, fmt.Errorf("applicability map: unknown audience %q; want one of %s", name, strings.Join(KnownAudiences, "|"))
+		}
+		seenOmit := map[string]bool{}
+		for i, or := range aud.Omit {
+			or.Locator = strings.Join(strings.Fields(or.Locator), " ")
+			if or.Locator == "" {
+				return nil, fmt.Errorf("applicability map: audiences.%s omit entry %d has an empty locator", name, i+1)
+			}
+			if seenOmit[or.Locator] {
+				return nil, fmt.Errorf("applicability map: audiences.%s omits %q twice", name, or.Locator)
+			}
+			seenOmit[or.Locator] = true
+			if strings.TrimSpace(or.Trigger) == "" {
+				return nil, fmt.Errorf("applicability map: audiences.%s omits %q without a trigger naming when to read the full source", name, or.Locator)
+			}
+			aud.Omit[i] = or
+		}
+	}
+	m.Audiences = doc.Audiences
 	return m, nil
+}
+
+// audienceOmit returns the omission trigger for a locator under the named audience.
+func (m *Map) audienceOmit(audience, locator string) (string, bool) {
+	if m == nil || m.Audiences == nil {
+		return "", false
+	}
+	spec, ok := m.Audiences[audience]
+	if !ok {
+		return "", false
+	}
+	for _, or := range spec.Omit {
+		if or.Locator == locator {
+			return or.Trigger, true
+		}
+	}
+	return "", false
+}
+
+// neverCutForRequest reports whether a locator is pinned by the ratified never-cut
+// floor FOR THIS REQUEST (always; its flag set; its transport active; its phase
+// listed). The audience pass may not omit such a block — this is the hard safety
+// property that the audience dimension can never cut below the floor.
+func neverCutForRequest(locator string, req Request) bool {
+	for _, nc := range neverCut {
+		if !strings.HasPrefix(locator, nc.prefix) {
+			continue
+		}
+		switch {
+		case nc.always:
+			return true
+		case nc.flag != "":
+			if contains(req.Flags, nc.flag) {
+				return true
+			}
+		case nc.transport != "":
+			if req.Transport == nc.transport {
+				return true
+			}
+		case len(nc.phases) > 0:
+			for _, p := range nc.phases {
+				if p == req.Phase {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // LoadMap reads and parses the map at path. A missing file is ErrNoMap.
@@ -289,6 +379,27 @@ func Check(src Source, m *Map) Report {
 				}
 			}
 		}
+		for name, aud := range m.Audiences {
+			for _, or := range aud.Omit {
+				if !have[or.Locator] {
+					rep.Stale = append(rep.Stale, "audiences."+name+" omits unknown block "+or.Locator)
+					continue
+				}
+				// An audience may never name an UNCONDITIONAL never-cut block:
+				// those are pinned at every request, so an omission rule for one is
+				// a map-level floor breach even though Build would refuse to apply
+				// it. Conditionally pinned blocks (per phase/transport/flag) may be
+				// NAMED — the runtime floor protects them where they pin — which is
+				// how the ratified facilitator set omits the non-active §11
+				// subsections.
+				for _, nc := range neverCut {
+					if nc.always && strings.HasPrefix(or.Locator, nc.prefix) {
+						rep.NeverCut = appendUnique(rep.NeverCut, "audiences."+name+" omits never-cut block "+or.Locator)
+						break
+					}
+				}
+			}
+		}
 		transport := src.Transport
 		if transport == "" {
 			transport = "local-dir"
@@ -298,6 +409,21 @@ func Check(src Source, m *Map) Report {
 				c := Build(src, m, Request{Phase: phase, Track: track, Transport: transport, Optimize: true})
 				if c.ContextMode != ModePacket {
 					rep.Fallbacks = appendUnique(rep.Fallbacks, fmt.Sprintf("phase %d/%s: %s (%s)", phase, track, c.ContextMode, c.FallbackReason))
+				}
+				// Audience safety proof: for every declared audience, the scoped
+				// build may never omit a never-cut block for that request. This is
+				// the `packet check` negative surface for the audience dimension.
+				for audience := range m.Audiences {
+					ca := Build(src, m, Request{Phase: phase, Track: track, Transport: transport, Optimize: true, Audience: audience})
+					req := Request{Phase: phase, Track: track, Transport: transport, Flags: ca.Request.Flags}
+					for _, rec := range ca.Index {
+						if rec.Included {
+							continue
+						}
+						if neverCutForRequest(rec.Locator, req) {
+							rep.NeverCut = appendUnique(rep.NeverCut, fmt.Sprintf("phase %d/%s audience %s omits never-cut block %s", phase, track, audience, rec.Locator))
+						}
+					}
 				}
 			}
 		}

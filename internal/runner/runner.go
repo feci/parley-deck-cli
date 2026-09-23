@@ -667,24 +667,29 @@ func finalizeExecResult(opts Options, result *Result, agent agents.Discovery, ru
 	// fence), persist it as the agent-authored artifact. Strict "---" validation
 	// keeps narration from becoming a protocol file.
 	if _, statErr := os.Stat(outputPath); os.IsNotExist(statErr) {
-		if data, readErr := os.ReadFile(stdoutPath); readErr == nil && firstLineIsFence(data) {
-			// Validate a CANDIDATE before placing it at the protocol path, so a
-			// malformed print-only response never poisons the artifact path.
-			tmp := outputPath + ".stdout-candidate"
-			if writeErr := os.WriteFile(tmp, data, 0o644); writeErr == nil {
-				if validateArtifactForPhase(opts, tmp, agent.ID) == nil {
-					if renameErr := os.Rename(tmp, outputPath); renameErr == nil {
-						result.Warning = "artifact recovered from stdout (print-only agent)"
-						_ = opts.Store.Append(store.Event{
-							Time: time.Now().UTC(),
-							Type: "agent.stdout_fallback",
-							Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
-						})
+		if data, readErr := os.ReadFile(stdoutPath); readErr == nil {
+			if agent.Adapter() == "kimi" {
+				data = []byte(UnwrapKimiStreamJSON(string(data)))
+			}
+			if firstLineIsFence(data) {
+				// Validate a CANDIDATE before placing it at the protocol path, so a
+				// malformed print-only response never poisons the artifact path.
+				tmp := outputPath + ".stdout-candidate"
+				if writeErr := os.WriteFile(tmp, data, 0o644); writeErr == nil {
+					if validateArtifactForPhase(opts, tmp, agent.ID) == nil {
+						if renameErr := os.Rename(tmp, outputPath); renameErr == nil {
+							result.Warning = "artifact recovered from stdout (print-only agent)"
+							_ = opts.Store.Append(store.Event{
+								Time: time.Now().UTC(),
+								Type: "agent.stdout_fallback",
+								Data: map[string]any{"agent": agent.ID, "artifact": outputPath},
+							})
+						} else {
+							_ = os.Remove(tmp)
+						}
 					} else {
-						_ = os.Remove(tmp)
+						_ = os.Remove(tmp) // invalid candidate -> leave no protocol artifact
 					}
-				} else {
-					_ = os.Remove(tmp) // invalid candidate -> leave no protocol artifact
 				}
 			}
 		}

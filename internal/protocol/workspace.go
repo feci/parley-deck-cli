@@ -33,6 +33,10 @@ type IdeaStatus struct {
 	Status       string
 	Participants []string
 	Path         string
+	// Facilitator declaration (lean-organizer A): optional `facilitator:` +
+	// `facilitator_participates:` frontmatter. Undeclared stays zero-valued so the
+	// absent-field deck is untouched.
+	FacilitatorRole FacilitatorRole
 }
 
 // InitWorkspace creates a fresh deck with the default (local-dir) transport.
@@ -347,10 +351,11 @@ func readIdeas(path string) ([]IdeaStatus, error) {
 			return nil, fmt.Errorf("%s: %w", prompt, err)
 		}
 		ideas = append(ideas, IdeaStatus{
-			Slug:         first(meta["idea"], entry.Name()),
-			Status:       first(meta["status"], "unknown"),
-			Participants: parseList(meta["participants"]),
-			Path:         filepath.Dir(prompt),
+			Slug:            first(meta["idea"], entry.Name()),
+			Status:          first(meta["status"], "unknown"),
+			Participants:    parseList(meta["participants"]),
+			Path:            filepath.Dir(prompt),
+			FacilitatorRole: FacilitatorRoleFromMeta(meta),
 		})
 	}
 

@@ -295,6 +295,7 @@ type timeoutsBlock struct {
 	RoundMS         int `toml:"round_ms"`
 	ReviewMS        int `toml:"review_ms"`
 	DeepReasoningMS int `toml:"deep_reasoning_ms"`
+	WaitMS          int `toml:"wait_ms"`
 }
 
 // loopBlock is the [defaults.loop] policy: explicit auto-drive loop ceilings (LE-5).
@@ -320,6 +321,7 @@ type CentralDefaults struct {
 	RoundMS            int
 	ReviewMS           int
 	DeepReasoningMS    int
+	WaitMS             int
 	// Loop ceilings (LE-5); 0 = unlimited.
 	MaxDriverSteps int
 	MaxWallClockMS int
@@ -551,6 +553,9 @@ func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
 		if gd.Timeouts.ReviewMS > 0 {
 			out.ReviewMS = gd.Timeouts.ReviewMS
 		}
+		if gd.Timeouts.WaitMS > 0 {
+			out.WaitMS = gd.Timeouts.WaitMS
+		}
 		if gd.Timeouts.DeepReasoningMS > 0 {
 			out.DeepReasoningMS = gd.Timeouts.DeepReasoningMS
 		}
@@ -636,7 +641,8 @@ func centralDefaultTemplate() string {
 	b.WriteString("signoff_ms = 600000          # 10 min\n")
 	b.WriteString("round_ms = 1200000           # 20 min\n")
 	b.WriteString("review_ms = 1200000          # 20 min\n")
-	b.WriteString("deep_reasoning_ms = 1200000  # 20 min\n\n")
+	b.WriteString("deep_reasoning_ms = 1200000  # 20 min\n")
+	b.WriteString("wait_ms = 1500000             # 25 min default for `parley wait` — a bounded blocking read. Heuristic default below the owner-requested 30-minute guidance; NOT a verified provider cache fact. Per-call --timeout overrides.\n\n")
 	b.WriteString("[defaults.loop]              # auto-drive loop ceilings (LE-5); breach escalates, never completes. 0 = unlimited.\n")
 	b.WriteString("max_driver_steps = 200       # total progress steps before escalation (generous safety net)\n")
 	b.WriteString("max_wall_clock_ms = 7200000  # 2 h total run budget (distinct from the per-tick 30 min round deadline)\n")

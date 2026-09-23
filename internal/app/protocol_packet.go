@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/protocolpacket"
 )
 
 // `parley protocol packet` — the phase-scoped protocol context renderer and its check.
 const protocolPacketUsage = `usage:
   parley protocol packet [--dir DIR] --phase N [--track T] [--transport X] [--idea SLUG]
-                         [--flag F]... [--optimize] [--json] [--print]
+                         [--audience participant|facilitator] [--flag F]... [--optimize] [--json] [--print]
   parley protocol packet check [--dir DIR] [--json]
 
   Renders the protocol context for one launch from the LIVE resolved authority (a source-role
@@ -53,6 +54,7 @@ func runProtocolPacket(args []string, stdout, stderr io.Writer) int {
 	transport := fs.String("transport", "", "transport (default: the deck header's Transport: value)")
 	idea := fs.String("idea", "", "idea slug (a meta-protocol-change-* slug sets the protocol_change flag)")
 	optimize := fs.Bool("optimize", false, "EXPERIMENTAL: emit the optimized packet when every guard passes (default: full context + shadow audit)")
+	audience := fs.String("audience", "", "audience scope: participant|facilitator (default: participant — full context). The facilitator view renders the ratified facilitator reading set verbatim with a complete omission index; it can never cut below the never-cut floor. facilitator_participates: true and unknown audiences fall back to full context with a stated reason.")
 	jsonOut := fs.Bool("json", false, "machine-readable attestation and index")
 	print := fs.Bool("print", false, "also write the emitted body to stdout")
 	var flags packetFlagList
@@ -71,6 +73,7 @@ func runProtocolPacket(args []string, stdout, stderr io.Writer) int {
 	}
 	c, err := BuildProtocolContext(root, protocolpacket.Request{
 		Phase: *phase, Track: *track, Transport: *transport, IdeaSlug: *idea, Flags: flags, Optimize: *optimize,
+		Audience: *audience, FacilitatorParticipates: ideaDeclaresFacilitatorParticipates(root, *idea),
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "protocol packet: %v\n", err)
@@ -95,6 +98,12 @@ func runProtocolPacket(args []string, stdout, stderr io.Writer) int {
 		if c.FallbackReason != "" {
 			fmt.Fprintf(stdout, "fallback_reason : %s\n", c.FallbackReason)
 		}
+		if c.Audience != "" {
+			fmt.Fprintf(stdout, "audience        : %s\n", c.Audience)
+		}
+		if c.AudienceFallbackReason != "" {
+			fmt.Fprintf(stdout, "audience_fallback_reason : %s\n", c.AudienceFallbackReason)
+		}
 		if c.Shadow != nil {
 			fmt.Fprintf(stdout, "shadow packet   : %d/%d blocks included, %d of %d bytes, sha256 %s%s\n",
 				c.Shadow.IncludedBlocks, c.Shadow.IncludedBlocks+c.Shadow.OmittedBlocks, c.Shadow.PacketBytes, c.Shadow.SourceBytes,
@@ -106,6 +115,25 @@ func runProtocolPacket(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprint(stdout, c.Body)
 	}
 	return 0
+}
+
+// ideaDeclaresFacilitatorParticipates reads the idea's 00-prompt for the
+// facilitator_participates exception: a facilitator who signs keeps FULL context —
+// a signing agent never silently loses reading set.
+func ideaDeclaresFacilitatorParticipates(root, ideaSlug string) bool {
+	if strings.TrimSpace(ideaSlug) == "" {
+		return false
+	}
+	ws, err := protocol.ReadWorkspaceStatus(root)
+	if err != nil {
+		return false
+	}
+	for _, idea := range ws.Ideas {
+		if idea.Slug == ideaSlug {
+			return idea.FacilitatorRole.Declared && idea.FacilitatorRole.Participates
+		}
+	}
+	return false
 }
 
 func suffixIf(cond bool, s string) string {

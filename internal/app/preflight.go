@@ -311,6 +311,30 @@ func confirmCommand(root string) string {
 	return fmt.Sprintf("parley preflight --dir %s --yes", root)
 }
 
+// facilitatorConflictGates scans every idea's 00-prompt.md for the declared-facilitator
+// conflict (facilitator: also in participants: without facilitator_participates: true)
+// and returns one blocking gate per conflicting idea. Decks that declare no facilitator
+// produce nothing — the absent-field deck is untouched.
+func facilitatorConflictGates(root string) []gate {
+	status, err := protocol.ReadWorkspaceStatus(root)
+	if err != nil {
+		return nil
+	}
+	var gates []gate
+	for _, idea := range status.Ideas {
+		msg := idea.FacilitatorRole.Conflict(idea.Participants)
+		if msg == "" {
+			continue
+		}
+		gates = append(gates, gate{
+			Kind:    "facilitator-declaration",
+			Detail:  fmt.Sprintf("ideas/%s: %s", idea.Slug, msg),
+			Confirm: fmt.Sprintf("edit ideas/%s/00-prompt.md — remove the agent from participants, or add facilitator_participates: true", idea.Slug),
+		})
+	}
+	return gates
+}
+
 // workspaceExists reports whether root holds a real parley-deck/ workspace (the
 // deck directory must exist). An empty / non-workspace dir must never report ready.
 func workspaceExists(root string) bool {
@@ -350,6 +374,15 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	}
 	report.Freshness = fr
 	report.Gates = append(report.Gates, freshGates...)
+
+	// Declared-facilitator consistency (lean-organizer A): an idea whose
+	// `facilitator:` names a `participants:` member without
+	// `facilitator_participates: true` is a fail-closed preflight gate — non-zero
+	// exit naming BOTH fields. It is not waivable by --yes: the ambiguity is the
+	// deck's own declaration, not an availability observation.
+	for _, gate := range facilitatorConflictGates(opts.Root) {
+		report.Gates = append(report.Gates, gate)
+	}
 
 	report.Pinged = !opts.NoPing
 	report.Roster = checkRoster(ctx, opts, discovered)
@@ -887,7 +920,14 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	if truncated {
 		reason = "overflow"
 	}
-	obs := classifyReadiness(out.String(), errOut.String(), code, timedOut, truncated, reason)
+	// Kimi's structured argv emits role-tagged envelopes; the exact-PONG sentinel
+	// reads the ASSISTANT CONTENT (lean-organizer D.4 — the observed preflight
+	// parser rejection class).
+	stdoutText := out.String()
+	if agent.Adapter() == "kimi" {
+		stdoutText = runner.UnwrapKimiStreamJSON(stdoutText)
+	}
+	obs := classifyReadiness(stdoutText, errOut.String(), code, timedOut, truncated, reason)
 	obs.Duration = time.Since(started)
 	obs.BuffersStdout = agent.BuffersStdout
 	return obs

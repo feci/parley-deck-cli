@@ -73,6 +73,12 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runContext(args[1:], stdout, stderr)
 	case "status":
 		return runStatus(args[1:], stdout, stderr)
+	case "wait":
+		return runWait(args[1:], stdout, stderr)
+	case "organizer":
+		return runOrganizer(args[1:], stdout, stderr)
+	case "usage":
+		return runUsage(args[1:], stdout, stderr)
 	case "sessions":
 		return runSessions(args[1:], stdout, stderr)
 	case "preflight":
@@ -207,6 +213,14 @@ Commands:
 
   status
       Show workspace, idea, consensus, run, and HITL question state.
+
+  wait --idea <slug> --for round|consensus|review|implementation|any
+      One blocking read (lean-organizer B). Exit 0 boundary reached; 3 timeout
+      (partial digest printed, outstanding agents named); 4 a present artifact
+      fails the shared validator (verbatim reason) or a blocking escalation /
+      driver error arrives; 1 usage/IO. Missing artifacts keep waiting. The
+      digest is deterministic, mechanically derived, and never persists
+      anything. Observes only — never advances a phase.
 
   sessions
       List and inspect the local Parley session index in ~/.parley-deck.

@@ -339,7 +339,12 @@ func defaultBuiltinSpecs() []Spec {
 			// autonomous") and `-y/--yolo`, but BOTH are rejected alongside `-p`:
 			// `kimi --auto -p …` exits 1 with "Cannot combine --prompt with --auto." So `-p` is
 			// the only autonomous headless shape, and it is what we declare.
-			HeadlessArgs:          []string{"-m", "{model}", "-p", "{prompt}"},
+			// Structured output is adapter-supported alongside -p (probed live
+			// 2026-09-23 on 0.42.0: `kimi --output-format stream-json -m <model> -p
+			// <prompt>` exits 0 and emits role-tagged envelope lines; the runner
+			// unwraps assistant content for text consumers and telemetry reads
+			// usage.record lines when the CLI emits them — lean-organizer D.4).
+			HeadlessArgs:          []string{"--output-format", "stream-json", "-m", "{model}", "-p", "{prompt}"},
 			InteractivePromptMode: InteractivePromptNone,
 			InteractiveInvoke:     InteractiveInvokePrintOnly,
 			InteractivePollMS:     DefaultInteractivePollMS,
@@ -354,8 +359,8 @@ func defaultBuiltinSpecs() []Spec {
 			Speed:           DefaultSpeed,
 			TimeoutMS:       DefaultTimeoutMS,
 			ExternalBackend: ExternalHosted,
-			Telemetry:       "final text on stdout",
-			Notes:           "Kimi Code. Headless is `kimi -p <prompt>`; --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.",
+			Telemetry:       "stream-json envelopes; usage.record parsed when emitted (coverage: none otherwise)",
+			Notes:           "Kimi Code. Headless is `kimi -p <prompt>` (now defaulted to --output-format stream-json, unwrapped by the runner); --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.",
 			// Scope is deliberately EMPTY: print mode confines nothing at the OS level, it only
 			// auto-approves. Only codex --sandbox workspace-write earns Scope "workspace".
 			AutonomousWrite: AutonomousWrite{Mode: "prompt", Args: []string{"-p"}, Scope: ""},

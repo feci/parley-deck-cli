@@ -1,0 +1,4 @@
+{"role":"meta","type":"system.version","version":"0.42.0"}
+{"type":"usage.record","agentId":"main","model":"kimi-code/k3","usage":{"inputOther":357,"output":27,"inputCacheRead":24064,"inputCacheCreation":0},"usageScope":"turn","time":1790194906880}
+{"role":"meta","type":"usage.record","agentId":"main","model":"kimi-code/k3","usage":{"inputOther":129,"output":38,"inputCacheRead":30111,"inputCacheCreation":0},"usageScope":"turn","time":1790194906999}
+{"role":"assistant","content":"done"}

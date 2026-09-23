@@ -62,7 +62,7 @@ func TestPromotedAdaptersFullContract(t *testing.T) {
 		autoArgs []string
 		headless []string
 	}{
-		{"kimi", []string{"-p"}, []string{"-m", "{model}", "-p", "{prompt}"}},
+		{"kimi", []string{"-p"}, []string{"--output-format", "stream-json", "-m", "{model}", "-p", "{prompt}"}},
 		{"opencode", []string{"--auto"}, []string{"run", "--auto", "-m", "{model}", "{prompt}"}},
 	}
 	for _, c := range cases {

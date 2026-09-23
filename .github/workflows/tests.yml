@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: go build & test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # The Windows leg is load-bearing for the portable verbs added by
+        # lean-organizer: `parley wait` (bounded portable polling — no fsnotify)
+        # and `parley usage ingest` (streaming path-only ingest) must hold on
+        # Windows so releases ship Windows assets honestly.
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test ./... -count=1

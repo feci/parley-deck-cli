@@ -112,6 +112,28 @@ date: 2026-05-23
 
 # Consensus
 
+## Agreed decisions
+
+Seeded decision.
+
+## Agreed trade-offs
+
+Seeded trade-off.
+
+## Open items deferred to implementation
+
+## Comparison & blind spots
+
+Seeded comparison.
+
+## Drafter position changes
+
+None.
+
+## Alternatives disposition
+
+Seeded disposition.
+
 ## Signoffs
 
 ### Signoff: codex - 2026-05-23
@@ -140,6 +162,28 @@ date: 2026-05-23
 ---
 
 # Consensus
+
+## Agreed decisions
+
+Seeded decision.
+
+## Agreed trade-offs
+
+Seeded trade-off.
+
+## Open items deferred to implementation
+
+## Comparison & blind spots
+
+Seeded comparison.
+
+## Drafter position changes
+
+None.
+
+## Alternatives disposition
+
+Seeded disposition.
 
 ## Signoffs
 

@@ -1627,7 +1627,18 @@ func writeConsensusIdea(t *testing.T, root, slug string, participants []string, 
 		}
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "---\nidea: %s\n---\n\n## Signoffs\n", slug)
+	fmt.Fprintf(&b, "---\nidea: %s\n---\n\n", slug)
+	if !review {
+		// The Phase-3 gate requires the canonical template sections incl. the
+		// §15.5/§15.6 drafter duties (lean-organizer A.4).
+		for _, section := range protocol.RequiredConsensusSections {
+			if section == "## Signoffs" {
+				continue
+			}
+			fmt.Fprintf(&b, "%s\n\nSeeded content.\n\n", section)
+		}
+	}
+	fmt.Fprintf(&b, "## Signoffs\n")
 	for _, participant := range participants {
 		status, ok := signoffs[participant]
 		if !ok {
@@ -1703,7 +1714,7 @@ prompt=$(mktemp)
 cat > "$prompt"
 path=$(awk -F': ' '/^Consensus file to sign:/ {print $2; exit}' "$prompt")
 tmp=$(mktemp)
-sed 's/## Signoffs/## Changed Signoffs/' "$path" > "$tmp"
+sed 's/Seeded content./Edited by agent./' "$path" > "$tmp"
 mv "$tmp" "$path"
 cat >> "$path" <<'SIGNOFF'
 

@@ -149,6 +149,9 @@ func RunConsult(ctx context.Context, opts ConsultOptions) ConsultResult {
 	answer, readErr := os.ReadFile(opts.StdoutPath)
 	if readErr == nil {
 		result.Answer = string(answer)
+		if opts.Agent.Adapter() == "kimi" {
+			result.Answer = UnwrapKimiStreamJSON(result.Answer)
+		}
 	}
 	if err != nil {
 		// Artifact-wins, consult flavor: a non-empty answer overrides an

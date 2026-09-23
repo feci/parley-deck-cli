@@ -219,7 +219,35 @@ func (d *Driver) commitCursor(c Cursor, action Action, previous Phase) error {
 			"source":         "driver",
 		},
 	})
+	d.writePhaseHandoff(c, action, previous)
 	return nil
+}
+
+// writePhaseHandoff records the per-phase handoff under runs/<run-id>/
+// (lean-organizer D.1). It is NON-CANONICAL driver state (§3 `runs/`), advisory
+// only, and written on the same machinery conventions as the shipped handoff packet
+// (atomic file write; no protocol artifact is touched). Its schema states the
+// recomputed view (`parley organizer brief` / `parley status`) is authoritative on
+// any disagreement, and no agent is ever obliged to author or refresh it by hand.
+// A failed write is logged to the event stream, never fatal: advisory state must
+// not block a phase transition the cursor already committed.
+func (d *Driver) writePhaseHandoff(c Cursor, action Action, previous Phase) {
+	record := BuildPhaseHandoffRecord(d.cfg.Root, d.cfg.IdeaSlug, d.cfg.IdeaDir, d.cfg.Participants, c, action, previous)
+	record.RunID = filepath.Base(d.cfg.RunDir)
+	path := filepath.Join(d.cfg.RunDir, PhaseHandoffPath(c.Phase))
+	if err := storeHandoffRecord(path, record); err != nil {
+		_ = d.cfg.Events.Append(store.Event{
+			Time: time.Now().UTC(),
+			Type: "driver.phase_handoff_failed",
+			Data: map[string]any{"idea": d.cfg.IdeaSlug, "path": path, "error": err.Error()},
+		})
+		return
+	}
+	_ = d.cfg.Events.Append(store.Event{
+		Time: time.Now().UTC(),
+		Type: "driver.phase_handoff",
+		Data: map[string]any{"idea": d.cfg.IdeaSlug, "path": path, "phase": string(c.Phase)},
+	})
 }
 
 // autoDriveEnabled reports whether the driver should auto-advance. As of 1.27.0

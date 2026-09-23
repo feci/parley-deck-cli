@@ -1,3 +1,23 @@
+## 2026-09-23 — lean organizer: pure-organizer default, wait/digest, audience packet, fresh-session tooling (UNRELEASED)
+Idea: ideas/meta-protocol-change-lean-organizer/
+Drafted by: kimi-1 (FINAL); protocol hunks applied by zcode-1 (Phase 5)
+Summary: Permissive lines recording the ratified lean-organizer defaults, in all three
+COOPERATION.md copies (deck view, internal/protocol/defaults/, skill references/): a deck declaring
+`facilitator:` runs the pure organizer by default — participants implement and verify code, the
+facilitator reads verdicts and validator output (Quickstart facilitator row, §4 Phase 5, §4 Phase 6;
+`facilitator_participates: true` restores full participation); §9 checklist item 1 records the
+opt-in audience-scoped facilitator packet view (`parley protocol packet --audience facilitator`,
+never cutting below the never-cut floor) and re-orientation from the computed
+`parley organizer brief` after a compaction; §11 gains an advisory line preferring one blocking
+`parley wait` over repeated short polls. Tooling shipped in parley-deck-cli: `parley wait` +
+PhaseDigest, the `--audience` packet dimension with `audiences:` in
+`meta/packet-applicability.yaml`, `parley organizer brief`, driver-written per-phase handoff records
+under `runs/` (non-canonical, advisory; recomputation authoritative), path-only
+`parley usage ingest`, and the kimi telemetry case with structured stream-json argv.
+No heading was touched; no classification changed except the additive `audiences:` overlay, whose
+omissions the never-cut floor bounds and `parley protocol packet check` proves for every phase ×
+track. `full` remains the default context for everyone.
+
 ## 2026-09-10 — §9 item 1: a `refused` launch is a stop, not a fallback (UNRELEASED)
 Idea: ideas/meta-protocol-change-evidence-first-efficiency/
 Drafted by: claude-1
