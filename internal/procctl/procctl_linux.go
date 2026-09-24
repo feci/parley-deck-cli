@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func init() { active = linuxProbe{} }
@@ -45,11 +46,56 @@ func (linuxProbe) procStart(pid int) (string, bool) {
 	return fields[19], true
 }
 
+// cmdlinePublishBound bounds how long command() waits for /proc/<pid>/cmdline
+// to become non-empty on an otherwise readable process. Linux publishes argv
+// late in execve: the CLOEXEC exec-status pipe that unblocks cmd.Start() is
+// closed in begin_new_exec(), while mm->arg_start/arg_end are set afterwards
+// in create_elf_tables() — so a read racing that window returns ZERO bytes for
+// a process that provably exists (its stat/pgid read fine microseconds apart)
+// and is already executing. Recording that transient emptiness as an empty
+// Command later trips Attributed's fail-closed "no recorded command" facet for
+// a process we just started (hosted U2: exit -1, empty output, ~1500ms kill
+// grace). The bound only tolerates the kernel's publication latency: residual
+// exec work after the pipe closes is microseconds of CPU and preemption under
+// load is the variable, so 100ms is orders of magnitude beyond the expected
+// window yet far under every surrounding budget (KillGroup grace 1500ms,
+// WaitDelay 2s/10s) — it can only extend paths that already fail, and the
+// healthy first-read path pays nothing. A read error (process gone) returns
+// immediately: no amount of retrying makes a dead pid recordable.
+const (
+	cmdlinePublishBound = 100 * time.Millisecond
+	cmdlinePublishPoll  = time.Millisecond
+)
+
 func (linuxProbe) command(pid int) (string, bool) {
-	data, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/cmdline")
-	if err != nil || len(data) == 0 {
-		return "", false
+	return pollCmdline(func() ([]byte, error) {
+		return os.ReadFile("/proc/" + strconv.Itoa(pid) + "/cmdline")
+	})
+}
+
+// pollCmdline reads NUL-separated argv through read, polling only while a
+// live-looking process yields exactly zero bytes (the execve publication
+// window above), for at most cmdlinePublishBound. It returns on the FIRST
+// non-empty read — it never re-reads after obtaining a value — so it cannot
+// turn an untrusted identity into a trusted one: whatever it returns is still
+// subject to every unchanged Attributed facet (boot id, alive, exact start
+// time, exact process group, session leader, command match). Exhaustion
+// returns ("", false): exactly the pre-poll outcome, so a Command that never
+// published still records empty and Attributed still refuses it.
+func pollCmdline(read func() ([]byte, error)) (string, bool) {
+	deadline := time.Now().Add(cmdlinePublishBound)
+	for {
+		data, err := read()
+		if err != nil {
+			return "", false
+		}
+		if len(data) > 0 {
+			// cmdline is NUL-separated argv.
+			return strings.TrimSpace(strings.ReplaceAll(string(data), "\x00", " ")), true
+		}
+		if !time.Now().Before(deadline) {
+			return "", false
+		}
+		time.Sleep(cmdlinePublishPoll)
 	}
-	// cmdline is NUL-separated argv.
-	return strings.TrimSpace(strings.ReplaceAll(string(data), "\x00", " ")), true
 }
