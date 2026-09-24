@@ -7,6 +7,7 @@ date: 2026-09-24
 status: CANDIDATE PREPARED — reviewable only, NOT released
 base: 519951e (lean-organizer branch; hosted-accepted behavior at 9134c7a + comment-only 519951e, equivalence independently verified)
 amended: 2026-09-24 — two record corrections before independent review (see § 8): U2 read-error/cancellation wording (reaped pids exit at once; killed-but-unreaped pids consume the full bound, per accepted C-1/K-1 evidence) and Windows decision framing aligned with the organizer scope inbox (defer-and-label-experimental vs separate reviewed portability track; omission of Windows assets is a deviation the owner must select; publication held pending the decision)
+amended-2: 2026-09-24 (later, wording finalization) — owner authorization recorded (see § 9 and release-wording-1.49.1-zcode-1.md): release CLI 1.49.1 now for macOS and Linux through GitHub and Homebrew, keep Windows assets explicitly labelled experimental/unvalidated, hold the CLI winget submission until a separate reviewed windows-portability track removes the label; skill 2.13.0 npm handled separately by the owner-facing Claude session and not a CLI gate; dated historical statements (incl. § 8) unchanged
 ---
 
 # CLI 1.49.1 release candidate — metadata prep — zcode-1
@@ -14,9 +15,18 @@ amended: 2026-09-24 — two record corrections before independent review (see §
 This prepares a **reviewable release candidate only**. Nothing here publishes,
 tags, pushes, builds distribution assets, or installs anything. Per the release
 plan's role split, the organizer independently reviews this metadata and stages
-assets; release operations then wait on the required **owner Windows scope
-decision** and **owner npm verification**. Preparing this candidate does not
-mark the release task complete.
+assets. The required **owner Windows scope decision** has since been given
+(2026-09-24, deck inbox
+`user-to-codex-1_meta-protocol-change-lean-organizer_windows-scope.md`):
+release CLI 1.49.1 now for macOS and Linux through GitHub and Homebrew, keep
+the Windows assets explicitly labelled experimental/unvalidated, and hold the
+CLI winget submission until a separate reviewed windows-portability track
+fixes the defects and removes the label; the **owner npm verification** of
+the separate skill 2.13.0 tarball is handled by the owner-facing Claude
+session apart from this release and is not a CLI gate. This commit updates
+the candidate's active wording to that authorization (§ 9); it performs no
+release operations, and preparing or amending this candidate does not mark
+the release task complete.
 
 ## 1. Inputs
 
@@ -36,6 +46,16 @@ mark the release task complete.
 - Owner-gate context: `parley-deck/inbox/codex-1-to-user_..._npm-login.md`
   (skill 2.13.0 npm publish is owner-attended and still pending; that tarball
   is a separate artifact — untouched here).
+- Owner decision, received 2026-09-24 after the candidate and its § 8
+  corrections: `parley-deck/inbox/user-to-codex-1_meta-protocol-change-lean-organizer_windows-scope.md`
+  — "Oboje" / "Both": release CLI 1.49.1 now for macOS and Linux through
+  GitHub and Homebrew; label Windows experimental and hold winget for the
+  CLI; open a separate reviewed Windows idea that fixes the defects and
+  removes the label. Release order set by the owner-facing session:
+  release-1.49.1 first (writes its done file), then
+  meta-protocol-change-designated-implementer, then windows-portability. The
+  skill is unaffected; the npm item above is handled separately by the
+  owner-facing Claude session and is not a CLI gate.
 
 ## 2. Metadata delta (the whole candidate)
 
@@ -90,14 +110,20 @@ test, workflow, or skill-2.13.0 change; no closed artifact touched.
   — `internal/evidence` does not build (`syscall.Mkfifo` undefined on
   windows), 14 packages fail against 16 ok, the bounded stderr-drain guard
   fires in `internal/acp` — so Windows `wait`/`usage` behavior is **not**
-  exercised. The entry aligns the decision framing with the organizer scope
-  inbox (`codex-1-to-user_meta-protocol-change-lean-organizer_scope.md`): the
-  owner chooses between deferring the newly exposed native-Windows work with
-  Windows explicitly labelled experimental/unvalidated, or authorizing a
-  separate reviewed Windows-portability track; neither choice is inferred,
-  and omitting Windows assets is a further deviation the owner must
-  explicitly select. Publication is held pending that decision — a process
-  hold the owner adjudicates, not a technical prohibition.
+  exercised. The entry originally aligned the decision framing with the
+  organizer scope inbox
+  (`codex-1-to-user_meta-protocol-change-lean-organizer_scope.md`) — owner
+  choice pending, publication held — which was accurate as of this
+  candidate's § 8 corrections. The owner has since decided (2026-09-24,
+  `user-to-codex-1_meta-protocol-change-lean-organizer_windows-scope.md`):
+  **both** — this release ships now for macOS and Linux through GitHub and
+  Homebrew; the Windows assets are kept and explicitly labelled
+  experimental/unvalidated on the evidence above; and the CLI winget
+  submission is held until a separate reviewed windows-portability track
+  fixes the defects, turns hosted windows-latest CI green, and removes the
+  label. The entry now records that authorization; until that track ships,
+  every CLI release keeps the experimental Windows label and opens no CLI
+  winget submission.
 
 ## 4. Validation run for this candidate (focused, by me, 2026-09-24, go on darwin/arm64)
 
@@ -137,30 +163,44 @@ at the 1.49.0 metadata commit), U2 container mutation proofs, Windows leg
 - Hosted acceptance is one green sample; the U2 claim rests on the
   twice-reproduced mechanism plus mutation evidence, with the hosted run
   closing the x86_64 gap.
-- Windows: red, uninvestigated here; owner choice per the organizer scope
-  inbox (defer-and-label-experimental vs authorize a separate reviewed
-  Windows-portability track) pending, and publication held on it; npm
-  verification for the separate skill 2.13.0 tarball also pending (owner).
+- Windows: red, uninvestigated here. No longer owner-pending: authorization
+  recorded 2026-09-24 (both) — macOS/Linux release now via GitHub and
+  Homebrew, Windows assets kept and labelled experimental/unvalidated in the
+  notes, CLI winget held until the separate reviewed windows-portability
+  track ships and removes the label. The skill 2.13.0 npm item is
+  owner-attended in the owner-facing Claude session and is not a CLI gate.
 - Optional and non-blocking per the acceptance review: one `-v` hosted ubuntu
   run would confirm the two environment-guarded procctl tests execute there.
 
-## 6. Remaining gates, exactly
+## 6. Remaining gates, exactly (as amended 2026-09-24, after the owner decision)
 
-1. **Organizer**: independently review this metadata + report; stage release
-   assets from a pinned commit (either `9134c7a` as tested, or push the
-   comment-only `519951e` first — no new CI needed for it per the acceptance
-   review's token-identity verification).
-2. **Owner**: Windows scope decision per the organizer scope inbox
-   (`codex-1-to-user_meta-protocol-change-lean-organizer_scope.md`) — defer
-   the newly exposed native-Windows work with Windows explicitly labelled
-   experimental/unvalidated, or authorize a separate reviewed
-   Windows-portability track. Neither choice is inferred; omitting Windows
-   assets is a further deviation the owner must explicitly select.
-   Publication of this release is held pending this decision.
-3. **Owner**: npm verification/publish of the skill 2.13.0 tarball (separate
-   artifact; SHA256 `dcf9c75c…d8d802` per the inbox record).
+1. **Organizer**: independent review of this metadata + report — done
+   (kimi-1, VERDICT PASS at `481fb65`, recorded by the organizer in
+   `868825f`); still open on the organizer side: stage release assets from a
+   pinned commit (either `9134c7a` as tested, or push the comment-only
+   `519951e` first — no new CI needed for it per the acceptance review's
+   token-identity verification).
+2. **Owner — RESOLVED 2026-09-24** (previously: Windows scope decision
+   pending, publication held on it). Decision recorded in
+   `user-to-codex-1_meta-protocol-change-lean-organizer_windows-scope.md`:
+   both — release this CLI now for macOS and Linux through GitHub and
+   Homebrew; keep the Windows assets explicitly labelled
+   experimental/unvalidated; hold the CLI winget submission until a separate
+   reviewed windows-portability track fixes the defects, turns hosted
+   windows-latest CI green, and removes the label. Release order per the
+   owner-facing session: release-1.49.1 (this release) completes first and
+   writes its done file, then meta-protocol-change-designated-implementer,
+   then windows-portability.
+3. **Owner — reclassified, not a CLI gate**: npm verification/publish of the
+   skill 2.13.0 tarball (separate artifact; SHA256 `dcf9c75c…d8d802` per the
+   inbox record) is owner-attended in the owner-facing Claude session, runs
+   apart from this release, and does not gate it; the skill is unaffected by
+   the Windows decision.
 4. **Organizer/owner only**: tag `v1.49.1`, channel builds, GitHub release,
-   distribution. `v1.49.0`/`06e563e` never moves.
+   distribution — now owner-authorized for macOS and Linux through GitHub
+   and Homebrew, with the Windows assets retained under the
+   experimental/unvalidated label and **no CLI winget submission** until
+   windows-portability ships. `v1.49.0`/`06e563e` never moves.
 
 ## 7. NOT done
 
@@ -168,9 +208,12 @@ No push, tag, distribution build, publication, or install. No product source,
 test, or workflow change. No rewrite of the frozen `v1.49.0` tag/history, the
 1.49.0 changelog entry, closed idea artifacts (`FINAL.md`,
 `IMPLEMENTATION.md`, `consensus.md`, `review/`), or skill 2.13.0 material. No
-Windows investigation or claim. Peer reports, organizer records, inbox, ledger
-and `runs/` left as found (untracked). Preparing this candidate is not release
-approval and does not complete the release task.
+Windows investigation or claim. No CLI winget submission opened or prepared;
+no `release-1.49.1` done-file written — release operations and completion
+signaling remain organizer/owner-only. Peer reports, organizer records,
+inbox, ledger and `runs/` left as found (untracked). Preparing or amending
+this candidate is not release approval and does not complete the release
+task.
 
 ## 8. Record corrections (this commit, before independent review)
 
@@ -196,3 +239,30 @@ no behavior, test, peer, or closed-artifact change:
    explicitly select. The records now state that publication is **held
    pending that owner decision** — a process hold the owner adjudicates —
    and the invented no-assets prohibition is withdrawn.
+
+## 9. Owner authorization — wording finalization (this commit)
+
+The owner answered the scope question this candidate was held on (2026-09-24,
+`parley-deck/inbox/user-to-codex-1_meta-protocol-change-lean-organizer_windows-scope.md`,
+status authorized, relayed by the owner's Claude Code session): **"Oboje" /
+"Both"** — release CLI 1.49.1 now for macOS and Linux through GitHub and
+Homebrew; label Windows experimental and hold winget for the CLI; at the same
+time open a separate reviewed Windows idea that fixes the defects and removes
+the label. Until that track ships, every CLI release labels Windows
+experimental/unvalidated in its notes, keeps the Windows assets (labelled),
+and does not open a CLI winget PR. The skill is unaffected; its npm
+verification/publish stays with the owner-facing Claude session and is not a
+CLI gate.
+
+This commit updates this report's active wording (intro, § 1, § 3, § 5,
+§ 6, § 7, front-matter amendment note) and the CHANGELOG 1.49.1 "Release
+scope and limitations" bullet to that authorization. Wording only — no
+behavior, test, product, workflow, or skill change, and no release operation
+performed. Dated historical statements are preserved: § 8 still describes
+what the earlier record corrections said as of their date (publication held
+pending the then-open owner decision — a hold the decision above now lifts),
+and the pre-decision gate list as PASS-reviewed by kimi-1 at `481fb65` read:
+organizer review + staging; owner Windows scope decision with publication
+held on it; owner npm verification of the separate skill tarball;
+organizer/owner-only tag/builds/release. Exact edit inventory:
+`release-wording-1.49.1-zcode-1.md` (same directory).

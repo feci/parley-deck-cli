@@ -44,11 +44,14 @@
   (`syscall.Mkfifo` is undefined there), 14 of the packages fail against 16 passing —
   including the bounded stderr-drain guard firing in `internal/acp` — and Windows
   `wait`/`usage` behavior is therefore not exercised. Per the organizer's scope
-  escalation to the owner, the choice is between deferring the newly exposed
-  native-Windows work with Windows explicitly labelled experimental/unvalidated, or
-  authorizing a separate reviewed Windows-portability track; neither choice is
-  inferred here, and omitting Windows assets would itself be a deviation the owner
-  must explicitly select. Publication is held pending that owner decision.
+  escalation, the owner decided on 2026-09-24 to do both: this release ships now
+  for macOS and Linux through GitHub and Homebrew; the Windows assets are kept
+  and explicitly labelled experimental/unvalidated on the evidence above; and the
+  CLI winget submission is held until a separate, reviewed windows-portability
+  track fixes the defects, turns hosted windows-latest CI green, and removes the
+  label. Until that track ships, every CLI release keeps this experimental
+  Windows label and makes no CLI winget submission. The skill is unaffected by
+  this decision.
 - Hosted CI now pins a deterministic fixture git identity and enables Windows long
   paths before checkout, which is what allowed the hosted legs to reach the tests at
   all; the Linux and macOS acceptance below ran on that workflow.
