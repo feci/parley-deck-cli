@@ -1,5 +1,53 @@
 # Changelog
 
+## 1.49.0 — 2026-09-24
+
+### Added
+
+- `parley wait` blocks until the deck's review/implementation state changes, with a
+  stable exit map (0 boundary reached, 1 usage error, 3 timeout with partial digest,
+  4 invalid review artifact with the validator error). `--json` writes a stdout
+  envelope holding the phase digest only; terminal status goes to stderr. The digest
+  lists every round artifact per agent (path, bytes, owner, validity with failing
+  check, stance, parser fallback) and never rewrites or replaces a round file.
+- Audience-targeted protocol packets: `parley protocol packet --audience facilitator`
+  renders the live authority with a per-audience named omission set, a retained-block
+  floor and an upper guardrail, and an additive audience attestation. Unknown audiences
+  fall back to full context with a disclosed reason instead of guessing.
+- A generated organizer brief (byte-capped, deterministic, no model-written fields)
+  derived from the packet, replacing free-form organizer context assembly.
+- Fresh session per phase: phase handoff records carry the run directory, cursor and
+  context pointer across sessions; `parley usage ingest` populates the client-accounting
+  ledger from agent rollouts (streaming with bounded memory, idempotent re-ingest, six
+  token-usage fields verbatim, honest `attribution: ambiguous` when the rollout cannot
+  be attributed to one agent).
+- Structured Kimi usage telemetry, with an honest `coverage: none` path when the CLI
+  emits no usage envelope — never a fabricated number.
+- Declared-facilitator runs keep the organizer pure: `parley preflight` gates
+  `facilitator:`/`facilitator_participates:` conflicts explicitly, and the driver never
+  selects the declared facilitator for implementer/reviewer roles — it escalates
+  instead of falling back.
+
+### Fixed
+
+- `parley preflight` fails closed with a named read error when workspace status is
+  unreadable, instead of proceeding as if it had been verified.
+- Phase next-action reading no longer trusts file mtimes alone: the fix-up-published
+  state is keyed on implementation-record content (fix-up cycle vs latest complete
+  review round), so fresh clones and equal-mtime checkouts read `await review`
+  instead of silently regressing to `await implementation`.
+
+### Release scope and limitations
+
+This release ships the lean-organizer protocol change end to end (wait/digest, audience
+packets and brief, pure-organizer defaults, handoff and usage accounting). It claims no
+measured organizer token reduction: the usage ledger is the measurement instrument and
+post-release runs will be ingested and reported. Attribution windows are unit- and
+driver-tested but no live driver transition has yet produced a non-zero window, so live
+attribution is recorded as ambiguous. Windows behavior of `wait`/`usage` is exercised by
+the CI leg; local verification was macOS-only. The full Go suite runs with an explicit
+45-minute timeout (the slowest package exceeds Go's 10-minute default locally).
+
 ## 1.48.0 — 2026-09-18
 
 ### Added

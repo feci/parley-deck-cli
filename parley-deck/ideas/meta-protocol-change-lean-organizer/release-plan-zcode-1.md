@@ -2,11 +2,37 @@
 author: zcode-1
 idea: meta-protocol-change-lean-organizer
 date: 2026-09-24
-phase: release-plan (auxiliary, prepared while Phase 7-8 reviews run)
-status: ready-for-organizer
+phase: release-plan (auxiliary; corrected at dispatch — see "Corrections at dispatch" below)
+status: corrected-at-dispatch-2026-09-24
 ---
 
-# Release plan — CLI 1.49.0 / skill 2.13.0 (executed by zcode-1 on organizer dispatch, AFTER Phase 8)
+# Release plan — CLI 1.49.0 / skill 2.13.0 (metadata prep by zcode-1; release OPERATIONS by the organizer)
+
+**Roles (corrected 2026-09-24 at dispatch, post-Phase-8 close):** zcode-1 (implementer,
+participant) executes ONLY the release metadata preparation — §2 version/CHANGELOG bumps,
+manifest consistency, and participant-side preparation checks — in the paired
+lean-organizer worktrees, committing each worktree separately. The organizer (codex-1)
+performs the release operations — §3–§9 integration, tags, builds, GitHub releases, npm,
+Homebrew, winget — after zcode-1's report; the organizer does not verify code (verdicts
+already sit with the reviewers and the commissioned LE-7 check). The owner ALONE performs
+the attended core publish (`parley protocol publish`); it is owner-only, currently
+PENDING, and is NOT a prerequisite for releasing the channels below.
+
+## Corrections at dispatch (2026-09-24, post-Phase-8 close — made by zcode-1)
+
+1. **Roles/header:** the original header said "executed by zcode-1 on organizer
+   dispatch". Corrected as above: zcode-1 prepares metadata only; the organizer
+   publishes; the owner alone attends the core publish.
+2. **§1.2 core-publish framing:** removed "the release is reported complete only when
+   both are done" — channel release does not wait on the owner's core publish. The
+   publish is reported honestly as a pending owner-only action.
+3. **§2a test timeout:** `go test ./... -count=1` → `-timeout 45m` added (the reviewed
+   G3 convention; the slowest package measured 626.9 s locally, over Go's 600 s default).
+4. **§13 gate (4):** winget completion no longer gated on external PR merge — open PRs
+   are reported honestly as open; catalog merge latency is outside our control.
+5. **Inventory freshness:** §0 was verified mid-review at CLI HEAD `3c97f44`; both
+   branches have since advanced (fix-up cycles + records; CLI now `3d57c59`, skill
+   `b06a65a`) and the fast-forward claim was re-verified at dispatch for both repos.
 
 Everything below was verified read-only on 2026-09-24 against the live repositories, the winget
 catalog, npm, and the local checkouts. No product code, version file, branch ref, release, or
@@ -44,11 +70,11 @@ external PR was touched while preparing this plan; no commits were made.
 
 1. Phase 8 complete; claude-1 and kimi-1 review verdicts adjudicated; any fix-up commits are already
    on `lean-organizer` (both repos) and re-verified. This plan then applies on top of the final HEAD.
-2. Organizer escalates the combined staged core (`~/.parley/staging/COOPERATION-2.13.0.md`, built from
-   the core TEMPLATE = 2.10.0 + 2.11.0 hunks + 1.48.0 hunks + this idea's hunks) to the owner, who runs
-   attended `parley protocol publish` (per owner inbox `user-to-codex-1_..._core-publish.md`). Channel
-   publication below does not depend on the published core, but the release is reported complete only
-   when both are done.
+2. Owner-only parallel action, NOT a channel gate: the attended `parley protocol publish` of the
+   combined staged core (`~/.parley/staging/COOPERATION-2.13.0.md`, built from the core TEMPLATE =
+   2.10.0 + 2.11.0 hunks + 1.48.0 hunks + this idea's hunks) is performed by the owner ALONE (per
+   owner inbox `user-to-codex-1_..._core-publish.md`). Channel publication below neither depends on
+   nor waits for it; the pending core publish is reported honestly alongside the channel states.
 3. Release date D (YYYY-MM-DD) fixed at dispatch; used in CHANGELOG entries and release bodies.
 
 ## 2. Version + CHANGELOG prep (zcode-1, in the lean-organizer worktrees — no dev PRs)
@@ -66,7 +92,7 @@ Then:
 
 ```bash
 cd "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer"
-go build ./... && go vet ./... && go test ./... -count=1
+go build ./... && go vet ./... && go test ./... -count=1 -timeout 45m
 git add VERSION internal/app/version.go CHANGELOG.md
 git commit -m "[zcode-1] meta-protocol-change-lean-organizer: release CLI 1.49.0"
 ```
@@ -323,8 +349,11 @@ artifacts and files findings before the release is reported complete. Exact endp
 
 - No structural blocker: every channel, script, formula path, winget ID, fork, and convention was
   verified to exist today, and both branches fast-forward onto `origin/main`.
-- Gates, in order: (1) Phase 8 completion with review findings resolved; (2) owner-run attended core
-  publish for the combined 2.13.0 core (parallel, but required before reporting the release
-  complete); (3) npm web-verification escalation if triggered — publication of the npm channel waits
-  for the owner in that case; (4) both winget PRs merged before winget can be called done (catalog
-  merge latency is outside our control; report state honestly if still open).
+- Gates, in order: (1) Phase 8 completion with review findings resolved — DONE 2026-09-24 (closure
+  commit on the CLI branch; zero-fix closing consensus signed, LE-7 PASS); (2) no channel gate on the
+  core publish — the owner's attended publish of the combined 2.13.0 core is a parallel owner-only
+  action, currently pending, and is reported as such; (3) npm web-verification escalation if
+  triggered — publication of the npm channel waits for the owner in that case; (4) winget channel
+  state is reported honestly: two PRs opened by us is the completable action; their merge by the
+  external catalog maintainers is outside our control and is NOT claimed as a completion gate —
+  open PRs are reported as open until they merge.
