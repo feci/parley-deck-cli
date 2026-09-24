@@ -19,6 +19,23 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Configure fixture git identity
+        # release-ci-claude-1 Finding A: the evidence-refusal path
+        # (internal/app commitVerificationRefusal via refusalGit) commits
+        # with no git identity of its own, so suite fixtures that stage
+        # refusal records depend on an ambient identity that stock hosted
+        # runners do not provide. Pin one deterministic fixture identity
+        # per leg instead of relying on whatever each runner image carries.
+        run: |
+          git config --global user.email "parley-ci@example.invalid"
+          git config --global user.name "parley-ci"
+      - name: Enable long paths (Windows)
+        # release-ci-claude-1 Finding C: the longest deck record path is
+        # 233 chars; under the D:\a\parley-deck-cli\parley-deck-cli\
+        # workspace prefix it exceeds MAX_PATH 260 and the checkout itself
+        # fails, so this must run before actions/checkout. No-op elsewhere.
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
