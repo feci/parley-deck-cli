@@ -6,6 +6,7 @@ artifact: release-candidate-1.49.1
 date: 2026-09-24
 status: CANDIDATE PREPARED — reviewable only, NOT released
 base: 519951e (lean-organizer branch; hosted-accepted behavior at 9134c7a + comment-only 519951e, equivalence independently verified)
+amended: 2026-09-24 — two record corrections before independent review (see § 8): U2 read-error/cancellation wording (reaped pids exit at once; killed-but-unreaped pids consume the full bound, per accepted C-1/K-1 evidence) and Windows decision framing aligned with the organizer scope inbox (defer-and-label-experimental vs separate reviewed portability track; omission of Windows assets is a deviation the owner must select; publication held pending the decision)
 ---
 
 # CLI 1.49.1 release candidate — metadata prep — zcode-1
@@ -66,9 +67,12 @@ test, workflow, or skill-2.13.0 change; no closed artifact touched.
   closed with `no recorded command` (hosted run 36002574211: exit -1, empty
   output/hash, killed at grace). Fix: the Linux capture probe polls `cmdline`
   — retry **only** zero-byte reads of a live-looking process, return the
-  **first** non-empty read (no value shopping), return immediately on read
-  errors (dead pids never polled), and on exhaustion of the 100 ms bound
-  (`cmdlinePublishBound`, 1 ms poll) fail closed **exactly as pre-poll**.
+  **first** non-empty read (no value shopping), and return immediately on
+  read errors: a **reaped** pid's ENOENT exits at once, while a
+  **killed-but-unreaped** pid's cmdline reads empty with no error and
+  therefore consumes the full 100 ms bound (`cmdlinePublishBound`, 1 ms
+  poll) before failing closed **exactly as pre-poll** — cancellation is
+  bounded, not immediate (accepted C-1/K-1 evidence).
   All attribution facets, refusal strings, and strictness byte-identical;
   argv publication is monotone and pid swaps remain caught by the exact
   start-time/pgid facets; darwin (ps-based) and Windows untouched.
@@ -86,9 +90,14 @@ test, workflow, or skill-2.13.0 change; no closed artifact touched.
   — `internal/evidence` does not build (`syscall.Mkfifo` undefined on
   windows), 14 packages fail against 16 ok, the bounded stderr-drain guard
   fires in `internal/acp` — so Windows `wait`/`usage` behavior is **not**
-  exercised. The entry states the open **owner scope decision** (fix the
-  Windows track vs ship without Windows assets) as neither resolved nor
-  waived, and that Windows assets must not ship on this evidence.
+  exercised. The entry aligns the decision framing with the organizer scope
+  inbox (`codex-1-to-user_meta-protocol-change-lean-organizer_scope.md`): the
+  owner chooses between deferring the newly exposed native-Windows work with
+  Windows explicitly labelled experimental/unvalidated, or authorizing a
+  separate reviewed Windows-portability track; neither choice is inferred,
+  and omitting Windows assets is a further deviation the owner must
+  explicitly select. Publication is held pending that decision — a process
+  hold the owner adjudicates, not a technical prohibition.
 
 ## 4. Validation run for this candidate (focused, by me, 2026-09-24, go on darwin/arm64)
 
@@ -103,8 +112,10 @@ exist independently and were deliberately not repeated:
   `versionLine()`).
 - `go run ./cmd/parley --version` → **`parley 1.49.1`**.
 - Consistency: `VERSION` = `version.go` = CHANGELOG heading = `1.49.1`.
-- `git diff -- CHANGELOG.md` → **0 deleted lines** (pure insertion; the frozen
-  1.49.0 entry untouched in place).
+- `git diff -- CHANGELOG.md` vs pre-candidate HEAD → **0 deleted lines**
+  (pure insertion; the frozen 1.49.0 entry untouched in place — re-verified
+  at the § 8 record-correction commit, which edits only this 1.49.1
+  section's own wording, never the 1.49.0 entry).
 - `git rev-parse v1.49.0` = `06e563e…` locally **and** at
   `git ls-remote --tags origin` — unmoved; **no `v1.49.1` tag exists** locally
   or remotely.
@@ -126,7 +137,9 @@ at the 1.49.0 metadata commit), U2 container mutation proofs, Windows leg
 - Hosted acceptance is one green sample; the U2 claim rests on the
   twice-reproduced mechanism plus mutation evidence, with the hosted run
   closing the x86_64 gap.
-- Windows: red, uninvestigated here, owner scope decision pending; npm
+- Windows: red, uninvestigated here; owner choice per the organizer scope
+  inbox (defer-and-label-experimental vs authorize a separate reviewed
+  Windows-portability track) pending, and publication held on it; npm
   verification for the separate skill 2.13.0 tarball also pending (owner).
 - Optional and non-blocking per the acceptance review: one `-v` hosted ubuntu
   run would confirm the two environment-guarded procctl tests execute there.
@@ -137,8 +150,13 @@ at the 1.49.0 metadata commit), U2 container mutation proofs, Windows leg
    assets from a pinned commit (either `9134c7a` as tested, or push the
    comment-only `519951e` first — no new CI needed for it per the acceptance
    review's token-identity verification).
-2. **Owner**: Windows scope decision — fix the Windows track or ship without
-   Windows assets on the corrected claim. Not resolved, not waived.
+2. **Owner**: Windows scope decision per the organizer scope inbox
+   (`codex-1-to-user_meta-protocol-change-lean-organizer_scope.md`) — defer
+   the newly exposed native-Windows work with Windows explicitly labelled
+   experimental/unvalidated, or authorize a separate reviewed
+   Windows-portability track. Neither choice is inferred; omitting Windows
+   assets is a further deviation the owner must explicitly select.
+   Publication of this release is held pending this decision.
 3. **Owner**: npm verification/publish of the skill 2.13.0 tarball (separate
    artifact; SHA256 `dcf9c75c…d8d802` per the inbox record).
 4. **Organizer/owner only**: tag `v1.49.1`, channel builds, GitHub release,
@@ -153,3 +171,28 @@ test, or workflow change. No rewrite of the frozen `v1.49.0` tag/history, the
 Windows investigation or claim. Peer reports, organizer records, inbox, ledger
 and `runs/` left as found (untracked). Preparing this candidate is not release
 approval and does not complete the release task.
+
+## 8. Record corrections (this commit, before independent review)
+
+Two wording defects in the original candidate records (commit `3002782`),
+corrected in place in the 1.49.1 CHANGELOG section and § 3/§ 4/§ 5/§ 6 above;
+no behavior, test, peer, or closed-artifact change:
+
+1. **U2 read-error/cancellation accuracy.** The candidate said read errors
+   return immediately "(dead processes are never polled)". Per the accepted
+   C-1/K-1 evidence that is only the **reaped** case (ENOENT exits at once);
+   a **killed-but-unreaped** pid's cmdline reads empty with no error and
+   consumes the full 100 ms bound before failing closed exactly as pre-poll.
+   Both records now state: cancellation is bounded, not immediate.
+2. **Windows decision framing.** The candidate framed the owner decision as
+   "fix the Windows track or ship without Windows assets" and added a
+   self-imposed "Windows assets must not ship on this evidence" obligation.
+   Corrected to the organizer scope inbox
+   (`codex-1-to-user_meta-protocol-change-lean-organizer_scope.md`): the
+   owner chooses between deferring the newly exposed native-Windows work
+   with Windows explicitly labelled experimental/unvalidated, or authorizing
+   a separate reviewed Windows-portability track; neither choice is inferred,
+   and omitting Windows assets is a further deviation the owner must
+   explicitly select. The records now state that publication is **held
+   pending that owner decision** — a process hold the owner adjudicates —
+   and the invented no-assets prohibition is withdrawn.

@@ -20,9 +20,11 @@
   downstream attribution failed closed with `no recorded command` (hosted steps with
   exit -1, empty output, killed at grace). The Linux capture probe now polls `cmdline`
   under a 100 ms bound (1 ms interval): it retries only zero-byte reads of a
-  live-looking process, returns the first non-empty read without re-reading, returns
-  immediately on read errors (dead processes are never polled), and on bound
-  exhaustion fails closed exactly as before the poll. Every attribution facet — boot,
+  live-looking process, returns the first non-empty read without re-reading, and
+  returns immediately on read errors — a reaped pid's ENOENT exits at once, while a
+  killed-but-unreaped pid's cmdline reads empty with no error and so spends the full
+  bound before failing closed exactly as before the poll: cancellation is bounded,
+  not immediate. Every attribution facet — boot,
   alive, exact start time, pgid, session leader, command match — plus refusal strings
   and strictness is unchanged, and pid-reuse tampering is still refused. Darwin
   (ps-based) and Windows are untouched.
@@ -41,10 +43,12 @@
   **the Windows leg currently fails.** `internal/evidence` does not build on Windows
   (`syscall.Mkfifo` is undefined there), 14 of the packages fail against 16 passing —
   including the bounded stderr-drain guard firing in `internal/acp` — and Windows
-  `wait`/`usage` behavior is therefore not exercised. Whether to fix the Windows track
-  or to ship this release without Windows assets is an open owner scope decision; it is
-  neither resolved nor waived by this entry, and Windows assets must not ship on this
-  evidence.
+  `wait`/`usage` behavior is therefore not exercised. Per the organizer's scope
+  escalation to the owner, the choice is between deferring the newly exposed
+  native-Windows work with Windows explicitly labelled experimental/unvalidated, or
+  authorizing a separate reviewed Windows-portability track; neither choice is
+  inferred here, and omitting Windows assets would itself be a deviation the owner
+  must explicitly select. Publication is held pending that owner decision.
 - Hosted CI now pins a deterministic fixture git identity and enables Windows long
   paths before checkout, which is what allowed the hosted legs to reach the tests at
   all; the Linux and macOS acceptance below ran on that workflow.
