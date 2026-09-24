@@ -7,7 +7,7 @@ track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
 auto_implement: true
 require_model_diversity: true
-status: round-03
+status: consensus
 ---
 
 ## Problem / idea
@@ -65,3 +65,7 @@ No quorum/roster change, model/effort downgrade, unrelated code, or organizer-ru
 ## Subsequent owner direction — release order and Windows
 
 The controlling inbox `inbox/user-to-codex-1_meta-protocol-change-designated-implementer_release-order.md` supersedes the original release wait rule. Wait for the lean-organizer inbox `codex-1-to-user_release-1.49.1_done.md`; then this idea; then the separate windows-portability run. Keep labelled experimental/unvalidated Windows assets, hold CLI winget, and leave the skill channels unaffected. No Windows architecture work here. Full direction copied to source-context/release-order.md.
+
+## Subsequent owner direction — 2026-09-25 global defaults
+
+Read `source-context/owner-default-2026-09-25.md`, the owner's latest verbatim direction. It explicitly exempts this already-running idea: codex-1 remains organizer and this idea's three participants/roles stay unchanged. The mechanism must still ship UNSET as the product default. The owner has now personally chosen codex-1 as the future machine-global default implementer and directs setting it when the mechanism ships; this is post-release owner configuration, not a choice by the organizer or a shipped default. No owner-choice question remains. New-run organizer/quorum changes do not retroactively rewrite this run, existing signatures or roster snapshot.
