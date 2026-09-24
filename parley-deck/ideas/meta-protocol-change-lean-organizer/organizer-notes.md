@@ -39,3 +39,14 @@ codex-1 inspected FINAL's A–D specification, binding cross-cutting decisions, 
 - Core publication remains owner-only; no TTY bypass. Release remains the organizer's authorized post-Phase-8 action.
 
 - Driver re-entry observation at the FINAL boundary: continuing by idea slug resolved the newer signoff-request run, 20260923T211817.507433000Z, and printed "drafting FINAL via claude-1" despite Kimi's published FINAL and claim. The organizer stopped that owned continuation and its child before any diff to FINAL appeared. Frozen FINAL remains exactly commit 120a9bf. Further Phase-5/6 dispatch uses the explicit authorized manual fallback to avoid ownership collisions; successful leaf CLI signoff requests remain usable. This is observed orchestration behavior, not a code verdict.
+
+## Owner core-publication direction received through inbox
+
+The owner's Claude Code session relayed inbox/user-to-codex-1_meta-protocol-change-lean-organizer_core-publish.md. Owner's words: “počkám, publikuj to celé na konci” (“I will wait; publish all of it at the end.”). Stage one combined 2.13.0 template core from published 2.10.0 + staged 2.11.0 changes + released 1.48.0 protocol changes + this idea's reviewed changes. Do not request a separate 2.11.0 publish. Participant verification must cover all three change sets and template project zones; attended publication remains the owner's action. Zcode's implementation plan already includes this combined staging.
+
+- Phase-6 dogfooding: the new wait command for this idea returned exit 4 on an unrelated old inbox escalation. Exact command/output is recorded in inbox/codex-1-to-all_meta-protocol-change-lean-organizer_wait-observation.md for independent reviewer evaluation; no organizer code verdict. Reviews remain running.
+
+## Phase-7 disposition and fix-up authorization
+
+VC-1/VC-2 were resolved by Kimi independently reproducing the counterexamples and self-correcting; both reviewers concurred with the documented F8 disposition for VC-3. All three participants signed the 21-fix plan (two reservations, one unconditional ACCEPT), authorizing fix-up, not closure. R2 deferred records are created as inactive candidates only; this is audit/backlog recording within review, not an added shipped obligation or authorization to implement new scope.
+- DF-1: ideas/meta-protocol-change-consensus-duty-gates/00-prompt.md\n- DF-2: ideas/meta-protocol-change-facilitator-integrity-phase-coverage/00-prompt.md\n- DF-3: ideas/facilitator-packet-per-phase-bounds/00-prompt.md\n- DF-4: ideas/release-binary-reproducibility/00-prompt.md\n

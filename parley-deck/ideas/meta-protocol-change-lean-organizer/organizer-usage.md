@@ -21,3 +21,9 @@ Accounting correction (2026-09-23): the initial helper selected the first date-d
 <!-- boundary: Phase 3 → 4 @ 2026-09-23T21:31:08.921Z -->
 | Phase 4 → 5 scope approved (observed 2026-09-23T21:41:52.720Z) | 2026-09-23T21:41:52.720Z | 7025097 | 6867072 | 39873 | 17855 | 76 |
 <!-- boundary: Phase 4 → 5 scope approved @ 2026-09-23T21:41:52.720Z -->
+| Phase 5 → 6 (observed 2026-09-23T23:44:38.674Z) | 2026-09-23T23:44:38.674Z | 10572500 | 10374528 | 56787 | 28850 | 97 |
+<!-- boundary: Phase 5 → 6 @ 2026-09-23T23:44:38.674Z -->
+| Phase 6 → 7 review round 1 (observed 2026-09-24T00:20:46.199Z) | 2026-09-24T00:20:46.199Z | 12111040 | 11894528 | 69660 | 38272 | 105 |
+<!-- boundary: Phase 6 → 7 review round 1 @ 2026-09-24T00:20:46.199Z -->
+| Phase 7 → 8 fix-up cycle 1 (observed 2026-09-24T00:47:57.864Z) | 2026-09-24T00:47:57.864Z | 13570591 | 13333504 | 80850 | 47425 | 112 |
+<!-- boundary: Phase 7 → 8 fix-up cycle 1 @ 2026-09-24T00:47:57.864Z -->
