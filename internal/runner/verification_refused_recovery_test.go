@@ -226,6 +226,7 @@ func TestVerifierBudgetRefusalRecoversExplicitly(t *testing.T) {
 	// receipt validates against the complete recovered journal lineage.
 	receipt, err := trajectory.ExecuteCapturedVerification(ctx, ticket, "recovered-verifier-invocation", criteria, t.TempDir())
 	if err != nil || receipt.Steps != 4 || receipt.FailureStage != "" || receipt.InvocationID != "recovered-verifier-invocation" {
+		dumpRetainedVerificationSteps(t, journal)
 		t.Fatalf("recovered verification did not complete: %+v %v", receipt, err)
 	}
 	read, observation, err := trajectory.ReadCapturedVerification(ctx, ticket, "recovered-verifier-invocation")

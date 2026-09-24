@@ -119,32 +119,49 @@ func (p *Process) ExitCode() *int {
 }
 
 // Stop closes stdin (giving the agent a chance to exit), waits up to
-// ctx.Done()-or-process-exit, and then kills hard if needed.
+// ctx.Done()-or-process-exit, and then kills hard if needed. Stderr is
+// drained to EOF before the child is reaped, so the captured Stderr tail
+// and StderrObserver cannot be truncated by cmd.Wait closing the pipe
+// mid-copy.
 func (p *Process) Stop(ctx context.Context) error {
 	if p.stdin != nil {
 		_ = p.stdin.Close()
 	}
 	done := make(chan error, 1)
-	go func() { done <- p.cmd.Wait() }()
+	go func() {
+		// Drain before reaping: cmd.Wait closes the stderr pipe on return,
+		// which races the copier and can drop everything it has not read
+		// yet (a loaded runner observed 0 of 16384 bytes). The copier
+		// reaches EOF as soon as the child and any writer it spawned exit,
+		// which is the same moment cmd.Wait would unblock, so draining
+		// first adds no latency.
+		p.wg.Wait()
+		done <- p.cmd.Wait()
+	}()
 	select {
 	case err := <-done:
-		p.wg.Wait()
 		return err
 	case <-ctx.Done():
 		if p.cmd.Process != nil {
 			_ = killProcessGroup(p.cmd.Process.Pid) // reap the whole tree, not just the child
 		}
+		// A writer that escaped the process group can keep the copier
+		// blocked in Read past the kill; closing the read end interrupts
+		// it so Stop stays bounded. Data still unread in the pipe at that
+		// point is abandoned, never silently truncated.
+		_ = p.stderr.Close()
 		<-done
-		p.wg.Wait()
 		return ctx.Err()
 	}
 }
 
-// Wait blocks until the process exits without sending a signal.
+// Wait blocks until the process exits without sending a signal. It returns
+// only after the stderr copier has drained to EOF, so Stderr is complete
+// when it returns. Draining can outlast the child's own exit when a spawned
+// writer still holds the stderr pipe open — use Stop for bounded shutdown.
 func (p *Process) Wait() error {
-	err := p.cmd.Wait()
 	p.wg.Wait()
-	return err
+	return p.cmd.Wait()
 }
 
 // Kill sends SIGKILL to the whole process group (reaping grandchildren).

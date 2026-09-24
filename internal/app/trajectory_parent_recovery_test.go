@@ -149,7 +149,15 @@ func TestTrajectoryParentRecoveryRetainsOriginalAndDoesNotExecute(t *testing.T) 
 
 func TestTrajectoryParentRecoveryRestoresPreviouslyBoundFacts(t *testing.T) {
 	binary := trajectoryHelperBinary(t)
-	root, trace, _, agent := trajectoryHelperFixture(t, "actual-helper")
+	root, trace, journal, agent := trajectoryHelperFixture(t, "actual-helper")
+	t.Cleanup(func() {
+		// Hosted diagnosis: the launch-stage failure at this site surfaces
+		// from inside reconciledHelper, so retained-envelope diagnostics
+		// ride a failed-test cleanup rather than a call-site assertion.
+		if t.Failed() {
+			dumpRetainedVerificationSteps(t, journal)
+		}
+	})
 	result, old := reconciledHelper(t, root, binary, agent)
 	before, err := trajectory.Inspect(context.Background(), root, "idea-x")
 	if err != nil {

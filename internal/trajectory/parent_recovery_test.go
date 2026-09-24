@@ -102,6 +102,7 @@ func parentRecoveryFixture(t *testing.T) (string, ParentRecoveryPreview) {
 	}
 	startErr := inv.Started(cmd.Process.Pid)
 	if err = cmd.Wait(); err != nil {
+		dumpAllRetainedVerifications(t, root)
 		t.Fatalf("helper: %v %s", err, &out)
 	}
 	if startErr != nil {
@@ -113,6 +114,7 @@ func parentRecoveryFixture(t *testing.T) (string, ParentRecoveryPreview) {
 	}
 	p, err := PreviewParentRecovery(context.Background(), root, "fixture", ticket.RunID)
 	if err != nil {
+		dumpAllRetainedVerifications(t, root)
 		t.Fatal(err)
 	}
 	return root, p

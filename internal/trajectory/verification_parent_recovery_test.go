@@ -139,6 +139,7 @@ func recoveredParentLineageFixture(t *testing.T, lifecycleTimes func(recoveryAt 
 		var execErr error
 		receipt, execErr = ExecuteCapturedVerification(ctx, ticket, replacement, criteria, t.TempDir())
 		if execErr != nil || receipt.Steps != 4 || receipt.FailureStage != "" || receipt.InvocationID != replacement {
+			dumpRetainedVerificationSteps(t, filepath.Join(filepath.Dir(b.Store.Dir), "trajectory-verifications", ticket.Request.Charge.EntryKey))
 			t.Fatalf("recovered helper execution did not complete: %+v %v", receipt, execErr)
 		}
 	})
@@ -506,6 +507,7 @@ func refusedParentRecoveryFixture(t *testing.T) refusedParentRecoveryLineage {
 	retainedReplacementLifecycle(t, ticket, replacement, nil, recovery.At, func() {
 		receipt, execErr := ExecuteCapturedVerification(ctx, ticket, replacement, criteria, t.TempDir())
 		if execErr != nil || receipt.Steps != 4 || receipt.FailureStage != "" || receipt.InvocationID != replacement {
+			dumpRetainedVerificationSteps(t, path)
 			t.Fatalf("recovered helper execution did not complete: %+v %v", receipt, execErr)
 		}
 	})
