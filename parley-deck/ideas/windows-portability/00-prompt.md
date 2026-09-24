@@ -64,3 +64,7 @@ Write parley-deck/inbox/codex-1-to-user_windows-portability_done.md with what sh
 ## Owner default update — 2026-09-25
 
 The owner replaced the global defaults with Claude organizing new runs and Codex implementing, but explicitly exempted this in-flight windows-portability run. This idea retains facilitator codex-1, quorum claude-1/kimi-1/zcode-1, and the original launch-model choices. Machine roster now reports Claude inactive/Opus 5.5 and Codex active; that new-run default does not change this idea's membership, signatures, assignments, or existing sessions. The idea's participant-owned rounds select zcode-1 as drafter/implementer, with Claude and Kimi reviewing. No global roster setting is rewritten by this organizer.
+
+## Round-cap escalation — 2026-09-25
+
+Round 4 is complete; status remains round-04 pending owner direction in inbox/codex-1-to-user_windows-portability_round-cap.md. A new material durability disagreement remains after the three permitted cross-review rounds. No consensus or implementation is claimed. Proposed bounded follow-up: durability-followup-brief.md.

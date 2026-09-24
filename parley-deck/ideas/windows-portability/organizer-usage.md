@@ -11,3 +11,4 @@ CLI `parley usage ingest` was used for phase 0 and reported attribution=ambiguou
 | Round 2 complete; focused round 3 active | 2026-09-24T22:05:07.911Z | 16074825 | 15873408 | 38549 | 17594 | 119 |
 | Round 3 complete; final scheduled cross-review opened | 2026-09-24T22:10:05.681Z | 17465009 | 17243264 | 44608 | 21675 | 126 |
 | Round 4 resumed; awaited participant outputs and recorded current memory availability | 2026-09-24T22:20:17.434Z | 19953018 | 19424000 | 54278 | 25539 | 145 |
+| Round 4 complete; durability conflict escalated at the cross-review cap | 2026-09-24T22:38:33.156Z | 23233082 | 22653056 | 59823 | 27034 | 190 |
