@@ -1,15 +1,80 @@
 ---
 idea: meta-protocol-change-lean-organizer
-status: fix-up-cycle-3
+status: complete
 implementer: zcode-1
 started: 2026-09-23
-completed: 2026-09-23
+completed: 2026-09-24 (Phase 8 close)
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer#lean-organizer
-head-commit: c3baf09 (fix-up cycle 3 source; recorded in the cycle-3 section)
+head-commit: c3baf09 (reviewed source, byte-unchanged through close — closure record
+  follows organizer record commit 76e2d61 on this branch; see Phase 8 closure below)
 fix-up-cycle: 3
 design-pr: n/a
 implementation-pr: n/a
 ---
+
+## Phase 8 closure
+
+status: complete (the idea — closed per the signed zero-fix closing consensus; the
+  cycle-3 section below keeps its own cycle-scoped `status: complete` unchanged)
+closed: 2026-09-24
+closing-consensus: `review/consensus.md` (review cycle 4, the zero-fix closing record;
+  `outstanding_agreed_fixes: 0`) with three unconditional ✅ ACCEPT signoffs dated
+  2026-09-24 — claude-1, kimi-1, zcode-1; no 🟡, no operator ruling needed. The prior
+  signed consensus is archived VERBATIM at `review/consensus-cycle-03.md`.
+goal-done: `review/goal-done/kimi-1.md` — LE-7 verdict **PASS** at CLI record tip
+  `4df0855` (fix-up-3 source `c3baf09`), skill `b06a65a`, frozen FINAL `120a9bf`;
+  commissioned by the organizer via inbox (`blocking: no`), executed by a fresh
+  non-implementer, non-facilitator session. Pinning dependency honored: this close is
+  zero-fix, so no cycle 4 opened and the `4df0855` pin stays valid.
+
+### Close conditions — all five satisfied (the consensus's own list, checked this session)
+
+1. Zero Agreed fixes — `## Agreed fixes` in `review/consensus.md` reads "None —
+   `outstanding_agreed_fixes: 0`"; the three round-04 findings are dispositioned as two
+   deferred follow-ups (DF-5 slug `wait-boundary-vs-published-fixup`, idea scaffold
+   filed by the organizer) and one dismissed-as-immaterial NIT, each per its filer's
+   own filed position.
+2. LE-11 reservations — all three signoffs unconditional ✅ ACCEPT; nothing 🟡.
+3. LE-11 reviewer floor — two independent reviewers, claude-1 and kimi-1 (both filed
+   READY in round-04 on their own PRIMARY evidence).
+4. LE-7 goal-done — PASS at the closing HEAD (block above).
+5. No release actions before the organizer's authorized release step — verified below;
+   nothing released, tagged, published, installed, or merged by this record.
+
+### Source unchanged through the organizer's closing record commit — verified this session (2026-09-24)
+
+`git show --name-status 76e2d61` lists only record paths: this idea's
+`organizer-usage.md`, the `consensus.md` rewrite plus the `consensus-cycle-03.md`
+verbatim archive, `goal-done/kimi-1.md`, both `round-04/` reviews, the deferred
+follow-up idea scaffold `ideas/wait-boundary-vs-published-fixup/00-prompt.md`, and two
+inbox notes. `git diff --stat c3baf09 76e2d61 -- . ':(exclude)parley-deck/ideas'
+':(exclude)parley-deck/inbox' ':(exclude)parley-deck/runs'` is empty — the reviewed
+source `c3baf09` is byte-unchanged through record commit `4df0855` (cycle-3
+IMPLEMENTATION record) and organizer record commit `76e2d61`. Frozen FINAL re-verified
+by me: `git diff 120a9bf..76e2d61 -- …/FINAL.md` and `git diff 120a9bf..HEAD -- same`
+are both empty.
+
+### Implementer discipline at close
+
+No code verdict is issued here and none is invented: the verification verdicts are the
+reviewers' (claude-1, kimi-1 — round-04 files and signoff blocks) and the commissioned
+checker's (kimi-1, LE-7 PASS); my own signoff block records the same discipline. This
+is a manually driven run under the owner-authorized manual fallback, so the driver's
+auto-complete path does not run; this closure follows the closing consensus's close
+conditions section for the manual path — frontmatter `status: complete` plus this
+record on the same branch, committed separately from everything else. All prior
+records, signoffs, and the frozen FINAL are preserved; the only changed artifact is
+this closure record (frontmatter status/date/head-commit note plus this section).
+
+### Post-close (recorded, not performed here)
+
+Release metadata preparation (CLI 1.49.0 / skill 2.13.0 version + CHANGELOG bumps,
+metadata-only, no feature changes) is separately authorized post-close work for the
+same implementer and lands in its own commits after the closure commit; the organizer
+performs release operations after the implementer's report. The attended core publish
+of the combined staged 2.13.0 core (`~/.parley/staging/COOPERATION-2.13.0.md`,
+109,772 B, sha256 `fc907e59…62c9f`) remains the owner's pending owner-only action.
+Nothing in this closure performs, implies, or gates on any of them.
 
 ## Fix-up cycle 3
 
