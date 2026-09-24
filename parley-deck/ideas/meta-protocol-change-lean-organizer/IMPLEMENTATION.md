@@ -1,15 +1,291 @@
 ---
 idea: meta-protocol-change-lean-organizer
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: zcode-1
 started: 2026-09-23
 completed: 2026-09-23
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer#lean-organizer
-head-commit: 64a622c
-fix-up-cycle: 1
+head-commit: 998346c (fix-up cycle 2 source; recorded in the cycle-2 section)
+fix-up-cycle: 2
 design-pr: n/a
 implementation-pr: n/a
 ---
+
+## Fix-up cycle 2
+
+status: complete
+completed: 2026-09-24
+head-commit: 998346c (fix-up-2 source; this record commit follows on the same branch)
+skill-commit: b06a65a (lean-organizer-skill branch, same cycle)
+opened: 2026-09-24 (protocol context and all signed inputs read in full before the
+first source edit; this record itself lands with the record commit)
+
+Authorized by all three signoffs on `review/consensus.md` review cycle 2 (claude-1
+🟡 ACCEPT-WITH-RESERVATIONS, kimi-1 🟡 ACCEPT-WITH-RESERVATIONS, zcode-1 ✅ ACCEPT)
+— authorizing G1–G10, not closure. All three verdict conflicts closed through the
+signoff mechanism before this cycle opened: VC-4 on the fix-cycle branch (kimi-1
+withdrew "ready" via §15.1 SELF-CORRECTION; claude-1 sustained NOT-READY on two
+unmet frozen-FINAL acceptance elements); VC-5 resolved-by-fix at the **stderr**
+shape (both reviewers independently picked stderr; zcode-1 concurred); VC-6 in-cycle
+with G4 whole (kimi-1 withdrew record-only after itself reproducing state (b)).
+This cycle does not close the idea: fresh independent review round 3 and a zero-fix
+review consensus are required after these fixes.
+
+### Protocol context attestation (Phase-8 fix-up cycle 2)
+
+```json
+{"context_mode": "full", "source_sha256": "8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7", "packet_sha256": "8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7", "fallback_reason": null, "body_path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer/.parley-runtime/protocol-packets/full-phase8-deliberation-8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7.md"}
+```
+
+Inputs read in full before the first source edit (2026-09-24): the live phase-8
+packet (sha256 re-verified against the file: `8ce83cde…a9db7`, 109,928 B), frozen
+`FINAL.md` (frozen at `120a9bf`), the entire signed `review/consensus.md` (all
+three signoff blocks and the finding→disposition map), both complete round-02
+review files, `organizer-notes.md`, `organizer-usage.md`, the codex-1
+wait-observation-02 inbox note, and the implementer-owned core-publish note. The
+cycle-1 archive `review/consensus-cycle-01.md` stays verbatim; no reviewer file,
+signoff, FINAL, release-plan, or organizer artifact was edited in this cycle.
+
+### Fixes applied (fix-up cycle 2)
+
+All at fix-up-2 source commit `998346c` (CLI, full hash
+`998346cd70a913a98c79e0b575d1d7f1cda49fa9`) and `b06a65a` (skill, full hash
+`b06a65adaa081ebc063046f51fcff8c00cdb08d0`) unless noted.
+
+- **G1 (claude-1 R2-MAJ-1, branch 1 — FINAL as frozen; both signoffs confirmed the
+  branch).** `TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail` now records the
+  facilitator body against the **measured floor** in the same run that records the
+  guardrail and the `--optimize` baseline. The floor is computed as the **retained
+  whole-block source total** — the exact bytes the facilitator body carries for the
+  blocks the request INCLUDES, summed as `renderPacket` lays them out (each block's
+  text + blank-line separator, i.e. `len(TrimRight(text,"\n"))+2` per included
+  block): **52,295 B** at the fix-up-2 tree, against a body of **59,206 B**
+  (difference = envelope header + omission-index table) and the 70,000 B guardrail.
+  `Parse` splits `###` subsections into their own blocks, so every retained
+  subsection is counted — nothing silently excluded; a body under its own floor is
+  now a test failure. The omission-set total is kept beside it under its own label,
+  recomputed **whole-section-correct** (a `##`-level section's span runs through
+  its deeper blocks; each block `len(text)+1`): **30,262 B** for the nine-entry
+  named omission set (the seven top-level sections subtotal 23,230 B — claude-1's
+  independently measured 23,223 B plus this convention's per-block newline), where
+  the old undercounted sum was 19,736 B mislabelled `floor` (17 subsection blocks /
+  ~11.9 KB of §12/§13 content silently excluded). Recorded-number note for round 3:
+  FINAL's "≈ 42.1 KB with §2" was claude-1's round-1 derivation from the
+  then-shipped optimizer's within-section cuts (65,516 − 27,420 + §2 at `ffa4587`);
+  the recomputed whole-block retained total at this HEAD is 52,295 B with the
+  convention stated beside it — same concept (the minimum the body retains under
+  whole-block omission), honestly measured at the tree it describes. The gating
+  half of C.3 (named-omission-set absence) and the guardrail are untouched.
+- **G2 (claude-1 R2-MAJ-2 ≡ kimi-1 K2-F3; VC-5 resolved at the stderr shape).**
+  `parley wait --json` stdout now carries ONLY the `{notes?, digest}` envelope on
+  the exit-0/3/4 routes; the terminal status line (`wait: boundary reached (…)` /
+  `wait: timeout after …; outstanding: …`) moves to **stderr**; non-`--json` human
+  output is unchanged; exit-1 usage/IO failures print their error to stderr with
+  no envelope on stdout at all. `printWaitTerminal` routes the line.
+  `TestWaitJSONStdoutCarriesOnlyTheEnvelopeOnAllExitPaths` decodes `--json` stdout
+  through `encoding/json` on all four exit paths (0/3/4 single-parseable-envelope +
+  status-on-stderr; 1 no-envelope-on-stdout). The skill's `wait` section now states
+  the stream contract and the envelope keys. Envelope-freeze note (recorded per the
+  signed plan): the round-1→fix-up-1 envelope change (bare `PhaseDigest` →
+  `{notes?, digest}`) and this G2 stream split both ride the same **unreleased
+  1.49.0** freeze — nothing has shipped between them.
+- **G3 (claude-1 R2-MAJ-3).** `.github/workflows/tests.yml` Test step is now
+  `go test ./... -count=1 -timeout 45m` (≥ the 2400 s every green record here uses;
+  motivation comment in the workflow: `internal/trajectory` 589.7 s / `internal/app`
+  521.7 s of Go's 600 s per-package default, and the reviewer's own no-flag run of
+  the plan's named command failed). The FINAL-named validation command recorded in
+  this IMPLEMENTATION.md is aligned to `go test ./... -count=1 -timeout 2400s`
+  ("Checks to run" and T.1 above). The package-duration question stays advisory
+  (no slug launched; recorded in review/consensus.md `## Deferred follow-ups`).
+- **G4 (claude-1 R2-MIN-1 + R2-NIT-1 + kimi-1 K2-F4 record half; VC-6 closed
+  in-cycle).** `internal/driver/phasedigest.go`: (a) `nextAction` returns
+  `NextAwaitReviewArtifact` when the implementation is present and ready and the
+  latest review round is complete but IMPLEMENTATION.md is newer than every
+  artifact of that round (`implementationNewerThanLatestReview`; mtime is the
+  arrival signal — the same signal `wait` uses — and the digest stays
+  byte-identical over an unchanged tree); (b) `NextAwaitConsensus` when rounds are
+  complete and no `consensus.md` exists (`consensusAbsent`, detected by
+  `consensus.Status` error + direct `os.Stat`; unexported, JSON shape unchanged);
+  (c) `outstandingAgents` gains `"consensus.md not filed"` for `--for consensus`
+  with a nil consensus section. The F10 residual record above is corrected to the
+  true trigger (directory creation) and the corrected enumeration. Tests:
+  `TestPhaseDigestNextActionFixUpPublishedAwaitsReview` (both the fix-up-published
+  state and the newer-review-artifact relaxation),
+  `TestPhaseDigestNextActionRoundsCompleteNoConsensusAwaitsConsensus`,
+  `TestWaitOutstandingNamesConsensusNotFiled`.
+- **G5 (claude-1 R2-MIN-2).** `unevaluatedNoteAnnotations`: a `*-to-user_*.md`
+  inbox note whose frontmatter is unreadable, or that carries no `idea:` key, is
+  annotated (`note: to-user note not evaluated (…): <file>`) and exposed in the
+  `--json` `notes` list — re-scanned each poll iteration so a note that appears
+  mid-wait is annotated too. Annotating, not blocking (the filer's stated
+  sufficient remedy): F2's qualifiers remain the only exit-4 escalation path.
+  `TestWaitUnevaluableToUserNoteIsAnnotatedNotSilent` covers both shapes (no
+  frontmatter; frontmatter without `idea:`) in human and `--json` output.
+- **G6 (claude-1 R2-MIN-3).** The implementer-owned core-publish note now matches
+  the staged file: **109,772 B**, sha256
+  `fc907e5914a072d1a6afe249fc39401e1f8761cc1d67f2ce002dfde210762c9f`, composition
+  verification date **2026-09-24**, with the verify-before-publish `shasum` line.
+  Facts re-verified against the live staged file this session (values above) and
+  re-verified again at the record commit (G6 rule); `~/.parley/protocol/core/`
+  still holds only `2.10.0` — no publish has occurred and none is performed in
+  this cycle.
+- **G7 (claude-1 R2-MIN-4).** The A.4 gate-side-parity deviation is now recorded
+  under `## Deviations from FINAL.md` (bullet above): removed by unanimously signed
+  F1, acceptance-table row met by prompt ↔ scaffold ↔ constant parity, hard-gating
+  remains DF-1's question.
+- **G8 (claude-1 R2-NIT-2).** Comment at the mtime comparison in
+  `arrivedBlockingEscalation` (`internal/app/wait.go`) records that arrival is
+  approximated by mtime, that an in-place rewrite or bare `touch` of a
+  pre-existing escalation therefore looks "new" (fails loud — the safe direction),
+  and why that is acceptable. Recorded here, the driver behavior behind it:
+  `internal/driver/loop.go:353-354` builds `claude-to-user_<slug>_<topic>.md` and
+  writes it with an unconditional `os.WriteFile` — a second `driver.error` for the
+  same idea replaces the first, still-unanswered escalation (observed live this
+  run: the round-02 historical-worktree blocker note was replaced by
+  `draft FINAL.md: context canceled`); the canonical record survived in
+  `organizer-notes.md:24`. **No behavior change.**
+- **G9 (claude-1 R2-NIT-4 ≡ kimi-1 K2-F1).** The F20 recheck figure corrected:
+  "§15 region (8,041 B)" → **8,056 B**, with the extraction boundary stated beside
+  the number (`sed -n '/^## 15\. Verification integrity/,$p' | wc -c`, heading
+  line to EOF, same convention in all three copies). The byte-equality claim
+  itself already held (both reviewers' per-region diffs empty).
+- **G10 (kimi-1 K2-F2, filer's fail-closed leaning; claude-1 reproduced and
+  concurred at signoff).** `facilitatorConflictGates` now returns the
+  `ReadWorkspaceStatus` error instead of swallowing it, and `preflight` fails
+  closed: a tree whose `parley-deck/` exists but whose status cannot be read (e.g.
+  no `COOPERATION.md`) exits **1** naming the read failure — no more "Ready: no
+  pending gates" while the conflict gate silently never ran.
+  `TestPreflightFailsClosedWhenWorkspaceStatusUnreadable` is the negative fixture
+  (kimi-1's shape: agents.toml + meta/version.json + conflicting idea prompt, no
+  COOPERATION.md). The pre-existing `sourceWorkspace` test fixture (same
+  degenerate shape, pre-idea) now carries a minimal COOPERATION.md — those tests
+  exercise the JSON/roster flow, which needs a readable workspace.
+
+### Fix-up validation evidence (cycle 2)
+
+All commands run 2026-09-24. "Clean clone" = `git clone --no-hardlinks` of this
+worktree checked out at the fix-up-2 source commit `998346c`, working tree clean
+(`git status --porcelain` empty), at `/tmp/fixup2-clean`.
+
+**Both full suites:**
+
+- CLI (clean clone at `998346c`, the G3-named command): `go build ./... && go test
+  ./... -count=1 -timeout 2400s` — **exit 0, 31/31 packages ok, 0 FAIL** (log
+  `/tmp/fixup2-cli-full.log`; `internal/trajectory` 564.1 s — within the explicit
+  2400 s budget, and itself evidence for G3: it exceeds Go's 600 s per-package
+  default margin on this machine). Working-tree runs during the cycle:
+  `./internal/app` ok (516.5 s) + `./internal/driver` ok; after the G10
+  error-return refinement (amended into `998346c` before any record commit), the
+  preflight/facilitator set re-run green and the full suite above is the run at
+  the final source commit.
+- Skill (`worktrees/lean-organizer-skill` at `b06a65a`): `npm test` — **exit 0,
+  399 pass / 0 fail**; `npm run manifest:addons` re-run after the SKILL.md edit
+  (payload hash regenerated). Skill core **17,802 B ≤ 20,000 B** (was 17,292 B;
+  +510 B = the G2 stream-contract sentences).
+
+**G1 measurement (clean clone, `go test ./internal/app/ -run
+'TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail|TestLiveDeckFacilitatorAcrossPhases'
+-count=1 -v`, quoted verbatim from the log):**
+
+    R-2 measurement (phase 1 / deliberation / github-pr): facilitator body=59206 B; floor (retained whole-block source total: sum over the request's included blocks of len(text)+2, the renderer's exact layout)=52295 B; named-omission-set whole-section bytes (each block len(text)+1, subsections included)=30262 B; guardrail=70000 B; --optimize baseline=65750 B
+
+Phase vector (unchanged from cycle 1 — no protocol text changed this cycle):
+53,870 / 59,206 / 59,307 / 60,567 / 63,485 / 61,129 / 62,211 / 70,086 / 72,696 B
+for phases 0–8 at the test's relative path.
+
+**G2 + G4 live (the fix-up-2 binary below against THIS live deck, 2026-09-24):**
+
+- The organizer's exact observation-02 invocation shape —
+  `parley wait --idea meta-protocol-change-lean-organizer --for review --timeout
+  3s --json` with streams separated — now: **exit 0** ("boundary reached (review
+  round complete)" on **stderr**, 47 B), stdout = **3,409 B** decoding cleanly
+  through `json.load` as the single `{notes, digest}` envelope; the F2
+  pre-existing-escalation annotation rides `notes`. At `118b245` this exact shape
+  produced `jq: parse error` (observation-02).
+- Live digest on this deck's own fix-up-published state:
+  `implementation: present=true status=fix-up-cycle-2 implementer=zcode-1` and
+  **`next: await review artifact`** — at `118b245` the same state read
+  `next: await implementation` (R2-MIN-1(a), the state this deck was live in).
+- No unevaluable `to-user` notes exist on the live deck (every inbox note carries
+  readable frontmatter with `idea:`), so the live `notes` list correctly carries
+  only the F2 annotation; the G5 annotations are exercised by
+  `TestWaitUnevaluableToUserNoteIsAnnotatedNotSilent` on both shapes.
+
+**G10 live (fix-up-2 binary, kimi-1's fixture shape — agents.toml +
+meta/version.json + conflicting idea prompt, no COOPERATION.md):** `parley
+preflight --dir <fixture> --no-ping` → **exit 1**, **stdout 0 B** (no "Ready" line
+can follow an unreadable workspace — the hard-error return suppresses the report),
+stderr: `preflight failed: cannot read workspace status — the facilitator-declaration
+gate could not run (is parley-deck/COOPERATION.md present?): open …/COOPERATION.md:
+no such file or directory`. At `118b245` this fixture printed "Ready: no pending
+gates." and exited 0.
+
+**Binary provenance (F14 discipline):** built in the clean clone:
+`go build -o /tmp/parley-lean-organizer-fixup2/parley ./cmd/parley`
+(go1.27.1 darwin/arm64) → sha256
+`cefd8c0b2c1c359bd20f8caf521464bd300dc89be939e1d64418123cea21159e`;
+`go version -m` → `vcs.revision=998346cd70a913a98c79e0b575d1d7f1cda49fa9`,
+`vcs.time=2026-09-24T03:46:48Z`, `vcs.modified=false`. NOT installed globally.
+(Again a distinct sha256 at a distinct build path — DF-4's embedded-build-path
+mechanism, claude-1's round-02 `-trimpath` experiment explains it in one line.)
+
+**Frozen/unchanged re-verified at the cycle-2 source commit:** `git diff
+120a9bf..998346c -- …/FINAL.md` empty (FINAL frozen); deck authority
+`parley-deck/COOPERATION.md` sha256 `8ce83cde…a9db7` = the attested packet (no
+protocol-text edit this cycle, so **no core restage** was needed and none was
+performed); staged core `~/.parley/staging/COOPERATION-2.13.0.md` sha256
+`fc907e59…62c9f`, 109,772 B — the exact facts the corrected G6 note states, i.e.
+the note matches the staged file at the landing HEAD; `~/.parley/protocol/core/`
+still holds only `2.10.0` — **no publish has occurred**; the cycle-1 archive
+`review/consensus-cycle-01.md` re-verified verbatim (`cmp`-silent against its
+origin at `118b245`).
+
+**Scope discipline:** the cycle's commits touch only implementer-owned paths —
+CLI: `internal/app/{wait,preflight}.go`, `internal/app/{wait,facilitator,preflight,
+facilitator_packet_live}_test.go`, `internal/driver/phasedigest.go`,
+`.github/workflows/tests.yml`,
+`parley-deck/inbox/zcode-1-to-user_…_core-publish.md` (G6), and this
+IMPLEMENTATION.md (record commit). Skill: `skills/parley-deck/SKILL.md` +
+`skills/parley-deck/parley-addon.json`. No reviewer file, signoff, organizer
+artifact, FINAL, release plan, or run/telemetry artifact is committed; the
+untracked `usage-ledger.jsonl` and `runs/` records stay untracked.
+
+### Cycle-2 closure conditions check
+
+Per `review/consensus.md` ("Closure conditions for fix-up cycle 2"):
+
+1. **Both suites green at the fix-up-2 HEAD run with the G3-named command** —
+   CLI: **exit 0, 31/31 packages ok** in the clean clone at `998346c`; skill:
+   399 pass / 0 fail at `b06a65a`.
+2. **Every fix's regression test added** — G1 (floor computed + body≥floor assert
+   + whole-section omission companion in the live-deck test), G2
+   (`TestWaitJSONStdoutCarriesOnlyTheEnvelopeOnAllExitPaths`), G4
+   (`TestPhaseDigestNextActionFixUpPublishedAwaitsReview`,
+   `TestPhaseDigestNextActionRoundsCompleteNoConsensusAwaitsConsensus`,
+   `TestWaitOutstandingNamesConsensusNotFiled`), G5
+   (`TestWaitUnevaluableToUserNoteIsAnnotatedNotSilent`), G10
+   (`TestPreflightFailsClosedWhenWorkspaceStatusUnreadable`); G3 (workflow flag +
+   plan-command alignment — exercised by this very suite run), G6/G7/G8/G9 are
+   record corrections whose checks are the quoted live facts above.
+3. **IMPLEMENTATION.md Phase-8 fix-up-cycle-2 section with per-fix commit
+   references and top-level frontmatter bumped** — this section; frontmatter
+   `status: fix-up-cycle-2`, `fix-up-cycle: 2`, `head-commit: 998346c`.
+4. **Core-publish note's facts match the staged file at that HEAD** — re-verified
+   above (fc907e59…, 109,772 B, 2026-09-24).
+5. **No release, merge, tag, global install, or publish in the cycle** — none
+   performed; `parley protocol publish` not run; release remains the organizer's
+   post-Phase-8 step.
+
+**Residuals carried for round 3 (disclosed, not hidden):** the ten G-fixes now
+exist and round 3 must verify them (including `--json` stdout decode on all four
+exit paths at the stderr shape); GitHub-hosted runner wall-clock remains unmeasured
+(G3 removes the known cliff, not the unknown); live attribution windows remain
+test-proven only (no driver transition occurred during this cycle either — the
+deck's runs/ records are still the historical zero-width set); Windows
+`wait`/`usage` portability remains macOS-verified only (carried from cycle 1).
+The floor's recorded figure is now the retained whole-block total with its
+convention stated (52,295 B) rather than FINAL's round-1 ≈ 42 KB derivation — the
+derivation difference is recorded in the G1 entry for round 3 to check.
 
 ## Fix-up cycle 1
 
@@ -220,11 +496,16 @@ All at fix-up source commit `64a622c` (CLI) and `a820dc7` (skill) unless noted.
 None in substance. Two recorded observations inside the signed scope:
 
 - F10's NextAwaitReviewArtifact fires when no review round exists, exactly as
-  signed. Residual: after a fix-up publishes (IMPLEMENTATION status
-  `fix-up-cycle-1`) while the PREVIOUS review round still exists on disk, the
-  enumeration reads `await implementation` until the first round-02 review file
-  lands (then `await review artifact`). Matches the signed fix text; noted for the
-  review round.
+  signed. Residual (trigger wording corrected by fix-up G4 per kimi-1 K2-F4): after
+  a fix-up publishes (IMPLEMENTATION status `fix-up-cycle-1`) while the PREVIOUS
+  review round still exists on disk, the enumeration read `await implementation`
+  until the `review/round-NN/` DIRECTORY for the next round was created — not
+  until the first review file landed (with the directory present but empty, the
+  enumeration already read `await review artifact`, 0/N filed). Fix-up G4(a)
+  retired the residual: the fix-up-published state now reads `await review
+  artifact` even with no next-round directory, keyed on IMPLEMENTATION.md being
+  newer than every artifact of the latest complete review round (mtime, the same
+  arrival signal `parley wait` uses).
 - F7's live smoke still reports `attribution=ambiguous` — correct and expected: the
   deck's existing run manifests keep their zero-width historical windows; only
   transitions after this fix open real ones. The unit/driver tests prove the window
@@ -327,9 +608,13 @@ no deck `Protocol synced:` values); §2 stubbed (grep claude-1|kimi-1|zcode-1|co
 → **0**); diff = 11 hunks, each attributed by normalized signature to exactly one of
 the three change sets — 3× 2.11.0 (§15.6/§15.7), 2× 1.48.0 (LE-7/LE-11 bullet,
 goal-check withhold-only paragraph), 5× this idea pre-fixup + 1× this idea F20 §9.0
-sentence; **0 unexplained**; §15 region (8,041 B), §9.0 region, §4 Phase-5, §4
-Phase-6 and §11.B regions byte-equal to the deck view. No publish performed; the
-owner's attended command in the escalation note is unchanged.
+sentence; **0 unexplained**; §15 region (**8,056 B** — extraction: `sed -n
+'/^## 15\. Verification integrity/,$p' | wc -c`, heading line to EOF, the same
+convention in all three copies; the 8,041 B this line carried before fix-up G9 was
+a range/transcription slip — both round-02 reviewers independently measured 8,056
+B, claude-1 R2-NIT-4 ≡ kimi-1 K2-F1), §9.0 region, §4 Phase-5, §4 Phase-6 and
+§11.B regions byte-equal to the deck view. No publish performed; the owner's
+attended command in the escalation note is unchanged.
 
 **F1 corpus fixture (clean clone):** `TestLiveDeckConsensusCorpusMalformedNotAboveBase`
 → `corpus: 80 consensus.md checked, 9 malformed (base 9)`; the protocol's own
@@ -406,18 +691,38 @@ cross-cutting protocol-text/staging work — plus my own impl-claim signoff-stat
       (three-change-set diff check); inbox note with exact owner-only attended publish command.
 - [x] P.3 Windows CI leg covering `wait`/`usage` (CLI repo has no workflows today; add one).
 - [x] P.4 Task-local CLI binary built (`go build`), path + sha256 recorded; NEVER installed globally.
-- [x] T.1 CLI: `go build ./... && go test ./...` all green incl. new tests.
+- [x] T.1 CLI: `go build ./... && go test ./... -count=1 -timeout 2400s` all green incl. new tests.
 - [x] T.2 Skill: `npm test` all green incl. new tests; `npm run manifest:addons` after payload edits.
 - [x] T.3 Adversarial negative cases per FINAL (never-cut breach, retained omission-set block,
       count-flag rejection, timeout ceiling rejection, unknown audience, read-only deck, etc.).
 - [x] C-claim Correct own impl-claim signoff sentence (done — see Summary).
-- Checks to run: CLI `go build ./... && go test ./...`; skill `npm test`; staged-core three-way diff.
+- Checks to run: CLI `go build ./... && go test ./... -count=1 -timeout 2400s`
+      (the explicit `-timeout` aligned by fix-up G3 — Go's 10m per-package default
+      left `internal/trajectory`/`internal/app` ~2% from timing out and a no-flag
+      run failed on the round-2 reviewer's machine, claude-1 R2-MAJ-3); skill
+      `npm test`; staged-core three-way diff.
 - Review or risk notes: byte caps are binding — if 20,000 B / 70,000 B / 8,192 B genuinely cannot
   be met, bytes come back to the quorum (logged as deviation/blocker, never silently relaxed).
 
 ## Deviations from FINAL.md
 
-None in scope or mechanisms. One measured finding is surfaced for the quorum rather than
+One deviation from a FINAL-named mechanism, made by unanimously signed fix and
+logged here where Phase 5 requires it — not silently absorbed (fix-up G7, claude-1
+R2-MIN-4):
+
+- **A.4's gate-side parity was removed by fix-up F1** (all three cycle-1 signoffs).
+  FINAL A.4 requires "a **parity test** proving prompt **and gate** read the same
+  value" from one shared constant. After F1 no gate reads
+  `RequiredConsensusSections`/`RequiredFinalSections` at all —
+  `MissingConsensusSections` no longer exists and `ValidateFinal` checks
+  status/slug/scaffold only — so the parity test proves prompt ↔ scaffold ↔
+  constant (`TestConsensusDraftPromptScaffoldParity`), which is what the
+  acceptance-table row for A asks; hard-gating the duty sections remains DF-1's
+  question (`ideas/meta-protocol-change-consensus-duty-gates`). The F1 fix-up
+  entry explains the change; this bullet records it as a deviation from FINAL's
+  named mechanism shape.
+
+One measured finding is surfaced for the quorum rather than
 resolved unilaterally (the FINAL's own open-item-2 discipline):
 
 - **Phase-8 facilitator body above the 70,000 B guardrail** (figures corrected
