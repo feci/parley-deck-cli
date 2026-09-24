@@ -502,7 +502,11 @@ func TestWaitUnevaluableToUserNoteIsAnnotatedNotSilent(t *testing.T) {
 // R2-MIN-1(a) ≡ kimi-1 K2-F4 record half): implementation present and ready,
 // latest review round complete, and IMPLEMENTATION.md newer than every artifact
 // of that round — this deck's own live state during a fix-up cycle. The digest
-// must say `await review artifact`, never `await implementation`.
+// must say `await review artifact`, never `await implementation`. Cycle-3
+// H1/H7: a same-round artifact rewritten newer than the implementation stays at
+// `await review artifact` via the content signal (fix-up-cycle-N published,
+// latest complete round round-0M with M <= N), and the complete reviewing round
+// (round-02, M > N) relaxes to `await implementation` — both halves asserted.
 func TestPhaseDigestNextActionFixUpPublishedAwaitsReview(t *testing.T) {
 	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
 	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
@@ -537,18 +541,89 @@ func TestPhaseDigestNextActionFixUpPublishedAwaitsReview(t *testing.T) {
 		t.Errorf("fix-up-published state must read %q, got %q", driver.NextAwaitReviewArtifact, d.Next)
 	}
 
-	// Once a NEWER review artifact lands, the implementation is no longer the
-	// newest thing and the state stops claiming a re-review is awaited.
-	os.WriteFile(filepath.Join(ideaDir, "review", "round-01", "claude-1.md"), []byte(validReviewOne("claude-1")), 0o644)
-	d2 := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
-	if d2.Next == driver.NextAwaitReviewArtifact && d2.Review.Completed == d2.Review.Total {
-		// review complete AND no impl-newer signal: falling back past the review
-		// wait would be wrong only if the impl switch still claimed it; the
-		// enumeration itself is validated below.
-		t.Logf("after the newer review artifact: next=%q", d2.Next)
+	// A review artifact of the SAME (pre-cycle) round, rewritten with an mtime
+	// NEWER than the implementation: the mtime signal is gone, but the content
+	// signal holds — round-01 (M=1 <= N=1) never reviewed fix-up cycle 1, so the
+	// publication still awaits its round. Keyed on mtime alone (pre-H1) this
+	// exact state read `await implementation`.
+	newer := t0.Add(90 * time.Minute)
+	if err := os.Chtimes(filepath.Join(ideaDir, "review", "round-01", "claude-1.md"), newer, newer); err != nil {
+		t.Fatal(err)
 	}
-	if !driver.IsValidNextAction(d2.Next) {
-		t.Errorf("next must stay in the fixed enumeration, got %q", d2.Next)
+	d2 := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
+	if d2.Next != driver.NextAwaitReviewArtifact {
+		t.Errorf("same-round newer review artifact must not mask the published cycle: want %q, got %q",
+			driver.NextAwaitReviewArtifact, d2.Next)
+	}
+
+	// The newer-review-artifact RELAXATION, asserted (cycle-3 H7; this half
+	// used to end in a t.Logf + enumeration check only): once the round that
+	// REVIEWED this fix-up cycle lands complete — round-02, M=2 > N=1, artifacts
+	// newer than the implementation — the implementer owes the next artifact.
+	os.MkdirAll(filepath.Join(ideaDir, "review", "round-02"), 0o755)
+	for _, agent := range []string{"claude-1", "kimi-1"} {
+		rp := filepath.Join(ideaDir, "review", "round-02", agent+".md")
+		os.WriteFile(rp, []byte(strings.Replace(validReviewOne(agent), "review-round: 1", "review-round: 2", 1)), 0o644)
+		if err := os.Chtimes(rp, t0.Add(2*time.Hour), t0.Add(2*time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d3 := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
+	if d3.Review == nil || d3.Review.Label != "round-02" || d3.Review.Completed != d3.Review.Total {
+		t.Fatalf("fixture: round-02 must be the complete latest round, got %+v", d3.Review)
+	}
+	if d3.Next != driver.NextAwaitImplementation {
+		t.Errorf("newer-review-artifact relaxation must read %q, got %q",
+			driver.NextAwaitImplementation, d3.Next)
+	}
+	if !driver.IsValidNextAction(d3.Next) {
+		t.Errorf("next must stay in the fixed enumeration, got %q", d3.Next)
+	}
+}
+
+// TestPhaseDigestNextActionFreshCheckoutEqualMtimeAwaitsReview (fix-up cycle 3
+// H1, claude-1 R3-MIN-1): the fresh-checkout shape — fix-up cycle N published,
+// the latest review round round-0M complete 2/2 with M <= N, NO next-round
+// directory, and IMPLEMENTATION.md sharing ONE mtime with every artifact of that
+// round (what git clone / git checkout / git worktree add / git archive | tar -x
+// / rsync without -t produce) — must read `await review artifact`. Keyed on the
+// strict-After mtime signal alone this exact state read `await implementation`
+// silently (claude-1 reproduced it twice; kimi-1's fresh-archive reproduction
+// joined it); the content signal keys it on status=fix-up-cycle-N vs round-0M.
+func TestPhaseDigestNextActionFreshCheckoutEqualMtimeAwaitsReview(t *testing.T) {
+	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "kimi-1.md"), []byte(validRoundOne("kimi-1")), 0o644)
+	os.MkdirAll(filepath.Join(ideaDir, "review", "round-02"), 0o755)
+	for _, agent := range []string{"claude-1", "kimi-1"} {
+		os.WriteFile(filepath.Join(ideaDir, "review", "round-02", agent+".md"),
+			[]byte(strings.Replace(validReviewOne(agent), "review-round: 1", "review-round: 2", 1)), 0o644)
+	}
+	os.WriteFile(filepath.Join(ideaDir, "consensus.md"), []byte(readyConsensus("wait-idea")), 0o644)
+
+	impl := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	os.WriteFile(impl, []byte("---\nidea: wait-idea\nstatus: fix-up-cycle-2\nimplementer: zcode-1\n---\n\n## Fix-up cycle 2\n"), 0o644)
+
+	// ONE mtime for the implementation and every artifact of the latest complete
+	// round — the fresh-checkout shape. No review/round-03/ directory exists.
+	one := time.Now().Add(-time.Hour)
+	for _, f := range []string{
+		impl,
+		filepath.Join(ideaDir, "review", "round-02", "claude-1.md"),
+		filepath.Join(ideaDir, "review", "round-02", "kimi-1.md"),
+	} {
+		if err := os.Chtimes(f, one, one); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	d := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
+	if d.Review == nil || d.Review.Label != "round-02" || d.Review.Completed != d.Review.Total {
+		t.Fatalf("fixture: round-02 must be the complete latest round, got %+v", d.Review)
+	}
+	if d.Next != driver.NextAwaitReviewArtifact {
+		t.Errorf("fresh-checkout equal-mtime fix-up-published state must read %q, got %q",
+			driver.NextAwaitReviewArtifact, d.Next)
 	}
 }
 

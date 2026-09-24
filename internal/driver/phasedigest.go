@@ -199,10 +199,49 @@ func implementationNewerThanLatestReview(ideaDir string, review *PhaseRoundSecti
 	return implInfo.ModTime().After(newest)
 }
 
+// fixUpCycleNumberFromStatus parses the N of a `fix-up-cycle-N` implementation
+// status; 0 for anything else. The vocabulary is the closed `^fix-up-cycle-\d+$`
+// set internal/protocol gates ReadyForReview with; the Sscanf idiom matches
+// roundNumberFromLabel's for round-0M.
+func fixUpCycleNumberFromStatus(status string) int {
+	var n int
+	if _, err := fmt.Sscanf(strings.TrimPrefix(status, "fix-up-cycle-"), "%d", &n); err != nil {
+		return 0
+	}
+	return n
+}
+
+// fixUpAwaitingReviewRound reports the fix-up-published state by CONTENT (fix-up
+// cycle 3 H1, claude-1 R3-MIN-1): IMPLEMENTATION.md's status names fix-up cycle
+// N and the latest review round is round-0M with M <= N, so no complete round
+// has reviewed cycle N yet (the round that reviews it is round-0(N+1) or later)
+// and a further review round is awaited REGARDLESS of timestamps. The mtime
+// branch above stays as the arrival signal, but keyed alone it read
+// `await implementation` silently on every fresh clone, checkout, worktree
+// creation, archive extraction or rsync without -t — operations that give
+// IMPLEMENTATION.md and the review artifacts ONE mtime, so the strict After
+// never fires (three independent reproductions, review round 3). Content is
+// deterministic under every filesystem operation. A complete round-0M with
+// M > N reviewed this cycle and falls through exactly as before; an incomplete
+// next round never reaches here — Completed < Total returns earlier.
+func fixUpAwaitingReviewRound(impl *PhaseImplSection, review *PhaseRoundSection) bool {
+	if impl == nil {
+		return false
+	}
+	n := fixUpCycleNumberFromStatus(impl.Status)
+	if n <= 0 {
+		return false
+	}
+	if review == nil {
+		return true // no review round exists at all: nothing has reviewed cycle N
+	}
+	return roundNumberFromLabel(review.Label) <= n
+}
+
 // nextAction picks from the fixed enumeration only. Any adverse signal
 // (❌ block, malformed/error state, unparsed row, invalid artifact) routes the
 // organizer to the raw artifact. implNewerThanReview is the G4(a) fix-up-published
-// signal; consensusAbsent is the G4(b) no-consensus.md signal.
+// mtime signal; consensusAbsent is the G4(b) no-consensus.md signal.
 func nextAction(d *PhaseDigest, implNewerThanReview, consensusAbsent bool) string {
 	if d.Consensus != nil && (len(d.Consensus.Blocks) > 0 || len(d.Consensus.Errors) > 0) {
 		return NextAdjudicateRaw
@@ -236,11 +275,16 @@ func nextAction(d *PhaseDigest, implNewerThanReview, consensusAbsent bool) strin
 		switch {
 		case d.Implementation.Status == "complete":
 			return NextFinalPublished
-		case d.Implementation.ReadyForReview && (d.Review == nil || implNewerThanReview):
-			// Published implementation awaiting review: either no review round
-			// exists yet (fix-up F10), or the latest round is complete and the
-			// implementation is newer than it — the fix-up-published state (fix-up
-			// G4(a)): both previously collapsed into "await implementation".
+		case d.Implementation.ReadyForReview && (d.Review == nil || implNewerThanReview ||
+			fixUpAwaitingReviewRound(d.Implementation, d.Review)):
+			// Published implementation awaiting review: no review round exists
+			// yet (fix-up F10), or the latest round is complete and the
+			// implementation is newer than it (mtime arrival signal), or the
+			// implementation publishes fix-up cycle N while the latest complete
+			// round is round-0M with M <= N (content signal, fix-up cycle 3 H1 —
+			// equal mtimes on a fresh checkout must not mask the publication) —
+			// the fix-up-published state (fix-up G4(a)): all previously
+			// collapsed into "await implementation".
 			return NextAwaitReviewArtifact
 		}
 	}
