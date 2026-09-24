@@ -49,4 +49,13 @@ The owner's Claude Code session relayed inbox/user-to-codex-1_meta-protocol-chan
 ## Phase-7 disposition and fix-up authorization
 
 VC-1/VC-2 were resolved by Kimi independently reproducing the counterexamples and self-correcting; both reviewers concurred with the documented F8 disposition for VC-3. All three participants signed the 21-fix plan (two reservations, one unconditional ACCEPT), authorizing fix-up, not closure. R2 deferred records are created as inactive candidates only; this is audit/backlog recording within review, not an added shipped obligation or authorization to implement new scope.
-- DF-1: ideas/meta-protocol-change-consensus-duty-gates/00-prompt.md\n- DF-2: ideas/meta-protocol-change-facilitator-integrity-phase-coverage/00-prompt.md\n- DF-3: ideas/facilitator-packet-per-phase-bounds/00-prompt.md\n- DF-4: ideas/release-binary-reproducibility/00-prompt.md\n
+- DF-1: ideas/meta-protocol-change-consensus-duty-gates/00-prompt.md
+- DF-2: ideas/meta-protocol-change-facilitator-integrity-phase-coverage/00-prompt.md
+- DF-3: ideas/facilitator-packet-per-phase-bounds/00-prompt.md
+- DF-4: ideas/release-binary-reproducibility/00-prompt.md
+
+- Release runbook is advisory; the owner's brief remains authoritative. The organizer performs publication. The owner-attended core command may remain an explicitly listed owner-only action at delivery, and the authorized winget work is two catalog PRs plus honest state verification; the runbook must not silently add a requirement that external maintainers merge those PRs before the organizer can report its completed actions. No winget availability is claimed while PRs remain open.
+
+## Review round 2
+
+Both independent reviews are filed. Claude reports 0 CRITICAL / 3 MAJOR / 4 MINOR / 4 NIT; Kimi reports 0/0/0/4. Fresh reconciliation and cycle-2 consensus are required before fixes/closure. Organizer corrected literal newline escapes reported by Claude R2-NIT-3 in this owned note. No product-code verification by organizer. Wait JSON stream observation is confirmed independently by both reviewers.
