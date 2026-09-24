@@ -33,3 +33,9 @@ Accounting correction (2026-09-23): the initial helper selected the first date-d
 <!-- boundary: Phase 6 review round 2 artifacts filed @ 2026-09-24T02:39:01.917Z -->
 | Phase 7 review cycle 2 signoffs filed (observed 2026-09-24T03:10:15.145Z) | 2026-09-24T03:10:15.145Z | 17325966 | 16774528 | 103857 | 57545 | 145 |
 <!-- boundary: Phase 7 review cycle 2 signoffs filed @ 2026-09-24T03:10:15.145Z -->
+| Phase 8 fix-up cycle 2 ready for independent review (observed 2026-09-24T04:02:14.516Z) | 2026-09-24T04:02:14.516Z | 18148309 | 17576320 | 106357 | 57818 | 157 |
+<!-- boundary: Phase 8 fix-up cycle 2 ready for independent review @ 2026-09-24T04:02:14.516Z -->
+| Phase 6 review round 3 artifacts filed (observed 2026-09-24T04:30:25.258Z) | 2026-09-24T04:30:25.258Z | 18631609 | 18049536 | 108036 | 58038 | 163 |
+<!-- boundary: Phase 6 review round 3 artifacts filed @ 2026-09-24T04:30:25.258Z -->
+| Phase 7 review cycle 3 signoffs filed (observed 2026-09-24T05:00:08.389Z) | 2026-09-24T05:00:08.389Z | 19338183 | 18745600 | 109809 | 58249 | 171 |
+<!-- boundary: Phase 7 review cycle 3 signoffs filed @ 2026-09-24T05:00:08.389Z -->
