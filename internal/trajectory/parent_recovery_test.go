@@ -72,7 +72,7 @@ func TestParentRecoveryProcessHelper(t *testing.T) {
 func parentRecoveryFixture(t *testing.T) (string, ParentRecoveryPreview) {
 	t.Helper()
 	criteria := capturedCriteria()
-	ticket, _ := journalFixture(t, criteria, dirtyCapturedChild(t))
+	ticket, journal := journalFixture(t, criteria, dirtyCapturedChild(t))
 	root := ticket.Root
 	scope := "---\nparticipants: [builder, reviewer]\nchecks:\n  - name: material\n    command: >\n      " + criteria[0].Command + "\n---\n"
 	snapshotWrite(t, root, "parley-deck/ideas/fixture/00-prompt.md", []byte(scope), 0600)
@@ -102,7 +102,7 @@ func parentRecoveryFixture(t *testing.T) (string, ParentRecoveryPreview) {
 	}
 	startErr := inv.Started(cmd.Process.Pid)
 	if err = cmd.Wait(); err != nil {
-		dumpAllRetainedVerifications(t, root)
+		dumpRetainedVerificationSteps(t, journal)
 		t.Fatalf("helper: %v %s", err, &out)
 	}
 	if startErr != nil {
@@ -114,7 +114,7 @@ func parentRecoveryFixture(t *testing.T) (string, ParentRecoveryPreview) {
 	}
 	p, err := PreviewParentRecovery(context.Background(), root, "fixture", ticket.RunID)
 	if err != nil {
-		dumpAllRetainedVerifications(t, root)
+		dumpRetainedVerificationSteps(t, journal)
 		t.Fatal(err)
 	}
 	return root, p

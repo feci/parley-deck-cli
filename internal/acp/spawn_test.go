@@ -77,6 +77,15 @@ func (g *gatingObserver) Write(data []byte) (int, error) {
 // on stdout and exits 7. READY proves all 16384 bytes are already in the
 // pipes and the child is on its way out, so a reap that closes the stderr
 // pipe mid-drain is the only way bytes can go missing.
+//
+// The 16 KiB in-flight volume mirrors the hosted truncation signature and
+// sits well inside the 64 KiB Linux/macOS pipe capacity, so the child never
+// blocks before READY there. A platform whose pipe buffer could not hold
+// the in-flight bytes would block the child before READY and fail the
+// handshake below loudly (or fail the 16384-byte assertion) — never
+// silently mis-pass. That scenario is unverified and unexecuted: these
+// tests have never run on Windows (owner-blocked) and imply nothing about
+// it.
 func spawnGatedChild(t *testing.T, observer *gatingObserver) *Process {
 	t.Helper()
 	p, err := Spawn(context.Background(), SpawnOptions{Command: os.Args[0],
@@ -121,8 +130,13 @@ func TestSpawnStopDrainsStderrBeforeReaping(t *testing.T) {
 	go func() { stopped <- p.Stop(context.Background()) }()
 	time.Sleep(500 * time.Millisecond)
 	close(observer.release)
-	if err := <-stopped; err == nil {
-		t.Fatal("nonzero child passed")
+	select {
+	case err := <-stopped:
+		if err == nil {
+			t.Fatal("nonzero child passed")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Stop did not return after the copier was released")
 	}
 	assertGatedChildDrained(t, p, observer)
 }
@@ -136,8 +150,13 @@ func TestSpawnWaitDrainsStderrBeforeReaping(t *testing.T) {
 	go func() { waited <- p.Wait() }()
 	time.Sleep(500 * time.Millisecond)
 	close(observer.release)
-	if err := <-waited; err == nil {
-		t.Fatal("nonzero child passed")
+	select {
+	case err := <-waited:
+		if err == nil {
+			t.Fatal("nonzero child passed")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Wait did not return after the copier was released")
 	}
 	assertGatedChildDrained(t, p, observer)
 }

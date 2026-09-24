@@ -34,17 +34,3 @@ func dumpRetainedVerificationSteps(t *testing.T, journal string) {
 		t.Logf("diagnostics: retained %s: %s", name, strings.TrimSpace(string(raw)))
 	}
 }
-
-// dumpAllRetainedVerifications sweeps every captured-verification journal
-// under a runtime root (fixtures create exactly one) and dumps each.
-func dumpAllRetainedVerifications(t *testing.T, root string) {
-	t.Helper()
-	journals, err := filepath.Glob(filepath.Join(root, ".parley-runtime", "trajectory-verifications", "*"))
-	if err != nil || len(journals) == 0 {
-		t.Logf("diagnostics: no retained verification journals under %s (glob err: %v)", root, err)
-		return
-	}
-	for _, journal := range journals {
-		dumpRetainedVerificationSteps(t, journal)
-	}
-}
