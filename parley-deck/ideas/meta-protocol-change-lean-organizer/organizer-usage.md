@@ -49,3 +49,7 @@ Accounting correction (2026-09-23): the initial helper selected the first date-d
 <!-- boundary: Phase 8 complete and release metadata prepared @ 2026-09-24T09:39:08.978Z -->
 | Release published channels independently audited; npm auth and hosted CI remain unresolved (observed 2026-09-24T10:53:45.420Z) | 2026-09-24T10:53:45.420Z | 28253442 | 27578624 | 132740 | 63595 | 241 |
 <!-- boundary: Release published channels independently audited; npm auth and hosted CI remain unresolved @ 2026-09-24T10:53:45.420Z -->
+| Linux repair independently accepted; release candidate staged pending owner decisions (observed 2026-09-24T14:39:13.687Z) | 2026-09-24T14:39:13.687Z | 44206079 | 43445888 | 165608 | 81001 | 322 |
+<!-- boundary: Linux repair independently accepted; release candidate staged pending owner decisions @ 2026-09-24T14:39:13.687Z -->
+| Owner-blocked release handoff; all independent preparation finished (observed 2026-09-24T14:46:24.664Z) | 2026-09-24T14:46:24.664Z | 44910726 | 44147840 | 166206 | 81192 | 326 |
+<!-- boundary: Owner-blocked release handoff; all independent preparation finished @ 2026-09-24T14:46:24.664Z -->

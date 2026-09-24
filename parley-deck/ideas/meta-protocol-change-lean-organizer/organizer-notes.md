@@ -59,3 +59,9 @@ VC-1/VC-2 were resolved by Kimi independently reproducing the counterexamples an
 ## Review round 2
 
 Both independent reviews are filed. Claude reports 0 CRITICAL / 3 MAJOR / 4 MINOR / 4 NIT; Kimi reports 0/0/0/4. Fresh reconciliation and cycle-2 consensus are required before fixes/closure. Organizer corrected literal newline escapes reported by Claude R2-NIT-3 in this owned note. No product-code verification by organizer. Wait JSON stream observation is confirmed independently by both reviewers.
+
+## Release handoff state correction
+
+Final read-only store check: global core2.13.0 is installed, with exact hash fc907e5914a072d1a6afe249fc39401e1f8761cc1d67f2ce002dfde210762c9f matching the staged participant-reviewed template. It appeared outside organizer actions (published-file mtime2026-09-24T11:19:35Z); protocol status lists2.10.0 and2.13.0. No attended publish was invoked or bypassed by codex-1. This supersedes older pending-core status only, not their historical evidence.
+
+Original A-D closed unanimously. Post-deploy CI exposed older platform issues. Narrow Linux repairs were implemented by Zcode, independently reviewed by both peers, and hosted Linux/macOS accepted by Claude. Current1.49.1 candidate481fb65 has independently approved metadata and six staged unpublished assets. Windows architecture/defer choice and npm publish verification remain owner-blocked; no new mandatory protocol rule or scope waiver inferred. Requested done.md explicitly says release NOT complete.
