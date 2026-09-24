@@ -55,7 +55,7 @@ Preflight reports source-role protocol drift as advisory. Installer/runtime skil
 
 Protocol attestation: context_mode=packet; source_sha256=8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7; packet_sha256=e88a7edb516ba1ff87b939294698626a5610393637f757816258f118b0ac8b2e; audience=facilitator; phase=0; track=deliberation; fallback_reason absent. The initial exploratory request used an invalid track implementation and was replaced before launch by this valid packet.
 
-Shared memory unavailable: no callable MCPAnywhere/OpenViking tools in this session. Local sources used. Other historical open ideas remain in their existing worktrees; owner explicitly assigns this workspace and priority. Both release prerequisites absent at startup.
+Shared memory was unavailable at startup. MCPAnywhere/OpenViking became callable during round 4; a scoped project search returned only the historical 2026-09-23 release note, not current release or authorization evidence. Current local sources remain authoritative for this run. Other historical open ideas remain in their existing worktrees; owner explicitly assigns this workspace and priority. Both release prerequisites absent at startup.
 
 ## Completion handoff
 
