@@ -8,3 +8,5 @@ CLI `parley usage ingest` was used for phase 0 and reported attribution=ambiguou
 |---|---|---:|---:|---:|---:|---:|
 | Phase 0 to independent round 1 | 2026-09-24T21:11:07.071Z | 1390844 | 1294592 | 8456 | 412 | 18 |
 | Round 1 complete; cross-review launched | 2026-09-24T21:33:03.603Z | 6895335 | 6750464 | 20193 | 5657 | 65 |
+| Round 2 complete; focused round 3 active | 2026-09-24T22:05:07.911Z | 16074825 | 15873408 | 38549 | 17594 | 119 |
+| Round 3 complete; final scheduled cross-review opened | 2026-09-24T22:10:05.681Z | 17465009 | 17243264 | 44608 | 21675 | 126 |

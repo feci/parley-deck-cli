@@ -7,7 +7,7 @@ track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
 auto_implement: true
 require_model_diversity: true
-status: round-03
+status: round-04
 ---
 
 ## Problem / idea
@@ -60,3 +60,7 @@ Shared memory unavailable: no callable MCPAnywhere/OpenViking tools in this sess
 ## Completion handoff
 
 Write parley-deck/inbox/codex-1-to-user_windows-portability_done.md with what shipped, hosted evidence, deferrals, organizer-usage.md, and owner actions left. Never represent an incomplete release as shipped.
+
+## Owner default update — 2026-09-25
+
+The owner replaced the global defaults with Claude organizing new runs and Codex implementing, but explicitly exempted this in-flight windows-portability run. This idea retains facilitator codex-1, quorum claude-1/kimi-1/zcode-1, and the original launch-model choices. Machine roster now reports Claude inactive/Opus 5.5 and Codex active; that new-run default does not change this idea's membership, signatures, assignments, or existing sessions. The idea's participant-owned rounds select zcode-1 as drafter/implementer, with Claude and Kimi reviewing. No global roster setting is rewritten by this organizer.
