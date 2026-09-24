@@ -424,7 +424,10 @@ func Build(src Source, m *Map, req Request) Context {
 	}
 	ctx.Index = records
 
-	packetBody := renderPacket(src, ctx.SourceSHA256, req, records)
+	// Fix-up F12 (claude-1 MIN-4): the body header records the RESOLVED audience —
+	// with `--optimize` under an unrecognized audience the build is full-fallback and
+	// must not stamp the rejected audience into a body no audience omission shaped.
+	packetBody := renderPacket(src, ctx.SourceSHA256, req, records, audience)
 	// The facilitator audience renders its scoped packet by request (the audience
 	// view is its own ratified surface, distinct from the experimental --optimize
 	// input); every guard that governs --optimize governs it identically.
@@ -462,14 +465,16 @@ func Build(src Source, m *Map, req Request) Context {
 }
 
 // renderPacket lays out the verbatim included blocks in source order, then the complete
-// omission index. Nothing here paraphrases protocol text.
-func renderPacket(src Source, sourceHash string, req Request, records []BlockRecord) string {
+// omission index. Nothing here paraphrases protocol text. The audience parameter is
+// the RESOLVED audience (fix-up F12): "" when no audience applied or the build fell
+// back — never the raw request value.
+func renderPacket(src Source, sourceHash string, req Request, records []BlockRecord, resolvedAudience string) string {
 	var b strings.Builder
 	flags := strings.Join(req.Flags, ",")
 	if flags == "" {
 		flags = "-"
 	}
-	audience := strings.TrimSpace(req.Audience)
+	audience := strings.TrimSpace(resolvedAudience)
 	if audience == "" || audience == "participant" {
 		audience = "-"
 	}

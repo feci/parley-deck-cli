@@ -51,11 +51,13 @@ const PhaseHandoffSchemaDoc = "This record is non-canonical driver state (adviso
 	"this file by hand; the driver rewrites it at each phase transition."
 
 // BuildPhaseHandoffRecord derives the record from the cursor and the idea tree,
-// sharing the PhaseDigest computation.
-func BuildPhaseHandoffRecord(root, ideaSlug, ideaDir string, participants []string, c Cursor, action Action, previous Phase) PhaseHandoffRecord {
+// sharing the PhaseDigest computation. The run dir is a PARAMETER (fix-up F13,
+// claude-1 MIN-5): the previous derivation evaluated to "parley-deck" for any
+// standard layout and was dead weight every caller had to overwrite.
+func BuildPhaseHandoffRecord(root, runDir, ideaSlug, ideaDir string, participants []string, c Cursor, action Action, previous Phase) PhaseHandoffRecord {
 	digest := BuildPhaseDigest(root, ideaSlug, ideaDir, participants)
 	return PhaseHandoffRecord{
-		RunID:         filepath.Base(filepath.Dir(filepath.Clean(ideaDir + "/.."))), // replaced by caller context below when possible
+		RunID:         filepath.Base(runDir),
 		Idea:          ideaSlug,
 		Phase:         string(c.Phase),
 		PreviousPhase: string(previous),
@@ -101,12 +103,22 @@ func LoadPhaseHandoffRecord(path string) (PhaseHandoffRecord, error) {
 		}
 		return ""
 	}
+	// Fix-up F13 (claude-1 MIN-5): parse ALL nine frontmatter fields so the
+	// round-trip is complete — the loader previously restored only 4 of 9.
 	rec := PhaseHandoffRecord{
-		RunID:  get("run_id"),
-		Idea:   get("idea"),
-		Phase:  get("phase"),
-		Action: get("action"),
-		Next:   get("next"),
+		RunID:         get("run_id"),
+		Idea:          get("idea"),
+		Phase:         get("phase"),
+		PreviousPhase: get("previous_phase"),
+		Action:        get("action"),
+		RoundLabel:    get("round_label"),
+		IdeaStatus:    get("idea_status"),
+		Next:          get("next"),
+	}
+	if written := get("written_at"); written != "" {
+		if when, werr := time.Parse(time.RFC3339Nano, written); werr == nil {
+			rec.WrittenAt = when
+		}
 	}
 	if rec.RunID == "" || rec.Idea == "" || rec.Phase == "" {
 		return rec, fmt.Errorf("handoff record %s is missing required fields", path)

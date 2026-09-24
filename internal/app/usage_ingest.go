@@ -16,6 +16,7 @@ package app
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -68,8 +69,11 @@ type ingestResult struct {
 }
 
 // streamLines yields file lines with bounded memory: a line longer than the cap is
-// discarded whole (a token_count/usage event line is small; oversized lines are
-// payload blobs the parsers never need).
+// discarded WHOLE — head and tail (a token_count/usage event line is small; oversized
+// lines are payload blobs the parsers never need). Fix-up F19 (kimi-1 K1-F6c): the
+// accumulator now stays reset for the ENTIRE remainder of a dropped line, so the
+// tail of an oversized line can never be yielded as a partial "line" for a future
+// parser to trust.
 func streamLines(path string, yield func(line []byte) error) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -79,12 +83,33 @@ func streamLines(path string, yield func(line []byte) error) error {
 	r := bufio.NewReaderSize(f, 1<<20)
 	const cap = 1 << 24 // 16 MiB per line; bounded
 	var acc []byte
+	dropping := false
 	for {
 		chunk, err := r.ReadSlice('\n')
-		if len(acc)+len(chunk) > cap {
-			acc = acc[:0] // drop the oversized line entirely
+		endsWithNewline := len(chunk) > 0 && chunk[len(chunk)-1] == '\n'
+		if dropping {
+			// Discard the tail of an oversized line; its terminator chunk ends it.
+			if endsWithNewline || err == io.EOF {
+				dropping = false
+			}
 			if err == io.EOF {
 				break
+			}
+			if err != nil && err != bufio.ErrBufferFull {
+				return err
+			}
+			continue
+		}
+		if len(acc)+len(chunk) > cap {
+			acc = acc[:0] // drop the oversized line entirely
+			if !endsWithNewline && err != io.EOF {
+				dropping = true
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil && err != bufio.ErrBufferFull {
+				return err
 			}
 			continue
 		}
@@ -100,7 +125,7 @@ func streamLines(path string, yield func(line []byte) error) error {
 		if err != nil && err != bufio.ErrBufferFull {
 			return err
 		}
-		if len(chunk) > 0 && chunk[len(chunk)-1] == '\n' {
+		if endsWithNewline {
 			if yerr := yield(acc); yerr != nil {
 				return yerr
 			}
@@ -116,7 +141,7 @@ func parseCodexRollout(path string) (ingestResult, error) {
 	res := ingestResult{ParserID: "codex-rollout/v1", SourcePath: path}
 	var acc []byte
 	err := streamLines(path, func(line []byte) error {
-		if !containsBytes(line, []byte("token_count")) {
+		if !bytes.Contains(line, []byte("token_count")) {
 			return nil
 		}
 		acc = append(acc[:0], line...)
@@ -152,7 +177,7 @@ func parseCodexRollout(path string) (ingestResult, error) {
 	first := ""
 	var count int64
 	err = streamLines(path, func(line []byte) error {
-		if !containsBytes(line, []byte("token_count")) {
+		if !bytes.Contains(line, []byte("token_count")) {
 			return nil
 		}
 		var probe struct {
@@ -186,7 +211,7 @@ func parseClaudeJSONL(path string) (ingestResult, error) {
 	first, last := "", ""
 	var lastLine []byte
 	err := streamLines(path, func(line []byte) error {
-		if !containsBytes(line, []byte("usage")) {
+		if !bytes.Contains(line, []byte("usage")) {
 			return nil
 		}
 		var probe struct {
@@ -222,26 +247,6 @@ func parseClaudeJSONL(path string) (ingestResult, error) {
 	res.FirstEventAt, res.LastEventAt, res.EventCount = first, last, count
 	res.ContentSHA256 = sha256Hex(string(lastLine))
 	return res, nil
-}
-
-func containsBytes(hay, needle []byte) bool {
-	return len(hay) >= len(needle) && (string(hay) == string(needle) || indexOfBytes(hay, needle) >= 0)
-}
-
-func indexOfBytes(hay, needle []byte) int {
-	for i := 0; i+len(needle) <= len(hay); i++ {
-		match := true
-		for j := range needle {
-			if hay[i+j] != needle[j] {
-				match = false
-				break
-			}
-		}
-		if match {
-			return i
-		}
-	}
-	return -1
 }
 
 // ledgerRow is one appended JSONL row.

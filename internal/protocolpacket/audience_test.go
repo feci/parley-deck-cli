@@ -246,6 +246,109 @@ func TestPacketCheckFailsAudienceOmittingAlwaysNeverCut(t *testing.T) {
 	}
 }
 
+// TestPacketCheckFailsAudienceOmittingPhasePinnedNeverCut (fix-up F6, claude-1
+// MAJ-6): the FINAL C.1 proof obligation — hostile `audiences.facilitator.omit`
+// entries naming the phase-pinned never-cut §15 family must FAIL `packet check` at
+// map level (they previously passed: only `always` blocks were rejected, so the
+// negative test could not fire for exactly the section FINAL singles out). The
+// transport-conditional §11 subsections remain nameable (the ratified facilitator
+// set omits the non-active ones).
+func TestPacketCheckFailsAudienceOmittingPhasePinnedNeverCut(t *testing.T) {
+	src, _ := audienceFixture(t)
+	hostile := audienceMap
+	for _, locator := range []string{
+		"## 15. Verification integrity",
+		"### 15.1 Scope, ownership, location",
+		"### 15.7 Per-track binding",
+	} {
+		hostile += "      - locator: \"" + locator + "\"\n        trigger: \"hostile attempt to cut the phase-pinned floor\"\n"
+	}
+	hm, err := ParseMap(hostile)
+	if err != nil {
+		t.Fatalf("ParseMap hostile: %v", err)
+	}
+	rep := Check(src, hm)
+	if rep.OK || len(rep.NeverCut) == 0 {
+		t.Fatalf("packet check must fail an audience naming phase-pinned never-cut blocks; ok=%v neverCut=%v", rep.OK, rep.NeverCut)
+	}
+	for _, locator := range []string{
+		"## 15. Verification integrity",
+		"### 15.1 Scope, ownership, location",
+		"### 15.7 Per-track binding",
+	} {
+		found := false
+		for _, v := range rep.NeverCut {
+			if strings.Contains(v, locator) {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("never-cut violation must name %q; got %v", locator, rep.NeverCut)
+		}
+	}
+}
+
+// TestPacketCheckAllowsTransportConditionalOmit (fix-up F6): the narrowed allowance —
+// a non-active §11 subsection (transport-conditional never-cut) may still be NAMED by
+// an audience without a map-level violation.
+func TestPacketCheckAllowsTransportConditionalOmit(t *testing.T) {
+	src, m := audienceFixture(t)
+	rep := Check(src, m)
+	if !rep.OK {
+		t.Fatalf("the clean map omits non-active §11 subsections and must pass; got %+v", rep)
+	}
+	for _, v := range rep.NeverCut {
+		if strings.Contains(v, "11.") {
+			t.Errorf("transport-conditional §11 omission must not be a violation; got %q", v)
+		}
+	}
+}
+
+// TestOptimizeAudienceBranchSharesReasonsSet (fix-up F18, claude-1 NIT-3): the
+// merged `--optimize`/audience branch claims "every guard that governs --optimize
+// governs it identically" — pinned by asserting the two paths yield the IDENTICAL
+// fallback-reason set for the same request shape across the kernel phases.
+func TestOptimizeAudienceBranchSharesReasonsSet(t *testing.T) {
+	src, m := audienceFixture(t)
+	for _, phase := range []int{1, 5, 8} {
+		opt := Build(src, m, Request{Phase: phase, Track: "deliberation", Transport: "github-pr", Optimize: true})
+		aud := Build(src, m, Request{Phase: phase, Track: "deliberation", Transport: "github-pr", Optimize: true, Audience: "facilitator"})
+		if strings.Join(opt.Problems, ";") != strings.Join(aud.Problems, ";") {
+			t.Errorf("phase %d: --optimize and audience paths must produce the same reasons set; optimize=%v audience=%v", phase, opt.Problems, aud.Problems)
+		}
+	}
+}
+
+// TestOptimizeUnknownAudienceDoesNotStampRejectedAudience (fix-up F12, claude-1
+// MIN-4): a body built under `--optimize` with an unrecognized audience must not
+// stamp `audience=banana` into its header while the attestation says it fell back.
+func TestOptimizeUnknownAudienceDoesNotStampRejectedAudience(t *testing.T) {
+	src, m := audienceFixture(t)
+	c := Build(src, m, Request{Phase: 1, Track: "deliberation", Transport: "github-pr", Optimize: true, Audience: "banana"})
+	// The optimizer path still builds a participant-shaped packet; the rejected
+	// audience is recorded as the audience-dimension fallback reason, and (F12) the
+	// body header must carry the RESOLVED audience — "-" — never `banana`.
+	if c.ContextMode != ModePacket {
+		t.Fatalf("optimize with unknown audience still builds a packet, got %s", c.ContextMode)
+	}
+	if c.AudienceFallbackReason != "unknown-audience:banana" {
+		t.Errorf("fallback reason must name the unknown audience, got %q", c.AudienceFallbackReason)
+	}
+	if c.Audience != "" {
+		t.Errorf("resolved audience must stay empty on fallback, got %q", c.Audience)
+	}
+	if strings.Contains(c.Body, "audience=banana") {
+		t.Errorf("the body header must carry the RESOLVED audience, never the rejected one; body starts:\n%s", firstLine(c.Body))
+	}
+}
+
+func firstLine(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i]
+	}
+	return s
+}
+
 func TestUnknownAudienceFallsBackToFullWithReason(t *testing.T) {
 	src, m := audienceFixture(t)
 	c := Build(src, m, Request{Phase: 1, Track: "deliberation", Transport: "github-pr", Audience: "banana"})

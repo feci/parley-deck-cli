@@ -6,6 +6,7 @@ package app
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,5 +78,50 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	}
 	if len(out) == 0 {
 		t.Fatalf("brief produced no output")
+	}
+}
+
+// TestOrganizerBriefPhaseNeverZeroForLivePhaseFivePlus (fix-up F5, claude-1 MAJ-5):
+// a live Phase 5–8 idea must never resolve to the phase-0 facilitator packet (whose
+// body carries no §15 at all). The deck's real vocabulary — IMPLEMENTATION.md status
+// `implemented` / `fix-up-cycle-1`, prompt status left at `final` — must map to
+// phases 5 and 8 respectively.
+func TestOrganizerBriefPhaseNeverZeroForLivePhaseFivePlus(t *testing.T) {
+	cases := []struct {
+		name         string
+		promptStatus string
+		implStatus   string
+		wantPhase    int
+	}{
+		{"implementation status maps to phase 5", "implementation", "", 5},
+		{"final plus implemented implementation maps to phase 5", "final", "implemented", 5},
+		{"fix-up-cycle-1 maps to phase 8", "final", "fix-up-cycle-1", 8},
+		{"complete maps to phase 8", "complete", "complete", 8},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+			if err := protocol.InitWorkspace(root); err != nil {
+				t.Fatal(err)
+			}
+			fm := "---\nidea: wait-idea\nauthor: user\ntrack: standard\nparticipants: [claude-1, kimi-1]\nstatus: " + tc.promptStatus + "\n---\n\n## Problem\n"
+			if err := os.WriteFile(filepath.Join(ideaDir, "00-prompt.md"), []byte(fm), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if tc.implStatus != "" {
+				impl := "---\nidea: wait-idea\nstatus: " + tc.implStatus + "\nimplementer: claude-1\nhead-commit: deadbeef\n---\n\n## Summary\nDone.\n"
+				if err := os.WriteFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"), []byte(impl), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, brief := briefFor(t, root)
+			marker := fmt.Sprintf("-phase%d-", tc.wantPhase)
+			if !strings.Contains(brief, marker) {
+				t.Fatalf("brief must render the phase-%d facilitator packet for prompt status %q / implementation status %q; brief:\n%s", tc.wantPhase, tc.promptStatus, tc.implStatus, brief)
+			}
+			if strings.Contains(brief, "-phase0-") {
+				t.Fatalf("a live Phase 5–8 idea must never resolve to the phase-0 packet (no §15); brief:\n%s", brief)
+			}
+		})
 	}
 }

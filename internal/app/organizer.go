@@ -25,22 +25,93 @@ import (
 
 const organizerBriefByteCap = 8192
 
-// briefPhase derives the protocol phase pointer for an idea status.
-func briefPhase(status string) int {
+// briefPhaseFromStatus maps an idea/implementation status to a protocol phase
+// (fix-up F5). Covers the deck's real vocabulary: the 00-prompt `status:` stops at
+// `final` for most ideas (final×80 in this deck), so Phases 5–8 are read from the
+// IMPLEMENTATION.md status and the review-round presence instead.
+func briefPhaseFromStatus(status string) (int, bool) {
 	switch {
 	case strings.HasPrefix(status, "round-01"):
-		return 1
+		return 1, true
 	case strings.HasPrefix(status, "round-"):
-		return 2
+		return 2, true
 	case status == "consensus":
-		return 3
+		return 3, true
 	case status == "final":
-		return 4
-	case strings.HasPrefix(status, "review"):
-		return 6
-	default:
-		return 0
+		return 4, true
+	case status == "implementation", status == "implemented", status == "in-progress":
+		return 5, true
+	case status == "ready-for-review", strings.HasPrefix(status, "review"):
+		return 6, true
+	case strings.HasPrefix(status, "fix-up-cycle-"), status == "complete":
+		return 8, true
 	}
+	return 0, false
+}
+
+// briefPhaseFromRun reads the driver run cursor (run.json `phase`), the live pointer
+// while a driver run is advancing the idea.
+func briefPhaseFromRun(root, slug string) (int, bool) {
+	summary, err := runstate.ResolveRun(root, slug)
+	if err != nil || summary.RunID == "" {
+		return 0, false
+	}
+	data, err := os.ReadFile(filepath.Join(summary.RunDir, "run.json"))
+	if err != nil {
+		return 0, false
+	}
+	var manifest struct {
+		Phase        string `json:"phase"`
+		CurrentRound string `json:"current_round"`
+	}
+	if json.Unmarshal(data, &manifest) != nil || manifest.Phase == "" {
+		return 0, false
+	}
+	switch manifest.Phase {
+	case "round":
+		if manifest.CurrentRound == "round-01" {
+			return 1, true
+		}
+		return 2, true
+	case "consensus":
+		return 3, true
+	case "final":
+		return 4, true
+	case "impl":
+		return 5, true
+	case "review":
+		return 6, true
+	case "done":
+		return 8, true
+	}
+	return 0, false
+}
+
+// briefPhase derives the protocol phase pointer (fix-up F5, claude-1 MAJ-5): the
+// MOST ADVANCED of the available signals — the IMPLEMENTATION.md status (the only
+// artifact that advances through Phases 5–8), the driver run cursor, the presence of
+// review rounds, and the 00-prompt status. Every signal only ever advances when its
+// phase is actually reached, so the maximum is the live pointer and a stale signal
+// (a run cursor left at `round`, a prompt status left at `final`) can never drag the
+// brief back to the §15-free phase-0 view. A live Phase 5–8 idea therefore never
+// resolves to the phase-0 packet.
+func briefPhase(root, slug, promptStatus string, digest driver.PhaseDigest) int {
+	phase := 0
+	if p, ok := briefPhaseFromStatus(promptStatus); ok && p > phase {
+		phase = p
+	}
+	if p, ok := briefPhaseFromRun(root, slug); ok && p > phase {
+		phase = p
+	}
+	if digest.Review != nil && phase < 6 {
+		phase = 6 // review rounds exist — the idea is at Phase 6 or beyond
+	}
+	if digest.Implementation != nil && digest.Implementation.Present {
+		if p, ok := briefPhaseFromStatus(digest.Implementation.Status); ok && p > phase {
+			phase = p
+		}
+	}
+	return phase
 }
 
 func runOrganizer(args []string, stdout, stderr io.Writer) int {
@@ -88,11 +159,14 @@ func runOrganizerBrief(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
-	phase := briefPhase(st.Status)
 	track := "standard"
 	if t, present := driver.ReadTrack(st.Path); present && t != "" {
 		track = string(t)
 	}
+	// The digest feeds the phase pointer (review-round presence, implementation
+	// status) and is computed before the packet render (fix-up F5).
+	digest := driver.BuildPhaseDigest(root, st.Slug, st.Path, st.Participants)
+	phase := briefPhase(root, st.Slug, st.Status, digest)
 
 	// Protocol context: the facilitator packet (computed; body cached by the
 	// renderer under .parley-runtime/, never inside the deck). A signing
@@ -112,7 +186,6 @@ func runOrganizerBrief(args []string, stdout, stderr io.Writer) int {
 		ctx = protocolpacket.Context{Attestation: protocolpacket.Attestation{ContextMode: "full-fallback", FallbackReason: reason}}
 	}
 
-	digest := driver.BuildPhaseDigest(root, st.Slug, st.Path, st.Participants)
 	runPhase := runPhasePointer(root, st.Slug)
 
 	brief := renderOrganizerBrief(st, ws.Transport, ctx, digest, runPhase)
@@ -146,7 +219,9 @@ func runPhasePointer(root, slug string) string {
 func renderOrganizerBrief(st protocol.IdeaStatus, transport string, ctx protocolpacket.Context, digest driver.PhaseDigest, runPhase string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Organizer brief — %s\n\n", st.Slug)
-	b.WriteString("Computed view — never stored. Recompute with `parley organizer brief`;\n")
+	b.WriteString("Computed view — never stored in the deck. Recompute with `parley organizer brief`;\n")
+	b.WriteString("the brief itself writes nothing into `parley-deck/` (the packet renderer caches its\n")
+	b.WriteString("body under `.parley-runtime/protocol-packets/`, outside the deck).\n")
 	b.WriteString("`parley status` / this brief are authoritative; `runs/` handoff records are advisory.\n\n")
 
 	fmt.Fprintf(&b, "## Protocol context\n")

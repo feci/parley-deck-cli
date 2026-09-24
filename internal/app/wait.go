@@ -10,7 +10,13 @@ package app
 //	0  boundary reached
 //	3  timeout — partial digest printed, outstanding agents named
 //	4  a PRESENT artifact fails the shared validator (validator error verbatim), or a
-//	   blocking escalation / driver.error event arrives — immediate
+//	   NEW blocking escalation / driver.error event ARRIVES after the wait started —
+//	   immediate (fix-up F2, FINAL B.3's "a **new** unanswered `to-user` escalation …
+//	   arrives"): an escalation qualifies only when its frontmatter `idea:` matches the
+//	   awaited slug, `blocking:` is not `no`, and `status:` is not answered/resolved;
+//	   a `driver.error` counts only when appended to the event log after wait start.
+//	   Pre-existing qualifying notes and historical errors are reported as digest
+//	   annotations, never as exit 4.
 //	1  usage / IO error
 //
 // Missing ≠ invalid: a not-yet-filed artifact keeps waiting; an invalid one exits
@@ -25,7 +31,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -134,7 +139,14 @@ func runWait(args []string, stdout, stderr interface{ Write([]byte) (int, error)
 		budget = ceiling
 	}
 
+	// Fix-up F2: the wait-start snapshot. Escalations and driver errors count as
+	// blocking only when they ARRIVE after this point; earlier ones are reported as
+	// annotations on the digest (the digest itself stays tree-derived and
+	// deterministic — the annotations ride the wait output, not PhaseDigest).
+	waitStart := time.Now()
 	events := waitEventStore(root, *idea)
+	startEventCount := eventLogLength(events)
+	annotations := preExistingAnnotations(root, *idea, events, startEventCount, waitStart)
 	deadline := time.Now().Add(budget)
 	poll := waitPollInterval
 	if poll < waitMinPoll {
@@ -143,27 +155,27 @@ func runWait(args []string, stdout, stderr interface{ Write([]byte) (int, error)
 	for {
 		digest := driver.BuildPhaseDigest(root, *idea, ideaDir, ideaStatus.Participants)
 		if reason, bad := invalidArtifact(digest, scope); bad {
-			printWaitDigest(out, digest, *jsonOut)
+			printWaitDigest(out, digest, annotations, *jsonOut)
 			fmt.Fprintf(stderr, "wait: present-but-invalid artifact: %s\n", reason)
 			return waitExitInvalid
 		}
-		if esc, src := blockingEscalation(root); esc {
-			printWaitDigest(out, digest, *jsonOut)
-			fmt.Fprintf(stderr, "wait: blocking escalation (unanswered to-user inbox note): %s\n", src)
+		if src := arrivedBlockingEscalation(root, *idea, waitStart); src != "" {
+			printWaitDigest(out, digest, annotations, *jsonOut)
+			fmt.Fprintf(stderr, "wait: blocking escalation (new unanswered to-user inbox note for this idea): %s\n", src)
 			return waitExitInvalid
 		}
-		if drvErr := driverErrorEvent(events); drvErr != "" {
-			printWaitDigest(out, digest, *jsonOut)
+		if drvErr := driverErrorEventSince(events, startEventCount); drvErr != "" {
+			printWaitDigest(out, digest, annotations, *jsonOut)
 			fmt.Fprintf(stderr, "wait: %s\n", drvErr)
 			return waitExitInvalid
 		}
 		if reached, why := boundaryReached(digest, scope); reached {
-			printWaitDigest(out, digest, *jsonOut)
+			printWaitDigest(out, digest, annotations, *jsonOut)
 			fmt.Fprintf(out, "wait: boundary reached (%s)\n", why)
 			return waitExitOK
 		}
 		if time.Now().After(deadline) {
-			printWaitDigest(out, digest, *jsonOut)
+			printWaitDigest(out, digest, annotations, *jsonOut)
 			fmt.Fprintf(out, "wait: timeout after %s; outstanding: %s\n", budget, outstandingAgents(digest, scope))
 			return waitExitTimeout
 		}
@@ -178,9 +190,16 @@ func minDuration(a, b time.Duration) time.Duration {
 	return a
 }
 
-func printWaitDigest(out interface{ Write([]byte) (int, error) }, digest driver.PhaseDigest, asJSON bool) {
+// waitJSON is the --json envelope: the digest plus the wait's F2 annotations
+// (pre-existing escalations / historical errors — reported, never exit-4).
+type waitJSON struct {
+	Notes  []string           `json:"notes,omitempty"`
+	Digest driver.PhaseDigest `json:"digest"`
+}
+
+func printWaitDigest(out interface{ Write([]byte) (int, error) }, digest driver.PhaseDigest, annotations []string, asJSON bool) {
 	if asJSON {
-		data, _ := json.MarshalIndent(digest, "", "  ")
+		data, _ := json.MarshalIndent(waitJSON{Notes: annotations, Digest: digest}, "", "  ")
 		fmt.Fprintln(out, string(data))
 		return
 	}
@@ -201,6 +220,9 @@ func printWaitDigest(out interface{ Write([]byte) (int, error) }, digest driver.
 		fmt.Fprintf(out, "implementation: present=%v status=%s implementer=%s\n", i.Present, i.Status, i.Implementer)
 	}
 	fmt.Fprintf(out, "next: %s\n", digest.Next)
+	for _, note := range annotations {
+		fmt.Fprintf(out, "note: %s\n", note)
+	}
 }
 
 func printRoundSection(out interface{ Write([]byte) (int, error) }, sec *driver.PhaseRoundSection) {
@@ -245,24 +267,81 @@ func invalidArtifact(d driver.PhaseDigest, scope string) (string, bool) {
 	return "", false
 }
 
-// blockingEscalation reports an unanswered `to-user` escalation note still living in
-// inbox/ (answered notes are moved to inbox/archived/ or deleted per §4).
-func blockingEscalation(root string) (bool, string) {
+// escalationNote is one `to-user` inbox note that QUALIFIES for blocking under
+// FINAL B.3 as read at fix-up F2: frontmatter `idea:` matches the awaited slug,
+// `blocking:` is not `no`, and `status:` is not answered/resolved. Non-qualifying
+// notes (other ideas, non-blocking, answered) are simply not this wait's business.
+type escalationNote struct {
+	Name  string
+	MTime time.Time
+}
+
+// qualifyingEscalationNotes scans the deck inbox for qualifying `to-user` notes
+// (answered notes are moved to inbox/archived/ or deleted per §4; a stale `status:`
+// field saying answered/resolved counts as answered too).
+func qualifyingEscalationNotes(root, idea string) []escalationNote {
 	inbox := filepath.Join(root, protocol.DeckDir, "inbox")
 	entries, err := os.ReadDir(inbox)
 	if err != nil {
-		return false, ""
+		return nil
 	}
+	var notes []escalationNote
 	for _, e := range entries {
 		name := e.Name()
 		if e.IsDir() || !strings.HasSuffix(name, ".md") {
 			continue
 		}
-		if i := strings.Index(name, "-to-user_"); i > 0 {
-			return true, name
+		if strings.Index(name, "-to-user_") <= 0 {
+			continue
+		}
+		path := filepath.Join(inbox, name)
+		meta, merr := protocol.ReadFrontmatter(path)
+		if merr != nil {
+			continue
+		}
+		if id := strings.Trim(strings.TrimSpace(meta["idea"]), `"'`); id != idea {
+			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(meta["blocking"]), "no") {
+			continue
+		}
+		if status := strings.ToLower(strings.TrimSpace(meta["status"])); strings.HasPrefix(status, "answered") || strings.HasPrefix(status, "resolved") {
+			continue
+		}
+		info, ierr := os.Stat(path)
+		if ierr != nil {
+			continue
+		}
+		notes = append(notes, escalationNote{Name: name, MTime: info.ModTime()})
+	}
+	return notes
+}
+
+// arrivedBlockingEscalation names the qualifying escalation that ARRIVED after the
+// wait started (mtime is the arrival signal), or "".
+func arrivedBlockingEscalation(root, idea string, waitStart time.Time) string {
+	for _, n := range qualifyingEscalationNotes(root, idea) {
+		if n.MTime.After(waitStart) {
+			return n.Name
 		}
 	}
-	return false, ""
+	return ""
+}
+
+// preExistingAnnotations reports, once at wait start, what the older any-note
+// semantics would have blocked on: qualifying escalations that predate the wait,
+// and historical driver errors. Reported in the digest output, never exit 4.
+func preExistingAnnotations(root, idea string, events store.Store, startEventCount int, waitStart time.Time) []string {
+	var notes []string
+	for _, n := range qualifyingEscalationNotes(root, idea) {
+		if !n.MTime.After(waitStart) {
+			notes = append(notes, "pre-existing unanswered to-user escalation for this idea (arrived before this wait; reported, not blocking): "+n.Name)
+		}
+	}
+	if h := firstDriverErrorBefore(events, startEventCount); h != "" {
+		notes = append(notes, "historical "+h+" (before this wait; reported, not blocking)")
+	}
+	return notes
 }
 
 // waitEventStore resolves the idea's latest run for event watching; without a run it
@@ -278,7 +357,20 @@ func waitEventStore(root, idea string) store.Store {
 	return store.Store{}
 }
 
-func driverErrorEvent(events store.Store) string {
+// eventLogLength snapshots the event count at wait start; only entries appended
+// after that index can block (fix-up F2 — FINAL B.3's "arrives").
+func eventLogLength(events store.Store) int {
+	if !events.Enabled() {
+		return 0
+	}
+	evs, err := events.Load()
+	if err != nil {
+		return 0
+	}
+	return len(evs)
+}
+
+func driverErrorEventSince(events store.Store, startIndex int) string {
 	if !events.Enabled() {
 		return ""
 	}
@@ -286,7 +378,31 @@ func driverErrorEvent(events store.Store) string {
 	if err != nil {
 		return ""
 	}
-	for _, ev := range evs {
+	if startIndex > len(evs) {
+		startIndex = len(evs)
+	}
+	for _, ev := range evs[startIndex:] {
+		switch ev.Type {
+		case "driver.error", "run.error":
+			if detail, _ := ev.Data["error"].(string); detail != "" {
+				return "driver.error event: " + detail
+			}
+			return "driver.error event at " + ev.Time.Format(time.RFC3339)
+		}
+	}
+	return ""
+}
+
+// firstDriverErrorBefore names the first historical driver error (annotation only).
+func firstDriverErrorBefore(events store.Store, startIndex int) string {
+	if !events.Enabled() {
+		return ""
+	}
+	evs, err := events.Load()
+	if err != nil || startIndex > len(evs) {
+		return ""
+	}
+	for _, ev := range evs[:startIndex] {
 		switch ev.Type {
 		case "driver.error", "run.error":
 			if detail, _ := ev.Data["error"].(string); detail != "" {
@@ -354,8 +470,22 @@ func outstandingAgents(d driver.PhaseDigest, scope string) string {
 	if (scope == "consensus" || scope == "any") && d.Consensus != nil {
 		missing = append(missing, d.Consensus.Missing...)
 	}
+	// Name the implementation's blocking condition instead of "none named" (fix-up
+	// F3): the timeout line must never conceal WHY the boundary is unreachable.
+	if scope == "implementation" || scope == "any" {
+		switch {
+		case d.Implementation == nil || !d.Implementation.Present:
+			missing = append(missing, "IMPLEMENTATION.md not filed")
+		case d.Implementation.Status == "complete", d.Implementation.ReadyForReview:
+			// not blocking on this scope
+		case d.Implementation.Status == "":
+			missing = append(missing, "implementation status is empty — not a recognised ready state")
+		default:
+			missing = append(missing, "implementation status `"+d.Implementation.Status+"` is not a recognised ready state")
+		}
+	}
 	if len(missing) == 0 {
-		missing = append(missing, "none named — inspect the digest")
+		missing = append(missing, "awaited condition not yet reached — inspect the digest")
 	}
 	return strings.Join(missing, ", ")
 }
@@ -365,8 +495,7 @@ func waitUsage() string {
 	return "" +
 		"  wait --idea <slug> --for round|consensus|review|implementation|any [--timeout 25m] [--json]\n" +
 		"    Blocking read: exit 0 boundary reached; 3 timeout (partial digest, outstanding named);\n" +
-		"    4 present-but-invalid artifact or blocking escalation/driver error; 1 usage/IO. Observes only.\n"
+		"    4 present-but-invalid artifact, or a NEW blocking escalation (idea-matching, unanswered,\n" +
+		"    blocking) or driver.error arriving after wait start — pre-existing ones are digest\n" +
+		"    notes; 1 usage/IO. Observes only.\n"
 }
-
-// strconv keeps the import list stable for future numeric options.
-var _ = strconv.Itoa

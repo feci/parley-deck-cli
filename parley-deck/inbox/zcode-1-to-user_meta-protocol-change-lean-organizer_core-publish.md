@@ -23,7 +23,8 @@ sets on top of published core 2.10.0, and nothing else:
 2. the 1.48.0 protocol hunks (§9 item 1 attestation rule, goal-check "can only withhold
    a close" paragraph, LE-7/LE-11 bullet),
 3. this idea's reviewed hunks (lean-organizer permissive lines: Quickstart facilitator
-   row, §4 Phase 5/Phase 6, §9.0 audience view + brief re-orientation, §11 one-blocking-wait).
+   row, §4 Phase 5/Phase 6, §9.0 pure-organizer default sentence, §9 checklist item 1
+   audience view + brief re-orientation, §11 one-blocking-wait).
 
 Verification performed: placeholder header intact; §2 host-handle table stubbed; the
 §15 region and every changed section byte-match the released deck view at this branch;

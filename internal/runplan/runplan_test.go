@@ -1,6 +1,7 @@
 package runplan
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -236,4 +237,39 @@ func join(values []string) string {
 		out += value
 	}
 	return out
+}
+
+// TestPlanByteIdenticalWithAbsentFacilitatorField (lean-organizer fix-up F21, FINAL
+// A.5 criterion): a deck WITHOUT a `facilitator:` field produces the byte-identical
+// run plan v1.48.0 produced — Plan() has no facilitator awareness, and this test
+// pins that: adding the optional field to an otherwise identical deck must not
+// change one byte of the serialized plan.
+func TestPlanByteIdenticalWithAbsentFacilitatorField(t *testing.T) {
+	base := "---\nidea: sample\nparticipants: [codex, claude]\ntrack: standard\nstatus: round-01\n---\n\n## Problem\nx\n"
+	withField := "---\nidea: sample\nparticipants: [codex, claude]\ntrack: standard\nfacilitator: codex\nstatus: round-01\n---\n\n## Problem\nx\n"
+
+	planFor := func(prompt string) string {
+		root := newWorkspace(t, "sample", []string{"codex", "claude"})
+		writeFile(t, filepath.Join(root, protocol.DeckDir, "ideas", "sample", "00-prompt.md"), prompt)
+		actions := Plan(root, Input{
+			RunID:        "run-1",
+			IdeaSlug:     "sample",
+			Participants: []string{"codex", "claude"},
+			CurrentRound: "round-01",
+		})
+		data, err := json.MarshalIndent(actions, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(data)
+	}
+
+	absent := planFor(base)
+	present := planFor(withField)
+	if absent == "" || absent == "null\n" || absent == "null" {
+		t.Fatalf("plan must have content for the fixture; got %q", absent)
+	}
+	if absent != present {
+		t.Fatalf("absent-field deck must keep the v1.48.0 run plan byte-identical:\nabsent:  %s\npresent: %s", absent, present)
+	}
 }

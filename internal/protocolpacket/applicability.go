@@ -385,15 +385,22 @@ func Check(src Source, m *Map) Report {
 					rep.Stale = append(rep.Stale, "audiences."+name+" omits unknown block "+or.Locator)
 					continue
 				}
-				// An audience may never name an UNCONDITIONAL never-cut block:
-				// those are pinned at every request, so an omission rule for one is
-				// a map-level floor breach even though Build would refuse to apply
-				// it. Conditionally pinned blocks (per phase/transport/flag) may be
-				// NAMED — the runtime floor protects them where they pin — which is
-				// how the ratified facilitator set omits the non-active §11
-				// subsections.
+				// An audience may never name an UNCONDITIONAL never-cut block
+				// (pinned at every request) nor a PHASE- or FLAG-PINNED one
+				// (§15.x at the kernel phases, `### Phase N`, §7 under
+				// protocol_change): the omission rule is a map-level floor breach
+				// even though Build would refuse to apply it — `packet check` must
+				// PROVE the floor for exactly the sections FINAL C.1 singles out
+				// (fix-up F6, claude-1 MAJ-6: the phase-pinned §15 family was
+				// previously allowed here, so the negative test could not fire for
+				// it). The allowance is narrowed to TRANSPORT-conditional blocks —
+				// the non-active §11 subsections the ratified facilitator set
+				// legitimately omits.
 				for _, nc := range neverCut {
-					if nc.always && strings.HasPrefix(or.Locator, nc.prefix) {
+					if nc.transport != "" {
+						continue
+					}
+					if strings.HasPrefix(or.Locator, nc.prefix) {
 						rep.NeverCut = appendUnique(rep.NeverCut, "audiences."+name+" omits never-cut block "+or.Locator)
 						break
 					}

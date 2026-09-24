@@ -42,6 +42,11 @@ type PhaseAgentRow struct {
 		Escalate int `json:"escalate"`
 	} `json:"stance_flags"`
 	Unparsed bool `json:"unparsed"` // fail-closed: attribution or stance could not be parsed
+	// FellBack reports degraded metadata derivation on the validator/ownership path:
+	// the artifact frontmatter was unreadable, or carried no usable `agent:` owner so
+	// attribution fell back to the filename-derived agent (fix-up F9 — it is NOT the
+	// round-digest's "## Summary absent" extraction flag; PhaseDigest discards
+	// position prose entirely, so that extraction says nothing about this digest).
 	FellBack bool `json:"fell_back"`
 }
 
@@ -181,13 +186,15 @@ func nextAction(d *PhaseDigest) string {
 	if d.Consensus != nil && len(d.Consensus.Missing) > 0 {
 		return NextAwaitConsensus
 	}
-	if imp := d.Implementation; imp != nil && imp.Present && imp.Status != "" && imp.Status != "in-progress" {
-		if imp.Status == "complete" {
+	if d.Implementation != nil && d.Implementation.Present {
+		switch {
+		case d.Implementation.Status == "complete":
 			return NextFinalPublished
+		case d.Implementation.ReadyForReview && d.Review == nil:
+			// Published implementation, no review round opened yet (fix-up F10:
+			// this state previously collapsed into "await implementation").
+			return NextAwaitReviewArtifact
 		}
-	}
-	if d.Implementation == nil || !d.Implementation.Present {
-		return NextAwaitImplementation
 	}
 	return NextAwaitImplementation
 }
@@ -208,11 +215,15 @@ func implSection(ideaDir string) *PhaseImplSection {
 		Implementer: strings.TrimSpace(meta["implementer"]),
 		HeadCommit:  strings.TrimSpace(meta["head-commit"]),
 	}
+	// Ready-for-review is DERIVED from the protocol's closed vocabulary
+	// (protocol.ValidImplementationStatus) minus the in-progress states, not from a
+	// second hand-written list — the hand list omitted `ready-for-review`, a status
+	// four files in this deck live at (fix-up F3, claude-1 MAJ-3).
 	switch status {
-	case "implemented", "complete", "fix-up-cycle-1", "fix-up-cycle-2", "fix-up-cycle-3", "fix-up-cycle-4", "fix-up-cycle-5":
-		if protocol.ValidImplementationStatus(status) {
-			sec.ReadyForReview = true
-		}
+	case "", "unparsed", "in-progress":
+		sec.ReadyForReview = false
+	default:
+		sec.ReadyForReview = protocol.ValidImplementationStatus(status)
 	}
 	return sec
 }
@@ -280,6 +291,9 @@ func agentRow(path, agent, ideaDir string, round int, review bool) PhaseAgentRow
 	if merr != nil || row.Owner == "" || row.Owner != agent {
 		row.Unparsed = true
 	}
+	// fell_back: the metadata path degraded — frontmatter unreadable, or no usable
+	// `agent:` owner so attribution falls back to the filename-derived agent (F9).
+	row.FellBack = merr != nil || row.Owner == ""
 	if review {
 		if verr := protocol.ValidateReviewArtifact(path, agent, filepath.Base(ideaDir), round); verr != nil {
 			row.Validity = verr.Error()
@@ -295,6 +309,5 @@ func agentRow(path, agent, ideaDir string, round int, review bool) PhaseAgentRow
 	}
 	b, c, a, e := stanceFlags(string(data))
 	row.StanceFlags.Block, row.StanceFlags.Counter, row.StanceFlags.Accept, row.StanceFlags.Escalate = b, c, a, e
-	_, row.FellBack = extractPosition(string(data))
 	return row
 }

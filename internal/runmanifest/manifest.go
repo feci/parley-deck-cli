@@ -222,6 +222,21 @@ func Write(root, runID string, manifest Manifest) error {
 	return os.Rename(tmpName, path)
 }
 
+// TouchUpdatedAt advances a run manifest's `updated_at` to now. Called by the
+// driver at its phase-transition chokepoint (lean-organizer fix-up F7): manifests
+// are written once at run creation, so every real run record kept
+// created_at == updated_at — a zero-width window that left `parley usage ingest`'s
+// attribution corroboration structurally dead. Keeping `updated_at` = "last state
+// change" makes the attribution window real.
+func TouchUpdatedAt(root, runID string) error {
+	manifest, err := Load(root, runID)
+	if err != nil {
+		return err
+	}
+	manifest.UpdatedAt = time.Now().UTC()
+	return Write(root, runID, manifest)
+}
+
 func Load(root, runID string) (Manifest, error) {
 	data, err := os.ReadFile(Path(root, runID))
 	if err != nil {

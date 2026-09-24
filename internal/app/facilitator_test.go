@@ -4,7 +4,8 @@ package app
 // Covers the FINAL A acceptance rows: preflight fail-closed naming both fields (exit 0
 // with the exception flag), driver role-ineligibility with escalate-not-fallback, the
 // absent-field regression (byte-identical role selection), and the consensus-prompt /
-// gate parity over protocol.RequiredConsensusSections.
+// scaffold parity over protocol.RequiredConsensusSections (fix-up F1: no status gate
+// reads the constant — append-only signoffs remain the only machine-validated gate).
 
 import (
 	"context"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/protocol"
 )
 
@@ -110,7 +112,13 @@ func TestFacilitatorConflictGateIsABlockingPreflightOutcome(t *testing.T) {
 	}
 }
 
-func TestConsensusDraftPromptGateParity(t *testing.T) {
+// TestConsensusDraftPromptScaffoldParity proves the fix-up-F1 parity property: the
+// drafting prompt and the scaffold generator read ONE constant
+// (protocol.RequiredConsensusSections + ConditionalConsensusSections), so the prompt
+// can never instruct a drafter to produce an artifact the scaffold does not shape —
+// while NO status gate requires the sections of an existing consensus document
+// (append-only signoffs remain the only machine-validated gate).
+func TestConsensusDraftPromptScaffoldParity(t *testing.T) {
 	prompt := buildConsensusDraftPrompt("/tmp/idea", "/tmp/idea/consensus.md")
 	for _, section := range protocol.RequiredConsensusSections {
 		if !strings.Contains(prompt, section) {
@@ -122,17 +130,60 @@ func TestConsensusDraftPromptGateParity(t *testing.T) {
 			t.Errorf("consensus draft prompt must name conditional duty section %q", section)
 		}
 	}
-	// The gate reads MissingConsensusSections, which is derived from the same slice;
-	// prove the loop guard by asserting every required section is what the gate checks.
-	body := strings.Join(protocol.RequiredConsensusSections, "\n")
-	if missing := protocol.MissingConsensusSections(body); len(missing) != 0 {
-		t.Errorf("a body containing RequiredConsensusSections must satisfy the gate, missing=%v", missing)
+
+	// The scaffold half: a fixture deck with a complete round-01, drafted through the
+	// shipped Draft entry point, must carry every constant section as a heading — and
+	// no `## ` heading outside the constant set (the scaffold cannot invent sections).
+	dir := t.TempDir()
+	if err := protocol.InitWorkspace(dir); err != nil {
+		t.Fatal(err)
 	}
-	dropped := strings.ReplaceAll(body, "## Drafter position changes", "## Changed positions")
-	if missing := protocol.MissingConsensusSections(dropped); len(missing) != 1 || missing[0] != "Drafter position changes" {
-		t.Errorf("gate must flag the dropped §15.5 duty, got %v", missing)
+	writeIdeaPrompt(t, dir, "parity-idea",
+		"idea: parity-idea\nauthor: user\ntrack: standard\nparticipants: [alpha-1, beta-1]")
+	ideaDir := filepath.Join(dir, protocol.DeckDir, "ideas", "parity-idea")
+	roundDir := filepath.Join(ideaDir, "round-01")
+	if err := os.MkdirAll(roundDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, agent := range []string{"alpha-1", "beta-1"} {
+		body := "---\nagent: " + agent + "\nidea: parity-idea\nround: 1\ndate: 2026-09-24\n---\n\n## Summary\nPosition.\n\n## Existing alternatives\nNone.\n\n## Proposed approach\nExtend.\n\n## Concerns / open questions\nNone.\n\n## Risks\nLow.\n"
+		if err := os.WriteFile(filepath.Join(roundDir, agent+".md"), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := consensus.Draft(dir, "parity-idea", consensus.DraftOptions{By: "alpha-1"}); err != nil {
+		t.Fatalf("consensus.Draft: %v", err)
+	}
+	scaffoldBytes, err := os.ReadFile(filepath.Join(ideaDir, "consensus.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	scaffold := string(scaffoldBytes)
+	inConstant := map[string]bool{}
+	for _, section := range protocol.RequiredConsensusSections {
+		inConstant[section] = true
+		if !headingLinePresent(scaffold, section) {
+			t.Errorf("scaffold must carry canonical section heading %q", section)
+		}
+	}
+	for line := range strings.SplitSeq(scaffold, "\n") {
+		line = strings.TrimRight(line, "\r")
+		if !strings.HasPrefix(line, "## ") {
+			continue
+		}
+		if !inConstant[line] {
+			t.Errorf("scaffold emits heading %q which is not in RequiredConsensusSections (drift)", line)
+		}
+	}
+	// And the prompt half stays parity-bound: every constant section must appear in
+	// the prompt with its heading form, so prompt, scaffold and constant cannot drift.
+	for _, section := range protocol.RequiredConsensusSections {
+		if !strings.Contains(prompt, "\n"+section+"\n") && !strings.HasPrefix(prompt, section) {
+			t.Errorf("prompt must list canonical section %q as a heading line", section)
+		}
 	}
 }
+
 
 func TestConsensusPromptNamesFifteenDuties(t *testing.T) {
 	prompt := buildConsensusDraftPrompt("/tmp/idea", "/tmp/idea/consensus.md")

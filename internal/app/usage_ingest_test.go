@@ -16,6 +16,8 @@ import (
 	"testing"
 
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/runmanifest"
+	"time"
 )
 
 func writeCodexFixture(t *testing.T, path string, totals string, ts string) {
@@ -150,33 +152,65 @@ func TestUsageIngestIdempotent(t *testing.T) {
 	}
 }
 
+// TestUsageIngestAttributionWindows (fix-up F7, claude-1 MAJ-7): the run records
+// here are built by the REAL machinery the driver uses — runmanifest.New/Write at
+// creation (created_at == updated_at, the only shape a real launch produces) and
+// runmanifest.TouchUpdatedAt at the driver's phase-transition chokepoint — replacing
+// the former hand-written two-hour-window manifest no driver ever produced.
 func TestUsageIngestAttributionWindows(t *testing.T) {
 	dir := t.TempDir()
 	root := dir
 	seedMinimalDeck(t, root)
 	os.MkdirAll(filepath.Join(root, protocol.DeckDir, "ideas", "u"), 0o755)
-	// A run whose window CONTAINS the accounting event for the same idea → attributed.
-	runsDir := filepath.Join(root, protocol.DeckDir, "runs", "20260923T190000.000000000Z")
-	os.MkdirAll(runsDir, 0o755)
-	os.WriteFile(filepath.Join(runsDir, "run.json"), []byte(`{"idea_slug":"u","created_at":"2026-09-23T19:00:00Z","updated_at":"2026-09-23T21:00:00Z"}`), 0o644)
-	fixture := filepath.Join(dir, "rollout.jsonl")
-	writeCodexFixture(t, fixture, `{"input_tokens":10,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":2,"reasoning_output_tokens":0,"total_tokens":12}`, "2026-09-23T20:00:00.000Z")
 
+	created := time.Now().UTC().Add(-1 * time.Hour)
+	runID := "20260923T190000.000000000Z"
+	manifest := runmanifest.New(runmanifest.Options{RunID: runID, Root: root, IdeaSlug: "u", CreatedAt: created, UpdatedAt: created})
+	if err := runmanifest.Write(root, runID, manifest); err != nil {
+		t.Fatal(err)
+	}
+	// The driver's transition touch opens the window: updated_at advances to now.
+	if err := runmanifest.TouchUpdatedAt(root, runID); err != nil {
+		t.Fatal(err)
+	}
+
+	// An accounting event inside the real window [created, now] for the SAME idea.
+	fixture := filepath.Join(dir, "rollout.jsonl")
+	writeCodexFixture(t, fixture, `{"input_tokens":10,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":2,"reasoning_output_tokens":0,"total_tokens":12}`, time.Now().UTC().Add(-30*time.Minute).Format("2006-01-02T15:04:05.000Z"))
 	res, err := parseCodexRollout(fixture)
 	if err != nil {
 		t.Fatal(err)
 	}
 	att, note := resolveAttribution(root, "u", res)
 	if att != "attributed" {
-		t.Errorf("want attributed, got %s (%s)", att, note)
+		t.Errorf("want attributed against the driver-built window, got %s (%s)", att, note)
 	}
+
 	// A window of a DIFFERENT idea containing the event → ambiguous.
-	other := filepath.Join(root, protocol.DeckDir, "runs", "20260923T193000.000000000Z")
-	os.MkdirAll(other, 0o755)
-	os.WriteFile(filepath.Join(other, "run.json"), []byte(`{"idea_slug":"other-idea","created_at":"2026-09-23T19:30:00Z","updated_at":"2026-09-23T20:30:00Z"}`), 0o644)
+	otherID := "20260923T193000.000000000Z"
+	other := runmanifest.New(runmanifest.Options{RunID: otherID, Root: root, IdeaSlug: "other-idea", CreatedAt: created, UpdatedAt: created})
+	if err := runmanifest.Write(root, otherID, other); err != nil {
+		t.Fatal(err)
+	}
+	if err := runmanifest.TouchUpdatedAt(root, otherID); err != nil {
+		t.Fatal(err)
+	}
+	touch, err := runmanifest.Load(root, otherID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Make the other-idea window the ONLY one containing the event: narrow the
+	// first run's window to end before the event by rewriting its manifest with a
+	// bounded updated_at (real shape, bounded window).
+	narrow := manifest
+	narrow.UpdatedAt = time.Now().UTC().Add(-45 * time.Minute)
+	if err := runmanifest.Write(root, runID, narrow); err != nil {
+		t.Fatal(err)
+	}
+	_ = touch
 	att, _ = resolveAttribution(root, "u", res)
 	if att != "ambiguous" {
-		t.Errorf("cross-idea window must be ambiguous, got %s", att)
+		t.Errorf("an event inside only a different idea's window must be ambiguous, got %s", att)
 	}
 }
 
@@ -234,4 +268,36 @@ func (c *countingWriter) Write(p []byte) (int, error) {
 	n, err := c.f.Write(p)
 	c.n += int64(n)
 	return n, err
+}
+
+// TestStreamLinesDropsOversizedLineWhole (fix-up F19, kimi-1 K1-F6c): a line above
+// the 16 MiB cap is discarded whole — its tail must never surface as a partial
+// "line". The fixture: a normal line, a 17 MiB line whose TAIL contains a decoy
+// JSON-looking fragment, then another normal line.
+func TestStreamLinesDropsOversizedLineWhole(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "oversized.jsonl")
+	var b bytes.Buffer
+	b.WriteString("{\"type\":\"normal\",\"n\":1}\n")
+	huge := bytes.Repeat([]byte("x"), 17<<20)
+	b.Write(huge)
+	b.WriteString("{\"type\":\"token_count\"}\n") // tail of the oversized line
+	b.WriteString("{\"type\":\"normal\",\"n\":2}\n")
+	if err := os.WriteFile(path, b.Bytes(), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	if err := streamLines(path, func(line []byte) error {
+		got = append(got, string(line))
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("exactly the two normal lines must be yielded (the oversized line dropped whole, tail included); got %d lines", len(got))
+	}
+	for i, want := range []string{"{\"type\":\"normal\",\"n\":1}\n", "{\"type\":\"normal\",\"n\":2}\n"} {
+		if got[i] != want {
+			t.Errorf("line %d: got %.60q want %q", i, got[i], want)
+		}
+	}
 }

@@ -4,8 +4,8 @@ Drafted by: kimi-1 (FINAL); protocol hunks applied by zcode-1 (Phase 5)
 Summary: Permissive lines recording the ratified lean-organizer defaults, in all three
 COOPERATION.md copies (deck view, internal/protocol/defaults/, skill references/): a deck declaring
 `facilitator:` runs the pure organizer by default — participants implement and verify code, the
-facilitator reads verdicts and validator output (Quickstart facilitator row, §4 Phase 5, §4 Phase 6;
-`facilitator_participates: true` restores full participation); §9 checklist item 1 records the
+facilitator reads verdicts and validator output (Quickstart facilitator row, §4 Phase 5, §4 Phase 6,
+§9.0; `facilitator_participates: true` restores full participation); §9 checklist item 1 (D.5) records the
 opt-in audience-scoped facilitator packet view (`parley protocol packet --audience facilitator`,
 never cutting below the never-cut floor) and re-orientation from the computed
 `parley organizer brief` after a compaction; §11 gains an advisory line preferring one blocking

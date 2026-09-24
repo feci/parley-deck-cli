@@ -123,10 +123,11 @@ func firstEligibleHeadlessAgent(discovered []agents.Discovery, participants []st
 }
 
 // buildConsensusDraftPrompt is generated from protocol.RequiredConsensusSections and
-// protocol.ConditionalConsensusSections — the SAME constants the consensus status gate
-// reads — so the prompt cannot instruct a drafter to produce an artifact the gate
-// rejects (lean-organizer A.4; the previous hardcoding emitted review-cycle headings
-// and none of the §15.3/§15.5/§15.6 duty sections).
+// protocol.ConditionalConsensusSections — the SAME constants the consensus scaffold
+// generator reads — so the prompt cannot diverge from the scaffold handed to the
+// drafter (lean-organizer A.4; fix-up F1: prompt+scaffold are the constant's only
+// consumers, no status gate reads it; the previous hardcoding emitted review-cycle
+// headings and none of the §15.3/§15.5/§15.6 duty sections).
 func buildConsensusDraftPrompt(ideaDir, path string) string {
 	var sections strings.Builder
 	for _, section := range protocol.RequiredConsensusSections {

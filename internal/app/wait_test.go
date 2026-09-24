@@ -148,44 +148,159 @@ func TestWaitPresentButInvalidExitsFourWithVerbatimReason(t *testing.T) {
 	}
 }
 
-func TestWaitBlockingEscalationExitsFour(t *testing.T) {
-	withWaitPoll(t, 5*time.Millisecond)
-	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+func writeEscalationNote(t *testing.T, root, name, frontmatter string, mtime time.Time) string {
+	t.Helper()
 	inbox := filepath.Join(root, protocol.DeckDir, "inbox")
 	if err := os.MkdirAll(inbox, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	esc := filepath.Join(inbox, "claude-1-to-user_wait-idea_blocker.md")
-	if err := os.WriteFile(esc, []byte("---\nfrom: claude-1\nto: user\nblocking: yes\n---\n\n## Question\n"), 0o644); err != nil {
+	path := filepath.Join(inbox, name)
+	if err := os.WriteFile(path, []byte("---\n"+frontmatter+"\n---\n\n## Question\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.Chtimes(path, mtime, mtime); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// TestWaitNewBlockingEscalationExitsFour (fix-up F2): a QUALIFYING note (idea match,
+// blocking, unanswered) that ARRIVES after the wait started exits 4.
+func TestWaitNewBlockingEscalationExitsFour(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	future := time.Now().Add(1 * time.Hour) // models arrival after wait start
+	writeEscalationNote(t, root, "claude-1-to-user_wait-idea_blocker.md",
+		"from: claude-1\nto: user\nidea: wait-idea\nblocking: yes", future)
 	code, _, errOut := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "any", "--timeout", "5s")
 	if code != 4 {
-		t.Fatalf("unanswered to-user escalation must exit 4 immediately, got %d; err=%q", code, errOut)
+		t.Fatalf("a NEW qualifying to-user escalation must exit 4 immediately, got %d; err=%q", code, errOut)
 	}
 	if !strings.Contains(errOut, "to-user") {
 		t.Errorf("exit must name the escalation source; got %q", errOut)
 	}
 }
 
-func TestWaitDriverErrorEventExitsFour(t *testing.T) {
+// TestWaitCrossIdeaEscalationDoesNotBlock (fix-up F2, claude-1 MAJ-1 fixture): a
+// six-week-old note belonging to a DIFFERENT idea never blocks this idea's wait.
+func TestWaitCrossIdeaEscalationDoesNotBlock(t *testing.T) {
 	withWaitPoll(t, 5*time.Millisecond)
 	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	old := time.Now().AddDate(0, 0, -42)
+	writeEscalationNote(t, root, "claude-1-to-user_fixup-budget_cap-exceeded-trajectory.md",
+		"from: claude-1\nto: user\nidea: meta-protocol-change-phase-packet-and-fixup-budget\ndate: 2026-08-12\nblocking: yes", old)
+	// A NEW-looking mtime must still not block: the note is not this idea's.
+	fresh := time.Now().Add(30 * time.Minute)
+	writeEscalationNote(t, root, "kimi-1-to-user_other-idea_urgent.md",
+		"from: kimi-1\nto: user\nidea: some-other-idea\nblocking: yes", fresh)
+	code, out, _ := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "30ms")
+	if code == 4 {
+		t.Fatalf("a note belonging to another idea must never block this wait")
+	}
+	if code != 3 {
+		t.Fatalf("expected timeout exit 3, got %d", code)
+	}
+	if strings.Contains(out, "fixup-budget") || strings.Contains(out, "other-idea") {
+		t.Errorf("cross-idea notes must not even be annotated; got %q", out)
+	}
+}
+
+// TestWaitNonBlockingEscalationDoesNotBlock (fix-up F2): `blocking: no` notes — like
+// this idea's own core-publish escalation — never block.
+func TestWaitNonBlockingEscalationDoesNotBlock(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	future := time.Now().Add(1 * time.Hour)
+	writeEscalationNote(t, root, "zcode-1-to-user_wait-idea_core-publish.md",
+		"from: zcode-1\nto: user\nidea: wait-idea\nblocking: no", future)
+	code, _, _ := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "30ms")
+	if code == 4 {
+		t.Fatalf("`blocking: no` must never block the wait, even when new and idea-matching")
+	}
+	if code != 3 {
+		t.Fatalf("expected timeout exit 3, got %d", code)
+	}
+}
+
+// TestWaitPreExistingEscalationIsAnnotationNotExit (fix-up F2): a qualifying note
+// that predates the wait is reported in the digest output, never exit 4.
+func TestWaitPreExistingEscalationIsAnnotationNotExit(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	old := time.Now().Add(-6 * 7 * 24 * time.Hour)
+	writeEscalationNote(t, root, "claude-1-to-user_wait-idea_still-open.md",
+		"from: claude-1\nto: user\nidea: wait-idea\nblocking: yes", old)
+	code, out, _ := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "30ms")
+	if code != 3 {
+		t.Fatalf("a pre-existing escalation must not exit 4; want timeout 3, got %d; out=%q", code, out)
+	}
+	if !strings.Contains(out, "pre-existing unanswered to-user escalation") || !strings.Contains(out, "still-open") {
+		t.Errorf("the digest output must annotate the pre-existing note; got %q", out)
+	}
+}
+
+func seedWaitRunEvents(t *testing.T, root string) store.Store {
+	t.Helper()
 	runsDir := filepath.Join(root, protocol.DeckDir, "runs", "20260923T000000.000000000Z")
-	os.MkdirAll(runsDir, 0o755)
+	if err := os.MkdirAll(runsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	manifest := `{"schema_version": 1, "run_id": "20260923T000000.000000000Z", "idea_slug": "wait-idea", "status": "running"}`
 	if err := os.WriteFile(filepath.Join(runsDir, "run.json"), []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	events := store.New(runsDir)
+	return store.New(runsDir)
+}
+
+// TestWaitHistoricalDriverErrorIsAnnotationNotExit (fix-up F2, claude-1 MAJ-2
+// fixture): a run that hit a transient error and RECOVERED — one historical
+// `driver.error`, then the round completes — must reach its boundary (exit 0) with
+// the historical error annotated, not exit 4 forever.
+func TestWaitHistoricalDriverErrorIsAnnotationNotExit(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "kimi-1.md"), []byte(validRoundOne("kimi-1")), 0o644)
+	events := seedWaitRunEvents(t, root)
 	events.Append(store.Event{Type: "run.created", Data: map[string]any{"idea": "wait-idea"}})
-	events.Append(store.Event{Type: "driver.error", Data: map[string]any{"idea": "wait-idea", "error": "context canceled"}})
-	code, _, errOut := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "any", "--timeout", "5s")
-	if code != 4 {
-		t.Fatalf("driver.error event must exit 4 immediately, got %d; err=%q", code, errOut)
+	events.Append(store.Event{Type: "driver.error", Data: map[string]any{"idea": "wait-idea", "error": "draft FINAL.md: context canceled"}})
+	events.Append(store.Event{Type: "run.phase", Data: map[string]any{"idea": "wait-idea", "phase": "round-01"}})
+	events.Append(store.Event{Type: "round.completed", Data: map[string]any{"idea": "wait-idea"}})
+	code, out, errOut := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "5s")
+	if code != 0 {
+		t.Fatalf("a recovered historical driver.error must not block the boundary; want exit 0, got %d; out=%q err=%q", code, out, errOut)
 	}
-	if !strings.Contains(errOut, "context canceled") {
-		t.Errorf("driver error detail must be carried verbatim; got %q", errOut)
+	if !strings.Contains(out, "historical driver.error event") || !strings.Contains(out, "context canceled") {
+		t.Errorf("the digest output must annotate the historical error verbatim; got %q", out)
+	}
+}
+
+// TestWaitNewDriverErrorAfterStartExitsFour (fix-up F2): a `driver.error` appended
+// to the event log AFTER the wait started still exits 4 immediately.
+func TestWaitNewDriverErrorAfterStartExitsFour(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	events := seedWaitRunEvents(t, root)
+	events.Append(store.Event{Type: "run.created", Data: map[string]any{"idea": "wait-idea"}})
+
+	type result struct {
+		code   int
+		errOut string
+	}
+	done := make(chan result, 1)
+	go func() {
+		var out, errOut bytes.Buffer
+		done <- result{runWait([]string{"--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "5s"}, &out, &errOut), errOut.String()}
+	}()
+	// Let the wait start (snapshot taken), then append the NEW error it must catch.
+	time.Sleep(150 * time.Millisecond)
+	events.Append(store.Event{Type: "driver.error", Data: map[string]any{"idea": "wait-idea", "error": "fresh failure"}})
+	res := <-done
+	if res.code != 4 {
+		t.Fatalf("a driver.error arriving after wait start must exit 4, got %d; err=%q", res.code, res.errOut)
+	}
+	if !strings.Contains(res.errOut, "fresh failure") {
+		t.Errorf("driver error detail must be carried verbatim; got %q", res.errOut)
 	}
 }
 

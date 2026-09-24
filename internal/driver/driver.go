@@ -13,6 +13,7 @@ import (
 
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/evidence"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/track"
@@ -220,7 +221,26 @@ func (d *Driver) commitCursor(c Cursor, action Action, previous Phase) error {
 		},
 	})
 	d.writePhaseHandoff(c, action, previous)
+	d.touchRunManifestUpdatedAt()
 	return nil
+}
+
+// touchRunManifestUpdatedAt advances run.json's `updated_at` at the phase-transition
+// chokepoint (fix-up F7, claude-1 MAJ-7). The manifest is written once at run
+// creation, so every real run record kept created_at == updated_at — a zero-width
+// window that left `parley usage ingest`'s attribution corroboration structurally
+// dead (everything resolved `ambiguous`). Advancing it here keeps the manifest's
+// meaning ("last state change") correct and makes the attribution window real.
+// Advisory: a failure is evented, never fatal to the transition.
+func (d *Driver) touchRunManifestUpdatedAt() {
+	runID := filepath.Base(d.cfg.RunDir)
+	if err := runmanifest.TouchUpdatedAt(d.cfg.Root, runID); err != nil {
+		_ = d.cfg.Events.Append(store.Event{
+			Time: time.Now().UTC(),
+			Type: "driver.run_manifest_touch_failed",
+			Data: map[string]any{"idea": d.cfg.IdeaSlug, "run_id": runID, "error": err.Error()},
+		})
+	}
 }
 
 // writePhaseHandoff records the per-phase handoff under runs/<run-id>/
@@ -232,8 +252,7 @@ func (d *Driver) commitCursor(c Cursor, action Action, previous Phase) error {
 // A failed write is logged to the event stream, never fatal: advisory state must
 // not block a phase transition the cursor already committed.
 func (d *Driver) writePhaseHandoff(c Cursor, action Action, previous Phase) {
-	record := BuildPhaseHandoffRecord(d.cfg.Root, d.cfg.IdeaSlug, d.cfg.IdeaDir, d.cfg.Participants, c, action, previous)
-	record.RunID = filepath.Base(d.cfg.RunDir)
+	record := BuildPhaseHandoffRecord(d.cfg.Root, d.cfg.RunDir, d.cfg.IdeaSlug, d.cfg.IdeaDir, d.cfg.Participants, c, action, previous)
 	path := filepath.Join(d.cfg.RunDir, PhaseHandoffPath(c.Phase))
 	if err := storeHandoffRecord(path, record); err != nil {
 		_ = d.cfg.Events.Append(store.Event{
