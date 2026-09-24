@@ -1,14 +1,339 @@
 ---
 idea: meta-protocol-change-lean-organizer
-status: implemented
+status: fix-up-cycle-1
 implementer: zcode-1
 started: 2026-09-23
 completed: 2026-09-23
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer#lean-organizer
-head-commit: 86d028b
+head-commit: 64a622c
+fix-up-cycle: 1
 design-pr: n/a
 implementation-pr: n/a
 ---
+
+## Fix-up cycle 1
+
+status: complete
+completed: 2026-09-24
+head-commit: 64a622c (fix-up source; this record commit follows on the same branch)
+skill-commit: a820dc7 (lean-organizer-skill branch, same cycle)
+opened: 2026-09-24
+
+Authorized by all three signoffs on `review/consensus.md` (claude-1 and kimi-1
+ACCEPT-WITH-RESERVATIONS, zcode-1 ACCEPT) — authorizing F1–F21, not closure. VC-1/VC-2
+resolved by the reviewers' independent reproductions and kimi-1's §15.1
+SELF-CORRECTIONs (both sustain claude-1's evidence; both sign F1's primary branch —
+remove the gate — and F2's stricter FINAL B.3 reading); VC-3: both concur with F8 for
+this release, subject to R2 (DF-1..DF-4 opened as real slugs — done by the organizer;
+paths recorded in this section). R1 accepted: F4 records the measurement method and
+the absolute deck path beside every figure. R3 stands: this cycle does not close the
+idea; fresh independent review round 2 and a zero-fix review consensus are required
+after these fixes.
+
+### Fix-up plan (F1–F21, per review/consensus.md)
+
+- F1 (primary branch, both reviewers signed): remove the `86d028b` hard
+  design-consensus section gate; keep the A.4 repair (`RequiredConsensusSections` as
+  the single source for the drafting prompt and scaffold generator; parity test
+  re-pointed to prompt ↔ scaffold ↔ constant); add both regression fixtures (the
+  protocol's own Phase-3 template renders `ready`; deck-corpus malformed count must
+  not exceed the 9/80 base count).
+- F2: `parley wait` implements FINAL B.3's stricter semantics — blocking escalation
+  only for notes with matching `idea:`, `blocking:` not `no`, `status:` not
+  answered/resolved, arriving after wait start; `driver.error` only after wait start;
+  pre-existing notes/errors become digest annotations; skill `wait` docs updated.
+- F3: ready set derived from `protocol.ValidImplementationStatus` minus in-progress
+  states (adds `ready-for-review`); timeout line names the actual blocking condition.
+- F4 (amended per R1): re-measure at the fix-up HEAD in a clean tree; record method
+  and absolute path beside every figure.
+- F5: brief phase from the driver run cursor, `status:` fallback only without a run;
+  full deck status vocabulary mapped.
+- F6: `packet check` map-level rejection extended to phase-pinned never-cut blocks
+  (§15.x); allowance narrowed to transport-conditional §11 subsections; hostile-map
+  negative test.
+- F7: run-record windows made real (`run.json` `updated_at` advanced at
+  `commitCursor`); synthetic-window test replaced by a driver-built one; live smoke
+  re-run.
+- F8: record the blind-spot (i) measurement (phase-5/8 §15.5/§15.6 omission,
+  phase-0 §15 absence) with the whether-it-matters analysis; no map change in-cycle.
+- F9: `fell_back` derived from the validator/ownership path; column legend updated.
+- F10: `NextAwaitReviewArtifact` when the implementation is present and ready but no
+  review round exists; dead branch deleted.
+- F11: brief names the `.parley-runtime` packet-body cache in its "never stored" line.
+- F12: `renderPacket` receives the resolved audience.
+- F13: `BuildPhaseHandoffRecord` takes the run dir; loader parses all nine fields;
+  full round-trip identity test.
+- F14: task-local binary rebuilt from the fix-up HEAD in a clean tree; sha256 +
+  `vcs.revision`/`vcs.modified` recorded.
+- F15: `consensus.ResolveImplementer` export dropped (no callers); doc comment and
+  Decision Log corrected.
+- F16: `containsBytes`/`indexOfBytes` replaced by `bytes.Contains`/`bytes.Index`.
+- F17: `strconv` sentinel dropped.
+- F18: same-`reasons`-set assertion for the merged `--optimize`/audience branch.
+- F19: `streamLines` resets the accumulator when an oversized line is dropped.
+- F20: §9.0 permissive sentence in all three COOPERATION.md copies; the two
+  inconsistent records (protocol-changelog, core-publish escalation note) aligned to
+  §9.0; combined 2.13.0 core restaged and independently rechecked; no publish.
+- F21: criterion-A test shapes — driver-level fixture auto-drive test asserting role
+  launches/escalation via the event log; absent-field run-plan byte-identity test.
+- Deferred follow-ups opened by the organizer (R2 satisfied):
+  DF-1 `ideas/meta-protocol-change-consensus-duty-gates/00-prompt.md`;
+  DF-2 `ideas/meta-protocol-change-facilitator-integrity-phase-coverage/00-prompt.md`;
+  DF-3 `ideas/facilitator-packet-per-phase-bounds/00-prompt.md`;
+  DF-4 `ideas/release-binary-reproducibility/00-prompt.md`.
+
+### Fix-up progress
+
+- (2026-09-24, pre-edit) IMPLEMENTATION.md opened for fix-up cycle 1 before any
+  source edit; inputs re-read in full (live phase-8 packet, attestation verified
+  against the file hash; frozen FINAL; both round-01 reviews; review/consensus.md
+  including every signoff and R1–R3).
+- (2026-09-24) F1, F15 applied (consensus gate removed; parity re-pointed to
+  prompt ↔ scaffold ↔ constant; ResolveImplementer export dropped; Decision Log
+  corrected). F2+F17 (wait.go stricter B.3 semantics + strconv sentinel). F3/F9/F10
+  (phasedigest). F5+F11 (organizer brief). F6 (packet check phase-pinned proof).
+  F12+F18 (packet.go). F13 (phasehandoff + driver caller). F16+F19 (usage_ingest).
+  F7 (runmanifest.TouchUpdatedAt at commitCursor). F21 (driver-level auto-drive
+  event-log test + run-plan byte-identity). F20 (§9.0 sentence ×3 copies, changelog
+  + escalation note aligned, core restaged + rechecked). F4/F8/F14 measured from a
+  clean clone at the fix-up HEAD (below). Both full suites green.
+- (2026-09-24) Deferred-follow-up references in review/consensus.md updated from
+  TBD to the organizer-opened slugs (DF-1..DF-4 paths recorded there; signoff
+  blocks untouched — diff shows only the four slug lines).
+
+### Fixes applied (fix-up cycle 1)
+
+All at fix-up source commit `64a622c` (CLI) and `a820dc7` (skill) unless noted.
+
+- **F1 (CRIT-1, primary branch — both reviewers signed for removal).** Removed the
+  `86d028b` hard design-consensus section gate (`if !review { MissingConsensusSections … }`
+  in `internal/consensus/consensus.go`) — no required-sections gate exists again, at
+  parity with base `b37f7ef`. `RequiredConsensusSections` remains the single source
+  for the drafting prompt and the scaffold generator; the parity test is re-pointed
+  to prove prompt ↔ scaffold ↔ constant (`TestConsensusDraftPromptScaffoldParity`).
+  Both regression fixtures added in `internal/consensus/consensus_gate_regression_test.go`:
+  the protocol's own Phase-3 template (extracted live from the deck COOPERATION.md,
+  placeholders substituted) triages **ready**; the deck corpus sweep reads
+  **80 consensus.md checked, 9 malformed** — the exact pre-idea base count both
+  reviewers measured (was 79/80 at the reviewed HEAD).
+- **F2 (MAJ-1 + MAJ-2 ≡ K1-F4).** `internal/app/wait.go`: `blockingEscalation` →
+  `qualifyingEscalationNotes` + `arrivedBlockingEscalation` — a note blocks only
+  when its frontmatter `idea:` matches the awaited slug AND `blocking:` is not `no`
+  AND `status:` is not answered/resolved AND its mtime is after wait start;
+  `driverErrorEvent` → `driverErrorEventSince` over an event-count snapshot at wait
+  start (`firstDriverErrorBefore` annotates history). Pre-existing qualifying notes
+  and historical errors are printed as `note:` digest annotations (and as `notes` in
+  the `--json` envelope `{notes?, digest}`). Skill `wait` docs state the semantics.
+  Tests: new-arrival exit 4; cross-idea note (the six-week fixup-budget note) never
+  blocks and is never annotated; `blocking: no` (this idea's core-publish note)
+  never blocks; pre-existing note → annotation + timeout 3; historical
+  error-then-recovery → boundary 0 with the annotation; error appended after wait
+  start → exit 4. **Live check:** `parley wait --for round` on this deck now exits
+  **0** (exit 4 forever at the reviewed HEAD); the driver-error inbox note for this
+  idea is demoted to a `note:` line.
+- **F3 (MAJ-3).** `implSection` derives ready-for-review from
+  `protocol.ValidImplementationStatus` minus `{"", "unparsed", "in-progress"}` —
+  `ready-for-review` (4 live deck files) now ready. `outstandingAgents` names the
+  actual blocking condition (implementation status X is not a recognised ready
+  state / IMPLEMENTATION.md not filed) instead of "none named — inspect the digest".
+- **F4 (MAJ-4 ≡ K1-F2, amended per R1).** Every figure re-measured at the fix-up
+  HEAD in a clean clone; method and absolute path recorded beside the numbers —
+  see `## Fix-up validation evidence` below. Stale Phase-5 figures corrected in
+  `## Deviations from FINAL.md`, `## Validation evidence`, and Decision Log item 3.
+- **F5 (MAJ-5).** `briefPhase` is now the most-advanced of: 00-prompt status (full
+  deck vocabulary: `implementation`/`implemented`/`in-progress`→5,
+  `ready-for-review`/`review*`→6, `fix-up-cycle-*`/`complete`→8), the driver run
+  cursor (`run.json` `phase` + `current_round`), review-round presence (→6), and the
+  IMPLEMENTATION.md status. A live Phase 5–8 idea can no longer resolve to the
+  §15-free phase-0 packet (`TestOrganizerBriefPhaseNeverZeroForLivePhaseFivePlus`).
+- **F6 (MAJ-6).** `packet check` map-level rejection extended from `always` to all
+  non-transport-conditional never-cut rules (phase-pinned §15.x, `### Phase N`,
+  flag-pinned §7); the allowance is narrowed to transport-conditional §11
+  subsections. Negative test: hostile omits naming `## 15.`, `### 15.1`,
+  `### 15.7` FAIL check; the clean map's §11.A/B/C omissions stay legal
+  (`TestPacketCheckFailsAudienceOmittingPhasePinnedNeverCut`,
+  `TestPacketCheckAllowsTransportConditionalOmit`).
+- **F7 (MAJ-7).** `runmanifest.TouchUpdatedAt` advances `run.json` `updated_at` at
+  `commitCursor` (evented, non-fatal). The synthetic 2-hour-window test is replaced
+  by records built by the real machinery (`runmanifest.New/Write` at creation with
+  created==updated, `TouchUpdatedAt` at the transition) in both
+  `internal/driver/phasehandoff_test.go` and `internal/app/usage_ingest_test.go`.
+  Live smoke re-run (below): attribution still `ambiguous` against the deck's
+  historical zero-width manifests — honest; windows open for future transitions.
+- **F8 (MAJ-8 ≡ K1-F5).** Blind-spot (i) measurement recorded below (line-anchored,
+  live map, fix-up HEAD): phase-5 and phase-8 facilitator bodies carry `### 15.7`
+  but not `### 15.5`/`### 15.6`; phase-0 omits §15 entirely; phase-7 carries all
+  three. No map change in-cycle (accepted for this release by both signoffs, subject
+  to R2; the pin question is DF-2, opened).
+- **F9 (MIN-1).** `fell_back` now derives from the validator/ownership path
+  (frontmatter unreadable, or no usable `agent:` owner → filename-derived
+  attribution); the discarded `extractPosition` call is gone; column legend updated.
+  Live digest now shows `fell_back=false` on all valid rows (was true on every
+  valid round-02 row).
+- **F10 (MIN-2).** `nextAction` returns `NextAwaitReviewArtifact` when the
+  implementation is present and ready and no review round exists; the dead twin
+  branch is deleted.
+- **F11 (MIN-3).** The brief's opening line now states "never stored in the deck"
+  and names the `.parley-runtime/protocol-packets/` body cache the renderer writes
+  outside the deck.
+- **F12 (MIN-4).** `renderPacket` receives the RESOLVED audience; `--optimize` with
+  an unrecognized audience no longer stamps `audience=banana` into a full-fallback
+  body (`TestOptimizeUnknownAudienceDoesNotStampRejectedAudience`).
+- **F13 (MIN-5 ≡ K1-F6a).** `BuildPhaseHandoffRecord` takes the run dir parameter
+  (the `"parley-deck"` derivation is gone); `LoadPhaseHandoffRecord` parses all nine
+  frontmatter fields; the round-trip test asserts nine-field identity and the
+  builder test asserts RunID = run-dir base.
+- **F14 (MIN-6).** Task-local binary rebuilt from a clean clone at the fix-up HEAD:
+  `/tmp/parley-lean-organizer-fixup1/parley`, sha256
+  `8bd06646e0cbf1286d62d5de33e9ad885ce3b1fbbdf1ff811ff4f3b11555341a`,
+  `go version -m` → `vcs.revision=64a622ce…`, `vcs.modified=false`, go1.27.1
+  darwin/arm64. (A fifth distinct sha256 over behavior-identical trees — DF-4
+  evidence; NOT installed globally.)
+- **F15 (MIN-7).** `consensus.ResolveImplementer` export dropped (zero callers; the
+  doc's claimed `participants[0]` fallback never existed in the internal resolver);
+  the Decision Log entry claiming PhaseDigest calls it is corrected above.
+- **F16 (NIT-1).** `containsBytes`/`indexOfBytes` replaced by `bytes.Contains`/
+  (deleted — `bytes.Index` was only used by the hand-rolled contains).
+- **F17 (NIT-2 ≡ K1-F6b).** `var _ = strconv.Itoa` sentinel and the import dropped.
+- **F18 (NIT-3).** `TestOptimizeAudienceBranchSharesReasonsSet` pins the merged
+  `--optimize`/audience branch to identical reason sets across kernel phases.
+- **F19 (K1-F6c).** `streamLines` drops an oversized line WHOLE — a `dropping` mode
+  discards the tail chunks so no fragment is ever yielded as a "line"
+  (`TestStreamLinesDropsOversizedLineWhole`, 17 MiB fixture).
+- **F20 (K1-F1).** The FINAL A.5 §9.0 permissive sentence added to all three
+  COOPERATION.md copies (byte-identical, 265 B): "Declaring `facilitator:` makes the
+  pure organizer this idea's default: …". `meta/protocol-changelog.md` corrected to
+  list §9.0 among the A.5 lines and to label the audience-view line "§9 checklist
+  item 1 (D.5)"; the core-publish escalation note corrected to "§9.0 pure-organizer
+  default sentence, §9 checklist item 1 audience view + brief re-orientation".
+  Combined 2.13.0 core RESTAGED from the amended template-form copy and
+  independently rechecked (below). No publish.
+- **F21 (K1-F3).** `TestFixtureAutoDriveNeverLaunchesFacilitatorForCodeRoles`: a
+  real `driver.Advance` auto-drive over the production ops and REAL fixture agent
+  launches — the event log's `agent.started` trail names the implementer and
+  reviewer, never the declared facilitator; plus the facilitator-only escalation
+  with ZERO launches. `TestPlanByteIdenticalWithAbsentFacilitatorField`: the
+  absent-field run plan is byte-identical with/without the optional field.
+
+### Deviations from agreed fixes
+
+None in substance. Two recorded observations inside the signed scope:
+
+- F10's NextAwaitReviewArtifact fires when no review round exists, exactly as
+  signed. Residual: after a fix-up publishes (IMPLEMENTATION status
+  `fix-up-cycle-1`) while the PREVIOUS review round still exists on disk, the
+  enumeration reads `await implementation` until the first round-02 review file
+  lands (then `await review artifact`). Matches the signed fix text; noted for the
+  review round.
+- F7's live smoke still reports `attribution=ambiguous` — correct and expected: the
+  deck's existing run manifests keep their zero-width historical windows; only
+  transitions after this fix open real ones. The unit/driver tests prove the window
+  mechanism; the ledger records the honest live state.
+
+### Fix-up validation evidence
+
+All commands run 2026-09-24. "Clean clone" = `git clone --no-hardlinks` of
+parley-deck-cli checked out at the fix-up source commit `64a622c`, working tree
+clean (`git status --porcelain` empty) at `/tmp/fixup1-clean`.
+
+**Both full suites (at the fix-up working trees):**
+
+- CLI: `go build ./... && go test ./... -count=1 -timeout 2400s` — **exit 0, 31/31
+  packages ok** (log `/tmp/fixup1-cli-full.log`), including every new fix-up test.
+- Skill: `npm test` — **exit 0, 399 pass / 0 fail** (log `/tmp/fixup1-skill-full.log`);
+  `node --test test/lean-organizer.test.js` 8/8 with the §9.0 hunk assertion added.
+- Targeted fix-up packages re-run in the clean clone: consensus / protocol /
+  protocolpacket / driver / app / runplan / runmanifest — ok (the full suite was run
+  at the fix-up working trees; the clean clone re-ran the measurement tests and the
+  touched packages).
+
+**F4 measurements (method + absolute path beside every figure, per R1).**
+
+*Method A — test-path vector (clean clone, relative authority path
+`../../parley-deck/COOPERATION.md` (32 chars); command
+`go test ./internal/app/ -run 'TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail|TestLiveDeckFacilitatorAcrossPhases' -count=1 -v`
+at `/tmp/fixup1-clean`):* phase 0–8 facilitator bodies
+**53,870 / 59,206 / 59,307 / 60,567 / 63,485 / 61,129 / 62,211 / 70,086 / 72,696 B**;
+phase-1 named-omission-set 15,759 B; §2 3,977 B; `--optimize` baseline **65,750 B**.
+The vector equals the reviewers' `3c97f44` vector + **265 B** at every phase — the
+F20 §9.0 sentence (§9 is retained at every phase). Phase 1 = **59,206 B ≤ 70,000 B**
+(guardrail met, ~10.8 KB margin). Phase 7 = 70,086 B — **86 B over** the 70,000 B
+figure at this path (was 179 B under at `3c97f44`); phase 8 = 72,696 B. Per-phase
+policy → DF-3.
+
+*Method B — CLI render at the live deck (absolute authority path
+`/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer/parley-deck/COOPERATION.md`
+(101 chars); `parley protocol packet --audience facilitator --phase N --track
+deliberation --transport github-pr` with the fix-up binary; written body file bytes):*
+phase 0 **53,939 B**, phase 1 **59,275 B**, phase 5 **61,198 B**, phase 7
+**70,155 B**, phase 8 **72,765 B** — exactly Method A + **69 B** at every phase,
+reproducing the R1 path-length mechanism 1:1 (101 − 32 = 69; the body embeds
+`Source.Path`).
+
+**F8 — blind-spot (i) measurement (line-anchored heading checks over the Method B
+bodies, live map, fix-up HEAD):**
+
+| phase | §15 | §15.5 | §15.6 | §15.7 |
+|---|---|---|---|---|
+| 0 | absent (phase 0 is outside the kernel set — no §15 at all) | absent | absent | absent |
+| 1 | present | present | present | present |
+| 5 | present | **absent** | **absent** | present |
+| 7 | present | present | present | present |
+| 8 | present | **absent** | **absent** | present |
+
+Whether it matters (the FINAL-required analysis): §15.5/§15.6 bind the DRAFTER at
+the phases where they pin (3, 6, 7); at phases 5 and 8 the facilitator's role is
+verdict-reading and implementation/review adjudication, and §15.3/§15.4/§15.7 (the
+close conditions, provenance, per-track table) are all present. The residual cost
+both reviewers named stands: at phase 8 — fix-up adjudication — §15.7's table
+asserts duties whose text (§15.5 role concentration, §15.6 alternatives/correlated
+agreement) is cut. Accepted for this release per both signoffs (VC-3), subject to
+R2; pinning them at 5/8 (+~2.4 KB at phase 8, already over) is DF-2's §7 question.
+The phase-0 §15 absence is the map's design (kernel = {1,2,3,5,6,7,8}) and F5
+ensures live Phase 5–8 briefs never resolve there.
+
+**F7 live smoke (fix-up binary, live deck):** `parley usage ingest --agent codex-1
+--source codex-rollout --path ~/.codex/sessions/2026/09/24/rollout-2026-09-24T00-18-19-….jsonl
+--idea meta-protocol-change-lean-organizer --phase 8` → appended, 18 events,
+total_tokens=1,513,379, **attribution=ambiguous** ("no run-record window contains the
+accounting event"), stdout ≤ 1 KB; re-ingest → `idempotent no-op`, ledger unchanged
+(1 row + method header). Honest: historical manifests keep zero-width windows;
+`commitCursor` transitions from this fix onward advance `updated_at` (proven by
+`TestCommitCursorAdvancesRunManifestUpdatedAt` and the driver-built attribution test).
+
+**F2 live check (fix-up binary, live deck):** `parley wait --idea
+meta-protocol-change-lean-organizer --for round --timeout 6s` → digest (round-02
+3/3, review round-01 2/2, consensus reserved, implementation fix-up-cycle-1,
+fell_back=false on all valid rows) + `note: pre-existing unanswered to-user
+escalation … driver-error.md` + `wait: boundary reached (round complete)` →
+**exit 0**. At the reviewed HEAD this exact invocation exited 4 forever on a
+six-week-old cross-idea note.
+
+**F14 binary provenance:** built in the clean clone: `go build -o
+/tmp/parley-lean-organizer-fixup1/parley ./cmd/parley` (go1.27.1 darwin/arm64) →
+sha256 `8bd06646e0cbf1286d62d5de33e9ad885ce3b1fbbdf1ff811ff4f3b11555341a`;
+`go version -m` → `vcs.revision=64a622ce48660725a59303befbd351962864c8e8`,
+`vcs.time=2026-09-24T01:48:45Z`, `vcs.modified=false`. NOT installed globally.
+
+**F20 staged-core restage + independent recheck:** the combined core
+`~/.parley/staging/COOPERATION-2.13.0.md` restaged from the amended template-form
+third copy (skill `skills/parley-deck/references/COOPERATION.md`; the pre-edit
+staged core sha256 `a8d3457a…` was verified byte-identical to the pre-edit copy
+before restaging). New staged sha256
+**`fc907e5914a072d1a6afe249fc39401e1f8761cc1d67f2ce002dfde210762c9f`**, **109,772 B**.
+Recheck (vs published core 2.10.0 at `~/.parley/protocol/core/2.10.0/COOPERATION.md`):
+placeholder header intact (`<workspace-name>`, `<transport-choice>`, `<YYYY-MM-DD>`;
+no deck `Protocol synced:` values); §2 stubbed (grep claude-1|kimi-1|zcode-1|codex-1
+→ **0**); diff = 11 hunks, each attributed by normalized signature to exactly one of
+the three change sets — 3× 2.11.0 (§15.6/§15.7), 2× 1.48.0 (LE-7/LE-11 bullet,
+goal-check withhold-only paragraph), 5× this idea pre-fixup + 1× this idea F20 §9.0
+sentence; **0 unexplained**; §15 region (8,041 B), §9.0 region, §4 Phase-5, §4
+Phase-6 and §11.B regions byte-equal to the deck view. No publish performed; the
+owner's attended command in the escalation note is unchanged.
+
+**F1 corpus fixture (clean clone):** `TestLiveDeckConsensusCorpusMalformedNotAboveBase`
+→ `corpus: 80 consensus.md checked, 9 malformed (base 9)`; the protocol's own
+Phase-3 template fixture triages `ready`.
 
 ## Protocol context attestation (Phase-5 implementation)
 
@@ -95,14 +420,26 @@ cross-cutting protocol-text/staging work — plus my own impl-claim signoff-stat
 None in scope or mechanisms. One measured finding is surfaced for the quorum rather than
 resolved unilaterally (the FINAL's own open-item-2 discipline):
 
-- **Phase-8 facilitator body = 71,168 B, above the 70,000 B guardrail.** The guardrail's
-  ratified scope is the phase-1 / deliberation / github-pr body, which measures **58,190 B**
-  (hard-asserted in tests). Phase 8 pins Phase 5–8 subsections + strict gate + stopping
-  judgment simultaneously, which pushes that one phase over; the map and the ceiling are
-  left untouched and the bytes are shown here for the quorum (test
-  `TestLiveDeckFacilitatorAcrossPhases` logs every phase: 52,854 / 58,190 / 58,291 / 59,551 /
-  62,469 / 59,791 / 61,005 / 68,880 / 71,168 B for phases 0–8). The never-cut floor is
-  untouched everywhere.
+- **Phase-8 facilitator body above the 70,000 B guardrail** (figures corrected
+  2026-09-24 by fix-up F4 — the original Phase-5 record transcribed pre-P.1-hunk
+  values that reproduce at no committed state; cause and corrected vector per both
+  reviewers' independent reproductions). The guardrail's ratified scope is the
+  phase-1 / deliberation / github-pr body, which measures **59,206 B** at the
+  fix-up HEAD (58,941 B at the reviewed HEAD `3c97f44`; +265 B = the F20 §9.0
+  sentence). Phase 8 pins Phase 5–8 subsections + strict gate + stopping judgment
+  simultaneously, which pushes that one phase over. At the fix-up HEAD
+  `TestLiveDeckFacilitatorAcrossPhases` logs: **53,870 / 59,206 / 59,307 / 60,567 /
+  63,485 / 61,129 / 62,211 / 70,086 / 72,696 B** for phases 0–8 — phase 7 now sits
+  **86 B over** the 70,000 B figure at the test's relative path (it was 179 B under
+  at `3c97f44`; the F20 sentence is 265 B), one more reason the per-phase policy
+  question belongs to DF-3. The map and the ceiling are left untouched; the
+  never-cut floor is untouched everywhere. What the tests assert (correcting the
+  Phase-5 record's "hard-asserted" clause): the phase-1 test
+  (`TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail`) asserts the
+  named-omission-set absence, the retention set and the ≤ 70,000 B guardrail;
+  `TestLiveDeckFacilitatorAcrossPhases` asserts the never-cut floor at every phase
+  and only LOGS the byte vector (per-phase bounds policy → DF-3). Measurement
+  method and absolute paths: see `## Fix-up validation evidence`.
 
 ## Notes for reviewers
 
@@ -145,12 +482,17 @@ resolved unilaterally (the FINAL's own open-item-2 discipline):
   `wait_ms` key inside the shipped `[defaults.timeouts]` block (default 1,500,000 = 25 m;
   per-call `--timeout` overrides; per-track §4.0 ceiling rejects over-large values).
   Satisfies `default < 30m && configurable`.
-- (2026-09-23 · zcode-1) Open item 3 (--optimize baseline): measured in the same test run —
-  64,734 B at phase 1 / deliberation / github-pr (logged by
-  `TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail`).
-- (2026-09-23 · zcode-1) Open item 5 (signoff/stance parsing reuse): RESOLVED by reuse —
-  PhaseDigest calls `consensus.Status` and the newly exported
-  `consensus.ExpectedRoundParticipants` / `consensus.ResolveImplementer`; nothing forked.
+- (2026-09-23 · zcode-1, figure corrected 2026-09-24 fix-up F4) Open item 3 (--optimize
+  baseline): measured in the same test run — **65,750 B** at phase 1 / deliberation /
+  github-pr at the fix-up HEAD (65,485 B at the reviewed HEAD `3c97f44`; the original
+  64,734 B was pre-P.1-hunk and reproduced at no committed state), logged by
+  `TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail`.
+- (2026-09-23 · zcode-1, corrected 2026-09-24 fix-up F15) Open item 5 (signoff/stance
+  parsing reuse): RESOLVED by reuse — PhaseDigest calls `consensus.Status` and the newly
+  exported `consensus.ExpectedRoundParticipants`; nothing forked. The round-1 record here
+  also named `consensus.ResolveImplementer` as a PhaseDigest callee — that was wrong
+  (claude-1 MIN-7: `implSection` reads the IMPLEMENTATION.md frontmatter directly and the
+  export had zero callers); fix-up F15 dropped the export and corrected this entry.
 - (2026-09-23 · zcode-1) Open item 6 (heading-consumer search): DONE — repo-wide search for
   consumers of the old design-prompt headings (`## Trade-offs accepted` etc.) found no
   code consumer; the only existing heading consumers read `## Open items deferred to
@@ -240,8 +582,11 @@ All commands run at the implementation HEAD in the CLI worktree
   every phase × track; unknown audience → full + `unknown-audience:banana`;
   `facilitator_participates: true` → full + reason; attestation carries additive
   `audience`, never `role`. **R-2 same-run measurements** (phase 1 / deliberation /
-  github-pr): facilitator body **58,190 B**; named-omission-set bytes 15,759 B; §2 3,977 B;
-  guardrail 70,000 B; `--optimize` baseline **64,734 B**. Brief: ≤ 8,192 B (1,863 B live),
+  github-pr; figures corrected 2026-09-24 by fix-up F4 — the Phase-5 record transcribed
+  pre-hunk values): facilitator body **59,206 B** at the fix-up HEAD (58,941 B at the
+  reviewed HEAD); named-omission-set bytes 15,759 B; §2 3,977 B; guardrail 70,000 B;
+  `--optimize` baseline **65,750 B** at the fix-up HEAD (65,485 B at the reviewed
+  HEAD). Brief: ≤ 8,192 B (1,863 B live),
   byte-identical ×2, computes against a read-only deck writing nothing.
 - **D** — `go test ./internal/app/ -run 'TestUsageIngest' -count=1` (incl. the 228 MB
   generated fixture streaming, ≤ 1 KB stdout, one row, six fields verbatim, idempotent

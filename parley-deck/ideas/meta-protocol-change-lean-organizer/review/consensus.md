@@ -245,19 +245,24 @@ independent worktrees reproducing the identical vector — the disposition is:
   `COOPERATION.md:401` and `:1360` in all three copies and the staged core, and adopt the
   `reviewartifact.go:48-49,92-95` measure-first pattern (measure the deck, bind new artifacts
   only; "a gate that rejects live work is a worse defect than the one it fixes"). Follow-up
-  slug: TBD (not opened in this invocation).
+  slug: `ideas/meta-protocol-change-consensus-duty-gates/00-prompt.md` (opened by the
+  organizer 2026-09-24, satisfying R2).
 - **DF-2 (from claude-1 MAJ-8 / open question 2, kimi-1 K1-F5):** §7 map change pinning
   `### 15.5` / `### 15.6` at phases 5 and 8 in `meta/packet-applicability.yaml` (+~2.4 KB at
   phase 8, already over the guardrail — bytes to the quorum first per open item 2). Only
-  pursued if signoffs reject F8's accept-with-rationale decision. Slug: TBD.
+  pursued if signoffs reject F8's accept-with-rationale decision. Slug:
+  `ideas/meta-protocol-change-facilitator-integrity-phase-coverage/00-prompt.md` (opened
+  by the organizer 2026-09-24, satisfying R2).
 - **DF-3 (from claude-1 open question 3):** per-phase guardrail assertion policy — make
   `TestLiveDeckFacilitatorAcrossPhases` assert (not just log) per-phase bounds once the quorum
   decides what, if anything, phases other than 1 are capped at; includes the 179 B phase-7
-  headroom question. Slug: TBD.
+  headroom question. Slug: `ideas/facilitator-packet-per-phase-bounds/00-prompt.md` (opened
+  by the organizer 2026-09-24, satisfying R2).
 - **DF-4 (from kimi-1 open question 4):** reproducible-build story for release binaries
   (documented flags), motivated by the three differing sha256s over behavior-identical builds
   (implementer `8d3e4c1c…`, kimi-1 `6022c400…`, claude-1 `abaad236…`). Release-step work, not
-  review scope. Slug: TBD (release checklist).
+  review scope. Slug: `ideas/release-binary-reproducibility/00-prompt.md` (opened by the
+  organizer 2026-09-24, satisfying R2; release checklist).
 - claude-1 open questions 5 and 6 are not deferred: Q5 (long-lived own-idea escalations) is
   resolved inside F2's digest-annotation semantics; Q6 (MAJ-3/MIN-2 as pre-existing vocabulary
   bugs) is resolved by taking them in-cycle (F3/F10) because B is the first consumer that makes
