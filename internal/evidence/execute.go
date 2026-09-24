@@ -207,6 +207,21 @@ func RunCriterionControlled(ctx context.Context, root, name, command, executor s
 	if capbuf.overflow {
 		ce.Diagnostics = "output exceeded the evidence capture bound — partial output is not a semantic basis\n" + ce.Diagnostics
 	}
+	// A non-ExitError run failure with zero captured output would otherwise
+	// persist an unexplained exit_code of -1 with empty diagnostics: the run
+	// error's text names the failing branch (attribution refusal, artifact
+	// write, control refusal, start failure) and was discarded. Persist the
+	// scrubbed, bounded reason so retained evidence identifies the branch.
+	// ExitError keeps empty diagnostics — the exit code already tells that
+	// story. OutputSHA256 still hashes only the stream the command emitted
+	// (here: the empty string); the label marks this text as executor-side,
+	// never as command output.
+	if runErr != nil && len(out) == 0 {
+		var exitErr *exec.ExitError
+		if !errors.As(runErr, &exitErr) {
+			ce.Diagnostics = ScrubAndTruncate("run error (no command output): " + runErr.Error())
+		}
+	}
 	envelopeInvalid := ""
 	goTestInvalid := ""
 	if env, present, envErr := ParseEnvelope(string(out)); present {

@@ -98,8 +98,27 @@ func spawnGatedChild(t *testing.T, observer *gatingObserver) *Process {
 	if _, err := io.WriteString(p.Stdin(), "go\n"); err != nil {
 		t.Fatal(err)
 	}
-	if line, err := bufio.NewReader(p.Stdout()).ReadString('\n'); err != nil || line != "READY\n" {
-		t.Fatalf("child ready handshake failed: line=%q err=%v", line, err)
+	// The READY read is bounded: on a platform whose pipe buffer cannot hold
+	// the in-flight bytes the child stalls before READY, and an unguarded
+	// ReadString would surface that only as the binary-wide global timeout.
+	// The guard fails at a named site instead (D1). The parked reader
+	// goroutine only outlives this call on the already-failing path.
+	type readyResult struct {
+		line string
+		err  error
+	}
+	ready := make(chan readyResult, 1)
+	go func() {
+		line, err := bufio.NewReader(p.Stdout()).ReadString('\n')
+		ready <- readyResult{line, err}
+	}()
+	select {
+	case r := <-ready:
+		if r.err != nil || r.line != "READY\n" {
+			t.Fatalf("child ready handshake failed: line=%q err=%v", r.line, r.err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("child READY handshake did not complete within 10s: child stalled before READY (pipe capacity below in-flight bytes) or died without announcing")
 	}
 	return p
 }
