@@ -7,7 +7,7 @@ track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
 auto_implement: true
 require_model_diversity: true
-status: round-02
+status: round-03
 ---
 
 ## Problem / idea
@@ -61,3 +61,7 @@ The previous release's required done.md exists and process 21386 has exited. Its
 ## Non-goals
 
 No quorum/roster change, model/effort downgrade, unrelated code, or organizer-rule changes beyond this role's needs. No persistent default implementer selection.
+
+## Subsequent owner direction — release order and Windows
+
+The controlling inbox `inbox/user-to-codex-1_meta-protocol-change-designated-implementer_release-order.md` supersedes the original release wait rule. Wait for the lean-organizer inbox `codex-1-to-user_release-1.49.1_done.md`; then this idea; then the separate windows-portability run. Keep labelled experimental/unvalidated Windows assets, hold CLI winget, and leave the skill channels unaffected. No Windows architecture work here. Full direction copied to source-context/release-order.md.
