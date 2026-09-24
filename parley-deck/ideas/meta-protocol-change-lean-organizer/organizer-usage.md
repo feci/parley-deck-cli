@@ -47,3 +47,5 @@ Accounting correction (2026-09-23): the initial helper selected the first date-d
 <!-- boundary: Phase 7 zero-fix cycle 4 unanimously accepted @ 2026-09-24T09:18:58.803Z -->
 | Phase 8 complete and release metadata prepared (observed 2026-09-24T09:39:08.978Z) | 2026-09-24T09:39:08.978Z | 22448900 | 21821568 | 117226 | 59010 | 200 |
 <!-- boundary: Phase 8 complete and release metadata prepared @ 2026-09-24T09:39:08.978Z -->
+| Release published channels independently audited; npm auth and hosted CI remain unresolved (observed 2026-09-24T10:53:45.420Z) | 2026-09-24T10:53:45.420Z | 28253442 | 27578624 | 132740 | 63595 | 241 |
+<!-- boundary: Release published channels independently audited; npm auth and hosted CI remain unresolved @ 2026-09-24T10:53:45.420Z -->
