@@ -5,7 +5,8 @@ role: narrow Linux release repair implementer (U2 recording fix)
 artifact: release-linux-u2-repair
 date: 2026-09-24
 base: 231d889
-inputs: release-linux-hosted-diagnostics-02-claude-1.md (U2 root cause + R1/R2), release-linux-diagnostic-followup-zcode-1.md, release-linux-diagnostic-review-claude-1.md, release-linux-repair-followup-zcode-1.md
+inputs: release-linux-hosted-diagnostics-02-claude-1.md (U2 root cause + R1/R2), release-linux-diagnostic-followup-zcode-1.md, release-linux-diagnostic-review-claude-1.md, release-linux-repair-followup-zcode-1.md, release-linux-u2-review-claude-1.md, release-linux-u2-review-kimi-1.md
+amended: 2026-09-24 (post-review corrections appended; body above left verbatim as reviewed at ef10cf3)
 environment: go1.27.1 darwin/arm64 (host) + golang:1.26 container go1.26.8 linux/arm64 (local Linux verification, never organizer tests)
 verdict: U2 REPAIRED AT THE RECORDING LAYER — bounded, fail-closed /proc cmdline poll; race reproduced locally pre-fix (first reproduction anywhere); every attribution facet and refusal preserved
 ---
@@ -323,3 +324,74 @@ Throwaway artifacts reverted and verified: the four mutation variants lived
 only in the container and in `/tmp/mut_*.go` (deleted); the pre-fix stash
 `/tmp/procctl_linux_prefix.go` (deleted); the container `parley-u2` (removed).
 No secrets in this report.
+
+## Post-review corrections (2026-09-24, zcode-1)
+
+Both independent reviews (`release-linux-u2-review-claude-1.md`,
+`release-linux-u2-review-kimi-1.md`) approve ef10cf3's behavior for the hosted
+leg; the organizer recorded them (9134c7a). Their findings C-1/C-2/C-3 and
+K-1/K-2/K-3 are defects in *this report's reasoning and my in-repo comments*,
+not in the gate. Corrections below preserve history: the body above stays
+verbatim as reviewed; the same facts are corrected in the two source files'
+comments by a comment-only commit (equivalence proven below). **All
+measurements cited here are the reviewers', reproduced from their reports —
+I did not run them; hosted x86_64 leg results belong to the independent
+reviewer and are not claimed here.**
+
+### Fact-correction map
+
+| # | original claim (this report) | correction | finding |
+|---|---|---|---|
+| 1 | "external cancellation can only reach it as process death, which arrives as a read error and exits immediately (pinned by `TestPollCmdlineDeadProcessStopsPolling` + `TestLinuxCaptureByPIDOfReapedProcessIsPrompt`)" (Cancellation, deadline, lifecycle) | Exact **only for reaped pids** (ENOENT). A killed-but-**unreaped** process (zombie interim) reads empty with **no error**, so the poll is **bounded, not immediate**: it spends the full 100 ms and then fails closed exactly as pre-poll. The two cited tests model only the reaped case (fake error reader / actually-reaped pid); the zombie test pins the bound-spending case — the file's own tests already encoded what the prose overclaimed. claude-1 measured it directly (`zombie(Z): len=0 err=<nil>`), kimi-1 measured the full bound burned (0.10 s). | C-1, K-1 |
+| 2 | "100 ms is three-plus orders of magnitude beyond preemption jitter" (Bound choice) | True at the **median** only (~15 µs p50). The **tail under CPU oversubscription is milliseconds to tens of milliseconds**: claude-1 instrumented the Start→first-non-empty window over 10,400 spawns — idle max 281 µs, loaded maxima 33.9/34.2/56.5 ms, **0 samples past the bound** — so 100 ms carries **~1.8× headroom at the measured maximum, not ~1000×**. The bound remains supported by those measurements (no sample exceeded it; exhaustion degrades to the status-quo refusal), and claude-1's unresolved-condition note stands: exhaustion is silent, so if U2 recurs hosted, raise the bound before re-diagnosing. | C-2 |
+| 3 | "the ACP path claude-1 flagged as same-class (`acp.go:118`, `launch.go:74`)" named the sites but not the cancellation-path arithmetic; Live-read note said "`durablekill.go` calls `Attributed` once per invocation, no loop" | Three completions. **`launch.go:74`** is the one capture site on a *cancellation* path (`cmd.Cancel` → `KillGroup(CaptureByPID(…))`, `WaitDelay` 2 s at `launch.go:63`): worst case 100 ms poll + 1500 ms grace ≈ 1600 ms of 2000 ms — inside the envelope as claimed, but headroom drops 500 ms → 400 ms (unnamed before). **`preflight.go:916`** captures *before* `go cmd.Wait()` is armed (`:918`), so a fast-exiting probe is an unreaped zombie at capture time: claude-1 measured the full bound burned on **79/100** `sh -c "exit 1"` (mean 79.5 ms) and **73/100** `sh -c "true"` (mean 73.4 ms), vs **0/100** long-lived `sleep 5` (mean 477 µs) — the healthy preflight probe (the agent's real, long-lived invocation) is unaffected, failing probes pay ≈ one bound wall-clock (probes run concurrently per agent). **`durablekill.go`** is not loop-free as a file: `KillAgentDurable` (`:19`) is one-shot, but `AgentLiveness`'s `Attributed` call (`:66`) is invoked from TUI render/update paths — `protocolui.go:353`, `live.go:848`, and `live.go:1305` (which loops every agent) via `live.go:1290` → `app.go:2416` (`AgentLivenessAt`). `trajectory/verification.go:145` calls `KillTreeAttributed` in an ordinal loop (4×len(criteria)) but returns on the first refusal — at most one bound per stop, no accumulation (claude-1 checked specifically). | C-3 |
+| 4 | (scope note added) Live-read note said liveness pays ≤100 ms "only when refusing an alive-but-empty-cmdline pid" — but framed the choke point as recording-side plus a symmetric afterthought | The shared probe also changes **`Attributed`'s live read** (`procctl.go:152`): an empty live read was an **instant** refusal ("cannot read live command") pre-poll; now it waits ≤100 ms first, then compares or refuses at the same facet — so TUI liveness renders (map row 3) can spend the bound per alive-but-empty pid instead of refusing at once. Exposure is narrow (parley-owned zombies are transient — `cmd.Wait`/init reaps; persistent cost needs a persistent argv-less process, already un-attributable pre-fix). kimi-1 judges the placement correct: the execve window is symmetric (the live read can hit it microseconds after capture), and fixing only the recording side would leave the mirrored flake. No facet, order, or strictness change — timing-only scope. | K-2 |
+| 5 | (not previously recorded) | **Pre-existing re-exec window**: a process that re-execs can publish its **pre-exec** argv inside the window; first-non-empty records it and `Attributed` then refuses fail-closed ("command mismatch (pid was reused)"). kimi-1 observed it 1/60 re-exec spawns (`sh -c 'exec sleep 30'`). Identical window pre-poll (the single read behaved the same on non-empty data) — recorded so a hosted sighting is not misread as a poll regression. | K-3 |
+
+K-1 is C-1 (same finding, both reviewers). claude-1's C-4 (behaviour table
+omits the live-probe row) and C-5 (pre-existing `commandMatches` comment/test
+gap) are INFO/"no action requested" and outside this dispatch; C-4's substance
+is covered factually by map row 4.
+
+### Comment-only equivalence record
+
+The corrections above are written into the two owned source files as **comment
+text only**; the code at ef10cf3 is untouched. Proofs (host, go1.27.1
+darwin/arm64):
+
+- **git diff**: every added/removed line in both files is a `//` comment line
+  (asserted programmatically; zero code lines touched).
+- **Token streams**: `go/scanner` over both versions of each file, COMMENT
+  tokens excluded, compared as (type, literal) pairs — **identical**
+  (`procctl_linux.go`: 434 tokens; `procctl_cmdline_linux_test.go`: 1975).
+- **Compiled**: `gofmt -l` clean on both; `GOOS=linux go build ./...` ok;
+  `GOOS=linux go vet ./internal/procctl/` ok. Compiled archives/test binaries
+  are *not* byte-identical — comment lines shift subsequent source line
+  numbers, which DWARF/runtime line tables embed — so instead:
+  `go tool objdump` of `pollCmdline` from the before/after test binaries
+  (`-trimpath -buildvcs=false`), line annotations and addresses normalized:
+  **65 lines of disassembly, identical**. Test re-runs are unchanged by
+  construction (same instructions; only failure-message line numbers differ).
+
+New file sha256 after the comment corrections (the Provenance table above
+still records ef10cf3, which is immutable):
+
+| File | sha256 at ef10cf3 | sha256 after comment corrections |
+|---|---|---|
+| `internal/procctl/procctl_linux.go` | `a3f8eb16…040547` | `81c77dd4720563bb7c6025c328fff315ed523771de6f3a4ca491823867053dfa` |
+| `internal/procctl/procctl_cmdline_linux_test.go` | `5b3cca33…935b26` | `caa7dc7929f70a3941f60131ca9b8fc3a2ad29409f29e349844761f3a67bcded` |
+
+**Line-number drift for future readers** (the reviews and the ef10cf3 commit
+message cite old line numbers): in the test file, old lines 11–111 shift +4,
+old 112–286 shift +6, old 287–301 shift +7 — so the cited spawn-race failure
+sites `:170`/`:198` become `:176`/`:204`. In `procctl_linux.go`, old 68–87
+shift +7 and old 88+ shifts +19 (`pollCmdline` moves 89 → 108).
+
+### Not done
+
+No code, test-logic, product-logic, or version change; no push, tag, release,
+install, or CI rerun; the reviews, organizer records, closed artifacts, ledger,
+inbox and runs/ are read/referenced only, never edited (reviews remain
+untracked for the organizer). Safety facets, refusal strings, and fail-closed
+behavior are exactly as at ef10cf3 — the hosted leg and its results belong to
+the independent reviewer.

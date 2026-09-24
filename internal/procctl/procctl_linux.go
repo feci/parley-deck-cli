@@ -56,12 +56,19 @@ func (linuxProbe) procStart(pid int) (string, bool) {
 // Command later trips Attributed's fail-closed "no recorded command" facet for
 // a process we just started (hosted U2: exit -1, empty output, ~1500ms kill
 // grace). The bound only tolerates the kernel's publication latency: residual
-// exec work after the pipe closes is microseconds of CPU and preemption under
-// load is the variable, so 100ms is orders of magnitude beyond the expected
-// window yet far under every surrounding budget (KillGroup grace 1500ms,
-// WaitDelay 2s/10s) — it can only extend paths that already fail, and the
-// healthy first-read path pays nothing. A read error (process gone) returns
-// immediately: no amount of retrying makes a dead pid recordable.
+// exec work after the pipe closes is microseconds of CPU, with preemption
+// under load as the variable. Measured, the window is ~15µs at the median but
+// tens of milliseconds at the loaded tail (worst independently observed:
+// 56.5ms across 10,400 spawns, none past the bound), so 100ms is ~1.8× that
+// worst observed sample — not orders of magnitude beyond the tail — and is
+// sized to sit under every surrounding budget (KillGroup grace 1500ms,
+// WaitDelay 2s/10s): it can only extend paths that already fail, and the
+// healthy first-read path pays nothing. A read error (process reaped and
+// gone) returns immediately: no amount of retrying makes a reaped pid
+// recordable. A killed-but-UNREAPED process is different: /proc/<pid> still
+// exists and its cmdline reads zero bytes with no error, so there the poll is
+// bounded, not immediate — it spends cmdlinePublishBound and then returns
+// ("", false), exactly the pre-poll refusal.
 const (
 	cmdlinePublishBound = 100 * time.Millisecond
 	cmdlinePublishPoll  = time.Millisecond
@@ -82,6 +89,18 @@ func (linuxProbe) command(pid int) (string, bool) {
 // time, exact process group, session leader, command match). Exhaustion
 // returns ("", false): exactly the pre-poll outcome, so a Command that never
 // published still records empty and Attributed still refuses it.
+//
+// Two scope notes reviewers pinned on this shared probe. First, the bound is
+// paid by Attributed's LIVE read too: an alive-but-empty-cmdline pid (zombie
+// interim, argv-zeroed) used to refuse instantly at "cannot read live
+// command"; now that read waits ≤cmdlinePublishBound first and then either
+// compares the published argv or refuses at the same facet with the same
+// reason — so render-path liveness callers (TUI badges) can spend the bound
+// per such pid instead of refusing at once. Second, a re-execing process can
+// publish its PRE-exec argv inside the window; the first non-empty value is
+// recorded and Attributed then refuses the live mismatch fail-closed — a
+// window the pre-poll single read had as well, neither widened nor narrowed
+// by polling.
 func pollCmdline(read func() ([]byte, error)) (string, bool) {
 	deadline := time.Now().Add(cmdlinePublishBound)
 	for {

@@ -3,8 +3,12 @@
 // Tests for the bounded /proc/<pid>/cmdline poll (the execve argv-publication
 // window behind hosted U2). The poll has no context parameter by design: the
 // probe interface is frozen and portable, so external cancellation reaches it
-// only as process death — a read error — which returns immediately instead of
-// polling (pinned below). Cancellation via KillGroup lands as SIGKILL within
+// only as process death — and death bounds the poll, it does not make it
+// immediate: a REAPED pid fails the read (ENOENT) and returns at once, but a
+// killed-but-unreaped process reads empty with no error and spends the full
+// cmdlinePublishBound before failing closed (pinned below by the zombie test;
+// the fake-reader dead-process test models only the reaped case). Cancellation
+// via KillGroup lands as SIGKILL within
 // the existing 1500ms grace, far beyond the 100ms bound, so no caller's
 // deadline can be pushed past its previous envelope: the bound can only extend
 // paths that already failed.
@@ -104,8 +108,10 @@ func TestPollCmdlinePermanentEmptyFailsClosedWithinBound(t *testing.T) {
 	}
 }
 
-// A dead process (read error) stops the poll immediately — cancellation
-// arrives here as process death, never as a retry loop over a gone pid.
+// A REAPED process (read error: /proc/<pid> gone) stops the poll immediately
+// — never a retry loop over a gone pid. This fake-reader test models only
+// that case; a killed-but-unreaped process reads empty without error and
+// spends the bound instead (real-/proc zombie test below).
 func TestPollCmdlineDeadProcessStopsPolling(t *testing.T) {
 	f := &fakeCmdlineReader{results: []func() ([]byte, error){
 		empty(), empty(), gone(),
@@ -280,7 +286,8 @@ func TestLinuxAttributedRefusesIdentityChangesUnderPollingProbe(t *testing.T) {
 }
 
 // A reaped pid short-circuits: the ENOENT read stops the poll at once, so
-// capture of a gone pid stays prompt (cancellation arrives as death).
+// capture of a gone pid stays prompt. (Prompt only once reaped — an unreaped
+// one spends the bound; see the zombie test.)
 func TestLinuxCaptureByPIDOfReapedProcessIsPrompt(t *testing.T) {
 	cmd := exec.Command("sleep", "30")
 	SetNewProcessGroup(cmd)
