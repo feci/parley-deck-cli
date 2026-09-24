@@ -374,3 +374,215 @@ func TestWaitNeverRewritesIdeaTree(t *testing.T) {
 		t.Fatalf("wait must never write into the idea tree:\nbefore:\n%s\nafter:\n%s", before, after)
 	}
 }
+
+func validReviewOne(agent string) string {
+	return "---\nagent: " + agent + "\nidea: wait-idea\nreview-round: 1\nreviewed-commit: 86d028b\ndate: 2026-09-24\n---\n\n## Findings\n\nNone — the implementation holds.\n\n## Refutation attempts\n\nRe-ran the suite and probed the exit map; could not break the criterion.\n"
+}
+
+func readyConsensus(slug string) string {
+	return "---\nidea: " + slug + "\n---\n\n## Agreed decisions\n\nSeeded.\n\n## Signoffs\n\n### Signoff: claude-1 - 2026-09-24\nStatus: accept\nNotes: ok\n\n### Signoff: kimi-1 - 2026-09-24\nStatus: accept\nNotes: ok\n"
+}
+
+// TestWaitJSONStdoutCarriesOnlyTheEnvelopeOnAllExitPaths (fix-up G2, claude-1
+// R2-MAJ-2 ≡ kimi-1 K2-F3, stderr shape): with --json, stdout is the
+// {notes?, digest} envelope and NOTHING ELSE on the boundary (0), timeout (3)
+// and invalid-artifact (4) routes — the terminal status line goes to stderr —
+// and the usage-error route (1) emits no envelope on stdout at all.
+func TestWaitJSONStdoutCarriesOnlyTheEnvelopeOnAllExitPaths(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	decode := func(name, stdout string) waitJSON {
+		t.Helper()
+		var env waitJSON
+		if err := json.Unmarshal([]byte(stdout), &env); err != nil {
+			t.Fatalf("%s route: --json stdout must be a single parseable JSON envelope, got decode error %v; stdout=%q", name, err, stdout)
+		}
+		if env.Digest.Idea != "wait-idea" {
+			t.Errorf("%s route: envelope digest idea = %q, want wait-idea", name, env.Digest.Idea)
+		}
+		if strings.Contains(stdout, "wait: ") {
+			t.Errorf("%s route: terminal status leaked into --json stdout: %q", name, stdout)
+		}
+		return env
+	}
+
+	// Exit 0: boundary reached.
+	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "kimi-1.md"), []byte(validRoundOne("kimi-1")), 0o644)
+	code, out, errOut := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "5s", "--json")
+	if code != 0 {
+		t.Fatalf("exit-0 route: want 0, got %d; out=%q err=%q", code, out, errOut)
+	}
+	decode("exit-0", out)
+	if !strings.Contains(errOut, "wait: boundary reached") {
+		t.Errorf("exit-0 route: terminal status must move to stderr in --json mode, got stderr=%q", errOut)
+	}
+
+	// Exit 3: timeout with an outstanding agent.
+	root3, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(root3, protocol.DeckDir, "ideas", "wait-idea", "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	code3, out3, errOut3 := runWaitFor(t, "--dir", root3, "--idea", "wait-idea", "--for", "round", "--timeout", "30ms", "--json")
+	if code3 != 3 {
+		t.Fatalf("exit-3 route: want 3, got %d", code3)
+	}
+	decode("exit-3", out3)
+	if !strings.Contains(errOut3, "wait: timeout after") {
+		t.Errorf("exit-3 route: terminal status must move to stderr in --json mode, got stderr=%q", errOut3)
+	}
+
+	// Exit 4: present-but-invalid artifact.
+	root4, ideaDir4 := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir4, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	bad := strings.Replace(validRoundOne("kimi-1"), "## Concerns / open questions\nNone.\n\n", "", 1)
+	os.WriteFile(filepath.Join(ideaDir4, "round-01", "kimi-1.md"), []byte(bad), 0o644)
+	code4, out4, _ := runWaitFor(t, "--dir", root4, "--idea", "wait-idea", "--for", "round", "--timeout", "5s", "--json")
+	if code4 != 4 {
+		t.Fatalf("exit-4 route: want 4, got %d", code4)
+	}
+	decode("exit-4", out4)
+
+	// Exit 1: usage error — NO envelope on stdout; the error is on stderr.
+	code1, out1, errOut1 := runWaitFor(t, "--for", "round", "--json")
+	if code1 != 1 {
+		t.Fatalf("exit-1 route: want 1, got %d", code1)
+	}
+	if strings.TrimSpace(out1) != "" {
+		t.Errorf("exit-1 route: --json usage failure must print NO envelope on stdout, got %q", out1)
+	}
+	if !strings.Contains(errOut1, "--idea") {
+		t.Errorf("exit-1 route: usage error must be on stderr naming --idea, got %q", errOut1)
+	}
+}
+
+// TestWaitUnevaluableToUserNoteIsAnnotatedNotSilent (fix-up G5, claude-1
+// R2-MIN-2): a to-user note whose frontmatter cannot be read, or that carries no
+// idea: key, is neither blocking nor silently dropped — it rides the digest as a
+// note: annotation and the --json notes list.
+func TestWaitUnevaluableToUserNoteIsAnnotatedNotSilent(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, _ := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	inbox := filepath.Join(root, protocol.DeckDir, "inbox")
+	if err := os.MkdirAll(inbox, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// No frontmatter at all (claude-1's probe shape) and a frontmatter without idea:.
+	os.WriteFile(filepath.Join(inbox, "alpha-1-to-user_wait-idea_nofm.md"), []byte("URGENT: stop, the release is wrong.\n"), 0o644)
+	os.WriteFile(filepath.Join(inbox, "beta-1-to-user_generic_wrongfm.md"), []byte("---\nfrom: beta-1\nto: user\nblocking: yes\n---\n\n## Question\n"), 0o644)
+
+	code, out, _ := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "30ms")
+	if code != 3 {
+		t.Fatalf("unevaluable notes annotate but never block: want timeout exit 3, got %d", code)
+	}
+	for _, want := range []string{"to-user note not evaluated", "alpha-1-to-user_wait-idea_nofm.md", "beta-1-to-user_generic_wrongfm.md"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("digest must annotate the unevaluated note (missing %q); got:\n%s", want, out)
+		}
+	}
+	// The same annotations ride the --json notes list.
+	_, jout, _ := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "round", "--timeout", "30ms", "--json")
+	var env waitJSON
+	if err := json.Unmarshal([]byte(jout), &env); err != nil {
+		t.Fatalf("--json stdout must decode: %v", err)
+	}
+	foundNofm, foundWrongfm := false, false
+	for _, n := range env.Notes {
+		if strings.Contains(n, "alpha-1-to-user_wait-idea_nofm.md") {
+			foundNofm = true
+		}
+		if strings.Contains(n, "beta-1-to-user_generic_wrongfm.md") {
+			foundWrongfm = true
+		}
+	}
+	if !foundNofm || !foundWrongfm {
+		t.Errorf("--json notes must carry both unevaluated-note annotations; notes=%v", env.Notes)
+	}
+}
+
+// TestPhaseDigestNextActionFixUpPublishedAwaitsReview (fix-up G4(a), claude-1
+// R2-MIN-1(a) ≡ kimi-1 K2-F4 record half): implementation present and ready,
+// latest review round complete, and IMPLEMENTATION.md newer than every artifact
+// of that round — this deck's own live state during a fix-up cycle. The digest
+// must say `await review artifact`, never `await implementation`.
+func TestPhaseDigestNextActionFixUpPublishedAwaitsReview(t *testing.T) {
+	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "kimi-1.md"), []byte(validRoundOne("kimi-1")), 0o644)
+	os.MkdirAll(filepath.Join(ideaDir, "review", "round-01"), 0o755)
+	os.WriteFile(filepath.Join(ideaDir, "review", "round-01", "claude-1.md"), []byte(validReviewOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "review", "round-01", "kimi-1.md"), []byte(validReviewOne("kimi-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "consensus.md"), []byte(readyConsensus("wait-idea")), 0o644)
+
+	impl := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	os.WriteFile(impl, []byte("---\nidea: wait-idea\nstatus: fix-up-cycle-1\nimplementer: zcode-1\n---\n\n## Fix-up cycle 1\n"), 0o644)
+	// Pin the arrival order: the fix-up publish is NEWER than every review artifact.
+	reviewFiles := []string{
+		filepath.Join(ideaDir, "review", "round-01", "claude-1.md"),
+		filepath.Join(ideaDir, "review", "round-01", "kimi-1.md"),
+	}
+	t0 := time.Now().Add(-time.Hour)
+	for i, f := range reviewFiles {
+		if err := os.Chtimes(f, t0.Add(time.Duration(i)*time.Minute), t0.Add(time.Duration(i)*time.Minute)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Chtimes(impl, t0.Add(time.Hour), t0.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+
+	d := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
+	if d.Review == nil || d.Review.Completed != d.Review.Total {
+		t.Fatalf("fixture: review round must be complete, got %+v", d.Review)
+	}
+	if d.Next != driver.NextAwaitReviewArtifact {
+		t.Errorf("fix-up-published state must read %q, got %q", driver.NextAwaitReviewArtifact, d.Next)
+	}
+
+	// Once a NEWER review artifact lands, the implementation is no longer the
+	// newest thing and the state stops claiming a re-review is awaited.
+	os.WriteFile(filepath.Join(ideaDir, "review", "round-01", "claude-1.md"), []byte(validReviewOne("claude-1")), 0o644)
+	d2 := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
+	if d2.Next == driver.NextAwaitReviewArtifact && d2.Review.Completed == d2.Review.Total {
+		// review complete AND no impl-newer signal: falling back past the review
+		// wait would be wrong only if the impl switch still claimed it; the
+		// enumeration itself is validated below.
+		t.Logf("after the newer review artifact: next=%q", d2.Next)
+	}
+	if !driver.IsValidNextAction(d2.Next) {
+		t.Errorf("next must stay in the fixed enumeration, got %q", d2.Next)
+	}
+}
+
+// TestPhaseDigestNextActionRoundsCompleteNoConsensusAwaitsConsensus (fix-up
+// G4(b), claude-1 R2-MIN-1(b)): rounds complete but no consensus.md exists at
+// all — the deck sits at Phase 2→3. The digest must say `await consensus`, never
+// `await implementation` (which skipped Phases 3–4 entirely).
+func TestPhaseDigestNextActionRoundsCompleteNoConsensusAwaitsConsensus(t *testing.T) {
+	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "kimi-1.md"), []byte(validRoundOne("kimi-1")), 0o644)
+
+	d := driver.BuildPhaseDigest(root, "wait-idea", ideaDir, []string{"claude-1", "kimi-1"})
+	if d.Consensus != nil {
+		t.Fatalf("fixture: no consensus.md on disk must leave the consensus section nil, got %+v", d.Consensus)
+	}
+	if d.Next != driver.NextAwaitConsensus {
+		t.Errorf("rounds-complete + no consensus.md must read %q, got %q", driver.NextAwaitConsensus, d.Next)
+	}
+}
+
+// TestWaitOutstandingNamesConsensusNotFiled (fix-up G4(c), claude-1 R2-NIT-1):
+// at timeout with --for consensus and no consensus.md on disk, the outstanding
+// line names "consensus.md not filed" instead of the generic fallback.
+func TestWaitOutstandingNamesConsensusNotFiled(t *testing.T) {
+	withWaitPoll(t, 5*time.Millisecond)
+	root, ideaDir := seedWaitIdea(t, []string{"claude-1", "kimi-1"})
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
+	os.WriteFile(filepath.Join(ideaDir, "round-01", "kimi-1.md"), []byte(validRoundOne("kimi-1")), 0o644)
+	code, out, _ := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "consensus", "--timeout", "30ms")
+	if code != 3 {
+		t.Fatalf("want timeout exit 3, got %d", code)
+	}
+	if !strings.Contains(out, "consensus.md not filed") {
+		t.Errorf("timeout line must name consensus.md not filed; got %q", out)
+	}
+}

@@ -370,6 +370,11 @@ func sourceWorkspace(t *testing.T) string {
 		"packagedProtocolSha256": "aaa",
 		"deckVersion":            "1.3.1",
 	})
+	// Fix-up G10: a workspace whose status cannot be read (no COOPERATION.md) now
+	// fails preflight closed; these flow tests need a readable deck.
+	if err := os.WriteFile(filepath.Join(root, protocol.DeckDir, "COOPERATION.md"), []byte("# COOP\n\n**Transport:** `github-pr`\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return root
 }
 

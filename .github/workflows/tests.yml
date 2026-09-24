@@ -26,4 +26,10 @@ jobs:
       - name: Build
         run: go build ./...
       - name: Test
-        run: go test ./... -count=1
+        # Fix-up G3 (claude-1 R2-MAJ-3): an explicit timeout, at or above the 2400s
+        # every green record in the lean-organizer idea uses. Go's 10m per-package
+        # default left internal/trajectory (589.7s) and internal/app (521.7s) ~2%
+        # from timing out on the dev machine, and a no-flag run failed there — a
+        # leg configured to time out does not deliver the honest Windows coverage
+        # FINAL risk 8 claims for it.
+        run: go test ./... -count=1 -timeout 45m

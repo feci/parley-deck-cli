@@ -315,10 +315,15 @@ func confirmCommand(root string) string {
 // conflict (facilitator: also in participants: without facilitator_participates: true)
 // and returns one blocking gate per conflicting idea. Decks that declare no facilitator
 // produce nothing — the absent-field deck is untouched.
-func facilitatorConflictGates(root string) []gate {
+//
+// Fix-up G10 (kimi-1 K2-F2): a workspace-status read failure is an error, not an
+// empty gate list. Returning nil here made preflight print "Ready: no pending gates"
+// for a tree whose COOPERATION.md was missing — the conflict gate silently never
+// ran. The caller fails closed (exit 1) naming the read failure.
+func facilitatorConflictGates(root string) ([]gate, error) {
 	status, err := protocol.ReadWorkspaceStatus(root)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	var gates []gate
 	for _, idea := range status.Ideas {
@@ -332,7 +337,7 @@ func facilitatorConflictGates(root string) []gate {
 			Confirm: fmt.Sprintf("edit ideas/%s/00-prompt.md — remove the agent from participants, or add facilitator_participates: true", idea.Slug),
 		})
 	}
-	return gates
+	return gates, nil
 }
 
 // workspaceExists reports whether root holds a real parley-deck/ workspace (the
@@ -380,7 +385,16 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	// `facilitator_participates: true` is a fail-closed preflight gate — non-zero
 	// exit naming BOTH fields. It is not waivable by --yes: the ambiguity is the
 	// deck's own declaration, not an availability observation.
-	for _, gate := range facilitatorConflictGates(opts.Root) {
+	conflictGates, err := facilitatorConflictGates(opts.Root)
+	if err != nil {
+		// Fail closed (fix-up G10): "Ready" for a tree the gate could not read is the
+		// status-concealment class this idea exists to fix — a deck with no readable
+		// COOPERATION.md gets a hard preflight error, never a silent pass. Returned
+		// as an error so the caller prints the failure INSTEAD of the report (no
+		// "Ready: no pending gates" line can follow an unreadable workspace).
+		return report, 1, fmt.Errorf("cannot read workspace status — the facilitator-declaration gate could not run (is parley-deck/COOPERATION.md present?): %w", err)
+	}
+	for _, gate := range conflictGates {
 		report.Gates = append(report.Gates, gate)
 	}
 

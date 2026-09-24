@@ -2,9 +2,11 @@ package app
 
 // lean-organizer C.3 against the LIVE deck protocol + map: the named-omission-set
 // absence is the GATING check (R-2); the facilitator body is recorded against BOTH
-// the measured whole-section floor and the <= 70,000 B guardrail in this same run;
-// the --optimize baseline is captured here too (measured, not transcribed from any
-// round file).
+// the measured floor (the retained whole-block source total) and the <= 70,000 B
+// guardrail in this same run; the --optimize baseline is captured here too
+// (measured, not transcribed from any round file). Fix-up G1 (claude-1 R2-MAJ-1):
+// the floor is what the body RETAINS; the omission-set total is a separate
+// quantity under its own label — an omission sum is never called a floor.
 
 import (
 	"os"
@@ -93,20 +95,47 @@ func TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail(t *testing.T) {
 		t.Errorf("facilitator body must carry the complete omission index")
 	}
 
-	// Guardrail and floor, measured in this same run (R-2 / open item 2). The
-	// whole-section floor is the sum of the source bytes of the named omission set.
+	// Guardrail, floor and omission total, all measured in this same run (R-2 /
+	// open item 14; fix-up G1 — claude-1 R2-MAJ-1). The FLOOR is the retained
+	// whole-block source total: the bytes the facilitator body itself carries for
+	// the blocks this request INCLUDES, summed exactly as renderPacket lays them
+	// out (each block's text plus its blank-line separator). Parse splits `###`
+	// subsections into their own blocks, so every retained subsection is counted —
+	// nothing is silently excluded. A floor is what the body RETAINS; the omission
+	// set is the opposite quantity and is logged under its own label below.
 	floor := 0
+	for _, r := range c.Index {
+		if !r.Included {
+			continue
+		}
+		floor += len(strings.TrimRight(r.Text, "\n")) + 2
+	}
+	if len(c.Body) < floor {
+		t.Errorf("facilitator body %d B is below its own retained-source floor %d B — the renderer dropped retained bytes", len(c.Body), floor)
+	}
+
+	// The named-omission-set total, whole-section-correct (fix-up G1): a
+	// `##`-level section's span runs from its heading block through every deeper
+	// block below it (its `###`/`####` subsections — Parse splits them out, so a
+	// byHeading lookup alone silently drops them; claude-1 measured 17 blocks /
+	// 11,903 B of §12/§13 subsection content the old sum missed). Convention: each
+	// block contributes len(Text)+1 (its text plus the newline joining it to the
+	// next block of the section).
 	blocks := protocolpacket.Parse(string(raw))
-	byHeading := map[string]int{}
-	for _, b := range blocks {
-		byHeading[b.Locator] = len(b.Text)
-	}
+	omissionWholeSections := 0
 	for _, heading := range namedOmissionSet {
-		floor += byHeading[heading]
+		for i, b := range blocks {
+			if b.Locator != heading {
+				continue
+			}
+			span := len(b.Text) + 1
+			for j := i + 1; j < len(blocks) && blocks[j].Level > b.Level; j++ {
+				span += len(blocks[j].Text) + 1
+			}
+			omissionWholeSections += span
+			break
+		}
 	}
-	// claude-1's measured floor included the subsections; approximate the §2
-	// retention by adding §2's bytes on top of the omission-set total.
-	section2 := byHeading["## 2. Active agents (roster)"]
 
 	// --optimize baseline (participant audience) captured in the same run.
 	base := protocolpacket.Build(src, m, protocolpacket.Request{Phase: 1, Track: "deliberation", Transport: "github-pr", Optimize: true, Audience: "participant"})
@@ -115,8 +144,8 @@ func TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail(t *testing.T) {
 		optimizeBytes = base.Shadow.PacketBytes
 	}
 
-	t.Logf("R-2 measurement (phase 1 / deliberation / github-pr): facilitator body=%d B; named-omission-set bytes=%d B; +§2(%d B) reference=%d B; guardrail=%d B; --optimize baseline=%d B",
-		len(c.Body), floor, section2, floor+section2, facilitatorGuardrailBytes, optimizeBytes)
+	t.Logf("R-2 measurement (phase 1 / deliberation / github-pr): facilitator body=%d B; floor (retained whole-block source total: sum over the request's included blocks of len(text)+2, the renderer's exact layout)=%d B; named-omission-set whole-section bytes (each block len(text)+1, subsections included)=%d B; guardrail=%d B; --optimize baseline=%d B",
+		len(c.Body), floor, omissionWholeSections, facilitatorGuardrailBytes, optimizeBytes)
 
 	if len(c.Body) > facilitatorGuardrailBytes {
 		t.Errorf("facilitator body %d B exceeds the 70,000 B guardrail — bytes go back to the quorum before any map/ceiling change", len(c.Body))

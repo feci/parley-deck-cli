@@ -154,29 +154,35 @@ func runWait(args []string, stdout, stderr interface{ Write([]byte) (int, error)
 	}
 	for {
 		digest := driver.BuildPhaseDigest(root, *idea, ideaDir, ideaStatus.Participants)
+		// G5: unevaluable to-user notes ride every digest print (they may appear or
+		// repair mid-wait; re-scanned each iteration — the inbox is small and local).
+		notes := annotations
+		if extra := unevaluatedNoteAnnotations(root); len(extra) > 0 {
+			notes = append(append([]string{}, annotations...), extra...)
+		}
 		if reason, bad := invalidArtifact(digest, scope); bad {
-			printWaitDigest(out, digest, annotations, *jsonOut)
+			printWaitDigest(out, digest, notes, *jsonOut)
 			fmt.Fprintf(stderr, "wait: present-but-invalid artifact: %s\n", reason)
 			return waitExitInvalid
 		}
 		if src := arrivedBlockingEscalation(root, *idea, waitStart); src != "" {
-			printWaitDigest(out, digest, annotations, *jsonOut)
+			printWaitDigest(out, digest, notes, *jsonOut)
 			fmt.Fprintf(stderr, "wait: blocking escalation (new unanswered to-user inbox note for this idea): %s\n", src)
 			return waitExitInvalid
 		}
 		if drvErr := driverErrorEventSince(events, startEventCount); drvErr != "" {
-			printWaitDigest(out, digest, annotations, *jsonOut)
+			printWaitDigest(out, digest, notes, *jsonOut)
 			fmt.Fprintf(stderr, "wait: %s\n", drvErr)
 			return waitExitInvalid
 		}
 		if reached, why := boundaryReached(digest, scope); reached {
-			printWaitDigest(out, digest, annotations, *jsonOut)
-			fmt.Fprintf(out, "wait: boundary reached (%s)\n", why)
+			printWaitDigest(out, digest, notes, *jsonOut)
+			printWaitTerminal(*jsonOut, out, stderr, "wait: boundary reached (%s)\n", why)
 			return waitExitOK
 		}
 		if time.Now().After(deadline) {
-			printWaitDigest(out, digest, annotations, *jsonOut)
-			fmt.Fprintf(out, "wait: timeout after %s; outstanding: %s\n", budget, outstandingAgents(digest, scope))
+			printWaitDigest(out, digest, notes, *jsonOut)
+			printWaitTerminal(*jsonOut, out, stderr, "wait: timeout after %s; outstanding: %s\n", budget, outstandingAgents(digest, scope))
 			return waitExitTimeout
 		}
 		time.Sleep(minDuration(poll, time.Until(deadline)))
@@ -195,6 +201,20 @@ func minDuration(a, b time.Duration) time.Duration {
 type waitJSON struct {
 	Notes  []string           `json:"notes,omitempty"`
 	Digest driver.PhaseDigest `json:"digest"`
+}
+
+// printWaitTerminal routes the terminal status line (boundary/timeout). Human
+// output goes to stdout as before; in --json mode it goes to STDERR so stdout
+// carries ONLY the machine-readable {notes?, digest} envelope (fix-up G2,
+// claude-1 R2-MAJ-2 ≡ kimi-1 K2-F3; stderr shape selected by both signoffs).
+// The exit-1 usage/IO paths print their error to stderr and never emit an
+// envelope on stdout at all.
+func printWaitTerminal(asJSON bool, out, stderr interface{ Write([]byte) (int, error) }, format string, args ...any) {
+	if asJSON {
+		fmt.Fprintf(stderr, format, args...)
+		return
+	}
+	fmt.Fprintf(out, format, args...)
 }
 
 func printWaitDigest(out interface{ Write([]byte) (int, error) }, digest driver.PhaseDigest, annotations []string, asJSON bool) {
@@ -276,6 +296,39 @@ type escalationNote struct {
 	MTime time.Time
 }
 
+// unevaluatedNoteAnnotations names every `*-to-user_*.md` inbox note this wait
+// could NOT evaluate — frontmatter unreadable/unparseable, or no `idea:` key, so
+// the idea-match qualifier has nothing to match against (fix-up G5, claude-1
+// R2-MIN-2: such a note was previously silently dropped — neither blocking nor
+// annotated). Annotated, never a new blanket blocker: the F2 qualifiers stay the
+// only blocking path; this only removes the silence.
+func unevaluatedNoteAnnotations(root string) []string {
+	inbox := filepath.Join(root, protocol.DeckDir, "inbox")
+	entries, err := os.ReadDir(inbox)
+	if err != nil {
+		return nil
+	}
+	var notes []string
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".md") {
+			continue
+		}
+		if strings.Index(name, "-to-user_") <= 0 {
+			continue
+		}
+		path := filepath.Join(inbox, name)
+		meta, merr := protocol.ReadFrontmatter(path)
+		switch {
+		case merr != nil:
+			notes = append(notes, "to-user note not evaluated (frontmatter unreadable/unparseable — cannot qualify or exclude it): "+name)
+		case strings.TrimSpace(meta["idea"]) == "":
+			notes = append(notes, "to-user note not evaluated (no idea: frontmatter — cannot tell which idea it belongs to): "+name)
+		}
+	}
+	return notes
+}
+
 // qualifyingEscalationNotes scans the deck inbox for qualifying `to-user` notes
 // (answered notes are moved to inbox/archived/ or deleted per §4; a stale `status:`
 // field saying answered/resolved counts as answered too).
@@ -319,6 +372,16 @@ func qualifyingEscalationNotes(root, idea string) []escalationNote {
 
 // arrivedBlockingEscalation names the qualifying escalation that ARRIVED after the
 // wait started (mtime is the arrival signal), or "".
+//
+// Fix-up G8 (claude-1 R2-NIT-2), recorded not changed: arrival is APPROXIMATED by
+// file mtime, so an in-place rewrite or bare `touch` of a pre-existing escalation
+// looks "new" to wait. That fails loud — the safe direction: a false "arrived"
+// costs one premature exit 4 and one human look at the note, never a missed
+// escalation. The known in-place rewriter is the driver itself
+// (internal/driver/loop.go:353-354 builds `claude-to-user_<slug>_<topic>.md` and
+// writes it with an unconditional os.WriteFile — a second driver.error for the
+// same idea replaces the first, still-unanswered note; observed live this run,
+// canonical record preserved in organizer-notes.md).
 func arrivedBlockingEscalation(root, idea string, waitStart time.Time) string {
 	for _, n := range qualifyingEscalationNotes(root, idea) {
 		if n.MTime.After(waitStart) {
@@ -469,6 +532,12 @@ func outstandingAgents(d driver.PhaseDigest, scope string) string {
 	}
 	if (scope == "consensus" || scope == "any") && d.Consensus != nil {
 		missing = append(missing, d.Consensus.Missing...)
+	}
+	// A nil consensus section is a real state — no consensus.md on disk — not an
+	// absent one (fix-up G4(c), claude-1 R2-NIT-1): name it instead of falling
+	// through to the generic "awaited condition not yet reached".
+	if scope == "consensus" && d.Consensus == nil {
+		missing = append(missing, "consensus.md not filed")
 	}
 	// Name the implementation's blocking condition instead of "none named" (fix-up
 	// F3): the timeout line must never conceal WHY the boundary is unreachable.

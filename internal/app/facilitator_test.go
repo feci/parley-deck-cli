@@ -52,7 +52,10 @@ func TestPreflightFacilitatorInParticipantsFailsClosed(t *testing.T) {
 	writeIdeaPrompt(t, dir, "declared-run",
 		"idea: declared-run\nauthor: user\ntrack: standard\nparticipants: [codex-1, claude-1]\nfacilitator: codex-1")
 
-	gates := facilitatorConflictGates(dir)
+	gates, err := facilitatorConflictGates(dir)
+	if err != nil {
+		t.Fatalf("conflict gates: %v", err)
+	}
 	if len(gates) != 1 {
 		t.Fatalf("want 1 facilitator gate, got %d", len(gates))
 	}
@@ -69,7 +72,7 @@ func TestPreflightFacilitatorParticipatesFlagClearsConflict(t *testing.T) {
 	seedMinimalDeck(t, dir)
 	writeIdeaPrompt(t, dir, "declared-run",
 		"idea: declared-run\nauthor: user\ntrack: standard\nparticipants: [codex-1, claude-1]\nfacilitator: codex-1\nfacilitator_participates: true")
-	if gates := facilitatorConflictGates(dir); len(gates) != 0 {
+	if gates, err := facilitatorConflictGates(dir); err != nil || len(gates) != 0 {
 		t.Fatalf("facilitator_participates: true must clear the conflict, got %d gates", len(gates))
 	}
 }
@@ -78,7 +81,7 @@ func TestPreflightNoFacilitatorFieldUntouched(t *testing.T) {
 	dir := t.TempDir()
 	seedMinimalDeck(t, dir)
 	writeIdeaPrompt(t, dir, "plain-run", "idea: plain-run\nauthor: user\ntrack: standard\nparticipants: [claude-1, kimi-1]")
-	if gates := facilitatorConflictGates(dir); len(gates) != 0 {
+	if gates, err := facilitatorConflictGates(dir); err != nil || len(gates) != 0 {
 		t.Fatalf("absent facilitator field must produce no gate, got %d", len(gates))
 	}
 }
@@ -109,6 +112,48 @@ func TestFacilitatorConflictGateIsABlockingPreflightOutcome(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("preflight report must carry the facilitator gate naming facilitator_participates; gates=%+v", report.Gates)
+	}
+}
+
+// TestPreflightFailsClosedWhenWorkspaceStatusUnreadable (fix-up G10, kimi-1 K2-F2):
+// a tree whose parley-deck/ exists but whose COOPERATION.md is missing must exit 1
+// naming the read failure — at the reviewed HEAD this shape printed "Ready: no
+// pending gates" and exited 0 while the facilitator-conflict gate silently never
+// ran (facilitatorConflictGates returned nil on the ReadWorkspaceStatus error).
+func TestPreflightFailsClosedWhenWorkspaceStatusUnreadable(t *testing.T) {
+	dir := t.TempDir()
+	// The kimi-1 fixture shape: agents.toml + meta/version.json + a conflicting
+	// idea prompt, but NO COOPERATION.md — workspaceExists passes, ReadWorkspaceStatus
+	// cannot.
+	deck := filepath.Join(dir, protocol.DeckDir)
+	if err := os.MkdirAll(filepath.Join(deck, "meta"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	meta := `{"protocolRole": "source", "protocolSha256": "` + strings.Repeat("a", 64) + `", "deckVersion": "2.12.0"}`
+	if err := os.WriteFile(filepath.Join(deck, "meta", "version.json"), []byte(meta), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "agents.toml"), []byte("[agents]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	writeIdeaPrompt(t, dir, "declared-run",
+		"idea: declared-run\nauthor: user\ntrack: standard\nparticipants: [codex-1, claude-1]\nfacilitator: codex-1")
+
+	opts := preflightOptions{Root: dir, NoPing: true}
+	var out, errOut strings.Builder
+	_, code, err := preflight(context.Background(), opts, nil, &out, &errOut)
+	if err == nil {
+		t.Fatalf("unreadable workspace status must be a hard preflight error, got nil (out=%q err=%q)", out.String(), errOut.String())
+	}
+	if code != 1 {
+		t.Fatalf("unreadable workspace status must fail closed with exit 1, got %d", code)
+	}
+	joined := err.Error() + " " + errOut.String()
+	if !strings.Contains(joined, "cannot read workspace status") || !strings.Contains(joined, "COOPERATION.md") {
+		t.Errorf("the failure must name the read failure and COOPERATION.md, got err=%q errOut=%q", err, errOut.String())
+	}
+	if strings.Contains(out.String(), "Ready") {
+		t.Errorf("no readiness summary may follow an unreadable workspace (the report is suppressed on hard error); out=%q", out.String())
 	}
 }
 
