@@ -1,0 +1,42 @@
+{
+  "freshness": {
+    "role": "source",
+    "deckVersion": "2.12.0",
+    "protocolSha256": "12e4b31cd3f6c1066a97caa7c7cb84213e16429dd43b26de06d4b1c32977aa18",
+    "packagedProtocolSha256": "d45a7e869ceb5ac5f7145cfe2c7beb869f21cf0f0ef0e60f6200b75d3934d703",
+    "skillVersion": "2.13.0",
+    "classification": "source-advisory",
+    "summary": "source — ahead of / independent of packaged skill; advisory only, never writes COOPERATION.md"
+  },
+  "roster": [
+    {
+      "rosterId": "claude-1",
+      "runtime": "/Users/tomasfecko/.local/bin/claude",
+      "version": "2.1.282 (Claude Code)",
+      "available": true,
+      "class": "ready"
+    },
+    {
+      "rosterId": "kimi-1",
+      "runtime": "/Users/tomasfecko/.kimi-code/bin/kimi",
+      "version": "0.42.0",
+      "available": true,
+      "class": "ready"
+    },
+    {
+      "rosterId": "zcode-1",
+      "runtime": "zcode",
+      "version": "zcode-app-cli 3.7.7-13",
+      "available": true,
+      "class": "ready"
+    }
+  ],
+  "pinged": true,
+  "gates": [
+    {
+      "kind": "facilitator-declaration",
+      "detail": "ideas/meta-protocol-change-devx-speed: idea frontmatter declares `facilitator: claude-1` but also lists it in `participants:` without `facilitator_participates: true` — either remove the agent from participants (pure organizer) or set facilitator_participates: true (full participation)",
+      "confirm": "edit ideas/meta-protocol-change-devx-speed/00-prompt.md — remove the agent from participants, or add facilitator_participates: true"
+    }
+  ]
+}
