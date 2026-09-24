@@ -1,15 +1,295 @@
 ---
 idea: meta-protocol-change-lean-organizer
-status: fix-up-cycle-2
+status: fix-up-cycle-3
 implementer: zcode-1
 started: 2026-09-23
 completed: 2026-09-23
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer#lean-organizer
-head-commit: 998346c (fix-up cycle 2 source; recorded in the cycle-2 section)
-fix-up-cycle: 2
+head-commit: c3baf09 (fix-up cycle 3 source; recorded in the cycle-3 section)
+fix-up-cycle: 3
 design-pr: n/a
 implementation-pr: n/a
 ---
+
+## Fix-up cycle 3
+
+status: complete (this cycle's own work — NOT the idea; see close conditions below)
+completed: 2026-09-24
+head-commit: c3baf09 (full hash c3baf0977b82c2e9fc386b174f45de9e5a1dc1d9 — fix-up-3
+source; this record commit follows on the same branch)
+skill-commit: b06a65a (unchanged this cycle — the signed plan requires no skill change)
+opened: 2026-09-24 (protocol context and all signed inputs read in full before the
+first source edit; this record lands with the record commit)
+
+Authorized by all three unconditional ✅ ACCEPT signoffs on `review/consensus.md`
+review cycle 3 (claude-1 ✅, kimi-1 ✅, zcode-1 ✅) — authorizing H1–H7, not
+closure. Both verdict conflicts closed through the signoff mechanism before this
+cycle opened, never by count, drafter, or organizer: VC-7 resolved to the short
+cycle 3 (claude-1's route 1 sustained, route 2 withdrawn as mechanically
+unavailable; kimi-1 recorded its READY → NOT-YET position change with its own
+fresh-archive reproduction); VC-8 resolved at MINOR-fix-in-cycle (kimi-1's §15.1
+SELF-CORRECTION removed the defensible-as-is position; both reviewers endorsed
+the content signal over the `>=` relaxation). Both claude-1 amendments accepted
+into the plan as commitments, not conditions: Amendment 1 (locators —
+`implementationNewerThanLatestReview` spans `phasedigest.go:182-200` with the
+strict `After` comparison at `:199` at the reviewed commit `913f8ba`; the draft's
+`:204` was a comment line past the function) and Amendment 2 (H6's durable,
+shape-based rewording). This cycle does not close the idea: independent review
+round 04, the organizer-commissioned LE-7 goal-done check at the closing HEAD, a
+fresh zero-fix review consensus, and all-unconditional signoffs remain owed.
+
+### Protocol context attestation (Phase-8 fix-up cycle 3)
+
+```json
+{"context_mode": "full", "source_sha256": "8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7", "packet_sha256": "8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7", "fallback_reason": null, "body_path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/lean-organizer/.parley-runtime/protocol-packets/full-phase8-deliberation-8ce83cde0b4f1c3019229869433df0c32451fdbaa13a186952fdf9805c3a9db7.md"}
+```
+
+Inputs read in full before the first source edit (2026-09-24): the live phase-8
+packet (sha256 re-verified against the file: `8ce83cde…a9db7`, 109,928 B —
+packet = live source, `full` mode, no fallback); the entire signed
+`review/consensus.md` review cycle 3 (draft record, complete finding→disposition
+map, close-conditions subsection, VC-7/VC-8 with verbatim quotes, and all three
+signoff blocks — claude-1's two amendments and kimi-1's SELF-CORRECTION
+included); both complete round-03 review files; frozen `FINAL.md` (frozen at
+`120a9bf`; `git diff 120a9bf..HEAD -- …/FINAL.md` empty re-verified this
+session, before and after the source commit); this `IMPLEMENTATION.md` through
+all of fix-up cycle 2; `00-prompt.md`; `organizer-notes.md`; `organizer-usage.md`.
+No reviewer file, signoff, FINAL, release-plan, organizer artifact, or signed
+consensus/history file is edited in this cycle; the retro-corrections below
+(`[corrected in fix-up cycle 3 …]`) touch only implementer-owned record
+sections, are marked inline at each site, and preserve the prior text's
+substance. The same stale "newest run record" dating that H6 corrects here also
+sits in the ARCHIVED signed `review/consensus-cycle-02.md` blind-spot 3 — signed
+history is not edited; this correction supersedes it.
+
+### Fixes applied (fix-up cycle 3)
+
+Source commit `c3baf09` (full hash above) — the only code change is H1, inside
+frozen FINAL B's phasedigest surface, the same file and branch G4(a) changed in
+cycle 2. Skill worktree unchanged at `b06a65a` (no skill change required by the
+signed plan; none made; `npm test` re-run green — below).
+
+- **H1 (claude-1 R3-MIN-1, MINOR; VC-8 resolved at fix; primary shape — the
+  content signal — both reviewers endorsed).** `internal/driver/phasedigest.go`:
+  `nextAction`'s fix-up-published arm gains the content signal
+  `fixUpAwaitingReviewRound` — status `fix-up-cycle-N` (parsed by the new
+  `fixUpCycleNumberFromStatus`, the same Sscanf idiom `roundNumberFromLabel`
+  uses for `round-0M`) with latest complete review round `round-0M` and `M ≤ N`
+  → `await review artifact` REGARDLESS of timestamps. The mtime branch
+  `implementationNewerThanLatestReview` (Amendment-1 locators: spans `:182-200`,
+  strict `After` at `:199` at `913f8ba`; unchanged by this commit — the new
+  helpers sit after it at `:206`/`:227`, the wired arm at `:279`) stays
+  alongside as the arrival-order signal and covers non-fix-up statuses. A
+  complete `round-0M` with `M > N` reviewed this cycle and falls through exactly
+  as before — the live deck mid-cycle (status `fix-up-cycle-2`, round-03
+  complete, M=3 > N=2) reads `await implementation`, unchanged by H1, exactly as
+  kimi-1's signoff predicted; an incomplete next round never reaches the arm
+  (`Completed < Total` returns earlier). New regression test
+  `TestPhaseDigestNextActionFreshCheckoutEqualMtimeAwaitsReview` — the missing
+  fresh-checkout case: review `round-02` complete 2/2, NO round-03 directory,
+  IMPLEMENTATION.md and both round-02 artifacts sharing ONE mtime via
+  `os.Chtimes`, status `fix-up-cycle-2` (claude-1's exact reproduction shape) —
+  asserts `await review artifact`.
+- **H7 (claude-1 R3-NIT-4; the signoff-amendable stronger alternative, taken per
+  my signoff commitment).** `TestPhaseDigestNextActionFixUpPublishedAwaitsReview`'s
+  second half no longer ends in the `t.Logf` + enumeration-only check: the
+  same-round artifact rewritten with an mtime NEWER than the implementation
+  (mtime signal gone; M=1 ≤ N=1) is ASSERTED to stay `await review artifact`, and
+  the complete reviewing round `round-02` (M=2 > N=1, artifacts pinned newer) is
+  ASSERTED to relax to `await implementation`. The original G4 record wording
+  ("both the fix-up-published state and the newer-review-artifact relaxation")
+  now describes genuinely asserted behavior and is kept as committed.
+- **H2 (claude-1 R3-MIN-2).** `### Deviations from agreed fixes` added to
+  `## Fix-up cycle 2` (marked "added in fix-up cycle 3, H2"): one bullet for
+  G1's +10.2 KB / +24 % figure divergence (52,295 B delivered vs "≈ 42 KB with
+  §2" named by the signed plan and FINAL's acceptance row) with the why and the
+  FINAL-frozen note; `None` for G2–G10.
+- **H3(a) (claude-1 R3-MIN-3, documentation half).** The close-conditions
+  pointer in this section (below); the complete rule set itself lives in the
+  signed `review/consensus.md` cycle 3 ("Close conditions for this idea
+  (R3-MIN-3(a))"). **H3(b): the LE-7 goal-done check is NOT performed or claimed
+  here** — it is the organizer's to commission, by inbox note, at the closing
+  HEAD, from a fresh non-implementer non-facilitator session (claude-1 or
+  kimi-1), filing `review/goal-done/<agent>.md` with its own commands and §15.2
+  PRIMARY provenance; both reviewers verified `review/goal-done/` is inert to
+  the digest (`latestRoundSection` filters `HasPrefix("round-")`). Until that
+  verdict lands, nothing in this idea claims the close conditions satisfied.
+- **H4 (claude-1 R3-NIT-1).** G1's reconciliation clause corrected at its site:
+  the 7 B delta was one byte per SECTION at the extraction boundary (7 sections),
+  not a per-block newline (28 blocks would add 28); claude-1's §15.1
+  SELF-CORRECTION (23,223 → 23,230 B) respected — the exact source total
+  23,230 B stands.
+- **H5 (claude-1 R3-NIT-2).** G1's `floor` attribution corrected at its site: at
+  `118b245` the `floor` variable held 15,759 B (logged `named-omission-set
+  bytes`); 19,736 B was the `+§2 reference` it was compared against — the right
+  comparison basis for FINAL's ≈ 42.1 KB, so the substantive point stands.
+- **H6 (claude-1 R3-NIT-3; Amendment-2 durable rewording, both reviewers
+  endorsed, my commitment).** The cycle-2 residual clause replaced with the
+  shape-based statement (recent `runs/` records: `events.jsonl` only, no
+  `run.json`, except `20260923T202501Z` whose manifest is zero-width; post-F7
+  records exist at 02:52:08Z and 04:41:28Z; none produced a non-zero-width
+  attribution window; conclusion unchanged and reinforced). All facts
+  re-verified with my own commands this session before writing (runs/ listing,
+  per-directory contents, the manifest's `created_at == updated_at`, the
+  signoff-run events) — the wording is falsified only by a real driver
+  transition, not by the next signoff-request launch.
+
+### Deviations from agreed fixes (cycle 3)
+
+None. H1–H7 landed as signed: the content signal (primary shape), the stronger
+H7 alternative (the choice kimi-1 left the implementer, committed at signoff),
+Amendment 1's locators, and Amendment 2's H6 rewording are all inside the signed
+plan — the amendments were accepted into the plan by the signoffs themselves.
+H3(b) is explicitly NOT performed in this cycle (organizer-commissioned at the
+closing HEAD). No protocol text was edited, so no core restage was needed and
+none was performed; the staged core and core-publish note are untouched (G6
+rule — facts re-verified below).
+
+### Fix-up validation evidence (cycle 3)
+
+All commands run 2026-09-24. "Clean clone" = `git clone --no-hardlinks` of this
+worktree checked out at the fix-up-3 source commit `c3baf09`, working tree clean
+(`git status --porcelain` empty), at `/tmp/fixup3-clean`.
+
+**Focused (worktree, before the source commit):**
+
+- `go build ./...` exit 0; `go vet ./internal/driver/ ./internal/app/` clean;
+  `go test ./internal/driver/ -count=1` → ok (13.6 s).
+- `go test ./internal/app/ -run 'TestPhaseDigestNextAction|TestWaitOutstanding…|
+  TestWaitUnevaluable…|TestPhaseDigestByteIdentical…|TestPhaseDigestHasNoModel…'
+  -count=1 -v` → all PASS, including the two new/extended cases.
+- **Pre/post demonstration (the regression catches the old behavior):** with
+  `internal/driver/phasedigest.go` temporarily reverted to `913f8ba` (git
+  checkout; tests left at cycle 3), both new assertions FAIL with R3-MIN-1's
+  exact output —
+  `wait_test.go:555: same-round newer review artifact must not mask the published
+  cycle: want "await review artifact", got "await implementation"` and
+  `wait_test.go:625: fresh-checkout equal-mtime fix-up-published state must read
+  "await review artifact", got "await implementation"` — and with H1 restored
+  both pass. The file was restored byte-identically (the committed c3baf09
+  content) before committing.
+
+**Both full suites:**
+
+- CLI (clean clone at `c3baf09`, the G3-named command): `go build ./... &&
+  go test ./... -count=1 -timeout 2400s` — **exit 0, 31/31 packages ok, 0 FAIL**
+  (log `/tmp/fixup3-cli-full.log`; `internal/trajectory` 577.8 s,
+  `internal/app` 494.2 s — within the explicit 2400 s budget and again over/near
+  Go's 600 s per-package default margin, further evidence for G3). Provenance
+  note: the first launch of this suite died with a session interruption after two
+  packages; it was restarted detached in the SAME clean clone (tree clean
+  throughout, no re-clone) and the quoted result is that completed run — 31 ok
+  lines, no FAIL line, `EXIT=0`.
+
+**Skill (unchanged tree):** `worktrees/lean-organizer-skill` at `b06a65a`
+(`git status --porcelain` clean): `npm test` — **exit 0, 399 pass / 0 fail**
+(54 python tests across 7 files + the node suites) — identical counts to the
+cycle-2 record on the identical tree; no skill edit this cycle.
+
+**Task-local CLI from clean committed source (F14 discipline):** built in
+`/tmp/fixup3-clean` at `c3baf09`:
+`go build -o /tmp/parley-lean-organizer-fixup3/parley ./cmd/parley`
+(go1.27.1 darwin/arm64) → sha256
+`19831a2435074314e85c066651384d770ed20b494ee38817f7e6fde8fa066bdc`;
+`go version -m` → `vcs.revision=c3baf0977b82c2e9fc386b174f45de9e5a1dc1d9`,
+`vcs.time=2026-09-24T05:11:16Z`, `vcs.modified=false`. NOT installed globally
+(distinct sha256 from every prior recorded build — DF-4's embedded-build-path
+mechanism, unchanged).
+
+**Live falsifier check (claude-1's offered withdrawal condition, fresh archive
+extraction — the operation R3-MIN-1 names):** fresh `git archive c3baf09 |
+  tar -x` into `/tmp/fixup3-falsifier/src`, task binary above, two shapes:
+
+  1. **As-extracted mid-cycle state** — `IMPLEMENTATION.md` (status
+     `fix-up-cycle-2`) and both `review/round-03/` artifacts all at `Sep 24
+     07:11:16 2026` (ONE mtime): `next: await implementation` — the M=3 > N=2
+     fall-through, correct under H1 exactly as before it (round-03 already
+     reviewed cycle 2; the implementer owes the next artifact). kimi-1's
+     signoff predicted this unchanged fall-through; this is its equal-mtime
+     confirmation.
+  2. **The record-commit tree** (archive + the final IMPLEMENTATION.md,
+     `cmp`-verified byte-identical to this worktree's record tree, its mtime
+     pinned back to the extraction instant so all three files share ONE mtime) —
+     status `fix-up-cycle-3`, round-03 complete 2/2, NO round-04 directory:
+     **`next: await review artifact`**. Pre-H1 this exact shape is claude-1's
+     twice-reproduced wrong-direction failure (`got "await implementation"`,
+     quoted in the focused pre/post demonstration above); with H1 the falsifier
+     does not fire — the content signal (M=3 ≤ N=3) holds the state regardless
+     of the equalized timestamps.
+
+**Live deck, real mtimes (honest both-directions record):** this worktree
+  after the cycle-3 edits, task binary, `parley wait --for review --timeout 2s`:
+  `implementation: present=true status=fix-up-cycle-3 implementer=zcode-1`,
+  **`next: await review artifact`**, exit 0 (boundary reached) — the deck's own
+  fix-up-published state reads correctly for cycle 3 (both the content signal,
+  M=3 ≤ N=3, and the just-edited-newest mtime fire). Mid-cycle, before the
+  record edits, the same live surface held the M > N fall-through
+  (`await implementation`) exactly as observed in falsifier shape 1.
+
+**Frozen/unchanged re-verified at the cycle-3 source commit:** `git diff
+120a9bf..c3baf09 -- …/FINAL.md` empty (FINAL frozen); deck authority
+`parley-deck/COOPERATION.md` sha256 `8ce83cde…a9db7` = the attested packet (no
+protocol-text edit this cycle → no core restage); staged core
+`~/.parley/staging/COOPERATION-2.13.0.md` sha256 `fc907e59…62c9f`, 109,772 B,
+mtime 2026-09-24 03:35:27 — unchanged, the G6 note still matches the staged
+file; `~/.parley/protocol/core/` still holds only `2.10.0` — no publish has
+occurred and none is performed in this cycle; the prior-cycle archives
+`review/consensus-cycle-01.md`/`-02.md` untouched.
+
+**Scope discipline:** the cycle's commits touch only implementer-owned paths —
+CLI: `internal/driver/phasedigest.go`, `internal/app/wait_test.go` (source
+commit), and this IMPLEMENTATION.md (record commit). No reviewer file, signoff,
+organizer artifact, FINAL, release plan, inbox note, or run/telemetry artifact
+is committed; the untracked `usage-ledger.jsonl` and `runs/` records stay
+untracked.
+
+### Cycle-3 closure conditions check
+
+Per `review/consensus.md` cycle 3 ("Closure conditions for fix-up cycle 3"):
+
+1. **Both suites green at the cycle-3 HEAD with the G3-named command** —
+   CLI: **exit 0, 31/31 packages ok, 0 FAIL** in the clean clone at `c3baf09`;
+   skill: **399 pass / 0 fail** at `b06a65a` (unchanged tree, re-run this
+   cycle).
+2. **H1's equal-mtime regression case added, H7's assertion (stronger
+   alternative)** — done: `TestPhaseDigestNextActionFreshCheckoutEqualMtime…`
+   and the asserted second half of
+   `TestPhaseDigestNextActionFixUpPublishedAwaitsReview` (source commit
+   `c3baf09`), with the pre/post demonstration above.
+3. **IMPLEMENTATION.md Phase-8 fix-up-cycle-3 section with its own `###
+   Deviations from agreed fixes`, per-fix commit references, bumped frontmatter**
+   — this section; frontmatter `status: fix-up-cycle-3`, `fix-up-cycle: 3`,
+   `head-commit: c3baf09`.
+4. **Core-publish note's facts still match the staged file (no protocol-text
+   edit → no restage; G6 rule)** — re-verified above (fc907e59…, 109,772 B,
+   2026-09-24).
+5. **No release, merge, tag, global install, or publish in the cycle** — none
+   performed; `parley protocol publish` not run; release remains the owner's
+   post-Phase-8 step.
+
+**Close-conditions pointer (H3(a) — existing rules, nothing new created):** the
+closing consensus is planned against the COMPLETE rule set recorded in the signed
+`review/consensus.md` cycle 3 ("Close conditions for this idea"): under
+`auto_implement: true` (`00-prompt.md:8`; `strict_gate` absent), zero Agreed
+fixes is necessary but NOT sufficient — additionally LE-11 all-✅ signoffs or a
+recorded operator ruling accepting any 🟡, the LE-11 reviewer floor (two
+independent reviewers, satisfied by claude-1 + kimi-1), and the LE-7 goal-done
+check commissioned by the organizer from a fresh non-implementer
+non-facilitator session AT THE CLOSING HEAD (H3(b) — after this cycle lands),
+passing before `status: complete` is set. This manually-driven run's manual
+close must satisfy and record the driver-enforced equivalents. **Until the
+goal-done verdict lands, nothing in this idea may claim the close conditions
+satisfied — and this record does not.**
+
+**Residuals carried for round 4 (disclosed, not hidden):** round 4 verifies
+H1–H7 (it should include the fresh-checkout equal-mtime shape on its own
+machine); the three carried residuals stand — GitHub-hosted runner wall-clock
+unmeasured, live attribution windows test-proven only (with H6's corrected,
+shape-based record facts), Windows `wait`/`usage` portability macOS-verified
+only. The equal-mtime coverage gap that hid R3-MIN-1 from round 2 is now closed
+by a shipped test; kimi-1's live-deck mid-cycle observation (`await
+implementation` while signoffs were pending, M=3 > N=2) is unchanged by design
+and is the fall-through, not the masked state.
 
 ## Fix-up cycle 2
 
@@ -66,10 +346,16 @@ All at fix-up-2 source commit `998346c` (CLI, full hash
   now a test failure. The omission-set total is kept beside it under its own label,
   recomputed **whole-section-correct** (a `##`-level section's span runs through
   its deeper blocks; each block `len(text)+1`): **30,262 B** for the nine-entry
-  named omission set (the seven top-level sections subtotal 23,230 B — claude-1's
-  independently measured 23,223 B plus this convention's per-block newline), where
-  the old undercounted sum was 19,736 B mislabelled `floor` (17 subsection blocks /
-  ~11.9 KB of §12/§13 content silently excluded). Recorded-number note for round 3:
+  named omission set (the seven top-level sections subtotal 23,230 B — *figure
+  corrected in fix-up cycle 3, H4 (claude-1 R3-NIT-1): claude-1's round-02 23,223 B
+  was one byte short per section at the extraction boundary; the exact source total
+  is 23,230 B — a per-block newline would have added 28 (28 blocks), not the
+  observed 7*), where at `118b245` the old code compared two numbers whose labels
+  this record crossed (*corrected in fix-up cycle 3, H5, claude-1 R3-NIT-2: the
+  `floor` variable held 15,759 B, logged `named-omission-set bytes`; the `+§2
+  reference` it was compared against was 19,736 B — the right comparison basis for
+  FINAL's ≈ 42.1 KB, so the substantive point stands*) — either way 17 subsection
+  blocks / ~11.9 KB of §12/§13 content were silently excluded. Recorded-number note for round 3:
   FINAL's "≈ 42.1 KB with §2" was claude-1's round-1 derivation from the
   then-shipped optimizer's within-section cuts (65,516 − 27,420 + §2 at `ffa4587`);
   the recomputed whole-block retained total at this HEAD is 52,295 B with the
@@ -160,6 +446,34 @@ All at fix-up-2 source commit `998346c` (CLI, full hash
   COOPERATION.md). The pre-existing `sourceWorkspace` test fixture (same
   degenerate shape, pre-idea) now carries a minimal COOPERATION.md — those tests
   exercise the JSON/roster flow, which needs a readable workspace.
+
+### Deviations from agreed fixes (cycle 2 — subsection added in fix-up cycle 3, H2)
+
+*(claude-1 R3-MIN-2: Phase 8 requires a `### Deviations from agreed fixes` in
+every fix-up section; cycle 2 landed without one — cycle 1 carries its at the
+equivalent position. Added retroactively in fix-up cycle 3 with the deviation
+that belonged here at cycle-2 time; the divergence was already disclosed in two
+narrative places — the G1 "Recorded-number note for round 3" and the
+closure-conditions residual — but not in the one place Phase 8's shape puts
+decision-relevant divergence.)*
+
+- **G1 delivered floor figure diverges from the signed plan text and FINAL's
+  acceptance row.** The signed G1 plan says "compute the floor as the **retained
+  whole-section total** (**≈ 42 KB with §2**, recomputed at the fix-up-2 HEAD)"
+  and FINAL's C.3/R-2 row names "the measured floor (**≈ 42 KB with §2**)"; the
+  delivered, recorded figure is the retained whole-block total **52,295 B** —
+  +10.2 KB / +24 % against both. Why: the round-1 ≈ 42.1 KB was a derivation
+  subtracting a whole-section quantity (27,420 B) from an already
+  within-section-optimized body (65,516 B at `ffa4587`), which under-states what
+  a whole-block-omission body retains; the recomputed whole-block retained total
+  is the conceptually correct realization of the criterion, and both reviewers
+  independently hold it met as frozen (claude-1 withdrew R2-MAJ-1; kimi-1:
+  "criterion met as frozen; no wording amendment needed"). FINAL stays frozen —
+  a measurement-convention correction recorded here, not a criterion change.
+- **G2–G10: None** — each landed as signed. (G7's A.4 gate-side-parity item is a
+  `## Deviations from FINAL.md` entry — the section for mechanism changes; per
+  claude-1's open question 1, answered at signoff, the agreed-fixes bullet above
+  is the right and sufficient home for the G1 figure divergence.)
 
 ### Fix-up validation evidence (cycle 2)
 
@@ -280,8 +594,15 @@ Per `review/consensus.md` ("Closure conditions for fix-up cycle 2"):
 exist and round 3 must verify them (including `--json` stdout decode on all four
 exit paths at the stderr shape); GitHub-hosted runner wall-clock remains unmeasured
 (G3 removes the known cliff, not the unknown); live attribution windows remain
-test-proven only (no driver transition occurred during this cycle either — the
-deck's runs/ records are still the historical zero-width set); Windows
+test-proven only — *clause corrected in fix-up cycle 3, H6 (claude-1 R3-NIT-3),
+durable Amendment-2 wording: every recent `runs/` record for this idea writes
+`events.jsonl` only, with no `run.json` at all, except `20260923T202501Z`, whose
+manifest has `created_at == updated_at` (verified: both
+`2026-09-23T20:25:01.377412Z`) — a zero-width window; records postdating F7
+(`64a622c`, 2026-09-24T01:48:45Z) do exist, including `mode: consensus-signoff`
+runs at 02:52:08Z and 04:41:28Z, so the struck clause's "still the historical
+zero-width set" was stale — but none has produced a non-zero-width attribution
+window, so the conclusion is unchanged and reinforced*; Windows
 `wait`/`usage` portability remains macOS-verified only (carried from cycle 1).
 The floor's recorded figure is now the retained whole-block total with its
 convention stated (52,295 B) rather than FINAL's round-1 ≈ 42 KB derivation — the
@@ -502,10 +823,20 @@ None in substance. Two recorded observations inside the signed scope:
   until the `review/round-NN/` DIRECTORY for the next round was created — not
   until the first review file landed (with the directory present but empty, the
   enumeration already read `await review artifact`, 0/N filed). Fix-up G4(a)
-  retired the residual: the fix-up-published state now reads `await review
-  artifact` even with no next-round directory, keyed on IMPLEMENTATION.md being
-  newer than every artifact of the latest complete review round (mtime, the same
-  arrival signal `parley wait` uses).
+  keyed the fix-up-published state on IMPLEMENTATION.md being newer than every
+  artifact of the latest complete review round (mtime, the same arrival signal
+  `parley wait` uses). **[Corrected in fix-up cycle 3, H1 (claude-1 R3-MIN-1):
+  the "retired the residual" wording was unconditional for behavior that was
+  conditional on mtime ordering — on a fresh clone, checkout, worktree creation,
+  archive extraction or `rsync` without `-t`, IMPLEMENTATION.md and the review
+  artifacts share ONE mtime, the strict `After` never fired, and this exact state
+  still read `await implementation` silently (claude-1 reproduced it twice;
+  kimi-1's fresh-archive reproduction joined it; the shipped tests pinned strict
+  ordering via `os.Chtimes`, so the equal-mtime case was never exercised). The
+  cycle-3 content signal — status `fix-up-cycle-N` vs latest complete round
+  `round-0M`, M ≤ N awaits review regardless of timestamps — restores the claim
+  unconditionally; no claim is made that the unconditional retirement predates
+  cycle 3.]**
 - F7's live smoke still reports `attribution=ambiguous` — correct and expected: the
   deck's existing run manifests keep their zero-width historical windows; only
   transitions after this fix open real ones. The unit/driver tests prove the window
