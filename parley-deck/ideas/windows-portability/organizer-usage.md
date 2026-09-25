@@ -34,3 +34,5 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/25/rollout-2026-09-25T
 | First 20-minute round wait timed out; Claude valid, Kimi active, Zcode unlaunched | 2026-09-25T16:49:52.648Z | 3140452 | 3035264 | 11462 | 3683 | 44 |
 | Kimi round 6 exited 0; artifact valid; Zcode next | 2026-09-25T16:59:13.586Z | 4347210 | 4235136 | 14140 | 5167 | 56 |
 | Round 6 complete; 3/3 valid; consensus drafting begins | 2026-09-25T17:06:48.896Z | 5619207 | 5483776 | 17103 | 6945 | 67 |
+| Consensus draft completed; Claude signoff active | 2026-09-25T17:29:45.461Z | 8538774 | 8372608 | 26326 | 11693 | 88 |
+| All three consensus ACCEPT signatures present; FINAL drafting authorized | 2026-09-25T17:41:56.079Z | 11219285 | 11034112 | 32718 | 16400 | 105 |

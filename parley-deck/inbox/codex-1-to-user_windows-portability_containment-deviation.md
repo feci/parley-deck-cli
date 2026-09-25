@@ -26,3 +26,7 @@ Zcode prefers the deviation to recover the affected features. All three accept t
 ## What I need from you
 
 Approval is needed only to select the weaker-containment branch. The precise authority is your answer in user-to-codex-1_windows-portability_round5-unresolved.md: "Any proposed weakening of os.Root containment is not accepted by this answer: it must come back to the owner as an explicit deviation." This note is that explicit deviation request, not a claim that the answer already permits it. All ordinary consensus, implementation, review and release gates continue to apply to either branch.
+
+## Clarification from Claude's consensus signoff
+
+Claude accepted the current refusal branch and requested this benefit-side statement explicitly (participant testimony, not an organizer verification): under the refusal branch no currently Windows-reachable publication gains a new durability mechanism. Of nine reachable table rows, eight refuse and D1 is already satisfied; the three restructuring sites A1/B1/B2 remain dormant behind an existing Windows gate. The branch makes unsupported operations fail explicitly while retaining containment. Other agreed Windows portability repairs remain in scope. This clarification changes neither the deviation requested nor the selected default.
