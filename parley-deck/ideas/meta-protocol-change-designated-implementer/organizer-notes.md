@@ -45,3 +45,29 @@ The organizer launched runner signoffs once the draft and Claude signoff appeare
 Consensus status is ready: Claude, Kimi and Zcode each ACCEPT. Kimi independently reaffirmed the exact frozen body after the sequencing incident; Zcode's runner request exited 0 and independently ratified all OPEN dispositions. Zcode withdrew its own VC-1 UNVERIFIED verdict with a scoped primary disposition trace; code-efficacy audit was not claimed. No organizer signoff or code verification.
 
 The agreed FINAL drafter is Claude (own volunteer note plus Drafter: yes); Kimi is the current-run implementer, pending its own claim. Frozen global default remains UNSET in the shipped product; owner-selected post-release machine configuration is codex-1. Manual FINAL drafting continues under the recorded stale-driver-run fallback; no synthetic driver transitions.
+
+## Phase 4 closed / Phase 5 authorized
+
+Claude exited 0 after publishing FINAL in e4640bf. Organizer inspected the outcome/acceptance scope, in/out boundaries, release constraints and explicit changes-since-consensus disclosure. The one-line skill companion consistency edit is a scoped consequence of the already required drift check and must receive independent peer review. No new owner decision is required. Scope remains the designated-implementer mechanism with product default UNSET and existing-default behavior preserved; current-run Kimi implementer, Claude/Zcode reviewers; owner-selected codex machine setting after release.
+
+The stale driver run/signoff-run selection cannot safely perform Phase 5 with the current-protocol social Kimi claim; recorded manual dispatch retains canonical participant ownership and avoids re-drafting frozen FINAL. Kimi owns code and tests in both specified worktrees. No organizer code verification. Allow a 60-minute implementation process (not a wait call); bounded waits stay at 24 minutes.
+
+Release-readiness observation at Phase 5: GitHub latest CLI v1.49.1 / skill v2.13.0; npm now reports 2.13.0 (the earlier owner publish pending state has changed); installed CLI is 1.49.1; core store lists 2.10.0 and 2.13.0. Next expected minor versions are CLI 1.50.0 and skill/core 2.14.0, to be rechecked at release staging. Predecessor final handoff copied into source-context/release-1.49.1-done.md. No release mutation yet.
+
+## Phase 5 continuation
+
+Kimi's implementation invocation reached its 60-minute process timeout, with partial work preserved. No completion, test pass or review-readiness is inferred. Reinvoke the same implementer for a fresh bounded continuation, reconciling its living artifact and current worktree before further edits; reviewers still wait. No model/effort or quorum change.
+
+## Phase 5 closed / Phase 6
+
+Kimi continuation exited 0. Shared wait reports implementation published. Committed implementation: CLI 0893989; skill bf7e049; baselines e4640bf (FINAL publication) and 8161e5e (skill). Kimi reports build/vet/full tests PASS and changed-file formatting clean; these remain implementer evidence pending independent challenge. IMPLEMENTATION head-commit frontmatter still names e4640bf, so review briefs pin the actual code commits explicitly and disclose the metadata discrepancy. Reviewers may report it; no organizer edit to Kimi's artifact.
+
+Direct driver continuation remains a stale signoff run with no recoverable action (last read-only continuation). Manual Phase-6 dispatch is the recorded fallback. Claude and Zcode each own their raw review, tests and verdicts; local-disk isolated worktrees are recommended by implementer's measured shared-mount test slowness. No reviewer writes product fixes before consensus.
+
+## Phase 6 schema repair
+
+Both review invocations exited 0. wait returned exit 4 because Claude's file uses author: rather than required agent:, with a plural reviewed-commits map instead of the canonical singular reviewed-commit field. The body is present; the earlier possibility of an in-progress partial was not the cause. Claude alone is asked to repair its own required frontmatter and run shared validation; no finding/body changes or organizer proxy edit.
+
+## Phase 6 closed / Phase 7
+
+Claude repaired only its own frontmatter, kept review body checksum unchanged, and shared wait now exits 0 for both review artifacts. Claude reports 3 MAJOR / 5 MINOR / 3 NIT; Zcode reports 1 MAJOR (overlapping confirmation parser issues) plus MINOR findings. Both explicitly withhold full independent whole-suite PASS because their broad test runs did not finish; this gap must be resolved before closure, not inferred from implementer output. No human-only issue was raised. Kimi drafts a fix-plan review consensus; no source fixes until participant signoff.
