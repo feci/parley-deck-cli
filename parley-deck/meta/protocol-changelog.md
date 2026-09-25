@@ -1,3 +1,30 @@
+## 2026-09-25 — designated implementer: per-idea `implementer:` + layered `default_implementer` (UNRELEASED)
+Idea: ideas/meta-protocol-change-designated-implementer/
+Drafted by: claude-1 (FINAL); protocol hunks applied by kimi-1 (Phase 5)
+Summary: Owner-set designation of the participant who executes FINAL, identical hunks in all three
+COOPERATION.md copies (deck view, internal/protocol/defaults/, skill references/): §0 `[defaults]`
+records `default_implementer`, deliberately shipped COMMENTED OUT in the generated central config
+(a per-idea `implementer:` outranks it; `default_implementer = "none"` suppresses it deck-wide);
+§4.0 Phase-0 template gains the optional `implementer:` field (designation vs the IMPLEMENTATION.md
+outcome record; empty = blocked, id outside `participants:` = invalid); §4 Phase 4 prefers a drafter
+that is not the designee (never forbidden) and adds designated runs to the FINAL self-containment
+trigger list; §4 Phase 5 states the mechanism — one four-rank resolution chain (IMPLEMENTATION.md
+pin → per-idea designation → live layered `default_implementer` → FINAL-drafter fallback), the four
+field states, fail-closed validity gates on any run, the tier-2 unavailability gate with its three
+recorded exits (`implementer_waived:`/`implementer: none`/re-designate), tier-3 notice-and-fall-
+through (never a gate; malformed still hard-fails), pin-vs-designation escalation with the
+`implementer_reassigned:` record, claim subordination under a live designation, the scope sentence
+(a designation names who executes, never which gate applies), the `excluded:`/`participants:` note,
+and the drafter==implementer concentration record; §9.0 readiness records that the designee's ping
+result feeds those rules; §10 TL;DR item 6 restates the chain. Behaviour is byte-identical on a
+deck that sets neither field. The skill companion
+`skills/parley-deck/references/ROSTER_AND_PROTOCOL.md` Phase-5 line states the amended rule.
+**Status: UNRELEASED.** Deck source, embedded default and skill source only — not published to a
+global core and not in a package release. Three-copy tail-hash identity (AC-1) verified after the
+hunks; code and tests shipped in the same branch (internal/protocol/implementer.go,
+internal/config/runtime.go, internal/app/, internal/consensus/); no channel or publication action
+taken.
+
 ## 2026-09-23 — lean organizer: pure-organizer default, wait/digest, audience packet, fresh-session tooling (UNRELEASED)
 Idea: ideas/meta-protocol-change-lean-organizer/
 Drafted by: kimi-1 (FINAL); protocol hunks applied by zcode-1 (Phase 5)

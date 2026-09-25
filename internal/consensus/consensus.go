@@ -748,34 +748,20 @@ func expectedRoundParticipants(ideaDir string, participants []string, review boo
 }
 
 // resolveImplementer reads the implementer from IMPLEMENTATION.md, else the FINAL drafter.
+//
+// This is the REVIEW-EXCLUSION read: it must name who actually implemented — a recorded
+// fact — never who was instructed to (R32). Tiers 2 and 3 of the designation chain
+// (per-idea `implementer:`, `[defaults].default_implementer`) therefore never enter it;
+// the source list is exactly today's two artifacts. The eligibility list stays the raw
+// participants list this function was handed — the deliberate, pinned divergence from
+// the driver's facilitator-filtered list (R34), now an explicit parameter of the shared
+// chain (R31) rather than an accidental copy.
 func resolveImplementer(ideaDir string, participants []string) string {
-	isParticipant := func(id string) bool {
-		for _, p := range participants {
-			if p == id {
-				return true
-			}
-		}
-		return false
+	id, _, ok := protocol.ResolveImplementerChain(ideaDir, protocol.LegacyImplementerCandidates(), participants)
+	if !ok {
+		return ""
 	}
-	for _, src := range []struct {
-		file string
-		keys []string
-	}{
-		{"IMPLEMENTATION.md", []string{"implementer"}},
-		{"FINAL.md", []string{"implementer", "drafted-by"}},
-	} {
-		meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, src.file))
-		if err != nil {
-			continue
-		}
-		for _, k := range src.keys {
-			id := strings.Trim(strings.TrimSpace(meta[k]), `"'`)
-			if id != "" && isParticipant(id) {
-				return id
-			}
-		}
-	}
-	return ""
+	return id
 }
 
 func draftTemplate(idea protocol.IdeaStatus, opts DraftOptions, roundLabel, roundRel string) string {

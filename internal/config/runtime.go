@@ -281,10 +281,14 @@ type rosterOverride struct {
 // globalDefaults is the optional [defaults] block of a layered config file —
 // non-agent policy knobs that apply project-wide.
 type globalDefaults struct {
-	Speed              string            `toml:"speed"`
-	PingTier           string            `toml:"ping_tier"`
-	PreferredTransport string            `toml:"preferred_transport"`
-	RosterChangePolicy string            `toml:"roster_change_policy"`
+	Speed              string `toml:"speed"`
+	PingTier           string `toml:"ping_tier"`
+	PreferredTransport string `toml:"preferred_transport"`
+	RosterChangePolicy string `toml:"roster_change_policy"`
+	// DefaultImplementer is the optional standing implementer designation (the
+	// designated-implementer idea, R7). It inherits all four config layers by riding
+	// [defaults]; a per-idea `implementer:` line outranks it and "none" suppresses it.
+	DefaultImplementer string            `toml:"default_implementer"`
 	Timeouts           *timeoutsBlock    `toml:"timeouts"`
 	Loop               *loopBlock        `toml:"loop"`
 	TrackRosters       map[string]string `toml:"track_rosters"`
@@ -317,6 +321,9 @@ type CentralDefaults struct {
 	PingTier           string
 	PreferredTransport string
 	RosterChangePolicy string
+	// DefaultImplementer is the merged standing implementer designation; "" means
+	// unset (today's behaviour), "none" is the documented deck-wide suppressor.
+	DefaultImplementer string
 	SignoffMS          int
 	RoundMS            int
 	ReviewMS           int
@@ -543,6 +550,13 @@ func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
 	if s := strings.TrimSpace(gd.RosterChangePolicy); s != "" {
 		out.RosterChangePolicy = s
 	}
+	// Non-empty-string merge like the sibling keys above (R8): an empty value at a
+	// higher layer does NOT clear a lower layer's value — the documented suppressor is
+	// `default_implementer = "none"`. Deliberately NOT a presence-aware pointer (the
+	// [defaults.loop] clearing precedent does not apply here; ALT-19 rejected).
+	if s := strings.TrimSpace(gd.DefaultImplementer); s != "" {
+		out.DefaultImplementer = s
+	}
 	if gd.Timeouts != nil {
 		if gd.Timeouts.SignoffMS > 0 {
 			out.SignoffMS = gd.Timeouts.SignoffMS
@@ -636,7 +650,8 @@ func centralDefaultTemplate() string {
 	b.WriteString("speed = \"fast\"                             # fast output at the SAME model+effort (Claude Code /fast), NOT a downgrade; a separate axis from reasoning. Use \"deep\" per idea for heavy work.\n")
 	b.WriteString("ping_tier = \"hosted-pong\"                 # §9.0 roster liveness ping before each idea (or \"none\")\n")
 	b.WriteString("preferred_transport = \"local-dir\"          # parley init default transport (local-dir|github-pr|gitlab-mr)\n")
-	b.WriteString("roster_change_policy = \"confirm-breaking\"  # auto-add new agents; user confirms drops/breaking changes\n\n")
+	b.WriteString("roster_change_policy = \"confirm-breaking\"  # auto-add new agents; user confirms drops/breaking changes\n")
+	b.WriteString("# default_implementer = \"agent-id\"           # SHIPPED UNSET ON PURPOSE: optional standing implementer designation (§4 Phase 5). A per-idea `implementer:` line outranks it; \"none\" suppresses it deck-wide. Unlike the active keys above, this one stays commented out — an active value here would ship the global default SET.\n\n")
 	b.WriteString("[defaults.timeouts]\n")
 	b.WriteString("signoff_ms = 600000          # 10 min\n")
 	b.WriteString("round_ms = 1200000           # 20 min\n")

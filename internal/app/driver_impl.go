@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/evidence"
@@ -40,6 +41,13 @@ type driverImplOps struct {
 	verificationCLI string // internal process-fixture seam; empty uses this running CLI
 	roleErr         string // declared-facilitator role deadlock; every role action escalates
 	facilitator     protocol.FacilitatorRole
+	// Designated-implementer state (meta-protocol-change-designated-implementer).
+	// All four stay zero on an undesignated deck, which keeps today's behavior
+	// byte-identical (nothing emitted, nothing compared, no gate).
+	implSource     protocol.ImplementerSource // resolution rank that produced implementer
+	implDesignated bool                       // a tier-2/tier-3 designation is present (drives the R45 event/line)
+	implLine       string                     // the extra designation-path stdout line
+	dispatchErr    string                     // tier-2 availability gate; escalated by the dispatch actions only (R17)
 }
 
 func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, participants []string, out io.Writer) driver.ImplOps {
@@ -61,7 +69,21 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 	if role.Declared && !role.Participates && len(eligible) == 0 && len(participants) > 0 {
 		roleErr = fmt.Sprintf("declared facilitator %s is the only participant; a declared-facilitator run needs at least one non-facilitator participant to implement — add a participant or set facilitator_participates: true (escalated, not fallen back)", role.Facilitator)
 	}
-	implementer := resolveImplementer(ideaDir, eligible)
+	// Designated implementer (meta-protocol-change-designated-implementer): resolve
+	// through the four-rank chain — pin → per-idea designation → live layered global
+	// default → today's chain. Validity and pin-conflict gates ride the roleErr path
+	// so every role action escalates (R25); the tier-2 availability gate is a
+	// dispatch gate only (R17/R18). With no designation present anywhere this is
+	// exactly today's resolveImplementer call.
+	designation := resolveDispatchDesignation(root, ideaDir, eligible, base.Agents)
+	implementer := designation.implementer
+	if designation.gate != "" {
+		if roleErr != "" {
+			roleErr += "; " + designation.gate
+		} else {
+			roleErr = designation.gate
+		}
+	}
 	// Dedupe to distinct non-implementer IDs (review CF1). Duplicate participant
 	// IDs (e.g. [impl, rev, rev]) would otherwise (a) inflate ReviewerCount so the
 	// LE-11 `< 2` guard passes with a single real reviewer, and (b) make
@@ -91,42 +113,226 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 	if len(reviewers) > 0 {
 		drafter = reviewers[0]
 	}
-	return driverImplOps{
+	ops := driverImplOps{
 		base: base, root: root, ideaSlug: ideaSlug, ideaDir: ideaDir,
 		implementer: implementer, reviewers: reviewers, drafter: drafter, out: out,
 		roleErr: roleErr, facilitator: role,
+		implSource: designation.source, implDesignated: designation.present,
+		implLine: designation.line, dispatchErr: designation.dispatchGate,
 	}
+	if designation.present {
+		ops.kickoffDesignationChecks()
+	}
+	return ops
+}
+
+// dispatchDesignation is the designation-aware resolution of who implements, computed
+// once per driverImplOps construction and frozen for that dispatch (R29).
+type dispatchDesignation struct {
+	implementer  string
+	source       protocol.ImplementerSource
+	present      bool   // a tier-2/tier-3 designation is present (R45 event/line gate)
+	line         string // the extra designation-path stdout line
+	gate         string // validity / pin-conflict gate — roleErr path, any run (R16/R25/R28)
+	dispatchGate string // tier-2 availability gate — dispatch actions only (R17/R18)
+}
+
+// resolveDispatchDesignation implements the R13 chain: rank 1 pin, rank 2 per-idea
+// designation, rank 3 live layered global default, rank 4 today's chain verbatim.
+// Ranks 2 and 3 are dormant unless somebody set them; with neither set the result is
+// exactly resolveImplementer(ideaDir, eligible) and present=false.
+func resolveDispatchDesignation(root, ideaDir string, eligible []string, discovered []agents.Discovery) dispatchDesignation {
+	legacy := resolveImplementer(ideaDir, eligible)
+	pinID, _, pinOK := protocol.ResolveImplementerChain(ideaDir, protocol.PinImplementerCandidates(), eligible)
+	d := protocol.ReadImplementerDesignation(ideaDir)
+	resolvedLine := func(id string, src protocol.ImplementerSource) string {
+		return fmt.Sprintf("driver: implementer resolved: %s (source: %s)", id, src)
+	}
+	fallThroughNotice := func(id, reason string) string {
+		return fmt.Sprintf("driver: designated implementer %s %s; falling through to the default chain — to gate instead: set per-idea `implementer: <other-id>`, write `implementer: none`, or record `implementer_waived: %s — <reason> — confirmed <date>`", id, reason, id)
+	}
+	switch d.State {
+	case protocol.DesignationEmpty:
+		// R2/R16: present-empty is an INCOMPLETE designation — a typo, never the
+		// opt-out. Hard gate on any run; both legal spellings named.
+		return dispatchDesignation{implementer: legacy, gate: "incomplete designation: 00-prompt.md carries `implementer:` with an empty value — write `implementer: <agent-id>` naming an eligible participant, or `implementer: none` for an explicit opt-out"}
+	case protocol.DesignationNone:
+		// R2: explicit per-idea non-designation — tier 3 suppressed, today's chain, no gate.
+		return dispatchDesignation{implementer: legacy, source: protocol.SourceImplementerNone, present: true,
+			line: fmt.Sprintf("driver: implementer designation declined (implementer: none); using the default chain (source: %s)", protocol.SourceImplementerNone)}
+	case protocol.DesignationSet:
+		id := d.ID
+		if !memberOf(eligible, id) {
+			// R16/R20: at tier 2 a non-participant AND the idea's own declared
+			// non-participating facilitator are the same hard gate — both are absent
+			// from the facilitator-filtered eligible set. Malformed values (R4) land
+			// here too: they are never repaired, they fail this membership check.
+			return dispatchDesignation{implementer: legacy, gate: fmt.Sprintf("invalid designation: `implementer: %s` is not an eligible participant of this idea — edit it to an eligible participant or write `implementer: none`", id)}
+		}
+		if pinOK && pinID != id {
+			// R28: pin and designation disagree — escalate, never silently honour
+			// either. Only a confirmed owner/author record retires the pin.
+			if meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md")); err != nil || !protocol.ParseImplementerReassignment(meta, pinID, id) {
+				return dispatchDesignation{implementer: legacy, gate: fmt.Sprintf("implementer conflict: IMPLEMENTATION.md pins %s but 00-prompt.md designates %s — either restore the designation to match the pin, or record `implementer_reassigned: %s to %s — <reason> — confirmed <date>` (never the incoming implementer's own edit)", pinID, id, pinID, id)}
+			}
+		}
+		src := protocol.SourceImplementerDesignation
+		if pinOK {
+			src = protocol.SourceImplementerPin // rank 1 wins when tiers 1 and 2 agree (R27)
+		}
+		if !designeeAvailable(root, id, discovered) {
+			if meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md")); err == nil && protocol.ImplementerWaived(meta, id) {
+				// R18 exit 2, recorded: the confirmed waiver clears the gate.
+				return dispatchDesignation{implementer: legacy, source: protocol.SourceImplementerFallThroughUnavailable, present: true,
+					line: fallThroughNotice(id, "is waived by a recorded `implementer_waived:` line")}
+			}
+			// R18: valid but unavailable at the ping — blocking dispatch gate with
+			// the Confirm pre-built (three recorded exits). Dispatch actions only.
+			return dispatchDesignation{implementer: id, source: src, present: true, line: resolvedLine(id, src),
+				dispatchGate: fmt.Sprintf("designated implementer %s is unavailable (§9.0 ping) — exits: (1) re-designate: edit `implementer:` to another eligible participant; (2) record `implementer_waived: %s — <reason> — confirmed <date>`; (3) write `implementer: none`", id, id)}
+		}
+		return dispatchDesignation{implementer: id, source: src, present: true, line: resolvedLine(id, src)}
+	}
+	// DesignationAbsent — rank 1 pin governs re-entry (R27/R30)…
+	if pinOK {
+		if g := globalDefaultImplementer(root); g != "" {
+			// …and a present tier-3 designation is still recorded as present (R45).
+			return dispatchDesignation{implementer: pinID, source: protocol.SourceImplementerPin, present: true, line: resolvedLine(pinID, protocol.SourceImplementerPin)}
+		}
+		return dispatchDesignation{implementer: pinID, source: protocol.SourceImplementerPin}
+	}
+	// …then rank 3: the live layered global default (R10/R11).
+	g := globalDefaultImplementer(root)
+	if g == "" {
+		return dispatchDesignation{implementer: legacy} // unset path: byte-identical
+	}
+	if strings.EqualFold(g, "none") {
+		// R9: "none" is the documented deck-wide suppressor — today's chain, recorded.
+		return dispatchDesignation{implementer: legacy, source: protocol.SourceImplementerNone, present: true,
+			line: fmt.Sprintf("driver: standing implementer default suppressed (default_implementer = \"none\"); using the default chain (source: %s)", protocol.SourceImplementerNone)}
+	}
+	if strings.ContainsAny(g, " \t\r\n") {
+		// R19 concession 3 / AC-10: a malformed tier-3 value keeps its hard failure;
+		// only unavailability and inapplicability fall through.
+		return dispatchDesignation{implementer: legacy, gate: fmt.Sprintf("invalid default_implementer %q: not a single agent id — fix the config value or set it to \"none\"", g)}
+	}
+	if !memberOf(eligible, g) {
+		// R20–R22: a standing preference legitimately predates this idea's roster and
+		// facilitator declaration — inapplicable, not invalid. Notice + fall through.
+		return dispatchDesignation{implementer: legacy, source: protocol.SourceImplementerFallThroughInapplicable, present: true,
+			line: fallThroughNotice(g, "is not an eligible participant of this idea (inapplicable)")}
+	}
+	if !designeeAvailable(root, g, discovered) {
+		// R19: tier-3 unavailability is a one-line notice and fall-through, no gate.
+		return dispatchDesignation{implementer: legacy, source: protocol.SourceImplementerFallThroughUnavailable, present: true,
+			line: fallThroughNotice(g, "is unavailable (§9.0 ping)")}
+	}
+	return dispatchDesignation{implementer: g, source: protocol.SourceImplementerGlobalDefault, present: true, line: resolvedLine(g, protocol.SourceImplementerGlobalDefault)}
+}
+
+func memberOf(list []string, id string) bool {
+	for _, p := range list {
+		if p == id {
+			return true
+		}
+	}
+	return false
+}
+
+// designeeAvailable is the dispatch-time availability signal behind the R18/R19 ping
+// checks: the designee resolves to a discovered (Found) agent on this machine.
+func designeeAvailable(root, id string, discovered []agents.Discovery) bool {
+	d, err := agents.ResolveParticipant(id, discovered, rosterMappingFor(root))
+	return err == nil && d.Found
+}
+
+// globalDefaultImplementer is rank 3's live layered read (R10/R11). A layered-config
+// read error leaves tier 3 unset rather than gating dispatch on a parse failure that
+// the config-loading paths already surface.
+func globalDefaultImplementer(root string) string {
+	defs, err := config.LoadDefaults(root)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(defs.DefaultImplementer)
+}
+
+// kickoffDesignationChecks runs the designation-only kickoff surfacing (R36–R39): the
+// unchanged LE-3 model-diversity check runs early so an unsatisfiable roster costs an
+// error message rather than a design cycle, and thin reviewer benches warn without
+// blocking. Fires only under a present designation; the OpenReviewRound check at
+// review time is unchanged.
+func (o driverImplOps) kickoffDesignationChecks() {
+	if o.out == nil {
+		return
+	}
+	// R37: same check, same severity, no new gate class — an escalation here prints
+	// early and still gates later at OpenReviewRound, unchanged.
+	if err := o.checkModelDiversity(); err != nil {
+		fmt.Fprintf(o.out, "driver: kickoff model-diversity check: %v\n", err)
+	}
+	switch len(o.reviewers) {
+	case 0:
+		// R39 surfaced earlier: the hard stop itself stays at OpenReviewRound.
+		fmt.Fprintf(o.out, "driver: WARNING designated run has no non-implementer reviewer; review cannot open (the hard stop is unchanged)\n")
+	case 1:
+		// R38: a two-participant designated idea warns, never blocks.
+		fmt.Fprintf(o.out, "driver: WARNING designated run leaves a single non-implementer reviewer (%s); %s implements and never reviews itself — consider a third participant for review depth\n", o.reviewers[0], o.implementer)
+	}
+}
+
+// checkImplementerReentry is R29: before a pin exists, the recorded
+// agent.implementer_resolved event is the durable record of what was dispatched, and a
+// live tier-2/tier-3 change against it escalates rather than reassigning silently. The
+// comparison fires only when the recorded source was designation or global-default; a
+// pinned resolution governs every resume (R30) and never reaches here.
+func (o driverImplOps) checkImplementerReentry() error {
+	if o.base.Store == (store.Store{}) {
+		return nil
+	}
+	// The comparison is a PRE-PIN instrument: once IMPLEMENTATION.md exists the pin
+	// governs every resume (R30) and there is nothing to compare against.
+	if o.implSource == protocol.SourceImplementerPin {
+		return nil
+	}
+	events, err := o.base.Store.Load()
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("driver: cannot replay the run's dispatch record: %v", err)
+	}
+	for i := len(events) - 1; i >= 0; i-- {
+		e := events[i]
+		if e.Type != "agent.implementer_resolved" {
+			continue
+		}
+		if idea, _ := e.Data["idea"].(string); idea != o.ideaSlug {
+			continue
+		}
+		recSrc, _ := e.Data["source"].(string)
+		if recSrc != string(protocol.SourceImplementerDesignation) && recSrc != string(protocol.SourceImplementerGlobalDefault) {
+			continue
+		}
+		recID, _ := e.Data["implementer"].(string)
+		if recID == o.implementer && recSrc == string(o.implSource) {
+			return nil
+		}
+		return fmt.Errorf("driver: designation changed after a recorded dispatch (recorded: %s via %s; now: %s via %s) — restore the designation to match the record, or record `implementer_reassigned: %s to %s — <reason> — confirmed <date>`; escalating rather than reassigning silently", recID, recSrc, o.implementer, o.implSource, recID, o.implementer)
+	}
+	return nil
 }
 
 // resolveImplementer picks the implementer from durable role metadata (D10/AF6):
 // IMPLEMENTATION.md `implementer` (on re-entry), else FINAL.md `implementer` /
-// `drafted-by`, validated against participants; otherwise participants[0].
+// `drafted-by`, validated against participants; otherwise participants[0]. This is
+// rank 1 + rank 4 of the R13 chain — today's behavior, byte-identical, pinned by
+// TestResolveImplementerFromRoleMetadata (R33). The shared implementation lives in
+// internal/protocol (R31); the eligibility list is the caller's explicit parameter
+// (R34). Tiers 2–3 never enter this function.
 func resolveImplementer(ideaDir string, participants []string) string {
-	isParticipant := func(id string) bool {
-		for _, p := range participants {
-			if p == id {
-				return true
-			}
-		}
-		return false
-	}
-	for _, src := range []struct {
-		file string
-		keys []string
-	}{
-		{"IMPLEMENTATION.md", []string{"implementer"}},
-		{"FINAL.md", []string{"implementer", "drafted-by"}},
-	} {
-		meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, src.file))
-		if err != nil {
-			continue
-		}
-		for _, k := range src.keys {
-			id := strings.Trim(strings.TrimSpace(meta[k]), `"'`)
-			if id != "" && isParticipant(id) {
-				return id
-			}
-		}
+	if id, _, ok := protocol.ResolveImplementerChain(ideaDir, protocol.LegacyImplementerCandidates(), participants); ok {
+		return id
 	}
 	if len(participants) > 0 {
 		return participants[0]
@@ -214,7 +420,32 @@ func (o driverImplOps) Implement(ctx context.Context) error {
 	if o.roleErr != "" {
 		return fmt.Errorf("driver: %s", o.roleErr)
 	}
+	if o.dispatchErr != "" {
+		return fmt.Errorf("driver: %s", o.dispatchErr)
+	}
 	fmt.Fprintf(o.out, "driver: implementing via %s ...\n", o.implementer)
+	if o.implDesignated {
+		// R29: a live tier-2/tier-3 change against a recorded designation dispatch
+		// escalates rather than reassigning silently.
+		if err := o.checkImplementerReentry(); err != nil {
+			return err
+		}
+		// R45/R46: designation-only observability — one extra stdout line and the
+		// durable resolved-source event, guarded exactly as checkModelDiversity's
+		// event. On an undesignated deck neither fires and the line above stays
+		// byte-identical to today.
+		fmt.Fprintln(o.out, o.implLine)
+		if o.base.Store != (store.Store{}) {
+			_ = o.base.Store.Append(store.Event{
+				Time: time.Now().UTC(),
+				Type: "agent.implementer_resolved",
+				Data: map[string]any{
+					"idea": o.ideaSlug, "implementer": o.implementer,
+					"source": string(o.implSource),
+				},
+			})
+		}
+	}
 	r := runner.RunImplementation(ctx, o.withParticipants(o.implementer))
 	if !r.Success() {
 		return fmt.Errorf("implementer %s: %s", r.AgentID, r.ExitError)
@@ -503,6 +734,9 @@ func (o driverImplOps) PrecheckFixup(ctx context.Context) error {
 func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 	if o.roleErr != "" {
 		return fmt.Errorf("driver: %s", o.roleErr)
+	}
+	if o.dispatchErr != "" {
+		return fmt.Errorf("driver: %s", o.dispatchErr)
 	}
 	fmt.Fprintf(o.out, "driver: running fix-up cycle %d via %s ...\n", cycle, o.implementer)
 	r := runner.RunFixup(ctx, o.withParticipants(o.implementer))

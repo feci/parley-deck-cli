@@ -82,7 +82,10 @@ func (o driverConsensusOps) Reopen(ctx context.Context, reason string) error {
 // per the given prompt. Drafting is a single-agent facilitator action (D6).
 func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string) error {
 	role := protocol.ReadFacilitatorRole(o.ideaDir)
-	drafter, ok := firstEligibleHeadlessAgent(o.discovered, o.participants, rosterMappingFor(o.root), role)
+	// R36 drafter separation: under a live designation, prefer an eligible drafter
+	// that is not the designated implementer (the designee remains the fallback).
+	preferNot := designatedImplementerPreference(o.root, o.ideaDir, o.participants, role)
+	drafter, ok := firstEligibleHeadlessAgentPreferring(o.discovered, o.participants, rosterMappingFor(o.root), role, preferNot)
 	if !ok {
 		return fmt.Errorf("no headless idea participant available to draft %s", kind)
 	}
@@ -92,6 +95,35 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 	}
 	fmt.Fprintf(o.out, "driver: drafting %s via %s ...\n", kind, drafter.ID)
 	return runHeadlessSignoffAgent(ctx, rootAbs, drafter, prompt, o.out, o.out)
+}
+
+// designatedImplementerPreference returns the designation that drafter selection
+// should avoid where an alternative exists (R36): the eligible tier-2 designation,
+// else the eligible tier-3 global default, else "". Inert without a designation — and
+// a defective or inapplicable designation steers nothing.
+func designatedImplementerPreference(root, ideaDir string, participants []string, role protocol.FacilitatorRole) string {
+	eligible := make([]string, 0, len(participants))
+	for _, p := range participants {
+		if role.IneligibleForRoles(p) {
+			continue
+		}
+		eligible = append(eligible, p)
+	}
+	d := protocol.ReadImplementerDesignation(ideaDir)
+	if d.State == protocol.DesignationSet {
+		if memberOf(eligible, d.ID) {
+			return d.ID
+		}
+		return ""
+	}
+	if d.State != protocol.DesignationAbsent {
+		return "" // `none` and the gating present-empty state suppress tier 3
+	}
+	g := globalDefaultImplementer(root)
+	if g == "" || strings.EqualFold(g, "none") || strings.ContainsAny(g, " \t\r\n") || !memberOf(eligible, g) {
+		return ""
+	}
+	return g
 }
 
 // firstHeadlessAgent returns the first discovered headless agent that is also an
@@ -107,16 +139,32 @@ func firstHeadlessAgent(discovered []agents.Discovery, participants []string, ma
 // With no eligible drafter left it reports !ok so the caller escalates rather than
 // silently falling back to the facilitator.
 func firstEligibleHeadlessAgent(discovered []agents.Discovery, participants []string, mapping map[string]string, role protocol.FacilitatorRole) (agents.Discovery, bool) {
+	return firstEligibleHeadlessAgentPreferring(discovered, participants, mapping, role, "")
+}
+
+// firstEligibleHeadlessAgentPreferring adds the R36 drafter-separation preference:
+// preferNot is the designated implementer (empty when no designation is present) —
+// the first pass skips it, the second pass falls back to it, so drafter ==
+// implementer is never forbidden, only dispreferred where an alternative exists.
+func firstEligibleHeadlessAgentPreferring(discovered []agents.Discovery, participants []string, mapping map[string]string, role protocol.FacilitatorRole, preferNot string) (agents.Discovery, bool) {
 	// Iterate participants in order and resolve each (roster id via [roster.*] or a
 	// bare family id) so a roster-id deck finds its drafter (composite-agent-naming).
-	for _, p := range participants {
-		if role.IneligibleForRoles(p) {
-			continue
-		}
-		if agent, err := agents.ResolveParticipant(p, discovered, mapping); err == nil {
-			if agent.Found && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
-				return agent, true
+	for pass := 0; pass < 2; pass++ {
+		for _, p := range participants {
+			if role.IneligibleForRoles(p) {
+				continue
 			}
+			if pass == 0 && preferNot != "" && p == preferNot {
+				continue
+			}
+			if agent, err := agents.ResolveParticipant(p, discovered, mapping); err == nil {
+				if agent.Found && agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless {
+					return agent, true
+				}
+			}
+		}
+		if preferNot == "" {
+			break
 		}
 	}
 	return agents.Discovery{}, false

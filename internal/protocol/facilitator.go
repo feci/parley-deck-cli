@@ -41,6 +41,14 @@ func ReadFacilitatorRole(ideaDir string) FacilitatorRole {
 }
 
 // FacilitatorRoleFromMeta maps parsed 00-prompt frontmatter onto the role.
+//
+// Deliberate divergence from the sibling `implementer:` designation field: an EMPTY
+// facilitator collapses into absent here because `facilitator:` is EXCLUSIONARY (an
+// empty one excludes nobody), whereas `implementer:` is APPOINTIVE (an empty one
+// appoints nobody, and the silent destination is the positional default) — so the
+// designation parser keeps present-empty as its own gating state and reserves `none`
+// for the deliberate opt-out. `none` versus empty is what separates "nobody
+// deliberately" from "nobody by mistake".
 func FacilitatorRoleFromMeta(meta map[string]string) FacilitatorRole {
 	id := strings.Trim(strings.TrimSpace(meta[FacilitatorKey]), `"'`)
 	if id == "" {
