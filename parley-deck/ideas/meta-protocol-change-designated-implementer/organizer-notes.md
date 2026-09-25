@@ -145,3 +145,11 @@ Exact resumed Kimi session exited 0. Source 717f3de is one test-comment edit; re
 ## Round-04 exited / closing-consensus proposal
 
 Both processes exited 0, shared wait exited 0. Zcode PASS/scoped null; Claude PASS with one explicitly nonblocking NIT, no reservation/BLOCK and no request for another implementation cycle. Both AF-16/17 and standing metadata confirmed. Claude's NIT is the blanket WITH-flags header alongside the explicit WITHOUT-flags exception; its filed verdict expressly permits a recorded dismissal. Participants decide its disposition openly; organizer does not call the text fixed or suppress it. Archive signed cycle-3 plan at review/consensus-cycle-03.md (SHA256 5da26e8892c5ba42f93e5f0439cf5cf028b73717590b6ee3ed9b4d309ab90923). Resume exact Claude review-4 session 52dccda8-ad11-45b2-805b-7c9ee727cf89 (JSON result ID, is_error false) for Phase-7 draft; preserve original Opus 5[1m]/max. Closing requires fresh signatures and later a separate fresh goal-check invocation.
+
+## Closing cycle-4 signoff dispatch
+
+Resumed from durable state; closing draft by Claude exited 0. Runner request-signoffs for Kimi/Zcode is active; Kimi ACCEPT received, Zcode still awaited. Read all raw signature text. Separate fresh Zcode goal-check prompt is prepared but will not launch before runner exit and complete zero-fix signatures. `parley wait --for consensus` again returns the root design consensus rather than the pending review signatures; use `consensus status --review` plus process exit. Read-only release recheck: GitHub CLI v1.49.1, skill v2.13.0; npm 2.13.0. No release mutation. Machine roster currently shows Claude, Codex, Kimi and Zcode active; no roster change made, and frozen in-flight quorum/models remain unchanged.
+
+## Cycle-4 closing consensus signed / fresh goal check
+
+Runner exited 0. All three raw signatures are fresh ACCEPT, no reservation or block; parsed review triage ready, outstanding agreed fixes zero. Both Kimi and Zcode explicitly concur with the recorded NIT dismissal; text remains an honest unrepaired accepted residual. Fresh Zcode non-implementer goal-check invocation follows, separate from review and signoff. No implementation completion or release inferred yet.
