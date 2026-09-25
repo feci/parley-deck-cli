@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"testing"
 )
 
@@ -94,7 +93,7 @@ func TestTreeDigestModeChangeChanges(t *testing.T) {
 // entry is UNTRACKED and git's file inventory omits it entirely.
 func TestTreeDigestUnsupportedEntryFails(t *testing.T) {
 	root := scratchGitRepo(t, map[string]string{"a.go": "package a\n"})
-	if err := syscall.Mkfifo(filepath.Join(root, "pipe"), 0o644); err != nil {
+	if err := mkfifo(filepath.Join(root, "pipe"), 0o644); err != nil {
 		// This host's shared test volume cannot host FIFOs, and its long
 		// mandated TMPDIR paths exceed the AF_UNIX sun_path limit. Fall back
 		// to a unix socket created through a short RELATIVE path; the socket

@@ -40,6 +40,16 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Windows cross-compile guard
+        # AC-BLD-2 (FINAL §D.8): compile-only evidence that the tree builds
+        # for windows/amd64 and windows/arm64. Never execution evidence; no
+        # ARM64 gate is added and no ARM64 execution is claimed anywhere.
+        if: runner.os == 'Linux'
+        run: |
+          GOOS=windows GOARCH=amd64 go build ./...
+          GOOS=windows GOARCH=amd64 go vet ./...
+          GOOS=windows GOARCH=arm64 go build ./...
+          GOOS=windows GOARCH=arm64 go vet ./...
       - name: Build
         run: go build ./...
       - name: Test

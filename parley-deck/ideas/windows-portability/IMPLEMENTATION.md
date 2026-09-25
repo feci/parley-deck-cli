@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: parley-deck-cli#windows-portability
-head-commit: 356fbb8 (design/final freeze; updated per progress below)
+head-commit: 356fbb8 (design/final freeze); Stage 0 code commit recorded in Progress
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -98,7 +98,13 @@ None. (Any unavoidable deviation will be logged here, not silently absorbed.)
 ## Progress
 
 - (2026-09-25 ~18:20Z) Invocation 1 started: read full phase-5 packet, 00-prompt.md,
-  FINAL.md, source-context; wrote this claim before any code edit. Beginning Stage 0.
+  FINAL.md, source-context; wrote this claim before any code edit (commit e9cf601). Beginning Stage 0.
+- (2026-09-25 ~18:35Z) Stage 0 code complete (commit follows): mkfifo build tag
+  (`internal/evidence/mkfifo_{unix,windows}_test.go`, call site switched, `syscall` import
+  dropped from `tree_report_test.go`); comma-ok assertions at `app_test.go` former :155/:157
+  (fail-with-message, never panic-abort); Ubuntu-leg Windows cross-compile guard
+  (amd64+arm64 build+vet) in `tests.yml`. Local checks green (see Validation evidence).
+  Pushing for the budgeted diagnostic hosted cycle; green NOT assumed (§H Stage 0).
 
 ## Decision Log
 
@@ -114,8 +120,13 @@ None. (Any unavoidable deviation will be logged here, not silently absorbed.)
 
 (Per-stage entries appended as checks run; hosted run IDs recorded here.)
 
-- Local (macOS host, darwin/arm64 — NOT Windows evidence):
-  - pending Stage 0 local checks.
+- Local (macOS host, darwin/arm64 — NOT Windows evidence), Stage 0 at commit after e9cf601:
+  - `go build ./...` OK; `go vet ./internal/evidence/ ./internal/app/` OK.
+  - `GOOS=windows GOARCH=amd64 go build ./... && go vet ./...` OK;
+    `GOOS=windows GOARCH=arm64 go build ./... && go vet ./...` OK — W4 (syscall.Mkfifo
+    undefined) is fixed: internal/evidence now compiles+vet-clean for Windows (compile-only).
+  - `go test ./internal/evidence/ -run TestTreeDigest -count=1` ok 0.910s;
+    `go test ./internal/app/ -run TestVersionAll -count=1` ok 0.623s.
 
 ## Hosted run register
 

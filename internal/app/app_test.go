@@ -152,8 +152,16 @@ func TestVersionAllUsesDirFlagForProjectStatus(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
 	}
-	skill := payload["parley_deck_skill"].(map[string]any)
-	project := skill["project"].(map[string]any)
+	// Checked assertions: an unchecked type assertion panics and aborts the
+	// whole test binary, taking the wait/usage results with it (AC-BLD-1).
+	skill, ok := payload["parley_deck_skill"].(map[string]any)
+	if !ok {
+		t.Fatalf("parley_deck_skill missing or not an object: %v", payload["parley_deck_skill"])
+	}
+	project, ok := skill["project"].(map[string]any)
+	if !ok {
+		t.Fatalf("skill project missing or not an object: %v", skill["project"])
+	}
 	if project["projectArg"] != absRoot {
 		t.Fatalf("project arg=%v want %s", project["projectArg"], absRoot)
 	}
