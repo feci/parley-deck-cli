@@ -62,6 +62,14 @@ Progress for the live stage state.
       windows-tagged): hosted execution rides the next push; outcomes to be recorded
       per the FINAL §G mappings — no probe upgrades an inference.
 - [ ] **Stage 1** — snapshot privacy/ACL (§D.1) incl. `denyRead` helper.
+      IN PROGRESS (2026-09-25T18:19–18:21Z): `internal/fsacl` module landed
+      unwired (Unix semantics byte-identical; Windows owner-only PROTECTED_DACL
+      set+walk-verify naming trustees; DenyRead helper both platforms; 5 local
+      tests green on darwin; windows amd64/arm64 cross build+vet OK; hostile
+      Windows execution rides the next cycle — see Progress). Remaining:
+      wire `privateSnapshotDirectory` (snapshot.go:150) + :544 read-back,
+      adversarial BUILTIN\Users/Administrators/inherited-only hosted tests,
+      pre-existing-store refuse-and-instruct message with documented repair.
 - [ ] **Stage 2** — gate-name encoding + raw-ID allowlist (§D.4), legacy fallback +
       shadow retirement.
 - [ ] **Stage 3** — directory durability: §B table dispositions BEFORE code;
@@ -182,6 +190,23 @@ push. The rule is now applied with a post-write clock check.]
     keeping Unix output byte-identical (AC-DUR-5 applies to §B rows; this is §D.1
     but same discipline), then assess run 36172430646 probe outcomes FIRST and
     record them per §G mappings before building on any probe result.
+- (2026-09-25T18:19–18:21Z, commit follows) Stage 1 opened: `internal/fsacl`
+  landed as a self-contained module, deliberately UNWIRED from
+  trajectory/snapshot.go in this invocation (wiring + adversarial hosted tests
+  are the next unit of work; §D.1's AC-PRIV-1..6 deserve a full window, not the
+  tail of this one). Contents: ErrNotPrivate sentence-stable refusal; Unix
+  Ensure/Verify byte-identical to the inline guard (0700 MkdirAll +
+  IsDir/symlink/Perm checks); Windows owner-only protected DACL via
+  ACLFromEntries/SetNamedSecurityInfo (the H1-probe-seeded mechanism) with
+  create-then-requery self-check and trustee-naming walk (refuses non-owner
+  grants, inherited ACEs, unprotected DACLs, missing DACLs; FAT/exFAT refuse
+  via error propagation); shared DenyRead helper (chmod 0 Unix, deny-ACE
+  Windows). Local: go test ./internal/fsacl/ ok (5 funcs incl. byte-identical
+  refusal-string pin); GOOS=windows amd64 build+vet / arm64 build OK. On the
+  windows leg the package tests double as first hostile execution of the DACL
+  round-trip and DenyRead (symlink-creation assertion may surface runner
+  privilege facts — if os.Symlink errors there, that is a hosted fact to
+  record, not a suppression candidate).
 
 ## Decision Log
 
