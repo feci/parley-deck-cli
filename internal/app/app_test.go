@@ -122,12 +122,21 @@ func TestVersionAllJSONIncludesSkillStatus(t *testing.T) {
 	if payload["ok"] != true {
 		t.Fatalf("payload=%+v", payload)
 	}
-	parley := payload["parley"].(map[string]any)
+	parley, ok := payload["parley"].(map[string]any)
+	if !ok {
+		t.Fatalf("parley missing or not an object: %v", payload["parley"])
+	}
 	if parley["version"] != version {
 		t.Fatalf("parley=%+v", parley)
 	}
-	skill := payload["parley_deck_skill"].(map[string]any)
-	installer := skill["installer"].(map[string]any)
+	skill, ok := payload["parley_deck_skill"].(map[string]any)
+	if !ok {
+		t.Fatalf("parley_deck_skill missing or not an object: %v", payload["parley_deck_skill"])
+	}
+	installer, ok := skill["installer"].(map[string]any)
+	if !ok {
+		t.Fatalf("skill installer missing or not an object: %v", skill["installer"])
+	}
 	if installer["version"] != "1.1.0" {
 		t.Fatalf("installer=%+v", installer)
 	}
@@ -182,11 +191,17 @@ func TestVersionAllFallsBackToLegacySkillVersion(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("invalid json: %v\n%s", err, stdout.String())
 	}
-	skill := payload["parley_deck_skill"].(map[string]any)
+	skill, ok := payload["parley_deck_skill"].(map[string]any)
+	if !ok {
+		t.Fatalf("parley_deck_skill missing or not an object: %v", payload["parley_deck_skill"])
+	}
 	if skill["statusSupported"] != false {
 		t.Fatalf("skill=%+v", skill)
 	}
-	installer := skill["installer"].(map[string]any)
+	installer, ok := skill["installer"].(map[string]any)
+	if !ok {
+		t.Fatalf("skill installer missing or not an object: %v", skill["installer"])
+	}
 	if installer["version"] != "1.0.8" {
 		t.Fatalf("installer=%+v", installer)
 	}
