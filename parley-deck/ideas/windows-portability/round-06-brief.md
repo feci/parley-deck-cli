@@ -1,0 +1,9 @@
+# Round 6 — one sequential reconciliation round
+
+Authority: inbox/user-to-codex-1_windows-portability_round5-unresolved.md, read verbatim. This is a procedural brief, not a technical verdict. Order is claude-1, kimi-1, zcode-1; only one participant runs at a time.
+
+Read all three completed round-05 artifacts in full and every round-06 artifact already written. Respond to every peer's latest completed position, explicitly distinguishing it from superseded claims. Record current positions on: (1) create-entry guarantee and O_SYNC inference versus staged write-through rename; (2) preserved os.Root containment versus feature scope and any named pre-mutation refusal; (3) one normalized complete operation table with stable row IDs, reachability, guarantee, mechanism/refusal, feature blast radius and partial-publication recovery. Map earlier 14-row and 15-site/16-operation inventories rather than silently dropping rows.
+
+Resolve contrary evidence and claims under section 15 with participant-owned provenance and non-owner verdicts. Do not count agreement as evidence. A promised future hosted test is not present verification. No weaker containment is authorized; label any proposed weakening as a deviation requiring owner review. Explicit reviewed refusal remains an available design outcome under the original owner scope. Preserve other settled requirements and all-leg census baseline. State whether your current proposal is consensus-ready and identify any remaining material disagreement. No code edits, implementation, consensus/signoffs, hosted mutations, release, or extra round during this task.
+
+English artifacts only. Include User direction with the exact English translation in the owner's answer and its path. Every participant owns only round-06/<agent>.md. zcode-1 remains prospective drafter/implementer; Claude and Kimi remain reviewers after an actual consensus.

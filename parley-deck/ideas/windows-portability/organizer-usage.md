@@ -22,3 +22,11 @@ Client accounting source for this resume: `/Users/tomasfecko/.codex/sessions/202
 | Round 5 launched under owner authorization | 2026-09-25T06:32:27.994Z | 266663 | 228736 | 3198 | 303 | 8 |
 | Round 5: Claude and Zcode complete; Kimi pending at first 20-minute wait timeout | 2026-09-25T06:54:44.289Z | 2429773 | 2366208 | 8282 | 1976 | 46 |
 | Round 5 complete: 3/3 valid, conflict escalated, exit handoff written | 2026-09-25T06:55:39.573Z | 2643492 | 2574848 | 9318 | 2590 | 49 |
+
+## Sequential round 6 resume — 2026-09-25
+
+Client source: `/Users/tomasfecko/.codex/sessions/2026/09/25/rollout-2026-09-25T18-25-22-01a0d962-bf99-7581-9bfd-8d8c2fbbd7f4.jsonl`. Separate cumulative totals, no monetary estimate. G2 persists; original selectors dispatched one participant at a time. Current global CLI probes preceded rediscovery of the existing pinned 1.49.0 tool; all round-6 dispatch and validation use that private binary.
+
+| Boundary | Timestamp | Input | Cached input | Output | Reasoning | Accounting events |
+|---|---|---:|---:|---:|---:|---:|
+| Round 6 opened; Claude alone launched | 2026-09-25T16:28:13.787Z | 351540 | 285696 | 3823 | 456 | 9 |

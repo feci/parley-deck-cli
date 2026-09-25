@@ -7,7 +7,7 @@ track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
 auto_implement: true
 require_model_diversity: true
-status: round-05
+status: round-06
 ---
 
 ## Problem / idea
@@ -76,3 +76,7 @@ The owner answered the round-cap escalation in inbox/user-to-codex-1_windows-por
 ## Round 5 complete — escalation renewed, 2026-09-25
 
 All three requested real CLI participants exited 0, and the final round-05 files pass structural validation. Durability remains unresolved in their latest positions. Status remains round-05; no consensus, FINAL, implementation or release is authorized to advance across this unresolved boundary. The owner authorized exactly one extra round; no round 6 was opened. See inbox/codex-1-to-user_windows-portability_round5-unresolved.md and inbox/codex-1-to-user_windows-portability_done.md. The answered prior escalation was archived at inbox/archived/codex-1-to-user_windows-portability_round-cap.md after the participants recorded the owner direction in their own round-05 artifacts. The original owner answer remains at its supplied inbox path.
+
+## Authorized sequential reconciliation round 6 — 2026-09-25
+
+The owner answer in inbox/user-to-codex-1_windows-portability_round5-unresolved.md supersedes the previous no-round-6 boundary and authorizes exactly one sequential reconciliation round. Order: claude-1, kimi-1, zcode-1. Each reads all completed round-05 artifacts and all already-written round-06 artifacts, states its current position on the three conflicts, and waits for organizer validation before the next launch. Any proposed weakening of os.Root containment requires a separate explicit owner deviation. If a material conflict remains, stop and escalate; no further round is authorized. Later lifecycle/release authority and the two predecessor gates remain unchanged.
