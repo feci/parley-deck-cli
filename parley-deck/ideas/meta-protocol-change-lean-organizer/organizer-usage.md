@@ -49,3 +49,15 @@ Accounting correction (2026-09-23): the initial helper selected the first date-d
 <!-- boundary: Phase 8 complete and release metadata prepared @ 2026-09-24T09:39:08.978Z -->
 | Release published channels independently audited; npm auth and hosted CI remain unresolved (observed 2026-09-24T10:53:45.420Z) | 2026-09-24T10:53:45.420Z | 28253442 | 27578624 | 132740 | 63595 | 241 |
 <!-- boundary: Release published channels independently audited; npm auth and hosted CI remain unresolved @ 2026-09-24T10:53:45.420Z -->
+| Linux repair independently accepted; release candidate staged pending owner decisions (observed 2026-09-24T14:39:13.687Z) | 2026-09-24T14:39:13.687Z | 44206079 | 43445888 | 165608 | 81001 | 322 |
+<!-- boundary: Linux repair independently accepted; release candidate staged pending owner decisions @ 2026-09-24T14:39:13.687Z -->
+| Owner-blocked release handoff; all independent preparation finished (observed 2026-09-24T14:46:24.664Z) | 2026-09-24T14:46:24.664Z | 44910726 | 44147840 | 166206 | 81192 | 326 |
+<!-- boundary: Owner-blocked release handoff; all independent preparation finished @ 2026-09-24T14:46:24.664Z -->
+
+## Release-only resume — codex-1 (2026-09-24)
+
+Separate organizer session, not added to the prior session's cumulative totals. Source pinned by this process's CODEX_THREAD_ID: `/Users/tomasfecko/.codex/sessions/2026/09/24/rollout-2026-09-24T23-03-33-01a0d53b-1299-74d3-acd2-346455fc885c.jsonl`. Actual client accounting from token_count events; not a model estimate. Snapshot through the timestamp below, before the final recording/push and response. Cached input is a subset of input; reasoning is a subset of output. No savings/cost claim.
+
+| Boundary | Accounting timestamp | Input | Cached input | Output | Reasoning | Request events |
+|---|---|---:|---:|---:|---:|---:|
+| Release 1.49.1 independent audit PASS; completion handoff preparation | 2026-09-24T21:31:03.218Z | 3611928 | 3537152 | 18928 | 7640 | 62 |

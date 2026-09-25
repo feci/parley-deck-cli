@@ -1,5 +1,77 @@
 # Changelog
 
+## 1.49.1 — 2026-09-24
+
+### Fixed
+
+- **Captured stderr is no longer truncated by a fast reap (U1).** `acp.Process`
+  `Stop`/`Wait` previously called `cmd.Wait()` before the stderr copier goroutine
+  finished; `os/exec` closes the pipe read end when `Wait` returns, so a quickly
+  exiting process could lose its entire captured stderr — the first hosted Linux run
+  recorded 0 of 16384 written bytes while reading the exit code correctly. The copier
+  now drains to EOF before the reap. `Stop` stays bounded: its existing kill-timeout
+  branch also closes the stderr read end to interrupt a copier still blocked by a
+  writer that escaped the process group; bytes unread on that abandon path are
+  discarded explicitly, never silently truncated.
+- **Process capture survives the Linux argv publication race (U2).** Linux can expose
+  a freshly started process through `/proc/<pid>` before `execve` publishes its
+  argument vector, so an immediate post-`Start` read of `/proc/<pid>/cmdline` can
+  return zero bytes for a live process; capture then recorded an empty command and
+  downstream attribution failed closed with `no recorded command` (hosted steps with
+  exit -1, empty output, killed at grace). The Linux capture probe now polls `cmdline`
+  under a 100 ms bound (1 ms interval): it retries only zero-byte reads of a
+  live-looking process, returns the first non-empty read without re-reading, and
+  returns immediately on read errors — a reaped pid's ENOENT exits at once, while a
+  killed-but-unreaped pid's cmdline reads empty with no error and so spends the full
+  bound before failing closed exactly as before the poll: cancellation is bounded,
+  not immediate. Every attribution facet — boot,
+  alive, exact start time, pgid, session leader, command match — plus refusal strings
+  and strictness is unchanged, and pid-reuse tampering is still refused. Darwin
+  (ps-based) and Windows are untouched.
+- **Executor failures with no output now explain themselves.** A non-`ExitError` run
+  failure with zero captured output (attribution refusal, artifact-write or controller
+  error) persists its scrubbed, length-bounded reason into the step's diagnostics
+  instead of leaving an unexplained exit -1 with empty diagnostics behind a killed
+  run. `ExitError` with empty output keeps empty diagnostics so the exit code remains
+  the discriminator, and hashed fields never see the executor text.
+
+### Release scope and limitations
+
+- **Correction of a false claim in the 1.49.0 notes.** 1.49.0 stated that "Windows
+  behavior of `wait`/`usage` is exercised by the CI leg". The first actual hosted
+  Windows execution of this suite contradicts that claim, and this entry corrects it:
+  **the Windows leg currently fails.** `internal/evidence` does not build on Windows
+  (`syscall.Mkfifo` is undefined there), 14 of the packages fail against 16 passing —
+  including the bounded stderr-drain guard firing in `internal/acp` — and Windows
+  `wait`/`usage` behavior is therefore not exercised. Per the organizer's scope
+  escalation, the owner decided on 2026-09-24 to do both: this release ships now
+  for macOS and Linux through GitHub and Homebrew; the Windows assets are kept
+  and explicitly labelled experimental/unvalidated on the evidence above; and the
+  CLI winget submission is held until a separate, reviewed windows-portability
+  track fixes the defects, turns hosted windows-latest CI green, and removes the
+  label. Until that track ships, every CLI release keeps this experimental
+  Windows label and makes no CLI winget submission. The skill is unaffected by
+  this decision.
+- Hosted CI now pins a deterministic fixture git identity and enables Windows long
+  paths before checkout, which is what allowed the hosted legs to reach the tests at
+  all; the Linux and macOS acceptance below ran on that workflow.
+- Linux acceptance rests on the independent hosted review (claude-1, run 36009912946
+  at `9134c7a`): the full, unsuppressed ubuntu suite is green — both original failure
+  signatures absent from the log, no skips in any previously-failing test, all 32
+  packages present — and the macOS leg is green. The comment-only commit `519951e` on
+  top of the tested head was verified token-identical excluding comments, so the
+  hosted green transfers to this candidate's source.
+- The 100 ms `cmdline` bound is measured-tail-based (~1.8× the worst of 10,400
+  measured spawns), not kernel-instrumented, and bound exhaustion is **silent**: it
+  degrades to the pre-fix fail-closed refusal, never to an unsafe grant. Operational
+  rule: if the `no recorded command` signature recurs hosted, raise
+  `cmdlinePublishBound` before re-diagnosing. Making exhaustion observable is a source
+  change that needs its own version.
+- The pre-fix race reproduced at load-dependent rates (~0.7% of spawns locally), so a
+  single green hosted run is one sample; the U2 claim is carried by the
+  twice-independently-reproduced mechanism and bidirectional mutation tests, with the
+  hosted run closing the x86_64 gap.
+
 ## 1.49.0 — 2026-09-24
 
 ### Added
