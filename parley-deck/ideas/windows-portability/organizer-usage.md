@@ -30,3 +30,7 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/25/rollout-2026-09-25T
 | Boundary | Timestamp | Input | Cached input | Output | Reasoning | Accounting events |
 |---|---|---:|---:|---:|---:|---:|
 | Round 6 opened; Claude alone launched | 2026-09-25T16:28:13.787Z | 351540 | 285696 | 3823 | 456 | 9 |
+| Claude round 6 exited 0; artifact valid; Kimi next | 2026-09-25T16:41:35.297Z | 2485593 | 2397952 | 9469 | 2452 | 37 |
+| First 20-minute round wait timed out; Claude valid, Kimi active, Zcode unlaunched | 2026-09-25T16:49:52.648Z | 3140452 | 3035264 | 11462 | 3683 | 44 |
+| Kimi round 6 exited 0; artifact valid; Zcode next | 2026-09-25T16:59:13.586Z | 4347210 | 4235136 | 14140 | 5167 | 56 |
+| Round 6 complete; 3/3 valid; consensus drafting begins | 2026-09-25T17:06:48.896Z | 5619207 | 5483776 | 17103 | 6945 | 67 |
