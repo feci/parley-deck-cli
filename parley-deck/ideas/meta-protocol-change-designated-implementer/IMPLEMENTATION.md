@@ -1,10 +1,10 @@
 ---
 idea: meta-protocol-change-designated-implementer
-status: fix-up-cycle-2
+status: fix-up-cycle-3
 implementer: kimi-1
 started: 2026-09-25
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer#designated-implementer + /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer-skill#designated-implementer
-head-commit: 1bad263
+head-commit: 717f3de
 skill-commit: a624318
 design-pr: n/a
 implementation-pr: n/a
@@ -322,12 +322,16 @@ carries all three signoffs (kimi-1 ✅, claude-1 🟡 ACCEPT-WITH-RESERVATIONS, 
   shipped Phase-5/§4.0/§10 hunks were read from it. The POST-edit authority at `d238238` is
   `b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388` (1,400 lines / 115,166
   bytes — re-derived at cycle 2 from `git show d238238:parley-deck/COOPERATION.md`; the live tree
-  matches). **All shadow byte figures in this bullet are PHASE-8 shadows** — over the `d238238`
-  source the phase-8 shadow measures 86,716 bytes / 40 included / 29 omitted (`fe0e4c04…ebcf`,
-  measured twice at fix-up cycle 2 with parley 1.49.1; the cycle-2 plan's "86,701" figure did
-  not reproduce under this binary and is superseded by this measurement), while a PHASE-7 packet
-  over the same `d238238` source reports a different shadow (80,799 bytes / 41 included / 28
-  omitted, `c6d29141…d980` — both cycle-2 signoff attestations). Read the phase with the figure.
+  matches). **All shadow byte figures in this bullet are rendered WITH `--flag auto_implement
+  --flag protocol_change`**: the phase-8 shadow over the `d238238` source measures 86,716 bytes /
+  40 included / 29 omitted (`fe0e4c04…ebcf`, measured twice at fix-up cycle 2 with parley 1.49.1),
+  while the SAME phase-8 packet over the SAME `d238238` source rendered WITHOUT the two flags
+  measures 86,701 bytes / 40 included / 29 omitted (`a0845614…f08efd`) — the cycle-2 plan's
+  "86,701" figure is that flagless rendering, and it reproduces on demand (settled at fix-up
+  cycle 3 by all three participants' own runs; VC-3.2 in `review/consensus.md`). A PHASE-7 packet
+  over the same `d238238` source, also rendered with both flags, reports a different shadow
+  (80,799 bytes / 41 included / 28 omitted, `c6d29141…d980` — both cycle-2 signoff attestations).
+  Read the phase and the flags with the figure.
 - **Scoped suites:** `go test ./internal/protocol/ ./internal/config/ ./internal/consensus/
   -count=1` all ok; `go test ./internal/app/ -count=1 -timeout 900s` ok 534.5s (shared-mount fork
   profile); `go build ./...` + `go vet ./...` OK; `gofmt -l` clean on every file this cycle
@@ -522,8 +526,7 @@ status: complete
 completed: 2026-09-25
 head-commit: 1bad263
 skill-commit: a624318
-record-commit: follows on the same branch and is named at the next touch (a file cannot name its
-own commit — no self-hash claim)
+record-commit: b850576
 
 Commit-provenance note: the cycle-2 source commit was first committed as `bf3336d` with a
 `[kimi-1]` prefix; per the owner's standing prefix override (inbox
@@ -607,11 +610,13 @@ read from the body (the frontmatter-bump sentence at body :622 verbatim).
   "eleven lines above it" reference is wrong; the fix targets and direction were right and are
   what changed. The signed consensus body and all three signatures are preserved unedited — the
   correction lives here and in the source commit message.
-- **One plan figure did not reproduce:** AF-14(1) names an 86,701-byte phase-8 shadow for the
-  `d238238` source; measured twice this cycle (parley 1.49.1, the exact phase-8 command), the
-  reproducible figure is 86,716 bytes / 40 included / 29 omitted (`fe0e4c04…ebcf`). The
-  reproducible figure is what the relabelled bullet records; the source hash, line count and byte
-  count all reproduce exactly.
+- **One plan figure differs by invocation flags, disclosed:** AF-14(1) names an 86,701-byte
+  phase-8 shadow for the `d238238` source — that is the FLAGLESS phase-8 rendering, and it
+  reproduces on demand (`a0845614…f08efd`, 40 included / 29 omitted; confirmed at fix-up cycle 3
+  by all three participants' own runs, VC-3.2 in `review/consensus.md`). The relabelled bullet
+  carries 86,716 bytes (`fe0e4c04…ebcf`) because the flagged command — `--flag auto_implement
+  --flag protocol_change` — is what the plan and both cycle-2 signoffs attested with. The source
+  hash, line count and byte count are identical on both invocations.
 - Otherwise none: no item was infeasible; no protocol text, skill file, FINAL, consensus, or
   peer artifact was edited; no new owner question arises.
 
@@ -641,6 +646,80 @@ read from the body (the frontmatter-bump sentence at body :622 verbatim).
 Round-03 re-review reassesses exactly: AF-12's machine effect (digest/wait output) and metadata
 fields; AF-13's comment accuracy; AF-14's labels; AF-15's regex scope (enumerated negations
 only) and its tests; the unmodified AC-4 pins — per the signed plan's verification plan step 3.
+
+## Fix-up cycle 3 (2026-09-25, kimi-1)
+
+status: complete
+completed: 2026-09-25
+head-commit: 717f3de
+skill-commit: a624318
+record-commit: follows on the same branch and is named at the next touch (a file cannot name its
+own commit — no self-hash claim)
+
+Applies the signed cycle-3 fix plan (`review/consensus.md` — claude-1 ✅ ACCEPT, kimi-1 ✅
+ACCEPT, zcode-1 ✅ ACCEPT; no BLOCK). Two one-clause documentary repairs: no behaviour change, no
+protocol text, no skill delta, no FINAL edit, no new test. Phase-8 packet attested at this
+publication (2026-09-25, parley 1.49.1, this worktree; the source delta against reviewed
+`1bad263` is exactly the AF-17 comment line): `parley protocol packet --dir . --phase 8 --track
+deliberation --idea meta-protocol-change-designated-implementer --flag auto_implement --flag
+protocol_change --audience participant --json`, exit 0 → `context_mode: "full"`,
+`fallback_reason` ABSENT (top-level keys enumerated: `body_path`, `context_mode`, `index`,
+`packet_sha256`, `request`, `shadow`, `source`, `source_sha256`), `source_sha256` =
+`packet_sha256` = `b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388` (1,400 lines
+/ 115,166 bytes — this cycle moved no protocol text); phase-8 shadow WITH both flags 86,716
+bytes / `fe0e4c04…ebcf` / 40 included / 29 omitted, not used. Phase 8 and §15 were read from the
+body.
+
+### Fixes applied
+
+- **AF-17** (origin: claude-1/review/round-03 NIT-1) — in the cycle-3 SOURCE commit `717f3de`:
+  `internal/app/driver_designation_test.go:448` comment now reads "Present-empty is an incomplete
+  designation, on any run that reaches a role action." — the corrected AF-3/R-1 scope wording
+  AF-13 applied at `driver_impl.go:188`, reused, not expanded. Comment only; no assertion,
+  fixture or behaviour change. Post-fix sweep: `grep -rn "any run" --include="*.go" .` leaves
+  only qualified or unrelated hits (`driver_impl.go:188` qualified; `internal/agents/naming.go:50`
+  and `internal/budget/run_identity_inventory_test.go:351` unrelated English).
+- **AF-16** (origin: claude-1/review/round-03 MINOR-1) — in THIS record commit, the two named
+  locations only: (1) the cycle-1 Phase-8 attestation bullet under `## Validation evidence` now
+  labels every shadow figure with its flag state — 86,716 B is the phase-8 shadow WITH `--flag
+  auto_implement --flag protocol_change`; 86,701 B (`a0845614…f08efd`) is the same packet over
+  the same source WITHOUT them and reproduces on demand; the "did not reproduce / superseded"
+  clause is struck; the rule is completed to "Read the phase and the flags with the figure";
+  (2) `### Deviations from agreed fixes` restated on the same terms. The AF-14 summary inside
+  `## Fix-up cycle 2` → "Fixes applied" is deliberately NOT touched, per the signed plan — it
+  describes what AF-14 delivered and stays literally true.
+- **Standing per-publication bump (AF-12's restored obligation, not a new finding):** frontmatter
+  at this publication — `status: fix-up-cycle-2` → `fix-up-cycle-3`; `head-commit: 1bad263` →
+  `717f3de` (the cycle-3 source commit — PRIOR and knowable under the source-then-record order);
+  `skill-commit: a624318` (unchanged; no skill delta). The cycle-2 section's `record-commit` is
+  filled in: `b850576` (PRIOR and knowable at this publication).
+
+### Deviations from agreed fixes
+
+None. Both repairs are exactly the signed text; no item was infeasible; no protocol text, skill
+file, FINAL, consensus, signature, or peer artifact was edited; no new owner question arises.
+
+### Evidence this cycle (proportional, as ratified — no broad suite for a comment/prose-only delta)
+
+- `go build ./...` exit 0; `go vet ./...` exit 0; `gofmt -l
+  internal/app/driver_designation_test.go` clean (no output, exit 0).
+- `go test ./internal/app/ -count=1 -run
+  'TestMalformedTier2Gates|TestTier2UnavailabilityGateAndExits|TestPinDesignationConflictEscalates|TestUnsetPathIsByteIdentical'`
+  → `ok  parley-deck-cli/internal/app  0.524s`, exit 0 — including `TestMalformedTier2Gates`, the
+  test whose comment AF-17 touched.
+- **AC-17 standing, honestly:** claude-1's independent full suite stays EXACT-COMMIT scoped to
+  `d238238` and is NOT re-claimed; the targeted behaviour evidence (both reviewers' focused runs,
+  M1=9 / M2=5, the probe sets) stays scoped to `1bad263`; this cycle's delta is one comment line
+  plus record prose, so no suite result is claimed for it beyond the focused run above. The LE-7
+  fresh-invocation goal-done check (AC-21's second clause) remains separate and still owed. No
+  completion, goal-done, or release is claimed here.
+
+### Review-pointer
+
+Round-04 re-review reassesses exactly: AF-16's two locations (flag-state labels; the struck
+supersession clause), AF-17's comment plus the tree-wide `any run` sweep, and the cycle-3
+metadata bump (`status: fix-up-cycle-3`, `head-commit: 717f3de`, cycle-2 `record-commit:
+b850576`) — per the signed plan's verification plan step 3.
 
 ## Outcomes & Retrospective
 
