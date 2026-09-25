@@ -117,6 +117,10 @@ measurements; no test executions occurred at those times and no evidence was tak
 from them. They are re-dated below to the actual commit timestamps. Rule adopted from
 here on: Progress entries use actual UTC clock reads at write time or commit/run
 timestamps only; estimates are labeled as such and never in the 18:20Z/18:35Z form.
+[Second disclosed slip, same invocation: the first draft of the Stage 1 recon entry
+below was stamped 18:22Z while the actual clock read 18:18:34Z — a projected write
+time, caught on re-verification and re-dated to commit 0baff30's 18:18:00Z before
+push. The rule is now applied with a post-write clock check.]
 
 - (2026-09-25T17:55–17:58Z, corrected; commit e9cf601 at 17:58:23Z) Invocation 1
   started: read full phase-5 packet, 00-prompt.md, FINAL.md, source-context; wrote
@@ -155,8 +159,29 @@ timestamps only; estimates are labeled as such and never in the 18:20Z/18:35Z fo
   agreement with actual work: Stage 0 marked complete (fix + guard + ledger + two
   assessed diagnostic cycles), run register filled with final per-leg outcomes,
   ledger refreshed from the real denominator with new rows 16–18, frontmatter
-  head-commit/branch corrected. Next: Stage 1 snapshot privacy/ACL (§D.1) — the H1
-  probe seeds its exact DACL mechanism; then Stage 2 gate names (§D.4).
+  head-commit/branch corrected. Committed as 16824fd and pushed (hosted cycle
+  36172430646, started 18:17:04Z — carries the probe bundle + app comma-ok fix;
+  NOT yet assessed at this checkpoint).
+- (2026-09-25T18:17–18:18Z; commit 0baff30 at 18:18:00Z) Stage 1 reconnaissance (recorded for resume; no product code
+  written yet — starting a half-wired ACL change at the checkpoint boundary would
+  leave an incoherent tree):
+  - Guard site: `internal/trajectory/snapshot.go:150-165` `privateSnapshotDirectory`
+    (os.MkdirAll 0700; Lstat; IsDir/symlink/Perm()&0077 → the 71x hosted signature
+    at :163). Read-back sibling check at :544 (Perm()&0077 on the archive file).
+  - Plan per §D.1: new `internal/fsacl` package — Unix path byte-identical to today
+    (0700 MkdirAll + Perm check, no behavior change); Windows path = owner-only
+    PROTECTED_DACL via ACLFromEntries/SetNamedSecurityInfo (exact mechanism the H1
+    probe seeds), verification walks effective ACEs via GetNamedSecurityInfo and
+    refuses any non-owner grant NAMING THE TRUSTEE (sentence-stable refusal with
+    trustee appended); FAT/exFAT/no-ACL volumes refuse (SetNamedSecurityInfo error
+    propagates as refusal, never weaken); pre-existing stores stay refuse-and-instruct
+    (no in-place DACL rewrite of user data); share the `denyRead` test helper with the
+    Stage 6 sweep (D.9). The trajectory tests currently x71 red on Windows become the
+    hosted adversarial suite once the store passes own-creation.
+  - Resume here: implement fsacl + wire privateSnapshotDirectory + :544 read-back,
+    keeping Unix output byte-identical (AC-DUR-5 applies to §B rows; this is §D.1
+    but same discipline), then assess run 36172430646 probe outcomes FIRST and
+    record them per §G mappings before building on any probe result.
 
 ## Decision Log
 
