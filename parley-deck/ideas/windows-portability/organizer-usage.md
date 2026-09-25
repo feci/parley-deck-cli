@@ -12,3 +12,13 @@ CLI `parley usage ingest` was used for phase 0 and reported attribution=ambiguou
 | Round 3 complete; final scheduled cross-review opened | 2026-09-24T22:10:05.681Z | 17465009 | 17243264 | 44608 | 21675 | 126 |
 | Round 4 resumed; awaited participant outputs and recorded current memory availability | 2026-09-24T22:20:17.434Z | 19953018 | 19424000 | 54278 | 25539 | 145 |
 | Round 4 complete; durability conflict escalated at the cross-review cap | 2026-09-24T22:38:33.156Z | 23233082 | 22653056 | 59823 | 27034 | 190 |
+
+## Resume after owner authorization — 2026-09-25
+
+Client accounting source for this resume: `/Users/tomasfecko/.codex/sessions/2026/09/25/rollout-2026-09-25T08-30-09-01a0d741-ce48-70e2-a848-0dad94dd4d98.jsonl`. Separate cumulative totals from the prior session; no monetary estimate. Dispatch: three real CLIs, original model selectors, one focused round 5. Driver G2 reproduced; pinned CLI 1.49.0 dispatch/wait reused.
+
+| Boundary | Timestamp | Input | Cached input | Output | Reasoning | Accounting events |
+|---|---|---:|---:|---:|---:|---:|
+| Round 5 launched under owner authorization | 2026-09-25T06:32:27.994Z | 266663 | 228736 | 3198 | 303 | 8 |
+| Round 5: Claude and Zcode complete; Kimi pending at first 20-minute wait timeout | 2026-09-25T06:54:44.289Z | 2429773 | 2366208 | 8282 | 1976 | 46 |
+| Round 5 complete: 3/3 valid, conflict escalated, exit handoff written | 2026-09-25T06:55:39.573Z | 2643492 | 2574848 | 9318 | 2590 | 49 |

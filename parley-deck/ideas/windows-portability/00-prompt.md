@@ -7,7 +7,7 @@ track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
 auto_implement: true
 require_model_diversity: true
-status: round-04
+status: round-05
 ---
 
 ## Problem / idea
@@ -68,3 +68,11 @@ The owner replaced the global defaults with Claude organizing new runs and Codex
 ## Round-cap escalation — 2026-09-25
 
 Round 4 is complete; status remains round-04 pending owner direction in inbox/codex-1-to-user_windows-portability_round-cap.md. A new material durability disagreement remains after the three permitted cross-review rounds. No consensus or implementation is claimed. Proposed bounded follow-up: durability-followup-brief.md.
+
+## Authorized focused round 5 — 2026-09-25
+
+The owner answered the round-cap escalation in inbox/user-to-codex-1_windows-portability_round-cap.md and explicitly authorized exactly one focused fifth cross-review limited to durability-followup-brief.md. If durability is unresolved afterward, escalate again and exit; no sixth round is authorized. All three participants must answer their peers’ round-04 positions, particularly Claude’s correction, in their own round-05 artifacts. Original quorum, organizer, launch selectors, implementation assignment and release gates remain unchanged.
+
+## Round 5 complete — escalation renewed, 2026-09-25
+
+All three requested real CLI participants exited 0, and the final round-05 files pass structural validation. Durability remains unresolved in their latest positions. Status remains round-05; no consensus, FINAL, implementation or release is authorized to advance across this unresolved boundary. The owner authorized exactly one extra round; no round 6 was opened. See inbox/codex-1-to-user_windows-portability_round5-unresolved.md and inbox/codex-1-to-user_windows-portability_done.md. The answered prior escalation was archived at inbox/archived/codex-1-to-user_windows-portability_round-cap.md after the participants recorded the owner direction in their own round-05 artifacts. The original owner answer remains at its supplied inbox path.
