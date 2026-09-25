@@ -38,3 +38,4 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/25/rollout-2026-09-25T
 | All three consensus ACCEPT signatures present; FINAL drafting authorized | 2026-09-25T17:41:56.079Z | 11219285 | 11034112 | 32718 | 16400 | 105 |
 | FINAL complete; closing design and assigning Phase 5 to Zcode | 2026-09-25T17:52:34.403Z | 13163546 | 12960768 | 39973 | 20979 | 116 |
 | Implementation Stage 0 checkpoint reported; resume hosted diagnosis and ACL work | 2026-09-25T18:03:24.622Z | 14513520 | 14294656 | 46222 | 25164 | 123 |
+| Implementation Stage 0 hosted results assessed; probe bundle and initial ACL module checkpointed | 2026-09-25T18:21:58.198Z | 18507244 | 18266368 | 57176 | 33222 | 142 |
