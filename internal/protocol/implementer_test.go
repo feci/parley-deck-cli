@@ -159,6 +159,11 @@ func TestDesignationRecordsRequireConfirmation(t *testing.T) {
 // no negation in any earlier segment. Every adversarial case below PASSES if the
 // corresponding strictness is removed (substring identity, a bare "confirmed"
 // substring check, no calendar parse, no negation sweep), so the test pins each one.
+// AF-15 (review cycle 2, as widened by the signed plan's carried correction (a))
+// adds the hyphenated/space-separated spellings of the SAME enumerated negations —
+// each new reject case fails if the separator class is reverted — while the boundary
+// accept cases pin that no word outside the signed enumeration is flagged and that
+// the NIT-2(a) multi-segment tolerance is untouched.
 func TestConfirmationRecordsAreFailClosed(t *testing.T) {
 	waivers := []struct {
 		name  string
@@ -176,6 +181,15 @@ func TestConfirmationRecordsAreFailClosed(t *testing.T) {
 		{"VC-D: invalid calendar date", "zz-impl — offline — confirmed 2026-02-31", "zz-impl", false},
 		{"missing reason segment", "zz-impl — confirmed 2026-09-25", "zz-impl", false},
 		{"empty reason segment", "zz-impl —  — confirmed 2026-09-25", "zz-impl", false},
+		{"AF-15: hyphenated not-yet-confirmed", "zz-impl — not-yet-confirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"AF-15: hyphenated not-confirmed", "zz-impl — not-confirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"AF-15 (a): hyphenated un-confirmed", "zz-impl — un-confirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"AF-15 (a): space-separated un confirmed", "zz-impl — un confirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"AF-15 (a): cased UN-Confirmed", "zz-impl — UN-Confirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"AF-15 boundary: cannot-confirmed is not a negation", "zz-impl — cannot-confirmed elsewhere — confirmed 2026-09-25", "zz-impl", true},
+		{"AF-15 boundary: unconfirmedness is not the enumerated negation", "zz-impl — unconfirmedness claims aside — confirmed 2026-09-25", "zz-impl", true},
+		{"AF-15 boundary: run confirmed stays a plain reason", "zz-impl — run confirmed the fix — confirmed 2026-09-25", "zz-impl", true},
+		{"AF-15 boundary: em-dash detail is not a separator (NIT-2(a))", "zz-impl — reason—detail — confirmed 2026-09-25", "zz-impl", true},
 	}
 	for _, tc := range waivers {
 		t.Run("waiver/"+tc.name, func(t *testing.T) {
@@ -195,6 +209,11 @@ func TestConfirmationRecordsAreFailClosed(t *testing.T) {
 		{"VC-D: invalid calendar date", "aa-first to zz-impl — rotation — confirmed 2026-02-31", "aa-first", "zz-impl", false},
 		{"missing reason segment", "aa-first to zz-impl — confirmed 2026-09-25", "aa-first", "zz-impl", false},
 		{"same-id tier change (the documented exit)", "zz-impl to zz-impl — designation removed, default set — confirmed 2026-09-25", "zz-impl", "zz-impl", true},
+		{"AF-15: hyphenated not-yet-confirmed", "aa-first to zz-impl — not-yet-confirmed — confirmed 2026-09-25", "aa-first", "zz-impl", false},
+		{"AF-15: hyphenated not-confirmed", "aa-first to zz-impl — not-confirmed — confirmed 2026-09-25", "aa-first", "zz-impl", false},
+		{"AF-15 (a): hyphenated un-confirmed", "aa-first to zz-impl — un-confirmed — confirmed 2026-09-25", "aa-first", "zz-impl", false},
+		{"AF-15 (a): space-separated un confirmed", "aa-first to zz-impl — un confirmed — confirmed 2026-09-25", "aa-first", "zz-impl", false},
+		{"AF-15 boundary: cannot-confirmed is not a negation", "aa-first to zz-impl — cannot-confirmed elsewhere — confirmed 2026-09-25", "aa-first", "zz-impl", true},
 	}
 	for _, tc := range reassignments {
 		t.Run("reassignment/"+tc.name, func(t *testing.T) {

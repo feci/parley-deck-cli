@@ -145,7 +145,7 @@ type dispatchDesignation struct {
 	source       protocol.ImplementerSource
 	present      bool   // a tier-2/tier-3 designation is present (R45 event/line gate)
 	line         string // the extra designation-path stdout line
-	gate         string // validity / pin-conflict gate — roleErr path, any run (R16/R25/R28)
+	gate         string // validity / pin-conflict gate — roleErr path, escalated by every role action (R16/R25/R28)
 	dispatchGate string // tier-2 availability gate — dispatch actions only (R17/R18)
 	configErr    error  // layered-config read error on the tier-3 path — a notice, never a gate (AF-6)
 }
@@ -185,7 +185,8 @@ func resolveDispatchDesignation(root, ideaDir string, eligible []string, discove
 	switch d.State {
 	case protocol.DesignationEmpty:
 		// R2/R16: present-empty is an INCOMPLETE designation — a typo, never the
-		// opt-out. Hard gate on any run; both legal spellings named.
+		// opt-out. Hard gate on any run that reaches a role action; both legal
+		// spellings named.
 		return dispatchDesignation{implementer: legacy, gate: "incomplete designation: 00-prompt.md carries `implementer:` with an empty value — write `implementer: <agent-id>` naming an eligible participant, or `implementer: none` for an explicit opt-out"}
 	case protocol.DesignationNone:
 		// R2: explicit per-idea non-designation — tier 3 suppressed, today's chain, no gate.

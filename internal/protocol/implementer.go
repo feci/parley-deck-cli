@@ -181,8 +181,12 @@ var confirmationMarker = regexp.MustCompile(`(?i)^confirmed \d{4}-\d{2}-\d{2}$`)
 
 // negationMarker matches the negations that must never appear in a segment before
 // the confirmation marker: `not confirmed`, `not yet confirmed`, `unconfirmed`
-// (any casing). A negated record is not a confirmation, whatever else it carries.
-var negationMarker = regexp.MustCompile(`(?i)\b(?:unconfirmed|not(?:\s+yet)?\s+confirmed)\b`)
+// (any casing), fail-closed on their hyphenated/space-separated spellings too
+// (`not-confirmed`, `not-yet-confirmed`, `un-confirmed`, `un confirmed` — review
+// cycle 2, AF-15 as widened by the signed plan's carried correction (a): the same
+// signed AF-1 clause (iv) enumeration, no broader free-prose denylist). A negated
+// record is not a confirmation, whatever else it carries.
+var negationMarker = regexp.MustCompile(`(?i)\b(?:un[\s-]*confirmed|not(?:[\s-]+yet)?[\s-]+confirmed)\b`)
 
 // confirmationRecordTail enforces the §9.0 confirmation-record shape shared by the
 // waiver and reassignment readers (review AF-1). parts is the record value split on
