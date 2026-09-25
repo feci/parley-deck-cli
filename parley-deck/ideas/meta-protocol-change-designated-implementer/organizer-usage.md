@@ -13,3 +13,4 @@ Cumulative client token_count totals from the exact organizer rollout; not model
 | 5 | 2026-09-24T23:26:38.700Z | 22582925 | 22380800 | 33702 | 8328 | 177 | ambiguous |
 | 6 | 2026-09-25T01:24:24.499Z | 44476813 | 44221056 | 46595 | 12943 | 291 | ambiguous |
 | 7 | 2026-09-25T01:43:39.854Z | 48739403 | 48464256 | 53269 | 16573 | 311 | ambiguous |
+| 8 | 2026-09-25T02:58:53.601Z | 64925739 | 64344704 | 72798 | 23990 | 391 | ambiguous |

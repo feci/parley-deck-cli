@@ -71,3 +71,13 @@ Both review invocations exited 0. wait returned exit 4 because Claude's file use
 ## Phase 6 closed / Phase 7
 
 Claude repaired only its own frontmatter, kept review body checksum unchanged, and shared wait now exits 0 for both review artifacts. Claude reports 3 MAJOR / 5 MINOR / 3 NIT; Zcode reports 1 MAJOR (overlapping confirmation parser issues) plus MINOR findings. Both explicitly withhold full independent whole-suite PASS because their broad test runs did not finish; this gap must be resolved before closure, not inferred from implementer output. No human-only issue was raised. Kimi drafts a fix-plan review consensus; no source fixes until participant signoff.
+
+## Review-cycle-1 signoffs
+
+Kimi exited 0 with proposed 11-fix review consensus and its own ACCEPT. Other signatures are required before fixes. Runner signoff dry-run is available, but global Claude model changed to Opus 5.5 after kickoff; this in-flight run is expressly exempt and its launches remain frozen to original Opus 5[1m]. No per-invocation model override is exposed by request-signoffs; use frozen manual Claude append, then runner Zcode append. No global/deck runtime mutation to change another run.
+
+Claude cycle-1 signoff is ACCEPT-WITH-RESERVATIONS. Its initial Notes carrier was malformed; Claude alone repaired grammar with prose preserved and added a fresh-checker clarification. Kimi must explicitly incorporate R-1/R-3 and resolve R-2 before Zcode signs. The owner's unchanged-default boundary is not waivable by participant agreement; R-2's explicitly offered narrower error-handling variant preserves it and needs no additional owner decision. No code fixes yet.
+
+## Review-cycle-1 plan signed / Phase 8
+
+Zcode runner exited 0. Review consensus is valid reserved (Kimi ACCEPT, Claude ACCEPT-WITH-RESERVATIONS, Zcode ACCEPT); all three signed. Claude explicitly places its reservations in this fix-up, and Kimi and Zcode explicitly incorporate R-1/R-2/R-3. The amended plan preserves the owner boundary with the narrower live-designation Load-error branch, corrects the changelog and latent-design-only wording, and names the inactive follow-up. No block or owner question remains. Dispatch Kimi for exactly AF-1 through AF-11 plus the supplemental amendments. Full-suite independent evidence, zero-fix consensus and fresh goal check remain outstanding. The original driver cursor is still stale; use recorded manual fix-up fallback, preserving participant artifact ownership.
