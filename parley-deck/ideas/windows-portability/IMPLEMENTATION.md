@@ -104,7 +104,13 @@ None. (Any unavoidable deviation will be logged here, not silently absorbed.)
   dropped from `tree_report_test.go`); comma-ok assertions at `app_test.go` former :155/:157
   (fail-with-message, never panic-abort); Ubuntu-leg Windows cross-compile guard
   (amd64+arm64 build+vet) in `tests.yml`. Local checks green (see Validation evidence).
-  Pushing for the budgeted diagnostic hosted cycle; green NOT assumed (§H Stage 0).
+  Pushed for the budgeted diagnostic hosted cycle; green NOT assumed (§H Stage 0).
+  Hosted run 36170672078 (push 255f1a5) in progress at invocation close — NEXT STEP:
+  watch to completion (`gh run watch 36170672078`), pull per-leg logs, and refresh the
+  reconciliation ledger from the real Windows denominator (expect: internal/evidence now
+  compiles+runs; internal/app no longer aborts — wait/usage results should appear, with
+  TestVersionAllUsesDirFlagForProjectStatus likely failing gracefully until the Stage 6
+  W6 fixture port; W1/W2/W3 product families still red by design until Stages 1/2/4).
 
 ## Decision Log
 
@@ -114,7 +120,9 @@ None. (Any unavoidable deviation will be logged here, not silently absorbed.)
 
 ## Surprises & Discoveries
 
-- (none yet)
+- (2026-09-25, zcode-1) `internal/app` hosts not only the panic site but also the
+  `wait_test.go` (21 funcs) and `usage_ingest_test.go` (6 funcs) suites — confirming the
+  FINAL claim that one panic hides 27 test functions' first-ever Windows execution.
 
 ## Validation evidence
 
@@ -134,6 +142,7 @@ None. (Any unavoidable deviation will be logged here, not silently absorbed.)
 |---|---|---|---|---|
 | 35987916696 | 4e0c069 (main) | win FAIL / ubuntu FAIL / macos ok | historical | also failed Ubuntu; per-run claims separate |
 | 36009912946 | (main) | 14 red vs 16 ok packages on Windows | historical | baseline for ledger refresh |
+| 36170672078 | 255f1a5 (stage 0) | three-leg Tests matrix | in_progress at 2026-09-25T18:00Z | Stage 0 diagnostic cycle; green NOT assumed; refresh ledger from its Windows log (esp. wait/usage first execution per AC-BLD-1) |
 
 ## Reconciliation ledger (§D.9 — emitted at Stage 0, before the sweep; refreshed per hosted cycle)
 
