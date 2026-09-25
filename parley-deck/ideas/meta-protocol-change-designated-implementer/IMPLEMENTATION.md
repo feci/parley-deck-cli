@@ -1,8 +1,9 @@
 ---
 idea: meta-protocol-change-designated-implementer
-status: fix-up-cycle-3
+status: complete
 implementer: kimi-1
 started: 2026-09-25
+completed: 2026-09-25
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer#designated-implementer + /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer-skill#designated-implementer
 head-commit: 717f3de
 skill-commit: a624318
@@ -653,8 +654,7 @@ status: complete
 completed: 2026-09-25
 head-commit: 717f3de
 skill-commit: a624318
-record-commit: follows on the same branch and is named at the next touch (a file cannot name its
-own commit — no self-hash claim)
+record-commit: ee8849c
 
 Applies the signed cycle-3 fix plan (`review/consensus.md` — claude-1 ✅ ACCEPT, kimi-1 ✅
 ACCEPT, zcode-1 ✅ ACCEPT; no BLOCK). Two one-clause documentary repairs: no behaviour change, no
@@ -723,6 +723,56 @@ b850576`) — per the signed plan's verification plan step 3.
 
 ## Outcomes & Retrospective
 
-(At completion — not claimed here. `status: fix-up-cycle-N` marks review-readiness only: Phase 6
-review belongs to claude-1 and zcode-1, and the goal-done check belongs to a fresh
-non-implementer.)
+**Implementation complete — 2026-09-25, kimi-1 (sole implementer).** `status: complete` is set at
+this publication — close-sequence step 3, after both predecessor gates landed:
+
+- **Closing review consensus (cycle 4)** — `review/consensus.md`, `outstanding_agreed_fixes: 0`,
+  `blocked: false`, signoffs claude-1 ✅ / kimi-1 ✅ / zcode-1 ✅, no reservations, preserved at
+  `804522c`. Its one open item (claude-1 round-04 NIT-1, the blanket lead-in at
+  `IMPLEMENTATION.md:325-326`) is a RECORDED DISMISSAL — an accepted residual standing UNREPAIRED
+  with all three concurring; no acceptance criterion depends on it, and this closing edit does not
+  touch that text. All seventeen agreed fixes (AF-1…AF-17) are applied as signed.
+- **LE-7 goal-done check — PASS** (`goal-check-zcode-1.md`): a FRESH invocation of zcode-1, an
+  existing non-implementer quorum member — never the organizer, never the implementer, never a
+  fourth identity. Verdict `PASS`, no reservation: all twenty-one FINAL observable acceptance
+  criteria verified against the current tree (CLI HEAD `804522c`, code tree `717f3de`, skill
+  `a624318`, record `ee8849c`), each with PRIMARY current-tree evidence or exactly-scoped PRIOR
+  evidence. Per LE-7/LE-11 the check could only withhold a close, never establish one — this
+  status flip is my own act as implementer.
+
+**Metadata at this publication:** `status: complete`, `completed: 2026-09-25`; `head-commit:
+717f3de` and `skill-commit: a624318` retained (PRIOR and accurate — no code moved since); the
+cycle-3 section's `record-commit` is filled in as `ee8849c` (PRIOR and knowable now). This record
+names no commit that does not already exist — no self-hash.
+
+**Achievements:** the owner-designated implementer mechanism shipped exactly as the frozen FINAL
+specifies — four-state per-idea designation, one resolution chain (pin → per-idea → global
+default → fallback), fail-closed validity gates, the tier-2 three-exit unavailability gate,
+dormant tier-3 with honest fall-through, reviewer-diversity warning, and the global default
+SHIPPED UNSET. Three protocol copies in fidelity (AC-1); findings converged 17 → 8 → 2 →
+1-dismissed-NIT across four cycles, zero MAJOR/behaviour findings in the last two.
+
+**Gaps and limitations — named, not waived (carried from the signed consensuses):** (1) no broad
+`go test ./...` exists at `1bad263` / `717f3de` / HEAD — AC-17's whole-suite clause rests on the
+exactly-scoped `d238238` independent full suite plus the goal check's live re-execution at HEAD;
+(2) skill npm-level gates unexercised — owed to the organizer's release preflight; (3) no
+end-to-end `parley run` against a real designated deck; no live §9.0 ping behind
+`designeeAvailable`; TUI/pipeline-block surfaces remain FINAL deferrals F3/F10; Windows is DF-4;
+(4) the NIT-1 residual stands unrepaired by recorded dismissal; (5) the pre-edit 86,336 B figure
+is not absolutely re-derivable — its flag label rests on the bullet's own quoted command.
+
+**Lessons for §13:** record the full invocation (flags included) with every measurement — one
+unlabelled shadow figure cost two review cycles; tree-wide claims need tree-wide sweeps — the
+third `any run` carrier sat in the delta's own test file; the per-publication frontmatter bump
+fires at every cycle's record commit, not at idea close; carrying corrections in the record and
+commit message — never by editing a signed body — was re-verified independently every cycle.
+
+**Release work — still pending, none of it mine.** The owner/organizer-only sequence is unchanged
+and unstarted here: `origin/main` integration (R56) in the ratified order (`release-1.49.1` done
+→ this idea → `windows-portability`), release preflight incl. the skill npm gates, expected CLI
+1.50.0 / skill-core 2.14.0 re-verified at staging, per-channel participant audit after each
+channel exists (R51), `parley protocol publish` owner-attended (R54), and the owner's
+post-release machine-default selection (`codex-1`) as post-release configuration only. No
+participant merges, publishes, versions, installs, releases, or mutates any global default; the
+product default ships UNSET. DF-1…DF-4 stand as recorded — DF-2's carrier
+`meta-protocol-change-designation-launch-surfacing` stays NAMED and INACTIVE.
