@@ -137,3 +137,7 @@ Signed cycle-2 plan archived byte-exact at review/consensus-cycle-02.md, SHA256 
 ## Cycle-3 plan signed / Phase 8
 
 Runner sequence exited 0; all three fresh ACCEPT signatures parse ready. Both Kimi and Zcode independently reproduce flagged 86,716 / flagless 86,701 and concur with the two documentary repairs. Reuse the exact Kimi runner session session_0b28c2be-cf40-45b5-b051-768ae49192b8 for its implementation continuation, preserving kimi-code/k3 and existing effort config. Session ID came from the runner's own resume_hint. Current CLI help documents --session/-S (rather than hint's -r); use the documented form. No other session is resumed and no claim of a model switch.
+
+## Cycle-3 fix-up exited / round-04 verification
+
+Exact resumed Kimi session exited 0. Source 717f3de is one test-comment edit; record ee8849c contains both AF-16 clauses and standing cycle-3 metadata, skill unchanged a624318. Implementer reports signed build/vet/gofmt/focused app checks exit 0. No behavior delta or full-suite repetition. Dispatch both existing reviewers for the ratified documentation-delta reassessment. Claude CLI output format is JSON this invocation to retain its own exact session ID for later allowed context reuse; model/effort/identity unchanged. The later goal check remains fresh and separate.
