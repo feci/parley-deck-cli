@@ -445,7 +445,7 @@ func TestMalformedTier2Gates(t *testing.T) {
 		t.Fatalf("the malformed value must fail closed, got roleErr=%q", ops.roleErr)
 	}
 
-	// Present-empty is an incomplete designation, on any run.
+	// Present-empty is an incomplete designation, on any run that reaches a role action.
 	ideaDir = writeDesignationPrompt(t, root, "demo2", designationPrompt("demo2", participants, "implementer:\n"))
 	ops = designationOps(t, root, "demo2", ideaDir, participants, participants, &bytes.Buffer{})
 	if ops.roleErr == "" || !strings.Contains(ops.roleErr, "incomplete designation") {
