@@ -21,6 +21,7 @@ import (
 
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/evidence"
+	"parley-deck-cli/internal/fsacl"
 	"parley-deck-cli/internal/fsutil"
 )
 
@@ -149,20 +150,16 @@ func (r contextReader) Read(p []byte) (int, error) {
 func snapshotHeader(name string, kind byte, mode int64, size int64, link string) *tar.Header {
 	return &tar.Header{Name: name, Typeflag: kind, Mode: mode, Size: size, Linkname: link, ModTime: time.Unix(0, 0), Format: tar.FormatPAX}
 }
+
+// privateSnapshotDirectory routes through internal/fsacl (FINAL §D.1): on
+// Unix the historical mode-based semantics, byte-identical to the previous
+// inline guard; on Windows the owner-only protected-DACL policy with
+// refuse-and-instruct for pre-existing stores.
 func privateSnapshotDirectory(dir string, create bool) error {
 	if create {
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			return err
-		}
+		return fsacl.EnsurePrivateStore(dir)
 	}
-	info, err := os.Lstat(dir)
-	if err != nil {
-		return err
-	}
-	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm()&0077 != 0 {
-		return errors.New("snapshot store must be a private real directory")
-	}
-	return nil
+	return fsacl.VerifyPrivateStore(dir)
 }
 
 // CaptureSnapshot freezes actual bytes under an immutable content address. It
@@ -207,6 +204,9 @@ func CaptureSnapshot(ctx context.Context, root, dir string, want Source) (Snapsh
 		return SnapshotRef{}, err
 	}
 	defer os.Remove(f.Name())
+	if err := fsacl.ProtectPrivateFile(f.Name()); err != nil {
+		return SnapshotRef{}, err
+	}
 	defer f.Close()
 	digestWriter := sha256.New()
 	bounded := &snapshotWriter{w: io.MultiWriter(f, digestWriter)}
@@ -541,7 +541,10 @@ func inspectSnapshotFileAttempt(ctx context.Context, file string, ref SnapshotRe
 	if err != nil {
 		return err
 	}
-	if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 || info.Size() != ref.Bytes {
+	if !info.Mode().IsRegular() || info.Size() != ref.Bytes {
+		return errors.New("snapshot must be an exact bounded private regular file")
+	}
+	if err := fsacl.VerifyPrivateFile(file, info); err != nil {
 		return errors.New("snapshot must be an exact bounded private regular file")
 	}
 	if origin != nil && !sameSnapshotFile(origin, info) {

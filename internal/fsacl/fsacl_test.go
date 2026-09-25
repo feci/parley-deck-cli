@@ -16,17 +16,15 @@ func TestRefusalStringIsStable(t *testing.T) {
 	}
 }
 
+// TestEnsurePrivateStoreCreatesAndPasses is platform-neutral: own creation
+// must pass verification everywhere. The mode-bit expression of privacy is
+// pinned unix-side (fsacl_unix_test.go); on Windows the DACL round-trip is
+// pinned in fsacl_windows_test.go (hosted fact 36172828285: dir perms
+// synthesize 0777 there, so the perm assertion itself is Unix mechanics).
 func TestEnsurePrivateStoreCreatesAndPasses(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "store")
 	if err := EnsurePrivateStore(dir); err != nil {
 		t.Fatalf("EnsurePrivateStore: %v", err)
-	}
-	info, err := os.Lstat(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if info.Mode().Perm()&0o077 != 0 {
-		t.Fatalf("created store perm=%#o, group/other bits set", info.Mode().Perm())
 	}
 	if err := VerifyPrivateStore(dir); err != nil {
 		t.Fatalf("VerifyPrivateStore after own creation: %v", err)

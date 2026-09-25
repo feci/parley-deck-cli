@@ -30,6 +30,25 @@ func verifyRealPrivateDir(dir string) error {
 	return nil
 }
 
+// ProtectPrivateFile is a no-op on Unix: os.CreateTemp already creates the
+// archive temp file with mode 0600, byte-identical to the previous behavior.
+// Windows must set the owner-only DACL because mode bits are synthesized.
+func ProtectPrivateFile(file string) error {
+	_ = file
+	return nil
+}
+
+// VerifyPrivateFile enforces the file half of the contract byte-identically
+// to the previous inline read-back check: a regular file with no group/other
+// permission bits. info is the caller's Lstat result.
+func VerifyPrivateFile(file string, info os.FileInfo) error {
+	_ = file
+	if !info.Mode().IsRegular() || info.Mode().Perm()&0o077 != 0 {
+		return ErrNotPrivate
+	}
+	return nil
+}
+
 // DenyRead makes path unreadable for tests: mode 0 on Unix (§D.9).
 func DenyRead(path string) error {
 	if err := os.Chmod(path, 0o000); err != nil {

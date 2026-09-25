@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 9a96c2f at this invocation's start (2026-09-25T18:05Z); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code)
+head-commit: cd82025 at this invocation's start (2026-09-25T18:23Z); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -62,14 +62,27 @@ Progress for the live stage state.
       windows-tagged): hosted execution rides the next push; outcomes to be recorded
       per the FINAL §G mappings — no probe upgrades an inference.
 - [ ] **Stage 1** — snapshot privacy/ACL (§D.1) incl. `denyRead` helper.
-      IN PROGRESS (2026-09-25T18:19–18:21Z): `internal/fsacl` module landed
-      unwired (Unix semantics byte-identical; Windows owner-only PROTECTED_DACL
-      set+walk-verify naming trustees; DenyRead helper both platforms; 5 local
-      tests green on darwin; windows amd64/arm64 cross build+vet OK; hostile
-      Windows execution rides the next cycle — see Progress). Remaining:
-      wire `privateSnapshotDirectory` (snapshot.go:150) + :544 read-back,
-      adversarial BUILTIN\Users/Administrators/inherited-only hosted tests,
-      pre-existing-store refuse-and-instruct message with documented repair.
+      IN PROGRESS (2026-09-25T18:23–18:38Z): `internal/fsacl` module landed AND
+      WIRED this invocation: `privateSnapshotDirectory` (snapshot.go:158-162)
+      routes through Ensure/VerifyPrivateStore; archive temp file protected via
+      ProtectPrivateFile (snapshot.go:206) after CreateTemp; read-back at :546
+      via VerifyPrivateFile — all three Windows-only effects, Unix byte-identical
+      (AC-PRIV-6). Windows Ensure now distinguishes created-vs-preexisting stores:
+      pre-existing failing stores get refuse-and-instruct (repair text names the
+      user-invoked repair; DACL never rewritten in place, AC-PRIV-5); fresh stores
+      get set+requery self-check. Reparse-point rejection added beyond symlinks.
+      Adversarial suite `fsacl_windows_test.go` (AC-PRIV-1..6 windows half):
+      own-creation round-trip with independent raw requery; BUILTIN\Users (S-1-5-32-545)
+      and Administrators (S-1-5-32-544) grants refused naming the trustee;
+      inherited-only refused; pre-existing refused+not-rewritten (marker file intact,
+      DACL still grants Users); symlink/non-dir refused (symlink failure = fatalf,
+      never skip); file policy round-trip. Shared test's Unix perm assertion split
+      into fsacl_unix_test.go (hosted fact: dir perms synthesize 0777 on Windows).
+      Hosted evidence for the UNWIRED module (run 36172828285): Ensure/verify/
+      symlink-rejection/DenyRead all PASSED on real Windows; only the old perm-bit
+      assertion failed (fixed). Remaining: wired-product hostile Windows execution
+      (next push), restore-file privacy decision (see Progress note), AC-PRIV-4
+      design-level refusal documentation (§N blind spot: no FAT volume on runners).
 - [ ] **Stage 2** — gate-name encoding + raw-ID allowlist (§D.4), legacy fallback +
       shadow retirement.
 - [ ] **Stage 3** — directory durability: §B table dispositions BEFORE code;
@@ -208,6 +221,70 @@ push. The rule is now applied with a post-write clock check.]
   privilege facts — if os.Symlink errors there, that is a hosted fact to
   record, not a suppression candidate).
 
+- (2026-09-25T18:23–18:38Z, zcode-1; commit follows) Invocation 3. Re-read packet
+  (attestation above), 00-prompt, living IMPLEMENTATION.md, FINAL §D.1/§G/AC-PRIV.
+  While the two in-flight cycles ran: wired fsacl into the product (three sites,
+  Windows-confined effects, Unix byte-identical), restructured Windows Ensure for
+  AC-PRIV-5 refuse-and-instruct with no in-place rewrite, added reparse-point
+  rejection, landed the AC-PRIV-1..6 windows adversarial suite, split the Unix
+  perm-bit pin into fsacl_unix_test.go. Local checks: darwin build ./... OK,
+  vet fsacl+trajectory OK, fsacl tests ok; GOOS=windows amd64 build+vet ./... and
+  fsacl/trajectory OK, arm64 build OK (see Validation). Restore-file privacy
+  (snapshot.go:630 OpenFile 0600 into user-chosen destinations; snapshot_test.go:124
+  asserts restored perms) is identified but deliberately NOT wired this invocation:
+  setting owner-only DACLs on restored trees removes inheritance users may want in
+  shared destinations — a product-behavior decision to settle with reviewers as the
+  last Stage 1 item, not a unilateral change inside a tight window.
+
+  ### Hosted cycle assessments (both completed; per-leg facts below)
+
+  **Run 36172430646 @16824fd** (macos ok / ubuntu ok / windows FAIL, completed
+  18:29:37Z; windows leg 12m34s): the H1–H7 probe bundle EXECUTED hosted —
+  `ok parley-deck-cli/internal/winprobe 0.122s`, all 7 probe functions PASSED.
+  Observed outcomes per FINAL §G mappings (workflow runs go test without -v, so
+  recorder probes' t.Logf values are not surfaced; outcome-level facts are the
+  assertions themselves — unknowns are named, nothing inferred):
+  - **H3 OBSERVED as-expected**: runner volume asserted NTFS; directory move
+    accepted, no-REPLACE failed on existing destination, MOVEFILE_WRITE_THROUGH
+    accepted (any deviation fails the probe). Mapping applied: §A disclosure tiers
+    pinned as written; coverage-envelope claim stands (NTFS confirmed).
+  - **H7 OBSERVED as-expected**: read-only-destination rename-over rejected before
+    clear, accepted after clear — the pinned pair held; §D.6 clear-before-replace
+    is pinned by its probe (mechanics only). Also under H7: wait/usage FIRST HOSTED
+    EXECUTION completed — internal/app ran to completion (165s) with zero failures
+    attributed to wait_test.go/usage_ingest_test.go (the workflow runs the whole
+    package; those suites therefore executed and passed). The comma-ok fixes are
+    hosted-verified; the app failures that remain are fixture/runtime families
+    (rows 16/18/23), not panics.
+  - **H1 OBSERVED outcome-level**: the x/sys ACL chain round-trips hosted (asserted
+    in-probe). Mapping: owner-only policy unchanged, mechanism viable. The
+    parent/%TEMP% ACL dump VALUES are logged but not surfaced (unknown-in-band,
+    fixture-placement data only). Doubly confirmed by 36172828285: the fsacl module
+    Ensure/verify round-trip PASSED on real Windows.
+  - **H2 OBSERVED outcome-level**: read-only directory handle opened; FlushFileBuffers
+    raw error recorded in-log only (UNKNOWN-in-band). Diagnostic-only forever; when
+    Stage 3 needs the raw string for the §B audit-of-record, run a targeted hosted
+    `go test ./internal/winprobe/ -run TestH2 -v` step — never a mechanism change.
+  - **H4 OBSERVED outcome-level**: probe ran; runtime.Version() value and
+    os.ReadDir(regular file) error class are logged but not surfaced (UNKNOWN-in-band).
+    §D.5 fix ships under every outcome; no blocker.
+  - **H6 OBSERVED outcome-level**: git config --show-origin dump executed hosted
+    (git present); VALUES unknown-in-band until the Stage 6 §D.7 pinning work.
+  Windows red set: SAME 14 packages as the denominator (deterministic third cycle).
+
+  **Run 36172828285 @ca5efef** (macos ok / ubuntu ok / windows FAIL, completed
+  ~18:32:50Z): first hostile Windows execution of internal/fsacl (unwired module,
+  original tests). Hosted facts: EnsurePrivateStore round-trip PASSED (MkdirAll +
+  SetNamedSecurityInfo + walk-verify on real NTFS); pre-existing permissive store
+  refused via DACL walk PASSED; symlink creation WORKS on the runner (no privilege
+  error — the previously-unknown runner fact is now observed) and symlink/non-dir
+  rejection PASSED; DenyRead deny-ACE PASSED (file became unreadable). ONE failure:
+  the shared test's `perm=0777` assertion — Windows dir perms synthesize 0777, so
+  that assertion is Unix mechanics; fixed by splitting it into fsacl_unix_test.go
+  (the Windows expression of the same AC-PRIV-6 guarantee is the DACL round-trip,
+  now asserted in fsacl_windows_test.go). 15 red packages = the same 14 + fsacl's
+  that one test; W1 signature persists (81x) as expected while unwired.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -252,6 +329,23 @@ push. The rule is now applied with a post-write clock check.]
     `gofmt -l internal/winprobe/ internal/app/app_test.go` clean.
   - Windows-hosted execution of the probe bundle: NOT yet run — rides the next push;
     outcomes land per FINAL §G mappings (mechanics/diagnostic only).
+- Local (macOS host, darwin/arm64 — NOT Windows evidence), invocation 3 at 18:23–18:38Z
+  (working tree = cd82025 + this invocation's edits):
+  - `go build ./...` OK; `go vet ./internal/fsacl/ ./internal/trajectory/` OK;
+    `go test ./internal/fsacl/ -count=1` ok 0.286s (post-split).
+  - `GOOS=windows GOARCH=amd64 go build ./... && go vet ./internal/fsacl/ ./internal/trajectory/` OK
+    (vet typechecks the new windows test file); `GOOS=windows GOARCH=arm64 go build ./...` OK.
+  - `gofmt -l internal/fsacl/ internal/trajectory/` clean.
+  - `go test ./internal/trajectory/ -run 'TestSnapshot|TestPersistentTrajectory' -count=1`
+    ok 39.831s (2026-09-25T18:37:41Z) — the wired snapshot paths pass on darwin.
+    The FULL `go test ./internal/trajectory/ -count=1` was still running on this
+    slow shared-volume host at commit time (started 18:29Z); it is advisory darwin
+    evidence only — the hosted legs are the acceptance evidence, and the next
+    hosted cycle carries the wired code either way. Result to be recorded next
+    entry; never claimed green without the run finishing.
+  - Wired-product hostile Windows execution (fsacl adversarial suite + trajectory under
+    the wired guard): rides the next push — the fsacl-package behaviors above are already
+    hosted-verified at the module level (36172828285).
 
 ## Hosted run register
 
@@ -261,6 +355,8 @@ push. The rule is now applied with a post-write clock check.]
 | 36009912946 | (main) | 14 red vs 16 ok packages on Windows | historical | baseline for ledger refresh |
 | 36170672078 | 255f1a5 (stage 0) | win FAIL / ubuntu ok / macos ok; completed 18:13:58Z | Stage 0 diagnostic cycle 1: Windows 14 red pkgs / 16 ok / 111 failing funcs; evidence package runs (W4 fixed); internal/app panic moved to :185 (residual unchecked assertion, fixed in invocation 2); wait/usage still never executed |
 | 36170742720 | 9c1db32 (docs-only over 255f1a5) | win FAIL / ubuntu ok / macos ok; completed 18:12:48Z | Diagnostic cycle 2 (triggered by the run-record push): Windows red set IDENTICAL to 36170672078 (same 14 pkgs, same 111 funcs) — denominator deterministic; ACP drain tests fail on Windows in BOTH runs (new row 17) |
+| 36172430646 | 16824fd (probe bundle + app comma-ok) | win FAIL / ubuntu ok / macos ok; completed 18:29:37Z (win leg 12m34s) | H1–H7 bundle EXECUTED: winprobe 7/7 PASS (H3 NTFS+rename mechanics, H7 readonly-rename-over pair, H1 ACL chain — OBSERVED; H2/H4/H6 recorder values unknown-in-band without -v). wait/usage first hosted execution PASSED (row 2 closed). Same deterministic 14 red pkgs; rows 16 confirmed, 19–23 added |
+| 36172828285 | ca5efef (fsacl unwired) | win FAIL / ubuntu ok / macos ok; completed ~18:32:50Z | fsacl FIRST hostile Windows execution: Ensure/verify round-trip, pre-existing refusal, symlink+non-dir rejection, DenyRead ALL PASS; os.Symlink works on runner (observed). 15 red = same 14 + fsacl perm-bit assertion (Unix mechanics, fixed this invocation in fsacl_unix_test.go split). W1 signature persists (81x) until wiring lands hosted |
 
 ## Reconciliation ledger (§D.9 — emitted at Stage 0, before the sweep; refreshed per hosted cycle)
 
@@ -278,7 +374,7 @@ source-context classing.
 | # | Hosted phenomenon (run 35987916696 / 36009912946) | Class | FINAL item | Stage | Exclusion row |
 |---|---|---|---|---|---|
 | 1 | `internal/evidence` test build failure: `syscall.Mkfifo` undefined on Windows | W4 (TEST) | §D.8, AC-BLD-1 | 0 | none — FIXED AND HOSTED-VERIFIED: evidence package compiles and executes in both cycles (its W1 privacy failures now visible = row 5) |
-| 2 | `internal/app` aborts 3.499s: unchecked type assertion panic at `app_test.go:155`; no `wait`/`usage` results ever on Windows | W6 panic half (TEST) | §D.8, AC-BLD-1 | 0 | none — comma-ok at :155/:157 verified hosted (fails with message, no panic there); residual :185-family panic recorded as row 16 |
+| 2 | `internal/app` aborts 3.499s: unchecked type assertion panic at `app_test.go:155`; no `wait`/`usage` results ever on Windows | W6 panic half (TEST) | §D.8, AC-BLD-1 | 0 | none — CLOSED hosted (36172430646): internal/app ran to completion 165s, no panic; wait/usage suites executed for the first time and PASSED (zero failures attributed to them) |
 | 3 | `writeFakeParleyDeckSkill` extension-less `#!/bin/sh` fixture unexecutable on Windows (W6 fixture half) | W5/W6 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — re-exec/`cmd.exe /c` port |
 | 4 | `#!/bin/sh`/extensionless fixtures: `launch_test.go`, `protocol_context_test.go`, `telemetry_test.go` (~13) | W5 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — test-binary re-exec |
 | 5 | Snapshot privacy guard `Perm()&0077` never passes (0777/0666 synthesis), 71 messages / ~69 tests | W1 (PRODUCT) | §D.1, AC-PRIV-1..6 | 1 | none — real ACL implementation; CONFIRMED hosted in both cycles (evidence, driver refusal families; "snapshot store must be a private real directory" signature) |
@@ -292,9 +388,15 @@ source-context classing.
 | 13 | Captured-execution family root cause not established (ubuntu) | U2 (undesignated) | §D.5 sibling discipline | probe/H4 | none — diagnose, never label flaky |
 | 14 | refusalGit identity dependence | U3 (PRODUCT, already repaired in base) | preserved | n/a | none |
 | 15 | `strict_gate` `:179` file-where-directory-belongs no-veto | §D.5 | §D.5, AC-STRICT-1/2 | with probe bundle | none — branch-independent fix ships |
-| 16 | NEW (both cycles): `internal/app` panics at `app_test.go:185` `payload["parley_deck_skill"].(map[string]any)` — interface conversion nil→map; root cause = `writeFakeParleyDeckSkill` extension-less fixture unexecutable (row 3 W6) so the key is absent; :125/:129/:130/:189 same shape | W6 (TEST) | §D.8/§D.9, AC-BLD-1, AC-FIX-1 | 0 (this fix) / 6 (fixture) | none — comma-ok audit of the whole file done in invocation 2 (no unchecked map assertions remain); wait/usage first Windows execution still pending that fix landing hosted |
+| 16 | `internal/app` panics at `app_test.go:185` (fixed invocation 2). ROOT CAUSE NOW OBSERVED hosted (36172430646): `app_test.go:123` payload shows `parley_deck_skill_error: exec: "parley-deck-skill": executable file not found in %PATH%` — the extension-less fake-skill fixture (row 3) is unexecutable on Windows, so the key is absent; graceful failures now, no panic | W6 (TEST) | §D.8/§D.9, AC-BLD-1, AC-FIX-1 | 6 (fixture port) | none — re-exec/cmd.exe port at Stage 6 |
 | 17 | NEW (both cycles, deterministic): `internal/acp` TestSpawnStopDrainsStderrBeforeReaping + TestSpawnWaitDrainsStderrBeforeReaping fail 10.01s on WINDOWS legs | ACP family (§D.7) — previously classified ubuntu-only (U1, repaired in base); on Windows this is a NEW phenomenon, cause not yet established | §D.7 split rule | 6 (§D.7 a/b split) + probe-informed | none — record before reaction; do NOT retune; U1 spawn.go Stop/Wait ordering stays untouched; not labeled flaky (it is deterministic in both runs) |
 | 18 | NEW (both cycles): `internal/agents` TestZcodeResolvesModelAndEffortFromItsOwnConfig, TestKimiThinkingEffort; `internal/config` TestLoadAgentSpecsLayersAndTracksSources, TestExpandPlaceholders | class PROVISIONAL W8 (HOME/config-path fixtures) — root cause NOT yet verified; do not treat as settled until probed at Stage 6 | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
+
+| 19 | NEW (36172430646): `trajectory/snapshot_read_test.go:261/:432` — os.Rename of a directory fails `The process cannot access the file because it is being used by another process` (open handle on source tree) | W3 sharing family (PRODUCT/TEST site) | §D.6, AC-LOCK-1..4 | 4 | none — recorded before reaction; structural handle discipline first (§G H7 mapping) |
+| 20 | NEW (36172430646/36172828285): `evidence/refusal_test.go:299` `sync ...: Access is denied`; `tree_report_test.go:300/:311` TestSaveUnwritableDirFails + TestFailedSaveLeavesNoReport — chmod-unwritable/unreadable fixtures do not block writes/syncs on Windows | W7 chmod-fixture family (TEST) | §D.9 denyRead | 6 (sweep) / 1 (helper now exists) | none — DenyRead helper landed and hosted-verified; sweep converts fixtures |
+| 21 | NEW (36172430646): `evidence/tree_report_test.go:87` TestTreeDigestModeChangeChanges — chmod 0600→0700 does not change the synthesized mode on Windows, so the tree digest does not change | mode-synthesis family, NEW distinct phenomenon (TEST + product semantics question) | §D.9 sweep; digest mode semantics need review | 6 | none — record first; the digest's mode-sensitivity on Windows needs a deliberate decision, not a silent fixture change |
+| 22 | NEW (36172430646): `evidence/source_inventory_test.go:136` — fixture filename containing a newline (`line\nbreak`) fails to open: `The filename, directory name, or volume label syntax is incorrect` | W2-adjacent invalid-name class in FIXTURES (TEST) | §D.9 | 6 | none — fixture portability (t.TempDir-compatible names) |
+| 23 | NEW (36172430646): `internal/app` `app_test.go:373` `code=1 stdout=codex: not installed`, `:421` agent-runtime resolution; correlates with row 18's agents/config failures | W8/agent-runtime family PROVISIONAL — root cause not yet verified (runner PATH lacks real agents; tests presumably fake them) | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
 
 Refresh rule: after every hosted cycle, re-diff failing vs ledger; new phenomenon ⇒ new row
 before any code reaction; no `t.Skip` added without a row (AC-FIX-2).
