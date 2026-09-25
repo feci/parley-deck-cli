@@ -157,3 +157,7 @@ Runner exited 0. All three raw signatures are fresh ACCEPT, no reservation or bl
 ## Technical closure and release integration
 
 Fresh Zcode invocation exited 0 with unreserved PASS over all 21 FINAL criteria, documented in goal-check-zcode-1.md. Current-tree checks plus explicitly scoped prior evidence; organizer adopts no code-verification role. Exact resumed Kimi process then exited 0 and committed record-only completion ba46b2a. No source moved. Main fetch sees CLI origin/main c49b464; skill origin/main unchanged ancestor. Owner-authorized release step begins: integrate latest main, then delegate selected-version candidate preparation/builds to Kimi and independent preparation audit to Claude. Participants prepare candidates under this explicit release-step delegation; organizer retains every publication/global mutation action.
+
+## Final delivery audit closed
+
+Zcode final audit and narrow addendum both exited0 with scoped PASS. All15 managed roots now independently match2.14 payloads (90SKILL.md,15protocol copies,15markers); no runtime tool newly installed. Both GitHub channels, Homebrew formulas/installations/audit/tests, owner default and source ancestry verified. npm/core remain owner-only pending, skillwinget external validation/merge open. Required done handoff written honestly with those pending states and releases windows-portability sequencing hold. No code or product tag changed in closure records. Own usage ingested at final boundary; shared-memory outage retained locally, no persistence claim.
