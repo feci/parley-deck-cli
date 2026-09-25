@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.50.0 — 2026-09-25
+
+### Added
+
+- **Owner-designated implementer for idea runs.** The owner can now designate the
+  participant who executes an idea's FINAL (code or other work) while the other
+  participants evaluate it: a per-idea `implementer:` field in `00-prompt.md`, plus an
+  optional standing `[defaults].default_implementer` in the layered agents config.
+  Resolution follows one chain — the `IMPLEMENTATION.md` re-entry pin, the per-idea
+  designation, the global default, then the existing fallback (FINAL's recorded
+  implementer/drafter, else the first eligible participant). A designation names who
+  executes, never which gate applies: quorum, signoff weight and every attended
+  boundary are unchanged.
+- **Fail-closed designation validity gates.** An empty value (an incomplete
+  designation), an id outside the idea's eligible participants, or a malformed value
+  blocks any run that reaches an implementer, review-round, goal-check or fix-up
+  action — a malformed value is never trimmed or repaired. `implementer: none`
+  suppresses the global default for that idea. A designated implementer who fails the
+  §9.0 liveness ping gates a Phase-5-reaching run behind a user-confirmed three-exit
+  choice (re-designate, a recorded waiver, or `implementer: none`); an unavailable
+  global-default designee only surfaces a one-line notice and dispatch falls through.
+  A re-entry pin that disagrees with a live designation escalates rather than
+  honouring either silently; an owner/author-recorded reassignment retires the
+  abandoned attempt.
+- **Ships UNSET.** No default implementer is preselected: the generated central
+  template carries the key commented out, and a deck created by tooling contains no
+  active value — setting one is deliberate owner configuration. Kickoff emits an
+  `agent.model_diversity` WARNING when every reviewer shares the designated
+  implementer's model. The protocol text (all three COOPERATION.md copies) documents
+  the mechanism in §0, §4.0, §4 Phase 4/5, §9.0 and §10.
+
 ## 1.49.1 — 2026-09-24
 
 ### Fixed
