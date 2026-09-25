@@ -153,3 +153,7 @@ Resumed from durable state; closing draft by Claude exited 0. Runner request-sig
 ## Cycle-4 closing consensus signed / fresh goal check
 
 Runner exited 0. All three raw signatures are fresh ACCEPT, no reservation or block; parsed review triage ready, outstanding agreed fixes zero. Both Kimi and Zcode explicitly concur with the recorded NIT dismissal; text remains an honest unrepaired accepted residual. Fresh Zcode non-implementer goal-check invocation follows, separate from review and signoff. No implementation completion or release inferred yet.
+
+## Technical closure and release integration
+
+Fresh Zcode invocation exited 0 with unreserved PASS over all 21 FINAL criteria, documented in goal-check-zcode-1.md. Current-tree checks plus explicitly scoped prior evidence; organizer adopts no code-verification role. Exact resumed Kimi process then exited 0 and committed record-only completion ba46b2a. No source moved. Main fetch sees CLI origin/main c49b464; skill origin/main unchanged ancestor. Owner-authorized release step begins: integrate latest main, then delegate selected-version candidate preparation/builds to Kimi and independent preparation audit to Claude. Participants prepare candidates under this explicit release-step delegation; organizer retains every publication/global mutation action.

@@ -16,3 +16,7 @@ Integrate latest origin/main, participant-prepared metadata/builds and independe
 Stage core from published 2.13.0 TEMPLATE plus exactly reviewed hunks, independently verify, then provide exact attended `parley protocol publish --version V --from FILE` command. No TTY bypass. Owner-only core publication stays separate from completed agent-controlled channels.
 
 Every actual delivery channel needs independent participant verification before final completion file. That file releases windows-portability's sequencing hold and must state deferred/owner-only items honestly.
+
+## Current closing state (2026-09-25)
+
+Closing consensus cycle 4 is signed ACCEPT by all three, runner exited 0; canonical evidence preserved at 804522c. Zcode is performing a separate fresh LE-7 goal invocation. No release preparation launched pending verdict. Read-only staging-version recheck still reports GitHub CLI 1.49.1 and skill 2.13.0, npm 2.13.0; selected next minors remain 1.50.0 / 2.14.0. Homebrew checkout is clean at 52b09f3. Winget checkout is clean on historical feci-skill-2.11.0; use an isolated updated branch/worktree for this skill PR, never reuse/mix its old branch.
