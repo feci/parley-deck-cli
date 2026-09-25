@@ -152,3 +152,55 @@ func TestDesignationRecordsRequireConfirmation(t *testing.T) {
 		t.Fatal("reassignment naming a different new id must not re-pin this dispute")
 	}
 }
+
+// AF-1 (review cycle 1, zcode-1 MAJOR + claude-1 MAJOR-3): both confirmation-record
+// parsers are fail-closed — exact subject identity, a non-empty reason segment, a
+// strict trailing `confirmed <date>` whose date is a valid calendar date (VC-D), and
+// no negation in any earlier segment. Every adversarial case below PASSES if the
+// corresponding strictness is removed (substring identity, a bare "confirmed"
+// substring check, no calendar parse, no negation sweep), so the test pins each one.
+func TestConfirmationRecordsAreFailClosed(t *testing.T) {
+	waivers := []struct {
+		name  string
+		value string
+		id    string
+		want  bool
+	}{
+		{"control: confirmed waiver", "zz-impl — offline — confirmed 2026-09-25", "zz-impl", true},
+		{"control: marker any casing", "zz-impl — offline — CONFIRMED 2026-09-25", "zz-impl", true},
+		{"zcode case: negated marker", "zz-impl — NOT confirmed yet, pending owner", "zz-impl", false},
+		{"negated reason with valid tail", "zz-impl — not confirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"unconfirmed reason with valid tail", "zz-impl — Unconfirmed — confirmed 2026-09-25", "zz-impl", false},
+		{"claude MAJOR-3: waiver naming kimi-10 against kimi-1", "kimi-10 — offline — confirmed 2026-09-25", "kimi-1", false},
+		{"claude B5: prefix collision zz-impl-2 vs zz-impl", "zz-impl-2 — offline — confirmed 2026-09-25", "zz-impl", false},
+		{"VC-D: invalid calendar date", "zz-impl — offline — confirmed 2026-02-31", "zz-impl", false},
+		{"missing reason segment", "zz-impl — confirmed 2026-09-25", "zz-impl", false},
+		{"empty reason segment", "zz-impl —  — confirmed 2026-09-25", "zz-impl", false},
+	}
+	for _, tc := range waivers {
+		t.Run("waiver/"+tc.name, func(t *testing.T) {
+			if got := ImplementerWaived(map[string]string{"implementer_waived": tc.value}, tc.id); got != tc.want {
+				t.Fatalf("ImplementerWaived(%q, %q) = %v, want %v", tc.value, tc.id, got, tc.want)
+			}
+		})
+	}
+	reassignments := []struct {
+		name     string
+		value    string
+		old, new string
+		want     bool
+	}{
+		{"control: confirmed pair", "aa-first to zz-impl — rotation — confirmed 2026-09-25", "aa-first", "zz-impl", true},
+		{"zcode case: negated marker", "aa-first to zz-impl — NOT confirmed", "aa-first", "zz-impl", false},
+		{"VC-D: invalid calendar date", "aa-first to zz-impl — rotation — confirmed 2026-02-31", "aa-first", "zz-impl", false},
+		{"missing reason segment", "aa-first to zz-impl — confirmed 2026-09-25", "aa-first", "zz-impl", false},
+		{"same-id tier change (the documented exit)", "zz-impl to zz-impl — designation removed, default set — confirmed 2026-09-25", "zz-impl", "zz-impl", true},
+	}
+	for _, tc := range reassignments {
+		t.Run("reassignment/"+tc.name, func(t *testing.T) {
+			if got := ParseImplementerReassignment(map[string]string{"implementer_reassigned": tc.value}, tc.old, tc.new); got != tc.want {
+				t.Fatalf("ParseImplementerReassignment(%q, %q, %q) = %v, want %v", tc.value, tc.old, tc.new, got, tc.want)
+			}
+		})
+	}
+}

@@ -9,8 +9,8 @@ records `default_implementer`, deliberately shipped COMMENTED OUT in the generat
 outcome record; empty = blocked, id outside `participants:` = invalid); §4 Phase 4 prefers a drafter
 that is not the designee (never forbidden) and adds designated runs to the FINAL self-containment
 trigger list; §4 Phase 5 states the mechanism — one four-rank resolution chain (IMPLEMENTATION.md
-pin → per-idea designation → live layered `default_implementer` → FINAL-drafter fallback), the four
-field states, fail-closed validity gates on any run, the tier-2 unavailability gate with its three
+pin → per-idea designation → live layered `default_implementer` → today's chain — `FINAL.md`'s recorded `implementer:` / `drafted-by:`, else the first eligible participant (list order)), the four
+field states, fail-closed validity gates on any run that reaches an implementer, review-round, goal-check or fix-up action (latent on design-only runs until the idea next runs with `auto_implement` on), the tier-2 unavailability gate with its three
 recorded exits (`implementer_waived:`/`implementer: none`/re-designate), tier-3 notice-and-fall-
 through (never a gate; malformed still hard-fails), pin-vs-designation escalation with the
 `implementer_reassigned:` record, claim subordination under a live designation, the scope sentence

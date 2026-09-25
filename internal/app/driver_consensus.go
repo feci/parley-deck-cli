@@ -119,7 +119,7 @@ func designatedImplementerPreference(root, ideaDir string, participants []string
 	if d.State != protocol.DesignationAbsent {
 		return "" // `none` and the gating present-empty state suppress tier 3
 	}
-	g := globalDefaultImplementer(root)
+	g, _ := globalDefaultImplementer(root) // a layered-config read error steers nothing here (AF-6); the dispatch path surfaces it
 	if g == "" || strings.EqualFold(g, "none") || strings.ContainsAny(g, " \t\r\n") || !memberOf(eligible, g) {
 		return ""
 	}

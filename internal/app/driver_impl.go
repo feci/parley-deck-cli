@@ -42,10 +42,11 @@ type driverImplOps struct {
 	roleErr         string // declared-facilitator role deadlock; every role action escalates
 	facilitator     protocol.FacilitatorRole
 	// Designated-implementer state (meta-protocol-change-designated-implementer).
-	// All four stay zero on an undesignated deck, which keeps today's behavior
+	// All five stay zero on an undesignated deck, which keeps today's behavior
 	// byte-identical (nothing emitted, nothing compared, no gate).
 	implSource     protocol.ImplementerSource // resolution rank that produced implementer
 	implDesignated bool                       // a tier-2/tier-3 designation is present (drives the R45 event/line)
+	implLive       bool                       // a genuinely designation-sourced dispatch (drives kickoff checks + the re-entry Load-error gate)
 	implLine       string                     // the extra designation-path stdout line
 	dispatchErr    string                     // tier-2 availability gate; escalated by the dispatch actions only (R17)
 }
@@ -118,9 +119,20 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 		implementer: implementer, reviewers: reviewers, drafter: drafter, out: out,
 		roleErr: roleErr, facilitator: role,
 		implSource: designation.source, implDesignated: designation.present,
+		implLive: designation.live(),
 		implLine: designation.line, dispatchErr: designation.dispatchGate,
 	}
-	if designation.present {
+	// AF-6: a layered-config read error on the designation path surfaces as one
+	// construction-time WARNING — the standing default is treated as unset for this
+	// dispatch, never a gate (R16's scoping). A healthy-config deck prints nothing.
+	if designation.configErr != nil && out != nil {
+		fmt.Fprintf(out, "driver: WARNING cannot read the layered config: %v — the standing implementer default is treated as unset for this dispatch\n", designation.configErr)
+	}
+	// AF-4: kickoff checks run under a genuinely designation-sourced dispatch
+	// (`live`), not merely a present one — `none` and the fall-throughs keep the
+	// R45 line/event but skip the kickoff surfacing (and its second
+	// agent.model_diversity event).
+	if ops.implLive {
 		ops.kickoffDesignationChecks()
 	}
 	return ops
@@ -135,6 +147,25 @@ type dispatchDesignation struct {
 	line         string // the extra designation-path stdout line
 	gate         string // validity / pin-conflict gate — roleErr path, any run (R16/R25/R28)
 	dispatchGate string // tier-2 availability gate — dispatch actions only (R17/R18)
+	configErr    error  // layered-config read error on the tier-3 path — a notice, never a gate (AF-6)
+}
+
+// live reports whether the resolution is a genuinely designation-sourced dispatch
+// (review AF-4): present, and not an explicit opt-out (`none`) or a fall-through.
+// It gates the kickoff designation checks; and after checkImplementerReentry's pin
+// exit — where the only live sources left are designation and global-default — it is
+// exactly the set R29's comparison protects (claude-1 R-2, narrower form).
+func (d dispatchDesignation) live() bool {
+	if !d.present {
+		return false
+	}
+	switch d.source {
+	case protocol.SourceImplementerNone,
+		protocol.SourceImplementerFallThroughInapplicable,
+		protocol.SourceImplementerFallThroughUnavailable:
+		return false
+	}
+	return true
 }
 
 // resolveDispatchDesignation implements the R13 chain: rank 1 pin, rank 2 per-idea
@@ -195,14 +226,32 @@ func resolveDispatchDesignation(root, ideaDir string, eligible []string, discove
 	}
 	// DesignationAbsent — rank 1 pin governs re-entry (R27/R30)…
 	if pinOK {
-		if g := globalDefaultImplementer(root); g != "" {
+		g, err := globalDefaultImplementer(root)
+		if err != nil {
+			// AF-6: the pin governs regardless of the config error; the error is
+			// carried out and surfaced as one construction-time notice, never a gate.
+			return dispatchDesignation{implementer: pinID, source: protocol.SourceImplementerPin, configErr: err}
+		}
+		if g != "" {
 			// …and a present tier-3 designation is still recorded as present (R45).
-			return dispatchDesignation{implementer: pinID, source: protocol.SourceImplementerPin, present: true, line: resolvedLine(pinID, protocol.SourceImplementerPin)}
+			d := dispatchDesignation{implementer: pinID, source: protocol.SourceImplementerPin, present: true, line: resolvedLine(pinID, protocol.SourceImplementerPin)}
+			if strings.ContainsAny(g, " \t\r\n") {
+				// AF-5: a pin-shadowed malformed tier-3 value is surfaced, never
+				// gated — the pin is the owner's recorded outcome and a config typo
+				// cannot mis-dispatch here (fail-safe, never fail-open).
+				d.line += fmt.Sprintf("\ndriver: NOTICE standing default_implementer %q is malformed; it is ignored while the IMPLEMENTATION.md pin governs this dispatch", g)
+			}
+			return d
 		}
 		return dispatchDesignation{implementer: pinID, source: protocol.SourceImplementerPin}
 	}
 	// …then rank 3: the live layered global default (R10/R11).
-	g := globalDefaultImplementer(root)
+	g, err := globalDefaultImplementer(root)
+	if err != nil {
+		// AF-6: a layered-config read error leaves tier 3 unset for this dispatch —
+		// carried out and surfaced as one construction-time notice, never a gate.
+		return dispatchDesignation{implementer: legacy, configErr: err}
+	}
 	if g == "" {
 		return dispatchDesignation{implementer: legacy} // unset path: byte-identical
 	}
@@ -246,22 +295,24 @@ func designeeAvailable(root, id string, discovered []agents.Discovery) bool {
 	return err == nil && d.Found
 }
 
-// globalDefaultImplementer is rank 3's live layered read (R10/R11). A layered-config
-// read error leaves tier 3 unset rather than gating dispatch on a parse failure that
-// the config-loading paths already surface.
-func globalDefaultImplementer(root string) string {
+// globalDefaultImplementer is rank 3's live layered read (R10/R11). The error is
+// carried out (review AF-6): the dispatch path surfaces it once at ops construction
+// with tier 3 treated as unset — never a gate; the R36 drafter preference lets a
+// read error steer nothing.
+func globalDefaultImplementer(root string) (string, error) {
 	defs, err := config.LoadDefaults(root)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return strings.TrimSpace(defs.DefaultImplementer)
+	return strings.TrimSpace(defs.DefaultImplementer), nil
 }
 
 // kickoffDesignationChecks runs the designation-only kickoff surfacing (R36–R39): the
 // unchanged LE-3 model-diversity check runs early so an unsatisfiable roster costs an
 // error message rather than a design cycle, and thin reviewer benches warn without
-// blocking. Fires only under a present designation; the OpenReviewRound check at
-// review time is unchanged.
+// blocking. Fires only under a genuinely designation-sourced dispatch (the `live`
+// predicate, AF-4) — a present `none` or fall-through emits the R45 line/event but
+// skips this surfacing. The OpenReviewRound check at review time is unchanged.
 func (o driverImplOps) kickoffDesignationChecks() {
 	if o.out == nil {
 		return
@@ -283,9 +334,12 @@ func (o driverImplOps) kickoffDesignationChecks() {
 
 // checkImplementerReentry is R29: before a pin exists, the recorded
 // agent.implementer_resolved event is the durable record of what was dispatched, and a
-// live tier-2/tier-3 change against it escalates rather than reassigning silently. The
-// comparison fires only when the recorded source was designation or global-default; a
-// pinned resolution governs every resume (R30) and never reaches here.
+// live tier-2/tier-3 change against it escalates rather than reassigning silently —
+// including DELETING the designation, which is why Implement calls this
+// unconditionally (review AF-2 / VC-A: the comparison keys on the RECORDED source).
+// The comparison fires only when the recorded source was designation or
+// global-default; a pinned resolution governs every resume (R30) and never reaches
+// here.
 func (o driverImplOps) checkImplementerReentry() error {
 	if o.base.Store == (store.Store{}) {
 		return nil
@@ -300,7 +354,22 @@ func (o driverImplOps) checkImplementerReentry() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return fmt.Errorf("driver: cannot replay the run's dispatch record: %v", err)
+		// Fail closed only while the current dispatch is genuinely
+		// designation-sourced (claude-1 R-2, the narrower owner-compatible form —
+		// the always-on form was explicitly NOT ratified): after the pin exit above,
+		// implLive is exactly implSource ∈ {designation, global-default}, the set
+		// the comparison below protects. Every other dispatch — unset/legacy, none,
+		// either fall-through — keeps exactly today's behaviour and proceeds, so the
+		// owner's unchanged-default boundary holds by construction. Disclosed
+		// residual: deleting the designation AND corrupting the event store defeats
+		// both branches (the check proceeds on a now-undesignated dispatch with the
+		// record unreadable) — that requires destroying the run's durable evidence,
+		// a detectable deck-visible act, and hardening past it crosses the owner
+		// boundary, so it stays an owner decision, never a participant one.
+		if o.implLive {
+			return fmt.Errorf("driver: cannot replay the run's dispatch record: %v", err)
+		}
+		return nil
 	}
 	for i := len(events) - 1; i >= 0; i-- {
 		e := events[i]
@@ -316,6 +385,15 @@ func (o driverImplOps) checkImplementerReentry() error {
 		}
 		recID, _ := e.Data["implementer"].(string)
 		if recID == o.implementer && recSrc == string(o.implSource) {
+			return nil
+		}
+		// Honour the exit the escalation names (AF-2): a confirmed
+		// `implementer_reassigned: <recorded> to <current>` record — parsed by the
+		// AF-1-strict reader — retires the recorded dispatch and clears the
+		// escalation. A same-id record (`X to X`) is the owner-confirmed exit for a
+		// source-only tier change.
+		if meta, merr := protocol.ReadFrontmatter(filepath.Join(o.ideaDir, "00-prompt.md")); merr == nil &&
+			protocol.ParseImplementerReassignment(meta, recID, o.implementer) {
 			return nil
 		}
 		return fmt.Errorf("driver: designation changed after a recorded dispatch (recorded: %s via %s; now: %s via %s) — restore the designation to match the record, or record `implementer_reassigned: %s to %s — <reason> — confirmed <date>`; escalating rather than reassigning silently", recID, recSrc, o.implementer, o.implSource, recID, o.implementer)
@@ -424,12 +502,15 @@ func (o driverImplOps) Implement(ctx context.Context) error {
 		return fmt.Errorf("driver: %s", o.dispatchErr)
 	}
 	fmt.Fprintf(o.out, "driver: implementing via %s ...\n", o.implementer)
+	// R29 (hoisted out of the designation guard, review AF-2): a live tier-2/tier-3
+	// change against a recorded dispatch escalates rather than reassigning silently —
+	// and deleting the designation IS such a change, so the check cannot sit behind
+	// `implDesignated`. A never-designated deck pays one Store.Load() read; the early
+	// exits (zero store, pin source, not-exist) keep the unset path byte-identical.
+	if err := o.checkImplementerReentry(); err != nil {
+		return err
+	}
 	if o.implDesignated {
-		// R29: a live tier-2/tier-3 change against a recorded designation dispatch
-		// escalates rather than reassigning silently.
-		if err := o.checkImplementerReentry(); err != nil {
-			return err
-		}
 		// R45/R46: designation-only observability — one extra stdout line and the
 		// durable resolved-source event, guarded exactly as checkModelDiversity's
 		// event. On an undesignated deck neither fires and the line above stays

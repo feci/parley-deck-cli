@@ -2,7 +2,9 @@ package protocol
 
 import (
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 )
 
 // Designated-implementer fields (idea meta-protocol-change-designated-implementer).
@@ -171,25 +173,67 @@ func ResolveImplementerChain(ideaDir string, candidates []ImplementerCandidate, 
 	return "", "", false
 }
 
+// confirmationMarker is the §9.0 confirmation-record tail: exactly `confirmed
+// <date>` (any casing, one space, ISO date shape). The date must additionally parse
+// as a valid calendar date (review VC-D) — `confirmed 2026-02-31` is the "typo
+// indistinguishable from intention" class R3 names.
+var confirmationMarker = regexp.MustCompile(`(?i)^confirmed \d{4}-\d{2}-\d{2}$`)
+
+// negationMarker matches the negations that must never appear in a segment before
+// the confirmation marker: `not confirmed`, `not yet confirmed`, `unconfirmed`
+// (any casing). A negated record is not a confirmation, whatever else it carries.
+var negationMarker = regexp.MustCompile(`(?i)\b(?:unconfirmed|not(?:\s+yet)?\s+confirmed)\b`)
+
+// confirmationRecordTail enforces the §9.0 confirmation-record shape shared by the
+// waiver and reassignment readers (review AF-1). parts is the record value split on
+// "—": parts[0] is the subject (the caller's concern), parts[1..n-2] are reason
+// segments, parts[n-1] is the confirmation marker. The record is valid only with at
+// least one non-empty reason segment, a strict trailing marker whose date parses as
+// a valid calendar date, and no negation in any earlier segment.
+func confirmationRecordTail(parts []string) bool {
+	if len(parts) < 3 { // subject + reason + marker
+		return false
+	}
+	for _, seg := range parts[:len(parts)-1] {
+		if negationMarker.MatchString(seg) {
+			return false
+		}
+	}
+	for _, seg := range parts[1 : len(parts)-1] {
+		if strings.TrimSpace(seg) == "" {
+			return false // a reason segment must carry a reason
+		}
+	}
+	marker := strings.TrimSpace(parts[len(parts)-1])
+	if !confirmationMarker.MatchString(marker) {
+		return false
+	}
+	date := strings.TrimSpace(marker[len("confirmed"):])
+	_, err := time.Parse("2006-01-02", date)
+	return err == nil
+}
+
 // ImplementerWaived reports whether 00-prompt.md carries a confirmed waiver for id:
-// `implementer_waived: <agent-id> — <reason> — confirmed <date>`. The line must name
-// the id and carry the §9.0 confirmation marker; anything weaker is not a waiver.
+// `implementer_waived: <agent-id> — <reason> — confirmed <date>`. The subject
+// segment must name the id EXACTLY (substring containment would let `kimi-10` clear
+// kimi-1's gate), the tail must satisfy confirmationRecordTail; anything weaker is
+// not a waiver.
 func ImplementerWaived(meta map[string]string, id string) bool {
 	v := strings.Trim(strings.TrimSpace(meta[ImplementerWaivedKey]), `"'`)
 	if v == "" || id == "" {
 		return false
 	}
 	parts := strings.Split(v, "—")
-	if !strings.Contains(strings.TrimSpace(parts[0]), id) {
+	if !confirmationRecordTail(parts) {
 		return false
 	}
-	return strings.Contains(strings.ToLower(v), "confirmed")
+	return strings.TrimSpace(parts[0]) == id
 }
 
 // ParseImplementerReassignment parses `implementer_reassigned: <old> to <new> —
 // <reason> — confirmed <date>`. It returns ok only when the record names exactly the
-// (old → new) pair under dispute and carries the confirmation marker — the owner/
-// author-recorded act that retires the abandoned attempt, never the incoming
+// (old → new) pair under dispute and its tail satisfies confirmationRecordTail — the
+// owner/author-recorded act that retires the abandoned attempt, never the incoming
 // implementer's own edit.
 func ParseImplementerReassignment(meta map[string]string, oldID, newID string) bool {
 	v := strings.Trim(strings.TrimSpace(meta[ImplementerReassignedKey]), `"'`)
@@ -197,10 +241,7 @@ func ParseImplementerReassignment(meta map[string]string, oldID, newID string) b
 		return false
 	}
 	parts := strings.Split(v, "—")
-	if len(parts) < 2 {
-		return false
-	}
-	if !strings.Contains(strings.ToLower(v), "confirmed") {
+	if !confirmationRecordTail(parts) {
 		return false
 	}
 	pair := strings.TrimSpace(parts[0])

@@ -639,3 +639,389 @@ func TestDrafterSeparationPreference(t *testing.T) {
 		t.Fatalf("tier-3 preference, got %q", got)
 	}
 }
+
+// corruptDesignationStore appends a non-JSON line to the store's events.jsonl so the
+// next Load() fails with a non-not-exist error.
+func corruptDesignationStore(t *testing.T, st store.Store) {
+	t.Helper()
+	if err := os.MkdirAll(st.Directory(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.OpenFile(filepath.Join(st.Directory(), "events.jsonl"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.WriteString("this is not json\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func rawStoreEvents(t *testing.T, st store.Store) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(st.Directory(), "events.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+// AF-2 (review claude-1 MAJOR-1, construction B1): DELETING the per-idea designation
+// after a recorded designation dispatch escalates — the comparison is hoisted out of
+// the designation guard and keys on the RECORDED source (VC-A). The confirmed
+// `implementer_reassigned:` record the error names is the machine-read exit.
+func TestReentryEscalatesOnDesignationDeletion(t *testing.T) {
+	setCentralDefaults(t, "")
+	participants := []string{"aa-first", "zz-impl"}
+	root := designationRoot(t)
+	slug := "demo"
+	writeDesignationPrompt(t, root, slug, designationPrompt(slug, participants, "implementer: zz-impl\n"))
+	st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+	if err := st.Append(store.Event{Type: "agent.implementer_resolved",
+		Data: map[string]any{"idea": slug, "implementer": "zz-impl", "source": "designation"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Delete the designation: the live change against the record must escalate.
+	ideaDir := writeDesignationPrompt(t, root, slug, designationPrompt(slug, participants, ""))
+	ops := designationOps(t, root, slug, ideaDir, participants, participants, &bytes.Buffer{})
+	ops.base.Store = st
+	if ops.implDesignated {
+		t.Fatal("the designation is deleted; the deck is undesignated now")
+	}
+	err := ops.Implement(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "designation changed after a recorded dispatch") ||
+		!strings.Contains(err.Error(), "zz-impl") {
+		t.Fatalf("deleting the designation after a recorded dispatch must escalate naming the record, got %v", err)
+	}
+	if _, serr := os.Stat(filepath.Join(ideaDir, "IMPLEMENTATION.md")); !os.IsNotExist(serr) {
+		t.Fatal("the escalation must fire before any dispatch")
+	}
+
+	// A negated record does not clear it (rides the AF-1-strict parser).
+	writeDesignationPrompt(t, root, slug, designationPrompt(slug, participants,
+		"implementer_reassigned: zz-impl to aa-first — NOT confirmed\n"))
+	ops = designationOps(t, root, slug, ideaDir, participants, participants, &bytes.Buffer{})
+	ops.base.Store = st
+	if err := ops.Implement(context.Background()); err == nil {
+		t.Fatal("a negated reassignment record must not clear the escalation")
+	}
+
+	// The confirmed record naming exactly the recorded → current pair clears it.
+	writeDesignationPrompt(t, root, slug, designationPrompt(slug, participants,
+		"implementer_reassigned: zz-impl to aa-first — owner redirect — confirmed 2026-09-25\n"))
+	ops = designationOps(t, root, slug, ideaDir, participants, participants, &bytes.Buffer{})
+	ops.base.Store = st
+	if err := ops.Implement(context.Background()); err != nil {
+		t.Fatalf("the confirmed reassignment record must clear the escalation, got %v", err)
+	}
+
+	// Idea scoping: an unrelated idea's recorded event never fires the comparison.
+	root2 := designationRoot(t)
+	ideaDir2 := writeDesignationPrompt(t, root2, slug, designationPrompt(slug, participants, "implementer: zz-impl\n"))
+	st2 := store.New(filepath.Join(root2, protocol.DeckDir, "runs", "designation-test"))
+	if err := st2.Append(store.Event{Type: "agent.implementer_resolved",
+		Data: map[string]any{"idea": "other-idea", "implementer": "aa-first", "source": "designation"}}); err != nil {
+		t.Fatal(err)
+	}
+	ops = designationOps(t, root2, slug, ideaDir2, participants, participants, &bytes.Buffer{})
+	ops.base.Store = st2
+	if err := ops.Implement(context.Background()); err != nil {
+		t.Fatalf("an unrelated idea's recorded event must not fire the comparison, got %v", err)
+	}
+}
+
+// AF-2 (construction B2): CLEARING the global default after a recorded
+// global-default dispatch escalates exactly like a designation change.
+func TestReentryEscalatesOnGlobalDefaultCleared(t *testing.T) {
+	setCentralDefaults(t, "default_implementer = \"zz-impl\"\n")
+	participants := []string{"aa-first", "zz-impl"}
+	root := designationRoot(t)
+	ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, ""))
+	st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+	if err := st.Append(store.Event{Type: "agent.implementer_resolved",
+		Data: map[string]any{"idea": "demo", "implementer": "zz-impl", "source": "global-default"}}); err != nil {
+		t.Fatal(err)
+	}
+	// The standing default is now gone; dispatch falls to today's chain.
+	setCentralDefaults(t, "")
+	ops := designationOps(t, root, "demo", ideaDir, participants, participants, &bytes.Buffer{})
+	ops.base.Store = st
+	if ops.implDesignated || ops.implSource != "" {
+		t.Fatalf("with the default cleared the deck is unset, got %+v", ops)
+	}
+	if err := ops.Implement(context.Background()); err == nil ||
+		!strings.Contains(err.Error(), "designation changed after a recorded dispatch") {
+		t.Fatalf("clearing the global default after a recorded dispatch must escalate, got %v", err)
+	}
+}
+
+// AF-2 (claude-1 R-2, narrower owner-compatible form): a corrupt/unreadable event
+// store fails closed ONLY while the current dispatch is genuinely
+// designation-sourced (after the pin exit: implSource ∈ {designation,
+// global-default} = the live set). Unset and `none` decks keep exactly today's
+// behaviour. The always-on form was explicitly NOT ratified.
+func TestReentryCorruptStoreFailsClosedOnlyWhenLive(t *testing.T) {
+	participants := []string{"zz-first", "zz-impl"}
+
+	// (1) Live tier-2 designation + corrupt store → escalate; no dispatch, no
+	// resolved event. Fails if the fail-closed branch is removed.
+	func() {
+		setCentralDefaults(t, "")
+		root := designationRoot(t)
+		ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, "implementer: zz-impl\n"))
+		var out bytes.Buffer
+		ops := designationOps(t, root, "demo", ideaDir, participants, participants, &out)
+		st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+		corruptDesignationStore(t, st)
+		ops.base.Store = st
+		err := ops.Implement(context.Background())
+		if err == nil || !strings.Contains(err.Error(), "cannot replay the run's dispatch record") {
+			t.Fatalf("a live designation with a corrupt store must fail closed, got %v", err)
+		}
+		if _, serr := os.Stat(filepath.Join(ideaDir, "IMPLEMENTATION.md")); !os.IsNotExist(serr) {
+			t.Fatal("the escalation must fire before any dispatch")
+		}
+		if strings.Contains(rawStoreEvents(t, st), "implementer_resolved") {
+			t.Fatal("no resolved event may be appended when the record cannot be replayed")
+		}
+	}()
+
+	// (2) Unset deck (neither field) + the same corrupt store → proceeds, stdout
+	// byte-identical to the healthy-store unset baseline, no events added. Fails if
+	// the escalation broadens back toward always-on — the machine pin of the owner's
+	// unchanged-default boundary on this path.
+	func() {
+		setCentralDefaults(t, "")
+		root := designationRoot(t)
+		ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, ""))
+		var out bytes.Buffer
+		ops := designationOps(t, root, "demo", ideaDir, participants, participants, &out)
+		st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+		corruptDesignationStore(t, st)
+		ops.base.Store = st
+		if err := ops.Implement(context.Background()); err != nil {
+			t.Fatalf("an unset deck keeps exactly today's behaviour on a corrupt store, got %v", err)
+		}
+		if got := out.String(); got != "driver: implementing via zz-first ...\n" {
+			t.Fatalf("unset stdout must stay byte-identical, got %q", got)
+		}
+		if strings.Contains(rawStoreEvents(t, st), "implementer_resolved") {
+			t.Fatal("an unset dispatch appends no designation events")
+		}
+	}()
+
+	// (3) `implementer: none` + corrupt store → proceeds. Fails if the predicate is
+	// keyed on `present` instead of the live set.
+	func() {
+		setCentralDefaults(t, "")
+		root := designationRoot(t)
+		ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, "implementer: none\n"))
+		ops := designationOps(t, root, "demo", ideaDir, participants, participants, &bytes.Buffer{})
+		st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+		corruptDesignationStore(t, st)
+		ops.base.Store = st
+		if err := ops.Implement(context.Background()); err != nil {
+			t.Fatalf("an explicit opt-out is not a live designation; it must proceed, got %v", err)
+		}
+	}()
+}
+
+// AF-2 residual, pinned honestly (claude-1 R-2): deleting the designation AND
+// corrupting the event store defeats both branches — the dispatch proceeds on a
+// now-undesignated deck with the record unreadable. This test PINS the limitation
+// rather than pretending it absent: any future hardening (an always-on gate) is a
+// deliberate, reviewed change that must cross the owner's unchanged-default
+// boundary, so it is an owner decision, never a participant one.
+func TestReentryResidualDeletionPlusStoreDestructionProceeds(t *testing.T) {
+	setCentralDefaults(t, "")
+	participants := []string{"aa-first", "zz-impl"}
+	root := designationRoot(t)
+	ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, ""))
+	st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+	if err := st.Append(store.Event{Type: "agent.implementer_resolved",
+		Data: map[string]any{"idea": "demo", "implementer": "zz-impl", "source": "designation"}}); err != nil {
+		t.Fatal(err)
+	}
+	corruptDesignationStore(t, st) // the durable evidence is destroyed after recording
+	ops := designationOps(t, root, "demo", ideaDir, participants, participants, &bytes.Buffer{})
+	ops.base.Store = st
+	if err := ops.Implement(context.Background()); err != nil {
+		t.Fatalf("the disclosed residual: evidence destruction defeats the comparison, got %v", err)
+	}
+}
+
+// AF-4 (review claude-1 MINOR-1): `present` (R45 emission) is split from `live`
+// (kickoff behaviours). An explicit `none` — per-idea or deck-wide — and a waived
+// tier-2 designation keep the R45 line/event but run NO kickoff checks, so the
+// agent.model_diversity event fires exactly once (at OpenReviewRound), as on an
+// unset deck. T-10/AC-14 (a genuinely designated two-participant run warns) is
+// unmodified and stays green.
+func TestNoneAndFallThroughsAreNotLive(t *testing.T) {
+	participants := []string{"zz-impl", "aa-rev"} // two participants: live would warn (R38)
+	sameModel := []agents.Discovery{
+		{Spec: agents.Spec{ID: "zz-impl", Model: "same-model"}, Found: true},
+		{Spec: agents.Spec{ID: "aa-rev", Model: "same-model"}, Found: true},
+	}
+	assertNotLive := func(t *testing.T, ops driverImplOps, constructionOut *bytes.Buffer) {
+		t.Helper()
+		if ops.implLive {
+			t.Fatalf("source %q must not be live", ops.implSource)
+		}
+		if !ops.implDesignated {
+			t.Fatal("a present opt-out/fall-through is still present (R45 emission unchanged)")
+		}
+		if strings.Contains(constructionOut.String(), "designated run") ||
+			strings.Contains(constructionOut.String(), "model-diversity") {
+			t.Fatalf("no kickoff checks may run when not live, got %q", constructionOut.String())
+		}
+		// Construction emits no diversity event; the OpenReviewRound surface emits
+		// exactly one — the same total as an unset deck.
+		st := store.New(filepath.Join(ops.root, protocol.DeckDir, "runs", "designation-test"))
+		ops.base.Store = st
+		if err := ops.checkModelDiversity(); err != nil {
+			t.Fatal(err)
+		}
+		events, err := st.Load()
+		if err != nil {
+			t.Fatal(err)
+		}
+		count := 0
+		for _, e := range events {
+			if e.Type == "agent.model_diversity" {
+				count++
+			}
+		}
+		if count != 1 {
+			t.Fatalf("exactly one agent.model_diversity event (at the review surface), got %d", count)
+		}
+	}
+
+	// Per-idea `implementer: none`.
+	setCentralDefaults(t, "")
+	root := designationRoot(t)
+	ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, "implementer: none\n"))
+	var out bytes.Buffer
+	ops := newDriverImplOps(runner.Options{Root: root, Idea: protocol.IdeaStatus{Slug: "demo", Path: ideaDir, Participants: participants}, Agents: sameModel},
+		root, "demo", ideaDir, participants, &out).(driverImplOps)
+	assertNotLive(t, ops, &out)
+
+	// Deck-wide `default_implementer = "none"`.
+	setCentralDefaults(t, "default_implementer = \"none\"\n")
+	root = designationRoot(t)
+	ideaDir = writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, ""))
+	out.Reset()
+	ops = newDriverImplOps(runner.Options{Root: root, Idea: protocol.IdeaStatus{Slug: "demo", Path: ideaDir, Participants: participants}, Agents: sameModel},
+		root, "demo", ideaDir, participants, &out).(driverImplOps)
+	assertNotLive(t, ops, &out)
+
+	// A waived tier-2 designation (source fall-through-unavailable) is not live.
+	setCentralDefaults(t, "")
+	root = designationRoot(t)
+	ideaDir = writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants,
+		"implementer: aa-rev\nimplementer_waived: aa-rev — offline — confirmed 2026-09-25\n"))
+	out.Reset()
+	// aa-rev undiscovered → unavailable → waived fall-through.
+	ops = newDriverImplOps(runner.Options{Root: root, Idea: protocol.IdeaStatus{Slug: "demo", Path: ideaDir, Participants: participants}, Agents: sameModel[:1]},
+		root, "demo", ideaDir, participants, &out).(driverImplOps)
+	if ops.implSource != protocol.SourceImplementerFallThroughUnavailable {
+		t.Fatalf("expected the waived fall-through, got %q", ops.implSource)
+	}
+	if ops.implLive || strings.Contains(out.String(), "designated run") {
+		t.Fatalf("a waived designation must not trigger kickoff checks, got live=%v out=%q", ops.implLive, out.String())
+	}
+
+	// The R45 line/event still fire for `none`: dispatch emits the decline line and
+	// records the resolved event with source none.
+	setCentralDefaults(t, "")
+	root = designationRoot(t)
+	ideaDir = writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, "implementer: none\n"))
+	out.Reset()
+	impl := designationOps(t, root, "demo", ideaDir, participants, participants, &out)
+	st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+	impl.base.Store = st
+	if err := impl.Implement(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "implementer designation declined") {
+		t.Fatalf("the R45 line must still fire for `none`, got %q", out.String())
+	}
+	events, err := st.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, e := range events {
+		if e.Type == "agent.implementer_resolved" && e.Data["source"] == "none" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the R45 event must still record the present opt-out")
+	}
+}
+
+// AF-5 (review claude-1 MINOR-2, construction B3): with a pin present, a malformed
+// tier-3 value is surfaced as a one-line notice and IGNORED while the pin governs —
+// never a gate (the pin is the owner's recorded outcome). T-7/AC-10 (malformed
+// tier-3 WITHOUT a pin hard-fails) is unmodified and stays green.
+func TestPinShadowedMalformedDefaultNoticesNotGates(t *testing.T) {
+	setCentralDefaults(t, "default_implementer = \"zz-impl # copied from a comment\"\n")
+	root := designationRoot(t)
+	participants := []string{"aa-first", "zz-impl"}
+	ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, ""))
+	pin := "---\nidea: demo\nstatus: implemented\nimplementer: aa-first\n---\n\n## Summary of work\npartial\n"
+	if err := os.WriteFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"), []byte(pin), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	ops := designationOps(t, root, "demo", ideaDir, participants, participants, &out)
+	if ops.implementer != "aa-first" || ops.implSource != protocol.SourceImplementerPin {
+		t.Fatalf("the pin must govern, got implementer=%q source=%q", ops.implementer, ops.implSource)
+	}
+	if ops.roleErr != "" || ops.dispatchErr != "" {
+		t.Fatalf("a pin-shadowed malformed default never gates: %q / %q", ops.roleErr, ops.dispatchErr)
+	}
+	st := store.New(filepath.Join(root, protocol.DeckDir, "runs", "designation-test"))
+	ops.base.Store = st
+	out.Reset()
+	if err := ops.Implement(context.Background()); err != nil {
+		t.Fatalf("the pin dispatch must proceed, got %v", err)
+	}
+	if !strings.Contains(out.String(), "NOTICE") || !strings.Contains(out.String(), "zz-impl # copied from a comment") {
+		t.Fatalf("the notice must name the malformed value, got %q", out.String())
+	}
+}
+
+// AF-6 (review claude-1 MINOR-3 + zcode-1 MINOR): a layered-config read error on the
+// designation path surfaces as one construction-time WARNING naming the error; the
+// standing default is treated as unset for this dispatch — never a gate, no event
+// change. TestUnsetPathIsByteIdentical (healthy config) pins the other side.
+func TestConfigErrorSurfacesAsNoticeNotGate(t *testing.T) {
+	setCentralDefaults(t, "")
+	root := designationRoot(t)
+	// Malformed TOML in the deck layer.
+	deck := filepath.Join(root, protocol.DeckDir)
+	if err := os.WriteFile(filepath.Join(deck, "agents.toml"), []byte("[defaults\ndefault_implementer = \"zz-impl\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	participants := []string{"aa-first", "zz-impl"}
+	ideaDir := writeDesignationPrompt(t, root, "demo", designationPrompt("demo", participants, ""))
+	var out bytes.Buffer
+	ops := designationOps(t, root, "demo", ideaDir, participants, participants, &out)
+	if ops.roleErr != "" || ops.dispatchErr != "" {
+		t.Fatalf("a config read error never gates: %q / %q", ops.roleErr, ops.dispatchErr)
+	}
+	if ops.implementer != "aa-first" || ops.implSource != "" {
+		t.Fatalf("tier 3 is treated as unset → today's chain, got implementer=%q source=%q", ops.implementer, ops.implSource)
+	}
+	if !strings.Contains(out.String(), "driver: WARNING cannot read the layered config") || !strings.Contains(out.String(), "agents.toml") {
+		t.Fatalf("the notice must name the config error, got %q", out.String())
+	}
+	// Resolution falls to today's chain (asserted above). The downstream LAUNCH path
+	// has its own pre-existing fail-closed read of the same layered config (the
+	// launch budget refuses on the unreadable file), so no live dispatch is driven
+	// here — that refusal predates this delta and is not the designation path.
+}
