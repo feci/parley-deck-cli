@@ -121,3 +121,15 @@ Observed Kimi's new unpushed source commit bf3336d uses [kimi-1] rather than the
 Kimi exited 0. Final source 1bad263 and record b850576; skill unchanged a624318. It honored the live commit-prefix inbox before exit: bf3336d -> 1bad263 message-only, tree equivalence and original-test provenance recorded by implementer. Current frontmatter status fix-up-cycle-2, head-commit 1bad263, skill a624318; organizer brief mechanically reports await review artifact. Kimi reports AF-12…15 plus option (a) applied; build/vet/full protocol package/focused app fixtures/mutation checks pass, with no duplicate broad suite. It reports a phase-8 shadow-size measurement discrepancy (86,716 vs plan's 86,701), explicitly recorded for reviewer assessment. No organizer code verdict.
 
 Dispatch existing two non-implementer reviewers for proportional round-03 reassessment under the signed plan. Independent broad suite remains exact-commit scoped at d238238 and the new small delta has targeted evidence; reviewers determine sufficiency and may raise new concerns. All release gates still stand.
+
+## Round-03 launch DNS failure
+
+Both reviewer processes exited 1 before filing any round-03 artifact. Claude reports API reachability/DNS ENOTFOUND; Zcode reports getaddrinfo ENOTFOUND omniroute.marao.sk, retryable. GitHub and npm HTTPS remain reachable (200). No review verdict inferred, no model/role substitution and no release advance. Diagnose read-only DNS state and retry same frozen launches after recovery. Raw provider logs are not committed (may contain request metadata).
+
+Read-only diagnosis found local DNS recovered to the configured private endpoint and HTTPS HEAD returned 307. Public DNS uses a non-routable placeholder, consistent with local DNS dependence; no resolver/hosts/network/config change was made. First 24-minute review observer timed out (exit 3). Preserve failed attempt logs locally and retry same reviewer models/identities on unchanged commits; no artifacts existed to overwrite.
+
+## Round-03 retry exited / cycle-3 documentary plan
+
+Both retried reviewers exited 0; shared wait exited 0. Zcode PASS/no findings within its scope; Claude confirms every behavior fix and reports 1 MINOR + 1 NIT, both documentary: source packet figures differ by flags (86,701 without versus 86,716 with auto_implement/protocol_change) and one remaining test comment overclaims any-run gate scope. No behavior regression, no new broad-suite need. Participants must reconcile Zcode's scoped null/indeterminate-cause statement with Claude's controlled argument variation; organizer does not adjudicate.
+
+Signed cycle-2 plan archived byte-exact at review/consensus-cycle-02.md, SHA256 dcc1e556636ee121da46c32d3003cc82c9a64f0bba257c3110b0077ed0f2f865. Phase 7 allows any participant to draft; assign this concise two-item documentary plan to Claude, the finding author, while Kimi stays sole implementer and all three fresh signatures remain required. No role/quorum/model change. The organizer remains purely operational.
