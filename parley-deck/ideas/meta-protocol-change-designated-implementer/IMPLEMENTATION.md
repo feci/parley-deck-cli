@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-designated-implementer
-status: implemented
+status: fix-up-cycle-2
 implementer: kimi-1
 started: 2026-09-25
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer#designated-implementer + /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer-skill#designated-implementer
-head-commit: 0893989
-skill-commit: bf7e049
+head-commit: 1bad263
+skill-commit: a624318
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -250,6 +250,12 @@ carries all three signoffs (kimi-1 ✅, claude-1 🟡 ACCEPT-WITH-RESERVATIONS, 
   `a624318` (skill worktree); this file's update follows in the next commit on the same branch
   (a file cannot name its own commit). No frozen FINAL, signoff, or peer-review edits; no
   version/release/main-merge/global-config change; the product default ships UNSET.
+- 2026-09-25 — **fix-up cycle 2 (Phase 8).** Phase-8 packet attested pre-edit (full mode,
+  `b273af1e…f388`, `fallback_reason` absent — see `## Fix-up cycle 2`). Applied AF-12…AF-15 as
+  signed, with both reviewer-carried corrections (AF-13's accurate `:42`/`driverImplOps` locator;
+  AF-15 alternative (a), accepted and recorded in `## Fix-up cycle 2`). Source/tests commit
+  `1bad263`; this file's update follows in the next commit on the same branch. No frozen FINAL,
+  signoff, or peer-review edits; no skill delta; the product default ships UNSET.
 
 ## Validation evidence
 
@@ -302,16 +308,26 @@ carries all three signoffs (kimi-1 ✅, claude-1 🟡 ACCEPT-WITH-RESERVATIONS, 
 
 ### Fix-up cycle 1 evidence (at `d238238`, skill `a624318`)
 
-- **Phase-8 packet attestation (this fix-up's authority):** `parley protocol packet --dir .
+- **Phase-8 packet attestation (PRE-EDIT — attested at `0893989` before the cycle's protocol
+  hunks; relabelled at fix-up cycle 2 per AF-14(1), the original "this fix-up's authority"
+  wording wrongly placed the pre-edit figures under `d238238`):** `parley protocol packet --dir .
   --phase 8 --track deliberation --idea meta-protocol-change-designated-implementer --flag
   auto_implement --flag protocol_change --audience participant --json` → `context_mode: "full"`,
   `fallback_reason` ABSENT (top-level keys enumerated: `body_path`, `context_mode`, `index`,
   `packet_sha256`, `request`, `shadow`, `source`, `source_sha256`), `source_sha256` =
   `packet_sha256` = `c749218255c96c4efeecc8d598abc6192f195a294291eff6c505096f0091568f` =
-  `shasum -a 256 parley-deck/COOPERATION.md` (1,400 lines / 114,771 bytes — the live amended
-  authority, byte-identical to what all three signoff attestations used); `shadow` (86,336 bytes,
-  40 included / 29 omitted) not used. Phases 6–8, §15, §0/§9.0 and the shipped Phase-5/§4.0/§10
-  hunks were read from it.
+  `git show 0893989:parley-deck/COOPERATION.md` (1,400 lines / 114,771 bytes — the pre-edit
+  authority, byte-identical to what all three cycle-1 signoff attestations used); phase-8
+  `shadow` (86,336 bytes, 40 included / 29 omitted) not used. Phases 6–8, §15, §0/§9.0 and the
+  shipped Phase-5/§4.0/§10 hunks were read from it. The POST-edit authority at `d238238` is
+  `b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388` (1,400 lines / 115,166
+  bytes — re-derived at cycle 2 from `git show d238238:parley-deck/COOPERATION.md`; the live tree
+  matches). **All shadow byte figures in this bullet are PHASE-8 shadows** — over the `d238238`
+  source the phase-8 shadow measures 86,716 bytes / 40 included / 29 omitted (`fe0e4c04…ebcf`,
+  measured twice at fix-up cycle 2 with parley 1.49.1; the cycle-2 plan's "86,701" figure did
+  not reproduce under this binary and is superseded by this measurement), while a PHASE-7 packet
+  over the same `d238238` source reports a different shadow (80,799 bytes / 41 included / 28
+  omitted, `c6d29141…d980` — both cycle-2 signoff attestations). Read the phase with the figure.
 - **Scoped suites:** `go test ./internal/protocol/ ./internal/config/ ./internal/consensus/
   -count=1` all ok; `go test ./internal/app/ -count=1 -timeout 900s` ok 534.5s (shared-mount fork
   profile); `go build ./...` + `go vet ./...` OK; `gofmt -l` clean on every file this cycle
@@ -348,6 +364,10 @@ carries all three signoffs (kimi-1 ✅, claude-1 🟡 ACCEPT-WITH-RESERVATIONS, 
 - 2026-09-25 · kimi-1 — review cycle-1 fix-up (AF-1…AF-11 as amended by the R-1/R-2/R-3
   ratification) applied exactly as signed; decisions and disclosures are in
   `## Deviations from FINAL.md` → "Ratified at review cycle 1" and `## Fix-up cycle 1`.
+- 2026-09-25 · kimi-1 — fix-up cycle 2: accepted AF-15's carried correction (a)
+  (`un[\s-]*confirmed` completing the signed AF-1 clause (iv) enumeration) with rationale
+  recorded in `## Fix-up cycle 2` before applying it; fallback (b) not invoked. AF-13's accurate
+  `:42`/`driverImplOps` locator carried transparently (the signed plan body is untouched).
 
 ## Surprises & Discoveries
 
@@ -363,8 +383,11 @@ carries all three signoffs (kimi-1 ✅, claude-1 🟡 ACCEPT-WITH-RESERVATIONS, 
   event is recorded TWICE per run — once at kickoff (R37's "runs unchanged … also runs at
   kickoff") and once at `OpenReviewRound` — versus once on an unset deck; a licensed consequence
   of R37, recorded here because consumers counting these events will see it. After AF-4 the
-  doubling is confined to genuinely designated runs (it no longer fires on `none` or the
-  fall-throughs); event counts are pinned by the AF-4 tests.
+  doubling is confined to `live()`-true dispatches and never fires on `none` or the
+  fall-throughs (read with zcode-1's round-02 NIT-3 corner, recorded via AF-14(2): `live()` is
+  also true for a pin-source dispatch when tier 3 is set — `present: true`, `source: pin` — so
+  the kickoff `agent.model_diversity` emission can fire there too); event counts are pinned by
+  the AF-4 tests.
 - **AF-6 test discovery (fix-up cycle 1):** the launch path has its own pre-existing fail-closed
   read of the layered config (the launch budget refuses when the deck `agents.toml` is
   unreadable), so the AF-6 notice test pins resolution + surfacing only; that refusal predates
@@ -466,6 +489,16 @@ cross-referenced with FINAL register item F4.
 file's update is the next commit on the same branch (a file cannot name its own commit — no
 self-hash claim). Pre-fix-up HEADs under review: CLI `0893989`, skill `bf7e049`.
 
+**Cycle-1 record metadata (repaired openly at the fix-up cycle-2 publication, per AF-12):**
+`status: fix-up-cycle-1`; `head-commit: d238238`; `skill-commit: a624318`; `record-commit:
+e4d868a` — all PRIOR commits at repair time, so the cycle-1 self-hash gap is closed
+retroactively with no self-naming. Admission: the per-publication frontmatter bump owed at
+`e4d868a` (Phase 8, packet body :622 — "They also update the top-level frontmatter: bump
+`status:` to `fix-up-cycle-N`, update `head-commit:`") was missed there; this section's "the
+Phase-8 fix-up close will bump `head-commit` again" rationale conflated the per-cycle close with
+the idea close. The bump is applied at this cycle-2 publication, not deferred again to idea
+close.
+
 **Tests this cycle:** scoped suites and mutation proofs as itemized in `## Validation evidence` →
 "Fix-up cycle 1 evidence"; full `go test ./... -count=1 -timeout 900s` at `d238238` in a clean
 local-disk detached checkout (`/private/tmp/parley-di-fullsuite-kimi1`, removed after) run by the
@@ -483,8 +516,134 @@ check by a fresh non-implementer remains owed after it. No completion is claimed
 **No contradiction found:** nothing in the amended plan conflicted with the code or the owner
 boundary, so no new consensus was needed; every fix is exactly the signed text.
 
+## Fix-up cycle 2 (2026-09-25, kimi-1)
+
+status: complete
+completed: 2026-09-25
+head-commit: 1bad263
+skill-commit: a624318
+record-commit: follows on the same branch and is named at the next touch (a file cannot name its
+own commit — no self-hash claim)
+
+Commit-provenance note: the cycle-2 source commit was first committed as `bf3336d` with a
+`[kimi-1]` prefix; per the owner's standing prefix override (inbox
+`codex-1-to-kimi-1_meta-protocol-change-designated-implementer_commit-prefix.md`, 2026-09-25) its
+message was corrected to the `[codex-1]` task prefix with `(authored by kimi-1)` retained — a
+message-only rewrite: the tree is byte-identical, so every evidence item in this section ran
+against exactly the committed tree. `1bad263` supersedes `bf3336d`; no test evidence is claimed
+to have run at a different content hash.
+
+Applies the signed cycle-2 fix plan (`review/consensus.md` — kimi-1 ✅ ACCEPT, claude-1 🟡
+ACCEPT-WITH-RESERVATIONS, zcode-1 🟡 ACCEPT-WITH-RESERVATIONS; no BLOCK) with both carried
+corrections, each explicitly nonblocking and reviewer-accepted. Phase-8 packet attested BEFORE
+any edit (2026-09-25T04:44Z, parley 1.49.1, this worktree at pre-edit source commit `8d026d4` —
+organizer-only commits since `d238238`; the code tree was and remains content-identical to the
+reviewed `d238238`): `parley protocol packet --dir . --phase 8 --track deliberation --idea
+meta-protocol-change-designated-implementer --flag auto_implement --flag protocol_change
+--audience participant --json`, exit 0 → `context_mode: "full"`, `fallback_reason` ABSENT
+(top-level keys enumerated: `body_path`, `context_mode`, `index`, `packet_sha256`, `request`,
+`shadow`, `source`, `source_sha256`), `source_sha256` = `packet_sha256` =
+`b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388` = `shasum -a 256
+parley-deck/COOPERATION.md` (1,400 lines / 115,166 bytes — the live post-cycle-1 authority at
+`d238238`, unchanged by this cycle); phase-8 `shadow` `fe0e4c04…ebcf` (86,716 bytes, 40
+included / 29 omitted) not used — re-run for determinism with identical figures. Phase 8 was
+read from the body (the frontmatter-bump sentence at body :622 verbatim).
+
+### Fixes applied
+
+- **AF-12** — this file's frontmatter at this publication: `status: implemented` →
+  `fix-up-cycle-2`; `head-commit: 0893989` → `1bad263` (the cycle-2 source commit — PRIOR and
+  knowable under the source-then-record order); `skill-commit: bf7e049` → `a624318` (still the
+  skill HEAD; cycle 2 has no skill delta). The cycle-1 omission is repaired openly inside
+  `## Fix-up cycle 1` (metadata lines plus admission), at this publication — not deferred again
+  to idea close.
+- **AF-13** — `internal/app/driver_impl.go`, comments only, no behaviour: `:148`'s gate field
+  now states the role-action scope ("roleErr path, escalated by every role action
+  (R16/R25/R28)") and `:188` now reads "Hard gate on any run that reaches a role action";
+  `grep -n "any run" internal/app/driver_impl.go` shows no unqualified claim. **Carried
+  correction, recorded here without touching the signed plan (claude-1's Reservation 1
+  self-correction, zcode-1 concurring):** the accurate scope model is the `roleErr` field comment
+  at `:42` in the `driverImplOps` struct ("declared-facilitator role deadlock; every role action
+  escalates") — not `:45` (the "All five stay zero on an undesignated deck" comment) and not
+  "eleven lines above" (`:42` sits 106 lines above `:148`, in a different struct than
+  `dispatchDesignation`). The signed plan's locator sentence was wrong — including inside a
+  DRAFTER-PRIMARY-tagged clause, which is hereby narrowed: the two target lines were correctly
+  re-read; the reference model was propagated unchecked. The fix direction was right, and `:42`'s
+  wording is the model both rewrites follow.
+- **AF-14** — record prose precisions in this record commit: (1) the cycle-1 Phase-8 attestation
+  bullet under `## Validation evidence` is relabelled PRE-EDIT at `0893989`, with the POST-edit
+  `d238238` authority (`b273af1e…f388`, 115,166 bytes / 1,400 lines) named, and all shadow byte
+  figures labelled with their phase (phase-8: 86,336 B over the pre-edit source, 86,716 B over
+  `d238238`; the phase-7 shadow over the same `d238238` source is 80,799 B per both signoff
+  attestations) so later phase-7 readers do not mistake different packet sizes; (2) the AF-11
+  Surprises & Discoveries sentence now carries the pin-source `live()` corner (zcode-1 NIT-3).
+- **AF-15 — as widened by carried correction (a)** — `internal/protocol/implementer.go:185`, one
+  regex line plus its comment: `negationMarker` is now
+  `(?i)\b(?:un[\s-]*confirmed|not(?:[\s-]+yet)?[\s-]+confirmed)\b`. The signed AF-1 clause (iv)
+  enumeration (`not confirmed`, `not yet confirmed`, `unconfirmed` — any casing) now fails closed
+  on hyphenated/space-separated spellings; this completes the signed enumeration and is NOT a
+  broader free-prose denylist — the bare-"not" extension stays dismissed, and zcode-1's NIT-2(a)
+  multi-segment tolerance is untouched. **My acceptance of alternative (a), recorded before it
+  was applied:** I accept claude-1's offered alternative (a) — widening the bare `unconfirmed`
+  alternative to `un[\s-]*confirmed` — independently elected by zcode-1, because `unconfirmed` is
+  enumerated verbatim in the signed AF-1 clause (iv) (no new banned word, no new enumeration),
+  and both reviewers' independent probes show zero false positives — re-verified by my own read
+  of the regex (`\b` blocks `un` inside `run`/`fun` and `not` inside `cannot`; the trailing `\b`
+  blocks `unconfirmedness`; the em-dash is outside `[\s-]`). Fallback (b) (explicit documented
+  tolerance) is NOT invoked. Tests (`internal/protocol/implementer_test.go`,
+  `TestConfirmationRecordsAreFailClosed`): 14 new cases across BOTH parsers — rejects:
+  `not-yet-confirmed`, `not-confirmed`, `un-confirmed`, `un confirmed` (both parsers) plus cased
+  `UN-Confirmed` (waiver); boundary accepts: `cannot-confirmed`, `unconfirmedness`, `run
+  confirmed the fix`, em-dash `reason—detail`. The existing 15 cases and the T-4/T-5 fixtures are
+  unmodified and green.
+
+### Deviations from agreed fixes
+
+- **AF-15's regex is wider than the signed plan's literal text** — exactly the carried
+  correction both reviewers signed for (claude-1 offered (a)/(b); zcode-1 elected (a), (b) as
+  fallback only; my acceptance recorded above). No new banned word; the enumeration completed is
+  the signed one.
+- **AF-13's locator carried transparently** (see Fixes applied): the signed plan's `:45` /
+  "eleven lines above it" reference is wrong; the fix targets and direction were right and are
+  what changed. The signed consensus body and all three signatures are preserved unedited — the
+  correction lives here and in the source commit message.
+- **One plan figure did not reproduce:** AF-14(1) names an 86,701-byte phase-8 shadow for the
+  `d238238` source; measured twice this cycle (parley 1.49.1, the exact phase-8 command), the
+  reproducible figure is 86,716 bytes / 40 included / 29 omitted (`fe0e4c04…ebcf`). The
+  reproducible figure is what the relabelled bullet records; the source hash, line count and byte
+  count all reproduce exactly.
+- Otherwise none: no item was infeasible; no protocol text, skill file, FINAL, consensus, or
+  peer artifact was edited; no new owner question arises.
+
+### Evidence this cycle (proportional, as ratified — no duplicate broad suite absent new concerns)
+
+- `go build ./...` OK; `go vet ./...` OK; `gofmt -l` clean on all three touched Go files.
+- `go test ./internal/protocol/ -count=1` ok — the full package;
+  `TestConfirmationRecordsAreFailClosed` 30/30 PASS lines (29 subtests: 15 prior + 14 new).
+- Valid-fixture boundary across the parsers' other consumer: `go test ./internal/app/ -run
+  'TestTier2UnavailabilityGateAndExits|TestPinDesignationConflictEscalates|TestUnsetPathIsByteIdentical'
+  -count=1` ok — the T-4/T-5 fixtures and the AC-4 byte-identical pin, unmodified.
+- Mutation checks (each applied, run, restored, and re-verified green): **M1** — full
+  separator-class revert to the pre-AF-15 regex → exactly the 9 new reject subtests FAIL;
+  **M2** — un-branch-only revert (the signed plan's original shape without correction (a)) →
+  exactly the 5 (a)-specific subtests FAIL. No boundary accept flipped under either mutation.
+- **AC-17 standing, honestly:** claude-1's independent full suite at `d238238` (clean local-disk
+  detached checkout, `git status --porcelain` empty, `go build ./...` / `go vet ./...` / `go test
+  ./... -count=1 -timeout 25m` all exit 0, durable log
+  `/tmp/parley-claude1-r2-1790307993/full-suite.log`, corroborated by zcode-1's own read of that
+  log) stands EXACT-COMMIT scoped to `d238238` and is NOT re-claimed for `1bad263`; this cycle's
+  evidence basis is the ratified proportional plan (the only behaviour change is AF-15's regex
+  line in `internal/protocol`). The LE-7 fresh-invocation goal-done check (AC-21's second clause)
+  remains separate and still owed. No completion, goal-done, or release is claimed here.
+
+### Review-pointer
+
+Round-03 re-review reassesses exactly: AF-12's machine effect (digest/wait output) and metadata
+fields; AF-13's comment accuracy; AF-14's labels; AF-15's regex scope (enumerated negations
+only) and its tests; the unmodified AC-4 pins — per the signed plan's verification plan step 3.
+
 ## Outcomes & Retrospective
 
-(At completion — not claimed here. `status: implemented` marks review-readiness only: Phase 6
+(At completion — not claimed here. `status: fix-up-cycle-N` marks review-readiness only: Phase 6
 review belongs to claude-1 and zcode-1, and the goal-done check belongs to a fresh
 non-implementer.)
