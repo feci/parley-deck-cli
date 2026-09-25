@@ -81,3 +81,11 @@ Claude cycle-1 signoff is ACCEPT-WITH-RESERVATIONS. Its initial Notes carrier wa
 ## Review-cycle-1 plan signed / Phase 8
 
 Zcode runner exited 0. Review consensus is valid reserved (Kimi ACCEPT, Claude ACCEPT-WITH-RESERVATIONS, Zcode ACCEPT); all three signed. Claude explicitly places its reservations in this fix-up, and Kimi and Zcode explicitly incorporate R-1/R-2/R-3. The amended plan preserves the owner boundary with the narrower live-designation Load-error branch, corrects the changelog and latent-design-only wording, and names the inactive follow-up. No block or owner question remains. Dispatch Kimi for exactly AF-1 through AF-11 plus the supplemental amendments. Full-suite independent evidence, zero-fix consensus and fresh goal check remain outstanding. The original driver cursor is still stale; use recorded manual fix-up fallback, preserving participant artifact ownership.
+
+Observer limitation: `parley wait --for implementation` immediately reports the previous implemented artifact during fix-up; it does not distinguish cycle-1 completion. Treat that output only as old artifact state; wait for the bounded Kimi process exit and its new exact-commit handoff before launching re-review.
+
+## Cycle-1 fix-up exited / independent round-02 review
+
+Kimi exited 0 after source/protocol/test CLI d238238, skill a624318, and IMPLEMENTATION-only CLI e4d868a. Its report applies AF-1 through AF-11 plus all R amendments; full suite passes at the source commit (app 526s, trajectory 635s), with no local-disk speedup on this VM. These are implementer claims pending independent review. No publication or owner-default mutation.
+
+Dispatch full-scope Claude and Zcode re-review against these exact source commits, both existing review files and complete amended plan. Claude alone owns the broad independent full suite; Zcode owns focused adversarial checks across the full review scope and must not launch a second broad suite concurrently. Avoid duplicate broad work after a valid pass unless a new concern justifies it. Manual fallback persists because original driver run state is stale. Wait for both processes to exit, not just artifact appearance. Fresh goal check remains a separate later invocation.
