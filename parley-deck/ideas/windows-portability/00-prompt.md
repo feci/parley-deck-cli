@@ -7,7 +7,7 @@ track: deliberation
 participants: [claude-1, kimi-1, zcode-1]
 auto_implement: true
 require_model_diversity: true
-status: consensus
+status: final
 ---
 
 ## Problem / idea
