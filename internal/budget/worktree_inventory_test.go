@@ -130,7 +130,9 @@ func TestWorktreeInventoryRetainsRemovedLinkedWorktree(t *testing.T) {
 	if _, err := os.Lstat(linked); !os.IsNotExist(err) {
 		t.Fatalf("inspection recreated the missing worktree path: %v", err)
 	}
-	if listed := git(root, "worktree", "list", "--porcelain"); !strings.Contains(listed, linked) {
+	// Row 10 family: git porcelain prints forward-separator paths on
+	// Windows; compare canonically against the Go-form fixture path.
+	if listed := git(root, "worktree", "list", "--porcelain"); !strings.Contains(filepath.ToSlash(listed), filepath.ToSlash(linked)) {
 		t.Fatalf("inspection pruned the registration: %s", listed)
 	}
 	after, err := os.ReadDir(adminDir)
