@@ -66,3 +66,4 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation20 temporary diagnostics and partial refusal coverage; advisor pending | 2026-09-28T18:25:10.018Z | 94424647 | 93572096 | 111993 | 29613 | 680 |
 | Invocation21 checkpoint; applicable read-path coverage remains open | 2026-09-28T18:48:27.839Z | 100486805 | 99609088 | 117442 | 31348 | 719 |
 | Invocation22 checkpoint; malformed coverage fixture and deck-write question remain open | 2026-09-28T19:09:19.173Z | 105917795 | 105022464 | 124297 | 34161 | 751 |
+| Invocation23 native coverage progress; accepted remaining coverage gaps | 2026-09-28T19:38:53.103Z | 114072150 | 112950528 | 132805 | 38414 | 795 |
