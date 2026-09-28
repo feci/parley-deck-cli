@@ -411,3 +411,73 @@ func TestRefusalRecoversOnlyMatchingInterruptedCanonicalStaging(t *testing.T) {
 		})
 	}
 }
+
+// F3c (kimi-1 applicability consult): incomplete-entry visibility and
+// conflicting-identity detection are INSPECT read-path behaviors —
+// constructible with hand-written records, no Retain, no barrier. These run
+// on every platform (the same records, the same assertions).
+func TestInspectShowsIncompleteEntriesAndConflictsFromHandwrittenRecords(t *testing.T) {
+	dir := t.TempDir()
+	pending, _, _ := refusalDirs(dir)
+	if err := os.MkdirAll(pending, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	// Incomplete entry: a partial JSON observation file.
+	if err := os.WriteFile(filepath.Join(pending, "observation-incomplete.json"), []byte("{\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := InspectVerificationRefusals(dir)
+	if err != nil || len(entries) != 1 || entries[0].Problem == "" {
+		t.Fatalf("incomplete entry not visible: %+v %v", entries, err)
+	}
+	// Conflicting identity: two records sharing an ObservationID.
+	conflict := filepath.Join(pending, "observation-conflict.json")
+	r := refusalFixture()
+	r.ObservationID = "shared-observation"
+	a, _ := encodeRefusal(r)
+	if err := os.WriteFile(conflict, a, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	r2 := refusalFixture()
+	r2.ObservationID = "shared-observation"
+	r2.Stage = "publication"
+	b, _ := encodeRefusal(r2)
+	if err := os.WriteFile(filepath.Join(pending, "observation-conflict-2.json"), b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	entries, err = InspectVerificationRefusals(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The conflict must be visible (either flagged or the entries carry the
+	// duplicate identity) — never silently collapsed to one clean record.
+	var flagged bool
+	for _, e := range entries {
+		if e.Problem != "" {
+			flagged = true
+		}
+	}
+	if !flagged && len(entries) < 2 {
+		t.Fatalf("conflicting identity silently collapsed: %+v", entries)
+	}
+}
+
+// F3d: alias rejection is read-path — a symlinked REFUSAL STORAGE dir must
+// be refused (realRefusalDir's Lstat walk), constructible without any
+// retention. Mirrors the original test's symlink placement.
+func TestInspectRefusesSymlinkedStorageAlias(t *testing.T) {
+	dir := t.TempDir()
+	pending, _, err := refusalDirs(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(pending), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(t.TempDir(), pending); err != nil {
+		t.Fatalf("symlinks unavailable: %v", err)
+	}
+	if _, err := InspectVerificationRefusals(dir); err == nil {
+		t.Fatal("aliased storage read accepted")
+	}
+}

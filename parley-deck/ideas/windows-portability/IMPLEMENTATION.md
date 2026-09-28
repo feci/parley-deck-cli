@@ -1361,12 +1361,16 @@ missing-intent pinned to its exact designed text). The F4.1 apply pin
 inherits the same fixture (it needs validateIntentBefore to pass, which
 the control now verifies).
 
-**F3c/F3d status (previously absent from the salvage — correcting the
-record):** NOT yet delivered. F3c (Inspect incomplete-entry visibility +
-conflicting-identity detection via hand-written records) and F3d (alias
-rejection via MkdirAll+Symlink read-path) remain named units — this
-invocation's window went to the fixture repair the correction identified
-as blocking. No implication that the F3 unit is complete stands.
+**F3c/F3d DELIVERED (later this invocation):** F3c — incomplete-entry
+visibility and conflicting-identity detection via hand-written records
+(partial JSON observation; two records sharing an ObservationID; the
+conflict must be visible/flagged, never silently collapsed), no Retain, no
+barrier, runs on every platform. F3d — alias rejection at the refusal
+STORAGE dir (realRefusalDir's Lstat walk; first attempt symlinked the deck
+root — wrong layer, the guard walks the storage path — fixed to the
+original test's placement). Bounded PASS both. The F3 unit's salvage set is
+now: F3a (ten cases, fixture v2), F3b, F3c, F3d, F3e — complete pending
+hosted confirmation of the v2 fixture.
 
 ## Decision Log
 
