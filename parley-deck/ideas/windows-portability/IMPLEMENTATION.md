@@ -120,9 +120,10 @@ Progress for the live stage state.
       finals + B2's dot-free UUID grammar can never collide); windows-tagged
       mechanics tests (publish/anti-clobber/stale-stage-blocker/idempotency —
       hosted executes them even though the product sites are dormant).
-      Hosted AC-DUR-1/2 confirmation came in 36434775624 (register); AC-DUR-3
-      mechanics confirmation rides this push. Stage 3 COMPLETE at code level
-      once that lands; acceptance review recorded in Progress.
+      Hosted AC-DUR-1/2 confirmation came in 36434775624; AC-DUR-3 mechanics +
+      grammar-pin hosted confirmation came in 36437548293 (all four new tests
+      PASSED first Windows execution). **Stage 3 COMPLETE — code and hosted
+      evidence**; acceptance review in Progress.
 - [ ] **Stage 4** — file sharing (§D.6) + open-site diagnostic cycle (H7).
       OPENED invocation 8 (2026-09-28T14:3x–14:4xZ): the §D.6
       read-only-attribute trap landed in ReplaceSyncedFile (Windows-only: a
@@ -816,6 +817,18 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
   ok 0.389s (POSIX passthrough byte-identical); the diagnostic executes
   hosted on the c6f3db1 push.
 
+- (2026-09-28T14:48–14:55Z, zcode-1; commits 08f769c pushed + 66fe5db docs
+  riding it — clock reads 14:46–14:53Z) Invocation 9 continued: **row-19
+  redesign landed** (08f769c) — both adversarial rename-root cases now swap
+  an in-root subdirectory; no platform conditional, no skip; all subtests
+  green on darwin including the redesigned 'root' cases; Windows execution
+  rides the push. Assessed 36437395294 + 36437548293 (register): **Stage 3
+  hosted confirmation COMPLETE** — all four AC-DUR-3/AC-LOCK-2 tests passed
+  first Windows execution; 13 red = the standing set. Remaining Stage 4:
+  AC-LOCK-1 share-flag sweep (delete-share readers for the concurrent-persist
+  family), close-before-rename discipline audit; then the 08f769c cycle
+  assessment (row-19 + lock diagnostic + retry outcomes).
+
 ## Hosted run register
 
 | run id | commit | legs | outcome | notes |
@@ -830,6 +843,8 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
 | 36425527266 | d07e6cc (stage 1 close-out) | win FAIL / ubuntu ok / macos ok; windows leg completed 13:06:09Z (run completed after) | ASSESSED invocation 5 (13:0xZ from job 108938416756 logs): win 15 red / 16 ok = SAME deterministic 14 + fsacl, no new red packages. W1 signature 17x → 2x; both residuals = row 28 restore bug (hosted-confirmed, fixed this invocation). fsacl 6/7: the one failure = row 26 (test scaffolding inheritance propagation strips marker access; product refusal verified correct by the log). Row-24 concurrent test PASSED. Residual families = rows 25 (dir-fsync, dominant), 7 (sharing), 21-23 (Stage 6 fixtures), 27 (new: POSIX-host evidence refusal unmasked) |
 | 36425631880 | 276b3e1 (docs-only checkpoint) | win FAIL / ubuntu ok / macos ok | Docs-only duplicate of d07e6cc code (register row deferred from invocation 5 per the no-gratuitous-docs-push rule); red set consistent with 36425527266 |
 | 36429107801 | a93f71c (row-24 fix + restore fix + Stage 2 core) | win FAIL / ubuntu ok / macos ok; completed ~13:39Z | ASSESSED invocation 6 (13:51-13:55Z from job logs): **fsacl GREEN 8/8** — first hostile Windows execution of TestConcurrentFirstCreationNeverRefuses and TestProtectPrivateStoreAppliesPolicyToProductCreatedDir both PASS; row-24 fix and restore fix HOSTED-VERIFIED; W1 privacy signature 2x -> **0** (store + restore privacy contract fully green hosted). Windows 14 red = prior 15 minus fsacl. pipeline red for 3 reasons: (a) LoadGate legacy-fallback gap — ERROR_INVALID_NAME on raw-'>' legacy reads was a hard error, broke TestComputeDAGStepParallelWaves/TestAdvanceCompletesAtLastBlock (fixed this invocation: invalid-name = not-found via build-tagged helper); (b) my legacy test tried to CREATE an uncreatable raw-'>' file (fixed: platform-conditional, pinning the uncreatability premise); (c) STANDING TestEmbeddedDefaultMatchesLiveDeck (row 29, also failed in 36425527266). trajectory/driver/budget red = rows 25/19 families as ledgered |
+| 36437395294 | e22b0ff (AC-DUR-3 dormant conversions + grammar pin) | win FAIL / ubuntu ok / macos ok; windows leg completed ~14:4xZ (macos still running at assessment) | ASSESSED invocation 9 (14:53Z): 13 red = the standing set; no failures among the new mechanics/grammar tests (superseded by the fuller 4e239fe assessment below — same code family) |
+| 36437548293 | 4e239fe (AC-DUR-3 + §D.6 read-only trap) | win FAIL / ubuntu ok / macos ok; completed ~14:52Z | ASSESSED invocation 9 (14:53Z): 13 red = the standing set (fsacl, pipeline green); **ALL FOUR new tests PASSED hosted on first Windows execution** — TestPublishFileDurableMechanics, TestPublishDirDurableMechanics, TestReplaceSyncedFileOverReadOnlyTarget (AC-LOCK-2 pin), TestStageSuffixOutsideEveryFinalGrammar. **Stage 3 hosted confirmation COMPLETE** |
 | 36435481011 | 32bacd2 (A2/B3/B4 gate pins + app dir-sync via contract) | win FAIL / ubuntu ok / macos ok; completed ~14:38Z | ASSESSED invocation 8 (14:38Z): 13 red = the SAME standing set (fsacl, pipeline green); the A2/B3/B4 gate-pin test has no failure line = PASSED hosted; one residual "Access is denied" occurrence (single instance — not the row-25 dir-sync family; attribute at Stage 4/6 sweep with locator) |
 | 36434775624 | e4a2af9 (Stage 3 core) | win FAIL / ubuntu ok / macos ok; completed ~14:33Z | ASSESSED invocation 8 (14:3xZ): the row-25 family TRANSFORMED as designed — "Access is denied" count 0 (was dominant), named refusal "directory-entry durability is not available on Windows" x13; 13 red = same standing set (fsacl, pipeline stay green); the three new windows refusal tests (SyncDirContract, RootedRows A3/B5/C1/C2, VerificationRows gate) have NO failure lines = PASSED hosted. The ~190 failing funcs in trajectory/driver/budget/evidence are the standing families now expressing the designed §C.1/§C.2 refusals (reservation/parent-recovery features refuse on Windows; their POSIX-exercising tests fail on the refusal — NOT treated as passing; reconciliation of those tests is Stage 6/7 review territory, no unilateral skips) |
 | 36432547744 | 6236af6 (Stage 2 complete + LoadGate fix) + a9c944e docs | win FAIL / ubuntu ok / macos ok; windows leg completed ~14:14Z | ASSESSED invocation 7 (14:15Z): **pipeline package GREEN** — the LoadGate ERROR_INVALID_NAME fix and platform-conditional legacy test are hosted-verified; fsacl stays GREEN; 13 red = prior 14 minus pipeline, all standing Stage 4/5/6 families. Row 29 (drift test) NOT reproduced this cycle — intermittent, row stays open |
@@ -857,7 +872,7 @@ source-context classing.
 | 4 | `#!/bin/sh`/extensionless fixtures: `launch_test.go`, `protocol_context_test.go`, `telemetry_test.go` (~13) | W5 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — test-binary re-exec |
 | 5 | Snapshot privacy guard `Perm()&0077` never passes (0777/0666 synthesis), 71 messages / ~69 tests | W1 (PRODUCT) | §D.1, AC-PRIV-1..6 | 1 | none — real ACL implementation; CONFIRMED hosted in both cycles (evidence, driver refusal families; "snapshot store must be a private real directory" signature) |
 | 6 | Pipeline gate filenames with `>` → `ERROR_INVALID_NAME` (9×) | W2 (PRODUCT) | §D.4, AC-NAME-1/2 | 2 | none — universal encoding |
-| 7 | Cross-process lock/open/rename "file is being used by another process" (~14: `ledger_test.go:57`, `review_test.go:438`, `verification_test.go:368`) | W3 (PRODUCT) | §D.6, AC-LOCK-1..4 | 4 | none |
+| 7 | §D.6 unit landed invocation 9 (c6f3db1): openLockFile bounded 250ms sharing-violation-only retry with structural self/foreign classification + TestOpenLockFileSharingDiagnostic (the AC-LOCK-4 diagnostic cycle; hosted outcome rides 08f769c's push). The wider family: cross-process lock/open/rename "file is being used by another process" (~14: `ledger_test.go:57`, `review_test.go:438`, `verification_test.go:368`) | W3 (PRODUCT) | §D.6, AC-LOCK-1..4 | 4 | none — AC-LOCK-1 share-flag sweep remains |
 | 8 | chmod-unreadable fixtures (~6: `consensus impl_test.go:807`, `phase_event_test.go:156/170/186`, `strict_gate_test.go:179`) | W7 (TEST) | §D.9 denyRead | 1 (helper) / 6 (sweep) | none — DACL deny-ACE helper |
 | 9 | HOME-only fixtures (`agents/configmodel_test.go`, 2) | W8 (TEST) | §D.9 | 6 | none — USERPROFILE set |
 | 10 | `/repo` POSIX-path worktree fixtures (~3-4) | W9 (TEST) | §D.9 | 6 | none — t.TempDir + volume-aware joins |
@@ -870,7 +885,7 @@ source-context classing.
 | 17 | NEW (both cycles, deterministic): `internal/acp` TestSpawnStopDrainsStderrBeforeReaping + TestSpawnWaitDrainsStderrBeforeReaping fail 10.01s on WINDOWS legs | ACP family (§D.7) — previously classified ubuntu-only (U1, repaired in base); on Windows this is a NEW phenomenon, cause not yet established | §D.7 split rule | 6 (§D.7 a/b split) + probe-informed | none — record before reaction; do NOT retune; U1 spawn.go Stop/Wait ordering stays untouched; not labeled flaky (it is deterministic in both runs) |
 | 18 | NEW (both cycles): `internal/agents` TestZcodeResolvesModelAndEffortFromItsOwnConfig, TestKimiThinkingEffort; `internal/config` TestLoadAgentSpecsLayersAndTracksSources, TestExpandPlaceholders | class PROVISIONAL W8 (HOME/config-path fixtures) — root cause NOT yet verified; do not treat as settled until probed at Stage 6 | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
 
-| 19 | NEW (36172430646): `trajectory/snapshot_read_test.go:261/:432` — os.Rename of a directory fails `The process cannot access the file because it is being used by another process` (open handle on source tree) | W3 sharing family (PRODUCT/TEST site) | §D.6, AC-LOCK-1..4 | 4 | none — recorded before reaction; structural handle discipline first (§G H7 mapping) |
+| 19 | REDESIGNED invocation 9 (commit 08f769c; hosted confirmation rides its push): both 'root' cases now swap an in-root SUBDIRECTORY (renaming the rooted dir itself is impossible on Windows while the root handle is open — containment by design); invariant preserved: a replaced directory entry must not be hidden by the original still-readable inode; all subtests green on darwin. Originally NEW (36172430646): `trajectory/snapshot_read_test.go:261/:432` — os.Rename of a directory fails `The process cannot access the file because it is being used by another process` (open handle on source tree) | W3 sharing family (PRODUCT/TEST site) | §D.6, AC-LOCK-1..4 | 4 | none — recorded before reaction; structural handle discipline first (§G H7 mapping) |
 | 20 | NEW (36172430646/36172828285): `evidence/refusal_test.go:299` `sync ...: Access is denied`; `tree_report_test.go:300/:311` TestSaveUnwritableDirFails + TestFailedSaveLeavesNoReport — chmod-unwritable/unreadable fixtures do not block writes/syncs on Windows | W7 chmod-fixture family (TEST) | §D.9 denyRead | 6 (sweep) / 1 (helper now exists) | none — DenyRead helper landed and hosted-verified; sweep converts fixtures |
 | 21 | NEW (36172430646): `evidence/tree_report_test.go:87` TestTreeDigestModeChangeChanges — chmod 0600→0700 does not change the synthesized mode on Windows, so the tree digest does not change | mode-synthesis family, NEW distinct phenomenon (TEST + product semantics question) | §D.9 sweep; digest mode semantics need review | 6 | none — record first; the digest's mode-sensitivity on Windows needs a deliberate decision, not a silent fixture change |
 | 22 | NEW (36172430646): `evidence/source_inventory_test.go:136` — fixture filename containing a newline (`line\nbreak`) fails to open: `The filename, directory name, or volume label syntax is incorrect` | W2-adjacent invalid-name class in FIXTURES (TEST) | §D.9 | 6 | none — fixture portability (t.TempDir-compatible names) |
