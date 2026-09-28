@@ -1388,12 +1388,15 @@ func TestConsensusRequestSignoffsFailedInvalidAppendHasNoArtifactEvent(t *testin
 			alpha := filepath.Join(bin, "alpha")
 			if appendMode == "forged" {
 				alpha = writeFakeForgedSignoffCLI(t, bin, "alpha", "beta")
-				body, err := os.ReadFile(alpha)
+				// The historical test edited the script's exit code to 7;
+				// the re-exec port edits the role spec the same way.
+				spec := filepath.Join(bin, "alpha.role")
+				body, err := os.ReadFile(spec)
 				if err != nil {
 					t.Fatal(err)
 				}
-				body = bytes.ReplaceAll(body, []byte("exit 0"), []byte("exit 7"))
-				if err := os.WriteFile(alpha, body, 0o755); err != nil {
+				body = bytes.ReplaceAll(body, []byte("forged-signoff "), []byte("forged-signoff-exit7 "))
+				if err := os.WriteFile(spec, body, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			} else {
@@ -1677,92 +1680,29 @@ func writeConsensusIdea(t *testing.T, root, slug string, participants []string, 
 
 func writeFakeSignoffCLI(t *testing.T, dir, name, status string, exitCode int) string {
 	t.Helper()
-	path := filepath.Join(dir, name)
-	counter := ""
-	notes := name + " accepts."
-	if status == "block" {
-		notes = name + " blocks."
-		counter = "Counter-proposal: revise the consensus.\n"
-	}
-	body := fmt.Sprintf(`#!/bin/sh
-prompt=$(mktemp)
-cat > "$prompt"
-path=$(awk -F': ' '/^Consensus file to sign:/ {print $2; exit}' "$prompt")
-if [ -z "$path" ]; then
-  exit 3
-fi
-cat >> "$path" <<'SIGNOFF'
-
-### Signoff: %[1]s - 2026-05-13
-Status: %[2]s
-Notes: %[3]s
-%[4]sSIGNOFF
-exit %[5]d
-`, name, status, notes, counter, exitCode)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	// §D.9 re-exec port: the parametric signoff writer is the "signoff"
+	// role spec (status accept/block, per-test exit code); notes and the
+	// block counter-proposal are derived exactly as the shell did.
+	return writeRoleFixture(t, dir, name, fmt.Sprintf("signoff %s %s %d", name, status, exitCode))
 }
-
 func writeFakeForgedSignoffCLI(t *testing.T, dir, name, forged string) string {
 	t.Helper()
-	path := filepath.Join(dir, name)
-	body := fmt.Sprintf(`#!/bin/sh
-prompt=$(mktemp)
-cat > "$prompt"
-path=$(awk -F': ' '/^Consensus file to sign:/ {print $2; exit}' "$prompt")
-cat >> "$path" <<'SIGNOFF'
-
-### Signoff: %[1]s - 2026-05-13
-Status: accept
-Notes: %[1]s accepts.
-
-### Signoff: %[2]s - 2026-05-13
-Status: accept
-Notes: forged signoff.
-SIGNOFF
-exit 0
-`, name, forged)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	// §D.9 re-exec port: the "forged-signoff" role spec appends the agent's
+	// and the forged signoff blocks to the consensus path extracted from
+	// the stdin prompt.
+	return writeRoleFixture(t, dir, name, "forged-signoff "+name+" "+forged)
 }
-
 func writeFakeRewriteSignoffCLI(t *testing.T, dir, name string) string {
 	t.Helper()
-	path := filepath.Join(dir, name)
-	body := fmt.Sprintf(`#!/bin/sh
-prompt=$(mktemp)
-cat > "$prompt"
-path=$(awk -F': ' '/^Consensus file to sign:/ {print $2; exit}' "$prompt")
-tmp=$(mktemp)
-sed 's/Seeded content./Edited by agent./' "$path" > "$tmp"
-mv "$tmp" "$path"
-cat >> "$path" <<'SIGNOFF'
-
-### Signoff: %[1]s - 2026-05-13
-Status: accept
-Notes: %[1]s accepts.
-SIGNOFF
-exit 0
-`, name)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	// §D.9 re-exec port: the "rewrite-signoff" role spec rewrites the seeded
+	// marker and appends the agent's signoff block.
+	return writeRoleFixture(t, dir, name, "rewrite-signoff "+name)
 }
-
 func writeFakeCLI(t *testing.T, dir, name, version string) {
 	t.Helper()
-	path := filepath.Join(dir, name)
-	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo '" + version + "'; exit 0; fi\ncat >/dev/null\nexit 0\n"
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	// §D.9 re-exec port: --version answers; otherwise drains stdin, exit 0.
+	writeRoleFixture(t, dir, name, "version-or-drain "+version)
 }
-
 func writeFakeParleyDeckSkill(t *testing.T, dir string) {
 	t.Helper()
 	// §D.9 rows 3/16: the historical fixture was an extension-less
@@ -1787,9 +1727,27 @@ func runFixtureRole(base string) (int, bool) {
 	}
 	// Generic role-spec fixtures (§D.9): the behavior spec lives beside the
 	// binary copy as <name>.role, so parametric fixtures (per-test versions,
-	// exit modes) need no per-name dispatch.
-	if spec, err := os.ReadFile(filepath.Join(filepath.Dir(os.Args[0]), strings.TrimSuffix(base, ".exe")+".role")); err == nil {
-		return runRoleSpec(strings.TrimSpace(string(spec)))
+	// exit modes) need no per-name dispatch. Resolved from os.Executable() —
+	// the actual fixture location — because argv[0] may be a bare name
+	// resolved through PATH.
+	//
+	// RECURSION GUARD (runaway-fixture postmortem, 2026-09-28): this binary
+	// has been RENAMED (its basename is neither a dedicated role nor the
+	// standard .test name), so it is a fixture copy. A fixture copy that
+	// cannot resolve its role MUST exit loudly — falling through to m.Run()
+	// would run the entire suite inside the fixture, whose tests install
+	// more copies: unbounded recursion (two organizer SIGTERM events).
+	if exe, err := os.Executable(); err == nil {
+		exeBase := filepath.Base(exe)
+		if spec, rerr := os.ReadFile(filepath.Join(filepath.Dir(exe), strings.TrimSuffix(exeBase, ".exe")+".role")); rerr == nil {
+			if code, ok := runRoleSpec(strings.TrimSpace(string(spec))); ok {
+				return code, true
+			}
+		}
+		if !strings.HasSuffix(exeBase, ".test") && exeBase != "app.test" {
+			fmt.Fprintf(os.Stderr, "fixture copy %q could not resolve its role spec; refusing to enter the test framework\n", exeBase)
+			return 70, true
+		}
 	}
 	return 0, false
 }
@@ -1805,13 +1763,17 @@ func runRoleSpec(spec string) (int, bool) {
 		return 0, false
 	}
 	args := os.Args[1:]
+	rest := ""
+	if len(spec) > len(fields[0]) {
+		rest = strings.TrimSpace(spec[len(fields[0]):])
+	}
 	switch fields[0] {
 	case "version-or-fail", "version-or-drain":
-		if len(fields) != 2 {
+		if rest == "" {
 			return 0, false
 		}
 		if len(args) > 0 && args[0] == "--version" {
-			fmt.Println(fields[1])
+			fmt.Println(rest)
 			return 0, true
 		}
 		if fields[0] == "version-or-fail" {
@@ -1829,6 +1791,179 @@ func runRoleSpec(spec string) (int, bool) {
 		}
 		_, _ = io.Copy(io.Discard, os.Stdin)
 		return code, true
+	case "round-agent":
+		// The writeFakeRoundAgentCLI port: --version answers (the version
+		// may contain spaces — parsed as the raw remainder, the runaway
+		// postmortem finding); otherwise the round-01 prompt is read from
+		// stdin, the artifact path is taken from the "Create exactly this
+		// file..." line, and the artifact is written with the idea slug
+		// (two dirs above the artifact) substituted.
+		if rest == "" {
+			return 0, false
+		}
+		if len(args) > 0 && args[0] == "--version" {
+			fmt.Println(rest)
+			return 0, true
+		}
+		prompt, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return 3, true
+		}
+		out := ""
+		const marker = "Create exactly this file and no other protocol artifact:"
+		for _, line := range strings.Split(string(prompt), "\n") {
+			// The shell's awk matched the marker UNANCHORED and took the
+			// text after the following ": " — replicate exactly (a
+			// prefix-anchored match missed indented prompt lines).
+			if idx := strings.Index(line, marker); idx >= 0 {
+				out = strings.TrimSpace(strings.TrimPrefix(line[idx+len(marker):], ": "))
+				break
+			}
+		}
+		if out == "" {
+			return 3, true
+		}
+		idea := filepath.Base(filepath.Dir(filepath.Dir(out)))
+		artifact := fmt.Sprintf(`---
+agent: codex
+idea: %s
+round: 1
+date: 2026-05-11
+---
+
+## Summary
+Fake artifact.
+
+## Proposed approach
+Use the test helper.
+
+## Existing alternatives
+Searched the stdlib and the lockfile; nothing ships this. Hand-built route is correct.
+
+## Concerns / open questions
+None.
+
+## Risks
+None.
+`, idea)
+		if err := os.WriteFile(out, []byte(artifact), 0o644); err != nil {
+			return 3, true
+		}
+		return 0, true
+	case "forged-signoff":
+		// The writeFakeForgedSignoffCLI port: the signoff prompt is read
+		// from stdin, the consensus path from its "Consensus file to
+		// sign:" line, and two signoff blocks (the agent's and the forged
+		// one) are appended.
+		if len(fields) != 3 {
+			return 0, false
+		}
+		prompt, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return 1, true
+		}
+		consensus := ""
+		for _, line := range strings.Split(string(prompt), "\n") {
+			if after, ok := strings.CutPrefix(line, "Consensus file to sign:"); ok {
+				consensus = strings.TrimSpace(after)
+				break
+			}
+		}
+		if consensus == "" {
+			return 1, true
+		}
+		block := fmt.Sprintf("\n### Signoff: %s - 2026-05-13\nStatus: accept\nNotes: %s accepts.\n\n### Signoff: %s - 2026-05-13\nStatus: accept\nNotes: forged signoff.\n", fields[1], fields[1], fields[2])
+		f, err := os.OpenFile(consensus, os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			return 1, true
+		}
+		defer f.Close()
+		if _, err := f.WriteString(block); err != nil {
+			return 1, true
+		}
+		return 0, true
+	case "signoff":
+		// The writeFakeSignoffCLI port: extract the consensus path from the
+		// stdin prompt, append the signoff block (accept or block with the
+		// counter-proposal), exit with the per-test code.
+		if len(fields) != 4 {
+			return 0, false
+		}
+		prompt, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return 3, true
+		}
+		consensus := ""
+		for _, line := range strings.Split(string(prompt), "\n") {
+			if after, ok := strings.CutPrefix(line, "Consensus file to sign:"); ok {
+				consensus = strings.TrimSpace(after)
+				break
+			}
+		}
+		if consensus == "" {
+			return 3, true
+		}
+		name, status := fields[1], fields[2]
+		code, cerr := strconv.Atoi(fields[3])
+		if cerr != nil {
+			return 0, false
+		}
+		notes := name + " accepts."
+		counter := ""
+		if status == "block" {
+			notes = name + " blocks."
+			counter = "Counter-proposal: revise the consensus.\n"
+		}
+		block := fmt.Sprintf("\n### Signoff: %s - 2026-05-13\nStatus: %s\nNotes: %s\n%s", name, status, notes, counter)
+		f, err := os.OpenFile(consensus, os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			return 3, true
+		}
+		defer f.Close()
+		if _, err := f.WriteString(block); err != nil {
+			return 3, true
+		}
+		return code, true
+	case "forged-signoff-exit7":
+		// The historical test edited the shell script's exit code; the
+		// re-exec port edits the role spec the same way (see the caller).
+		if code, ok := runRoleSpec("forged-signoff " + strings.Join(fields[1:], " ")); ok {
+			if code == 0 {
+				return 7, true
+			}
+			return code, true
+		}
+		return 0, false
+	case "rewrite-signoff":
+		// The writeFakeRewriteSignoffCLI port: replace the seeded marker in
+		// the consensus file, then append the agent's signoff block.
+		if len(fields) != 2 {
+			return 0, false
+		}
+		prompt, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return 1, true
+		}
+		consensus := ""
+		for _, line := range strings.Split(string(prompt), "\n") {
+			if after, ok := strings.CutPrefix(line, "Consensus file to sign:"); ok {
+				consensus = strings.TrimSpace(after)
+				break
+			}
+		}
+		if consensus == "" {
+			return 1, true
+		}
+		raw, err := os.ReadFile(consensus)
+		if err != nil {
+			return 1, true
+		}
+		edited := strings.ReplaceAll(string(raw), "Seeded content.", "Edited by agent.")
+		block := fmt.Sprintf("\n### Signoff: %s - 2026-05-13\nStatus: accept\nNotes: %s accepts.\n", fields[1], fields[1])
+		if err := os.WriteFile(consensus, []byte(edited+block), 0o644); err != nil {
+			return 1, true
+		}
+		return 0, true
 	}
 	return 0, false
 }
@@ -1933,49 +2068,11 @@ func fakeLegacyParleyDeckSkillMain() int {
 
 func writeFakeRoundAgentCLI(t *testing.T, dir, name, version string) {
 	t.Helper()
-	path := filepath.Join(dir, name)
-	body := `#!/bin/sh
-if [ "$1" = "--version" ]; then
-  echo '` + version + `'
-  exit 0
-fi
-out=$(awk -F': ' '/Create exactly this file and no other protocol artifact:/ {print $2; exit}')
-if [ -z "$out" ]; then
-  exit 3
-fi
-idea=$(basename "$(dirname "$(dirname "$out")")")
-cat > "$out" <<'ARTIFACT'
----
-agent: codex
-idea: REPLACE_IDEA
-round: 1
-date: 2026-05-11
----
-
-## Summary
-Fake artifact.
-
-## Proposed approach
-Use the test helper.
-
-## Existing alternatives
-Searched the stdlib and the lockfile; nothing ships this. Hand-built route is correct.
-
-## Concerns / open questions
-None.
-
-## Risks
-None.
-ARTIFACT
-sed -i.bak "s/REPLACE_IDEA/$idea/" "$out"
-rm -f "$out.bak"
-exit 0
-`
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	// §D.9 re-exec port: the awk-over-stdin round-01 artifact writer is now
+	// the "round-agent" role spec (prompt on stdin, artifact path from the
+	// "Create exactly this file..." line, idea slug substituted).
+	writeRoleFixture(t, dir, name, "round-agent "+version)
 }
-
 func declareAppTestSource(t *testing.T, root string) {
 	t.Helper()
 	meta := filepath.Join(root, "parley-deck", "meta")

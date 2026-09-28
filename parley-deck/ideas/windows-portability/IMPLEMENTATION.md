@@ -973,6 +973,60 @@ artifact writer — the largest port), `writeFakeForgedSignoffCLI` and the
 :1686/:1710/:1735 formatted bodies, and the launch_test.go /
 protocol_context_test.go / telemetry_test.go fixtures.
 
+## Runaway-fixture postmortem + rows 3/4 completion (invocation 17–18, 2026-09-28T16:55–17:2xZ)
+
+**The runaway (organizer SIGTERM ×2, 17:07:34Z with 67 descendants and
+17:15:18Z with 40):** my re-exec role-spec dispatch had TWO defects that
+composed into unbounded recursion. (1) The role lookup fell back to
+`m.Run()` — the ENTIRE test suite — inside a fixture copy whenever a role
+could not be resolved; (2) the `round-agent`/version spec parsers used
+whitespace field-splitting, so a version containing spaces
+("codex test 1.0") failed `len(fields)==2` → fallback → the copied binary
+ran the whole app suite inside itself, whose tests installed more copies
+(TestRunRecordsResolvedRuntime's codex fixture was the observed vector).
+**Repair (both defects):** a STRUCTURAL recursion guard — a renamed copy
+(its executable basename is neither a dedicated role nor the standard test
+name) that cannot resolve its role prints a diagnostic and exits 70,
+NEVER entering the testing framework (applied to BOTH dispatchers: app's
+runFixtureRole and driver's gitprobe TestMain); role resolution now uses
+os.Executable() (argv[0] may be a bare PATH name); and the version-carrying
+specs parse the raw remainder after the mode word, preserving spaces.
+
+**Claim reconciliation (the 17:09:15 report):** the 16:58:52Z broad batch
+(`-run 'TestConsensusRequestSignoffs|TestRun|TestVersionAll|TestAgents'`)
+NEVER completed for me — its output was lost to the first runaway (the
+organizer's 17:07:34Z observation of an 8-minute chain); it is NOT green.
+The 17:09:02Z "ok 13.331s" was a real completed run of the NARROW filter
+(`TestConsensusRequestSignoffs|TestVersionAll`) that started AFTER the first
+tree was killed — legitimate for that filter, but it ran with the
+recursion-capable code and is superseded by the post-fix verification below.
+The 17:09:40Z gitprobe failure and the ~17:10Z cancelled batch (the second
+runaway, killed 17:15:18Z) are as the organizer stated.
+
+**Post-fix verification (bounded, exit status preserved, no output pipes,
+process count checked after each):** TestRunRecordsResolvedRuntime (the
+recursion vector) — first exposed a second port defect (my artifact-marker
+extraction was prefix-anchored where the shell's awk matched unanchored;
+fixed to the exact index+trim semantics) — now **PASS, exit 0, 2.2s**;
+TestVersionAll PASS (0.5s); TestConsensusRequestSignoffsBlockStops PASS
+(2.3s); TestGitTreeCleanSetsOptionalLocksOff PASS (0.3s, driver — the
+historical t.Skip on Windows retired with the re-exec port); wider bounded
+family run (TestConsensusRequestSignoffs|TestAgentsExec|TestRunAnswer|
+TestRunRecords) **PASS 19.7s, exit 0**; zero stray test processes after
+every run.
+
+**Rows 3/4 fixture unit COMPLETE:** all extension-less shell fixtures in the
+tree are now re-exec ports — app: parley-deck-skill (+legacy via env
+marker), round-agent (the awk-over-stdin artifact writer, fully ported with
+unanchored-marker semantics), forged-signoff (+exit-7 variant via role-file
+edit, replacing the script-body edit), rewrite-signoff, parametric signoff,
+version-or-fail/drain, drain-exit; driver: the git PATH-shim (record-env
+role). tree_report's shebang is file CONTENT (a digest fixture — not an
+exec'd fixture; no conversion needed). The launch/protocol_context/telemetry
+files named in the original ledger no longer exist (row 4's locator was
+stale — the live out-of-app site was gitprobe only). Windows execution
+rides the push.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -1370,7 +1424,7 @@ source-context classing.
 |---|---|---|---|---|---|
 | 1 | `internal/evidence` test build failure: `syscall.Mkfifo` undefined on Windows | W4 (TEST) | §D.8, AC-BLD-1 | 0 | none — FIXED AND HOSTED-VERIFIED: evidence package compiles and executes in both cycles (its W1 privacy failures now visible = row 5) |
 | 2 | `internal/app` aborts 3.499s: unchecked type assertion panic at `app_test.go:155`; no `wait`/`usage` results ever on Windows | W6 panic half (TEST) | §D.8, AC-BLD-1 | 0 | none — CLOSED hosted (36172430646): internal/app ran to completion 165s, no panic; wait/usage suites executed for the first time and PASSED (zero failures attributed to them) |
-| 3 | `writeFakeParleyDeckSkill` extension-less `#!/bin/sh` fixture unexecutable on Windows (W6 fixture half) | W5/W6 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — re-exec/`cmd.exe /c` port |
+| 3 | CONVERSION COMPLETE invocation 17–18 (re-exec port; see the runaway postmortem for the recursion defect and repair; hosted leg rides the push). Originally: `writeFakeParleyDeckSkill` extension-less `#!/bin/sh` fixture unexecutable on Windows (W6 fixture half) | W5/W6 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — re-exec/`cmd.exe /c` port |
 | 4 | `#!/bin/sh`/extensionless fixtures: `launch_test.go`, `protocol_context_test.go`, `telemetry_test.go` (~13) | W5 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — test-binary re-exec |
 | 5 | Snapshot privacy guard `Perm()&0077` never passes (0777/0666 synthesis), 71 messages / ~69 tests | W1 (PRODUCT) | §D.1, AC-PRIV-1..6 | 1 | none — real ACL implementation; CONFIRMED hosted in both cycles (evidence, driver refusal families; "snapshot store must be a private real directory" signature) |
 | 6 | Pipeline gate filenames with `>` → `ERROR_INVALID_NAME` (9×) | W2 (PRODUCT) | §D.4, AC-NAME-1/2 | 2 | none — universal encoding |

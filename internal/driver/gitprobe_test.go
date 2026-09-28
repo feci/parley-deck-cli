@@ -1,9 +1,12 @@
 package driver
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -12,16 +15,14 @@ import (
 // never write .git on a weakly-coherent mount. A PATH-shimmed fake git records
 // the env it saw.
 func TestGitTreeCleanSetsOptionalLocksOff(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("PATH shim uses a shell script")
-	}
 	dir := t.TempDir()
 	record := filepath.Join(dir, "seen-env")
-	shim := filepath.Join(dir, "git")
-	script := "#!/bin/sh\nprintf '%s\\n' \"$GIT_OPTIONAL_LOCKS\" >> " + record + "\nexit 0\n"
-	if err := os.WriteFile(shim, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	// §D.9 test-binary re-exec port of the PATH-shim shell script (the
+	// historical t.Skip on Windows is retired with it): the shim is a copy
+	// of this test binary named "git"; TestMain below dispatches the
+	// "record-env" role (append GIT_OPTIONAL_LOCKS to the spec's path).
+	shim := writeGitShimFixture(t, dir, record)
+	_ = shim
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	_ = gitTreeClean(dir)
@@ -49,4 +50,69 @@ func splitNonEmptyLines(s string) []string {
 		}
 	}
 	return out
+}
+
+// writeGitShimFixture installs the re-exec git shim: a copy of this test
+// binary named git (.exe on Windows; LookPath resolves PATHEXT) with a
+// sibling git.role spec naming the record file.
+func writeGitShimFixture(t *testing.T, dir, record string) string {
+	t.Helper()
+	src, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := "git"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	installed := filepath.Join(dir, name)
+	in, err := os.Open(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer in.Close()
+	out, err := os.OpenFile(installed, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		t.Fatal(err)
+	}
+	if err := out.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "git.role"), []byte("record-env "+record), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return installed
+}
+
+// TestMain dispatches the re-exec git shim role before the testing framework.
+// The role is resolved from os.Executable() — the actual shim location —
+// because argv[0] may be a bare name resolved through PATH.
+//
+// RECURSION GUARD (runaway-fixture postmortem, 2026-09-28): a renamed copy
+// that cannot resolve its role exits loudly — falling through to m.Run()
+// would run the suite inside the shim (unbounded recursion).
+func TestMain(m *testing.M) {
+	if exe, err := os.Executable(); err == nil {
+		exeBase := filepath.Base(exe)
+		if strings.TrimSuffix(exeBase, ".exe") == "git" {
+			if spec, rerr := os.ReadFile(filepath.Join(filepath.Dir(exe), "git.role")); rerr == nil {
+				fields := strings.Fields(string(spec))
+				if len(fields) == 2 && fields[0] == "record-env" {
+					f, ferr := os.OpenFile(fields[1], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+					if ferr == nil {
+						fmt.Fprintf(f, "%s\n", os.Getenv("GIT_OPTIONAL_LOCKS"))
+						f.Close()
+					}
+					os.Exit(0)
+				}
+			}
+			fmt.Fprintln(os.Stderr, "git shim copy could not resolve its role spec; refusing to enter the test framework")
+			os.Exit(70)
+		}
+	}
+	os.Exit(m.Run())
 }
