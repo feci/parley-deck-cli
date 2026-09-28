@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"time"
 
@@ -265,6 +266,14 @@ func reconcileUnchanged(ctx context.Context, root, idea string, sequence int, ex
 }
 
 func syncUnchangedState(path string) error {
+	// §B D1, derived no-op (argued per site): the publication itself already
+	// carries the guarantee — writeState publishes via fsutil.ReplaceSyncedFile
+	// (MoveFileEx WRITE_THROUGH on Windows) — and Windows has no directory
+	// fsync to complete anyway; the re-sync adds nothing and no-ops. POSIX is
+	// byte-identical (AC-DUR-5).
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return err

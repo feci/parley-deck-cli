@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> this commit (Stage 2 backstops complete + fallback gap fix)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 backstops complete + fallback fix; assessed 36432547744: pipeline GREEN) -> this commit (Stage 3 core)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -103,6 +103,20 @@ Progress for the live stage state.
       the full Stage 2 rides the next push.
 - [ ] **Stage 3** — directory durability: §B table dispositions BEFORE code;
       `fsutil.SyncDir` named-type contract = audit of record + rooted refusal emitter.
+      CORE LANDED invocation 7 (2026-09-28T14:0x–14:2xZ): §B disposition
+      table recorded above BEFORE code; fsutil.DirHandle + SyncDir (Unix real
+      fsync incl. darwin F_FULLFSYNC, byte-identical; Windows named
+      fail-closed refusal ErrDirEntryDurabilityUnsupported) + Windows SyncFile
+      directory-handle guard; A3/B5/C1/C2 pre-mutation entry refusals
+      (durability_refusal.go, Windows-confined); D2/D3/D4a/D4b routed through
+      SyncDir (the emitter); D1 Windows no-op argued per §B; windows-tagged
+      hosted pins for the contract + A3/B5/C1/C2 (nothing-published asserted).
+      REMAINING Stage 3 items (next invocation): AC-DUR-3 plain-row
+      conversions A1/B1/B2 (dormant) + stage-derivation grammar pin; hosted
+      gate-path pins for A2/B3/B4 (covered by the existing :251-253 gate,
+      tests owed); assess the next hosted cycle (expect row-25 family turning
+      into NAMED refusals, not Access-denied crashes; some tests may then
+      fail on the changed refusal mode — refresh rule applies).
 - [ ] **Stage 4** — file sharing (§D.6) + open-site diagnostic cycle (H7).
 - [ ] **Stage 5** — P-A liveness (§D.2) + W-SHELL missing-`sh` refusal (§D.3).
 - [ ] **Stage 6** — fixture-portability sweep (§D.9) + ACP/AF_UNIX/CRLF (§D.7).
@@ -415,6 +429,30 @@ push. The rule is now applied with a post-write clock check.]
   assessment); they are the FIRST unit of the next invocation, before any
   Stage 3 code.
 
+- (2026-09-28T14:00–14:2xZ, zcode-1; commit follows — first verified clock read
+  14:00:34Z, commit timestamp authoritative) Invocation 7. Re-read packet
+  (attestation above; hash unchanged), 00-prompt, FINAL §A/§B/§C/§H/AC-DUR,
+  living IMPLEMENTATION.md. **Stage 3 core landed, dispositions BEFORE code**
+  (the §B table above was written and committed before any durability edit):
+  fsutil named-type contract (DirHandle + DirHandleOf fail-closed
+  constructor; SyncDir — POSIX byte-identical incl. darwin F_FULLFSYNC,
+  Windows = named refusal ErrDirEntryDurabilityUnsupported, the rooted sites'
+  emitter; Windows SyncFile refuses directory handles as the mechanical
+  backstop so no dir handle reaches FlushFileBuffers); A3 + B5 + C1 + C2
+  pre-mutation entry refusals (Windows-confined, named, blocking,
+  nothing-published; C1/C2 ordered before the renames per N8 — at entry,
+  before even the stage file); D2/D3/D4a/D4b dir barriers routed through
+  SyncDir; D1 = Windows no-op argued per §B (writeState already publishes via
+  ReplaceSyncedFile = WT-move). Windows-tagged hosted pins:
+  TestSyncDirContractRefusesFailClosed + TestRootedRowsRefusePreMutationOnWindows
+  (A3/B5/C1/C2, asserting the refusal text AND nothing-published). Assessed
+  hosted **36432547744** (register): pipeline package GREEN — Stage 2's two
+  hosted defects are verified fixed; fsacl stays green; row 29 drift test NOT
+  reproduced (intermittent — row stays open); 13 red = standing Stage 4/5/6
+  families. Unix byte-identity: durability_refusal.go returns nil on every
+  non-Windows GOOS; SyncDir delegates to the exact previous SyncFile
+  semantics; SyncFile's directory guard is windows-only.
+
   ### Hosted cycle assessments (both completed; per-leg facts below)
 
   **Run 36172430646 @16824fd** (macos ok / ubuntu ok / windows FAIL, completed
@@ -463,6 +501,39 @@ push. The rule is now applied with a post-write clock check.]
   (the Windows expression of the same AC-PRIV-6 guarantee is the DACL round-trip,
   now asserted in fsacl_windows_test.go). 15 red packages = the same 14 + fsacl's
   that one test; W1 signature persists (81x) as expected while unwired.
+
+## Stage 3 — §B disposition/audit table (recorded BEFORE durability code; FINAL §B is authority)
+
+Locators verified at current HEAD (a93f71c+working tree, 2026-09-28T14:0xZ).
+Dispositions are FINAL §B's refusal branch verbatim in intent; the
+implementation column records what THIS implementation does per row.
+
+| Row | Site (verified) | Disposition (FINAL §B) | Implementation action |
+|---|---|---|---|
+| A1 | `app/trajectory_verify.go:146` OpenFile O_EXCL → `:154` (dir sync `:138`) | Restructure (det-stage), DORMANT behind POSIX gate `:106-108` | none this stage — design of record; AC-DUR-3 conversion + stage-grammar pin = remaining Stage 3 item |
+| A2 | `trajectory/verification.go:202` Root.OpenFile O_EXCL → `:211` | Refuse pre-mutation; dormant behind gate `:251-253` | existing reviewed gate refusal covers it (§C.3: takes away nothing); hosted pin = gate test (nothing-published by construction: gate fires before OpenRoot) |
+| A3 | `trajectory/reservation_recovery.go:75` OpenFile O_EXCL → `:84`→`:67` | **Refuse pre-mutation** (Win-REACHABLE) | entry refusal in `publishReservationIntent` before the O_EXCL create |
+| B1 | `app/trajectory_verify.go:118` Mkdir ×2 → `:125` | Restructure, dormant | as A1 |
+| B2 | `app/trajectory_verify.go:190` Mkdir → `:193` | Restructure, dormant | as A1 |
+| B3 | `trajectory/verification.go:264` parent.Mkdir → `:267` | Refuse pre-mutation; dormant behind gate | as A2 |
+| B4 | `trajectory/verification.go:283` base.Mkdir(charge) → `:286` | Refuse pre-mutation; dormant behind gate | as A2 |
+| B5 | `trajectory/reservation_recovery.go:36` dir.Mkdir → `:47` | **Refuse pre-mutation** (Win-REACHABLE) | entry refusal in `openIntentRoot(create=true)` before the Mkdir |
+| C1 | `trajectory/parent_recovery.go:333` dir.Rename → `:336` (func bound `:311`) | **Refuse, ordered BEFORE `:333`** (N8) | entry refusal in `publishParentRecoveryWithSync` — before stage creation, hence before the rename; `defer dir.Remove(stage)` unaffected (nothing to clear) |
+| C2 | `trajectory/parent_recovery.go:570` dir.Rename → `:573` | **Refuse, ordered BEFORE `:570`** | entry refusal in the recovered-parent publish func, same shape |
+| D1 | `trajectory/unchanged.go:267` syncUnchangedState → `:279` (dir) | **Derived no-op**, argued: `writeState` already publishes via `ReplaceSyncedFile` = WT-move | Windows-confined no-op with the argument on record (Unix byte-identical); the re-sync adds nothing the WT-move publication does not already carry |
+| D2 | `trajectory/parent_recovery.go:368` → `:308` (syncParentRecovery dir part) | Refuse — derives from refused C1 | dir part routed through `fsutil.SyncDir` → named Windows refusal (the emitter) |
+| D3 | `trajectory/parent_recovery.go:605` → `:545` (syncRecoveredParent) | Refuse — derives from C2 | as D2 |
+| D4a | `trajectory/reservation_recovery.go:420` syncIntent (dir parts `:63-67`) | Refuse — derives from A3/B5 | dir parts routed through `fsutil.SyncDir` |
+| D4b | `trajectory/reservation_recovery.go:431` SyncFile(trajectory.json) + syncVerificationDirectory | Refuse — derives from A3/B5 | dir part via `fsutil.SyncDir`; the read-only-handle file re-sync cannot flush on Windows either — the whole barrier refuses (nothing rewritten) |
+
+Audit of record: `fsutil.SyncDir` named-type contract — directory handles reach
+entry-durability only as `fsutil.DirHandle` through `SyncDir`, which on
+Windows is a named fail-closed refusal (`ErrDirEntryDurabilityUnsupported`);
+the Windows `SyncFile` additionally refuses directory handles as a mechanical
+backstop so no dir handle can silently pass through the file path. Unix
+behavior byte-identical at every row (AC-DUR-5): all new refusals are
+`runtime.GOOS == "windows"`-confined; SyncDir's Unix implementation preserves
+today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
 
 ## Decision Log
 
@@ -617,6 +688,20 @@ push. The rule is now applied with a post-write clock check.]
     ok 0.274s after the LoadGate change.
   - Hosted verification of the Stage 2 backstops + LoadGate fix + legacy test
     rework rides this push.
+- Local (macOS host, darwin/arm64 — NOT Windows evidence), invocation 7 on
+  2026-09-28 (working tree = a9c944e + this invocation's edits; clock reads
+  14:03–14:15Z):
+  - `gofmt -l internal/fsutil/ internal/trajectory/` clean;
+    `go build ./...` OK; `go vet ./internal/fsutil/ ./internal/trajectory/` OK.
+  - `GOOS=windows GOARCH=amd64 go build ./...` OK;
+    `GOOS=windows GOARCH=amd64 go vet ./internal/fsutil/ ./internal/trajectory/`
+    OK (typechecks syncdir_windows.go, sync_windows.go and the
+    windows-tagged refusal tests).
+  - `go test ./internal/fsutil/ -count=1` ok 0.315s;
+    `go test ./internal/trajectory/ -run 'TestParentRecovery|TestRecoveredParent|TestReservation|TestUnchanged|TestPersist|TestWriteState' -count=1`
+    ok 307.573s — the durability surfaces hold on darwin with the refusals
+    dormant (Unix byte-identical; the windows test file is build-tag-excluded
+    here, hosted Windows execution is its evidence).
 
 ## Hosted run register
 
@@ -632,6 +717,8 @@ push. The rule is now applied with a post-write clock check.]
 | 36425527266 | d07e6cc (stage 1 close-out) | win FAIL / ubuntu ok / macos ok; windows leg completed 13:06:09Z (run completed after) | ASSESSED invocation 5 (13:0xZ from job 108938416756 logs): win 15 red / 16 ok = SAME deterministic 14 + fsacl, no new red packages. W1 signature 17x → 2x; both residuals = row 28 restore bug (hosted-confirmed, fixed this invocation). fsacl 6/7: the one failure = row 26 (test scaffolding inheritance propagation strips marker access; product refusal verified correct by the log). Row-24 concurrent test PASSED. Residual families = rows 25 (dir-fsync, dominant), 7 (sharing), 21-23 (Stage 6 fixtures), 27 (new: POSIX-host evidence refusal unmasked) |
 | 36425631880 | 276b3e1 (docs-only checkpoint) | win FAIL / ubuntu ok / macos ok | Docs-only duplicate of d07e6cc code (register row deferred from invocation 5 per the no-gratuitous-docs-push rule); red set consistent with 36425527266 |
 | 36429107801 | a93f71c (row-24 fix + restore fix + Stage 2 core) | win FAIL / ubuntu ok / macos ok; completed ~13:39Z | ASSESSED invocation 6 (13:51-13:55Z from job logs): **fsacl GREEN 8/8** — first hostile Windows execution of TestConcurrentFirstCreationNeverRefuses and TestProtectPrivateStoreAppliesPolicyToProductCreatedDir both PASS; row-24 fix and restore fix HOSTED-VERIFIED; W1 privacy signature 2x -> **0** (store + restore privacy contract fully green hosted). Windows 14 red = prior 15 minus fsacl. pipeline red for 3 reasons: (a) LoadGate legacy-fallback gap — ERROR_INVALID_NAME on raw-'>' legacy reads was a hard error, broke TestComputeDAGStepParallelWaves/TestAdvanceCompletesAtLastBlock (fixed this invocation: invalid-name = not-found via build-tagged helper); (b) my legacy test tried to CREATE an uncreatable raw-'>' file (fixed: platform-conditional, pinning the uncreatability premise); (c) STANDING TestEmbeddedDefaultMatchesLiveDeck (row 29, also failed in 36425527266). trajectory/driver/budget red = rows 25/19 families as ledgered |
+| 36432547744 | 6236af6 (Stage 2 complete + LoadGate fix) + a9c944e docs | win FAIL / ubuntu ok / macos ok; windows leg completed ~14:14Z | ASSESSED invocation 7 (14:15Z): **pipeline package GREEN** — the LoadGate ERROR_INVALID_NAME fix and platform-conditional legacy test are hosted-verified; fsacl stays GREEN; 13 red = prior 14 minus pipeline, all standing Stage 4/5/6 families. Row 29 (drift test) NOT reproduced this cycle — intermittent, row stays open |
+
 
 
 ## Reconciliation ledger (§D.9 — emitted at Stage 0, before the sweep; refreshed per hosted cycle)

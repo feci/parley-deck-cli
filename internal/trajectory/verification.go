@@ -186,7 +186,11 @@ func syncVerificationDirectory(dir *os.Root) error {
 		return err
 	}
 	defer f.Close()
-	return fsutil.SyncFile(f)
+	handle, err := fsutil.DirHandleOf(f)
+	if err != nil {
+		return err
+	}
+	return fsutil.SyncDir(handle)
 }
 
 // Exclusive writes leave any partial file in place. Its existence prevents

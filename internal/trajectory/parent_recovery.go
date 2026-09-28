@@ -305,13 +305,24 @@ func syncParentRecovery(dir *os.Root, base string) error {
 	if err != nil {
 		return err
 	}
-	return errors.Join(fsutil.SyncFile(parent), parent.Close())
+	baseDir, err := fsutil.DirHandleOf(parent)
+	if err != nil {
+		parent.Close()
+		return err
+	}
+	return errors.Join(fsutil.SyncDir(baseDir), parent.Close())
 }
 func publishParentRecovery(dir *os.Root, base string, r ParentRecovery) error {
 	return publishParentRecoveryWithSync(dir, base, r, syncParentRecovery)
 }
 
 func publishParentRecoveryWithSync(dir *os.Root, base string, r ParentRecovery, sync func(*os.Root, string) error) error {
+	// §B C1 (N8): the refusal is ordered BEFORE the rename at :333 — here at
+	// entry, before even the stage is created — so parent-recovery apply
+	// publishes nothing and leaves nothing to clean (§C.2).
+	if err := refuseWindowsRootedPublication("parent-recovery publication"); err != nil {
+		return err
+	}
 	raw, err := canonical(r)
 	if err != nil || len(raw) > 1<<20 {
 		return errors.New("parent recovery exceeds its publication bound")
@@ -542,13 +553,23 @@ func syncRecoveredParent(dir *os.Root, base string) error {
 	if err != nil {
 		return err
 	}
-	return errors.Join(fsutil.SyncFile(parent), parent.Close())
+	baseDir, err := fsutil.DirHandleOf(parent)
+	if err != nil {
+		parent.Close()
+		return err
+	}
+	return errors.Join(fsutil.SyncDir(baseDir), parent.Close())
 }
 
 // publishRecoveredParent writes the immutable observation with the same
 // stage-fsync-rename discipline as the missing-parent recovery. A retained
 // record is validated and replayed by the caller; it is never rewritten here.
 func publishRecoveredParent(dir *os.Root, base string, r RecoveredParentRecord) error {
+	// §B C2 (N8): ordered BEFORE the rename at :570, at entry — recovered-
+	// parent apply publishes nothing (§C.2).
+	if err := refuseWindowsRootedPublication("recovered-parent publication"); err != nil {
+		return err
+	}
 	raw, err := canonical(r)
 	if err != nil || len(raw) > 1<<20 {
 		return errors.New("recovered parent observation exceeds its publication bound")

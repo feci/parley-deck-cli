@@ -28,6 +28,13 @@ func intentName(entry string) string {
 }
 
 func openIntentRoot(b budget.CycleBinding, create bool) (*os.Root, error) {
+	// §B B5: the reservation-intent root's mkdir barrier refuses pre-mutation
+	// on Windows; reservation creation is unavailable there (§C.1).
+	if create {
+		if err := refuseWindowsRootedPublication("precharge reservation-intent directory publication"); err != nil {
+			return nil, err
+		}
+	}
 	dir, err := os.OpenRoot(filepath.Dir(b.Store.Dir))
 	if err != nil {
 		return nil, err
@@ -64,10 +71,22 @@ func syncIntent(dir *os.Root, entry string) error {
 	if err != nil {
 		return err
 	}
-	return errors.Join(fsutil.SyncFile(f), f.Close(), syncVerificationDirectory(dir))
+	intentDir, err := fsutil.DirHandleOf(f)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	return errors.Join(fsutil.SyncDir(intentDir), f.Close(), syncVerificationDirectory(dir))
 }
 
 func publishReservationIntent(dir *os.Root, i reservationIntent) (string, error) {
+	// §B A3: the intent's exclusive create + re-sync barrier refuses
+	// pre-mutation on Windows (§C.1: budget reservation intents cannot be
+	// published); nothing is written and the :79 partial-publication
+	// invariant is untouched.
+	if err := refuseWindowsRootedPublication("precharge reservation-intent publication"); err != nil {
+		return "", err
+	}
 	raw, err := canonical(i)
 	if err != nil || len(raw) > 16<<20 {
 		return "", errors.New("precharge intent exceeds its publication bound")
