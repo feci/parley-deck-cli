@@ -14,6 +14,17 @@ import (
 // refuses rather than continuing without the guarantee.
 var ErrDirEntryDurabilityUnsupported = errors.New("directory-entry durability is not available on Windows while os.Root containment is preserved; refusing rather than continuing without the guarantee (run the operation on macOS/Linux)")
 
+// StageSuffix is the deterministic-stage derivation of FINAL §A: the stage
+// name is always final+StageSuffix, created with O_EXCL and NOT removed on
+// the error path, so an interrupted publication leaves a visible blocker
+// whose existence prevents replay. Requirement (a): the suffix sits outside
+// every valid-final grammar of the §B plain rows — A1's fixed artifact names
+// (request.json, parent-result.json), B1's fixed runtime directories
+// (.parley-runtime, trajectory-verification) and B2's telemetry IDs (UUID v4:
+// lowercase hex and dashes only, no dots). The dotted suffix can therefore
+// never be part of a valid final name; the pin is durable_grammar_test.go.
+const StageSuffix = ".parley-staging"
+
 // DirHandle is the named directory-handle type of the entry-durability
 // contract: directory handles reach their barrier ONLY as a DirHandle through
 // SyncDir — the named type keeps them out of SyncFile at compile time, making

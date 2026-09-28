@@ -147,6 +147,12 @@ func writeTrajectoryRuntimeJSON(path string, value any) error {
 	if err != nil || len(data) > 1<<20 {
 		return errors.New("invalid or excessive trajectory runtime artifact")
 	}
+	if runtime.GOOS == "windows" {
+		// §B A1 conversion (dormant today): det-stage O_EXCL + file fsync +
+		// WT-move no-REPLACE; an interrupted publication leaves the stage as
+		// the anti-replay blocker. Stage grammar pinned by unit test.
+		return fsutil.PublishFileDurable(path, data, 0o600)
+	}
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return err
