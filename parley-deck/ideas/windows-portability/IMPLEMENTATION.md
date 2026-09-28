@@ -1027,6 +1027,29 @@ files named in the original ledger no longer exist (row 4's locator was
 stale — the live out-of-app site was gitprobe only). Windows execution
 rides the push.
 
+## claude-1 replacement-recurrence follow-up acknowledged (invocation 18, 17:2xZ)
+
+Its self-correction is accepted and recorded: **R1 was correct but was not
+the repair** — after R1 there is no product zero-share open left on that
+path (Claude independently reproduced my negative trace at 938bf52), and the
+36451945257 timing signature (exactly one Access-denied; the :134 assertion
+holding proves exactly one extension landed; the guard serializing the
+extends) shows the first replace was refused while a microseconds-later
+second succeeded — falsifying the persistent-holder family and the
+read-only-trap, leaving exactly two candidates: **C1** a go1.26.8-specific
+stdlib open (the CI toolchain; EVERY Go source line cited so far was
+go1.27.1 — the version gap is real and named) and **C2** a foreign holder on
+the source/target (first-attempt-fails/second-succeeds is the scanner
+shape). No second repair is proposed by Claude and none is implemented here:
+the D1–D3 discriminating diagnostic is NOT landed while kimi-1
+independently checks actual-version sources and diagnostic sufficiency
+(notified 2026-09-28; no duplication of that investigation from this
+implementer). Standing constraints accepted: any later diagnostic must be
+failure-path-only with probes unreachable on the success path, reported
+never acted on, no §D.6 broadening without foreign-holder evidence, and no
+simultaneous-attribution overclaims from racy later samples. The
+concurrent-replacement issue stays OPEN in the ledger.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -1444,7 +1467,7 @@ source-context classing.
 | 19 | REDESIGNED invocation 9 (commit 08f769c; hosted confirmation rides its push): both 'root' cases now swap an in-root SUBDIRECTORY (renaming the rooted dir itself is impossible on Windows while the root handle is open — containment by design); invariant preserved: a replaced directory entry must not be hidden by the original still-readable inode; all subtests green on darwin. Originally NEW (36172430646): `trajectory/snapshot_read_test.go:261/:432` — os.Rename of a directory fails `The process cannot access the file because it is being used by another process` (open handle on source tree) | W3 sharing family (PRODUCT/TEST site) | §D.6, AC-LOCK-1..4 | 4 | none — recorded before reaction; structural handle discipline first (§G H7 mapping) |
 | 20 | NEW (36172430646/36172828285): `evidence/refusal_test.go:299` `sync ...: Access is denied`; `tree_report_test.go:300/:311` TestSaveUnwritableDirFails + TestFailedSaveLeavesNoReport — chmod-unwritable/unreadable fixtures do not block writes/syncs on Windows | W7 chmod-fixture family (TEST) | §D.9 denyRead | 6 (sweep) / 1 (helper now exists) | none — DenyRead helper landed and hosted-verified; sweep converts fixtures |
 | 21 | CLOSED HOSTED (36451116684: Retains + RoundTrip PASSED with the pinned constants; the digest mode test passed in 36449623422). DISPOSITION LANDED invocation 14 (kimi-1 consult engaged in the Decision Log): platform-conditional mutation + pinned OS-observed constants — Unix byte-identical, Windows exercises the read-only dimension (0600→0400 digest test; 0666 archive/restore constants). Originally: `evidence/tree_report_test.go:87` TestTreeDigestModeChangeChanges — chmod 0600→0700 does not change the synthesized mode on Windows, so the tree digest does not change | mode-synthesis family, NEW distinct phenomenon (TEST + product semantics question) | §D.9 sweep; digest mode semantics need review | 6 | none — record first; the digest's mode-sensitivity on Windows needs a deliberate decision, not a silent fixture change |
-| 22 | NEW (36172430646): `evidence/source_inventory_test.go:136` — fixture filename containing a newline (`line\nbreak`) fails to open: `The filename, directory name, or volume label syntax is incorrect` | W2-adjacent invalid-name class in FIXTURES (TEST) | §D.9 | 6 | none — fixture portability (t.TempDir-compatible names) |
+| 22 | FIXED invocation 18 (platform-true odd-name set; inventory invariant pinned on both; Unix unchanged — hosted leg rides the push). Originally NEW (36172430646): `evidence/source_inventory_test.go:136` — fixture filename containing a newline (`line\nbreak`) fails to open: `The filename, directory name, or volume label syntax is incorrect` | W2-adjacent invalid-name class in FIXTURES (TEST) | §D.9 | 6 | none — fixture portability (t.TempDir-compatible names) |
 | 23 | NEW (36172430646): `internal/app` `app_test.go:373` `code=1 stdout=codex: not installed`, `:421` agent-runtime resolution; correlates with row 18's agents/config failures | W8/agent-runtime family PROVISIONAL — root cause not yet verified (runner PATH lacks real agents; tests presumably fake them) | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
 | 24 | NEW (36174658770): `trajectory/snapshot_test.go:493` TestSnapshotConcurrentCapturePublishesOneExactArchive — "concurrent publication differs: {ref:zero err:<e1>} {ref:zero err:<e2>}" (two DISTINCT unpublished results; error VALUES not surfaced in-band) | concurrency × §D.1 first-creation: CANDIDATE root cause (not established) is the create→set-DACL window — a concurrent observer's Lstat sees the dir exist before the owner-only DACL is applied, misclassifying a concurrent product creation as pre-existing and refusing. Recorded before reaction; fixture change removed the test's exposure (test PASSED hosted in 36425527266); product race remained possible | §D.1 | 1 | none — FIX LANDED invocation 5: atomic CreateDirectory with SECURITY_ATTRIBUTES owner-only SD (SDDL `D:P(A;;GA;;;<sid>)`), ERROR_ALREADY_EXISTS → verify-not-refuse; adversarial pin TestConcurrentFirstCreationNeverRefuses rides the next hosted cycle, which closes the row |
 | 25 | TRANSFORMED by e4a2af9 (36434775624 hosted-verified: Access-denied count 0, named refusal x13): originally UNMASKED by 36174658770 — `sync <dir>: Access is denied` was the dominant residual family in trajectory/driver/evidence/budget (`state_test.go:63/:478`, `verification_test.go:368`, `refusal_test.go:35/:97/:140/:210/:251/:270/:299`, `driver/trajectory_test.go:50`) — dir-fsync on a read-only dir handle; previously masked by the W1 store-guard failure | H2-adjacent fsync-on-directory class (FlushFileBuffers needs write access; Go dir handles are read-only) — rows 19/20's families now confirmed broader | §B (fsutil.SyncDir audit), §D.6 | 3 | none — the §B audit-of-record dispositions and named-type contract govern the fix; never a per-site skip |

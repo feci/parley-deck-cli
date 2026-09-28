@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -132,10 +133,20 @@ func TestGitSourceInventoryWorktreeAndDeletedFile(t *testing.T) {
 func TestGitSourceInventoryPathsBoundsAndCancellation(t *testing.T) {
 	isolateInventoryGit(t)
 	root := scratchGitRepo(t, map[string]string{"source": "baseline\n"})
-	for _, name := range []string{"space name", "žltý", "-option", "line\nbreak"} {
+	// Row 22 (§D.9): the odd-name class is platform-true — a filename
+	// containing a newline CANNOT exist on Windows (ERROR_INVALID_NAME at
+	// creation), so that member is Unix-only; Windows keeps every odd name
+	// the OS can actually host (space, non-ASCII, leading dash). The
+	// inventory-robustness invariant is pinned unconditionally on both.
+	names := []string{"space name", "žltý", "-option", "line\nbreak"}
+	if runtime.GOOS == "windows" {
+		names = []string{"space name", "žltý", "-option", "semi;colon", "tab\tname"}
+	}
+	for _, name := range names {
 		inventoryWrite(t, root, name, "included\n")
 	}
-	want := []string{"-option", "line\nbreak", "source", "space name", "žltý"}
+	want := append(append([]string(nil), names...), "source")
+	slices.Sort(want)
 	got, err := GitSourceInventory(context.Background(), root)
 	if err != nil || !slices.Equal(got, want) {
 		t.Fatalf("NUL-delimited names changed: %v %v", got, err)
