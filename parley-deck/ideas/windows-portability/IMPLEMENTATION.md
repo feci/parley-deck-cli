@@ -1380,6 +1380,46 @@ fixed: the intent's Root is now canonicalRoot(root) — Abs + EvalSymlinks,
 exactly what the product compares — and the changed-root mutation derives
 from that canonical form. Rides the next leg.
 
+
+## kimi-1 coverage follow-up ACKNOWLEDGED (invocation 23 close, 19:3xZ)
+
+Read in full at the window edge; several findings were ALREADY acted on by
+the concurrent hosted-evidence loop (the follow-up inspected fixed commits
+b40235d/276a1a2/12d7cba while later legs ran):
+
+- **R1 (chargeFixture watches the wrong call) — CONFIRMED and FIXED by the
+  hosted evidence before the note landed**: 36469442224 proved the refusal
+  comes from ChargeCycle (state_test.go:85), not OpenCycleSession; the
+  ChargeCycle gate landed (077c4b5) and 36471952913 CLEARED ContentCheck*
+  hosted. The never-taken Logf capture: still present, to remove in the
+  next batch (gap 1's second half).
+- **R2 (nine unwired callers)**: partially — :85/:156 area now gated via
+  ChargeCycle, but the FULL nine-caller audit is the next unit (gap 2).
+- **V-series (fixture completeness)**: fixture v2 landed (58f926a) and
+  PASSED hosted for all TEN cases; the F4.1 guard-chain findings
+  (canonicalRoot, exact-preview) match the note's predictions and are fixed
+  (df17141, 444d930). The V4 state+ledger byte-comparison restore and the
+  per-guard re-pins: next unit.
+- **F3c/F3d "NOT restored"** — the note inspected pre-a71aa9d commits; both
+  LANDED in a71aa9d and PASSED hosted (36471952913/36472183484: zero
+  failures). The note's construction guidance (hand-written records, never
+  realRefusalDir) is what landed.
+- **Item 1 (organizer)**: the note's "mtime noise refuted" is CORRECT — the
+  hosted delta print (36472183484) rewrote the diagnosis entirely: the
+  after-walk returns EMPTY under the deny (every before-path REMOVED,
+  including files no brief would delete) — a Walk-vs-deny interaction, not
+  a product write; the walk-error capture rides 444d930. Full-content
+  comparison upgrade: next unit with the walk fix.
+- **Item 3 holes (canonical check via refusalDirs' second return; the
+  pristine-dedicated nothing-created pin)**: accepted, next batch.
+- **F3e dropped assertion / stopped-parent bare return**: accepted, next
+  batch.
+- **Ledger precision (gap 11)**: accepted — the 36468595972 residual's
+  guard attribution correction and per-test (not aggregate) hosted outcomes
+  will be applied in the next docs pass.
+
+No phase or signoff inferred; all advisory pending formal review.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
