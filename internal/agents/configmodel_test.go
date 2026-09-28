@@ -21,6 +21,10 @@ func fakeHome(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	// §D.9 (row 9): a faked home must cover Windows too — os.UserHomeDir
+	// resolves USERPROFILE there, so a HOME-only fixture leaks the real
+	// runner home into the config-path search.
+	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	return home
 }
