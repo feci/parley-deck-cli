@@ -112,17 +112,20 @@ func makeUnsupportedSocket(t *testing.T, root string) {
 	t.Helper()
 	prev, err := os.Getwd()
 	if err != nil {
-		t.Skipf("cannot set up unsupported-entry probe: %v", err)
+		t.Fatalf("cannot set up unsupported-entry probe: %v", err)
 	}
 	if err := os.Chdir(root); err != nil {
-		t.Skipf("cannot set up unsupported-entry probe: %v", err)
+		t.Fatalf("cannot set up unsupported-entry probe: %v", err)
 	}
 	ln, err := net.Listen("unix", "parley-evidence-probe.sock")
 	if cherr := os.Chdir(prev); cherr != nil {
 		t.Fatalf("cannot restore cwd: %v", cherr)
 	}
 	if err != nil {
-		t.Skipf("no unsupported-entry probe available on this filesystem: %v", err)
+		// §D.7 AF_UNIX: a filesystem that cannot host the probe is a loud
+		// hosted fact (AF_UNIX creation failing hosted opens an individually
+		// reviewed exclusion row) — never a silent skip.
+		t.Fatalf("no unsupported-entry probe available on this filesystem: %v", err)
 	}
 	t.Cleanup(func() { _ = ln.Close() })
 }
@@ -246,7 +249,7 @@ func TestTreeDigestRejectsEscapingSymlink(t *testing.T) {
 	os.WriteFile(filepath.Join(outside, "secret.go"), []byte("package s\n"), 0o644)
 	root := scratchGitRepo(t, map[string]string{"a.go": "package a\n"})
 	if err := os.Symlink(filepath.Join(outside, "secret.go"), filepath.Join(root, "link.go")); err != nil {
-		t.Skipf("symlinks unavailable: %v", err)
+		t.Fatalf("symlinks unavailable: %v", err)
 	}
 	if _, err := TreeDigest(root); err == nil {
 		t.Fatal("escaping symlink must fail the digest")

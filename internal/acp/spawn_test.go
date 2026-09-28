@@ -78,14 +78,15 @@ func (g *gatingObserver) Write(data []byte) (int, error) {
 // pipes and the child is on its way out, so a reap that closes the stderr
 // pipe mid-drain is the only way bytes can go missing.
 //
-// The 16 KiB in-flight volume mirrors the hosted truncation signature and
-// sits well inside the 64 KiB Linux/macOS pipe capacity, so the child never
-// blocks before READY there. A platform whose pipe buffer could not hold
-// the in-flight bytes would block the child before READY and fail the
-// handshake below loudly (or fail the 16384-byte assertion) — never
-// silently mis-pass. That scenario is unverified and unexecuted: these
-// tests have never run on Windows (owner-blocked) and imply nothing about
-// it.
+// The 1 KiB in-flight volume (§D.7 a) sits inside every observed pipe
+// capacity, including Windows' ~4 KiB anonymous-pipe buffer — the historical
+// 16 KiB volume stalled the child before READY there (row 17).
+// spawnGatedChild launches the §D.7 (a) capacity-independent ordering probe:
+// the child's total stderr is 1 KiB, so every observed pipe capacity (Windows
+// ~4 KiB included) holds the in-flight bytes and the READY handshake cannot
+// stall on a full pipe. The copier still parks inside its first Write, so
+// the drain-ordering invariant under test — Stop/Wait must not reap before
+// the drain completes — is unchanged.
 func spawnGatedChild(t *testing.T, observer *gatingObserver) *Process {
 	t.Helper()
 	p, err := Spawn(context.Background(), SpawnOptions{Command: os.Args[0],
@@ -128,10 +129,10 @@ func assertGatedChildDrained(t *testing.T, p *Process, observer *gatingObserver)
 	if p.ExitCode() == nil || *p.ExitCode() != 7 {
 		t.Fatalf("exit: %v", p.ExitCode())
 	}
-	if got := observer.bytes.Load(); got != 16384 {
+	if got := observer.bytes.Load(); got != 1024 {
 		t.Fatalf("observed bytes: %d", got)
 	}
-	if len(p.Stderr()) != 8192 {
+	if len(p.Stderr()) != 1024 {
 		t.Fatalf("ring size: %d", len(p.Stderr()))
 	}
 }
@@ -214,13 +215,18 @@ func TestGatedStderrChild(t *testing.T) {
 	if len(os.Args) == 0 || os.Args[len(os.Args)-1] != "gated-stderr-child" {
 		return
 	}
-	if _, err := os.Stderr.WriteString(strings.Repeat("x", 8192)); err != nil {
+	// §D.7 (a) split: the gated drain-ordering probe uses a ≤2 KiB total
+	// payload so it is pipe-capacity-INDEPENDENT — Windows anonymous pipes
+	// buffer ~4 KiB, where the historical 16 KiB in-flight volume stalled the
+	// child before READY (row 17). The capacity-dependent 16384-write volume
+	// stays in the UNGATED ring-cap test (TestSpawnObservesAllStderrAndRealExit).
+	if _, err := os.Stderr.WriteString(strings.Repeat("x", 512)); err != nil {
 		os.Exit(11)
 	}
 	if _, err := bufio.NewReader(os.Stdin).ReadString('\n'); err != nil {
 		os.Exit(12)
 	}
-	if _, err := os.Stderr.WriteString(strings.Repeat("y", 8192)); err != nil {
+	if _, err := os.Stderr.WriteString(strings.Repeat("y", 512)); err != nil {
 		os.Exit(13)
 	}
 	if _, err := os.Stdout.WriteString("READY\n"); err != nil {

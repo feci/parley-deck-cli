@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic) -> 08f769c (row-19 redesign) -> 17d5210 (delete-share readers) -> bc08cd7 (identity-read retry + review-scope evidence) -> this commit (Stage 5 core: P-A + W-SHELL)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic) -> 08f769c (row-19 redesign) -> 17d5210 (delete-share readers) -> bc08cd7 (identity-read retry + review-scope evidence) -> 9b880d3 (Stage 5 core) -> this commit (Stage 5 checks pin + Stage 6 ACP/AF_UNIX)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -178,6 +178,25 @@ Progress for the live stage state.
       never a skip). Hosted execution rides this push. REMAINING Stage 5:
       hosted confirmation + the checks-path (driver_impl) refusal pin.
 - [ ] **Stage 6** — fixture-portability sweep (§D.9) + ACP/AF_UNIX/CRLF (§D.7).
+      OPENED invocation 11 (2026-09-28T15:1xZ): (1) ACP split per §D.7 a/b —
+      the two gated drain tests now use a 1 KiB total payload
+      (capacity-INDEPENDENT: Windows anonymous pipes buffer ~4 KiB, where the
+      historical 16 KiB in-flight volume stalled the child before READY —
+      row 17's mechanism); the copier still parks in its first Write so the
+      drain-ordering invariant (Stop/Wait never reap before the drain
+      completes) is unchanged; the capacity-dependent 16384-write/8192-ring
+      volume stays in the UNGATED TestSpawnObservesAllStderrAndRealExit
+      (hosted-green); spawn.go Stop/Wait ordering untouched. (2) AF_UNIX per
+      §D.7 — all four t.Skipf fallbacks in tree_report_test.go are now hard
+      failures (Getwd/Chdir setup, the unix-socket listen, the escaping
+      symlink); if hosted AF_UNIX creation itself fails, that loud fact opens
+      an individually reviewed exclusion row per §D.7 — never a silent skip.
+      Hosted execution of both rides this push. NEXT Stage 6 units: the §D.7
+      CRLF load-bearing layer (per-invocation `-c core.autocrlf=false -c
+      git.eol=lf` on parley's own git invocations, precedent
+      reviewsnapshot.go:138-139), HOME→USERPROFILE fixtures (row 9), denyRead
+      sweep (rows 8/20), /repo literals (row 10), agent fixtures (rows
+      16/18/23), row 22 newline fixture, row 27 POSIX-host refusal family.
 - [ ] **Stage 7** — validation/release: unfiltered three-leg matrix green, census
       enforcement (§E), coverage statements (§F), release sequence (§O).
 
@@ -935,6 +954,18 @@ both retry outcomes behave as specified.
   case's OS-refusal discovered and pinned (Windows asserts the refused swap
   leaves the read unchanged — containment; POSIX unchanged); darwin
   revalidation suite green after the fix.
+
+- (2026-09-28T15:15–15:2xZ, zcode-1; commit follows — first verified clock
+  read 15:15:16Z) Invocation 11. Stage 5 completed: the checks-path W-SHELL
+  pin (TestRunChecksMissingShRefusesPreWork — sh forced off PATH → ok=false
+  with the named refusal; the list-form `checks:` contract path routes
+  through evidence.RunCriterion → RunCriterionControlled and inherits the
+  same refusal, so all three §D.3 surfaces are pinned). Stage 6 opened with
+  the §D.7 ACP drain-test split (row 17's mechanism: Windows ~4 KiB pipe
+  buffers vs 16 KiB in-flight) and the AF_UNIX hard-failure conversion; full
+  acp suite green locally (2.859s), evidence TreeDigest tests green. Claude's
+  advisory note on row 30 was NOT present at this invocation's start;
+  re-checked before commit.
 
 ## Hosted run register
 
