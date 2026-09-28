@@ -1930,6 +1930,50 @@ None.
 			return 3, true
 		}
 		return code, true
+	case "zcode-probe":
+		// The writeFakeZcode port: verify the EQUALS-form argv exactly
+		// (--prompt=<v> as one token, --mode yolo --cwd root, argc 5), then
+		// read the prompt from stdin and write "<sentinel>\nheadless probe
+		// ok\n" (line 5 sentinel, line 2 output path) to that path; the
+		// help-exit0 mode prints usage and exits 0 writing nothing.
+		if len(fields) != 2 {
+			return 0, false
+		}
+		if len(args) > 0 && args[0] == "--version" {
+			fmt.Println("zcode-app-cli 0.0.0-test")
+			return 0, true
+		}
+		if len(args) != 5 {
+			fmt.Fprintf(os.Stderr, "argc=%d want 5\n", len(args))
+			return 64, true
+		}
+		promptText, perr := strings.CutPrefix(args[0], "--prompt=")
+		if !perr {
+			fmt.Fprintf(os.Stderr, "arg1=%s want --prompt=<value>\n", args[0])
+			return 64, true
+		}
+		if args[1] != "--mode" || args[2] != "yolo" || args[3] != "--cwd" || args[4] == "" {
+			fmt.Fprintf(os.Stderr, "argv mismatch: %v\n", args)
+			return 64, true
+		}
+		if fields[1] == "help-exit0" {
+			fmt.Println("Usage: zcode [options]")
+			return 0, true
+		}
+		// The prompt travels in argv (the EQUALS form), not stdin — the
+		// shell extracted $PROMPT from "${1#--prompt=}".
+		lines := strings.Split(promptText, "\n")
+		if len(lines) < 5 {
+			return 64, true
+		}
+		out, sentinel := lines[1], lines[4]
+		if out == "" || sentinel == "" {
+			return 64, true
+		}
+		if err := os.WriteFile(out, []byte(sentinel+"\nheadless probe ok\n"), 0o644); err != nil {
+			return 64, true
+		}
+		return 0, true
 	case "forged-signoff-exit7":
 		// The historical test edited the shell script's exit code; the
 		// re-exec port edits the role spec the same way (see the caller).

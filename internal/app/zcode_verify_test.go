@@ -3,8 +3,6 @@ package app
 import (
 	"bytes"
 	"context"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -33,40 +31,10 @@ func zcodeSpec(t *testing.T) agents.Spec {
 //	               output path and sentinel from the probe prompt, and writes the file.
 func writeFakeZcode(t *testing.T, dir, mode string) string {
 	t.Helper()
-	path := filepath.Join(dir, "zcode")
-	body := `#!/bin/sh
-if [ "$1" = "--version" ]; then echo 'zcode-app-cli 0.0.0-test'; exit 0; fi
-
-# EQUALS FORM. zcode's own parser rejects the separate-token form when the value starts with a dash
-# ("Option '--prompt' argument is ambiguous"), so the spec ships --prompt=<value> as ONE token
-# and this stub must parse it that way (review round 1, codex-1 MAJOR).
-case "$1" in
-  --prompt=*) PROMPT="${1#--prompt=}" ;;
-  *) echo "arg1=$1 want --prompt=<value>" >&2; exit 64 ;;
-esac
-[ "$2" = "--mode" ] || { echo "arg2=$2 want --mode" >&2; exit 64; }
-[ "$3" = "yolo" ]   || { echo "arg3=$3 want yolo" >&2; exit 64; }
-[ "$4" = "--cwd" ]  || { echo "arg4=$4 want --cwd" >&2; exit 64; }
-[ -n "$5" ]         || { echo "arg5 (root) empty" >&2; exit 64; }
-[ "$#" -eq 5 ]      || { echo "argc=$# want 5" >&2; exit 64; }
-
-if [ "MODE_PLACEHOLDER" = "help-exit0" ]; then
-  echo "Usage: zcode [options]"
-  exit 0
-fi
-
-OUT=$(printf '%s\n' "$PROMPT" | sed -n '2p')
-SENTINEL=$(printf '%s\n' "$PROMPT" | sed -n '5p')
-printf '%s\nheadless probe ok\n' "$SENTINEL" > "$OUT"
-exit 0
-`
-	body = strings.Replace(body, "MODE_PLACEHOLDER", mode, 1)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return path
+	// §D.9 re-exec port: the zcode stub's EQUALS-form argv check and the
+	// prompt/sentinel probe are now the "zcode-probe" role spec.
+	return writeRoleFixture(t, dir, "zcode", "zcode-probe "+mode)
 }
-
 func verifyZcode(t *testing.T, mode string) error {
 	t.Helper()
 	root := t.TempDir()

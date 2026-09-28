@@ -17,6 +17,10 @@ func zcodeDeck(t *testing.T, deckModel string) string {
 	root := setupRosterDeck(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	// Row 23 (§D.9, the row-9 shape): the zcode adapter resolves its config
+	// from the OS home — USERPROFILE on Windows — so a HOME-only fake leaks
+	// the real runner home.
+	t.Setenv("USERPROFILE", home)
 	mk := func(rel, body string) {
 		p := filepath.Join(home, rel)
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
