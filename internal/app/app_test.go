@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -1764,19 +1766,44 @@ func writeFakeCLI(t *testing.T, dir, name, version string) {
 
 func writeFakeParleyDeckSkill(t *testing.T, dir string) {
 	t.Helper()
-	path := filepath.Join(dir, "parley-deck-skill")
-	body := `#!/bin/sh
-if [ "$1" = "status" ]; then
-  project=""
-  while [ "$#" -gt 0 ]; do
-    if [ "$1" = "--project" ]; then
-      shift
-      project="$1"
-    fi
-    shift
-  done
-  cat <<JSON
-{
+	// §D.9 rows 3/16: the historical fixture was an extension-less
+	// #!/bin/sh script, which Windows cannot exec (the hosted
+	// "executable file not found in %PATH%" signature). The re-exec port
+	// installs a copy of this test binary; TestMain dispatches the
+	// "parley-deck-skill" basename role below. Behavior is identical to the
+	// shell script on every platform.
+	writeReexecFixture(t, dir, "parley-deck-skill")
+}
+
+// runFixtureRole dispatches a re-exec'd fixture copy (this binary renamed to
+// the fixture name) to its fake behavior. The bool reports whether the
+// basename is a known fixture role.
+func runFixtureRole(base string) (int, bool) {
+	switch strings.TrimSuffix(base, ".exe") {
+	case "parley-deck-skill":
+		if os.Getenv("PARLEY_FAKE_SKILL") == "legacy" {
+			return fakeLegacyParleyDeckSkillMain(), true
+		}
+		return fakeParleyDeckSkillMain(), true
+	}
+	return 0, false
+}
+
+// fakeParleyDeckSkillMain is the Go port of the historical shell script:
+// "status" prints the version-status JSON (with the --project argument
+// substituted) and exits 0; anything else exits 2.
+func fakeParleyDeckSkillMain() int {
+	args := os.Args[1:]
+	if len(args) == 0 || args[0] != "status" {
+		return 2
+	}
+	project := ""
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--project" && i+1 < len(args) {
+			project = args[i+1]
+		}
+	}
+	fmt.Printf(`{
   "ok": true,
   "installer": {
     "version": "1.1.0",
@@ -1788,34 +1815,61 @@ if [ "$1" = "status" ]; then
   },
   "project": {
     "metadataStatus": "valid",
-    "projectArg": "$project"
+    "projectArg": %q
   },
   "runtimeInstalls": []
 }
-JSON
-  exit 0
-fi
-exit 2
-`
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+`, project)
+	return 0
+}
+
+// writeReexecFixture installs a copy of the test binary at dir/name as the
+// §D.9 test-binary re-exec port of an extension-less shell fixture (the .exe
+// suffix on Windows is resolved by LookPath through PATHEXT).
+func writeReexecFixture(t *testing.T, dir, name string) {
+	t.Helper()
+	src, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	in, err := os.Open(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer in.Close()
+	out, err := os.OpenFile(filepath.Join(dir, name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		t.Fatal(err)
+	}
+	if err := out.Close(); err != nil {
 		t.Fatal(err)
 	}
 }
-
 func writeFakeLegacyParleyDeckSkill(t *testing.T, dir string) {
 	t.Helper()
-	path := filepath.Join(dir, "parley-deck-skill")
-	body := `#!/bin/sh
-if [ "$1" = "--version" ]; then
-  echo '1.0.8'
-  exit 0
-fi
-echo 'Unknown command: status' >&2
-exit 1
-`
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
+	// §D.9 re-exec port, as writeFakeParleyDeckSkill; the legacy behavior is
+	// selected by the env marker the child inherits from this test process.
+	t.Setenv("PARLEY_FAKE_SKILL", "legacy")
+	writeReexecFixture(t, dir, "parley-deck-skill")
+}
+
+// fakeLegacyParleyDeckSkillMain ports the historical legacy shell script:
+// --version answers 1.0.8; anything else is an unknown command, exit 1.
+func fakeLegacyParleyDeckSkillMain() int {
+	args := os.Args[1:]
+	if len(args) > 0 && args[0] == "--version" {
+		fmt.Println("1.0.8")
+		return 0
 	}
+	fmt.Fprintln(os.Stderr, "Unknown command: status")
+	return 1
 }
 
 func writeFakeRoundAgentCLI(t *testing.T, dir, name, version string) {

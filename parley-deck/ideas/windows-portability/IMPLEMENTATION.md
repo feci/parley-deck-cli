@@ -917,6 +917,38 @@ sharing-violation retry. No foreign-holder evidence exists on this path
 here and NO retry class is broadened. If a future class-5 replace failure
 shows a foreign holder, that is the moment for an amendment request.
 
+## Rows 3/4 re-exec fixture conversion — first tranche (invocation 16, 2026-09-28T16:4xZ)
+
+The §D.9 test-binary re-exec infrastructure landed in internal/app:
+TestMain dispatches a fixture role when the binary's BASENAME is a known
+fixture (writeReexecFixture installs a copy of the test binary at the
+fixture path — the .exe suffix on Windows resolves through PATHEXT via the
+product's LookPath). Converted this tranche:
+- `writeFakeParleyDeckSkill` (row 3's root cause — the hosted
+  "executable file not found in %PATH%" signature behind the version-all
+  failures, row 16): the status/JSON shell script is now
+  `fakeParleyDeckSkillMain` (Go port, identical JSON bytes with the
+  --project argument substituted).
+- `writeFakeLegacyParleyDeckSkill`: the legacy variant shares the
+  basename, so the behavior is selected by an inherited env marker
+  (PARLEY_FAKE_SKILL=legacy) — the test process's env reaches the child
+  through the product's exec; `fakeLegacyParleyDeckSkillMain` ports the
+  --version/unknown-command script.
+Local (darwin): all four version-all tests pass THROUGH the re-exec path
+(the copies are exercised, not the shell). Windows execution rides this
+push. Unix behavior equivalent (the §D.9 re-exec port is the sanctioned
+replacement for the shell fixture; same commands, same outputs).
+
+**Named remainder (rows 4/23, the launch/agent-CLI fixtures):**
+`writeFakeRoundAgentCLI` (complex: awk-over-stdin artifact writer — needs
+the role-spec ported to Go), `writeFailingRoundAgentCLI` (simple
+version-or-exit-1), the :1686/:1710/:1735 formatted bodies, :1398
+(cat/exit-7), and the launch_test.go / protocol_context_test.go /
+telemetry_test.go fixtures (~13 per the ledger). Design sketched for the
+parametric ones: a sibling `.role` spec file beside the binary copy (the
+role runner reads its behavior spec from os.Args[0]+".role"), so
+per-fixture versions/modes don't need per-name dispatch.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
