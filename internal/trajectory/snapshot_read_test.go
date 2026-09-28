@@ -247,8 +247,18 @@ func TestSnapshotRevalidationRejectsDifferentMaterial(t *testing.T) {
 			parent := t.TempDir()
 			dir := filepath.Join(parent, "root")
 			want := []byte("original")
-			snapshotWrite(t, dir, "source", want, 0600)
-			name := filepath.Join(dir, "source")
+			// Row-19 redesign (FINAL §D.6): the adversary mutates INSIDE the
+			// root — the "root" case swaps a subdirectory rather than renaming
+			// the rooted directory itself, which is impossible on Windows
+			// while the root handle is open (containment working as designed).
+			// The invariant is preserved: a replaced directory entry must not
+			// be hidden by the original still-readable inode.
+			rel := "source"
+			if kind == "root" {
+				rel = filepath.Join("sub", "source")
+			}
+			snapshotWrite(t, dir, rel, want, 0600)
+			name := filepath.Join(dir, rel)
 			prior := snapshotStat(t, name)
 			root := snapshotOpenRoot(t, dir)
 			ctx, cancel := context.WithCancel(context.Background())
@@ -257,10 +267,10 @@ func TestSnapshotRevalidationRejectsDifferentMaterial(t *testing.T) {
 			case "bytes":
 				snapshotWrite(t, dir, "source", []byte("replaced"), 0600)
 			case "root":
-				if err := os.Rename(dir, filepath.Join(parent, "old-root")); err != nil {
+				if err := os.Rename(filepath.Join(dir, "sub"), filepath.Join(dir, "old-sub")); err != nil {
 					t.Fatal(err)
 				}
-				snapshotWrite(t, dir, "source", want, 0600)
+				snapshotWrite(t, dir, rel, want, 0600)
 			case "inode", "symlink":
 				if err := os.Rename(name, filepath.Join(dir, "old-source")); err != nil {
 					t.Fatal(err)
@@ -289,7 +299,7 @@ func TestSnapshotRevalidationRejectsDifferentMaterial(t *testing.T) {
 				cancel()
 			}
 			hash := sha256.Sum256(want)
-			err := verifySnapshotRegular(ctx, root, "source", prior, hash[:])
+			err := verifySnapshotRegular(ctx, root, rel, prior, hash[:])
 			if err == nil {
 				t.Fatal("different material or canceled verification was accepted")
 			}
@@ -399,8 +409,15 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 			parent := t.TempDir()
 			dir := filepath.Join(parent, "root")
 			want := []byte("original")
-			snapshotWrite(t, dir, "source", want, 0600)
-			name := filepath.Join(dir, "source")
+			// Row-19 redesign (FINAL §D.6), as above: the in-read adversary
+			// swaps a subdirectory inside the root instead of renaming the
+			// rooted directory away; the names-recheck must catch it.
+			rel := "source"
+			if kind == "root" {
+				rel = filepath.Join("sub", "source")
+			}
+			snapshotWrite(t, dir, rel, want, 0600)
+			name := filepath.Join(dir, rel)
 			prior := snapshotStat(t, name)
 			root := snapshotOpenRoot(t, dir)
 			base, cancel := context.WithCancel(context.Background())
@@ -416,9 +433,9 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 				case "mode":
 					err = os.Chmod(name, 0400)
 				case "root":
-					err = os.Rename(dir, filepath.Join(parent, "old-root"))
+					err = os.Rename(filepath.Join(dir, "sub"), filepath.Join(dir, "old-sub"))
 					if err == nil {
-						snapshotWrite(t, dir, "source", want, 0600)
+						snapshotWrite(t, dir, rel, want, 0600)
 					}
 				case "inode":
 					err = os.Rename(name, filepath.Join(dir, "old-source"))
@@ -433,7 +450,7 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 				}
 			}}
 			hash := sha256.Sum256(want)
-			err := verifySnapshotRegular(ctx, root, "source", prior, hash[:])
+			err := verifySnapshotRegular(ctx, root, rel, prior, hash[:])
 			if ctx.checks < 2 || err == nil {
 				t.Fatalf("change during verification was not observed: checks=%d err=%v", ctx.checks, err)
 			}
