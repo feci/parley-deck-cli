@@ -225,13 +225,18 @@ func DenyRead(path string) error {
 // directory maps to adding files/subdirectories and does NOT include
 // FILE_DELETE_CHILD or DELETE, so cleanup removals still work.
 func DenyWrite(path string) error {
-	return denyAccess(path, windows.GENERIC_WRITE)
+	// Hosted evidence (444d930's organizer leg): a GENERIC_WRITE deny also
+	// blocks directory ENUMERATION (the walk's dir open got Access denied).
+	// Narrow to FILE_WRITE_DATA|FILE_APPEND_DATA (add-file/add-subdirectory for directories) — write-into
+	// is denied, listing/reading stays possible, so write-detection walks
+	// still function.
+	return denyAccess(path, windows.FILE_WRITE_DATA|windows.FILE_APPEND_DATA)
 }
 
 // AllowWrite removes a DenyWrite deny ACE (tests restore writability before
 // their cleanup). Unix restores mode 0755; Windows drops the deny ACE.
 func AllowWrite(path string) error {
-	return removeDeny(path, windows.GENERIC_WRITE)
+	return removeDeny(path, windows.FILE_WRITE_DATA|windows.FILE_APPEND_DATA)
 }
 
 func denyAccess(path string, mask windows.ACCESS_MASK) error {
