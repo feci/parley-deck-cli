@@ -294,7 +294,9 @@ func captureSnapshotMember(ctx context.Context, root string, origin os.FileInfo,
 			return err
 		}
 		if !validSnapshotLink(name, target) {
-			return errors.New("snapshot link is absolute, escaping or unsupported")
+			// Actionable refusal text (the §B discipline): name the offender
+			// so a hosted failure identifies the exact link shape.
+			return fmt.Errorf("snapshot link %q target %q is absolute, escaping or unsupported", name, target)
 		}
 		return tw.WriteHeader(snapshotHeader("files/"+name, tar.TypeSymlink, int64(info.Mode().Perm()), 0, target))
 	default:
