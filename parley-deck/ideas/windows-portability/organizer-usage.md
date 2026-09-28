@@ -55,3 +55,5 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation 9 complete; Stage 4 sharing repairs and diagnostics pushed | 2026-09-28T14:57:29.852Z | 33403466 | 33071104 | 42706 | 8751 | 288 |
 | Invocation 10 complete; Stage 5 core and advisory identity consult assigned | 2026-09-28T15:14:15.818Z | 39078208 | 38728832 | 47088 | 10118 | 322 |
 | Invocation 11 complete; fixture sweep and identity probe pushed, Claude advice recorded | 2026-09-28T15:31:48.950Z | 45068800 | 44696960 | 53034 | 11551 | 355 |
+| Invocation 12 complete; identity repair hosted-verified, 11 Windows packages remain red | 2026-09-28T15:51:40.914Z | 52725224 | 52333824 | 58510 | 13553 | 394 |
+| Invocation 13 complete; native fixture progress and Kimi mode advisory recorded | 2026-09-28T16:10:59.747Z | 60020221 | 59607680 | 65333 | 16085 | 429 |
