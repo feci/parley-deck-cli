@@ -1744,7 +1744,13 @@ func runFixtureRole(base string) (int, bool) {
 				return code, true
 			}
 		}
-		if !strings.HasSuffix(exeBase, ".test") && exeBase != "app.test" {
+		// Exempt the REAL test binary by its platform-true name: strip the
+		// Windows .exe suffix FIRST, then require the standard .test stem —
+		// "app.test.exe" must pass (the hosted false-positive that killed
+		// the whole package in 0.068s), while any renamed fixture copy
+		// ("codex.exe", "parley-deck-skill.exe", bare "git") fails.
+		stem := strings.TrimSuffix(exeBase, ".exe")
+		if !strings.HasSuffix(stem, ".test") {
 			fmt.Fprintf(os.Stderr, "fixture copy %q could not resolve its role spec; refusing to enter the test framework\n", exeBase)
 			return 70, true
 		}
