@@ -111,14 +111,18 @@ func canonicalWorktreePath(p string) string {
 	return filepath.ToSlash(filepath.Clean(p))
 }
 
-func isDeclaredUnavailable(declared []string, worktree string) bool {
+// declaredMatch returns the verbatim declared entry that matches the
+// registered worktree under canonical comparison ("" when none). The row
+// records the DECLARED path verbatim — the operator's declaration is the
+// row's identity; git's porcelain spelling is an implementation detail.
+func declaredMatch(declared []string, worktree string) string {
 	worktree = canonicalWorktreePath(worktree)
 	for _, path := range declared {
 		if canonicalWorktreePath(path) == worktree {
-			return true
+			return path
 		}
 	}
-	return false
+	return ""
 }
 
 // Scope location is independent of run IDs and linked-worktree paths. A deck
@@ -195,7 +199,7 @@ func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory 
 					} else if os.IsNotExist(e) {
 						observation = UnavailableMissing
 					}
-					if isDeclaredUnavailable(declared, worktree) {
+					if match := declaredMatch(declared, worktree); match != "" {
 						// Bind the actual stat class, not the operator's word for it.
 						// Non-ENOENT errors are never declarable, and a path that is
 						// readable again refuses rather than migrating over evidence.
@@ -207,7 +211,7 @@ func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory 
 							}
 							return
 						}
-						missing = append(missing, UnavailableRoot{worktree, observation, UnknownHistory})
+						missing = append(missing, UnavailableRoot{match, observation, UnknownHistory})
 						continue
 					}
 					if e != nil || !info.IsDir() {
