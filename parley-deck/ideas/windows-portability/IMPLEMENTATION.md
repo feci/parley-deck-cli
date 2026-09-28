@@ -1217,6 +1217,30 @@ and internal/runner are re-exec ports as of 7e7a340; any future grep that
 surfaces another family extends the same pattern. No coverage verdict is
 claimed from counts alone.
 
+
+## chargeFixture applicability tranche (invocation 21, 18:3xZ) — semantic mapping explicit
+
+Per the organizing correction, the semantic mapping for every
+chargeFixture-based conversion is recorded: the ORIGINAL assertion family of
+these tests is the recovery/validation of a CHARGED CYCLE (published
+reservation-intent → charge → state transitions) — every step presupposes
+the §D.1-durable publication, which on Windows refuses by signed §C.1
+design BEFORE any mutation ("refusing before any file is written, nothing
+was published"). The setup is therefore GENUINELY UNREACHABLE on Windows —
+not inconvenient. The retained substantive Windows assertions at the
+boundary (real, regression-sensitive): the designed refusal TEXT from
+OpenCycleSession, and the nothing-published state (no reservation-intents
+directory). Negative/adversarial cases within these tests that could run
+WITHOUT publication (e.g. pure refusal-shape checks) remain applicable and
+are covered by the fsacl/§B hosted pins — none were converted away.
+chargeFixture sets a package applicability flag; 4 caller files wired with
+early returns (captured_test's helper has typed returns; state_test's own
+callers included). Unix: full TestReservationRecovery+TestPersistent+
+TestCaptured families green (123s, exit 0). kimi-1's independent
+applicability challenge (announced, at fixed c39d81c) had NOT arrived at
+this commit; it will be engaged on arrival and may revise this pattern —
+recorded as pending advisory input, not settled.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

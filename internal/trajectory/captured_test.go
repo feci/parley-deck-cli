@@ -47,6 +47,9 @@ func capturedFixture(t *testing.T, criteria []Criterion, mutate func(string)) (s
 		t.Fatal(err)
 	}
 	ctx := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return "", nil, CapturedRequest{} // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	run, err := Begin(ctx, root, "fixture", "builder", "actual-patch-fixture")
 	if err != nil {
 		t.Fatal(err)

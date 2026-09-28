@@ -17,6 +17,9 @@ import (
 func TestStateValidationDoesNotHoldControlGuard(t *testing.T) {
 	root, b := unchangedFixture(t, "true")
 	charged := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	inv, err := telemetry.Begin(filepath.Join(root, ".parley-runtime", "invocations"), telemetry.Metadata{RunID: "n2-control", Idea: "fixture", Phase: "fixup", Agent: "builder", LaunchMode: "headless"})
 	if err != nil {
 		t.Fatal(err)

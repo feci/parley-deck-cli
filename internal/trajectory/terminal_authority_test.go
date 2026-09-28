@@ -37,6 +37,9 @@ func TestTerminalPublicationRetainsActualOutcomeWithUnavailableHistory(t *testin
 				}
 			}
 			charged := chargeFixture(t, root, binding)
+			if !chargeApplicable {
+				return // Windows §C.1 designed refusal (see chargeFixture)
+			}
 			invocation, err := telemetry.Begin(filepath.Join(root, ".parley-runtime", "invocations"), telemetry.Metadata{RunID: "terminal-authority-fixture", Idea: "fixture", Phase: "fixup", Agent: "builder", LaunchMode: "headless"})
 			if err != nil {
 				t.Fatal(err)

@@ -45,6 +45,9 @@ func missingRecoveryRow(t *testing.T) (string, *budget.CycleBinding, string) {
 func TestReservationRecoveryContentCheckDoesNotBlockLiveFinish(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	charged := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	run, err := Begin(charged, root, "fixture", "builder", "recovery-live")
 	if err != nil {
 		t.Fatal(err)
