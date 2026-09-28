@@ -25,7 +25,7 @@ func interactiveFixture(t *testing.T, root, script string) (agents.Discovery, *o
 	t.Cleanup(func() { file.Close() })
 	agent := telemetryShell(script, false)
 	agent.LaunchMode = agents.LaunchInteractive
-	agent.InteractiveCommand = "/bin/sh"
+	agent.InteractiveCommand = shellPath()
 	agent.InteractivePromptMode = agents.InteractivePromptFile
 	agent.InteractiveArgs = []string{"-c", script, "fixture", "{prompt_path}"}
 	return agent, file
@@ -160,7 +160,7 @@ func TestInteractiveRealTerminal(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "/bin/sh", "-c", `IFS= read -r answer && test "$answer" = parent`)
+	cmd := exec.CommandContext(ctx, shellPath(), "-c", `IFS= read -r answer && test "$answer" = parent`)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	fmt.Println("TTY_PARENT_READY")
 	if err := cmd.Run(); err != nil {
@@ -215,7 +215,7 @@ func TestInteractiveRealTerminalFailures(t *testing.T) {
 			}
 			parentCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
-			cmd := exec.CommandContext(parentCtx, "/bin/sh", "-c", `IFS= read -r answer && test "$answer" = parent`)
+			cmd := exec.CommandContext(parentCtx, shellPath(), "-c", `IFS= read -r answer && test "$answer" = parent`)
 			cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 			fmt.Println("TTY_PARENT_READY")
 			if err := cmd.Run(); err != nil {

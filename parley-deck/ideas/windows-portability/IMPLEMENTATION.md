@@ -1470,6 +1470,62 @@ first leg. **4.3 adopted:** the snapshot propagates walk errors to a Fatal
 "read-only deck" claim) noted for the review batch with the rest of the
 consult.
 
+
+## EXACT Windows red inventory @96cdd7f (recorded first, 20:0xZ — 55 distinct failing functions across 10 packages)
+
+Families with named work: (1) **driver precheck/refusal families** (7
+TestDriverPrecheck*, protocol refusal tests in runner) — §C.1-designed
+refusal flows; reconciliation in progress. (2) **reservation recovery
+authority/concurrency** (RechecksAuthority, ConcurrentApply,
+TrajectoryDriverReservationPersists, BeginBound…) — publication-dependent;
+the constructed-state salvage covers the read halves. (3) **runner /bin/sh
+families** (Interactive*, TrackedCommand*, MeasuredLaunch*,
+SupervisedExec) — the shell-role landed (7e7a340) but these legs predate…
+no: they postdate. Signatures: "exec: /bin/sh: not found" — the fixtures
+hardcode /bin/sh at MORE sites than shellPath covered (launch_test.go:48,
+:279 exit 70 = the sh role's unhandled-script loud refusal). Named work:
+extend the shell-role coverage to the remaining /bin/sh fixtures + port
+their scripts. (4) **snapshot read/replaced-root** (SnapshotReadRefuses*,
+StableReread, KeepLastOnError, TimestampTransition) — row-30-adjacent
+identity behaviors under mutation; investigate per-case. (5) **mode/perms
+synthesis** (PrepEditorTempPerms 666-vs-600) — row-21-adjacent product
+semantics. (6) **fixture portability leftovers** (WorktreeRegistration
+"/repo" literal; UnreadableMarker denyRead variant; SnapshotRefuses links
+"bad	" tab-name — invalid on Windows like row 22's tab). (7)
+**TestLoadAgentSpecs** mixed-separator want (one more site after the
+verbatim fix). (8) **TestEmbeddedDefault drift** — a SECOND anchor
+(workspace-name bootstrap line) beyond row 29's CRLF fix — needs the same
+document-semantic treatment. (9) **TestRefusalRecoveryCLI** — the gap-9
+helper's requireCommittedRefusals fired with a REAL finding: "invalid
+recoveries granted verification" on Windows — a product or test-expectation
+question to resolve, not silence. (10) app runtime families
+(TestFixtureAutoDrive, TrajectoryRuntime*, ExecTelemetry*) — publication +
+fixture mix. This inventory supersedes "stragglers" vagueness.
+
+
+## PRIMARY D4a/D4b named refusal + gap 3 delivered (invocation 25, 20:1xZ)
+
+**D4a/D4b — the named refusal is now explicit (not polish, not
+broad-class):** `fsutil.SyncFile` on Windows refuses with the named
+`ErrDirEntryDurabilityUnsupported` ("syncing a read-only file handle cannot
+supply the write-through durability barrier") when the handle lacks write
+access — the D4a apply-path arm (the intent file's read-only-handle fsync)
+that surfaced raw Access-denied hosted. Write-access detection is a
+zero-byte write probe at the preserved offset (harmless; the most portable
+check). Our own writers (opened for writing) pass through to
+FlushFileBuffers unchanged; directory handles keep their existing named
+refusal. The F4.1 pin is RESTORED to the specific message — the
+broad-class acceptance was temporary and is reverted in the same change.
+Unix untouched. Also this invocation: the runner shell-role extended to
+the remaining four /bin/sh sites (tracked-command hello/world scripts,
+parent-yield readers; a self-recursion typo in shellPath's darwin arm was
+caught by the bounded run and fixed — the same lesson as the app
+dispatcher). Gap 3 delivered: the missing-ROW state (intent on disk, state
+carries no charged row) constructed test-side by rewriting the state with
+zero attempts; Preview must refuse with the "no matching spent charge"
+authority guard and leave the ledger byte-identical — distinct from
+missing-intent and now pinned as such.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

@@ -214,3 +214,33 @@ func TestRecoverReservationApplyRefusesAndWritesNothing(t *testing.T) {
 		t.Fatal("refused apply rewrote the original state")
 	}
 }
+
+// Gap 3 (kept OPEN until delivered — delivering now): the
+// missingRecoveryRow family. The missing-ROW state is a charge whose
+// trajectory attempt row is absent — distinct from missing-INTENT (no file
+// on disk): here the intent file EXISTS but the state carries no matching
+// charged row. Constructible test-side on the v2 fixture by rewriting the
+// state with an empty Attempts slice; the product must refuse with the
+// "no matching spent charge" guard (readReservationChecked's authority
+// check), never silently grant a recovery.
+func TestPreviewRefusesMissingRecoveryRowOnConstructedState(t *testing.T) {
+	root, b, entry := windowsChargedStateFixture(t, "")
+	// Remove the charged row: rewrite the state with zero attempts (the
+	// writeState path is WT-move — Windows-safe).
+	st, _, err := readState(statePath(*b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Attempts = nil
+	if err := writeState(statePath(*b), st); err != nil {
+		t.Fatal(err)
+	}
+	ledgerBefore := snapshotRead(t, filepath.Join(b.Store.Dir, "ledger.json"))
+	_, err = PreviewReservationRecovery(context.Background(), root, "fixture", entry)
+	if err == nil || !strings.Contains(err.Error(), "no matching spent charge exists") {
+		t.Fatalf("missing-row Preview must refuse with the authority guard: %v", err)
+	}
+	if got := snapshotRead(t, filepath.Join(b.Store.Dir, "ledger.json")); !bytes.Equal(got, ledgerBefore) {
+		t.Fatal("missing-row refusal disturbed the ledger")
+	}
+}

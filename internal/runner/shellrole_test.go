@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -63,6 +64,23 @@ func runShellRole(argv []string) int {
 	switch {
 	case script == "exit 7":
 		return 7
+	case script == `printf 'hello'; printf 'world' >&2`:
+		fmt.Print("hello")
+		fmt.Fprint(os.Stderr, "world")
+		return 0
+	case script == "printf 'hello'":
+		fmt.Print("hello")
+		return 0
+	case script == `IFS= read -r answer && test "$answer" = parent`:
+		var answer string
+		if _, err := fmt.Fscan(os.Stdin, &answer); err != nil || answer != "parent" {
+			return 1
+		}
+		return 0
+	case script == "cat >/dev/null; printf 'agent-owned' > answer.md":
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		_ = os.WriteFile("answer.md", []byte("agent-owned\n"), 0o644)
+		return 0
 	case strings.HasPrefix(script, "exec sleep "):
 		secs := strings.TrimSpace(script[len("exec sleep "):])
 		d, err := time.ParseDuration(secs + "s")
