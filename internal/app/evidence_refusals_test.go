@@ -15,6 +15,31 @@ import (
 	"parley-deck-cli/internal/evidence"
 )
 
+// testWindowsRefusalCLIRejections (kimi-1 F3e): all five rejection cases
+// assert only a non-zero exit and are Windows-exercisable as-is — four need
+// no retained record; the fifth (valid-format absent digest) rejects before
+// any barrier.
+func testWindowsRefusalCLIRejections(t *testing.T, root string) {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		return
+	}
+	sum := sha256Hex("fabricated-but-valid-format")
+	for _, args := range [][]string{
+		{"recover", "--idea", "idea-x"},
+		{"recover", "--idea", "idea-x", "--expected-sha256", "wrong"},
+		{"inspect", "--idea", "idea-x", "--expected-sha256", sum},
+		{"recover", "--idea", "../idea-x", "--expected-sha256", sum},
+		{"recover", "--idea", "idea-x", "--expected-sha256", sha256Hex("different")},
+	} {
+		var out, stderr bytes.Buffer
+		full := append([]string{"refusals"}, append(args, "--dir", root)...)
+		if code := runEvidenceVerify(context.Background(), full, &out, &stderr); code == 0 {
+			t.Fatalf("windows: invalid recovery accepted: %v", args)
+		}
+	}
+}
+
 func appRefusal(t *testing.T, dir string) string {
 	t.Helper()
 	r, err := newVerificationRefusal("helper", "execution", "idea-x", "run", "reviewer", sha256Hex("request"), sha256Hex("report"), "attempt-invocation")
@@ -137,6 +162,10 @@ func TestRefusalCommitFailureRemainsInspectableAndRecoverable(t *testing.T) {
 
 func TestRefusalRecoveryCLIRejectsUnboundAndWrongScopes(t *testing.T) {
 	root, dir := gateScratchRepo(t, twoCriterionContract())
+	// F3e (kimi-1 applicability consult): the five rejection cases are
+	// Windows-exercisable without a retained record — run them on Windows
+	// BEFORE the not-applicable early return.
+	testWindowsRefusalCLIRejections(t, root)
 	sum := appRefusal(t, dir)
 	if sum == "" {
 		return // Windows §C designed refusal (not-applicable lifecycle)

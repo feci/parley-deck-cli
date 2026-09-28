@@ -1282,6 +1282,43 @@ yields the designed missing-intent refusal and publishes nothing
 tagged, no skips). F4.1 (the RecoverReservation apply-refusal pin) and the
 F3 read-path salvages remain the named next units.
 
+
+## F3 salvage + F4.1 pin delivered (invocation 22, 18:5xZ)
+
+Per the applicability consult's construction recipes:
+
+- **F3b** (`testWindowsRefusalReadPath`): the pristine-Inspect read-path
+  assertions (empty entries, nothing created) run on Windows BEFORE the
+  retain probe — restoring the bypassed no-mutation coverage at the first
+  wired site.
+- **F3e** (`testWindowsRefusalCLIRejections`): all five CLI rejection
+  cases run on Windows before the not-applicable early return — four need
+  no retained record; the fifth uses a fabricated valid-format digest and
+  rejects before any barrier. The blanket early return no longer bypasses
+  the Windows-exercisable CLI contract.
+- **F3a + F4.1**
+  (`reservation_recovery_readpath_windows_test.go`): the charged-cycle
+  state is constructed TEST-SIDE (canonical intent bytes via plain
+  Mkdir/WriteFile — the FINAL §D.4 cross-OS premise; no product
+  publication, no barrier), and on it: the Preview adversarial refusals
+  are restored (missing-intent pinned to its exact designed text;
+  partial-intent/changed-root/changed-limits each assert a non-nil
+  refusal — the exact per-case texts print via t.Logf on the first hosted
+  run and get pinned from that evidence rather than guessed); and the
+  F4.1 apply pin: `RecoverReservation` must refuse with the §B barrier
+  text and leave the original state byte-identical.
+  **Mapping honesty:** the original ten subtests' full downstream
+  assertion chains (inspect/replay/refuse-another-attempt after a
+  successful recovery) are NOT restorable on Windows (they presuppose a
+  completed recovery); what is restored is the read-path refusal family +
+  the apply barrier pin — the parts Kimi's trace proved reachable. The
+  chargeFixture tranche audit: the same split applies — the setup-level
+  publication is genuinely unreachable; read-side validation tests that
+  don't need the charge (e.g. Preview on constructed state, now landed)
+  are restored; tests whose EVERY assertion reads the charged row's
+  post-recovery state remain not-applicable with their invariants carried
+  by these constructed-state pins.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

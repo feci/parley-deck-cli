@@ -44,6 +44,22 @@ func retainRefusalPlatformTrue(t *testing.T, dir string) bool {
 	return false
 }
 
+// testWindowsRefusalReadPath (kimi-1 applicability consult F3b): the
+// pristine-Inspect read-path assertions are Windows-exercisable — they must
+// run BEFORE any retain probe (which the F1 gate now keeps clean too).
+func testWindowsRefusalReadPath(t *testing.T, dir string) {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		return
+	}
+	if entries, err := InspectVerificationRefusals(dir); err != nil || len(entries) != 0 {
+		t.Fatalf("windows pristine inspect: %+v %v", entries, err)
+	}
+	if files, _ := os.ReadDir(dir); len(files) != 0 {
+		t.Fatalf("windows inspection created state: %v", files)
+	}
+}
+
 func TestRefusalReadOnlyInspectionAndImmutableRecovery(t *testing.T) {
 	dir := t.TempDir()
 	if !retainRefusalPlatformTrue(t, dir) {
@@ -242,6 +258,7 @@ func TestRefusalStorageAliasesAndChangedRecordRefuse(t *testing.T) {
 		})
 	}
 	dir := t.TempDir()
+	testWindowsRefusalReadPath(t, dir) // F3b: pristine read-path first
 	if !retainRefusalPlatformTrue(t, dir) {
 		return // Windows §C designed refusal (not-applicable lifecycle)
 	}
