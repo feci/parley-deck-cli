@@ -76,6 +76,15 @@ func chargeFixture(t *testing.T, root string, b *budget.CycleBinding) context.Co
 	}
 	t.Cleanup(finish)
 	if _, err = budget.ChargeCycle(ctx, budget.Fixup); err != nil {
+		// ChargeCycle re-enters the refusing reservation path (hosted
+		// 36469442224 state_test.go:85): the same §C.1 gate applies.
+		if runtime.GOOS == "windows" && strings.Contains(err.Error(), "precharge reservation-intent") {
+			if names, derr := os.ReadDir(filepath.Join(filepath.Dir(b.Store.Dir), "reservation-intents")); derr == nil && len(names) != 0 {
+				t.Fatalf("refusal published intents anyway: %v", names)
+			}
+			chargeApplicable = false
+			return ctx
+		}
 		t.Fatal(err)
 	}
 	return ctx
