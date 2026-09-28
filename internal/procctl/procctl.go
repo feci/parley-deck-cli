@@ -106,7 +106,7 @@ func CaptureByPID(pid int, marker string) Spawned {
 // prevents killing a reused/unrelated PID.
 func Attributed(s Spawned) (bool, string) {
 	if active == nil || !active.supportsDurableKill() {
-		return false, "durable kill is unsupported on this platform"
+		return false, "durable cross-restart kill is unsupported on this platform (on Windows this is the P-A design: attribution needs the P-B Job Objects follow-up; refusing rather than risk signaling a reused PID)"
 	}
 	// Fail closed: an incomplete recorded identity can never be attributed.
 	if s.PID <= 0 {

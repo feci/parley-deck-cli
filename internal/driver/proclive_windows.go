@@ -2,11 +2,36 @@
 
 package driver
 
-// processAlive on Windows conservatively assumes any existing lock is held by a
-// live process. There is no portable signal-0 liveness probe on Windows without
-// golang.org/x/sys, and os.FindProcess always succeeds, so the Unix probe would
-// always report "dead" and defeat the lock entirely (AF3). Returning true instead
-// errs toward refusing to start a second driver (safe) rather than risking two
-// concurrent drivers corrupting the workspace. A genuinely stale lock left by a
-// crashed driver must be removed manually (the lock-acquire error names the path).
-func processAlive(pid int) bool { return true }
+import (
+	"errors"
+
+	"golang.org/x/sys/windows"
+)
+
+// processAlive is the truthful P-A probe (FINAL §D.2) — golang.org/x/sys is a
+// direct dependency (go.mod), so the old "no portable probe without x/sys"
+// placeholder is retired. OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION) +
+// GetExitCodeProcess: a PID that cannot be opened with ERROR_INVALID_PARAMETER
+// does not exist (dead); any other observation failure — ERROR_ACCESS_DENIED
+// first among them — is unverifiable, and unverifiable is ALIVE for refusal
+// purposes (fail closed: a stale-looking lock must never be treated as
+// releasable while a live owner might hold it). STILL_ACTIVE (259) is the
+// documented sentinel caveat: a genuine exit code 259 is indistinguishable
+// and reported alive.
+const stillActive = 259 // STILL_ACTIVE sentinel (§D.2 documented caveat)
+
+func processAlive(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
+	if err != nil {
+		return !errors.Is(err, windows.ERROR_INVALID_PARAMETER)
+	}
+	defer windows.CloseHandle(h)
+	var code uint32
+	if err := windows.GetExitCodeProcess(h, &code); err != nil {
+		return true
+	}
+	return code == stillActive
+}

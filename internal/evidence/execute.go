@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -114,6 +115,19 @@ done
 exit "$code"`
 
 func RunCriterionControlled(ctx context.Context, root, name, command, executor string, control CriterionStartControl) CriterionExecution {
+	// §D.3 W-SHELL: on Windows the criterion shell is probed ONCE, before any
+	// work — a missing `sh` is a named, actionable, blocking refusal (Git for
+	// Windows ships sh.exe on PATH); the criterion never executes unverified.
+	if runtime.GOOS == "windows" {
+		if _, err := exec.LookPath("sh"); err != nil {
+			return CriterionExecution{Complete: false, Record: CriterionRecord{
+				Name:   name,
+				Status: StatusNotRun,
+				Command: CommandEvidence{ExitCode: -1, ExecutedCases: -1, FailedCases: -1, SkippedCases: -1, FailedPackages: -1,
+					Diagnostics: "captured-verification criterion requires the POSIX shell `sh` (on Windows install Git for Windows, whose sh.exe ships on PATH, or run the verification on macOS/Linux); refusing rather than executing unverified"},
+			}}
+		}
+	}
 	start := time.Now()
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 	var release, gate *os.File

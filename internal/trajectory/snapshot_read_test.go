@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -422,6 +423,7 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 			root := snapshotOpenRoot(t, dir)
 			base, cancel := context.WithCancel(context.Background())
 			defer cancel()
+			swapRefusedByOS := false
 			ctx := &snapshotDuringReadContext{Context: base, change: func() {
 				var err error
 				switch kind {
@@ -436,6 +438,14 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 					err = os.Rename(filepath.Join(dir, "sub"), filepath.Join(dir, "old-sub"))
 					if err == nil {
 						snapshotWrite(t, dir, rel, want, 0600)
+					} else if runtime.GOOS == "windows" {
+						// Row-19: mid-read, the verifier holds the source open
+						// INSIDE sub, so Windows refuses the directory rename —
+						// the adversary cannot swap a directory under an open
+						// reader (containment by design). Nothing moved; the
+						// pinned outcome below is the unchanged read.
+						swapRefusedByOS = true
+						err = nil
 					}
 				case "inode":
 					err = os.Rename(name, filepath.Join(dir, "old-source"))
@@ -451,7 +461,13 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 			}}
 			hash := sha256.Sum256(want)
 			err := verifySnapshotRegular(ctx, root, rel, prior, hash[:])
-			if ctx.checks < 2 || err == nil {
+			if swapRefusedByOS {
+				// Windows containment outcome: the swap was refused by the OS,
+				// nothing changed, and the verification must succeed unchanged.
+				if err != nil {
+					t.Fatalf("unchanged verification must succeed after the OS-refused swap: %v", err)
+				}
+			} else if ctx.checks < 2 || err == nil {
 				t.Fatalf("change during verification was not observed: checks=%d err=%v", ctx.checks, err)
 			}
 			if kind == "cancel" && !errors.Is(err, context.Canceled) {
