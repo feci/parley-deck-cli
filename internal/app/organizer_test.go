@@ -87,7 +87,29 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("brief must work against a read-only deck, exit %d", code)
 	}
-	if after := snapshot(); before != after {
+	after := snapshot()
+	if before != after {
+		// Hosted delta print: the EXACT created/removed paths, so the
+		// product-write investigation starts from evidence.
+		beforeSet, afterSet := map[string]bool{}, map[string]bool{}
+		for _, l := range strings.Split(before, "\n") {
+			if parts := strings.SplitN(l, "|", 2); len(parts) == 2 {
+				beforeSet[parts[0]] = true
+			}
+		}
+		for _, l := range strings.Split(after, "\n") {
+			if parts := strings.SplitN(l, "|", 2); len(parts) == 2 {
+				afterSet[parts[0]] = true
+				if !beforeSet[parts[0]] {
+					t.Errorf("brief CREATED: %s", parts[0])
+				}
+			}
+		}
+		for p := range beforeSet {
+			if !afterSet[p] {
+				t.Errorf("brief REMOVED: %s", p)
+			}
+		}
 		t.Fatalf("brief wrote into the deck tree (structure changed)")
 	}
 	if data, err := os.ReadFile(sentinel); err != nil || string(data) != "untouched\n" {
