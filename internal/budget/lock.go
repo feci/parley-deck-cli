@@ -156,7 +156,7 @@ func missingOriginHistory(dir string) error {
 // an origin observed only after acquisition, including a completed migration.
 func acquirePinnedKernelLock(ctx context.Context, path, token string, take func(*os.File) (bool, error), drop func(*os.File), check, ready func() error) (func(), error) {
 	// Never recreate an established inode, including during migration recovery.
-	f, err := os.OpenFile(path, os.O_RDWR, 0o600)
+	f, err := openLockFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func acquirePinnedKernelLock(ctx context.Context, path, token string, take func(
 			}
 			// Verify the actual lock filesystem, rather than trusting a successful
 			// syscall on a filesystem that implements it as a no-op.
-			probe, err := os.OpenFile(path, os.O_RDWR, 0o600)
+			probe, err := openLockFile(path)
 			if err != nil {
 				drop(f)
 				f.Close()
