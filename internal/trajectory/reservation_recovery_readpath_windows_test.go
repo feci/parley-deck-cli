@@ -179,8 +179,14 @@ func TestPreviewAdversarialRefusalsOnConstructedState(t *testing.T) {
 // and refuses, leaving the original state untouched.
 func TestRecoverReservationApplyRefusesAndWritesNothing(t *testing.T) {
 	root, b, entry := windowsChargedStateFixture(t, "")
+	// RecoverReservation requires expected == the exact Preview digest —
+	// take the Preview first (the product's own contract), then apply with it.
+	preview, perr := PreviewReservationRecovery(context.Background(), root, "fixture", entry)
+	if perr != nil {
+		t.Fatalf("preview failed on the valid construction: %v", perr)
+	}
 	stateBefore, beforeErr := os.ReadFile(statePath(*b))
-	_, err := RecoverReservation(context.Background(), root, "fixture", entry, digest([]byte("x")))
+	_, err := RecoverReservation(context.Background(), root, "fixture", entry, preview.SHA256())
 	if err == nil {
 		t.Fatal("recovery apply succeeded on Windows — the §B barrier was bypassed")
 	}

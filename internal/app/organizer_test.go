@@ -87,6 +87,13 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("brief must work against a read-only deck, exit %d", code)
 	}
+	walkErr := filepath.Walk(filepath.Join(root, protocol.DeckDir), func(_ string, _ os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	t.Logf("after-state walk error: %v", walkErr)
 	after := snapshot()
 	if before != after {
 		// Hosted delta print: the EXACT created/removed paths, so the
