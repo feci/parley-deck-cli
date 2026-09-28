@@ -303,7 +303,7 @@ func verifyExactLockOrigin(dir string, expected []byte) error {
 // Read through the actual descriptor that will hold the kernel lock. ReadAt
 // leaves its position unchanged and bounds the read even for a replaced file.
 func verifyLockIdentity(f *os.File, path, token string) error {
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	opened, statErr := f.Stat()
 	if err != nil || statErr != nil || !info.Mode().IsRegular() || !os.SameFile(info, opened) || opened.Size() != 65 {
 		return errors.New("budget lock must be a stable regular file with its pinned identity")
@@ -384,7 +384,7 @@ func pinLockOrigin(dir, lockPath, token string) error {
 // outside the supported boundary. Missing established identities fail closed.
 func lockIdentity(path string, create bool) (string, error) {
 	read := func() (string, error) {
-		info, err := os.Lstat(path)
+		info, err := fsutil.PinLstat(path) // row 30: eager pin
 		if err != nil {
 			return "", err
 		}
@@ -475,7 +475,7 @@ func checkLockOriginLocation(dir, lockPath string) error {
 }
 
 func readLockOrigin(path string) ([]byte, error) {
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return nil, err
 	}

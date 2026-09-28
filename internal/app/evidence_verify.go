@@ -76,7 +76,7 @@ func runEvidenceVerify(ctx context.Context, args []string, stdout, stderr io.Wri
 }
 
 func readVerificationJSON(path string, target any) ([]byte, error) {
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return nil, err
 	}

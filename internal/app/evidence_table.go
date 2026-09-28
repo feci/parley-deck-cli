@@ -7,6 +7,7 @@ import (
 	"html"
 	"io"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -24,7 +25,7 @@ const validationEvidenceBindingSuffix = "#validation-evidence/v1"
 // carrier must not turn a symlink or unlimited stream into hidden input.
 func readImplementationEvidence(ideaDir string) ([]byte, error) {
 	path := filepath.Join(ideaDir, "IMPLEMENTATION.md")
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return nil, err
 	}

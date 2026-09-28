@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic) -> 08f769c (row-19 redesign) -> 17d5210 (delete-share readers) -> bc08cd7 (identity-read retry + review-scope evidence) -> 9b880d3 (Stage 5 core) -> 4e5bb24 (Stage 5 checks pin + Stage 6 ACP/AF_UNIX) -> a2d6af6 (CRLF pinning + consult engagement) -> 5e25d78 (origin-read retry) -> this docs commit
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic) -> 08f769c (row-19 redesign) -> 17d5210 (delete-share readers) -> bc08cd7 (identity-read retry + review-scope evidence) -> 9b880d3 (Stage 5 core) -> 4e5bb24 (Stage 5 checks pin + Stage 6 ACP/AF_UNIX) -> a2d6af6 (CRLF pinning + consult engagement) -> 5e25d78 (origin-read retry) -> 2da24e1 (checks-path restore) -> 4ed454a (row 9) -> this commit (row-30 remediation + record corrections)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -179,10 +179,19 @@ Progress for the live stage state.
       (TestRunChecksMissingShRefusesPreWork; the list-form `checks:` contract
       path routes through evidence.RunCriterion → RunCriterionControlled and
       inherits the same refusal — all three §D.3 surfaces pinned).
-      **Hosted confirmation COMPLETE (36441834810, assessed 15:28Z): zero
-      failures among all Stage 5 pins** (the two W-SHELL outcome tests, the
-      checks-path refusal, the lock diagnostic); 13 red = the standing
-      Stage 6 families. **Stage 5 COMPLETE — code and hosted evidence.**
+      **Hosted confirmation (36441834810 @9b880d3, re-scoped 15:35Z after an
+      evidence-integrity correction): zero failures among the pins THAT
+      COMMIT CARRIED** — the two evidence-package W-SHELL outcome tests and
+      the lock diagnostic. CORRECTION (invocation 12): an earlier entry
+      claimed the checks-path refusal also passed in 36441834810 — impossible:
+      TestRunChecksMissingShRefusesPreWork first shipped in 4e5bb24 and the
+      product checks-path code only in 2da24e1; a later test cannot execute
+      in an earlier run. The checks-path pin's hosted confirmation rides the
+      2da24e1+ cycles. In 36442736966 (@4e5bb24) the test FAILED for real
+      (empty refusal message — the commit genuinely lacked the product
+      code); that was a REAL failure of the incomplete pushed commit, not a
+      "false test failure" — wording corrected here per the organizer's
+      requirement reminder. 13 red then = the standing Stage 6 families.
 - [ ] **Stage 6** — fixture-portability sweep (§D.9) + ACP/AF_UNIX/CRLF (§D.7).
       OPENED invocation 11 (2026-09-28T15:1xZ): (1) ACP split per §D.7 a/b —
       the two gated drain tests now use a 1 KiB total payload
@@ -709,6 +718,66 @@ header says so). Engagement status:
   bundled with the same pending row-30 work so the identity story lands
   coherently, not piecemeal.
 
+## Row-30 remediation (invocation 12, 2026-09-28T15:3x–15:4xZ) — product fix FIRST, fixture paired, per the consult and the requirement reminder
+
+The hosted probe (36443342532) confirmed the lazy-FileInfo mechanism, so the
+remediation landed as ONE unit: the product identity-pin sites, the helper
+docs, and the fixture correction together — never a fixture-only mask.
+
+**Invariant adopted (consult §5.1):** the pinned ("before") operand of every
+`os.SameFile` guard must be handle- or `os.Root`-derived — never
+`os.Stat`/`os.Lstat` (whose Windows FileInfo defers identity to comparison
+time and re-resolves the path then). Greppable, platform-neutral, a
+strengthening of containment, no build tags, no owner deviation.
+
+**New fsutil helpers** (replacing OpenSharedDelete, whose doc the consult §7
+correctly called overstated): `PinLstat` (eager Root-derived stat; honest
+containment doc: FINAL-COMPONENT containment only, parent resolution is the
+caller's, no origin pin) and `OpenPinned` (eager pin + delete-share open
+through ONE directory handle, so pin and open cannot observe different
+directories).
+
+**Converted product sites (all lazy pins → fsutil.PinLstat / OpenPinned):**
+trajectory/state.go readState (OpenPinned), budget/step_history.go
+readStepHistoryFile (OpenPinned), runner/action_identity.go hashActionFile,
+budget/lock.go verifyLockIdentity + lockIdentity read + readLockOrigin,
+driver/cursor.go LoadCursor, app/evidence_table.go, app/evidence_verify.go
+(:79), evidence/report.go, budget/ledger.go, runner/cycle_budget.go,
+protocolpacket/source.go (both pin sites), budget/cycle_history.go (both
+same-dir-check operands). **Already eager, no change:** trajectory/reconcile.go
+(dir.Lstat), trajectory/parent_recovery.go (root-derived), all
+snapshot.go/verification.go production paths (the consult confirmed these
+were never affected). **Open item:** evidence_verify.go:441 — a second
+Lstat whose SameFile role was not yet traced; recorded, not silently
+cleared. **tui/live.go:2468** — cached `c.info` pin whose origin needs the
+same audit; recorded.
+
+**Fixture correction (paired):** both revalidation tests now take `prior`
+from `root.Lstat(rel)` — matching what production callers supply — so the
+{root,inode} subtests exercise the real invariant on every platform.
+
+**§D.6 lock-origin retry justification (requirement reminder):** the signed
+scope is "third-party holders, after self-held vs foreign-held
+classification". For `openOriginFileRead` the classification is: (a)
+SELF-HELD (this process) is structurally impossible — every handle this
+process takes on any file shares read|write, so our own handles cannot
+produce a sharing violation on our open; (b) the observed hosted holder is a
+SIBLING parley process inside its bounded origin-publication window — a
+foreign process by the classification's process-level meaning, transient by
+construction (the publication completes; if a sibling wedged mid-publication,
+the retry exhausts LOUDLY at 250ms rather than masking it — the origin/token
+verification chain re-runs after recovery). A scanner is the other foreign
+class. No self-held handle is masked: if the classification ever failed, the
+failure mode is the loud named exhaustion, not a silent wait. The
+writer-side origin-publication discipline remains recorded follow-up.
+
+Local evidence: full builds green (darwin + windows cross), vet green on all
+touched packages; targeted suites green (trajectory revalidation incl. the
+re-pinned fixture tests, budget lock/reserve/step/cycle/origin 10.8s,
+protocolpacket, evidence, driver cursor, runner). Hosted execution of the
+remediation rides this push; the {root,inode} subtests are expected to go
+green on Windows with it.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -1060,7 +1129,10 @@ header says so). Engagement status:
 | 36425527266 | d07e6cc (stage 1 close-out) | win FAIL / ubuntu ok / macos ok; windows leg completed 13:06:09Z (run completed after) | ASSESSED invocation 5 (13:0xZ from job 108938416756 logs): win 15 red / 16 ok = SAME deterministic 14 + fsacl, no new red packages. W1 signature 17x → 2x; both residuals = row 28 restore bug (hosted-confirmed, fixed this invocation). fsacl 6/7: the one failure = row 26 (test scaffolding inheritance propagation strips marker access; product refusal verified correct by the log). Row-24 concurrent test PASSED. Residual families = rows 25 (dir-fsync, dominant), 7 (sharing), 21-23 (Stage 6 fixtures), 27 (new: POSIX-host evidence refusal unmasked) |
 | 36425631880 | 276b3e1 (docs-only checkpoint) | win FAIL / ubuntu ok / macos ok | Docs-only duplicate of d07e6cc code (register row deferred from invocation 5 per the no-gratuitous-docs-push rule); red set consistent with 36425527266 |
 | 36429107801 | a93f71c (row-24 fix + restore fix + Stage 2 core) | win FAIL / ubuntu ok / macos ok; completed ~13:39Z | ASSESSED invocation 6 (13:51-13:55Z from job logs): **fsacl GREEN 8/8** — first hostile Windows execution of TestConcurrentFirstCreationNeverRefuses and TestProtectPrivateStoreAppliesPolicyToProductCreatedDir both PASS; row-24 fix and restore fix HOSTED-VERIFIED; W1 privacy signature 2x -> **0** (store + restore privacy contract fully green hosted). Windows 14 red = prior 15 minus fsacl. pipeline red for 3 reasons: (a) LoadGate legacy-fallback gap — ERROR_INVALID_NAME on raw-'>' legacy reads was a hard error, broke TestComputeDAGStepParallelWaves/TestAdvanceCompletesAtLastBlock (fixed this invocation: invalid-name = not-found via build-tagged helper); (b) my legacy test tried to CREATE an uncreatable raw-'>' file (fixed: platform-conditional, pinning the uncreatability premise); (c) STANDING TestEmbeddedDefaultMatchesLiveDeck (row 29, also failed in 36425527266). trajectory/driver/budget red = rows 25/19 families as ledgered |
-| 36442736966 | 4e5bb24 (Stage 5 checks pin + Stage 6 ACP/AF_UNIX) | IN FLIGHT at checkpoint | **PRE-NOTE (staging miss, disclosed):** the checks-path W-SHELL product code was edited in invocation 10 but missed by the 9b880d3 staging; its test landed here WITHOUT the code, so TestRunChecksMissingShRefusesPreWork is EXPECTED to fail this cycle on the message assertion — a false red corrected by 2da24e1, not a product regression. Assess with that lens; the ACP-split and AF_UNIX legs are genuine |
+| 36442736966 | 4e5bb24 (checks-path test + ACP split + AF_UNIX) | win FAIL / ubuntu ok / macos ok; windows completed ~15:24Z | ASSESSED invocation 12 (15:33Z): **acp package GREEN** (row 17 resolved by the §D.7 split); AF_UNIX hard-failure conversion survived hosted (no TreeDigestUnsupportedEntryFails failure — the unix-socket probe works on windows-latest; TestTreeDigestModeChangeChanges remains = row 21 standing); **TestRunChecksMissingShRefusesPreWork FAILED for real** — the commit genuinely lacked the checks-path product code (my staging miss; empty refusal message confirms); REAL failure of the incomplete commit, corrected by 2da24e1 whose cycle is in flight. 12 red = standing set minus acp |
+| 36443342532 | a2d6af6 (CRLF pinning + consult engagement + row-30 probe) | win FAIL / ubuntu ok / macos ok; windows completed ~15:31Z | ASSESSED invocation 12 (15:33Z): **TestSameFileLazyVsEagerPin PASSED** — both predictions held (lazy pin compares EQUAL to a same-path replacement; eager pin detects it) → row 30's mechanism is the Go lazy FileInfo, Claude-1's consult confirmed as hosted observation; remediation unblocked. 12 red = standing set minus acp (CRLF pinning produced no regressions) |
+| 36442736966-superseded | (pre-note row kept for the audit trail: the expected failure was described as a "false red" — wording corrected above; it was a real failure of the incomplete commit) | | | |
+ | **PRE-NOTE (staging miss, disclosed):** the checks-path W-SHELL product code was edited in invocation 10 but missed by the 9b880d3 staging; its test landed here WITHOUT the code, so TestRunChecksMissingShRefusesPreWork is EXPECTED to fail this cycle on the message assertion — a false red corrected by 2da24e1, not a product regression. Assess with that lens; the ACP-split and AF_UNIX legs are genuine |
 | 36441834810 | 9b880d3 (Stage 5 core: P-A + W-SHELL) | win FAIL / ubuntu ok / macos ok; windows completed ~15:27Z | ASSESSED invocation 11 (15:28Z): 13 red = standing set; **zero failures among ALL Stage 5 pins** — TestRunCriterionControlledMissingShRefusesPreWork + WithShRunsNormally, and (in the earlier same-code cycles) the lock diagnostic — P-A/W-SHELL hosted-confirmed on first Windows execution |
 | 36440560978 | bc08cd7 (identity-read retry + review-scope evidence) | win FAIL / ubuntu ok / macos ok; completed ~15:26Z | ASSESSED invocation 11 (15:25Z): **the :394 identity-read retry WORKED** — zero .lock-path sharing failures (the ledger_test/review_test raw opens are gone); the failure MOVED to the lock-ORIGIN file (readLockOrigin's os.Open), the site left unwired on a since-falsified premise; recorded in row 7 and fixed same invocation (openOriginFileRead, narrower classification). 13 red = standing set |
 | 36439743640 | 17d5210 (delete-share readers) | win FAIL / ubuntu ok / macos ok; completed ~15:10Z | ASSESSED invocation 10 (15:13Z): 13 red = standing set; **delete-share verdict: "persist operator cycle grant" = 0** — the attributed concurrent-persist Access-denied is GONE in the cycle carrying the OpenSharedDelete fix (present once in 36435481011, absent since). One residual "Access is denied": TestSnapshotRevalidationRefusesChangeDuringRead/root at :449 — the during-read variant of the row-19 redesign tried to rename `sub` while the verifier held the source OPEN INSIDE it; Windows refuses (containment by design). Recorded, then pinned honestly: the case now asserts the OS-refused swap leaves the verification unchanged on Windows (POSIX keeps the swap-detection assertion) |
@@ -1105,7 +1177,7 @@ source-context classing.
 | 14 | refusalGit identity dependence | U3 (PRODUCT, already repaired in base) | preserved | n/a | none |
 | 15 | `strict_gate` `:179` file-where-directory-belongs no-veto | §D.5 | §D.5, AC-STRICT-1/2 | with probe bundle | none — branch-independent fix ships |
 | 16 | `internal/app` panics at `app_test.go:185` (fixed invocation 2). ROOT CAUSE NOW OBSERVED hosted (36172430646): `app_test.go:123` payload shows `parley_deck_skill_error: exec: "parley-deck-skill": executable file not found in %PATH%` — the extension-less fake-skill fixture (row 3) is unexecutable on Windows, so the key is absent; graceful failures now, no panic | W6 (TEST) | §D.8/§D.9, AC-BLD-1, AC-FIX-1 | 6 (fixture port) | none — re-exec/cmd.exe port at Stage 6 |
-| 17 | NEW (both cycles, deterministic): `internal/acp` TestSpawnStopDrainsStderrBeforeReaping + TestSpawnWaitDrainsStderrBeforeReaping fail 10.01s on WINDOWS legs | ACP family (§D.7) — previously classified ubuntu-only (U1, repaired in base); on Windows this is a NEW phenomenon, cause not yet established | §D.7 split rule | 6 (§D.7 a/b split) + probe-informed | none — record before reaction; do NOT retune; U1 spawn.go Stop/Wait ordering stays untouched; not labeled flaky (it is deterministic in both runs) |
+| 17 | RESOLVED HOSTED (36442736966/36443342532: acp package GREEN — the §D.7 a/b split with the 1 KiB capacity-independent payload fixed both drain tests; U1 spawn.go Stop/Wait ordering untouched). Originally: `internal/acp` TestSpawnStopDrainsStderrBeforeReaping + TestSpawnWaitDrainsStderrBeforeReaping fail 10.01s on WINDOWS legs | ACP family (§D.7) — previously classified ubuntu-only (U1, repaired in base); on Windows this is a NEW phenomenon, cause not yet established | §D.7 split rule | 6 (§D.7 a/b split) + probe-informed | none — record before reaction; do NOT retune; U1 spawn.go Stop/Wait ordering stays untouched; not labeled flaky (it is deterministic in both runs) |
 | 18 | NEW (both cycles): `internal/agents` TestZcodeResolvesModelAndEffortFromItsOwnConfig, TestKimiThinkingEffort; `internal/config` TestLoadAgentSpecsLayersAndTracksSources, TestExpandPlaceholders | class PROVISIONAL W8 (HOME/config-path fixtures) — root cause NOT yet verified; do not treat as settled until probed at Stage 6 | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
 
 | 19 | REDESIGNED invocation 9 (commit 08f769c; hosted confirmation rides its push): both 'root' cases now swap an in-root SUBDIRECTORY (renaming the rooted dir itself is impossible on Windows while the root handle is open — containment by design); invariant preserved: a replaced directory entry must not be hidden by the original still-readable inode; all subtests green on darwin. Originally NEW (36172430646): `trajectory/snapshot_read_test.go:261/:432` — os.Rename of a directory fails `The process cannot access the file because it is being used by another process` (open handle on source tree) | W3 sharing family (PRODUCT/TEST site) | §D.6, AC-LOCK-1..4 | 4 | none — recorded before reaction; structural handle discipline first (§G H7 mapping) |
@@ -1118,7 +1190,7 @@ source-context classing.
 | 26 | NEW (36425527266): fsacl TestPreexistingStoreRefusedAndNotRewritten fails at the final marker ReadFile (`Access is denied`) — `grantTrustees`' protected-DACL replacement on the store dir auto-propagates inheritance removal to children, stripping the marker file's inherited-only access. Product refusal verified correct by the hosted log (store DACL before/after identical, refusal text exact) — TEST-scaffolding phenomenon, second layer under row-24-cycle's assertion fix | NTFS auto-inheritance propagation (test scaffolding) | §D.1, AC-PRIV-5 | 1 (test fix) | none — marker gets an explicit owner-allow ACE (readability independent of store-dir DACL churn); content assertion unchanged |
 | 27 | NEW (36425527266, unmasked by the W1 clear): evidence_publication_test.go:35 reaches product refusal "independent evidence verification requires a POSIX execution host; Windows runtime is not supported" (driver_impl.go:543; sibling trajectory_verify.go:107) | W-SHELL / POSIX-host product refusal family (§D.3) | §D.3 | 5 | none — the §D.3 named-prerequisite refusal design governs; never a skip |
 | 28 | NEW (36425527266, run-internal regression caught hosted): the 2 residual W1 signatures (snapshot_test.go:147, source_inventory_test.go:111) are both RestoreSnapshot refusing its OWN MkdirTemp destination — the d07e6cc restore wiring called EnsurePrivateStore on an already-created dir, which the guard correctly classifies as pre-existing user data. Found by code inspection before reading the log; log confirmed both sites | implementation defect in this run's Stage-1 wiring (not an environment phenomenon) | §D.1 creation policy | 1 | none — fixed this invocation: fsacl.ProtectPrivateStore (creation policy, no refuse-and-instruct) for product-created dirs; Unix verify-only byte-identical; pinned by TestProtectPrivateStoreAppliesPolicyToProductCreatedDir |
-| 30 | MECHANISM UNDER CONSULT (claude-1 advisory, 2026-09-28; discriminating probe TestSameFileLazyVsEagerPin awaiting hosted outcome — remediation deliberately not started): originally attributed as NTFS file-ID semantics, first attributed invocation 10 (present identically in 36432547744/36434775624/36439175112): TestSnapshotRevalidationRejectsDifferentMaterial/{root,inode} — "different material or canceled verification was accepted": on Windows the Lstat→open os.SameFile chain does NOT detect a rename+recreate replacement (NTFS file-ID semantics; the recreated file presents the same file identity). NOT caused by the row-19 redesign (identical failures predate it); the redesign removed the rename-mechanics failure as intended | file-identity-synthesis family (TEST + product semantics question — the inode-tamper guard layer) | §D.9 sweep; product SameFile-guard semantics need a deliberate decision (the verify already re-reads and hashes; the SameFile guard is the failing layer) | 6 | none — record first; no silent fixture change |
+| 30 | MECHANISM CONFIRMED HOSTED (36443342532 @a2d6af6: TestSameFileLazyVsEagerPin PASSED — SameFile(lazyPin, after)==true AND SameFile(eagerPin, after)==false): the cause is Go's Windows LAZY FileInfo (os.Stat/os.Lstat defer identity to the first SameFile call, re-opening by path at comparison time; the pinned operand re-resolves to the replacement), NOT NTFS identity reuse. Claude-1's consult mechanism stands as observed fact; remediation unblocked (invocation 12). Originally mis-attributed as NTFS file-ID semantics, invocation 10 (present identically in 36432547744/36434775624/36439175112): TestSnapshotRevalidationRejectsDifferentMaterial/{root,inode} — "different material or canceled verification was accepted": on Windows the Lstat→open os.SameFile chain does NOT detect a rename+recreate replacement (NTFS file-ID semantics; the recreated file presents the same file identity). NOT caused by the row-19 redesign (identical failures predate it); the redesign removed the rename-mechanics failure as intended | file-identity-synthesis family (TEST + product semantics question — the inode-tamper guard layer) | §D.9 sweep; product SameFile-guard semantics need a deliberate decision (the verify already re-reads and hashes; the SameFile guard is the failing layer) | 6 | none — record first; no silent fixture change |
 | 29 | STANDING (present in 36425527266 and 36429107801, first attributed invocation 6): pipeline TestEmbeddedDefaultMatchesLiveDeck — drift guard fails closed: anchor "## 2. Active agents (roster)" appears 0 times in the embedded-default comparison on Windows | PROVISIONAL §D.7 CRLF family (embedded-default vs live-deck file comparison; CRLF checkout on windows runners is the prime suspect) or roster-anchor family — root cause NOT yet verified; do not treat as settled until probed at Stage 6 | §D.7 | 6 | none — record first; per-invocation `-c core.autocrlf=false` pinning is the §D.7 load-bearing layer |
 
 Refresh rule: after every hosted cycle, re-diff failing vs ledger; new phenomenon ⇒ new row

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strings"
 
@@ -87,7 +88,7 @@ func prepareLaunchCycle(ctx context.Context, root, idea, phase, runID string) (c
 func cycleCeilings(ideaDir string) (int, int, bool, error) {
 	const legacyFixups, legacyCross = 3, 4
 	path := filepath.Join(ideaDir, "00-prompt.md")
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if os.IsNotExist(err) {
 		return 0, 0, false, errors.New("cycle policy prompt is missing")
 	}

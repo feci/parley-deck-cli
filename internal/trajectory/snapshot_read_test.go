@@ -260,8 +260,16 @@ func TestSnapshotRevalidationRejectsDifferentMaterial(t *testing.T) {
 			}
 			snapshotWrite(t, dir, rel, want, 0600)
 			name := filepath.Join(dir, rel)
-			prior := snapshotStat(t, name)
+			// Row 30 fixture correction (paired with the product pin fix, per
+			// the claude-1 consult): prior must be an EAGER Root-derived pin —
+			// production callers pass captureSnapshotRegular a handle/Root
+			// stat, never a lazy os.Lstat whose identity resolves at
+			// comparison time.
 			root := snapshotOpenRoot(t, dir)
+			prior, err := root.Lstat(rel)
+			if err != nil {
+				t.Fatal(err)
+			}
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			switch kind {
@@ -300,7 +308,7 @@ func TestSnapshotRevalidationRejectsDifferentMaterial(t *testing.T) {
 				cancel()
 			}
 			hash := sha256.Sum256(want)
-			err := verifySnapshotRegular(ctx, root, rel, prior, hash[:])
+			err = verifySnapshotRegular(ctx, root, rel, prior, hash[:])
 			if err == nil {
 				t.Fatal("different material or canceled verification was accepted")
 			}
@@ -419,8 +427,12 @@ func TestSnapshotRevalidationRefusesChangeDuringRead(t *testing.T) {
 			}
 			snapshotWrite(t, dir, rel, want, 0600)
 			name := filepath.Join(dir, rel)
-			prior := snapshotStat(t, name)
+			// Row 30 fixture correction, as above: eager Root-derived pin.
 			root := snapshotOpenRoot(t, dir)
+			prior, perr := root.Lstat(rel)
+			if perr != nil {
+				t.Fatal(perr)
+			}
 			base, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			swapRefusedByOS := false

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -211,11 +212,11 @@ func sameCycleDirectory(a, b string) bool {
 	if b == "" {
 		return false
 	}
-	ai, err := os.Stat(a)
+	ai, err := fsutil.PinLstat(a) // row 30: eager identity for the same-dir check
 	if err != nil {
 		return false
 	}
-	bi, err := os.Stat(b)
+	bi, err := fsutil.PinLstat(b) // row 30: eager identity for the same-dir check
 	return err == nil && ai.IsDir() && bi.IsDir() && os.SameFile(ai, bi)
 }
 

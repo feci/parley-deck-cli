@@ -222,18 +222,17 @@ func writeState(path string, s State) error {
 }
 func readState(path string) (State, []byte, error) {
 	var s State
-	info, err := os.Lstat(path)
-	if err != nil {
-		return s, nil, err
-	}
-	if !info.Mode().IsRegular() || info.Size() > 16<<20 {
-		return s, nil, errors.New("trajectory state must be a bounded regular file")
-	}
-	f, err := fsutil.OpenSharedDelete(path)
+	// Row 30: the pin and the open share one rooted handle — the identity is
+	// eager (Windows-safe against same-path replacement) and the open is
+	// delete-share (§D.6).
+	f, info, err := fsutil.OpenPinned(path)
 	if err != nil {
 		return s, nil, err
 	}
 	defer f.Close()
+	if !info.Mode().IsRegular() || info.Size() > 16<<20 {
+		return s, nil, errors.New("trajectory state must be a bounded regular file")
+	}
 	opened, err := f.Stat()
 	if err != nil || !os.SameFile(info, opened) {
 		return s, nil, errors.New("trajectory state changed during open")

@@ -363,7 +363,7 @@ func (s Store) update(ctx context.Context, change func(*Snapshot, time.Time) err
 }
 
 func read(path string) (Snapshot, error) {
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return Snapshot{}, err
 	}

@@ -175,18 +175,15 @@ func inspectStepRun(dir, idea string) error {
 // Read from one bounded regular file. Reject replacement and in-place changes
 // observed during the read; never follow an alias into unrelated history.
 func readStepHistoryFile(path string, limit int64) ([]byte, error) {
-	before, err := os.Lstat(path)
-	if err != nil {
-		return nil, err
-	}
-	if !before.Mode().IsRegular() || before.Size() > limit {
-		return nil, errors.New("driver history is not a bounded regular file")
-	}
-	f, err := fsutil.OpenSharedDelete(path)
+	// Row 30: eager rooted pin + delete-share open through one handle.
+	f, before, err := fsutil.OpenPinned(path)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
+	if !before.Mode().IsRegular() || before.Size() > limit {
+		return nil, errors.New("driver history is not a bounded regular file")
+	}
 	opened, err := f.Stat()
 	if err != nil || !os.SameFile(before, opened) {
 		return nil, fmt.Errorf("%w during open", errHistoryChanged)

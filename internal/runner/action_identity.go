@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 
 	"parley-deck-cli/internal/agents"
@@ -20,7 +21,7 @@ type actionFileInput struct {
 
 func hashActionFile(path string) (actionFileInput, error) {
 	row := actionFileInput{Path: path}
-	st, e := os.Lstat(path)
+	st, e := fsutil.PinLstat(path) // row 30: eager pin (deferred Lstat cannot detect same-path replacement)
 	if os.IsNotExist(e) {
 		row.Missing = true
 		return row, nil

@@ -101,7 +101,7 @@ func Load(ideaDir string) (*Report, error) {
 }
 
 func readBoundedEvidenceFile(path string, limit int64) ([]byte, error) {
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return nil, err
 	}

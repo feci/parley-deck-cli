@@ -117,7 +117,7 @@ func (c Cursor) Save(path string) error {
 // explicitly, and v2 also requires the original-checks binding (empty for legacy
 // scalar tasks). Metadata is not protection against a same-user writer.
 func LoadCursor(path string) (Cursor, error) {
-	info, err := os.Lstat(path)
+	info, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return Cursor{}, err
 	}

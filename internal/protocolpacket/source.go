@@ -208,7 +208,7 @@ func publicationDir(root string) (string, error) {
 }
 
 func ensurePrivateDir(path string) error {
-	fi, err := os.Lstat(path)
+	fi, err := fsutil.PinLstat(path) // row 30: eager pin
 	switch {
 	case errors.Is(err, os.ErrNotExist):
 		mkErr := os.Mkdir(path, runtimeDirPerm)
@@ -225,7 +225,7 @@ func ensurePrivateDir(path string) error {
 			// planted there. It proves an entry exists, never that the entry is the private
 			// directory this call asked for, so what actually got created is re-read and put
 			// through the same checks as a pre-existing path instead of being trusted.
-			fi, err = os.Lstat(path)
+			fi, err = fsutil.PinLstat(path) // row 30: eager pin
 			if err != nil {
 				return fmt.Errorf("protocolpacket: %s appeared while it was being created but cannot be stat-ed: %w", path, err)
 			}
@@ -318,7 +318,7 @@ func publish(dir, path, body string) error {
 // existingBody reports whether path is already a regular file. A symlink or any other
 // non-regular entry is an error rather than a target, so nothing is ever written through it.
 func existingBody(path string) (bool, error) {
-	fi, err := os.Lstat(path)
+	fi, err := fsutil.PinLstat(path) // row 30: eager pin
 	switch {
 	case errors.Is(err, os.ErrNotExist):
 		return false, nil
@@ -363,7 +363,7 @@ func verifyPublished(path, body string) error {
 // different file, which is refused. Bytes are therefore only ever read from a file that was, at
 // one moment, the regular file at this path.
 func openPublished(path string) (*os.File, error) {
-	fi, err := os.Lstat(path)
+	fi, err := fsutil.PinLstat(path) // row 30: eager pin
 	if err != nil {
 		return nil, fmt.Errorf("protocolpacket: cannot stat %s: %w", path, err)
 	}
