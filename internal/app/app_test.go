@@ -1974,6 +1974,38 @@ None.
 			return 64, true
 		}
 		return 0, true
+	case "agent-script":
+		// The measuredFixture port (rows 4/16): --version answers "fixture";
+		// otherwise the script mode is one of the fixture family's concrete
+		// behaviors — write-artifact (printf agent-owned > <rel>), touch
+		// (<rel>), or noop (exit 0); stdin is drained for write-artifact.
+		if rest == "" {
+			return 0, false
+		}
+		if len(args) > 0 && args[0] == "--version" {
+			fmt.Println("fixture")
+			return 0, true
+		}
+		switch {
+		case rest == "noop":
+			return 0, true
+		case strings.HasPrefix(rest, "touch "):
+			rel := strings.TrimSpace(rest[len("touch "):])
+			cwd, _ := os.Getwd()
+			if err := os.WriteFile(filepath.Join(cwd, rel), nil, 0o644); err != nil {
+				return 1, true
+			}
+			return 0, true
+		case strings.HasPrefix(rest, "write-artifact "):
+			rel := strings.TrimSpace(rest[len("write-artifact "):])
+			_, _ = io.Copy(io.Discard, os.Stdin)
+			cwd, _ := os.Getwd()
+			if err := os.WriteFile(filepath.Join(cwd, rel), []byte("agent-owned\n"), 0o644); err != nil {
+				return 1, true
+			}
+			return 0, true
+		}
+		return 0, false
 	case "forged-signoff-exit7":
 		// The historical test edited the shell script's exit code; the
 		// re-exec port edits the role spec the same way (see the caller).

@@ -73,10 +73,13 @@ model = "env-model"
 	}
 
 	extra := findSpec(t, specs, "extra")
-	if got, want := extra.Commands[0], filepath.Join(root, "bin", "extra"); got != want {
+	// The placeholder expansion is VERBATIM (the template's literal '/'
+	// separators are not normalized — the ExpandPlaceholders semantics): the
+	// want is built by the same substitution, not by Join normalization.
+	if got, want := extra.Commands[0], root+"/bin/extra"; got != want {
 		t.Fatalf("extra command=%q, want %q", got, want)
 	}
-	if got, want := extra.HeadlessArgs[1], filepath.Join(root, protocol.DeckDir, "prompt.md"); got != want {
+	if got, want := extra.HeadlessArgs[1], root+"/"+protocol.DeckDir+"/prompt.md"; got != want {
 		t.Fatalf("headless arg=%q, want %q", got, want)
 	}
 	if extra.ExternalBackend != agents.ExternalLocal {

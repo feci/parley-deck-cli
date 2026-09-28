@@ -22,11 +22,16 @@ func measuredFixture(t *testing.T, script string) (string, string) {
 		t.Fatal(err)
 	}
 	writeSourceRoleMetadata(t, root)
-	path := filepath.Join(root, "test-agent")
-	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo fixture; exit 0; fi\n" + script + "\n"
-	if err := os.WriteFile(path, []byte(body), 0o700); err != nil {
-		t.Fatal(err)
+	// §D.9 re-exec port (rows 4/16): the historical extension-less shell
+	// fixture is a role-spec binary copy; the three concrete script
+	// behaviors map to write-artifact/touch/noop specs.
+	role := "agent-script noop"
+	if script == "cat >/dev/null; printf 'agent-owned' > answer.md" {
+		role = "agent-script write-artifact answer.md"
+	} else if script == "touch launched" {
+		role = "agent-script touch launched"
 	}
+	path := writeRoleFixture(t, root, "test-agent", role)
 	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "fixture", Path: path})
 	prompt := filepath.Join(root, "input.txt")
 	if err := os.WriteFile(prompt, []byte("Private prompt, never telemetry"), 0o600); err != nil {

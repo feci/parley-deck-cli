@@ -1112,6 +1112,23 @@ other stat error is surfaced (`stat replace target before move`), preserving
 the diagnostic the old code discarded. Bounded local: fsutil + budget
 suites PASS exit 0 (4.0s); darwin + windows cross build/vet green.
 
+
+## Rows 4/16/18 tail + config residuals (invocation 20, 18:0xZ)
+
+- **TestLoadAgentSpecsLayersAndTracksSources** FIXED: the fixture's
+  `{root}/bin/extra` expands VERBATIM (the ExpandPlaceholders semantics);
+  the wants are built by the same substitution, not Join normalization.
+  Bounded PASS. **TestAgentsExecRecordsManualLaunch + family** FIXED: the
+  measuredFixture shell scripts (write-artifact / touch / noop) are now the
+  `agent-script` role spec — the extension-less fixture is a re-exec binary
+  copy; bounded PASS across TestAgentsExec* (1.5s).
+- Remaining known app-family reds recorded for the next unit:
+  TestBudgetWorktreeInspectCLIReportsRetainedRegistration (likely the row-10
+  porcelain comparison again, CLI variant), TestBeginBoundAllocates…,
+  TestExecTelemetry*, TestDriverAdapterProtocolPrecheck…,
+  TestFixtureAutoDrive…, TestTrajectoryHelper… — the designed-refusal and
+  fixture-portability mix.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
