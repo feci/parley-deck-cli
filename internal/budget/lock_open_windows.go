@@ -63,3 +63,31 @@ func openLockFileRead(path string) (*os.File, error) {
 		time.Sleep(25 * time.Millisecond)
 	}
 }
+
+// openOriginFileRead opens the lock-ORIGIN record with the same bounded
+// §D.6 retry, with an honestly narrower classification than the lock-file
+// opens: hosted evidence (36440560978, invocation 11) showed the origin read
+// hitting sharing violations during CONCURRENT ORIGIN PUBLICATION by a
+// sibling parley process (the transient delete-pending/rename window of the
+// bootstrap writer), not only foreign scanners. Both holder classes are
+// transient by nature; the retry is bounded and exhaustion is loud, and the
+// origin/token verification chain re-runs unchanged after recovery. The
+// writer-side discipline question (origin publication shape,
+// close-before-rename) is recorded as follow-up for review.
+func openOriginFileRead(path string) (*os.File, error) {
+	const budget = 250 * time.Millisecond
+	deadline := time.Now().Add(budget)
+	for {
+		f, err := os.Open(path)
+		if err == nil {
+			return f, nil
+		}
+		if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) {
+			return nil, err
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("open %s: the lock-origin record was held (a sibling parley process publishing it, or a foreign scanner) through the %s sharing-violation retry budget; refusing rather than extending the wait: %w", path, budget, err)
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+}

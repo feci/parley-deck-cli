@@ -482,7 +482,7 @@ func readLockOrigin(path string) ([]byte, error) {
 	if !info.Mode().IsRegular() || info.Size() > 16<<10 {
 		return nil, errors.New("invalid budget lock origin")
 	}
-	f, err := os.Open(path)
+	f, err := openOriginFileRead(path)
 	if err != nil {
 		return nil, err
 	}

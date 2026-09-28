@@ -13,3 +13,7 @@ func openLockFile(path string) (*os.File, error) {
 func openLockFileRead(path string) (*os.File, error) {
 	return os.Open(path)
 }
+
+func openOriginFileRead(path string) (*os.File, error) {
+	return os.Open(path)
+}
