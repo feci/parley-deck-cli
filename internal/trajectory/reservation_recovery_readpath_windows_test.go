@@ -68,7 +68,14 @@ func windowsChargedStateFixture(t *testing.T, change string) (string, *budget.Cy
 		Version: 1, Policy: b.Policy, StartedAt: snap.StartedAt,
 		EntryKey: entry, ReserveMicros: &zero,
 	}
-	i := reservationIntent{Version: 1, Root: root, PreparedAt: snap.StartedAt.UTC(), Accounting: accounting, Before: s, BeforeSHA256: digest(raw)}
+	// canonicalRoot: the product compares i.Root against the canonicalized
+	// (Abs + EvalSymlinks) worktree — the raw t.TempDir string differs
+	// hosted (58f926a's F4.1 finding: "recovery worktree differs").
+	croot, err := canonicalRoot(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i := reservationIntent{Version: 1, Root: croot, PreparedAt: snap.StartedAt.UTC(), Accounting: accounting, Before: s, BeforeSHA256: digest(raw)}
 	ibody, err := canonical(i)
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +90,7 @@ func windowsChargedStateFixture(t *testing.T, change string) (string, *budget.Cy
 		case "partial-intent":
 			body = []byte("{\n")
 		case "changed-root":
-			i.Root += "-other"
+			i.Root = croot + "-other"
 			if body, err = canonical(i); err != nil {
 				t.Fatal(err)
 			}

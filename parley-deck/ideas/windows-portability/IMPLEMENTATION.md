@@ -1372,6 +1372,14 @@ original test's placement). Bounded PASS both. The F3 unit's salvage set is
 now: F3a (ten cases, fixture v2), F3b, F3c, F3d, F3e — complete pending
 hosted confirmation of the v2 fixture.
 
+
+## F4.1 constructor: canonicalRoot fix (invocation 23, 19:2xZ)
+
+The hosted finding ("recovery worktree differs from the original intent")
+fixed: the intent's Root is now canonicalRoot(root) — Abs + EvalSymlinks,
+exactly what the product compares — and the changed-root mutation derives
+from that canonical form. Rides the next leg.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
