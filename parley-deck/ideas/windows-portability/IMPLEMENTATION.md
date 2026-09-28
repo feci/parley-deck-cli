@@ -829,6 +829,21 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
   family), close-before-rename discipline audit; then the 08f769c cycle
   assessment (row-19 + lock diagnostic + retry outcomes).
 
+- (2026-09-28T14:55–15:0xZ, zcode-1; commit follows) Invocation 9 final unit:
+  **AC-LOCK-1 share-flag sweep, first tranche** — new
+  fsutil.OpenSharedDelete (root-routed read-only open: FILE_SHARE_DELETE on
+  Windows via os.Root, §D.6's preferred routing; identical read-only open on
+  POSIX; callers pre-verify regular files so the no-escape symlink semantics
+  of the rooted open are behavior-neutral) converted the two readers that
+  hold files across concurrent atomic replacements: trajectory readState
+  (state.go) and budget readStepHistoryFile (step_history.go — also covers
+  readCyclePolicy and the other policy.json/history readers it serves). This
+  is the attributed fix for the residual cycle_extension Access-denied
+  (concurrent persist WT-replace over a reader without delete-share); hosted
+  confirmation rides this push. Local: gofmt clean, darwin + windows cross
+  build/vet green, trajectory state tests ok 31.9s, budget step/cycle tests
+  ok 5.4s.
+
 ## Hosted run register
 
 | run id | commit | legs | outcome | notes |

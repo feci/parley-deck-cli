@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strings"
 )
@@ -181,7 +182,7 @@ func readStepHistoryFile(path string, limit int64) ([]byte, error) {
 	if !before.Mode().IsRegular() || before.Size() > limit {
 		return nil, errors.New("driver history is not a bounded regular file")
 	}
-	f, err := os.Open(path)
+	f, err := fsutil.OpenSharedDelete(path)
 	if err != nil {
 		return nil, err
 	}

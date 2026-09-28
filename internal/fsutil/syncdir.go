@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // ErrDirEntryDurabilityUnsupported is the FINAL §B/AC-DUR-1 named,
@@ -24,6 +25,27 @@ var ErrDirEntryDurabilityUnsupported = errors.New("directory-entry durability is
 // lowercase hex and dashes only, no dots). The dotted suffix can therefore
 // never be part of a valid final name; the pin is durable_grammar_test.go.
 const StageSuffix = ".parley-staging"
+
+// OpenSharedDelete opens name for reading with delete-share semantics:
+// routed through an os.Root of its directory, which on Windows passes
+// FILE_SHARE_DELETE so a concurrent atomic replacement (ReplaceSyncedFile /
+// WriteFileAtomic) is not blocked by this reader (§D.6/AC-LOCK-1 share-flag-
+// correct opens; §D.6 prefers exactly this rooting over a raw CreateFile
+// helper). On POSIX root.Open is the same read-only open. Callers must have
+// verified the path is a regular file (the rooted open does not follow
+// symlinks that escape the directory).
+func OpenSharedDelete(name string) (*os.File, error) {
+	root, err := os.OpenRoot(filepath.Dir(name))
+	if err != nil {
+		return nil, err
+	}
+	f, err := root.Open(filepath.Base(name))
+	root.Close()
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
 
 // DirHandle is the named directory-handle type of the entry-durability
 // contract: directory handles reach their barrier ONLY as a DirHandle through

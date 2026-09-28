@@ -229,7 +229,7 @@ func readState(path string) (State, []byte, error) {
 	if !info.Mode().IsRegular() || info.Size() > 16<<20 {
 		return s, nil, errors.New("trajectory state must be a bounded regular file")
 	}
-	f, err := os.Open(path)
+	f, err := fsutil.OpenSharedDelete(path)
 	if err != nil {
 		return s, nil, err
 	}
