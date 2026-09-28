@@ -26,8 +26,18 @@ func RunPath(deckDir, slug string) string {
 
 // BlockWorkspace is the per-block engine workspace, an ordinary idea dir so the
 // unchanged Phase 0-8 engine runs in it without colliding with sibling blocks.
-func BlockWorkspace(deckDir, slug, blockID string) string {
-	return filepath.Join(deckDir, "ideas", slug+"__"+blockID)
+// It is a §D.4 interpolation backstop: the raw slug and block ID are REFUSED
+// (never sanitized) when they carry the unsafe classes — traversal,
+// separators, drive/ADS colons, reserved names, trailing dot/space — on every
+// OS with no legacy exemption.
+func BlockWorkspace(deckDir, slug, blockID string) (string, error) {
+	if err := checkID("pipeline slug", slug); err != nil {
+		return "", err
+	}
+	if err := checkBlockID(blockID); err != nil {
+		return "", err
+	}
+	return filepath.Join(deckDir, "ideas", slug+"__"+blockID), nil
 }
 
 // Action is what the driver determined should happen next for a pipeline.
@@ -300,7 +310,10 @@ func (d Driver) seedNext(from, to Block) (string, error) {
 // material only; it never writes a participant's round/consensus/signoff/final
 // artifact.
 func SeedBlockPrompt(deckDir string, m Manifest, prior *Block, to Block, now time.Time) (string, error) {
-	ws := BlockWorkspace(deckDir, m.IdeaSlug, to.ID)
+	ws, err := BlockWorkspace(deckDir, m.IdeaSlug, to.ID)
+	if err != nil {
+		return "", err
+	}
 	if err := os.MkdirAll(filepath.Join(ws, "round-01"), 0o755); err != nil {
 		return "", fmt.Errorf("create block workspace: %w", err)
 	}
@@ -310,7 +323,11 @@ func SeedBlockPrompt(deckDir string, m Manifest, prior *Block, to Block, now tim
 		fmt.Fprintf(&inputs, "  - %s\n", in)
 	}
 	if prior != nil {
-		priorArtifact := filepath.Join(BlockWorkspace(deckDir, m.IdeaSlug, prior.ID), valueOr(prior.OutputArtifact, "FINAL.md"))
+		priorWS, err := BlockWorkspace(deckDir, m.IdeaSlug, prior.ID)
+		if err != nil {
+			return "", err
+		}
+		priorArtifact := filepath.Join(priorWS, valueOr(prior.OutputArtifact, "FINAL.md"))
 		derivedFrom = priorArtifact
 		if inputs.Len() == 0 {
 			fmt.Fprintf(&inputs, "  - %s\n", priorArtifact)

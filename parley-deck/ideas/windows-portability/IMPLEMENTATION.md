@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> this commit (row-24 fix + restore fix + Stage 2 core)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> this commit (Stage 2 backstops complete + fallback gap fix)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -85,15 +85,22 @@ Progress for the live stage state.
       stays design-level refusal documentation (§N: no FAT volume on
       runners — the FAT path propagates SetNamedSecurityInfo's error as an
       ErrNotPrivate refusal, by code inspection fsacl_windows.go:51-55).
-- [ ] **Stage 2** — gate-name encoding + raw-ID allowlist (§D.4), legacy fallback +
-      shadow retirement. CORE LANDED this invocation (2026-09-28T13:0x–13:2xZ;
-      encodeEdgeID in GatePath, legacy read-fallback, shadow retirement,
-      SaveGate unsafe-edge refusal, Manifest.Validate raw-ID unsafe refusal,
-      ValidNewBlockID strict allowlist at pipeline start; tests: encoding
-      table incl. FINAL example, N4 traversal table, mixed-name deck,
-      unsafe-save refusals). REMAINING: BlockWorkspace/GatePath
-      `(string, error)` refusal-signature conversion (~15 call sites, named
-      in Progress); hosted confirmation rides the next push.
+- [x] **Stage 2** — gate-name encoding + raw-ID allowlist (§D.4), legacy fallback +
+      shadow retirement. COMPLETE at the code level across invocations 5–6
+      (2026-09-28): encodeEdgeID in GatePath, legacy read-fallback, shadow
+      retirement, Manifest.Validate raw-ID unsafe refusal (blocks + idea slug),
+      ValidNewBlockID strict allowlist at pipeline start, AND (invocation 6)
+      the error-returning GatePath/BlockWorkspace backstops with all 11
+      callers converted (launchBlockRound, SeedBlockPrompt, blockCompleteFunc,
+      planFinalized, run-block/auto/start sites + tests). Hosted status:
+      encoding rode 36429107801 — pipeline red there for three distinct
+      reasons, two fixed in the working tree this invocation (LoadGate legacy
+      fallback treated Windows' ERROR_INVALID_NAME on raw-'>' names as a hard
+      error instead of not-found; my legacy-fallback test itself tried to
+      CREATE a raw-'>' file, impossible on Windows — now platform-conditional,
+      pinning the uncreatability premise) and one STANDING pre-existing
+      failure (TestEmbeddedDefaultMatchesLiveDeck, row 29). Hosted green of
+      the full Stage 2 rides the next push.
 - [ ] **Stage 3** — directory durability: §B table dispositions BEFORE code;
       `fsutil.SyncDir` named-type contract = audit of record + rooted refusal emitter.
 - [ ] **Stage 4** — file sharing (§D.6) + open-site diagnostic cycle (H7).
@@ -380,6 +387,34 @@ push. The rule is now applied with a post-write clock check.]
     (manifests validate first; SaveGate refuses; encoding confines), but the
     mechanical in-function backstop AC-NAME-3 names is still owed.
 
+- (2026-09-28T13:32–13:57Z, zcode-1; commit 29ee668 — first verified clock read
+  13:32:49Z, commit timestamp authoritative) Invocation 6. Re-read packet
+  (attestation above; hash unchanged), 00-prompt, living IMPLEMENTATION.md,
+  FINAL §D.4. **Stage 2 completed**: GatePath and BlockWorkspace converted to
+  error-returning §D.4 backstops (raw slug/edge/block ID unsafe classes
+  refused, never sanitized, no legacy exemption); all 11 callers converted
+  (launchBlockRound now ([]runner.Result, error); SeedBlockPrompt,
+  blockCompleteFunc, planFinalized, run-block/start/auto sites, tests);
+  Manifest.Validate now also refuses unsafe idea slugs at load. Assessed
+  hosted **36429107801** (register): fsacl 8/8 GREEN — row-24 fix and
+  ProtectPrivateStore restore fix HOSTED-VERIFIED on first hostile Windows
+  execution; W1 signature 0; 14 red = prior 15 minus fsacl. The hosted run
+  exposed two defects in MY invocation-5 Stage-2 code, fixed this invocation
+  after recording: LoadGate's legacy fallback surfaced Windows
+  ERROR_INVALID_NAME as a hard read error (it means the raw legacy name
+  cannot exist on this OS — now not-found, via the build-tagged errInvalidName
+  helper), and my legacy-fallback test tried to create a raw-'>' filename
+  (impossible on Windows — now platform-conditional, PINNING that
+  uncreatability as the encoding premise). The third pipeline failure is
+  standing (row 29). RECORD CLARIFICATION per organizer correction: the
+  invocation-5 statement that the two ERROR_INVALID_NAME app tests 'now pass'
+  was LOCAL darwin evidence only; hosted Windows execution of the encoded gate
+  names first occurred in 36429107801 and still carried the two fallback
+  defects above — hosted green for the full Stage 2 rides this push. Stage 3
+  §B dispositions NOT started (window consumed by Stage 2 completion + hosted
+  assessment); they are the FIRST unit of the next invocation, before any
+  Stage 3 code.
+
   ### Hosted cycle assessments (both completed; per-leg facts below)
 
   **Run 36172430646 @16824fd** (macos ok / ubuntu ok / windows FAIL, completed
@@ -566,6 +601,22 @@ push. The rule is now applied with a post-write clock check.]
     ProtectPrivateStore restore fix, row-26 marker fix, Stage 2 encoding)
     rides the next push — the Windows DACL expressions are hosted-only
     evidence by §F.
+- Local (macOS host, darwin/arm64 — NOT Windows evidence), invocation 6 on
+  2026-09-28 (working tree = a93f71c + this invocation's edits; clock reads
+  13:41–13:56Z):
+  - `gofmt -l internal/pipeline/` clean; `go build ./...` OK;
+    `go vet ./internal/pipeline/ ./internal/app/` OK.
+  - `GOOS=windows GOARCH=amd64 go build ./...` OK;
+    `GOOS=windows GOARCH=amd64 go vet ./internal/pipeline/ ./internal/app/` OK
+    (typechecks the errInvalidName windows helper and the platform-conditional
+    legacy test).
+  - `go test ./internal/pipeline/ -count=1` ok 0.259s (full package);
+    `go test ./internal/app/ -count=1` ok 525.195s (FULL suite, 13:42–13:50Z —
+    the signature conversion holds across every app flow); targeted
+    `go test ./internal/app/ -run 'TestPipelineAuto|TestBlockComplete|TestActionBlock'`
+    ok 0.274s after the LoadGate change.
+  - Hosted verification of the Stage 2 backstops + LoadGate fix + legacy test
+    rework rides this push.
 
 ## Hosted run register
 
@@ -579,6 +630,9 @@ push. The rule is now applied with a post-write clock check.]
 | 36172828285 | ca5efef (fsacl unwired) | win FAIL / ubuntu ok / macos ok; completed ~18:32:50Z | fsacl FIRST hostile Windows execution: Ensure/verify round-trip, pre-existing refusal, symlink+non-dir rejection, DenyRead ALL PASS; os.Symlink works on runner (observed). 15 red = same 14 + fsacl perm-bit assertion (Unix mechanics, fixed this invocation in fsacl_unix_test.go split). W1 signature persists (81x) until wiring lands hosted |
 | 36174658770 | 3646a9f (fsacl WIRED + adversarial suite) | win FAIL / ubuntu ok / macos ok; completed 18:53:18Z | WIRED-GUARD cycle: fsacl suite 6/7 PASS (single failure = test-assertion bug, fixed next commit); W1 signature 81x → 17x, all 17 = correctly-refused test-pre-created stores with the new AC-PRIV-5 refuse-and-instruct text; product-created stores now pass the guard and tests proceed to already-ledgered Stage 3/4 families. Windows 15 red / 17 ok = same deterministic 14 + fsacl |
 | 36425527266 | d07e6cc (stage 1 close-out) | win FAIL / ubuntu ok / macos ok; windows leg completed 13:06:09Z (run completed after) | ASSESSED invocation 5 (13:0xZ from job 108938416756 logs): win 15 red / 16 ok = SAME deterministic 14 + fsacl, no new red packages. W1 signature 17x → 2x; both residuals = row 28 restore bug (hosted-confirmed, fixed this invocation). fsacl 6/7: the one failure = row 26 (test scaffolding inheritance propagation strips marker access; product refusal verified correct by the log). Row-24 concurrent test PASSED. Residual families = rows 25 (dir-fsync, dominant), 7 (sharing), 21-23 (Stage 6 fixtures), 27 (new: POSIX-host evidence refusal unmasked) |
+| 36425631880 | 276b3e1 (docs-only checkpoint) | win FAIL / ubuntu ok / macos ok | Docs-only duplicate of d07e6cc code (register row deferred from invocation 5 per the no-gratuitous-docs-push rule); red set consistent with 36425527266 |
+| 36429107801 | a93f71c (row-24 fix + restore fix + Stage 2 core) | win FAIL / ubuntu ok / macos ok; completed ~13:39Z | ASSESSED invocation 6 (13:51-13:55Z from job logs): **fsacl GREEN 8/8** — first hostile Windows execution of TestConcurrentFirstCreationNeverRefuses and TestProtectPrivateStoreAppliesPolicyToProductCreatedDir both PASS; row-24 fix and restore fix HOSTED-VERIFIED; W1 privacy signature 2x -> **0** (store + restore privacy contract fully green hosted). Windows 14 red = prior 15 minus fsacl. pipeline red for 3 reasons: (a) LoadGate legacy-fallback gap — ERROR_INVALID_NAME on raw-'>' legacy reads was a hard error, broke TestComputeDAGStepParallelWaves/TestAdvanceCompletesAtLastBlock (fixed this invocation: invalid-name = not-found via build-tagged helper); (b) my legacy test tried to CREATE an uncreatable raw-'>' file (fixed: platform-conditional, pinning the uncreatability premise); (c) STANDING TestEmbeddedDefaultMatchesLiveDeck (row 29, also failed in 36425527266). trajectory/driver/budget red = rows 25/19 families as ledgered |
+
 
 ## Reconciliation ledger (§D.9 — emitted at Stage 0, before the sweep; refreshed per hosted cycle)
 
@@ -624,6 +678,7 @@ source-context classing.
 | 26 | NEW (36425527266): fsacl TestPreexistingStoreRefusedAndNotRewritten fails at the final marker ReadFile (`Access is denied`) — `grantTrustees`' protected-DACL replacement on the store dir auto-propagates inheritance removal to children, stripping the marker file's inherited-only access. Product refusal verified correct by the hosted log (store DACL before/after identical, refusal text exact) — TEST-scaffolding phenomenon, second layer under row-24-cycle's assertion fix | NTFS auto-inheritance propagation (test scaffolding) | §D.1, AC-PRIV-5 | 1 (test fix) | none — marker gets an explicit owner-allow ACE (readability independent of store-dir DACL churn); content assertion unchanged |
 | 27 | NEW (36425527266, unmasked by the W1 clear): evidence_publication_test.go:35 reaches product refusal "independent evidence verification requires a POSIX execution host; Windows runtime is not supported" (driver_impl.go:543; sibling trajectory_verify.go:107) | W-SHELL / POSIX-host product refusal family (§D.3) | §D.3 | 5 | none — the §D.3 named-prerequisite refusal design governs; never a skip |
 | 28 | NEW (36425527266, run-internal regression caught hosted): the 2 residual W1 signatures (snapshot_test.go:147, source_inventory_test.go:111) are both RestoreSnapshot refusing its OWN MkdirTemp destination — the d07e6cc restore wiring called EnsurePrivateStore on an already-created dir, which the guard correctly classifies as pre-existing user data. Found by code inspection before reading the log; log confirmed both sites | implementation defect in this run's Stage-1 wiring (not an environment phenomenon) | §D.1 creation policy | 1 | none — fixed this invocation: fsacl.ProtectPrivateStore (creation policy, no refuse-and-instruct) for product-created dirs; Unix verify-only byte-identical; pinned by TestProtectPrivateStoreAppliesPolicyToProductCreatedDir |
+| 29 | STANDING (present in 36425527266 and 36429107801, first attributed invocation 6): pipeline TestEmbeddedDefaultMatchesLiveDeck — drift guard fails closed: anchor "## 2. Active agents (roster)" appears 0 times in the embedded-default comparison on Windows | PROVISIONAL §D.7 CRLF family (embedded-default vs live-deck file comparison; CRLF checkout on windows runners is the prime suspect) or roster-anchor family — root cause NOT yet verified; do not treat as settled until probed at Stage 6 | §D.7 | 6 | none — record first; per-invocation `-c core.autocrlf=false` pinning is the §D.7 load-bearing layer |
 
 Refresh rule: after every hosted cycle, re-diff failing vs ledger; new phenomenon ⇒ new row
 before any code reaction; no `t.Skip` added without a row (AC-FIX-2).

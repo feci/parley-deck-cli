@@ -143,6 +143,11 @@ func (m Manifest) Validate() error {
 	if m.IdeaSlug == "" {
 		return fmt.Errorf("idea_slug is required")
 	}
+	// §D.4: the slug is interpolated into every pipeline path; the unsafe
+	// classes are refused on the raw value at load, same as block IDs.
+	if err := checkID("idea slug", m.IdeaSlug); err != nil {
+		return err
+	}
 	if !validTransports[m.Transport] {
 		return fmt.Errorf("invalid transport %q (want local-dir|github-pr|gitlab-mr)", m.Transport)
 	}

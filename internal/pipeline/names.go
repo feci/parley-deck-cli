@@ -57,35 +57,38 @@ func reservedDeviceName(component string) bool {
 	return false
 }
 
-// checkBlockID refuses the unsafe classes on the RAW block ID (FINAL §D.4: the
+// checkID refuses the unsafe classes on the RAW identifier (FINAL §D.4: the
 // executed IsLocal table showed validating the concatenated slug__+id path is
 // unsound — the prefix absorbs ".." inside Clean and wrongly accepts
 // traversals, landing in another idea's directory). No legacy exemption:
 // traversal, separators, absolute/drive paths, ADS colons, reserved device
 // names (even with extension) and trailing dot/space are refused on every OS.
 // Safe-but-non-allowlisted IDs (spaces, unicode) are NOT refused here — they
-// are cosmetic grandfathering and stay encodable.
-func checkBlockID(id string) error {
+// are cosmetic grandfathering and stay encodable. kind names the identifier
+// class in the error ("block id", "pipeline slug", "gate edge").
+func checkID(kind, id string) error {
 	if id == "" {
-		return fmt.Errorf("block id is empty")
+		return fmt.Errorf("%s is empty", kind)
 	}
 	if strings.ContainsAny(id, `/\`) {
-		return fmt.Errorf("block id %q contains a path separator", id)
+		return fmt.Errorf("%s %q contains a path separator", kind, id)
 	}
 	if strings.Contains(id, ":") {
-		return fmt.Errorf("block id %q contains a colon (drive/ADS path)", id)
+		return fmt.Errorf("%s %q contains a colon (drive/ADS path)", kind, id)
 	}
-	if id == "." || id == ".." || strings.HasPrefix(id, "../") || strings.HasPrefix(id, "..\\") {
-		return fmt.Errorf("block id %q is a traversal", id)
+	if id == "." || id == ".." || strings.HasPrefix(id, "../") || strings.HasPrefix(id, `..\`) {
+		return fmt.Errorf("%s %q is a traversal", kind, id)
 	}
 	if reservedDeviceName(id) {
-		return fmt.Errorf("block id %q is a reserved device name", id)
+		return fmt.Errorf("%s %q is a reserved device name", kind, id)
 	}
 	if strings.HasSuffix(id, ".") || strings.HasSuffix(id, " ") {
-		return fmt.Errorf("block id %q ends in a dot or space", id)
+		return fmt.Errorf("%s %q ends in a dot or space", kind, id)
 	}
 	return nil
 }
+
+func checkBlockID(id string) error { return checkID("block id", id) }
 
 // validNewBlockID is the strict charset allowlist applied to raw IDs at NEW
 // pipeline creation (AC-NAME-3): [A-Za-z0-9._-], bounded length, no leading or

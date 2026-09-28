@@ -100,29 +100,38 @@ func (g *Gate) Resolve(approve bool, by string, now time.Time) {
 	g.AnsweredAt = now
 }
 
-// GatePath returns the on-disk location of a gate file. The edge ID is
-// universally encoded on every OS (§D.4/AC-NAME-1), so the .tmp staging name
-// SaveGate derives from this path inherits the safe name by construction.
-func GatePath(deckDir, slug, edgeID string) string {
-	return filepath.Join(PipelineDir(deckDir, slug), "gates", encodeEdgeID(edgeID)+".gate.json")
+// GatePath returns the on-disk location of a gate file. It is a §D.4
+// interpolation backstop: the raw pipeline slug and edge ID are REFUSED (never
+// sanitized) when they carry the unsafe classes, on every OS with no legacy
+// exemption; the safe remainder is universally encoded so the .tmp staging
+// name SaveGate derives from this path inherits it by construction
+// (AC-NAME-1/3).
+func GatePath(deckDir, slug, edgeID string) (string, error) {
+	if err := checkID("pipeline slug", slug); err != nil {
+		return "", err
+	}
+	if err := checkID("gate edge", edgeID); err != nil {
+		return "", err
+	}
+	return filepath.Join(PipelineDir(deckDir, slug), "gates", encodeEdgeID(edgeID)+".gate.json"), nil
 }
 
 // legacyGatePath is the pre-encoding name (raw edge ID); readable for one
-// release so existing decks keep resolving their already-written gates.
+// release so existing decks keep resolving their already-written gates. Only
+// reached with a backstop-validated edge ID.
 func legacyGatePath(deckDir, slug, edgeID string) string {
 	return filepath.Join(PipelineDir(deckDir, slug), "gates", edgeID+".gate.json")
 }
 
-// SaveGate writes a gate atomically and refuses unsafe edge IDs (§D.4
-// backstop: separators, ADS colons and reserved names never reach the disk
-// even if a caller bypassed manifest validation). The first rewrite of a gate
-// that still lives under its legacy raw name retires that shadow copy — no
-// stale HITL answer survives a re-answered gate (AC-NAME-2).
+// SaveGate writes a gate atomically; the GatePath backstop refuses unsafe
+// slugs/edge IDs before anything reaches the disk. The first rewrite of a
+// gate that still lives under its legacy raw name retires that shadow copy —
+// no stale HITL answer survives a re-answered gate (AC-NAME-2).
 func SaveGate(deckDir string, g Gate) error {
-	if err := checkBlockID(g.Edge); err != nil {
-		return fmt.Errorf("gate edge %q unsafe: %w", g.Edge, err)
+	path, err := GatePath(deckDir, g.PipelineSlug, g.Edge)
+	if err != nil {
+		return err
 	}
-	path := GatePath(deckDir, g.PipelineSlug, g.Edge)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create gates dir: %w", err)
 	}
@@ -152,7 +161,10 @@ func SaveGate(deckDir string, g Gate) error {
 // name is authoritative; the legacy raw name (pre-§D.4 decks) is a read
 // fallback for one release — rewriting the gate retires it (AC-NAME-2).
 func LoadGate(deckDir, slug, edgeID string) (Gate, bool, error) {
-	path := GatePath(deckDir, slug, edgeID)
+	path, err := GatePath(deckDir, slug, edgeID)
+	if err != nil {
+		return Gate{}, false, err
+	}
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		legacy := legacyGatePath(deckDir, slug, edgeID)
@@ -160,7 +172,10 @@ func LoadGate(deckDir, slug, edgeID string) (Gate, bool, error) {
 			return Gate{}, false, nil
 		}
 		data, err = os.ReadFile(legacy)
-		if os.IsNotExist(err) {
+		// A legacy raw name (pre-§D.4, may carry '>') is unrepresentable on
+		// Windows: it can never exist there, so ERROR_INVALID_NAME from this
+		// read means not-found, not a failure.
+		if os.IsNotExist(err) || errInvalidName(err) {
 			return Gate{}, false, nil
 		}
 	}

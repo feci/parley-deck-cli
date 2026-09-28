@@ -77,7 +77,11 @@ func TestBlockCompleteRespectsBlockedReviewConsensus(t *testing.T) {
 	deck := filepath.Join(ws, "parley-deck")
 	slug := "impl-demo"
 	block := pipeline.Block{ID: "build", Kind: pipeline.KindImplementation}
-	rcDir := filepath.Join(pipeline.BlockWorkspace(deck, slug, block.ID), "review")
+	blockWS, err := pipeline.BlockWorkspace(deck, slug, block.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rcDir := filepath.Join(blockWS, "review")
 	complete := blockCompleteFunc(deck, slug)
 
 	// 0 outstanding fixes but BLOCKED -> NOT complete (fail closed).
@@ -102,7 +106,10 @@ func TestActionBlockCompleteNeedsSucceededEffectNotJustPlan(t *testing.T) {
 
 	// A finalized PLAN alone must NOT make an action block complete (otherwise
 	// the DAG/auto could advance past an unexecuted deploy).
-	bw := pipeline.BlockWorkspace(deck, slug, blockID)
+	bw, err := pipeline.BlockWorkspace(deck, slug, blockID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	writeFile(t, filepath.Join(bw, "DEPLOYMENT.md"), writtenFinalBody(""))
 	writeFile(t, filepath.Join(bw, "FINAL.md"), writtenFinalBody(""))
 	if done, err := complete(block); err != nil || done {

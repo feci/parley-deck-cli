@@ -82,7 +82,11 @@ func TestAdvanceSeedsNextAfterGateApproved(t *testing.T) {
 	if len(run.CompletedBlocks) != 1 || run.CompletedBlocks[0] != "business-spec" {
 		t.Fatalf("completed = %v", run.CompletedBlocks)
 	}
-	seeded := BlockWorkspace(d.DeckDir, run.PipelineSlug, "technical-spec") + "/00-prompt.md"
+	ws, err := BlockWorkspace(d.DeckDir, run.PipelineSlug, "technical-spec")
+	if err != nil {
+		t.Fatalf("BlockWorkspace: %v", err)
+	}
+	seeded := ws + "/00-prompt.md"
 	if _, err := os.Stat(seeded); err != nil {
 		t.Fatalf("seeded prompt missing: %v", err)
 	}

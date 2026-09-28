@@ -23,8 +23,11 @@ import (
 // launchBlockRound runs one cooperation round for a block in its engine
 // workspace via the existing runner (round 1 -> RunRoundOne, later ->
 // RunRound). Shared by `pipeline run-block` and `pipeline auto`.
-func launchBlockRound(ctx context.Context, root, deck, slug, blockID string, participants []string, discovered []agents.Discovery, round int) []runner.Result {
-	blockWS := pipeline.BlockWorkspace(deck, slug, blockID)
+func launchBlockRound(ctx context.Context, root, deck, slug, blockID string, participants []string, discovered []agents.Discovery, round int) ([]runner.Result, error) {
+	blockWS, err := pipeline.BlockWorkspace(deck, slug, blockID)
+	if err != nil {
+		return nil, err
+	}
 	runID := fmt.Sprintf("pipe-%s-r%02d-%s", blockID, round, time.Now().UTC().Format("20060102T150405.000000Z"))
 	idea := protocol.IdeaStatus{Slug: slug + "__" + blockID, Path: blockWS, Participants: participants}
 	opts := runner.Options{
@@ -37,9 +40,9 @@ func launchBlockRound(ctx context.Context, root, deck, slug, blockID string, par
 		Store:   store.New(filepath.Join(deck, "runs", runID)),
 	}
 	if round <= 1 {
-		return runner.RunRoundOne(ctx, opts)
+		return runner.RunRoundOne(ctx, opts), nil
 	}
-	return runner.RunRound(ctx, opts)
+	return runner.RunRound(ctx, opts), nil
 }
 
 func printPipelineUsage(w io.Writer) {
@@ -171,7 +174,12 @@ func runPipelineStart(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "pipeline start failed: %v\n", err)
 		return 1
 	}
-	fmt.Fprintf(stdout, "Started pipeline %q. First block %q seeded at %s\n", m.IdeaSlug, m.Blocks[0].ID, pipeline.BlockWorkspace(deck, m.IdeaSlug, m.Blocks[0].ID))
+	firstWS, err := pipeline.BlockWorkspace(deck, m.IdeaSlug, m.Blocks[0].ID)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline start failed: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(stdout, "Started pipeline %q. First block %q seeded at %s\n", m.IdeaSlug, m.Blocks[0].ID, firstWS)
 	fmt.Fprintf(stdout, "Run that block's cooperation rounds, then `parley pipeline continue --dir %s %s`.\n", *root, m.IdeaSlug)
 	return 0
 }
@@ -326,7 +334,11 @@ func runPipelineRunBlock(ctx context.Context, args []string, stdout, stderr io.W
 		fmt.Fprintf(stderr, "pipeline run-block failed: pipeline %q has no current block (status %s)\n", slug, run.Status)
 		return 1
 	}
-	blockWS := pipeline.BlockWorkspace(deck, slug, run.CurrentBlock)
+	blockWS, err := pipeline.BlockWorkspace(deck, slug, run.CurrentBlock)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline run-block failed: %v\n", err)
+		return 1
+	}
 	if _, err := os.Stat(filepath.Join(blockWS, "00-prompt.md")); err != nil {
 		fmt.Fprintf(stderr, "pipeline run-block failed: block %q is not seeded (%v)\n", run.CurrentBlock, err)
 		return 1
@@ -360,7 +372,11 @@ func runPipelineRunBlock(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	fmt.Fprintf(stdout, "Running %s block %q round-%02d with: %s\n", slug, run.CurrentBlock, round, strings.Join(participants, ", "))
-	results := launchBlockRound(ctx, *root, deck, slug, run.CurrentBlock, participants, discovered, round)
+	results, err := launchBlockRound(ctx, *root, deck, slug, run.CurrentBlock, participants, discovered, round)
+	if err != nil {
+		fmt.Fprintf(stderr, "pipeline run-block failed: %v\n", err)
+		return 1
+	}
 	if printRunResults(stdout, results) {
 		return 1
 	}
@@ -462,7 +478,12 @@ func runPipelineAuto(ctx context.Context, args []string, stdout, stderr io.Write
 				// A succeeded effect already exists -> the action block is complete;
 				// fall through to Advance.
 			} else {
-				if !planFinalized(deck, slug, block) {
+				finalized, ferr := planFinalized(deck, slug, block)
+				if ferr != nil {
+					fmt.Fprintf(stderr, "auto: %v\n", ferr)
+					return 1
+				}
+				if !finalized {
 					if code := autoDriveDeliberationBlock(ctx, *root, deck, slug, block, *participantsFlag, *drafter, *rounds, *yes, stdout, stderr); code != 0 {
 						return code
 					}
@@ -573,7 +594,12 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 		for _, bid := range step.Ready {
 			b, _ := findBlock(m, bid)
 			if b.Kind == pipeline.KindAction {
-				if planFinalized(deck, slug, b) {
+				finalized, ferr := planFinalized(deck, slug, b)
+				if ferr != nil {
+					fmt.Fprintf(stderr, "auto: %v\n", ferr)
+					return 1
+				}
+				if finalized {
 					actionAwaiting = append(actionAwaiting, b)
 				} else {
 					actionPending = append(actionPending, b)
@@ -606,7 +632,12 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 		failed := 0
 		for _, b := range launch {
 			b := b
-			if _, statErr := os.Stat(filepath.Join(pipeline.BlockWorkspace(deck, slug, b.ID), "00-prompt.md")); os.IsNotExist(statErr) {
+			bws, berr := pipeline.BlockWorkspace(deck, slug, b.ID)
+			if berr != nil {
+				fmt.Fprintf(stderr, "auto: %v\n", berr)
+				return 1
+			}
+			if _, statErr := os.Stat(filepath.Join(bws, "00-prompt.md")); os.IsNotExist(statErr) {
 				if _, serr := pipeline.SeedBlockPrompt(deck, m, nil, b, time.Now()); serr != nil {
 					fmt.Fprintf(stderr, "auto: seed %q failed: %v\n", b.ID, serr)
 					return 1
@@ -643,7 +674,12 @@ func runPipelineAutoDAG(ctx context.Context, root, deck, slug string, m pipeline
 			if b.Kind == pipeline.KindAction {
 				// A driven action plan that finalized is progress; it becomes
 				// awaiting-execute next wave (not auto-completable).
-				if planFinalized(deck, slug, b) {
+				finalized, ferr := planFinalized(deck, slug, b)
+				if ferr != nil {
+					fmt.Fprintf(stderr, "auto: %v\n", ferr)
+					return 1
+				}
+				if finalized {
 					progressed = true
 				}
 				continue
@@ -715,11 +751,21 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
 	}
 	blockIdeaSlug := slug + "__" + block.ID
 
-	first := nextBlockRound(pipeline.BlockWorkspace(deck, slug, block.ID))
+	firstWS, err := pipeline.BlockWorkspace(deck, slug, block.ID)
+	if err != nil {
+		fmt.Fprintf(stderr, "auto: %v\n", err)
+		return 1
+	}
+	first := nextBlockRound(firstWS)
 	last := 1 + rounds
 	for r := first; r <= last; r++ {
 		fmt.Fprintf(stdout, "auto: block %q round-%02d (%s)\n", block.ID, r, strings.Join(participants, ", "))
-		if printRunResults(stdout, launchBlockRound(ctx, root, deck, slug, block.ID, participants, discovered, r)) {
+		results, lerr := launchBlockRound(ctx, root, deck, slug, block.ID, participants, discovered, r)
+		if lerr != nil {
+			fmt.Fprintf(stderr, "auto: %v\n", lerr)
+			return 1
+		}
+		if printRunResults(stdout, results) {
 			fmt.Fprintf(stderr, "auto: round-%02d had failures; stopping.\n", r)
 			return 1
 		}
@@ -790,7 +836,11 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 	if implementer == "" {
 		implementer = participants[0]
 	}
-	blockWS := pipeline.BlockWorkspace(deck, slug, block.ID)
+	blockWS, err := pipeline.BlockWorkspace(deck, slug, block.ID)
+	if err != nil {
+		fmt.Fprintf(stderr, "auto: %v\n", err)
+		return 1
+	}
 	idea := protocol.IdeaStatus{Slug: slug + "__" + block.ID, Path: blockWS}
 
 	if _, statErr := os.Stat(filepath.Join(blockWS, "IMPLEMENTATION.md")); os.IsNotExist(statErr) {
@@ -1274,7 +1324,10 @@ func runPipelineRecordEffect(args []string, stdout, stderr io.Writer) int {
 // status: final).
 func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 	return func(b pipeline.Block) (bool, error) {
-		ws := pipeline.BlockWorkspace(deck, slug, b.ID)
+		ws, err := pipeline.BlockWorkspace(deck, slug, b.ID)
+		if err != nil {
+			return false, err
+		}
 		// Action blocks complete ONLY when a side effect has succeeded — a
 		// finalized plan must not advance the pipeline past an unexecuted deploy
 		// (§12.10). The gated `pipeline execute` + `record-effect` produces it.
@@ -1318,18 +1371,21 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 // output_artifact, or FINAL.md / a known stage name) is status: final — used
 // for action blocks, whose plan finalizing is distinct from the block
 // completing (which needs a succeeded effect).
-func planFinalized(deck, slug string, b pipeline.Block) bool {
-	ws := pipeline.BlockWorkspace(deck, slug, b.ID)
+func planFinalized(deck, slug string, b pipeline.Block) (bool, error) {
+	ws, err := pipeline.BlockWorkspace(deck, slug, b.ID)
+	if err != nil {
+		return false, err
+	}
 	candidates := []string{"FINAL.md", "DEPLOYMENT.md", "RUNBOOK.md", "MONITORING.md"}
 	if b.OutputArtifact != "" {
 		candidates = append([]string{b.OutputArtifact}, candidates...)
 	}
 	for _, name := range candidates {
 		if data, err := os.ReadFile(filepath.Join(ws, name)); err == nil && isFinalized(string(data)) {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 func implementationComplete(content string) bool {
