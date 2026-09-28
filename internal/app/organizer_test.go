@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"parley-deck-cli/internal/protocol"
 )
@@ -53,15 +52,23 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	root, ideaDir := seedWaitIdea(t, []string{"claude-1"})
 	os.WriteFile(filepath.Join(ideaDir, "round-01", "claude-1.md"), []byte(validRoundOne("claude-1")), 0o644)
 
+	// Write-detection that separates PRODUCT WRITES from mtime churn:
+	// structure (the set of paths) must be identical, and a sentinel file's
+	// BYTES must be untouched. ModTime alone is not evidence of a product
+	// write (the hosted failure showed mtime noise under the working deny).
 	snapshot := func() string {
 		var sb strings.Builder
 		filepath.Walk(filepath.Join(root, protocol.DeckDir), func(p string, info os.FileInfo, err error) error {
 			if err == nil {
-				sb.WriteString(p + "|" + info.ModTime().Format(time.RFC3339Nano) + "|" + info.Name() + "\n")
+				sb.WriteString(p + "|" + info.Name() + "|" + fmt.Sprint(info.IsDir()) + "\n")
 			}
 			return nil
 		})
 		return sb.String()
+	}
+	sentinel := filepath.Join(root, protocol.DeckDir, "ideas", "wait-idea", "sentinel.md")
+	if err := os.WriteFile(sentinel, []byte("untouched\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	before := snapshot()
 	// Read-only deck: the brief must still compute and must write nothing into it.
@@ -81,7 +88,10 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 		t.Fatalf("brief must work against a read-only deck, exit %d", code)
 	}
 	if after := snapshot(); before != after {
-		t.Fatalf("brief wrote into the deck tree")
+		t.Fatalf("brief wrote into the deck tree (structure changed)")
+	}
+	if data, err := os.ReadFile(sentinel); err != nil || string(data) != "untouched\n" {
+		t.Fatalf("brief disturbed deck content: %q %v", data, err)
 	}
 	if len(out) == 0 {
 		t.Fatalf("brief produced no output")

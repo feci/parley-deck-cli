@@ -38,8 +38,18 @@ func retainRefusalPlatformTrue(t *testing.T, dir string) bool {
 	if err == nil || !strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
 		t.Fatalf("windows retain did not produce the designed refusal: %v", err)
 	}
-	if files, derr := os.ReadDir(dir); derr == nil && len(files) != 0 {
-		t.Fatalf("refusal created state anyway: %v", files)
+	// F1 assertion scoping (kimi consult): compare against the BASELINE the
+	// test itself established — the refusal may not ADD refusal-record
+	// state (no refusals/ or verification-refusals/ dirs, no observation
+	// files), but pre-existing test scaffolding (.parley-runtime from
+	// earlier steps of a long test) is not product residue.
+	pending, _, _ := refusalDirs(dir)
+	if entries, perr := os.ReadDir(pending); perr == nil && len(entries) != 0 {
+		t.Fatalf("refusal created refusal records anyway: %v", entries)
+	}
+	canonicalDir := filepath.Join(filepath.Dir(pending), "verification-refusals")
+	if entries, cerr := os.ReadDir(canonicalDir); cerr == nil && len(entries) != 0 {
+		t.Fatalf("refusal created canonical records anyway: %v", entries)
 	}
 	return false
 }

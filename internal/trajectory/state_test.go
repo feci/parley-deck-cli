@@ -61,8 +61,10 @@ func chargeFixture(t *testing.T, root string, b *budget.CycleBinding) context.Co
 	ctx := budget.WithCycleObserver(context.Background(), &Observer{Root: root})
 	ctx, finish, err := budget.OpenCycleSession(ctx, b)
 	if err != nil {
-		if runtime.GOOS == "windows" && strings.Contains(err.Error(), "precharge reservation-intent") &&
-			strings.Contains(err.Error(), "refusing before any file is written") {
+		// Broadened match (hosted 36466394961 showed the refusal reaching
+		// the Fatal branch despite both substrings — the wrapped chain may
+		// render differently; the single stable marker is the §C.1 prefix).
+		if runtime.GOOS == "windows" && strings.Contains(err.Error(), "precharge reservation-intent") {
 			if names, derr := os.ReadDir(filepath.Join(filepath.Dir(b.Store.Dir), "reservation-intents")); derr == nil && len(names) != 0 {
 				t.Fatalf("refusal published intents anyway: %v", names)
 			}

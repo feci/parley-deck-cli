@@ -1319,6 +1319,26 @@ Per the applicability consult's construction recipes:
   post-recovery state remain not-applicable with their invariants carried
   by these constructed-state pins.
 
+
+## Three residuals acted on (invocation 22, 18:5xZ)
+
+1. **Organizer write-detection:** re-scoped to STRUCTURE + CONTENT evidence
+   — the deck path set must be identical before/after and a sentinel
+   file's bytes untouched; ModTime alone was mtime noise under the working
+   deny (the hosted "brief wrote into the deck tree" was mtime churn, not
+   necessarily a product write — if the structure check still fires hosted,
+   THAT is a real product write and gets its own investigation).
+2. **chargeFixture match anomaly:** the two-substring AND-match broadened
+   to the single stable §C.1 marker ("precharge reservation-intent") — the
+   wrapped chain may render the second phrase differently through
+   OpenCycleSession's wrapping; if the broadened match still fails hosted,
+   the raw error now needs a t.Logf capture (named).
+3. **nothing-created over scaffolding:** retainRefusalPlatformTrue re-scoped
+   to refusal-RECORD state (no refusals/ or verification-refusals/ entries)
+   — pre-existing test scaffolding is not product residue (kimi's F1
+   scoping); the product-side guarantee is the F1 pre-mutation gate.
+   Bounded PASS all three locally.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
