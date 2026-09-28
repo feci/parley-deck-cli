@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic) -> 08f769c (row-19 redesign) -> 17d5210 (delete-share readers) -> bc08cd7 (identity-read retry + review-scope evidence) -> 9b880d3 (Stage 5 core) -> 4e5bb24 (Stage 5 checks pin + Stage 6 ACP/AF_UNIX) -> this commit (Stage 6 CRLF pinning + consult engagement)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic) -> 08f769c (row-19 redesign) -> 17d5210 (delete-share readers) -> bc08cd7 (identity-read retry + review-scope evidence) -> 9b880d3 (Stage 5 core) -> 4e5bb24 (Stage 5 checks pin + Stage 6 ACP/AF_UNIX) -> a2d6af6 (CRLF pinning + consult engagement) -> 5e25d78 (origin-read retry) -> this docs commit
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -175,8 +175,14 @@ Progress for the live stage state.
       TestRunCriterionControlledMissingShRefusesPreWork (sh forced off PATH →
       named message + non-zero + no work) + WithShRunsNormally (present →
       normal path; missing sh on the hosted image would be a loud t.Fatal,
-      never a skip). Hosted execution rides this push. REMAINING Stage 5:
-      hosted confirmation + the checks-path (driver_impl) refusal pin.
+      never a skip). The checks-path pin landed invocation 11
+      (TestRunChecksMissingShRefusesPreWork; the list-form `checks:` contract
+      path routes through evidence.RunCriterion → RunCriterionControlled and
+      inherits the same refusal — all three §D.3 surfaces pinned).
+      **Hosted confirmation COMPLETE (36441834810, assessed 15:28Z): zero
+      failures among all Stage 5 pins** (the two W-SHELL outcome tests, the
+      checks-path refusal, the lock diagnostic); 13 red = the standing
+      Stage 6 families. **Stage 5 COMPLETE — code and hosted evidence.**
 - [ ] **Stage 6** — fixture-portability sweep (§D.9) + ACP/AF_UNIX/CRLF (§D.7).
       OPENED invocation 11 (2026-09-28T15:1xZ): (1) ACP split per §D.7 a/b —
       the two gated drain tests now use a 1 KiB total payload
@@ -1033,6 +1039,13 @@ header says so). Engagement status:
   trajectory/app targeted suites green after the CRLF pinning (38s app
   subset).
 
+- (2026-09-28T15:24–15:29Z) Assessed 36440560978 (register: :394 retry
+  worked, failure moved to lock-origin, fixed with openOriginFileRead +
+  revised classification, commit 5e25d78) and 36441834810 (register:
+  **Stage 5 hosted-confirmed** — zero failures among all pins). Stage 5 is
+  COMPLETE (code + hosted evidence). Cycles in flight at checkpoint:
+  36442736966 (4e5bb24), 36443342532 (a2d6af6), and the 5e25d78 leg.
+
 ## Hosted run register
 
 | run id | commit | legs | outcome | notes |
@@ -1047,6 +1060,7 @@ header says so). Engagement status:
 | 36425527266 | d07e6cc (stage 1 close-out) | win FAIL / ubuntu ok / macos ok; windows leg completed 13:06:09Z (run completed after) | ASSESSED invocation 5 (13:0xZ from job 108938416756 logs): win 15 red / 16 ok = SAME deterministic 14 + fsacl, no new red packages. W1 signature 17x → 2x; both residuals = row 28 restore bug (hosted-confirmed, fixed this invocation). fsacl 6/7: the one failure = row 26 (test scaffolding inheritance propagation strips marker access; product refusal verified correct by the log). Row-24 concurrent test PASSED. Residual families = rows 25 (dir-fsync, dominant), 7 (sharing), 21-23 (Stage 6 fixtures), 27 (new: POSIX-host evidence refusal unmasked) |
 | 36425631880 | 276b3e1 (docs-only checkpoint) | win FAIL / ubuntu ok / macos ok | Docs-only duplicate of d07e6cc code (register row deferred from invocation 5 per the no-gratuitous-docs-push rule); red set consistent with 36425527266 |
 | 36429107801 | a93f71c (row-24 fix + restore fix + Stage 2 core) | win FAIL / ubuntu ok / macos ok; completed ~13:39Z | ASSESSED invocation 6 (13:51-13:55Z from job logs): **fsacl GREEN 8/8** — first hostile Windows execution of TestConcurrentFirstCreationNeverRefuses and TestProtectPrivateStoreAppliesPolicyToProductCreatedDir both PASS; row-24 fix and restore fix HOSTED-VERIFIED; W1 privacy signature 2x -> **0** (store + restore privacy contract fully green hosted). Windows 14 red = prior 15 minus fsacl. pipeline red for 3 reasons: (a) LoadGate legacy-fallback gap — ERROR_INVALID_NAME on raw-'>' legacy reads was a hard error, broke TestComputeDAGStepParallelWaves/TestAdvanceCompletesAtLastBlock (fixed this invocation: invalid-name = not-found via build-tagged helper); (b) my legacy test tried to CREATE an uncreatable raw-'>' file (fixed: platform-conditional, pinning the uncreatability premise); (c) STANDING TestEmbeddedDefaultMatchesLiveDeck (row 29, also failed in 36425527266). trajectory/driver/budget red = rows 25/19 families as ledgered |
+| 36441834810 | 9b880d3 (Stage 5 core: P-A + W-SHELL) | win FAIL / ubuntu ok / macos ok; windows completed ~15:27Z | ASSESSED invocation 11 (15:28Z): 13 red = standing set; **zero failures among ALL Stage 5 pins** — TestRunCriterionControlledMissingShRefusesPreWork + WithShRunsNormally, and (in the earlier same-code cycles) the lock diagnostic — P-A/W-SHELL hosted-confirmed on first Windows execution |
 | 36440560978 | bc08cd7 (identity-read retry + review-scope evidence) | win FAIL / ubuntu ok / macos ok; completed ~15:26Z | ASSESSED invocation 11 (15:25Z): **the :394 identity-read retry WORKED** — zero .lock-path sharing failures (the ledger_test/review_test raw opens are gone); the failure MOVED to the lock-ORIGIN file (readLockOrigin's os.Open), the site left unwired on a since-falsified premise; recorded in row 7 and fixed same invocation (openOriginFileRead, narrower classification). 13 red = standing set |
 | 36439743640 | 17d5210 (delete-share readers) | win FAIL / ubuntu ok / macos ok; completed ~15:10Z | ASSESSED invocation 10 (15:13Z): 13 red = standing set; **delete-share verdict: "persist operator cycle grant" = 0** — the attributed concurrent-persist Access-denied is GONE in the cycle carrying the OpenSharedDelete fix (present once in 36435481011, absent since). One residual "Access is denied": TestSnapshotRevalidationRefusesChangeDuringRead/root at :449 — the during-read variant of the row-19 redesign tried to rename `sub` while the verifier held the source OPEN INSIDE it; Windows refuses (containment by design). Recorded, then pinned honestly: the case now asserts the OS-refused swap leaves the verification unchanged on Windows (POSIX keeps the swap-detection assertion) |
 | 36438474793 | c6f3db1 (§D.6 lock retry + diagnostic) | win FAIL / ubuntu ok / macos ok; completed ~14:57Z | ASSESSED invocation 10 (14:59Z): the AC-LOCK-4 diagnostic test PASSED hosted (foreign class = ERROR_SHARING_VIOLATION; transient holder recovers, persistent holder exhausts loudly within bounds) — but product lock failures persisted with RAW unretried messages: the failing open was lockIdentity :394, unwired in invocation 9. Row 7 updated; fix (openLockFileRead) landed as bc08cd7 |
