@@ -447,6 +447,13 @@ func implReadyForReview(status string) bool {
 // claim closed, never auto-pass one.
 func reviewRoundHasFindings(ideaDir string, round int) bool {
 	dir := filepath.Join(ideaDir, "review", roundLabel(round))
+	// §D.5 branch-independent fix: a round path that exists and is NOT a
+	// directory vetoes explicitly — the ReadDir error classification alone
+	// proved unreliable for the file-where-directory-belongs case (hosted
+	// strict_gate :179; one Lstat, exactly as the FINAL prescribes).
+	if info, err := os.Lstat(dir); err == nil && !info.IsDir() {
+		return true
+	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		// Fail closed (review fix F1): an absent dir means nothing to veto
