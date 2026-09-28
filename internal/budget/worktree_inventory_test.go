@@ -68,8 +68,13 @@ func assertWorktreeFields(t *testing.T, value any, names ...string) {
 
 func worktreeRow(t *testing.T, i WorktreeInventory, path string) WorktreeRegistration {
 	t.Helper()
+	// Row 10 family: RegisteredPath is git's VERBATIM porcelain form
+	// (forward separators on Windows); the fixture path is a Go path — the
+	// lookup canonicalizes both, the verbatim record is untouched.
+	canonical := func(p string) string { return filepath.ToSlash(filepath.Clean(p)) }
+	path = canonical(path)
 	for _, r := range i.Registrations {
-		if r.RegisteredPath == path {
+		if canonical(r.RegisteredPath) == path {
 			return r
 		}
 	}
