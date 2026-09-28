@@ -391,7 +391,7 @@ func lockIdentity(path string, create bool) (string, error) {
 		if !info.Mode().IsRegular() || info.Size() != 65 {
 			return "", errors.New("invalid local budget lock identity")
 		}
-		f, err := os.Open(path)
+		f, err := openLockFileRead(path)
 		if err != nil {
 			return "", err
 		}

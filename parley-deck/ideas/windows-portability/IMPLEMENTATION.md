@@ -574,6 +574,48 @@ behavior byte-identical at every row (AC-DUR-5): all new refusals are
 `runtime.GOOS == "windows"`-confined; SyncDir's Unix implementation preserves
 today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
 
+## Stage 4 review-scope evidence (organizer reminders, invocation 10 — for the independent reviewers)
+
+**1. OpenSharedDelete and the owner's os.Root containment guarantee under
+races.** The helper opens `name` only through a fresh `os.Root` on
+`filepath.Dir(name)` + `root.Open(filepath.Base(name))`. Race analysis vs the
+previous plain `os.Open` at the two converted readers (readState,
+readStepHistoryFile), both of which enforce `Lstat → IsRegular → open →
+f.Stat → os.SameFile` around the open:
+- If the path is swapped to an escaping symlink between Lstat and the open,
+  the OLD `os.Open` FOLLOWED it and opened the outside file, rejecting only
+  afterwards via SameFile (post-hoc; the foreign file was opened). The rooted
+  open REFUSES at the kernel (Linux RESOLVE_BENEATH / Windows rooted-open
+  semantics): the outside file is never opened, and the SameFile check still
+  runs afterwards. The guarantee is strictly STRONGER under the race, never
+  weaker — no reliance on a pre-open lexical check.
+- The owner's containment decision concerns the product's ROOTED operations
+  (snapshot/verification os.Root sites, §A); those are untouched. The
+  converted readers were always plain-path readers; the helper only narrows
+  them to directory-scoped opens. POSIX semantics: root.Open is the same
+  read-only open, byte-identical reads.
+- Windows share semantics: os.Root opens carry FILE_SHARE_DELETE (FINAL §D.6
+  basis), which is the helper's purpose — a concurrent ReplaceSyncedFile/
+  WriteFileAtomic is no longer blocked by the reader. Empirical confirmation
+  (the cycle_extension Access-denied clearing) rides the 17d5210 cycle.
+
+**2. Lock-retry self-vs-foreign classification at every relevant open.** The
+claim: every handle THIS process takes on a budget .lock file uses Go's
+CreateFile share mode (FILE_SHARE_READ|FILE_SHARE_WRITE) with read and/or
+read-write access, so no two of our own handles conflict; a sharing violation
+on any of our opens is by construction a FOREIGN holder. The full audit of
+.lock opens and their coverage: acquirePinnedKernelLock :159 (kernel-lock
+open, O_RDWR — retry-wired), :200 (probe, O_RDWR — retry-wired), lockIdentity
+:394 (identity read, read-only — retry-wired invocation 10 after the hosted
+evidence showed it was the unwired failure site). Temp-file creates
+(.lock-identity-*, .lock-origin-*, .origin-migration-*) are different paths
+(racing their own O_EXCL, not share conflicts). readLockOrigin reads the
+lock-ORIGIN file (a different path with no hosted failures; deliberately
+unwired — documented here, not silently omitted). The classification is
+supportable at every wired open; the diagnostic test passed hosted,
+confirming the foreign-holder error class is ERROR_SHARING_VIOLATION and
+both retry outcomes behave as specified.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -844,6 +886,19 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
   build/vet green, trajectory state tests ok 31.9s, budget step/cycle tests
   ok 5.4s.
 
+- (2026-09-28T14:58–15:0xZ, zcode-1; commit follows — first verified clock
+  read 14:58:47Z) Invocation 10. Assessed hosted **36438474793** (@c6f3db1):
+  the lock diagnostic test PASSED hosted (AC-LOCK-4 complete) but the
+  product lock-open failures persisted with RAW unretried messages — the
+  failing open was lockIdentity's :394 read, unwired in invocation 9.
+  Recorded as the row-7 hosted outcome BEFORE reaction, then fixed:
+  openLockFileRead wired at :394 (same structural classification — our own
+  read/write+share-R|W handles cannot conflict with a read-only open).
+  Wrote the Stage 4 review-scope evidence section above (both organizer
+  reminders) with the full lock-chain open audit and the OpenSharedDelete
+  race analysis. Local: gofmt clean; darwin + windows cross build/vet green;
+  budget lock/reserve/ledger tests ok.
+
 ## Hosted run register
 
 | run id | commit | legs | outcome | notes |
@@ -887,7 +942,7 @@ source-context classing.
 | 4 | `#!/bin/sh`/extensionless fixtures: `launch_test.go`, `protocol_context_test.go`, `telemetry_test.go` (~13) | W5 (TEST) | §D.9, AC-FIX-1 | 6 | none planned — test-binary re-exec |
 | 5 | Snapshot privacy guard `Perm()&0077` never passes (0777/0666 synthesis), 71 messages / ~69 tests | W1 (PRODUCT) | §D.1, AC-PRIV-1..6 | 1 | none — real ACL implementation; CONFIRMED hosted in both cycles (evidence, driver refusal families; "snapshot store must be a private real directory" signature) |
 | 6 | Pipeline gate filenames with `>` → `ERROR_INVALID_NAME` (9×) | W2 (PRODUCT) | §D.4, AC-NAME-1/2 | 2 | none — universal encoding |
-| 7 | §D.6 unit landed invocation 9 (c6f3db1): openLockFile bounded 250ms sharing-violation-only retry with structural self/foreign classification + TestOpenLockFileSharingDiagnostic (the AC-LOCK-4 diagnostic cycle; hosted outcome rides 08f769c's push). The wider family: cross-process lock/open/rename "file is being used by another process" (~14: `ledger_test.go:57`, `review_test.go:438`, `verification_test.go:368`) | W3 (PRODUCT) | §D.6, AC-LOCK-1..4 | 4 | none — AC-LOCK-1 share-flag sweep remains |
+| 7 | HOSTED OUTCOME (36438474793 @c6f3db1): the diagnostic test PASSED hosted (AC-LOCK-4 evidence complete — foreign-holder class is ERROR_SHARING_VIOLATION, transient holders recover within the budget, persistent holders exhaust loudly), BUT the product failures persisted with RAW unretried messages — the failing open was lockIdentity's read (lock.go :394 os.Open), the FIRST .lock open in the reserve chain, which invocation 9 had not wired. Recorded before reaction; fixed same invocation: openLockFileRead (read-only retry variant, same structural classification) wired at :394. Full open audit of the lock chain: :159 kernel-lock open (WIRED, O_RDWR), :200 probe (WIRED, O_RDWR), :394 identity read (NOW WIRED, read-only), :427/:360 CreateTemp (different temp files, not the .lock), readLockOrigin :485 (the lock-ORIGIN file — different path, no hosted failures, deliberately unwired and documented), migration CreateTemp (temp). Hosted confirmation of the :394 fix rides this push. The wider family: cross-process lock/open/rename (~14 sites incl. `ledger_test.go:57`, `review_test.go:438`, `verification_test.go:368`) | W3 (PRODUCT) | §D.6, AC-LOCK-1..4 | 4 | none — AC-LOCK-1 close-before-rename audit remains |
 | 8 | chmod-unreadable fixtures (~6: `consensus impl_test.go:807`, `phase_event_test.go:156/170/186`, `strict_gate_test.go:179`) | W7 (TEST) | §D.9 denyRead | 1 (helper) / 6 (sweep) | none — DACL deny-ACE helper |
 | 9 | HOME-only fixtures (`agents/configmodel_test.go`, 2) | W8 (TEST) | §D.9 | 6 | none — USERPROFILE set |
 | 10 | `/repo` POSIX-path worktree fixtures (~3-4) | W9 (TEST) | §D.9 | 6 | none — t.TempDir + volume-aware joins |

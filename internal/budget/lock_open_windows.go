@@ -39,3 +39,27 @@ func openLockFile(path string) (*os.File, error) {
 		time.Sleep(25 * time.Millisecond)
 	}
 }
+
+// openLockFileRead is the read-only variant for the identity read: same
+// §D.6 bounded retry and same structural classification — the process's own
+// handles on the lock file (kernel lock, probe: read/write access, share
+// read|write) are compatible with a read-only open, so a sharing violation
+// here is by construction foreign. Hosted evidence (36438474793): the
+// identity read was the open that surfaced the raw unretried failures.
+func openLockFileRead(path string) (*os.File, error) {
+	const budget = 250 * time.Millisecond
+	deadline := time.Now().Add(budget)
+	for {
+		f, err := os.Open(path)
+		if err == nil {
+			return f, nil
+		}
+		if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) {
+			return nil, err
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("open %s: a foreign process (e.g. antivirus or indexer) held the lock file through the %s sharing-violation retry budget; refusing rather than extending the wait: %w", path, budget, err)
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+}
