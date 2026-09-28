@@ -263,6 +263,15 @@ func (o driverImplOps) RunChecks(ctx context.Context) (bool, string) {
 		checks = strings.TrimSpace(strings.Trim(strings.TrimSpace(meta["checks"]), `"'`))
 	}
 	if checks != "" {
+		// §D.3 W-SHELL: on Windows `sh` is probed ONCE before any work; a
+		// missing shell blocks the LE-4 verification command with a named,
+		// actionable refusal (Git for Windows ships sh.exe on PATH) — the
+		// gate never passes by default and exits non-zero through `run`.
+		if runtime.GOOS == "windows" {
+			if _, err := exec.LookPath("sh"); err != nil {
+				return false, "checks execution requires the POSIX shell `sh` (on Windows install Git for Windows, whose sh.exe ships on PATH, or run the verification on macOS/Linux); refusing rather than executing unverified"
+			}
+		}
 		return run(checks, exec.CommandContext(ctx, "sh", "-c", checks))
 	}
 	if _, err := os.Stat(filepath.Join(o.root, "go.mod")); err == nil {
