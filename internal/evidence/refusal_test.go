@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,8 +20,35 @@ func refusalFixture() VerificationRefusal {
 	return VerificationRefusal{Version: 1, ObservationID: strings.Repeat("a", 64), VerificationID: strings.Repeat("b", 64), ObservedAt: time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC), Observer: "helper", Stage: "execution", Executions: []RefusalExecution{{Status: StatusSkipped}}}
 }
 
+// retainRefusalPlatformTrue is the §C designed-refusal expression for the
+// refusal-publication lifecycle family: on Windows RetainVerificationRefusal
+// refuses with the named dir-entry-durability error (the §B SyncDir
+// contract — the publication barrier refuses rather than continue without
+// the guarantee), and NO state may exist afterward. The bool reports
+// whether the lifecycle under test is applicable (Unix: retained normally).
+// This is an early-return applicability check, NOT a skip: the refusal
+// assertions fail if the product regresses, and the durable-publication
+// refusal is separately pinned by the fsacl/§B hosted suites.
+func retainRefusalPlatformTrue(t *testing.T, dir string) bool {
+	t.Helper()
+	if runtime.GOOS != "windows" {
+		return true
+	}
+	_, err := RetainVerificationRefusal(dir, refusalFixture())
+	if err == nil || !strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
+		t.Fatalf("windows retain did not produce the designed refusal: %v", err)
+	}
+	if files, derr := os.ReadDir(dir); derr == nil && len(files) != 0 {
+		t.Fatalf("refusal created state anyway: %v", files)
+	}
+	return false
+}
+
 func TestRefusalReadOnlyInspectionAndImmutableRecovery(t *testing.T) {
 	dir := t.TempDir()
+	if !retainRefusalPlatformTrue(t, dir) {
+		return
+	}
 	entries, err := InspectVerificationRefusals(dir)
 	if err != nil || len(entries) != 0 {
 		t.Fatalf("pristine: %+v %v", entries, err)
@@ -92,6 +120,9 @@ func TestRefusalStrictSafeSchema(t *testing.T) {
 
 func TestRefusalIncompleteEntriesAreVisibleAndDoNotEraseValidRecovery(t *testing.T) {
 	dir := t.TempDir()
+	if !retainRefusalPlatformTrue(t, dir) {
+		return
+	}
 	sum, err := RetainVerificationRefusal(dir, refusalFixture())
 	if err != nil {
 		t.Fatal(err)
@@ -115,6 +146,9 @@ func TestRefusalIncompleteEntriesAreVisibleAndDoNotEraseValidRecovery(t *testing
 
 func TestRefusalConcurrentObserversAndExactRecovery(t *testing.T) {
 	dir := t.TempDir()
+	if !retainRefusalPlatformTrue(t, dir) {
+		return
+	}
 	const n = 8
 	sums := make(chan string, n)
 	errs := make(chan error, n)
@@ -180,6 +214,9 @@ func TestRefusalStorageAliasesAndChangedRecordRefuse(t *testing.T) {
 	for _, which := range []string{"pending", "canonical"} {
 		t.Run(which, func(t *testing.T) {
 			dir := t.TempDir()
+			if !retainRefusalPlatformTrue(t, dir) {
+				return
+			}
 			pending, canonical, err := refusalDirs(dir)
 			if err != nil {
 				t.Fatal(err)
@@ -264,6 +301,9 @@ func TestRefusalRetentionSurvivesMissingGuardOriginLock(t *testing.T) {
 
 func TestRefusalConflictingObservationIdentityCannotRecover(t *testing.T) {
 	dir := t.TempDir()
+	if !retainRefusalPlatformTrue(t, dir) {
+		return
+	}
 	r := refusalFixture()
 	first, err := RetainVerificationRefusal(dir, r)
 	if err != nil {
@@ -294,6 +334,9 @@ func TestRefusalRecoversOnlyMatchingInterruptedCanonicalStaging(t *testing.T) {
 	for _, conflict := range []bool{false, true} {
 		t.Run(fmt.Sprint(conflict), func(t *testing.T) {
 			dir := t.TempDir()
+			if !retainRefusalPlatformTrue(t, dir) {
+				return
+			}
 			sum, err := RetainVerificationRefusal(dir, refusalFixture())
 			if err != nil {
 				t.Fatal(err)

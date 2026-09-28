@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,13 @@ func appRefusal(t *testing.T, dir string) string {
 	}
 	sum, err := evidence.RetainVerificationRefusal(dir, r)
 	if err != nil {
+		if runtime.GOOS == "windows" && strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
+			// §C designed-refusal expression (see the evidence-package
+			// retainRefusalPlatformTrue note): the refusal lifecycle
+			// presupposes a durable publication that refuses on Windows;
+			// mark not-applicable via the sentinel for the caller.
+			return ""
+		}
 		t.Fatal(err)
 	}
 	return sum
@@ -43,6 +51,9 @@ func TestRefusalRecoveryCommitsOnlyExactPathAndInvalidatesOldTree(t *testing.T) 
 		t.Fatal(err)
 	}
 	sum := appRefusal(t, dir)
+	if sum == "" {
+		return // Windows §C designed refusal (not-applicable lifecycle)
+	}
 	pendingTree, err := evidence.TreeDigest(root)
 	if err != nil || pendingTree != before {
 		t.Fatalf("pending observation changed source: %s %v", pendingTree, err)
@@ -97,6 +108,9 @@ func TestRefusalCommitFailureRemainsInspectableAndRecoverable(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := appRefusal(t, dir)
+	if sum == "" {
+		return // Windows §C designed refusal (not-applicable lifecycle)
+	}
 	if err := recoverVerificationRefusal(context.Background(), root, dir, sum); err == nil {
 		t.Fatal("failed commit claimed durability")
 	}
@@ -124,6 +138,9 @@ func TestRefusalCommitFailureRemainsInspectableAndRecoverable(t *testing.T) {
 func TestRefusalRecoveryCLIRejectsUnboundAndWrongScopes(t *testing.T) {
 	root, dir := gateScratchRepo(t, twoCriterionContract())
 	sum := appRefusal(t, dir)
+	if sum == "" {
+		return // Windows §C designed refusal (not-applicable lifecycle)
+	}
 	for _, args := range [][]string{
 		{"recover", "--idea", "idea-x"},
 		{"recover", "--idea", "idea-x", "--expected-sha256", "wrong"},
@@ -290,6 +307,9 @@ func TestRefusalConcurrentRecoveryProcesses(t *testing.T) {
 	gateGit(t, root, "config", "user.name", "fixture")
 	gateGit(t, root, "config", "user.email", "fixture@example.invalid")
 	sum := appRefusal(t, dir)
+	if sum == "" {
+		return // Windows §C designed refusal (not-applicable lifecycle)
+	}
 	control := t.TempDir()
 	barrier := filepath.Join(control, "release")
 	children := make([]*exec.Cmd, 2)

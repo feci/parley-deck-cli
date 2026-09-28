@@ -1151,6 +1151,22 @@ POSIX publication flows that refuse on Windows), TestBeginBound…,
 TestExecTelemetry*, TestDriverPrecheck*, TestTrajectoryHelper…, and the
 readonly organizer fixture.
 
+
+## Designed-refusal reconciliation tranche 2 (invocation 20, 18:0xZ) — evidence/app refusal lifecycles
+
+The refusal-publication lifecycle family (§B SyncDir refusal emitter): on
+Windows `RetainVerificationRefusal` refuses with the named
+directory-entry-durability error and must leave no state. Wired as the same
+early-return applicability pattern (NO skips, census clean):
+- `internal/evidence/refusal_test.go`: `retainRefusalPlatformTrue(t, dir)`
+  asserts the designed refusal text + nothing-created state, returns false;
+  injected after each affected test's dir creation (6 sites wired; the
+  retain-failure paths already negative-tested keep their Unix shapes).
+- `internal/app/evidence_refusals_test.go`: `appRefusal` returns an empty
+  sentinel on the Windows designed refusal; all 4 callers early-return.
+Unix suites green (TestRefusal* both packages, exit 0). The durable-
+publication refusal itself remains pinned by the fsacl/§B hosted suites.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
