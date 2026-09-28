@@ -67,3 +67,4 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation21 checkpoint; applicable read-path coverage remains open | 2026-09-28T18:48:27.839Z | 100486805 | 99609088 | 117442 | 31348 | 719 |
 | Invocation22 checkpoint; malformed coverage fixture and deck-write question remain open | 2026-09-28T19:09:19.173Z | 105917795 | 105022464 | 124297 | 34161 | 751 |
 | Invocation23 native coverage progress; accepted remaining coverage gaps | 2026-09-28T19:38:53.103Z | 114072150 | 112950528 | 132805 | 38414 | 795 |
+| Invocation24 checkpoint; enforce named-refusal and distinct missing-row coverage contracts | 2026-09-28T20:07:02.732Z | 122498592 | 121317504 | 142681 | 43094 | 835 |
