@@ -1452,6 +1452,24 @@ itself prove the cause — the walk-error Logf is the evidence layer, and
 the diagnosis stays "walk-vs-deny interaction, cause pending the logged
 error", not a settled mechanism.
 
+
+## claude-1 readonly-walk consult ENGAGED (invocation 24, 20:0xZ) — 4.2/4.3 adopted immediately
+
+Its mechanism section matches the hosted evidence exactly (the walk's dir
+open denied; the empty snapshot; the brief exiting 0 because the
+write-failure surfaces elsewhere) and its repair 4.1 (narrow the deny to
+write-specific rights) is the SAME fix the hosted walk error decided
+(58472e2, landed before the note was read — independently converged).
+**4.2 adopted verbatim:** the negative control both halves — a probe write
+into the deck MUST be denied (else the fixture proves nothing) and
+enumeration MUST still work (else the snapshot cannot observe the tree) —
+this is precisely the guard that would have named the walk failure on the
+first leg. **4.3 adopted:** the snapshot propagates walk errors to a Fatal
+(never silently-empty) and both snapshots carry a minimum-path floor
+(after ≥ before's count). Bounded PASS. 4.4 (deny matched to the
+"read-only deck" claim) noted for the review batch with the rest of the
+consult.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

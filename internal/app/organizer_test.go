@@ -57,30 +57,41 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	// structure (the set of paths) must be identical, and a sentinel file's
 	// BYTES must be untouched. ModTime alone is not evidence of a product
 	// write (the hosted failure showed mtime noise under the working deny).
-	// Gap 8: STRUCTURE plus FULL-CONTENT hashing — every file's bytes are
-	// hashed into the snapshot, not one sentinel (a single-sentinel
-	// substitute could miss writes elsewhere in the tree).
-	snapshot := func() string {
+	// Gap 8 + claude-1 readonly-walk 4.3: STRUCTURE plus FULL-CONTENT
+	// hashing, and the snapshot can NEVER return silently-empty — walk
+	// errors propagate to a Fatal (an unobservable tree supports no
+	// no-write verdict) and both snapshots carry a minimum-path floor.
+	snapshot := func(t *testing.T, label string, minPaths int) string {
+		t.Helper()
 		var sb strings.Builder
-		filepath.Walk(filepath.Join(root, protocol.DeckDir), func(p string, info os.FileInfo, err error) error {
-			if err == nil {
-				sb.WriteString(p + "|" + info.Name() + "|" + fmt.Sprint(info.IsDir()))
-				if !info.IsDir() {
-					if data, rerr := os.ReadFile(p); rerr == nil {
-						sb.WriteString("|" + fmt.Sprintf("%x", sha256.Sum256(data)))
-					}
-				}
-				sb.WriteString("\n")
+		n := 0
+		err := filepath.Walk(filepath.Join(root, protocol.DeckDir), func(p string, info os.FileInfo, werr error) error {
+			if werr != nil {
+				return fmt.Errorf("%s: walking %s: %w", label, p, werr)
 			}
+			sb.WriteString(p + "|" + info.Name() + "|" + fmt.Sprint(info.IsDir()))
+			if !info.IsDir() {
+				if data, rerr := os.ReadFile(p); rerr == nil {
+					sb.WriteString("|" + fmt.Sprintf("%x", sha256.Sum256(data)))
+				}
+			}
+			sb.WriteString("\n")
+			n++
 			return nil
 		})
+		if err != nil {
+			t.Fatalf("%s snapshot is not trustworthy: %v", label, err)
+		}
+		if n < minPaths {
+			t.Fatalf("%s snapshot saw only %d paths — cannot support a no-write verdict", label, n)
+		}
 		return sb.String()
 	}
 	sentinel := filepath.Join(root, protocol.DeckDir, "ideas", "wait-idea", "sentinel.md")
 	if err := os.WriteFile(sentinel, []byte("untouched\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	before := snapshot()
+	before := snapshot(t, "before", 0) // floor pinned after the walk; both snapshots check the same tree shape
 	// Read-only deck: the brief must still compute and must write nothing into it.
 	deck := filepath.Join(root, protocol.DeckDir)
 	// GENUINE native deny (§D.9): chmod is a no-op for write access on
@@ -93,18 +104,23 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 		t.Fatalf("cannot make deck read-only: %v", err)
 	}
 	t.Cleanup(func() { _ = fsacl.AllowWrite(deck) })
+	// Claude-1 readonly-walk consult 4.2 — the NEGATIVE CONTROL both halves:
+	// a write into the deck MUST be denied (else the fixture proves nothing),
+	// and enumeration MUST still work (else the snapshot cannot observe the
+	// tree — exactly the hosted walk failure that took four legs to name).
+	if err := os.WriteFile(filepath.Join(deck, ".denywrite-probe"), []byte("x"), 0o644); err == nil {
+		_ = os.Remove(filepath.Join(deck, ".denywrite-probe"))
+		t.Fatal("DenyWrite did not deny writes — the fixture proves nothing")
+	}
+	if _, err := os.ReadDir(deck); err != nil {
+		t.Fatalf("DenyWrite also blocked reads — the snapshot cannot observe the tree: %v", err)
+	}
 	code, out := briefFor(t, root)
 	if code != 0 {
 		t.Fatalf("brief must work against a read-only deck, exit %d", code)
 	}
-	walkErr := filepath.Walk(filepath.Join(root, protocol.DeckDir), func(_ string, _ os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	t.Logf("after-state walk error: %v", walkErr)
-	after := snapshot()
+	beforePaths := strings.Count(before, "\n")
+	after := snapshot(t, "after", beforePaths) // the floor: at least as many paths as before
 	if before != after {
 		// Hosted delta print: the EXACT created/removed paths, so the
 		// product-write investigation starts from evidence.
