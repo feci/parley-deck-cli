@@ -64,3 +64,4 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation18 fixture repair checkpoint and independent toolchain challenge | 2026-09-28T17:32:06.570Z | 82662479 | 81852928 | 99744 | 26378 | 591 |
 | Invocation19 fixture-family closures; Windows matrix remains red | 2026-09-28T17:58:13.722Z | 88716498 | 87884672 | 105627 | 27835 | 639 |
 | Invocation20 temporary diagnostics and partial refusal coverage; advisor pending | 2026-09-28T18:25:10.018Z | 94424647 | 93572096 | 111993 | 29613 | 680 |
+| Invocation21 checkpoint; applicable read-path coverage remains open | 2026-09-28T18:48:27.839Z | 100486805 | 99609088 | 117442 | 31348 | 719 |
