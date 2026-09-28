@@ -58,3 +58,5 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation 12 complete; identity repair hosted-verified, 11 Windows packages remain red | 2026-09-28T15:51:40.914Z | 52725224 | 52333824 | 58510 | 13553 | 394 |
 | Invocation 13 complete; native fixture progress and Kimi mode advisory recorded | 2026-09-28T16:10:59.747Z | 60020221 | 59607680 | 65333 | 16085 | 429 |
 | Invocation 14 complete; mode/path/D.5 changes and Claude sharing analysis recorded | 2026-09-28T16:29:11.324Z | 67605337 | 67174144 | 72142 | 18976 | 463 |
+| Invocation 15 complete; mode/D.5 hosted green and no-retry sharing repair pushed | 2026-09-28T16:39:57.633Z | 72126321 | 71679616 | 76497 | 21089 | 482 |
+| Implementation invocation 16 boundary; fixture unit continues | 2026-09-28T16:54:53.621Z | 76626899 | 75867136 | 87313 | 23465 | 530 |
