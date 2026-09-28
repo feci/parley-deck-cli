@@ -1526,6 +1526,24 @@ zero attempts; Preview must refuse with the "no matching spent charge"
 authority guard and leave the ledger byte-identical — distinct from
 missing-intent and now pinned as such.
 
+
+## Claude readonly-walk 4.4/5/6 adopted (invocation 25, 20:1xZ)
+
+**4.4 — DenyWriteTree/AllowWriteTree landed as a SEPARATE helper** (the
+consult's design): the deny ACE carries SUB_CONTAINERS_AND_OBJECTS_INHERIT
+so it propagates to the whole deck subtree — existing files' bytes
+genuinely cannot be rewritten (the content-hash comparison is meaningful)
+— while the narrow mask keeps reads and cleanup removals possible.
+DenyWrite's other call sites keep their one-level semantics. The organizer
+test now uses the tree form (the name "read-only deck" is true). 4.5's
+sequencing was satisfied de facto (4.1/4.2/4.3 shipped together at
+58472e2/5986106; 4.4 + the full-content digest follow on a fixture now
+trustable to observe — 4.6's dependency noted and honored). The
+full-content comparison itself landed earlier (gap 8, 96cdd7f). Unix arms
+are the one-level equivalents (a recursive chmod would break cleanup
+removals — no delete-child carve-out in mode bits — recorded as the
+platform-true scoping).
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

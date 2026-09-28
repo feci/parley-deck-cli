@@ -77,3 +77,16 @@ func DenyRead(path string) error {
 	}
 	return nil
 }
+
+// DenyWriteTree is a no-op walk on Unix: chmod -R 0555 would break cleanup
+// removals (no delete-child carve-out in mode bits); tests use per-level
+// DenyWrite where one level suffices, or this helper when only the ROOT's
+// write-deny semantics matter cross-platform.
+func DenyWriteTree(path string) error {
+	return DenyWrite(path)
+}
+
+// AllowWriteTree restores after DenyWriteTree.
+func AllowWriteTree(path string) error {
+	return AllowWrite(path)
+}

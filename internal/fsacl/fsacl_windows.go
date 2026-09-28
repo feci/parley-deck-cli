@@ -233,6 +233,91 @@ func DenyWrite(path string) error {
 	return denyAccess(path, windows.FILE_WRITE_DATA|windows.FILE_APPEND_DATA)
 }
 
+// DenyWriteTree makes a whole TREE unwritable for tests (claude-1
+// readonly-walk consult 4.4): the deny ACE carries
+// SUB_CONTAINERS_AND_OBJECTS_INHERIT so it propagates to existing children
+// (their DACLs are unprotected) — existing files' bytes genuinely cannot be
+// rewritten — while the narrow mask keeps reads and cleanup removals
+// possible. Distinct from DenyWrite (one level) so the other call sites'
+// semantics are unchanged.
+func DenyWriteTree(path string) error {
+	return denyAccessTree(path, windows.FILE_WRITE_DATA|windows.FILE_APPEND_DATA, windows.SUB_CONTAINERS_AND_OBJECTS_INHERIT)
+}
+
+// AllowWriteTree removes a DenyWriteTree (the same rebuilt-allow restore,
+// protection flag preserved as-is so inheritance semantics stay intact).
+func AllowWriteTree(path string) error {
+	sd, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	if err != nil {
+		return err
+	}
+	dacl, _, err := sd.DACL()
+	if err != nil {
+		return err
+	}
+	if dacl == nil {
+		return nil
+	}
+	var kept []windows.EXPLICIT_ACCESS
+	const aclHeaderSize = uintptr(8)
+	off := aclHeaderSize
+	for i := uint16(0); i < dacl.AceCount; i++ {
+		hdr := (*windows.ACE_HEADER)(unsafe.Pointer(uintptr(unsafe.Pointer(dacl)) + off))
+		if hdr.AceType == windows.ACCESS_ALLOWED_ACE_TYPE {
+			ace := (*windows.ACCESS_ALLOWED_ACE)(unsafe.Pointer(uintptr(unsafe.Pointer(dacl)) + off))
+			sid := (*windows.SID)(unsafe.Pointer(uintptr(unsafe.Pointer(dacl)) + off + unsafe.Offsetof(ace.SidStart)))
+			kept = append(kept, windows.EXPLICIT_ACCESS{
+				AccessPermissions: ace.Mask,
+				AccessMode:        windows.GRANT_ACCESS,
+				Inheritance:       windows.SUB_CONTAINERS_AND_OBJECTS_INHERIT,
+				Trustee: windows.TRUSTEE{
+					TrusteeForm:  windows.TRUSTEE_IS_SID,
+					TrusteeType:  windows.TRUSTEE_IS_USER,
+					TrusteeValue: windows.TrusteeValueFromSID(sid),
+				},
+			})
+		}
+		off += uintptr(hdr.AceSize)
+	}
+	acl, err := windows.ACLFromEntries(kept, nil)
+	if err != nil {
+		return err
+	}
+	return windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION, nil, nil, acl, nil)
+}
+
+func denyAccessTree(path string, mask windows.ACCESS_MASK, inherit uint32) error {
+	owner, err := tokenUser()
+	if err != nil {
+		return err
+	}
+	sd, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	if err != nil {
+		return err
+	}
+	existing, _, err := sd.DACL()
+	if err != nil {
+		return err
+	}
+	entries := []windows.EXPLICIT_ACCESS{{
+		AccessPermissions: mask,
+		AccessMode:        windows.DENY_ACCESS,
+		Inheritance:       inherit,
+		Trustee: windows.TRUSTEE{
+			TrusteeForm:  windows.TRUSTEE_IS_SID,
+			TrusteeType:  windows.TRUSTEE_IS_USER,
+			TrusteeValue: windows.TrusteeValueFromSID(owner),
+		},
+	}}
+	acl, err := windows.ACLFromEntries(entries, existing)
+	if err != nil {
+		return err
+	}
+	return windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT,
+		windows.DACL_SECURITY_INFORMATION, nil, nil, acl, nil)
+}
+
 // AllowWrite removes a DenyWrite deny ACE (tests restore writability before
 // their cleanup). Unix restores mode 0755; Windows drops the deny ACE.
 func AllowWrite(path string) error {

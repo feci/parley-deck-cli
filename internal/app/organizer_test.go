@@ -100,10 +100,10 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	// deliberately NOT delete-child so cleanup removals still work), and
 	// AllowWrite restores by rebuilding the allow set WITHOUT the protected
 	// flag (the invocation-13 regression root cause, now fixed in fsacl).
-	if err := fsacl.DenyWrite(deck); err != nil {
-		t.Fatalf("cannot make deck read-only: %v", err)
+	if err := fsacl.DenyWriteTree(deck); err != nil {
+		t.Fatalf("cannot make deck tree read-only: %v", err)
 	}
-	t.Cleanup(func() { _ = fsacl.AllowWrite(deck) })
+	t.Cleanup(func() { _ = fsacl.AllowWriteTree(deck) })
 	// Claude-1 readonly-walk consult 4.2 — the NEGATIVE CONTROL both halves:
 	// a write into the deck MUST be denied (else the fixture proves nothing),
 	// and enumeration MUST still work (else the snapshot cannot observe the
