@@ -7,6 +7,7 @@ import (
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/evidence"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -31,7 +32,15 @@ func TestVerificationRequiresIgnoredRuntimeBeforeArtifacts(t *testing.T) {
 				t.Fatal(detail)
 			}
 			ok, detail := op.VerifyCompletionEvidence(context.Background())
-			if ok || !strings.Contains(detail, "runtime must be ignored before execution") {
+			// Row 27: on Windows the reviewed POSIX-host gate (§C.3,
+			// driver_impl.go) refuses BEFORE the ignore prerequisite — the
+			// designed first refusal differs by platform; refusal-retention
+			// and nothing-published hold on both.
+			wantRefusal := "runtime must be ignored before execution"
+			if runtime.GOOS == "windows" {
+				wantRefusal = "POSIX execution host"
+			}
+			if ok || !strings.Contains(detail, wantRefusal) {
 				t.Fatalf("wrong prerequisite result: %t %s", ok, detail)
 			}
 			if _, err := os.Lstat(filepath.Join(root, ".parley-runtime")); !os.IsNotExist(err) {
