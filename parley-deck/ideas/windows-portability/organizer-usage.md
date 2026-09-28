@@ -39,3 +39,12 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/25/rollout-2026-09-25T
 | FINAL complete; closing design and assigning Phase 5 to Zcode | 2026-09-25T17:52:34.403Z | 13163546 | 12960768 | 39973 | 20979 | 116 |
 | Implementation Stage 0 checkpoint reported; resume hosted diagnosis and ACL work | 2026-09-25T18:03:24.622Z | 14513520 | 14294656 | 46222 | 25164 | 123 |
 | Implementation Stage 0 hosted results assessed; probe bundle and initial ACL module checkpointed | 2026-09-25T18:21:58.198Z | 18507244 | 18266368 | 57176 | 33222 | 142 |
+
+## Provider-stop resume — 2026-09-28
+
+Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T14-43-38-01a0e80a-d3c9-7c92-92c8-54e32ea10927.jsonl`. Separate cumulative totals, no monetary estimate. Original quorum/assignments retained; G3 manual-dispatch fallback.
+
+| Boundary | Timestamp | Input | Cached input | Output | Reasoning | Accounting events |
+|---|---|---:|---:|---:|---:|---:|
+| Implementation resumed from Stage 1 after owner containment answer | 2026-09-28T12:46:31.578Z | 536764 | 466304 | 3937 | 235 | 11 |
+| Invocation 4 complete; invocation 5 assigned race fix and Stage 2 | 2026-09-28T13:03:12.038Z | 3342587 | 3251840 | 8921 | 1181 | 48 |
