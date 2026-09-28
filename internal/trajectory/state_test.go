@@ -92,6 +92,9 @@ func chargeFixture(t *testing.T, root string, b *budget.CycleBinding) context.Co
 func TestPersistentTrajectoryCapturesDirtyFailedAttemptAndRefusesResume(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	ctx := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	run, err := Begin(ctx, root, "fixture", "builder", "invocation-1")
 	if err != nil {
 		t.Fatal(err)
@@ -163,6 +166,9 @@ func TestPersistentTrajectoryMissingPolicyStateAndExactCharge(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			root, b, _ := accountingFixture(t)
 			chargeFixture(t, root, b)
+			if !chargeApplicable {
+				return // Windows §C.1 designed refusal (see chargeFixture)
+			}
 			switch kind {
 			case "missing-state":
 				if err := os.Remove(statePath(*b)); err != nil {
@@ -229,6 +235,9 @@ func TestPersistentTrajectoryMissingPolicyStateAndExactCharge(t *testing.T) {
 func TestPersistentTrajectoryPinsActorAndDoesNotTreatExitZeroAsVerification(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	ctx := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	if _, err := Begin(ctx, root, "fixture", "other", "invocation-1"); err == nil {
 		t.Fatal("wrong implementer admitted")
 	}
@@ -250,6 +259,9 @@ func TestPersistentTrajectoryPinsActorAndDoesNotTreatExitZeroAsVerification(t *t
 func TestPersistentTrajectorySourceUnavailableIsRetained(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	ctx := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	run, err := Begin(ctx, root, "fixture", "builder", "invocation-1")
 	if err != nil {
 		t.Fatal(err)
@@ -319,6 +331,9 @@ func TestPersistentTrajectorySeparateProcessHelper(t *testing.T) {
 func TestPersistentTrajectoryWorktreeAndSeparateProcessContinuity(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	linked := filepath.Join(t.TempDir(), "linked")
 	gitFixture(t, root, "worktree", "add", "--detach", linked, "HEAD")
 	shared, err := budget.LoadCycleBinding(context.Background(), linked, "fixture", budget.Fixup)
@@ -378,6 +393,9 @@ func TestPersistentTrajectoryLiveHandleRejectsErasedAuthority(t *testing.T) {
 		t.Run(stage, func(t *testing.T) {
 			root, b, _ := accountingFixture(t)
 			ctx := chargeFixture(t, root, b)
+			if !chargeApplicable {
+				return // Windows §C.1 designed refusal (see chargeFixture)
+			}
 			var run *Run
 			var err error
 			if stage == "after-launch" {
@@ -472,6 +490,9 @@ func TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging(t *testing.T
 func TestPersistentTrajectoryArchiveFailureRetainsActualTerminal(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	ctx := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	run, err := Begin(ctx, root, "fixture", "builder", "invocation-1")
 	if err != nil {
 		t.Fatal(err)
@@ -507,6 +528,9 @@ func TestPersistentTrajectoryArchiveFailureRetainsActualTerminal(t *testing.T) {
 func TestPersistentTrajectoryLostPostArchiveRefusesInspectionAndClosure(t *testing.T) {
 	root, b, _ := accountingFixture(t)
 	ctx := chargeFixture(t, root, b)
+	if !chargeApplicable {
+		return // Windows §C.1 designed refusal (see chargeFixture)
+	}
 	run, err := Begin(ctx, root, "fixture", "builder", "invocation-1")
 	if err != nil {
 		t.Fatal(err)

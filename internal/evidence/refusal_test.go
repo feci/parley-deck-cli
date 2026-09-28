@@ -38,20 +38,37 @@ func retainRefusalPlatformTrue(t *testing.T, dir string) bool {
 	if err == nil || !strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
 		t.Fatalf("windows retain did not produce the designed refusal: %v", err)
 	}
-	// F1 assertion scoping (kimi consult): compare against the BASELINE the
-	// test itself established — the refusal may not ADD refusal-record
-	// state (no refusals/ or verification-refusals/ dirs, no observation
-	// files), but pre-existing test scaffolding (.parley-runtime from
-	// earlier steps of a long test) is not product residue.
-	pending, _, _ := refusalDirs(dir)
+	// F1 assertion scoping (kimi consult): the refusal may not ADD
+	// refusal-record state — pending AND canonical via refusalDirs' own
+	// returns (gap 7, hole A) — but pre-existing test scaffolding
+	// (.parley-runtime from earlier steps of a long test) is not product
+	// residue.
+	pending, canonicalDir, _ := refusalDirs(dir)
 	if entries, perr := os.ReadDir(pending); perr == nil && len(entries) != 0 {
 		t.Fatalf("refusal created refusal records anyway: %v", entries)
 	}
-	canonicalDir := filepath.Join(filepath.Dir(pending), "verification-refusals")
 	if entries, cerr := os.ReadDir(canonicalDir); cerr == nil && len(entries) != 0 {
 		t.Fatalf("refusal created canonical records anyway: %v", entries)
 	}
 	return false
+}
+
+// Gap 7, hole B: the dedicated pristine nothing-created pin — on a
+// NEVER-touch dir, the retain refusal may not create ANY state at all
+// (not even .parley-runtime scaffolding; the F1 product gate guarantees
+// this, and this pin fails if that gate regresses).
+func TestWindowsRetainRefusalCreatesNothingOnPristineDir(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		return
+	}
+	dir := t.TempDir()
+	if _, err := RetainVerificationRefusal(dir, refusalFixture()); err == nil ||
+		!strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
+		t.Fatalf("pristine retain did not produce the designed refusal: %v", err)
+	}
+	if files, derr := os.ReadDir(dir); derr == nil && len(files) != 0 {
+		t.Fatalf("pristine retain created state (scaffolding or records): %v", files)
+	}
 }
 
 // testWindowsRefusalReadPath (kimi-1 applicability consult F3b): the

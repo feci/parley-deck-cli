@@ -1420,6 +1420,38 @@ b40235d/276a1a2/12d7cba while later legs ran):
 
 No phase or signoff inferred; all advisory pending formal review.
 
+
+## kimi-1 coverage follow-up: the eleven-gap checklist CLOSED (invocation 24, 19:4xZ)
+
+| Gap | Disposition |
+|---|---|
+| 1 | FIXED earlier + completed now: the ChargeCycle gate landed at 077c4b5 (hosted-cleared); the never-taken OpenCycleSession Logf remains to remove in the next tidy batch (cosmetic; the gate itself never fires by design now — see wording correction below) |
+| 2 | **LANDED this invocation**: all NINE previously-unwired chargeFixture callers now check `chargeApplicable` (state_test ×8 incl. the two in subtests, state_validation ×1); bounded suite green (34.6s) |
+| 3 | `missingRecoveryRow` decision: the missing-row state is constructible test-side the same way (delete the intent file from the v2 construction); wired into the salvaged set via the fixture's `missing-intent` case + the Preview pristine pin — the dedicated recovery-row variant is a named small follow-up if review wants the distinct row shape |
+| 4 | **LANDED this invocation (V4)**: every Preview adversarial case now asserts state AND ledger byte-identity across the refusal; the earlier constructor items (V1/V2/V3) were fixed across 58f926a/df17141/444d930 |
+| 5 | The six unrestored cases were restored at 58f926a (all ten hosted-verified); the per-guard re-pins after the clean control remain logged-hosted texts (pinned from evidence, not guessed) |
+| 6 | F3c/F3d landed at a71aa9d, hosted-green (36471952913/36472183484) — no repeat needed |
+| 7 | **LANDED**: hole A — the canonical check now uses `refusalDirs`' second return (not a hand-built path); hole B — the dedicated pristine nothing-created pin (`TestWindowsRetainRefusalCreatesNothingOnPristineDir`: no state AT ALL, not even scaffolding — pins the F1 product gate) |
+| 8 | **LANDED**: the organizer snapshot is now STRUCTURE + FULL-CONTENT hashing (every file's sha256 in the snapshot, not one sentinel); the walk-error capture rides 444d930's leg for the causal evidence |
+| 9 | **LANDED**: `requireCommittedRefusals`-on-empty-store carried into the Windows CLI helper |
+| 10 | **LANDED**: the stopped-parent test now asserts the ACTUAL designed refusal (`RetainVerificationRefusal` → §B durability text) — no bare return |
+| 11 | **Record corrections applied below** |
+
+**Wording corrections (gap 11, exact):** (a) my earlier claim "the
+OpenCycleSession gate matched fine" inferred matching from the Logf's
+absence — the correct statement is: the OpenCycleSession gate NEVER FIRED
+because OpenCycleSession's own publication path was not the one refusing in
+that flow; the refusal came from ChargeCycle (Kimi's R1 trace was right).
+(b) The 36468595972 residual's guard attribution corrected: the
+"incomplete or changed" text comes from `readReservationIntent`'s
+completeness check, not `validateIntentBefore`. (c) The earlier
+"state_test's own callers included" was wrong at that commit — nine were
+missed; they are wired NOW (this invocation), with the correction on
+record. (d) The empty after-snapshot shows a failed walk but does not by
+itself prove the cause — the walk-error Logf is the evidence layer, and
+the diagnosis stays "walk-vs-deny interaction, cause pending the logged
+error", not a settled mechanism.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

@@ -3,6 +3,7 @@
 package trajectory
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -161,13 +162,23 @@ func TestPreviewAdversarialRefusalsOnConstructedState(t *testing.T) {
 	})
 	for _, change := range []string{"missing-intent", "partial-intent", "changed-root", "changed-before", "changed-limits", "changed-action", "missing-archive", "extra-charge", "changed-trajectory", "symlink-intent"} {
 		t.Run(change, func(t *testing.T) {
-			root, _, entry := windowsChargedStateFixture(t, change)
+			root, b, entry := windowsChargedStateFixture(t, change)
+			// V4 (kimi gap 4): the read-path refusal must leave BOTH the
+			// trajectory state AND the ledger byte-identical.
+			stateBefore := snapshotRead(t, statePath(*b))
+			ledgerBefore := snapshotRead(t, filepath.Join(b.Store.Dir, "ledger.json"))
 			_, err := PreviewReservationRecovery(context.Background(), root, "fixture", entry)
 			if err == nil {
 				t.Fatalf("%s: corrupt evidence was accepted by Preview", change)
 			}
 			if change == "missing-intent" && !strings.Contains(err.Error(), "original reservation intent directory is missing") {
 				t.Fatalf("missing-intent refusal text: %v", err)
+			}
+			if got := snapshotRead(t, statePath(*b)); !bytes.Equal(got, stateBefore) {
+				t.Fatalf("%s: read-path Preview rewrote trajectory state", change)
+			}
+			if got := snapshotRead(t, filepath.Join(b.Store.Dir, "ledger.json")); !bytes.Equal(got, ledgerBefore) {
+				t.Fatalf("%s: read-path Preview rewrote the ledger", change)
 			}
 			t.Logf("%s refusal: %v", change, err)
 		})

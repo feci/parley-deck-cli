@@ -19,7 +19,7 @@ import (
 // assert only a non-zero exit and are Windows-exercisable as-is — four need
 // no retained record; the fifth (valid-format absent digest) rejects before
 // any barrier.
-func testWindowsRefusalCLIRejections(t *testing.T, root string) {
+func testWindowsRefusalCLIRejections(t *testing.T, root, dir string) {
 	t.Helper()
 	if runtime.GOOS != "windows" {
 		return
@@ -38,14 +38,25 @@ func testWindowsRefusalCLIRejections(t *testing.T, root string) {
 			t.Fatalf("windows: invalid recovery accepted: %v", args)
 		}
 	}
+	// Gap 9: the requireCommittedRefusals-on-empty-store assertion carries
+	// into the Windows helper — invalid recoveries grant no verification.
+	if err := requireCommittedRefusals(context.Background(), root, dir); err == nil {
+		t.Fatal("windows: invalid recoveries granted verification")
+	}
 }
 
-func appRefusal(t *testing.T, dir string) string {
+func appRefusalFixture(t *testing.T) evidence.VerificationRefusal {
 	t.Helper()
 	r, err := newVerificationRefusal("helper", "execution", "idea-x", "run", "reviewer", sha256Hex("request"), sha256Hex("report"), "attempt-invocation")
 	if err != nil {
 		t.Fatal(err)
 	}
+	return r
+}
+
+func appRefusal(t *testing.T, dir string) string {
+	t.Helper()
+	r := appRefusalFixture(t)
 	sum, err := evidence.RetainVerificationRefusal(dir, r)
 	if err != nil {
 		if runtime.GOOS == "windows" && strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
@@ -165,7 +176,7 @@ func TestRefusalRecoveryCLIRejectsUnboundAndWrongScopes(t *testing.T) {
 	// F3e (kimi-1 applicability consult): the five rejection cases are
 	// Windows-exercisable without a retained record — run them on Windows
 	// BEFORE the not-applicable early return.
-	testWindowsRefusalCLIRejections(t, root)
+	testWindowsRefusalCLIRejections(t, root, dir)
 	sum := appRefusal(t, dir)
 	if sum == "" {
 		return // Windows §C designed refusal (not-applicable lifecycle)
@@ -237,13 +248,18 @@ func TestRefusalOrphanHelperChild(t *testing.T) {
 }
 
 func TestRefusalHelperSurvivesStoppedParent(t *testing.T) {
+	root0, dir0 := gateScratchRepo(t, twoCriterionContract())
 	if runtime.GOOS == "windows" {
-		// §C designed refusal: the orphan helper's retention refuses on
-		// Windows (F2.3 of the applicability consult) — the lifecycle under
-		// test (retention succeeds) cannot hold; the refusal itself is pinned
-		// by retainRefusalPlatformTrue's sites and the fsacl/§B suites.
+		// Gap 10: assert the ACTUAL designed refusal (not a bare return) —
+		// retention must refuse with the §B durability text and leave no
+		// refusal records; the retention-succeeds lifecycle cannot hold.
+		if _, err := evidence.RetainVerificationRefusal(dir0, appRefusalFixture(t)); err == nil ||
+			!strings.Contains(err.Error(), "directory-entry durability is not available on Windows") {
+			t.Fatalf("windows stopped-parent helper retention did not produce the designed refusal: %v", err)
+		}
 		return
 	}
+	_ = root0
 	root, dir := gateScratchRepo(t, twoCriterionContract())
 	root, dir, err := verificationRefusalScope(root, "idea-x")
 	if err != nil {

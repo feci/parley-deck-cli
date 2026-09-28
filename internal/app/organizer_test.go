@@ -6,6 +6,7 @@ package app
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"parley-deck-cli/internal/fsacl"
@@ -56,11 +57,20 @@ func TestOrganizerBriefWritesNoFileReadOnlyDeck(t *testing.T) {
 	// structure (the set of paths) must be identical, and a sentinel file's
 	// BYTES must be untouched. ModTime alone is not evidence of a product
 	// write (the hosted failure showed mtime noise under the working deny).
+	// Gap 8: STRUCTURE plus FULL-CONTENT hashing — every file's bytes are
+	// hashed into the snapshot, not one sentinel (a single-sentinel
+	// substitute could miss writes elsewhere in the tree).
 	snapshot := func() string {
 		var sb strings.Builder
 		filepath.Walk(filepath.Join(root, protocol.DeckDir), func(p string, info os.FileInfo, err error) error {
 			if err == nil {
-				sb.WriteString(p + "|" + info.Name() + "|" + fmt.Sprint(info.IsDir()) + "\n")
+				sb.WriteString(p + "|" + info.Name() + "|" + fmt.Sprint(info.IsDir()))
+				if !info.IsDir() {
+					if data, rerr := os.ReadFile(p); rerr == nil {
+						sb.WriteString("|" + fmt.Sprintf("%x", sha256.Sum256(data)))
+					}
+				}
+				sb.WriteString("\n")
 			}
 			return nil
 		})

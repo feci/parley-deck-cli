@@ -228,6 +228,9 @@ func TestPendingCycleRefusesBeforeHistoricalContent(t *testing.T) {
 			root, b := unchangedFixture(t, "true")
 			if pending {
 				chargeFixture(t, root, b)
+				if !chargeApplicable {
+					return // Windows §C.1 designed refusal (see chargeFixture)
+				}
 			}
 			state, _, err := readState(statePath(*b))
 			if err != nil {
