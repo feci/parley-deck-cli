@@ -1273,6 +1273,15 @@ disputed pattern:
   returns; no-coverage verdict is claimed from counts; the
   fixture-completion wording was reconciled earlier this invocation.
 
+
+## F4.2 pin landed (invocation 21, 18:3xZ)
+
+Preview's Windows entry point anchored: on a pristine store the read path
+yields the designed missing-intent refusal and publishes nothing
+(TestPreviewReservationRecoveryPristineStoreRefusesOnWindows — windows-
+tagged, no skips). F4.1 (the RecoverReservation apply-refusal pin) and the
+F3 read-path salvages remain the named next units.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

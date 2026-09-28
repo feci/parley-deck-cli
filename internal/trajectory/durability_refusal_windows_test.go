@@ -3,6 +3,7 @@
 package trajectory
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -118,5 +119,20 @@ func TestVerificationRowsRefuseAtReviewedGateOnWindows(t *testing.T) {
 	_, err := openVerificationDirectory(budget.CycleBinding{}, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", true)
 	if err == nil || !strings.Contains(err.Error(), "captured verification journals require a POSIX execution host") {
 		t.Fatalf("A2/B3/B4 gate refusal wrong: %v", err)
+	}
+}
+
+// F4.2 (kimi-1 applicability consult): anchor the Preview ENTRY POINT on
+// Windows — on a pristine store the read path must yield the designed
+// missing-intent refusal (no publication, no barrier), proving Preview is
+// reachable and correct on this platform rather than silently bypassed.
+func TestPreviewReservationRecoveryPristineStoreRefusesOnWindows(t *testing.T) {
+	root, b, _ := accountingFixture(t)
+	_, err := PreviewReservationRecovery(context.Background(), root, "fixture", "someentrykey")
+	if err == nil || !strings.Contains(err.Error(), "original reservation intent directory is missing") {
+		t.Fatalf("pristine-store Preview must yield the designed missing-intent refusal: %v", err)
+	}
+	if names, derr := os.ReadDir(filepath.Join(filepath.Dir(b.Store.Dir), "reservation-intents")); derr == nil && len(names) != 0 {
+		t.Fatalf("read-path Preview published intents anyway: %v", names)
 	}
 }
