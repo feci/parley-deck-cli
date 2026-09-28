@@ -212,6 +212,13 @@ func TestSnapshotRelativeLinksRoundTrip(t *testing.T) {
 	}
 	for name, target := range links {
 		got, err := os.Readlink(filepath.Join(restored, name))
+		// Row 31: Windows Readlink reports the native backslash form for
+		// relative targets; the archive's canonical form (what the fixture
+		// asked for and what restore wrote) is slash-separated — compare
+		// canonically, the round-trip invariant unchanged.
+		if runtime.GOOS == "windows" {
+			got = strings.ReplaceAll(got, "\\", "/")
+		}
 		if err != nil || got != target {
 			t.Fatalf("raw link target lost: %s %q %v", name, got, err)
 		}

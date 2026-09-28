@@ -140,7 +140,7 @@ func TestGitSourceInventoryPathsBoundsAndCancellation(t *testing.T) {
 	// inventory-robustness invariant is pinned unconditionally on both.
 	names := []string{"space name", "žltý", "-option", "line\nbreak"}
 	if runtime.GOOS == "windows" {
-		names = []string{"space name", "žltý", "-option", "semi;colon", "tab\tname"}
+		names = []string{"space name", "žltý", "-option", "plus+name", "eq=name"}
 	}
 	for _, name := range names {
 		inventoryWrite(t, root, name, "included\n")

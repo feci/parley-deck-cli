@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -292,6 +293,16 @@ func captureSnapshotMember(ctx context.Context, root string, origin os.FileInfo,
 		target, err := entryRoot.Readlink(filepath.FromSlash(name))
 		if err != nil {
 			return err
+		}
+		if runtime.GOOS == "windows" {
+			// Row 31 (hosted diagnostic 36457689897): Windows Readlink
+			// returns the native backslash-separated form for relative
+			// targets ("alias\file"); the archive's canonical separator is
+			// slash, and validSnapshotLink rightly refuses backslashes —
+			// normalize at the capture boundary (the archive records the
+			// canonical form; restore writes it verbatim and Windows accepts
+			// either separator).
+			target = strings.ReplaceAll(target, "\\", "/")
 		}
 		if !validSnapshotLink(name, target) {
 			// Actionable refusal text (the §B discipline): name the offender
