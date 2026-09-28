@@ -304,8 +304,12 @@ func removeDeny(path string, mask windows.ACCESS_MASK) error {
 	if err != nil {
 		return err
 	}
+	// NO PROTECTED flag: setting it strips the directory's inherited ACEs
+	// and bricks cleanup traversal (the hosted 36447708947 regression root
+	// cause — the DACL became an empty protected list). Without it the
+	// rebuilt grants merge with parent inheritance as before.
 	return windows.SetNamedSecurityInfo(path, windows.SE_FILE_OBJECT,
-		windows.DACL_SECURITY_INFORMATION|windows.PROTECTED_DACL_SECURITY_INFORMATION,
+		windows.DACL_SECURITY_INFORMATION,
 		nil, nil, acl, nil)
 }
 

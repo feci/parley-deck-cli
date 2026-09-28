@@ -1180,6 +1180,43 @@ renamed copy exits loudly, never m.Run()). Unhandled scripts exit 70 loudly
 Full runner suite green locally (96.5s, exit 0). Windows execution rides
 the push; any unhandled-script failures there name themselves.
 
+
+## Genuinely readonly organizer fixture + platform-path gaps (invocation 21, 18:2xZ)
+
+**The readonly organizer fixture — ROOT CAUSE found and fixed:** the
+invocation-13 regression was NOT DenyWrite's deny semantics but
+`fsacl.AllowWrite`'s restore: `removeDeny` re-applied the rebuilt allow set
+with the PROTECTED_DACL flag, STRIPPING the directory's inherited ACEs and
+bricking cleanup traversal (openfdat: Access is denied on child dirs).
+Fix: `removeDeny` applies without the protected flag (the rebuilt grants
+merge with parent inheritance). With the restore repaired, the organizer
+test now uses the GENUINE native deny (`fsacl.DenyWrite` — chmod is a no-op
+for write access on Windows and the historical pass proved nothing there;
+the deny-ACE covers add-file/add-subdirectory, deliberately not
+delete-child, so cleanup removals survive) with `AllowWrite` restoring.
+The t.Skipf is retired into a loud t.Fatalf. Bounded PASS. **The
+write-detection snapshot misreport from invocation 13 is explained by the
+same root cause** (the broken restore left the tree unreadable, not the
+brief writing).
+
+**TestAgentsExecRetainsFailedStart:** the test removed `test-agent`
+(extension-less) — a no-op on Windows where the fixture is
+`test-agent.exe`, so the launch SUCCEEDED and inverted the test.
+measuredFixture now records the actual installed path; the removal uses it.
+
+**TestBudgetWorktreeInspectCLIReportsRetainedRegistration:** canonical
+comparison applied (the row-10 family's CLI variant).
+
+**Fixture-completion wording reconciled (per the organizing correction):**
+the earlier "every extension-less shell fixture in the tree is a re-exec
+port" claim was overbroad — the runner package's `/bin/sh -c` fixtures
+(telemetryShell/interactiveFixture) were subsequently discovered and ported
+in invocation 20 (`shellPath()` + the sh.exe role). The truthful scoped
+statement: all DISCOVERED extension-less/shell fixtures across internal/app
+and internal/runner are re-exec ports as of 7e7a340; any future grep that
+surfaces another family extends the same pattern. No coverage verdict is
+claimed from counts alone.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

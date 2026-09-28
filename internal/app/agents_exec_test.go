@@ -13,6 +13,10 @@ import (
 	"parley-deck-cli/internal/telemetry"
 )
 
+// installedAgentPath records the re-exec fixture's actual installed path
+// (with the Windows .exe suffix) for tests that manipulate the binary.
+var installedAgentPath string
+
 func measuredFixture(t *testing.T, script string) (string, string) {
 	t.Helper()
 	root := t.TempDir()
@@ -32,6 +36,7 @@ func measuredFixture(t *testing.T, script string) (string, string) {
 		role = "agent-script touch launched"
 	}
 	path := writeRoleFixture(t, root, "test-agent", role)
+	installedAgentPath = path
 	writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "fixture", Path: path})
 	prompt := filepath.Join(root, "input.txt")
 	if err := os.WriteFile(prompt, []byte("Private prompt, never telemetry"), 0o600); err != nil {
@@ -86,7 +91,10 @@ func TestAgentsExecRequiresExplicitLaunchAndSafePaths(t *testing.T) {
 
 func TestAgentsExecRetainsFailedStart(t *testing.T) {
 	root, prompt := measuredFixture(t, "exit 0")
-	if err := os.Remove(filepath.Join(root, "test-agent")); err != nil {
+	// The fixture's ACTUAL installed path (the .exe suffix on Windows) —
+	// removing the extension-less name is a no-op there and the launch then
+	// SUCCEEDS, inverting the test.
+	if err := os.Remove(installedAgentPath); err != nil {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer

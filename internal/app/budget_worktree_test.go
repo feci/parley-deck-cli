@@ -65,9 +65,13 @@ func TestBudgetWorktreeInspectCLIReportsRetainedRegistration(t *testing.T) {
 	if !inventory.Git || inventory.ObservationSHA256 == "" {
 		t.Fatalf("inspect did not report Git authority and a digest: %+v", inventory)
 	}
+	// Row 10 family: RegisteredPath is git porcelain's forward-separator
+	// form on Windows; the fixture path is a Go path — canonical comparison.
+	canonical := func(p string) string { return filepath.ToSlash(filepath.Clean(p)) }
+	removedKey := canonical(removed)
 	var found bool
 	for _, r := range inventory.Registrations {
-		if r.RegisteredPath != removed {
+		if canonical(r.RegisteredPath) != removedKey {
 			continue
 		}
 		found = true
