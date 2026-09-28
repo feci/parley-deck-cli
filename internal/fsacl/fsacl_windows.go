@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
 	"unsafe"
 
@@ -17,33 +18,70 @@ import (
 // under the protected DACL. No in-place DACL rewrite of user data happens.
 const repairInstruction = "existing snapshot store left untouched; to repair, move it aside and re-run the same command so the store is re-created with an owner-only access policy on an ACL-capable (NTFS) volume"
 
-// EnsurePrivateStore creates dir if missing and enforces the Windows privacy
-// contract: an owner-only protected DACL — exactly one access-allowed ACE for
-// the token user, PROTECTED_DACL (non-inherited) — set via
-// ACLFromEntries/SetNamedSecurityInfo, then re-queried (create-then-requery
-// self-check, §D.1). Volumes without ACL support (FAT/exFAT) fail
-// SetNamedSecurityInfo and refuse rather than weaken. A store that already
-// satisfies the contract is used as-is; a pre-existing store that fails
-// verification is user data and is refused with instructions, never rewritten.
+// EnsurePrivateStore is the product boundary guard for a snapshot store: an
+// owner-only protected DACL — exactly one access-allowed ACE for the token
+// user, PROTECTED_DACL (non-inherited). A store that already satisfies the
+// contract is used as-is; a pre-existing store that fails verification is user
+// data and is refused with instructions, never rewritten. A missing store is
+// created ATOMICALLY with its policy: CreateDirectory carries the owner-only
+// security descriptor in SECURITY_ATTRIBUTES, so no concurrent first capture
+// can ever observe the store without its owner-only DACL (the ledger row-24
+// create→set-DACL window); ERROR_ALREADY_EXISTS means a concurrent creator
+// won — and its directory was created under the same atomic policy — so the
+// loser verifies rather than refuses. Volumes without ACL support (FAT/exFAT)
+// fail creation-with-policy or the read-back and refuse rather than weaken.
 func EnsurePrivateStore(dir string) error {
 	_, statErr := os.Lstat(dir)
-	preexisting := statErr == nil
-	if !preexisting && !errors.Is(statErr, os.ErrNotExist) {
+	switch {
+	case statErr == nil:
+		return verifyOrRefuseStore(dir)
+	case !errors.Is(statErr, os.ErrNotExist):
 		return statErr
 	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dir), 0o700); err != nil {
 		return err
 	}
-	verifyErr := VerifyPrivateStore(dir)
-	if verifyErr == nil {
+	sd, err := ownerOnlySD()
+	if err != nil {
+		return err
+	}
+	sa := &windows.SecurityAttributes{
+		Length:             uint32(unsafe.Sizeof(windows.SecurityAttributes{})),
+		SecurityDescriptor: sd,
+	}
+	path, err := syscall.UTF16PtrFromString(dir)
+	if err != nil {
+		return err
+	}
+	if err := windows.CreateDirectory(path, sa); err != nil {
+		if errors.Is(err, windows.ERROR_ALREADY_EXISTS) {
+			return verifyOrRefuseStore(dir)
+		}
+		return fmt.Errorf("%w: creating store directory with owner-only DACL: %w", ErrNotPrivate, err)
+	}
+	return VerifyPrivateStore(dir)
+}
+
+// verifyOrRefuseStore accepts a store that passes verification and turns any
+// privacy failure on a present directory into the refuse-and-instruct refusal.
+func verifyOrRefuseStore(dir string) error {
+	err := VerifyPrivateStore(dir)
+	if err == nil {
 		return nil
 	}
-	if !errors.Is(verifyErr, ErrNotPrivate) {
-		return verifyErr
+	if !errors.Is(err, ErrNotPrivate) {
+		return err
 	}
-	if preexisting {
-		return fmt.Errorf("%w (%s)", verifyErr, repairInstruction)
-	}
+	return fmt.Errorf("%w (%s)", err, repairInstruction)
+}
+
+// ProtectPrivateStore applies the §D.1 creation policy to a directory the
+// product itself just created through a non-atomic allocator (restore's
+// os.MkdirTemp): the owner-only protected DACL is set on the product-owned
+// fresh directory, then verified. There is deliberately no refuse-and-instruct
+// path — the caller guarantees product creation — which is what distinguishes
+// creation policy from the EnsurePrivateStore guard.
+func ProtectPrivateStore(dir string) error {
 	acl, err := ownerOnlyDACL()
 	if err != nil {
 		return err
@@ -213,4 +251,17 @@ func ownerOnlyDACL() (*windows.ACL, error) {
 		},
 	}}
 	return windows.ACLFromEntries(entries, nil)
+}
+
+// ownerOnlySD is the atomic-creation form of the same single-ACE policy:
+// SDDL "D:P" = a protected (non-inherited) DACL holding one allow-all ACE for
+// the token user with no inheritance flags — the DACL ownerOnlyDACL produces,
+// carried inside CreateDirectory's SECURITY_ATTRIBUTES so the directory never
+// exists without its policy (ledger row 24).
+func ownerOnlySD() (*windows.SECURITY_DESCRIPTOR, error) {
+	sid, err := tokenUserSID()
+	if err != nil {
+		return nil, err
+	}
+	return windows.SecurityDescriptorFromString("D:P(A;;GA;;;" + sid + ")")
 }

@@ -143,6 +143,15 @@ func runPipelineStart(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "pipeline start failed: %v\n", err)
 		return 1
 	}
+	// §D.4/AC-NAME-3: strict charset allowlist on raw block IDs at NEW pipeline
+	// creation (existing decks grandfather the safe-but-cosmetic remainder at
+	// load; the unsafe classes are refused everywhere).
+	for _, b := range m.Blocks {
+		if err := pipeline.ValidNewBlockID(b.ID); err != nil {
+			fmt.Fprintf(stderr, "pipeline start failed: %v\n", err)
+			return 1
+		}
+	}
 	deck := deckDirFor(*root)
 	if err := os.MkdirAll(pipeline.PipelineDir(deck, m.IdeaSlug), 0o755); err != nil {
 		fmt.Fprintf(stderr, "pipeline start failed: %v\n", err)

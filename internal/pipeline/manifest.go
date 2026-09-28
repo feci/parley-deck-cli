@@ -158,6 +158,12 @@ func (m Manifest) Validate() error {
 		if b.ID == "" {
 			return fmt.Errorf("block %d: id is required", i)
 		}
+		if err := checkBlockID(b.ID); err != nil {
+			// §D.4/AC-NAME-3: the unsafe classes are refused at load on every
+			// OS with no legacy exemption; safe-but-non-allowlisted IDs are
+			// cosmetic grandfathering and stay encodable.
+			return fmt.Errorf("block %d: %w", i, err)
+		}
 		if seen[b.ID] {
 			return fmt.Errorf("duplicate block id %q", b.ID)
 		}

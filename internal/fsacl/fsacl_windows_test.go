@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"unsafe"
 
@@ -219,6 +220,11 @@ func TestPreexistingStoreRefusedAndNotRewritten(t *testing.T) {
 	if err := os.WriteFile(marker, []byte("user data"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	// Row 26: grantTrustees' protected-DACL replacement on the store
+	// auto-propagates inheritance removal to children, which strips a marker
+	// carrying only inherited access. Give the marker an EXPLICIT owner allow
+	// so its readability measures what the PRODUCT did, not the scaffolding.
+	grantTrustees(t, marker)
 	grantTrustees(t, store, builtinUsersSID) // permissive pre-existing policy
 	protectedBefore, acesBefore := walkDACL(t, store)
 
@@ -311,5 +317,58 @@ func TestPrivateFilePolicyRoundTrip(t *testing.T) {
 	err = VerifyPrivateFile(file, info)
 	if !errors.Is(err, ErrNotPrivate) || !strings.Contains(err.Error(), builtinUsersSID) {
 		t.Fatalf("granted file must refuse naming the trustee: %v", err)
+	}
+}
+
+// Ledger row 24 / §D.1: concurrent first creators race on CreateDirectory.
+// The old create→set-DACL window let a loser misclassify the winner's
+// mid-creation store as pre-existing and refuse it; with atomic creation the
+// loser must verify the winner's policy-complete store and succeed.
+func TestConcurrentFirstCreationNeverRefuses(t *testing.T) {
+	base := t.TempDir()
+	store := filepath.Join(base, "store")
+	const creators = 8
+	errs := make([]error, creators)
+	var start sync.WaitGroup
+	start.Add(1)
+	var done sync.WaitGroup
+	for i := 0; i < creators; i++ {
+		done.Add(1)
+		go func(i int) {
+			defer done.Done()
+			start.Wait() // maximize the number of racers on the same missing dir
+			errs[i] = EnsurePrivateStore(store)
+		}(i)
+	}
+	start.Done()
+	done.Wait()
+	for i, err := range errs {
+		if err != nil {
+			t.Fatalf("concurrent first creator %d refused: %v", i, err)
+		}
+	}
+	if err := VerifyPrivateStore(store); err != nil {
+		t.Fatalf("store after concurrent creation: %v", err)
+	}
+}
+
+// Restore shape (§D.1 creation policy): a product-created MkdirTemp dir has an
+// inheriting default DACL — the store guard would (correctly) refuse it as
+// foreign — while ProtectPrivateStore applies the owner-only policy to the
+// product-owned dir, after which verification passes.
+func TestProtectPrivateStoreAppliesPolicyToProductCreatedDir(t *testing.T) {
+	parent := t.TempDir()
+	dir, err := os.MkdirTemp(parent, "trajectory-source-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := VerifyPrivateStore(dir); !errors.Is(err, ErrNotPrivate) {
+		t.Fatalf("fresh MkdirTemp dir unexpectedly private (guard premise broken): %v", err)
+	}
+	if err := ProtectPrivateStore(dir); err != nil {
+		t.Fatalf("ProtectPrivateStore: %v", err)
+	}
+	if err := VerifyPrivateStore(dir); err != nil {
+		t.Fatalf("VerifyPrivateStore after protection: %v", err)
 	}
 }

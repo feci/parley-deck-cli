@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 3646a9f at this invocation's start (2026-09-28T12:57Z clock-verified mid-invocation); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed this invocation as run 36174658770) -> this commit (stage 1 close-out)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> this commit (row-24 fix + restore fix + Stage 2 core)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -86,7 +86,14 @@ Progress for the live stage state.
       runners — the FAT path propagates SetNamedSecurityInfo's error as an
       ErrNotPrivate refusal, by code inspection fsacl_windows.go:51-55).
 - [ ] **Stage 2** — gate-name encoding + raw-ID allowlist (§D.4), legacy fallback +
-      shadow retirement.
+      shadow retirement. CORE LANDED this invocation (2026-09-28T13:0x–13:2xZ;
+      encodeEdgeID in GatePath, legacy read-fallback, shadow retirement,
+      SaveGate unsafe-edge refusal, Manifest.Validate raw-ID unsafe refusal,
+      ValidNewBlockID strict allowlist at pipeline start; tests: encoding
+      table incl. FINAL example, N4 traversal table, mixed-name deck,
+      unsafe-save refusals). REMAINING: BlockWorkspace/GatePath
+      `(string, error)` refusal-signature conversion (~15 call sites, named
+      in Progress); hosted confirmation rides the next push.
 - [ ] **Stage 3** — directory durability: §B table dispositions BEFORE code;
       `fsutil.SyncDir` named-type contract = audit of record + rooted refusal emitter.
 - [ ] **Stage 4** — file sharing (§D.6) + open-site diagnostic cycle (H7).
@@ -252,6 +259,14 @@ push. The rule is now applied with a post-write clock check.]
   wired-guard + AC-PRIV suite cycle, @3646a9f; per-leg facts in the run register),
   then finished Stage 1's deferred items:
 
+  [PROCESS-RECORD CORRECTION 2026-09-28T13:28Z, disclosed per organizer process
+  evidence: invocation 4 actually LAUNCHED at 2026-09-28T12:45Z (organizer
+  process evidence), not "~12:30Z" as first estimated below. The "~12:30Z"
+  figure was a projected estimate written as a launch time; the real first
+  clock read remains 12:57:48Z. Entries below are re-anchored: the invocation-4
+  working window was 12:45Z–13:01Z (checkpoint commit 276b3e1 at 13:01:01Z,
+  resume commit 85babfe at 13:03:41Z, both clock-verified in git).]
+
   - **Assessment of 36174658770 (Windows leg):** macos+ubuntu GREEN. Windows:
     15 red / 17 ok packages = the SAME deterministic 14 + fsacl. The fsacl
     adversarial suite went **6/7 PASS** on real Windows: own-creation round-trip
@@ -293,6 +308,77 @@ push. The rule is now applied with a post-write clock check.]
   - Remaining Stage 1 close-out: next hosted cycle must show fsacl 7/7 and the
     17 W1-residual failures clearing (tests then proceed to the already-ledgered
     Stage 3/4 families: dir-fsync Access-denied, rename/sharing).
+
+- (2026-09-28T13:03–13:2xZ, zcode-1; commit follows — first verified clock read
+  13:04:10Z, commit timestamp authoritative) Invocation 5. Re-read packet
+  (attestation above), 00-prompt, living IMPLEMENTATION.md, FINAL §D.1/§D.4.
+  Assessed hosted cycle **36425527266** (Windows leg completed 13:06:09Z —
+  per-leg facts in the run register), then landed the row-24 fix, a
+  hosted-confirmed restore-path bug fix, and the Stage 2 core:
+
+  - **Assessment of 36425527266 (Windows leg @d07e6cc):** ubuntu GREEN, windows
+    FAIL with 15 red / 16 ok = the SAME deterministic 14 + fsacl (no new red
+    packages). W1 privacy signature 17x → **2x**, and both residuals are the
+    SAME bug (row 28): `RestoreSnapshot`'s `os.MkdirTemp` destination is a
+    pre-existing inheriting-DACL dir, which `EnsurePrivateStore` treats as
+    foreign user data and refuses — the restore-dir wiring committed in d07e6cc
+    cannot work on Windows as written (snapshot_test.go:147 and
+    source_inventory_test.go:111, both inside RestoreSnapshot calls). Found by
+    code inspection BEFORE reading the hosted log; hosted log then confirmed
+    both sites verbatim. Fix: new `fsacl.ProtectPrivateStore` (creation policy
+    for a product-created dir: set owner-only DACL + verify; no
+    refuse-and-instruct) — Unix verify-only (MkdirTemp 0700 already satisfies,
+    byte-identical), Windows SetNamedSecurityInfo; snapshot.go:751 switched to
+    it. Pinned by TestProtectPrivateStoreAppliesPolicyToProductCreatedDir.
+  - **Row-24 fix landed** (atomic creation): `EnsurePrivateStore` (Windows) now
+    creates the store via `windows.CreateDirectory` carrying an owner-only
+    security descriptor (SDDL `D:P(A;;GA;;;<sid>)` — protected DACL, one
+    non-inherited allow-all ACE for the token user, the same single-ACE policy
+    `ownerOnlyDACL` produces) inside SECURITY_ATTRIBUTES, so the directory
+    never exists without its policy; ERROR_ALREADY_EXISTS (lost race /
+    appeared meanwhile) verifies rather than refuses. The create→set-DACL
+    window is gone. Pinned by TestConcurrentFirstCreationNeverRefuses (8
+    racing creators, none may refuse). Hosted status of
+    TestSnapshotConcurrentCapturePublishesOneExactArchive this cycle: PASSED
+    (exposure removed by the fixture change; the product-race fix + adversarial
+    test ride this push).
+  - **New phenomenon row 26 recorded before reaction:** fsacl suite 6/7 — the
+    single failure, TestPreexistingStoreRefusedAndNotRewritten, was again the
+    TEST's own scaffolding, a second layer under the one fixed last
+    invocation: `grantTrustees`' protected-DACL replacement on the store
+    auto-propagates inheritance removal to children, stripping the marker
+    file's inherited-only access (final ReadFile: Access is denied). The
+    PRODUCT refusal was verified correct by the log itself: DACL before/after
+    identical (walkDACL: owner+Users both times), refusal text exact. Test
+    fix: the marker gets an explicit owner-allow ACE via the same
+    grantTrustees scaffolding, so its readability is independent of store-dir
+    DACL churn; content assertion unchanged.
+  - **New phenomenon row 27 recorded:** evidence_publication_test.go:35 now
+    reaches a product refusal "independent evidence verification requires a
+    POSIX execution host; Windows runtime is not supported"
+    (driver_impl.go:543; sibling trajectory_verify.go:107) — unmasked by the
+    W1 clear, class = §D.3 W-SHELL family, Stage 5.
+  - **Stage 2 core landed** (§D.4): new `internal/pipeline/names.go` —
+    `encodeEdgeID` (url.PathEscape base + explicit `:`→%3A + reserved-device
+    first-char escape + trailing-dot guard; total and injective; no separator
+    survives PathEscape, so GatePath output is structurally confined to the
+    gates dir), applied inside `GatePath` so the `.tmp` staging name inherits
+    it by construction (AC-NAME-1; the FINAL example
+    `block-a->block-b` → `block-a-%3Eblock-b.gate.json` pinned). `LoadGate`
+    gained the legacy raw-name read fallback; `SaveGate` retires the legacy
+    shadow on first rewrite and refuses unsafe edge IDs (AC-NAME-2; mixed-name
+    deck test). `checkBlockID` refuses the unsafe classes on the RAW ID
+    (AC-NAME-4: the five-IDs IsLocal table incl. `../../other-idea` all
+    refused; cosmetic-safe IDs grandfather), wired into `Manifest.Validate`
+    (load); `ValidNewBlockID` strict allowlist wired into `runPipelineStart`
+    (new pipeline creation, AC-NAME-3). Locally green: pipeline + app
+    packages, incl. the two hosted ERROR_INVALID_NAME failures
+    (TestPipelineAutoWalksToDoneUnderAutoLeft, TestPipelineAutoStopsAtActionBlockNeedsHumanGate)
+    which now pass. **Remaining Stage 2 item (recorded, not silently dropped):**
+    BlockWorkspace/GatePath refusal-signature conversion (`(string, error)`,
+    ~15 call sites) — the current posture is safe for all product flows
+    (manifests validate first; SaveGate refuses; encoding confines), but the
+    mechanical in-function backstop AC-NAME-3 names is still owed.
 
   ### Hosted cycle assessments (both completed; per-leg facts below)
 
@@ -378,6 +464,27 @@ push. The rule is now applied with a post-write clock check.]
   the product still runs its full guard on every access, and the permissive
   pre-existing-store refusal stays covered at THREE layers (fsacl suite, the new
   wired TestCaptureRefusesPermissivePreexistingStore, AC-PRIV-5 text pins).
+- (2026-09-28T13:1xZ, zcode-1, invocation 5) fsacl API split settled from the
+  row-28 hosted fact: Ensure = guard (verify-or-refuse-and-instruct; missing →
+  ATOMIC creation with policy — row-24 fix), Protect = creation policy for a
+  dir the product itself just created by other means (MkdirTemp; set owner-only
+  DACL + verify, no refusal semantics), Verify = pure check. This parallels the
+  existing ProtectPrivateFile and keeps the §D.1 refuse-and-instruct contract
+  exactly where it belongs (foreign/pre-existing dirs) without weakening it.
+  The atomic-creation SD is expressed as SDDL `D:P(A;;GA;;;<sid>)` via
+  SecurityDescriptorFromString — same single-ACE protected DACL ownerOnlyDACL
+  produces, but constructible before the directory exists.
+- (2026-09-28T13:2xZ, zcode-1, invocation 5) Stage 2 enforcement layering
+  (within §D.4 as written): the encoding is TOTAL (no separator survives
+  PathEscape → GatePath output structurally confined to gates/; ':' escaped →
+  no ADS; guards for reserved/trailing-dot) while the POLICY refusals bind at
+  Manifest.Validate (load, raw-ID unsafe classes, cosmetic grandfathering for
+  safe-but-non-allowlist), runPipelineStart (strict allowlist at creation) and
+  SaveGate (unsafe edge refused at the write boundary). The named
+  in-function backstops (BlockWorkspace/GatePath signature conversion) remain
+  owed work, recorded in the Stage 2 checklist — not silently dropped; current
+  product flows cannot interpolate an unvalidated ID (manifests validate
+  first; saves refuse).
 
 ## Surprises & Discoveries
 
@@ -435,6 +542,30 @@ push. The rule is now applied with a post-write clock check.]
     on darwin; the restore-dir DACL expression needs the hosted Windows leg.
   - Hosted verification of this invocation's four changes (test-assertion fix,
     restore-dir wiring, fixture change, wired refusal test) rides the next push.
+- Local (macOS host, darwin/arm64 — NOT Windows evidence), invocation 5 on
+  2026-09-28 (working tree = 85babfe + this invocation's edits; first verified
+  clock read 13:04:10Z):
+  - `gofmt -l internal/fsacl/ internal/trajectory/ internal/pipeline/` clean;
+    `go build ./...` OK; `go vet ./internal/fsacl/ ./internal/trajectory/
+    ./internal/pipeline/ ./internal/app/` OK.
+  - `GOOS=windows GOARCH=amd64 go build ./...` OK;
+    `GOOS=windows GOARCH=amd64 go vet ./internal/fsacl/ ./internal/trajectory/
+    ./internal/pipeline/` OK — the CreateDirectory/SecurityAttributes and
+    SDDL paths typecheck for Windows.
+  - `go test ./internal/fsacl/ -count=1` ok 0.257s;
+    `go test ./internal/trajectory/ -run 'TestSnapshot|TestCaptureRefusesPermissivePreexistingStore|TestConcurrent' -count=1`
+    ok 11.136s (row-24 + restore changes hold on darwin, Unix byte-identical).
+  - `go test ./internal/pipeline/ -count=1` ok 0.258s (FULL package — existing
+    gate/manifest/executor tests pass unchanged under the encoding; new
+    names_test.go table incl. the FINAL example and the N4 traversal IDs);
+    `go test ./internal/app/ -run 'TestPipeline' -count=1` ok 0.250s —
+    including the two tests that failed hosted with ERROR_INVALID_NAME
+    (TestPipelineAutoWalksToDoneUnderAutoLeft, TestPipelineAutoStopsAtActionBlockNeedsHumanGate),
+    which now write gates through the encoded names.
+  - Hosted verification of this invocation's changes (row-24 atomic creation,
+    ProtectPrivateStore restore fix, row-26 marker fix, Stage 2 encoding)
+    rides the next push — the Windows DACL expressions are hosted-only
+    evidence by §F.
 
 ## Hosted run register
 
@@ -447,7 +578,7 @@ push. The rule is now applied with a post-write clock check.]
 | 36172430646 | 16824fd (probe bundle + app comma-ok) | win FAIL / ubuntu ok / macos ok; completed 18:29:37Z (win leg 12m34s) | H1–H7 bundle EXECUTED: winprobe 7/7 PASS (H3 NTFS+rename mechanics, H7 readonly-rename-over pair, H1 ACL chain — OBSERVED; H2/H4/H6 recorder values unknown-in-band without -v). wait/usage first hosted execution PASSED (row 2 closed). Same deterministic 14 red pkgs; rows 16 confirmed, 19–23 added |
 | 36172828285 | ca5efef (fsacl unwired) | win FAIL / ubuntu ok / macos ok; completed ~18:32:50Z | fsacl FIRST hostile Windows execution: Ensure/verify round-trip, pre-existing refusal, symlink+non-dir rejection, DenyRead ALL PASS; os.Symlink works on runner (observed). 15 red = same 14 + fsacl perm-bit assertion (Unix mechanics, fixed this invocation in fsacl_unix_test.go split). W1 signature persists (81x) until wiring lands hosted |
 | 36174658770 | 3646a9f (fsacl WIRED + adversarial suite) | win FAIL / ubuntu ok / macos ok; completed 18:53:18Z | WIRED-GUARD cycle: fsacl suite 6/7 PASS (single failure = test-assertion bug, fixed next commit); W1 signature 81x → 17x, all 17 = correctly-refused test-pre-created stores with the new AC-PRIV-5 refuse-and-instruct text; product-created stores now pass the guard and tests proceed to already-ledgered Stage 3/4 families. Windows 15 red / 17 ok = same deterministic 14 + fsacl |
-| 36425527266 | d07e6cc (stage 1 close-out) | IN FLIGHT at checkpoint (started ~2026-09-28T13:0xZ) | Carries: AC-PRIV-5 no-rewrite assertion fix, restore-dir privacy wiring, store-fixture fidelity, wired refusal test. NEXT STEP: assess — expect fsacl 7/7 and the 17 W1-residuals clearing; trajectory/driver/evidence/budget red sets should then be dominated by ledger rows 25 (dir-fsync) / 19 (rename/sharing) / 21-23 (Stage 6 fixtures). Record new phenomena as rows BEFORE reacting |
+| 36425527266 | d07e6cc (stage 1 close-out) | win FAIL / ubuntu ok / macos ok; windows leg completed 13:06:09Z (run completed after) | ASSESSED invocation 5 (13:0xZ from job 108938416756 logs): win 15 red / 16 ok = SAME deterministic 14 + fsacl, no new red packages. W1 signature 17x → 2x; both residuals = row 28 restore bug (hosted-confirmed, fixed this invocation). fsacl 6/7: the one failure = row 26 (test scaffolding inheritance propagation strips marker access; product refusal verified correct by the log). Row-24 concurrent test PASSED. Residual families = rows 25 (dir-fsync, dominant), 7 (sharing), 21-23 (Stage 6 fixtures), 27 (new: POSIX-host evidence refusal unmasked) |
 
 ## Reconciliation ledger (§D.9 — emitted at Stage 0, before the sweep; refreshed per hosted cycle)
 
@@ -488,8 +619,11 @@ source-context classing.
 | 21 | NEW (36172430646): `evidence/tree_report_test.go:87` TestTreeDigestModeChangeChanges — chmod 0600→0700 does not change the synthesized mode on Windows, so the tree digest does not change | mode-synthesis family, NEW distinct phenomenon (TEST + product semantics question) | §D.9 sweep; digest mode semantics need review | 6 | none — record first; the digest's mode-sensitivity on Windows needs a deliberate decision, not a silent fixture change |
 | 22 | NEW (36172430646): `evidence/source_inventory_test.go:136` — fixture filename containing a newline (`line\nbreak`) fails to open: `The filename, directory name, or volume label syntax is incorrect` | W2-adjacent invalid-name class in FIXTURES (TEST) | §D.9 | 6 | none — fixture portability (t.TempDir-compatible names) |
 | 23 | NEW (36172430646): `internal/app` `app_test.go:373` `code=1 stdout=codex: not installed`, `:421` agent-runtime resolution; correlates with row 18's agents/config failures | W8/agent-runtime family PROVISIONAL — root cause not yet verified (runner PATH lacks real agents; tests presumably fake them) | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
-| 24 | NEW (36174658770): `trajectory/snapshot_test.go:493` TestSnapshotConcurrentCapturePublishesOneExactArchive — "concurrent publication differs: {ref:zero err:<e1>} {ref:zero err:<e2>}" (two DISTINCT unpublished results; error VALUES not surfaced in-band) | concurrency × §D.1 first-creation: CANDIDATE root cause (not established) is the create→set-DACL window — a concurrent observer's Lstat sees the dir exist before the owner-only DACL is applied, misclassifying a concurrent product creation as pre-existing and refusing. Recorded before reaction; fixture change this invocation removes the test's exposure but the product race remains possible | §D.1 | 1 (next invocation) | none — candidate fix: atomic CreateDirectory with SECURITY_ATTRIBUTES owner-only SD (x/sys BuildSecurityDescriptor + CreateDirectory both available), eliminating the window and making ERROR_ALREADY_EXISTS the pre-existing signal; NOT half-landed at a checkpoint boundary |
+| 24 | NEW (36174658770): `trajectory/snapshot_test.go:493` TestSnapshotConcurrentCapturePublishesOneExactArchive — "concurrent publication differs: {ref:zero err:<e1>} {ref:zero err:<e2>}" (two DISTINCT unpublished results; error VALUES not surfaced in-band) | concurrency × §D.1 first-creation: CANDIDATE root cause (not established) is the create→set-DACL window — a concurrent observer's Lstat sees the dir exist before the owner-only DACL is applied, misclassifying a concurrent product creation as pre-existing and refusing. Recorded before reaction; fixture change removed the test's exposure (test PASSED hosted in 36425527266); product race remained possible | §D.1 | 1 | none — FIX LANDED invocation 5: atomic CreateDirectory with SECURITY_ATTRIBUTES owner-only SD (SDDL `D:P(A;;GA;;;<sid>)`), ERROR_ALREADY_EXISTS → verify-not-refuse; adversarial pin TestConcurrentFirstCreationNeverRefuses rides the next hosted cycle, which closes the row |
 | 25 | UNMASKED by 36174658770 (stores now pass the guard): `sync <dir>: Access is denied` is the dominant residual family in trajectory/driver/evidence/budget (`state_test.go:63/:478`, `verification_test.go:368`, `refusal_test.go:35/:97/:140/:210/:251/:270/:299`, `driver/trajectory_test.go:50`) — dir-fsync on a read-only dir handle; previously masked by the W1 store-guard failure | H2-adjacent fsync-on-directory class (FlushFileBuffers needs write access; Go dir handles are read-only) — rows 19/20's families now confirmed broader | §B (fsutil.SyncDir audit), §D.6 | 3 | none — the §B audit-of-record dispositions and named-type contract govern the fix; never a per-site skip |
+| 26 | NEW (36425527266): fsacl TestPreexistingStoreRefusedAndNotRewritten fails at the final marker ReadFile (`Access is denied`) — `grantTrustees`' protected-DACL replacement on the store dir auto-propagates inheritance removal to children, stripping the marker file's inherited-only access. Product refusal verified correct by the hosted log (store DACL before/after identical, refusal text exact) — TEST-scaffolding phenomenon, second layer under row-24-cycle's assertion fix | NTFS auto-inheritance propagation (test scaffolding) | §D.1, AC-PRIV-5 | 1 (test fix) | none — marker gets an explicit owner-allow ACE (readability independent of store-dir DACL churn); content assertion unchanged |
+| 27 | NEW (36425527266, unmasked by the W1 clear): evidence_publication_test.go:35 reaches product refusal "independent evidence verification requires a POSIX execution host; Windows runtime is not supported" (driver_impl.go:543; sibling trajectory_verify.go:107) | W-SHELL / POSIX-host product refusal family (§D.3) | §D.3 | 5 | none — the §D.3 named-prerequisite refusal design governs; never a skip |
+| 28 | NEW (36425527266, run-internal regression caught hosted): the 2 residual W1 signatures (snapshot_test.go:147, source_inventory_test.go:111) are both RestoreSnapshot refusing its OWN MkdirTemp destination — the d07e6cc restore wiring called EnsurePrivateStore on an already-created dir, which the guard correctly classifies as pre-existing user data. Found by code inspection before reading the log; log confirmed both sites | implementation defect in this run's Stage-1 wiring (not an environment phenomenon) | §D.1 creation policy | 1 | none — fixed this invocation: fsacl.ProtectPrivateStore (creation policy, no refuse-and-instruct) for product-created dirs; Unix verify-only byte-identical; pinned by TestProtectPrivateStoreAppliesPolicyToProductCreatedDir |
 
 Refresh rule: after every hosted cycle, re-diff failing vs ledger; new phenomenon ⇒ new row
 before any code reaction; no `t.Skip` added without a row (AC-FIX-2).

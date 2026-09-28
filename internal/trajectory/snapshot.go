@@ -744,11 +744,14 @@ func RestoreSnapshot(ctx context.Context, dir string, ref SnapshotRef, want Sour
 			result = ""
 		}
 	}()
-	// The restore destination is product-created, so creation policy applies
-	// (same contract as the store): owner-only — 0700 on Unix, owner-only
-	// protected DACL on Windows (§D.1; the restore-dir privacy invariant is
-	// asserted via fsacl.VerifyPrivateStore in snapshot_test.go).
-	if err = fsacl.EnsurePrivateStore(created); err != nil {
+	// The restore destination is product-created (fresh MkdirTemp), so §D.1
+	// creation policy applies, not the store guard: ProtectPrivateStore sets
+	// the owner-only policy on the product-owned dir — 0700 already holds on
+	// Unix, owner-only protected DACL on Windows (the guard's refuse-and-
+	// instruct path would wrongly treat the inheriting MkdirTemp dir as user
+	// data; the restore-dir invariant is asserted via fsacl.VerifyPrivateStore
+	// in snapshot_test.go).
+	if err = fsacl.ProtectPrivateStore(created); err != nil {
 		return "", err
 	}
 	rooted, err := os.OpenRoot(created)

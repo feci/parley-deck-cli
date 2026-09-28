@@ -30,6 +30,16 @@ func verifyRealPrivateDir(dir string) error {
 	return nil
 }
 
+// ProtectPrivateStore applies the §D.1 creation policy to a directory the
+// product itself just created through a non-atomic allocator (restore's
+// os.MkdirTemp). On Unix MkdirTemp already creates 0700, so this is
+// verify-only — byte-identical to the previous EnsurePrivateStore path on an
+// existing 0700 directory. Windows sets the owner-only DACL instead (mode
+// bits are synthesized there).
+func ProtectPrivateStore(dir string) error {
+	return VerifyPrivateStore(dir)
+}
+
 // ProtectPrivateFile is a no-op on Unix: os.CreateTemp already creates the
 // archive temp file with mode 0600, byte-identical to the previous behavior.
 // Windows must set the owner-only DACL because mode bits are synthesized.
