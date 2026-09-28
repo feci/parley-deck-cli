@@ -53,3 +53,5 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation 7 complete; Stage 3 core and hosted Stage 2 recorded | 2026-09-28T14:24:19.633Z | 23514143 | 23213696 | 33745 | 6178 | 223 |
 | Invocation 8 complete; Stage 3 code complete and Stage 4 opened | 2026-09-28T14:40:46.399Z | 28386660 | 28070784 | 38012 | 7067 | 256 |
 | Invocation 9 complete; Stage 4 sharing repairs and diagnostics pushed | 2026-09-28T14:57:29.852Z | 33403466 | 33071104 | 42706 | 8751 | 288 |
+| Invocation 10 complete; Stage 5 core and advisory identity consult assigned | 2026-09-28T15:14:15.818Z | 39078208 | 38728832 | 47088 | 10118 | 322 |
+| Invocation 11 complete; fixture sweep and identity probe pushed, Claude advice recorded | 2026-09-28T15:31:48.950Z | 45068800 | 44696960 | 53034 | 11551 | 355 |
