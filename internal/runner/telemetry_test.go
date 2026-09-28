@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,16 @@ func terminalRecords(t *testing.T, root string) []telemetry.Record {
 	return out
 }
 
+// shellPath is the §D.9 platform-true shell: /bin/sh on Unix; on Windows a
+// copy of this test binary named "sh" whose TestMain emulates the -c
+// scripts this fixture family uses (see runShellRole below).
+func shellPath() string {
+	if runtime.GOOS != "windows" {
+		return "/bin/sh"
+	}
+	return shellExeOnce()
+}
+
 func telemetryShell(script string, structured bool) agents.Discovery {
 	args := []string{"-c", script, "fixture"}
 	if structured {
@@ -42,7 +53,7 @@ func telemetryShell(script string, structured bool) agents.Discovery {
 	}
 	return agents.Discovery{Spec: agents.Spec{ID: "test-1", AdapterID: "claude",
 		Model: "requested-model", Reasoning: "max", Speed: "fast",
-		HeadlessArgs: args, PromptMode: agents.PromptStdin}, Path: "/bin/sh"}
+		HeadlessArgs: args, PromptMode: agents.PromptStdin}, Path: shellPath()}
 }
 
 func runTelemetryFixture(ctx context.Context, root string, agent agents.Discovery) error {

@@ -1167,6 +1167,19 @@ early-return applicability pattern (NO skips, census clean):
 Unix suites green (TestRefusal* both packages, exit 0). The durable-
 publication refusal itself remains pinned by the fsacl/§B hosted suites.
 
+
+## Runner shell-role re-exec (invocation 20, 18:1xZ)
+
+The runner fixture family's `/bin/sh -c` fixtures get the §D.9 platform
+expression: `shellPath()` returns /bin/sh on Unix; on Windows a copy of the
+test binary named `sh.exe` whose TestMain dispatches `-c <script>` to the
+exact emulations the family uses (exit N; exec sleep N; cat "$1" + child
+output; drain). Same recursion-guard discipline as the app package (a
+renamed copy exits loudly, never m.Run()). Unhandled scripts exit 70 loudly
+— the census-visible failure mode if a future fixture adds a script shape.
+Full runner suite green locally (96.5s, exit 0). Windows execution rides
+the push; any unhandled-script failures there name themselves.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
