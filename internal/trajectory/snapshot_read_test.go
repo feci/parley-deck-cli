@@ -350,7 +350,12 @@ func TestSnapshotRevalidationRetainsIdenticalMaterialAfterTimestampChange(t *tes
 	if w.once != nil {
 		t.Fatal("timestamp transition was not exercised")
 	}
-	snapshotMemberBytes(t, w.Bytes(), want, 0600)
+	// Row 21 disposition, as above: pinned OS-observed mode constant.
+	retainsMode := os.FileMode(0o600)
+	if runtime.GOOS == "windows" {
+		retainsMode = 0o666
+	}
+	snapshotMemberBytes(t, w.Bytes(), want, retainsMode)
 }
 
 func TestSnapshotRevalidationCannotAdmitDifferentExpectedTree(t *testing.T) {
