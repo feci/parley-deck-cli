@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3; Stage 3 complete at code level) -> this commit (Stage 4 opened: §D.6 read-only trap)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3) -> 4e239fe (Stage 4 opener: read-only trap) -> 44dee89 (docs) -> c6f3db1 (§D.6 lock retry + diagnostic; this invocation) -> this docs commit
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -130,13 +130,32 @@ Progress for the live stage state.
       MoveFileEx(REPLACE) fails over it — the write bit is restored before
       the move to match POSIX rename semantics; Unix replace untouched);
       windows-tagged pin TestReplaceSyncedFileOverReadOnlyTarget rides the
-      next push. NEXT Stage 4 units: the open-site `.lock` sharing diagnostic
-      cycle (error class + retry outcome per §D.6 — still UNDIAGNOSED), the
-      share-flag-correct open sweep (prefer os.Root routing; raw CreateFile
-      only where rooting cannot express the site), close-before-rename
-      discipline, bounded third-party-only ERROR_SHARING_VIOLATION retry with
-      self-held/foreign-held classification, and the adversarial rename-root
-      test redesign (row 19).
+      next push. §D.6 lock unit landed invocation 9 (2026-09-28T14:4x–14:5xZ, commit c6f3db1):
+      openLockFile (Windows: bounded 250ms ERROR_SHARING_VIOLATION-only
+      retry; the self-held/foreign-held classification is structural — every
+      handle this process takes on a lock file shares read|write, so a
+      sharing violation on this open is by construction a FOREIGN holder;
+      ERROR_ACCESS_DENIED is a different class and never retried; exhaustion
+      is loud, naming the budget; only the open is retried, so the
+      identity/exclusion verification chain re-runs unchanged after
+      recovery; POSIX passthrough) wired into BOTH acquirePinnedKernelLock
+      opens (kernel lock :159 + probe :200). TestOpenLockFileSharingDiagnostic
+      IS the §D.6 open-site diagnostic cycle (windows-tagged, hosted): a
+      foreign exclusive holder via raw CreateFile(share=0) — logs the ACTUAL
+      error class and both retry outcomes (transient holder → recovery;
+      persistent holder → loud named-budget exhaustion, window bounds
+      asserted). REMAINING Stage 4 units: row-19 adversarial rename-root
+      test redesign (invariant analysis: the 'root' case renames the rooted
+      directory itself from outside — impossible on Windows while the root
+      handle is open, BY DESIGN; the redesign mutates inside the root and
+      must preserve 'change during verification is observed'), the
+      share-flag-correct open sweep for concurrent persist readers (the
+      residual Access-denied — cycle_extension_test.go:128 'persist operator
+      cycle grant' — is ATTRIBUTED: a concurrent persist's WT-replace over a
+      file another goroutine holds open without FILE_SHARE_DELETE; §D.6 fix
+      = delete-share readers via os.Root routing or a raw CreateFile helper
+      where rooting cannot express the site), and close-before-rename
+      discipline.
 - [ ] **Stage 5** — P-A liveness (§D.2) + W-SHELL missing-`sh` refusal (§D.3).
 - [ ] **Stage 6** — fixture-portability sweep (§D.9) + ACP/AF_UNIX/CRLF (§D.7).
 - [ ] **Stage 7** — validation/release: unfiltered three-leg matrix green, census
@@ -779,6 +798,23 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
   (darwin: fsutil/trajectory-targeted/app-trajectory suites green — 307s/
   274s; all new refusals runtime.GOOS-confined). Stage 3 COMPLETE at code
   level pending the AC-DUR-3 hosted leg.
+
+- (2026-09-28T14:41–14:47Z, zcode-1; commit c6f3db1 pushed — first verified
+  clock read 14:41:30Z) Invocation 9. Re-read packet (attestation above; hash
+  unchanged), 00-prompt, FINAL §D.6, living IMPLEMENTATION.md. **§D.6 lock
+  unit landed** (see Stage 4 checklist for the full contract);
+  TestOpenLockFileSharingDiagnostic is the required open-site diagnostic
+  cycle (hosted log carries the actual error class + both retry outcomes).
+  The residual Access-denied from 36435481011 is ATTRIBUTED, not silently
+  classified: cycle_extension_test.go:128 'persist operator cycle grant' =
+  a concurrent persist's WT-replace over a state file held open without
+  FILE_SHARE_DELETE — §D.6 close-before-rename/share-flag family; the
+  delete-share reader sweep is the next unit. Cycles 36437395294 (e22b0ff)
+  and 36437548293 (4e239fe) still in flight at commit time — assessment
+  next invocation. Local: gofmt clean; darwin + GOOS=windows build/vet
+  green; `go test ./internal/budget/ -run 'TestLock|TestReserve' -count=1`
+  ok 0.389s (POSIX passthrough byte-identical); the diagnostic executes
+  hosted on the c6f3db1 push.
 
 ## Hosted run register
 
