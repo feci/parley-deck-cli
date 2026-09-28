@@ -63,3 +63,4 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation17 interrupted for runaway recursive fixture processes; controlled resume18 | 2026-09-28T17:15:18.638Z | 80030069 | 79239680 | 96447 | 25794 | 567 |
 | Invocation18 fixture repair checkpoint and independent toolchain challenge | 2026-09-28T17:32:06.570Z | 82662479 | 81852928 | 99744 | 26378 | 591 |
 | Invocation19 fixture-family closures; Windows matrix remains red | 2026-09-28T17:58:13.722Z | 88716498 | 87884672 | 105627 | 27835 | 639 |
+| Invocation20 temporary diagnostics and partial refusal coverage; advisor pending | 2026-09-28T18:25:10.018Z | 94424647 | 93572096 | 111993 | 29613 | 680 |
