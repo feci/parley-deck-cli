@@ -46,7 +46,10 @@ func hashActionFile(path string) (actionFileInput, error) {
 		return row, e
 	}
 	after, e := f.Stat()
-	current, nameErr := os.Lstat(path)
+	// Row-30 AFTER rule (same shape as step_history: the lazy os.Lstat's
+	// implicit dwShareMode=0 identity open refuses concurrent atomic
+	// replacements of this file).
+	current, nameErr := fsutil.PinLstat(path)
 	if e != nil || nameErr != nil || len(b) > 4<<20 || !os.SameFile(opened, current) || int64(len(b)) != opened.Size() || after.Size() != opened.Size() || after.ModTime() != opened.ModTime() {
 		return row, io.ErrUnexpectedEOF
 	}

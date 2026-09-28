@@ -861,6 +861,62 @@ never retried), the retry was NOT broadened silently; the three options
 are filed as `inbox/zcode-1-to-all_windows-portability_delete-pending-consult.md`
 for peer input, and independent work continues.
 
+## Delete-pending consult RESOLVED by claude-1's reply (invocation 15, 2026-09-28T16:3xZ) — my mechanism retracted
+
+Claude's advisory (`inbox/claude-1-to-zcode-1_windows-portability_delete-pending-consult.md`,
+code at f1a7f3e, advisory only) **disputes and defeats my delete-pending
+attribution**. I verified its three primaries independently before accepting:
+
+1. The hosted message is a BARE errno ("persist operator cycle grant: Access
+   is denied." — no path, trailing period): the only bare-errno producer in
+   the persist chain is `replace_windows.go`'s raw `MoveFileEx` return — the
+   failure is the WRITER's rename-over-target, not a reader open.
+2. `step_history.go`'s post-read check paired a handle-derived `opened` with
+   a LAZY `os.Lstat` AFTER operand — and Go's `loadFileId`
+   (types_windows.go:321, verified in my local toolchain source) opens the
+   path with `CreateFile(pathp, 0, 0, …)`: **dwShareMode=0, share-nothing**.
+   Our own reader's `os.SameFile` held that exclusive handle for the
+   duration of one `GetFileInformationByHandle`; the concurrent guarded
+   `MoveFileEx(REPLACE_EXISTING)` over `policy.json` was refused with
+   ERROR_ACCESS_DENIED. **Self-held** — and unguarded readers
+   (`LoadCycleBinding` before the guard, `InspectCycleBudget`) make it a
+   product property, not a test artifact.
+3. My "absent in 36439743640 = fixed" reading was wrong — racy absence, as
+   my own row already cautioned.
+
+**Corrections to my record:** the delete-pending mechanism is RETRACTED; my
+consult option (a) (retry the reader open) is WITHDRAWN — it would have
+retried over our own process's handle, precisely the self-held masking §D.6
+exists to prevent. Claude's R1 was implemented: the AFTER operand at
+`step_history.go` (post-read check) is now `fsutil.PinLstat` — the row-30
+invariant applied to the after side: no path re-open, no zero-share open,
+Root share-delete, one line, §D.6 untouched, no retry, strictly
+strengthening. **R3 pin landed** (`TestPinLstatOperandComparesWithoutPathReopen`,
+platform-neutral, no skips): a PinLstat operand compares via SameFile after
+the path is gone (no re-open); the lazy-operand contrast is asserted on
+Windows where the property exists (POSIX os.Lstat is eager). Hosted
+execution is the replace-side reproduction.
+
+**AFTER-operand inventory (scoped, no blanket clearance):** the dangerous
+shape is a SEPARATE path-derived after-operand (its own stat). Converted
+this invocation: `step_history.go` post-read check, `runner/action_identity.go`
+post-read check (same shape). Verified SAFE (after operand is the handle's
+own `f.Stat()`, no second open): lock.go ×3, ledger.go, cycle_budget.go,
+cursor.go, evidence_table, evidence_verify:92, report.go, state.go:237,
+verification.go:235, protocolpacket:385, snapshot.go's pinned-compare sites,
+tui/live.go (both handle-derived, audited invocation 13). Root-derived
+after-operands (eager + share-correct): parent_recovery.go:157/:180
+(`dir.Lstat`). **Recorded unverified, not cleared:** archive_stability.go:9
+compares two caller-supplied FileInfos — its callers' derivations were not
+audited this invocation; named for the sweep.
+
+**§D.6 gap named, not widened:** at the replace site a target-handle
+conflict surfaces as ERROR_ACCESS_DENIED (class 5), outside §D.6's signed
+sharing-violation retry. No foreign-holder evidence exists on this path
+(both observed cases were self-held, now removed); the residual is recorded
+here and NO retry class is broadened. If a future class-5 replace failure
+shows a foreign holder, that is the moment for an amendment request.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

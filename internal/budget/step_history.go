@@ -193,7 +193,14 @@ func readStepHistoryFile(path string, limit int64) ([]byte, error) {
 		return nil, err
 	}
 	after, statErr := f.Stat()
-	current, pathErr := os.Lstat(path)
+	// Row 30 applied to the AFTER operand (claude-1 delete-pending consult,
+	// R1): a Root-derived pin captures identity eagerly, so os.SameFile
+	// performs no path re-open — the lazy os.Lstat's implicit CreateFile used
+	// dwShareMode=0 (share-nothing), refusing concurrent atomic replacements
+	// of this file with ERROR_ACCESS_DENIED (self-held; §D.6 never retries
+	// that). The Root open carries FILE_SHARE_DELETE, so it cannot refuse a
+	// concurrent ReplaceSyncedFile.
+	current, pathErr := fsutil.PinLstat(path)
 	if statErr != nil || pathErr != nil || !os.SameFile(opened, current) || !current.Mode().IsRegular() || opened.Size() != after.Size() || !opened.ModTime().Equal(after.ModTime()) {
 		return nil, fmt.Errorf("%w during read", errHistoryChanged)
 	}
