@@ -17,8 +17,9 @@ import (
 // Root.Lstat) captures the NTFS file identity eagerly.
 //
 // Predictions (both must hold for the lazy-mechanism attribution):
-//   SameFile(lazyPin,  after) == true   — the lazy idiom is a no-op here (the bug)
-//   SameFile(eagerPin, after) == false  — eager identity detects the replacement
+//
+//	SameFile(lazyPin,  after) == true   — the lazy idiom is a no-op here (the bug)
+//	SameFile(eagerPin, after) == false  — eager identity detects the replacement
 //
 // If the second prediction FAILS (eager compares equal), NTFS identity reuse
 // is in play after all and the consult's mechanism is wrong — the probe fails
