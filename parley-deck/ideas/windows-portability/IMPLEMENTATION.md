@@ -779,6 +779,42 @@ protocolpacket, evidence, driver cursor, runner). Hosted execution of the
 remediation rides this push; the {root,inode} subtests are expected to go
 green on Windows with it.
 
+## Row-30 open audit items CLOSED (invocation 13, 2026-09-28T15:5xZ)
+
+- **evidence_verify.go:441** — CLEARED, no fix needed: the os.Lstat there
+  feeds only an `IsDir` check (no os.SameFile guard); the lazy deferral
+  affects only the identity fields (vol/idxhi/idxlo) — mode/size/dir
+  attributes are captured eagerly by GetFileAttributesEx. No exposure.
+- **tui/live.go:2468** — CLEARED, already correct: the cached `c.info` pin
+  is assigned from `f.Stat()` (handle-derived = EAGER), and the comparison
+  operand `st` is also a `File.Stat` — both eager; the log-rotation
+  detection works on Windows as-is.
+
+## Stage 6 sweep, second tranche (invocation 13)
+
+**Rows 8/20 (chmod fixtures → ACL helpers), all converted:** the new
+`fsacl.DenyWrite`/`fsacl.AllowWrite` pair (Unix: chmod 0555/0755,
+byte-identical to the historical fixtures; Windows: deny-ACE on
+GENERIC_WRITE — which on a directory means adding files/subdirs and
+deliberately excludes FILE_DELETE_CHILD/DELETE so cleanup removals still
+work — and an AllowWrite restore that rebuilds the DACL from every
+surviving allow, dropping deny ACEs). Converted sites:
+evidence/tree_report_test.go (TestSaveUnwritableDirFails,
+TestFailedSaveLeavesNoReport), app/organizer_test.go (read-only deck —
+also retired a t.Skipf into a t.Fatalf), app/driver_checks_test.go
+(evidence-write veto), driver/impl_test.go (unreadable dir — Skipf retired),
+driver/phase_event_test.go ×3 (unreadable 00-prompt/IMPLEMENTATION/FINAL →
+fsacl.DenyRead). Unix behavior byte-identical (helpers are chmod on POSIX);
+Windows execution rides this push. Two pre-existing t.Skipf fallbacks were
+converted to loud failures per the no-silent-skip discipline.
+
+**Row 21 (mode-synthesis):** named as a product-semantics ambiguity in
+`inbox/zcode-1-to-all_windows-portability_row21-mode-synthesis.md`
+(synthesized-vs-requested mode in the archive header/digest; options (a)
+documented Windows expression vs (b) record the product's requested mode);
+no fixture or product change until review settles it — per FINAL row 21's
+"deliberate decision, not a silent fixture change".
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

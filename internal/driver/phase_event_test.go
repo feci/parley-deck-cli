@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"parley-deck-cli/internal/fsacl"
 	"path/filepath"
 	"testing"
 
@@ -149,7 +150,7 @@ func TestRebuildDetailSurfacesReadErrors(t *testing.T) {
 
 	t.Run("unreadable 00-prompt.md", func(t *testing.T) {
 		ideaDir, _ := setupIdea(t, parts, "")
-		if err := os.Chmod(filepath.Join(ideaDir, "00-prompt.md"), 0); err != nil {
+		if err := fsacl.DenyRead(filepath.Join(ideaDir, "00-prompt.md")); err != nil { // §D.9 row 8
 			t.Fatal(err)
 		}
 		if _, err := RebuildDetail(ideaDir, 4); err == nil {
@@ -162,7 +163,7 @@ func TestRebuildDetailSurfacesReadErrors(t *testing.T) {
 		if err := os.WriteFile(impl, []byte("---\nstatus: implemented\n---\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.Chmod(impl, 0); err != nil {
+		if err := fsacl.DenyRead(impl); err != nil { // §D.9 row 8
 			t.Fatal(err)
 		}
 		detail, err := RebuildDetail(ideaDir, 4)
@@ -179,7 +180,7 @@ func TestRebuildDetailSurfacesReadErrors(t *testing.T) {
 		if err := os.WriteFile(final, []byte(validFinal), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.Chmod(final, 0); err != nil {
+		if err := fsacl.DenyRead(final); err != nil { // §D.9 row 8
 			t.Fatal(err)
 		}
 		if _, err := RebuildDetail(ideaDir, 4); err == nil {

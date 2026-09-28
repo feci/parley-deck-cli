@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/fsacl"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -797,10 +798,9 @@ func TestUnreadableMarkerEscalatesInsteadOfLoweringTheCount(t *testing.T) {
 	os.MkdirAll(bad, 0o755)
 	os.WriteFile(filepath.Join(good, ".fixup-done"), []byte("x\n"), 0o644)
 	os.WriteFile(filepath.Join(bad, ".fixup-done"), []byte("x\n"), 0o644)
-	if err := os.Chmod(bad, 0o000); err != nil {
-		t.Skipf("cannot make a directory unreadable here: %v", err)
+	if err := fsacl.DenyRead(bad); err != nil { // §D.9 rows 8/20: chmod 0 cannot make a dir unreadable on Windows
+		t.Fatalf("cannot make a directory unreadable here: %v", err)
 	}
-	t.Cleanup(func() { os.Chmod(bad, 0o755) })
 
 	n, err := markedFixupCycles(dir)
 	if err == nil {

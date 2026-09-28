@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"parley-deck-cli/internal/fsacl"
 	"path/filepath"
 	"testing"
 )
@@ -297,8 +298,10 @@ func TestLoadMissingOrCorruptFails(t *testing.T) {
 // as a failure of the whole completion attempt.
 func TestSaveUnwritableDirFails(t *testing.T) {
 	dir := t.TempDir()
-	os.Chmod(dir, 0o555)
-	t.Cleanup(func() { os.Chmod(dir, 0o755) })
+	if err := fsacl.DenyWrite(dir); err != nil { // §D.9 row 20: chmod 0555 does not block writes on Windows
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = fsacl.AllowWrite(dir) })
 	if err := Save(dir, positiveReport()); err == nil {
 		t.Fatal("save into an unwritable dir must fail")
 	}
@@ -307,8 +310,10 @@ func TestSaveUnwritableDirFails(t *testing.T) {
 // Adversarial: a failed save must not leave a readable half-written report.
 func TestFailedSaveLeavesNoReport(t *testing.T) {
 	dir := t.TempDir()
-	os.Chmod(dir, 0o555)
-	t.Cleanup(func() { os.Chmod(dir, 0o755) })
+	if err := fsacl.DenyWrite(dir); err != nil { // §D.9 row 20
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = fsacl.AllowWrite(dir) })
 	_ = Save(dir, positiveReport())
 	if _, err := os.Stat(ReportPath(dir)); !os.IsNotExist(err) {
 		t.Fatalf("failed save left a report behind: %v", err)

@@ -59,6 +59,17 @@ func VerifyPrivateFile(file string, info os.FileInfo) error {
 	return nil
 }
 
+// DenyWrite makes a directory unwritable for tests: mode 0555 on Unix —
+// byte-identical to the historical chmod fixture (§D.9).
+func DenyWrite(path string) error {
+	return os.Chmod(path, 0o555)
+}
+
+// AllowWrite restores writability after DenyWrite: mode 0755 on Unix.
+func AllowWrite(path string) error {
+	return os.Chmod(path, 0o755)
+}
+
 // DenyRead makes path unreadable for tests: mode 0 on Unix (§D.9).
 func DenyRead(path string) error {
 	if err := os.Chmod(path, 0o000); err != nil {

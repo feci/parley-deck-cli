@@ -5,6 +5,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"io"
 	"os"
+	"parley-deck-cli/internal/fsacl"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -156,8 +157,10 @@ func TestRunChecksContractEvidenceWriteFailureVetoes(t *testing.T) {
 	idea := t.TempDir()
 	os.WriteFile(filepath.Join(idea, "IMPLEMENTATION.md"), []byte("---\nidea: x\n---\n\n## Validation evidence\n\n(pending)\n"), 0o644)
 	os.WriteFile(filepath.Join(idea, "code.go"), []byte("package x\n"), 0o644)
-	os.Chmod(idea, 0o555)
-	t.Cleanup(func() { os.Chmod(idea, 0o755) })
+	if err := fsacl.DenyWrite(idea); err != nil { // §D.9 row 20
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = fsacl.AllowWrite(idea) })
 	o := driverImplOps{ideaDir: idea, root: idea, ideaSlug: "x", implementer: "kimi-1", out: io.Discard}
 
 	ok, detail := o.runChecksContract(context.Background(), []driver.CheckCriterion{{Name: "unit", Command: "true"}})
