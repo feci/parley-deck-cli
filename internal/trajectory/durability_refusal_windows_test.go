@@ -128,7 +128,10 @@ func TestVerificationRowsRefuseAtReviewedGateOnWindows(t *testing.T) {
 // reachable and correct on this platform rather than silently bypassed.
 func TestPreviewReservationRecoveryPristineStoreRefusesOnWindows(t *testing.T) {
 	root, b, _ := accountingFixture(t)
-	_, err := PreviewReservationRecovery(context.Background(), root, "fixture", "someentrykey")
+	// validHash(entry) gates Preview before any store read — a real digest
+	// passes the identity check and reaches the missing-intent read.
+	entry := digest([]byte("pristine-store-preview"))
+	_, err := PreviewReservationRecovery(context.Background(), root, "fixture", entry)
 	if err == nil || !strings.Contains(err.Error(), "original reservation intent directory is missing") {
 		t.Fatalf("pristine-store Preview must yield the designed missing-intent refusal: %v", err)
 	}

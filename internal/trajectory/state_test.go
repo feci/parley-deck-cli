@@ -71,6 +71,7 @@ func chargeFixture(t *testing.T, root string, b *budget.CycleBinding) context.Co
 			chargeApplicable = false
 			return ctx
 		}
+		t.Logf("chargeFixture OpenCycleSession error (raw %q): %v", err.Error(), err)
 		t.Fatal(err)
 	}
 	t.Cleanup(finish)
