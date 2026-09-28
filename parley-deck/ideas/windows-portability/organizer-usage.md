@@ -50,3 +50,6 @@ Client source: `/Users/tomasfecko/.codex/sessions/2026/09/28/rollout-2026-09-28T
 | Invocation 4 complete; invocation 5 assigned race fix and Stage 2 | 2026-09-28T13:03:12.038Z | 3342587 | 3251840 | 8921 | 1181 | 48 |
 | Invocation 5 complete; same-session continuation to Stage 2 backstops and Stage 3 | 2026-09-28T13:32:11.791Z | 9777338 | 9542144 | 17697 | 2986 | 113 |
 | Invocation 6 complete; Stage 1 hosted privacy green and Stage 2 code complete | 2026-09-28T14:00:01.467Z | 16803738 | 16528640 | 26071 | 4696 | 173 |
+| Invocation 7 complete; Stage 3 core and hosted Stage 2 recorded | 2026-09-28T14:24:19.633Z | 23514143 | 23213696 | 33745 | 6178 | 223 |
+| Invocation 8 complete; Stage 3 code complete and Stage 4 opened | 2026-09-28T14:40:46.399Z | 28386660 | 28070784 | 38012 | 7067 | 256 |
+| Invocation 9 complete; Stage 4 sharing repairs and diagnostics pushed | 2026-09-28T14:57:29.852Z | 33403466 | 33071104 | 42706 | 8751 | 288 |
