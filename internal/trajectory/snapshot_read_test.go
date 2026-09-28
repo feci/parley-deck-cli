@@ -239,7 +239,16 @@ func TestSnapshotReadRetainsExactBytesAcrossDelayedMetadata(t *testing.T) {
 	if err := tw.Close(); err != nil {
 		t.Fatal(err)
 	}
-	snapshotMemberBytes(t, w.Bytes(), want, 0600)
+	// The archive records the mode the HOST reports (OS-observed semantics,
+	// row 21 disposition): a writable file reports 0600 on Unix and 0666 on
+	// Windows regardless of the 0600 creation request (no execute bits; the
+	// write bit synthesizes 0666). Pinned constants, not derived from the
+	// stat, so Go-synthesis drift is caught loudly rather than auto-blessed.
+	wantMode := os.FileMode(0o600)
+	if runtime.GOOS == "windows" {
+		wantMode = 0o666
+	}
+	snapshotMemberBytes(t, w.Bytes(), want, wantMode)
 }
 
 func TestSnapshotRevalidationRejectsDifferentMaterial(t *testing.T) {

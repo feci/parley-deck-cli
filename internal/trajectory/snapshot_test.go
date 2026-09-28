@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -163,8 +164,17 @@ func TestSnapshotRoundTripRetainsDirtySourceAndDoesNotWriteGit(t *testing.T) {
 				t.Fatal("restored current live files instead of archived contents")
 			}
 			info, err := os.Stat(filepath.Join(restored, "source"))
-			if err != nil || info.Mode().Perm() != 0700 {
-				t.Fatal("executable mode was lost")
+			// Row 21 disposition: the archive records the OS-observed mode
+			// and the restore applies it; on Windows there are no execute
+			// bits, so the observed-and-restored mode of the executable
+			// fixture is 0666 (writable) — the preservable mode surface is
+			// the read-only dimension, bound by the digest elsewhere.
+			wantRestored := os.FileMode(0o700)
+			if runtime.GOOS == "windows" {
+				wantRestored = 0o666
+			}
+			if err != nil || info.Mode().Perm() != wantRestored {
+				t.Fatalf("executable mode was lost: restored %o, want %o", info.Mode().Perm(), wantRestored)
 			}
 			if _, err = os.Lstat(filepath.Join(restored, "removed")); !os.IsNotExist(err) {
 				t.Fatal("tracked deletion was resurrected")

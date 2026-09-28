@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"parley-deck-cli/internal/fsacl"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -66,7 +67,14 @@ func TestTreeDigestSymlinkRetargetChanges(t *testing.T) {
 	}
 }
 
-// Adversarial (probe 3): a mode-only change (0600→0700) MUST change the digest.
+// Adversarial (probe 3): a mode-only change MUST change the digest. The
+// mutation is platform-conditional, the assertion is not: Unix flips the
+// execute bit (0600→0700); Windows has no execute bits — its only
+// chmod-mutable, stat-observable mode dimension is the read-only attribute
+// (0600→0400 sets FILE_ATTRIBUTE_READONLY, synthesized mode 0666→0444), an
+// OS-enforced semantic §D.6 already relies on. os.Chmod deliberately, not a
+// DACL helper: a deny-ACE is invisible to the synthesized FileMode, and this
+// test's subject is the mode value itself.
 func TestTreeDigestModeChangeChanges(t *testing.T) {
 	root := scratchGitRepo(t, map[string]string{"x.sh": "#!/bin/sh\n"})
 	f := filepath.Join(root, "x.sh")
@@ -77,7 +85,11 @@ func TestTreeDigestModeChangeChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(f, 0o700); err != nil {
+	next := os.FileMode(0o700)
+	if runtime.GOOS == "windows" {
+		next = 0o400
+	}
+	if err := os.Chmod(f, next); err != nil {
 		t.Fatal(err)
 	}
 	d2, err := TreeDigest(root)
@@ -85,7 +97,7 @@ func TestTreeDigestModeChangeChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	if d1 == d2 {
-		t.Fatal("mode change 0600→0700 must change the tree digest")
+		t.Fatalf("mode change 0600→%o must change the tree digest", next)
 	}
 }
 

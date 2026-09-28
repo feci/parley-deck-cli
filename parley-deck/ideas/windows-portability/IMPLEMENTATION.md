@@ -815,6 +815,40 @@ documented Windows expression vs (b) record the product's requested mode);
 no fixture or product change until review settles it — per FINAL row 21's
 "deliberate decision, not a silent fixture change".
 
+## Row-21 mode-synthesis disposition (invocation 14, 2026-09-28T16:1xZ) — kimi-1 consult engaged
+
+Kimi's advisory reply (`inbox/kimi-1-to-zcode-1_windows-portability_mode-consult.md`,
+read at fixed commit 4827e67, advisory only) was engaged independently. My
+assessment: **sound under the frozen FINAL, adopted.** Its load-bearing
+points, independently checked against the tree:
+
+- Windows has exactly one chmod-mutable, stat-observable mode dimension —
+  owner-write ↔ FILE_ATTRIBUTE_READONLY (synthesized 0666/0444; Go's Chmod
+  maps only S_IWRITE). The digest's per-file `file:%o` serialization
+  (tree.go) already binds it — the Windows mode signal is NARROWED, not
+  lost, and asserting it is consistent with §D.6 (the read-only attribute
+  is an OS-enforced semantic the FINAL already relies on).
+- My option (b) (record requested mode) is REJECTED for the reason the
+  consult surfaced and I had not: CaptureSnapshot/TreeDigest operate on
+  ARBITRARY USER WORKTREES — the product did not create those files, the
+  requested mode is unrecoverable, and inventing it would fabricate
+  metadata against §D.9's spirit and rewrite the archive-v1
+  observed-mode compatibility boundary.
+
+**Disposition implemented (test-side only, product unchanged, no skips,
+unconditional assertions on both platforms):** (1)
+TestTreeDigestModeChangeChanges mutates the dimension each OS has — Unix
+0600→0700 byte-identical, Windows 0600→0400 (read-only attribute;
+deliberately os.Chmod, not a DACL helper — a deny-ACE is invisible to the
+synthesized FileMode); the d1≠d2 assertion stays unconditional. (2)
+TestSnapshotRevalidationRetainsIdenticalMaterialAfterTimestampChange pins
+the platform-observed constant (0600 Unix / 0666 Windows) — pinned, not
+derived, so synthesis drift fails loudly. (3) The round-trip
+executable-mode assertion (same family, snapshot_test.go) pins
+0700/0666 the same way — the archive records OS-observed mode and the
+restore applies it. Hosted execution is the first Windows evidence (the
+consult itself ran nothing); the disposition is review-visible for Phase 6.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -1224,7 +1258,7 @@ source-context classing.
 
 | 19 | REDESIGNED invocation 9 (commit 08f769c; hosted confirmation rides its push): both 'root' cases now swap an in-root SUBDIRECTORY (renaming the rooted dir itself is impossible on Windows while the root handle is open — containment by design); invariant preserved: a replaced directory entry must not be hidden by the original still-readable inode; all subtests green on darwin. Originally NEW (36172430646): `trajectory/snapshot_read_test.go:261/:432` — os.Rename of a directory fails `The process cannot access the file because it is being used by another process` (open handle on source tree) | W3 sharing family (PRODUCT/TEST site) | §D.6, AC-LOCK-1..4 | 4 | none — recorded before reaction; structural handle discipline first (§G H7 mapping) |
 | 20 | NEW (36172430646/36172828285): `evidence/refusal_test.go:299` `sync ...: Access is denied`; `tree_report_test.go:300/:311` TestSaveUnwritableDirFails + TestFailedSaveLeavesNoReport — chmod-unwritable/unreadable fixtures do not block writes/syncs on Windows | W7 chmod-fixture family (TEST) | §D.9 denyRead | 6 (sweep) / 1 (helper now exists) | none — DenyRead helper landed and hosted-verified; sweep converts fixtures |
-| 21 | NEW (36172430646): `evidence/tree_report_test.go:87` TestTreeDigestModeChangeChanges — chmod 0600→0700 does not change the synthesized mode on Windows, so the tree digest does not change | mode-synthesis family, NEW distinct phenomenon (TEST + product semantics question) | §D.9 sweep; digest mode semantics need review | 6 | none — record first; the digest's mode-sensitivity on Windows needs a deliberate decision, not a silent fixture change |
+| 21 | DISPOSITION LANDED invocation 14 (kimi-1 consult engaged in the Decision Log; hosted leg rides the push): platform-conditional mutation + pinned OS-observed constants — Unix byte-identical, Windows exercises the read-only dimension (0600→0400 digest test; 0666 archive/restore constants). Originally: `evidence/tree_report_test.go:87` TestTreeDigestModeChangeChanges — chmod 0600→0700 does not change the synthesized mode on Windows, so the tree digest does not change | mode-synthesis family, NEW distinct phenomenon (TEST + product semantics question) | §D.9 sweep; digest mode semantics need review | 6 | none — record first; the digest's mode-sensitivity on Windows needs a deliberate decision, not a silent fixture change |
 | 22 | NEW (36172430646): `evidence/source_inventory_test.go:136` — fixture filename containing a newline (`line\nbreak`) fails to open: `The filename, directory name, or volume label syntax is incorrect` | W2-adjacent invalid-name class in FIXTURES (TEST) | §D.9 | 6 | none — fixture portability (t.TempDir-compatible names) |
 | 23 | NEW (36172430646): `internal/app` `app_test.go:373` `code=1 stdout=codex: not installed`, `:421` agent-runtime resolution; correlates with row 18's agents/config failures | W8/agent-runtime family PROVISIONAL — root cause not yet verified (runner PATH lacks real agents; tests presumably fake them) | §D.9 | 6 | none — diagnose at sweep; no exclusion anticipated |
 | 24 | NEW (36174658770): `trajectory/snapshot_test.go:493` TestSnapshotConcurrentCapturePublishesOneExactArchive — "concurrent publication differs: {ref:zero err:<e1>} {ref:zero err:<e2>}" (two DISTINCT unpublished results; error VALUES not surfaced in-band) | concurrency × §D.1 first-creation: CANDIDATE root cause (not established) is the create→set-DACL window — a concurrent observer's Lstat sees the dir exist before the owner-only DACL is applied, misclassifying a concurrent product creation as pre-existing and refusing. Recorded before reaction; fixture change removed the test's exposure (test PASSED hosted in 36425527266); product race remained possible | §D.1 | 1 | none — FIX LANDED invocation 5: atomic CreateDirectory with SECURITY_ATTRIBUTES owner-only SD (SDDL `D:P(A;;GA;;;<sid>)`), ERROR_ALREADY_EXISTS → verify-not-refuse; adversarial pin TestConcurrentFirstCreationNeverRefuses rides the next hosted cycle, which closes the row |
