@@ -100,6 +100,45 @@ func runShellRole(argv []string) int {
 		return 0
 	case script == "cat >/dev/null":
 		return 0
+	case script == "cat":
+		// echo stdin to stdout verbatim
+		_, _ = io.Copy(os.Stdout, os.Stdin)
+		return 0
+	case script == "exit 0":
+		return 0
+	case script == "sleep 20":
+		time.Sleep(20 * time.Second)
+		return 0
+	case script == "touch spawned":
+		_ = os.WriteFile("spawned", nil, 0o644)
+		return 0
+	case script == `(sleep 2; touch survived) & wait`:
+		// Emulate the background-child shape: the survivor appears after ~2s
+		// UNLESS the process is killed first (the timeout test's premise).
+		time.Sleep(2 * time.Second)
+		_ = os.WriteFile("survived", nil, 0o644)
+		return 0
+	case script == `test -t 0 && test -t 1 && test -t 2 && IFS= read -r answer && test "$answer" = child`:
+		var answer string
+		if _, err := fmt.Fscan(os.Stdin, &answer); err != nil || answer != "child" {
+			return 1
+		}
+		return 0
+	case script == `printf '%s' "$1"`:
+		if len(args) > 0 {
+			fmt.Print(args[0])
+		}
+		return 0
+	case strings.HasPrefix(script, "(touch child-ready;"):
+		_ = os.WriteFile("child-ready", nil, 0o644)
+		for i := 0; i < 2000; i++ {
+			if _, err := os.Stat("release-survivor"); err == nil {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		_ = os.WriteFile("survived", nil, 0o644)
+		return 0
 	}
 	fmt.Fprintf(os.Stderr, "sh role: unhandled script %q\n", script)
 	return 70
