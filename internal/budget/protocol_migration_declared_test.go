@@ -30,8 +30,14 @@ func declaredFixtureRequest(t *testing.T, root string, kind Kind, declared []str
 
 func assertOutsideDeclared(t *testing.T, i ProtocolMigrationInventory, path string) {
 	t.Helper()
+	// Row 10: roots and sources carry Git's forward separators while the
+	// declared path is a Go path; canonicalize both sides so the
+	// no-contributed-history assertion keeps its teeth on Windows.
+	canonical := func(p string) string { return filepath.ToSlash(filepath.Clean(p)) }
+	path = canonical(path)
 	inside := func(candidate string) bool {
-		return candidate == path || strings.HasPrefix(candidate, path+string(filepath.Separator))
+		candidate = canonical(candidate)
+		return candidate == path || strings.HasPrefix(candidate, path+"/")
 	}
 	for _, origin := range i.History.Roots {
 		if inside(origin) {

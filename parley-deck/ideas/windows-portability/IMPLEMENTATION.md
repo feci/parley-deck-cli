@@ -849,6 +849,18 @@ executable-mode assertion (same family, snapshot_test.go) pins
 restore applies it. Hosted execution is the first Windows evidence (the
 consult itself ran nothing); the disposition is review-visible for Phase 6.
 
+## Concurrent-replacement investigation (invocation 14) — §D.6 scope respected, consult filed
+
+The recurring cycle_extension Access-denied is analyzed to the delete-pending
+window (reader open racing a same-process MoveFileEx-replace; opens in the
+window fail with ERROR_ACCESS_DENIED — NOT the sharing-violation class §D.6's
+retry covers, and the holder is our own process, not a third party). Per the
+scope discipline (and my own lock-open documentation that Access-denied is
+never retried), the retry was NOT broadened silently; the three options
+(narrow delete-pending retry / writer-side lock ordering / accept-as-loud)
+are filed as `inbox/zcode-1-to-all_windows-portability_delete-pending-consult.md`
+for peer input, and independent work continues.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
@@ -1246,7 +1258,7 @@ source-context classing.
 | 7 | HOSTED OUTCOME (36438474793 @c6f3db1): the diagnostic test PASSED hosted (AC-LOCK-4 evidence complete — foreign-holder class is ERROR_SHARING_VIOLATION, transient holders recover within the budget, persistent holders exhaust loudly), BUT the product failures persisted with RAW unretried messages — the failing open was lockIdentity's read (lock.go :394 os.Open), the FIRST .lock open in the reserve chain, which invocation 9 had not wired. Recorded before reaction; fixed same invocation: openLockFileRead (read-only retry variant, same structural classification) wired at :394. Full open audit of the lock chain: :159 kernel-lock open (WIRED, O_RDWR), :200 probe (WIRED, O_RDWR), :394 identity read (NOW WIRED, read-only), :427/:360 CreateTemp (different temp files, not the .lock), readLockOrigin :485 (the lock-ORIGIN file — different path, no hosted failures, deliberately unwired and documented), migration CreateTemp (temp). Hosted confirmation of the :394 fix rides this push. The wider family: cross-process lock/open/rename (~14 sites incl. `ledger_test.go:57`, `review_test.go:438`, `verification_test.go:368`) | W3 (PRODUCT) | §D.6, AC-LOCK-1..4 | 4 | none — AC-LOCK-1 close-before-rename audit remains |
 | 8 | chmod-unreadable fixtures (~6: `consensus impl_test.go:807`, `phase_event_test.go:156/170/186`, `strict_gate_test.go:179`) | W7 (TEST) | §D.9 denyRead | 1 (helper) / 6 (sweep) | none — DACL deny-ACE helper |
 | 9 | RESOLVED HOSTED (36444086047: agents package GREEN): fakeHome now sets USERPROFILE alongside HOME (§D.9: os.UserHomeDir resolves USERPROFILE on Windows; the HOME-only fixture leaked the real runner home). Originally HOME-only fixtures (`agents/configmodel_test.go`, 2) | W8 (TEST) | §D.9 | 6 | none — USERPROFILE set |
-| 10 | RECLASSIFIED invocation 13 (no `/repo` literals exist in the tree — the ledger's original classing was wrong): the actual hosted phenomenon (protocol package, TestDeclared* ×4) is a PRODUCT path-separator mismatch — the fixtures derive `linked` from git worktree porcelain output (forward slashes on Windows), and the declared-path validation compares it against Go-cleaned backslash forms → 'not a retained registration' / 'unavailable' refusals. Fix = separator normalization at the product's declared-vs-registered comparison sites (volume-aware, per-OS refusal assertions kept); named as the next Stage 6 unit | W9→product separator family | §D.9 | 6 | none |
+| 10 | FIX LANDED invocation 14 (hosted leg rides the push): canonicalWorktreePath (filepath.ToSlash(filepath.Clean)) at all three comparison sites — isDeclaredUnavailable, the registered map, and the retained-registration check — with verbatim forms preserved in persisted records; the test-side assertOutsideDeclared canonicalizes both sides so its no-contributed-history assertion keeps its teeth. Unix behavior identical (ToSlash is identity). RECLASSIFIED invocation 13 (no `/repo` literals exist in the tree — the ledger's original classing was wrong): the actual hosted phenomenon (protocol package, TestDeclared* ×4) is a PRODUCT path-separator mismatch — the fixtures derive `linked` from git worktree porcelain output (forward slashes on Windows), and the declared-path validation compares it against Go-cleaned backslash forms → 'not a retained registration' / 'unavailable' refusals. Fix = separator normalization at the product's declared-vs-registered comparison sites (volume-aware, per-OS refusal assertions kept); named as the next Stage 6 unit | W9→product separator family | §D.9 | 6 | none |
 | 11 | CRLF (`hardening_test.go:456`, 1) | W10 (TEST) | §D.7, AC-CRLF-1..3 | 6 | none |
 | 12 | ACP drain race (ubuntu; load-dependent) | U1 (PRODUCT, already repaired in base) | §D.7 preserve | n/a | none — spawn.go Stop/Wait untouched |
 | 13 | Captured-execution family root cause not established (ubuntu) | U2 (undesignated) | §D.5 sibling discipline | probe/H4 | none — diagnose, never label flaky |

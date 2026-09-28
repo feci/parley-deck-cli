@@ -102,9 +102,19 @@ func normalizeDeclaredUnavailable(declared []string) ([]string, error) {
 
 // Declared paths are compared verbatim against the registered porcelain value.
 // No normalization, symlink resolution or case folding widens the match.
+// canonicalWorktreePath normalizes a worktree path for comparison: Git's
+// porcelain output uses forward separators while Go paths use the platform
+// separator, and declared-vs-registered matching must not be
+// separator-sensitive (row 10). Verbatim forms are preserved in all
+// persisted records; only comparisons canonicalize.
+func canonicalWorktreePath(p string) string {
+	return filepath.ToSlash(filepath.Clean(p))
+}
+
 func isDeclaredUnavailable(declared []string, worktree string) bool {
+	worktree = canonicalWorktreePath(worktree)
 	for _, path := range declared {
-		if path == worktree {
+		if canonicalWorktreePath(path) == worktree {
 			return true
 		}
 	}
@@ -174,7 +184,7 @@ func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory 
 			for _, field := range strings.Split(string(out), "\x00") {
 				if strings.HasPrefix(field, "worktree ") {
 					worktree := strings.TrimPrefix(field, "worktree ")
-					registered[worktree] = true
+					registered[canonicalWorktreePath(worktree)] = true
 					// Missing/unavailable worktrees are unknown history. A nested deck
 					// that does not exist in an accessible worktree has no local files
 					// to migrate; it still inherits the common policy if later created.
@@ -217,7 +227,7 @@ func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory 
 			// A declaration binds a retained registration. A path Git no longer
 			// registers is a stale registry, not an unknown history row.
 			for _, path := range declared {
-				if !registered[path] {
+				if !registered[canonicalWorktreePath(path)] {
 					err = fmt.Errorf("declared-unavailable worktree is not a retained registration: %s", path)
 					return
 				}
