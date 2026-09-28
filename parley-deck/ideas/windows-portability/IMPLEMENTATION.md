@@ -702,6 +702,20 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
     ok 307.573s — the durability surfaces hold on darwin with the refusals
     dormant (Unix byte-identical; the windows test file is build-tag-excluded
     here, hosted Windows execution is its evidence).
+- (2026-09-28T14:17–14:22Z, zcode-1; commits e4a2af9 + 32bacd2, both pushed —
+  hosted cycles 36434775624 (e4a2af9) in flight at checkpoint and a cycle for
+  32bacd2 queued behind it; app trajectory suite ok 267.629s local after the
+  syncTrajectoryRuntimeParent conversion). Stage 3 follow-up landed in
+  32bacd2: the A2/B3/B4 hosted gate-path pin
+  (TestVerificationRowsRefuseAtReviewedGateOnWindows — all seven rooted rows
+  now have refusal-path pins) and the app-side dormant surface
+  (syncTrajectoryRuntimeParent) routed through DirHandleOf+SyncDir — no
+  directory handle reaches SyncFile anywhere in the tree now. Remaining
+  Stage 3: AC-DUR-3 dormant plain-row conversions A1/B1/B2 + stage-grammar
+  pin; assess 36434775624 and the 32bacd2 cycle (expect the row-25
+  Access-denied family to become NAMED refusals; tests failing on the
+  changed refusal mode get ledger rows per the refresh rule). This docs
+  commit is deliberately NOT pushed alone — it rides the next code push.
 
 ## Hosted run register
 
