@@ -212,9 +212,14 @@ func TestExpandPlaceholders(t *testing.T) {
 	root := filepath.Join("tmp", "repo")
 	temp := filepath.Join("tmp", "agent")
 	got := ExpandPlaceholders("{root}/x:{deck}/y:{tempdir}/z:{prompt}", root, temp)
-	want := filepath.Join("tmp", "repo", "x") + ":" +
-		filepath.Join("tmp", "repo", protocol.DeckDir, "y") + ":" +
-		filepath.Join("tmp", "agent", "z") + ":{prompt}"
+	// The substitution replaces the placeholders VERBATIM; the template's
+	// literal '/' separators are not normalized (a Windows caller writing
+	// "{root}/x" gets the backslashed root followed by "/x"). The want is
+	// built by the same semantics — the test checks the placeholder VALUES,
+	// not separator normalization.
+	want := root + "/x:" +
+		filepath.Join(root, protocol.DeckDir) + "/y:" +
+		temp + "/z:{prompt}"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
 	}
