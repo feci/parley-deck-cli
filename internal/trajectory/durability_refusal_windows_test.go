@@ -110,3 +110,13 @@ func TestRootedRowsRefusePreMutationOnWindows(t *testing.T) {
 		t.Fatalf("C2 refusal wrong: %v", err)
 	}
 }
+
+// A2/B3/B4 are dormant behind the reviewed POSIX gate in
+// openVerificationDirectory (§C.3): the gate refuses before OpenRoot, so no
+// rooted publication exists for any of the three rows.
+func TestVerificationRowsRefuseAtReviewedGateOnWindows(t *testing.T) {
+	_, err := openVerificationDirectory(budget.CycleBinding{}, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", true)
+	if err == nil || !strings.Contains(err.Error(), "captured verification journals require a POSIX execution host") {
+		t.Fatalf("A2/B3/B4 gate refusal wrong: %v", err)
+	}
+}

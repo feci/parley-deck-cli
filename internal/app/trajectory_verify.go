@@ -135,7 +135,11 @@ func syncTrajectoryRuntimeParent(path string) error {
 		return err
 	}
 	defer dir.Close()
-	return fsutil.SyncFile(dir)
+	handle, err := fsutil.DirHandleOf(dir)
+	if err != nil {
+		return err
+	}
+	return fsutil.SyncDir(handle)
 }
 
 func writeTrajectoryRuntimeJSON(path string, value any) error {
