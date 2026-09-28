@@ -20,10 +20,17 @@ func ReplaceSyncedFile(staged, path string) error {
 	// carries FILE_ATTRIBUTE_READONLY and MoveFileEx(REPLACE) fails over it
 	// — POSIX rename is not blocked by the target's own permissions, so the
 	// write bit is restored before the move to match that contract.
-	if info, err := os.Lstat(path); err == nil && info.Mode().Perm()&0o200 == 0 {
-		if err := os.Chmod(path, info.Mode().Perm()|0o200); err != nil {
-			return fmt.Errorf("clear read-only replace target: %w", err)
+	// Stat-error repair (claude-1 §6, independently endorsed by kimi-1):
+	// a FAILED stat is not absence — surfacing it preserves the diagnostic
+	// the old code silently discarded; only genuine absence proceeds.
+	if info, err := os.Lstat(path); err == nil {
+		if info.Mode().Perm()&0o200 == 0 {
+			if err := os.Chmod(path, info.Mode().Perm()|0o200); err != nil {
+				return fmt.Errorf("clear read-only replace target: %w", err)
+			}
 		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("stat replace target before move: %w", err)
 	}
 	from, err := windows.UTF16PtrFromString(staged)
 	if err != nil {
@@ -33,5 +40,11 @@ func ReplaceSyncedFile(staged, path string) error {
 	if err != nil {
 		return err
 	}
-	return windows.MoveFileEx(from, to, windows.MOVEFILE_REPLACE_EXISTING|windows.MOVEFILE_WRITE_THROUGH)
+	if err := windows.MoveFileEx(from, to, windows.MOVEFILE_REPLACE_EXISTING|windows.MOVEFILE_WRITE_THROUGH); err != nil {
+		// TEMPORARY replace-failure diagnostic (kimi-1 corrected battery):
+		// report-only, grading-not-classification, no retry. See
+		// replace_diag_windows.go for the removal plan.
+		return fmt.Errorf("MoveFileEx(WRITE_THROUGH|REPLACE) failed: %w. %s", err, replaceDiag("ReplaceSyncedFile", staged, path, err))
+	}
+	return nil
 }

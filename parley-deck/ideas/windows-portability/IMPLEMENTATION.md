@@ -1081,6 +1081,37 @@ introduced, not proof of correct dispatch; only the later 92ab958+ hosted
 legs can evidence the corrected behavior.** No retry broadening; no
 probe-time state promoted to failure-time attribution.
 
+## Corrected sharing-failure diagnostic batch landed (invocation 20, 2026-09-28T17:59–18:0xZ)
+
+Per the engaged kimi-1 corrected battery and claude-1 constraints (both
+advisory), scoped under the frozen FINAL, declared TEMPORARY with a removal
+plan: **D1′** — `ReplaceSyncedFile`'s MoveFileEx failure path now wraps the
+error with a report-only diagnostic (`replace_diag_windows.go`): the RAW
+errno value, per-side (staged + target) existence and attribute word (P1),
+a DELETE-access-with-FULL-share probe (P2 — mirrors the rename's own
+requirement; succeeds over benign share-delete readers, fails only when a
+handle denies delete-sharing), a READ_ATTRIBUTES full-share control (P3 —
+delete-pending/hard-deny family), the D2′ in-flight reader sample taken
+BEFORE the probes, and a nanotime stamp. Every outcome is labelled
+**grading-not-classification**: the grades name probe-time state (t1 > t0)
+with the unclassified case reported AS unclassified — no probe-time sample
+is promoted to failure-time attribution, nothing is retried, the wrapped
+error still fails the operation, the success path is untouched (the probes
+are unreachable there — they are themselves opens, exactly what row-30
+removed from the success path). **D2′** — a per-path in-flight reader
+registry (fsutil.DiagReaderEnter/Exit) registered by the budget
+`readStepHistoryFile` (keyed by cleaned path so a policy.json block is not
+conflated with other files' readers; enter/exit with deferred exit).
+**REMOVAL PLAN:** temporary — once the concurrent-replacement class is
+identified from hosted evidence, the probes and registry are removed (or
+narrowed per review); only the structured errno in the wrapped error may
+remain. **Stat-error swallow repaired** (claude-1 §6, kimi-endorsed,
+verified by my own read): a FAILED stat in the read-only-clear branch is no
+longer silently conflated with absence — genuine absence proceeds, any
+other stat error is surfaced (`stat replace target before move`), preserving
+the diagnostic the old code discarded. Bounded local: fsutil + budget
+suites PASS exit 0 (4.0s); darwin + windows cross build/vet green.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

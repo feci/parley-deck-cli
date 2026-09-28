@@ -11,6 +11,7 @@ import (
 	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // A concurrent atomic replacement is a refused snapshot, not lost accounting.
@@ -176,6 +177,11 @@ func inspectStepRun(dir, idea string) error {
 // observed during the read; never follow an alias into unrelated history.
 func readStepHistoryFile(path string, limit int64) ([]byte, error) {
 	// Row 30: eager rooted pin + delete-share open through one handle.
+	// D2′ in-flight registry (TEMPORARY diagnostic; per-path so a
+	// policy.json block is not conflated with other files' readers).
+	key := filepath.ToSlash(filepath.Clean(path))
+	fsutil.DiagReaderEnter(key, time.Now())
+	defer fsutil.DiagReaderExit(key)
 	f, before, err := fsutil.OpenPinned(path)
 	if err != nil {
 		return nil, err
