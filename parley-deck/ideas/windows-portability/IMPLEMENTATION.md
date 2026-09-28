@@ -4,7 +4,7 @@ status: in-progress
 implementer: zcode-1
 started: 2026-09-25
 branch: windows-portability
-head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> this commit (AC-DUR-3 + assessment)
+head-commit: 85babfe at this invocation's start (2026-09-28T13:03Z clock-verified); prior checkpoints 356fbb8 (FINAL freeze) -> e9cf601 (claim) -> 255f1a5 (Stage 0 code) -> 9a96c2f/16824fd (stage 0 close) -> ff2ef9d (recon) -> ca5efef (fsacl unwired) -> cd82025 (ACL checkpoint) -> 3646a9f (fsacl wired; assessed 36174658770) -> d07e6cc (stage 1 close-out; assessed 36425527266 this invocation) -> 276b3e1/85babfe (checkpoint + resume) -> a93f71c (row-24 fix + restore fix + Stage 2 core; assessed 36429107801) -> 6236af6 (Stage 2 complete; assessed 36432547744: pipeline GREEN) -> e4a2af9 (Stage 3 core; assessed 36434775624: named-refusal transition verified) -> 32bacd2 (A2/B3/B4 gate pins; cycle 36435481011 in flight) -> 9d9c9cd (checkpoint docs) -> e22b0ff (AC-DUR-3; Stage 3 complete at code level) -> this commit (Stage 4 opened: §D.6 read-only trap)
 design-pr: n/a
 implementation-pr: n/a (owner override: no development PRs; files canonical, direct integration)
 ---
@@ -124,6 +124,19 @@ Progress for the live stage state.
       mechanics confirmation rides this push. Stage 3 COMPLETE at code level
       once that lands; acceptance review recorded in Progress.
 - [ ] **Stage 4** — file sharing (§D.6) + open-site diagnostic cycle (H7).
+      OPENED invocation 8 (2026-09-28T14:3x–14:4xZ): the §D.6
+      read-only-attribute trap landed in ReplaceSyncedFile (Windows-only: a
+      replace target without 0200 carries FILE_ATTRIBUTE_READONLY and
+      MoveFileEx(REPLACE) fails over it — the write bit is restored before
+      the move to match POSIX rename semantics; Unix replace untouched);
+      windows-tagged pin TestReplaceSyncedFileOverReadOnlyTarget rides the
+      next push. NEXT Stage 4 units: the open-site `.lock` sharing diagnostic
+      cycle (error class + retry outcome per §D.6 — still UNDIAGNOSED), the
+      share-flag-correct open sweep (prefer os.Root routing; raw CreateFile
+      only where rooting cannot express the site), close-before-rename
+      discipline, bounded third-party-only ERROR_SHARING_VIOLATION retry with
+      self-held/foreign-held classification, and the adversarial rename-root
+      test redesign (row 19).
 - [ ] **Stage 5** — P-A liveness (§D.2) + W-SHELL missing-`sh` refusal (§D.3).
 - [ ] **Stage 6** — fixture-portability sweep (§D.9) + ACP/AF_UNIX/CRLF (§D.7).
 - [ ] **Stage 7** — validation/release: unfiltered three-leg matrix green, census
@@ -722,6 +735,10 @@ today's fsync semantics exactly (darwin F_FULLFSYNC fallback included).
     unreachable there by construction).
   - Hosted execution of the AC-DUR-3 mechanics tests + the dormant wiring's
     compile rides this push; 36435481011 (32bacd2 leg) assessment pending.
+  - Stage 4 first unit (read-only trap): `gofmt -l internal/fsutil/` clean;
+    darwin + GOOS=windows build/vet green;
+    `go test ./internal/fsutil/ -count=1` ok 0.308s; the windows-tagged
+    replace test executes hosted on the next push.
 - (2026-09-28T14:17–14:22Z, zcode-1; commits e4a2af9 + 32bacd2, both pushed —
   hosted cycles 36434775624 (e4a2af9) in flight at checkpoint and a cycle for
   32bacd2 queued behind it; app trajectory suite ok 267.629s local after the

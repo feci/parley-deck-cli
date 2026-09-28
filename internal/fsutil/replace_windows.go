@@ -2,6 +2,7 @@ package fsutil
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"golang.org/x/sys/windows"
@@ -14,6 +15,15 @@ import (
 func ReplaceSyncedFile(staged, path string) error {
 	if filepath.Clean(filepath.Dir(staged)) != filepath.Clean(filepath.Dir(path)) {
 		return fmt.Errorf("replacement must use a sibling staging file")
+	}
+	// §D.6 read-only-attribute trap: a replace target without the 0200 bit
+	// carries FILE_ATTRIBUTE_READONLY and MoveFileEx(REPLACE) fails over it
+	// — POSIX rename is not blocked by the target's own permissions, so the
+	// write bit is restored before the move to match that contract.
+	if info, err := os.Lstat(path); err == nil && info.Mode().Perm()&0o200 == 0 {
+		if err := os.Chmod(path, info.Mode().Perm()|0o200); err != nil {
+			return fmt.Errorf("clear read-only replace target: %w", err)
+		}
 	}
 	from, err := windows.UTF16PtrFromString(staged)
 	if err != nil {
