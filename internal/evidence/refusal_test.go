@@ -242,6 +242,9 @@ func TestRefusalStorageAliasesAndChangedRecordRefuse(t *testing.T) {
 		})
 	}
 	dir := t.TempDir()
+	if !retainRefusalPlatformTrue(t, dir) {
+		return // Windows §C designed refusal (not-applicable lifecycle)
+	}
 	sum, err := RetainVerificationRefusal(dir, refusalFixture())
 	if err != nil {
 		t.Fatal(err)
@@ -282,6 +285,9 @@ func TestRefusalRetentionSurvivesMissingGuardOriginLock(t *testing.T) {
 	// No writer holds this test-only inode. Simulate loss without recreating it.
 	if err := os.Remove(parts[2]); err != nil {
 		t.Fatal(err)
+	}
+	if !retainRefusalPlatformTrue(t, dir) {
+		return // Windows §C designed refusal (not-applicable lifecycle)
 	}
 	sum, err := RetainVerificationRefusal(dir, refusalFixture())
 	if err != nil {

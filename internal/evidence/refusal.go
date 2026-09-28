@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -188,6 +189,15 @@ func syncRefusalDir(path string) error {
 // unavailable. Each observer gets its own exclusive file. Interrupted writes
 // remain visible as invalid pending entries; they never become acceptance.
 func RetainVerificationRefusal(ideaDir string, r VerificationRefusal) (string, error) {
+	// §C pre-mutation gate (kimi-1 applicability consult F1(a), adopted):
+	// the durable-publication barrier refuses on Windows, and FINAL §C's
+	// contract is that the refusal fires BEFORE the mutation — previously the
+	// recursion created the .parley-runtime scaffolding before the barrier,
+	// leaving litter despite the refusal. Refuse up front; nothing is created.
+	if err := fsutil.ErrDirEntryDurabilityUnsupported; runtime.GOOS == "windows" && err != nil {
+		return "", fmt.Errorf("%w: retaining a verification refusal requires a durable directory-entry publication", err)
+	}
+
 	data, err := encodeRefusal(r)
 	if err != nil {
 		return "", err

@@ -208,6 +208,13 @@ func TestRefusalOrphanHelperChild(t *testing.T) {
 }
 
 func TestRefusalHelperSurvivesStoppedParent(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// §C designed refusal: the orphan helper's retention refuses on
+		// Windows (F2.3 of the applicability consult) — the lifecycle under
+		// test (retention succeeds) cannot hold; the refusal itself is pinned
+		// by retainRefusalPlatformTrue's sites and the fsacl/§B suites.
+		return
+	}
 	root, dir := gateScratchRepo(t, twoCriterionContract())
 	root, dir, err := verificationRefusalScope(root, "idea-x")
 	if err != nil {

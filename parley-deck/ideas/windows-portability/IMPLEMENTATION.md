@@ -1241,6 +1241,38 @@ applicability challenge (announced, at fixed c39d81c) had NOT arrived at
 this commit; it will be engaged on arrival and may revise this pattern —
 recorded as pending advisory input, not settled.
 
+
+## kimi-1 applicability consult ENGAGED (invocation 21, 18:3xZ) — F1/F2 acted on immediately
+
+The advisory coverage challenge (at fixed 4952e1d/c39d81c) was read on
+arrival and its blocking findings acted on before any extension of the
+disputed pattern:
+
+- **F1 (adopted resolution (a)):** the evidence retention path created
+  `.parley-runtime` scaffolding BEFORE the barrier refused — leaving litter
+  despite the refusal, contradicting §C's "trigger is before the mutation",
+  and making my nothing-created assertion predictably red hosted. Fixed in
+  the PRODUCT: a pre-mutation Windows gate at the top of
+  `RetainVerificationRefusal` (mirroring the trajectory family's
+  refuse-before-OpenRoot shape) — the named durability error now fires
+  before ANY directory creation. (Kimi's option (b) — accepting scaffolding
+  litter — rejected as weakening §C's wording in effect.)
+- **F2:** the three missed retain-success sites wired with the same
+  platform-true gate (the changed-record half; the missing-guard-origin-lock
+  retention; the app-side stopped-parent helper — the last via an explicit
+  Windows early return with the mapping comment). Bounded PASS all.
+- **F3 (acknowledged, not yet acted on):** the bypassed-but-applicable
+  read-path assertions (Preview adversarial subtests constructible
+  test-side; Inspect visibility/alias/conflict halves; the five CLI
+  rejection cases) and F4's missing pins (RecoverReservation apply refusal;
+  Preview pristine-store sanity) are RECORDED as the next reconciliation
+  units with kimi's construction recipes — NOT silently dismissed. The
+  tranche's own criterion ("cannot exist on Windows") concedes these; the
+  early returns function as exclusions-in-effect for them until salvaged.
+- **O1/O3 acknowledged:** the census cannot see applicability-flag early
+  returns; no-coverage verdict is claimed from counts; the
+  fixture-completion wording was reconciled earlier this invocation.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
