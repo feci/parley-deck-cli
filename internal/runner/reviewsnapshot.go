@@ -41,7 +41,7 @@ func (e snapshotUnavailable) Error() string { return "snapshot unavailable: " + 
 // gitProbe builds a read-only git command with optional locks disabled
 // (consensus D8: probes must never write .git on the weakly-coherent mount).
 func gitProbe(dir string, args ...string) *exec.Cmd {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := exec.Command("git", append([]string{"-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", dir}, args...)...)
 	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
 	return cmd
 }
@@ -91,7 +91,7 @@ func CreateReviewSnapshot(liveRoot, ideaSlug, roundLabel, agentID, runID string)
 }
 
 func (s *ReviewSnapshot) materialize() error {
-	clone := exec.Command("git", "clone", "--quiet", "--shared", "--no-checkout", "--", s.liveRoot, s.Dir)
+	clone := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--shared", "--no-checkout", "--", s.liveRoot, s.Dir)
 	clone.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
 	if out, err := clone.CombinedOutput(); err != nil {
 		return fmt.Errorf("clone: %v: %s", err, strings.TrimSpace(string(out)))
@@ -121,7 +121,7 @@ func (s *ReviewSnapshot) materialize() error {
 		defer os.Remove(tempIndex)
 		gitDir := filepath.Join(s.Dir, ".git")
 		snapGit := func(args ...string) *exec.Cmd {
-			cmd := exec.Command("git", append([]string{"-C", s.liveRoot, "--git-dir", gitDir, "--work-tree", "."}, args...)...)
+			cmd := exec.Command("git", append([]string{"-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", s.liveRoot, "--git-dir", gitDir, "--work-tree", "."}, args...)...)
 			cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0", "GIT_INDEX_FILE="+tempIndex)
 			return cmd
 		}
@@ -135,7 +135,7 @@ func (s *ReviewSnapshot) materialize() error {
 		if err != nil {
 			return fmt.Errorf("write-tree: %v", err)
 		}
-		commitCmd := exec.Command("git", "--git-dir", gitDir,
+		commitCmd := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "--git-dir", gitDir,
 			"-c", "user.name=parley", "-c", "user.email=parley@localhost",
 			"commit-tree", strings.TrimSpace(string(treeOut)), "-p", "HEAD", "-m", "parley review snapshot")
 		commitCmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")

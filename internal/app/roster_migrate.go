@@ -380,7 +380,7 @@ func shortHash(b []byte) string {
 // protect a reversible rollback path, and outside a repository there was never one to
 // protect, so refusing there would block migration for no gain.
 func deckTreeDirty(deck string) bool {
-	cmd := exec.Command("git", "-C", deck, "status", "--porcelain")
+	cmd := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", deck, "status", "--porcelain")
 	out, err := cmd.Output()
 	if err != nil {
 		return false

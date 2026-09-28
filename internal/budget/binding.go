@@ -140,7 +140,7 @@ func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory 
 	if err != nil {
 		return
 	}
-	common, gitErr := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
+	common, gitErr := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
 	base := filepath.Join(root, ".parley-runtime", "launch-budgets")
 	prefix := ""
 	roots = []string{root}
@@ -157,14 +157,14 @@ func launchScopeDeclared(ctx context.Context, root, idea string, inspectHistory 
 			return
 		}
 		base = filepath.Join(gitDir, "parley-launch-budgets")
-		out, e := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--show-prefix").Output()
+		out, e := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "rev-parse", "--show-prefix").Output()
 		if e != nil {
 			err = e
 			return
 		}
 		prefix = strings.TrimSpace(string(out))
 		if inspectHistory {
-			out, e = exec.CommandContext(ctx, "git", "-C", root, "worktree", "list", "--porcelain", "-z").Output()
+			out, e = exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "worktree", "list", "--porcelain", "-z").Output()
 			if e != nil {
 				err = e
 				return

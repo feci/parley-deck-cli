@@ -133,7 +133,7 @@ func InspectWorktreeInventory(ctx context.Context, root string) (WorktreeInvento
 		return WorktreeInventory{}, err
 	}
 	i.Root = abs
-	common, gitErr := exec.CommandContext(ctx, "git", "-C", abs, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
+	common, gitErr := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", abs, "rev-parse", "--path-format=absolute", "--git-common-dir").Output()
 	if gitErr != nil {
 		if ctx.Err() != nil {
 			return WorktreeInventory{}, ctx.Err()
@@ -171,7 +171,7 @@ func InspectWorktreeInventory(ctx context.Context, root string) (WorktreeInvento
 	// with no work tree (a bare repository) still has inspectable
 	// registrations. Authority is already established by the common dir above,
 	// and the registration read below must still succeed.
-	if prefix, e := exec.CommandContext(ctx, "git", "-C", abs, "rev-parse", "--show-prefix").Output(); e == nil {
+	if prefix, e := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", abs, "rev-parse", "--show-prefix").Output(); e == nil {
 		i.RepoPrefix = strings.TrimSpace(string(prefix))
 	} else {
 		if ctx.Err() != nil {
@@ -179,7 +179,7 @@ func InspectWorktreeInventory(ctx context.Context, root string) (WorktreeInvento
 		}
 		i.Uncertainty = append(i.Uncertainty, "this root has no reportable work-tree prefix, so the inspected location is not described; the registrations below are unaffected")
 	}
-	out, err := exec.CommandContext(ctx, "git", "-C", abs, "worktree", "list", "--porcelain", "-z").Output()
+	out, err := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", abs, "worktree", "list", "--porcelain", "-z").Output()
 	if err != nil {
 		return WorktreeInventory{}, fmt.Errorf("cannot read Git worktree registrations: %w", err)
 	}

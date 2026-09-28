@@ -55,7 +55,7 @@ func newVerificationRefusal(observer, stage, idea, run, verifier, requestSHA, or
 }
 
 func refusalGit(ctx context.Context, root string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "git", append([]string{"--literal-pathspecs", "-C", root}, args...)...)
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-c", "core.autocrlf=false", "-c", "core.eol=lf", "--literal-pathspecs", "-C", root}, args...)...)
 	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
 	return cmd.Output()
 }

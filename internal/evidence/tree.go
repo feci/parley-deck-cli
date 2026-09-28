@@ -27,7 +27,7 @@ import (
 // ReviewedCommit returns HEAD's commit id, or "" when the root is not a git
 // work tree (the digest still works; the report records the absence).
 func ReviewedCommit(root string) string {
-	out, err := exec.Command("git", "-C", root, "rev-parse", "HEAD").Output()
+	out, err := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "rev-parse", "HEAD").Output()
 	if err != nil {
 		return ""
 	}
@@ -41,7 +41,7 @@ func TreeDirty(root string) bool {
 	if ReviewedCommit(root) == "" {
 		return true // no commit baseline → cannot claim clean
 	}
-	err := exec.Command("git", "-C", root, "diff", "--quiet", "HEAD", "--").Run()
+	err := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "diff", "--quiet", "HEAD", "--").Run()
 	return err != nil
 }
 
@@ -173,7 +173,7 @@ func rejectUnsupportedEntries(ctx context.Context, root string) error {
 // A type walk additionally rejects non-regular untracked entries Git omits.
 // Outside a committed Git tree, restoration still uses a .git-pruned walk.
 func listTreeFiles(ctx context.Context, root string) ([]string, error) {
-	cmd := exec.CommandContext(ctx, "git", "-C", root, "--no-optional-locks", "rev-parse", "--verify", "HEAD^{commit}")
+	cmd := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "--no-optional-locks", "rev-parse", "--verify", "HEAD^{commit}")
 	_, gitErr := cmd.Output()
 	if err := ctx.Err(); err != nil {
 		return nil, err

@@ -106,10 +106,10 @@ func trajectoryRuntime(root string) (string, error) {
 	if runtime.GOOS == "windows" {
 		return "", errors.New("trajectory verification requires a POSIX execution host")
 	}
-	if err := exec.Command("git", "--no-optional-locks", "-C", root, "check-ignore", "-q", "--", ".parley-runtime/").Run(); err != nil {
+	if err := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "--no-optional-locks", "-C", root, "check-ignore", "-q", "--", ".parley-runtime/").Run(); err != nil {
 		return "", errors.New("trajectory verification requires ignored private .parley-runtime storage")
 	}
-	tracked, err := exec.Command("git", "--no-optional-locks", "-C", root, "ls-files", "-z", "--", ".parley-runtime/").Output()
+	tracked, err := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "--no-optional-locks", "-C", root, "ls-files", "-z", "--", ".parley-runtime/").Output()
 	if err != nil || len(tracked) != 0 {
 		return "", errors.New("trajectory runtime cannot contain tracked files")
 	}

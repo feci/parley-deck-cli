@@ -423,14 +423,14 @@ func (o driverImplOps) VerifyCompletionEvidence(ctx context.Context) (ok bool, d
 	if _, err := exec.LookPath("git"); err != nil {
 		return fail(fmt.Errorf("independent evidence verification requires Git: %w", err))
 	}
-	inGit, err := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--is-inside-work-tree").Output()
+	inGit, err := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "rev-parse", "--is-inside-work-tree").Output()
 	if err != nil || strings.TrimSpace(string(inGit)) != "true" {
 		return false, "independent evidence verification requires a Git worktree with ignored runtime storage; non-Git closure is not supported"
 	}
-	if err := exec.CommandContext(ctx, "git", "-C", root, "check-ignore", "-q", "--", ".parley-runtime/").Run(); err != nil {
+	if err := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "check-ignore", "-q", "--", ".parley-runtime/").Run(); err != nil {
 		return false, "verification runtime must be ignored before execution; add .parley-runtime/ to the repository ignore rules, rerun checks, then retry"
 	}
-	tracked, err := exec.CommandContext(ctx, "git", "-C", root, "ls-files", "-z", "--", ".parley-runtime/").Output()
+	tracked, err := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "ls-files", "-z", "--", ".parley-runtime/").Output()
 	if err != nil {
 		return fail(err)
 	}

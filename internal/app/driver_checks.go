@@ -283,7 +283,7 @@ func (o driverImplOps) commitEvidence() {
 	implRel := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
 	evidenceRel := filepath.Join(o.ideaDir, evidence.ReportFileName)
 	git := func(args ...string) error {
-		cmd := exec.Command("git", append([]string{"-C", o.root}, args...)...)
+		cmd := exec.Command("git", append([]string{"-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", o.root}, args...)...)
 		cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
 		return cmd.Run()
 	}
@@ -297,7 +297,7 @@ func (o driverImplOps) commitEvidence() {
 	// `git commit` is a no-op error when nothing changed; ignore that case.
 	if err := git("commit", "-m", "[driver] "+o.ideaSlug+": validation evidence", "--", implRel, evidenceRel); err != nil {
 		// Only warn if the files actually have staged changes (a real failure).
-		if diff := exec.Command("git", "-C", o.root, "diff", "--cached", "--quiet", "--", implRel, evidenceRel).Run(); diff != nil {
+		if diff := exec.Command("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", o.root, "diff", "--cached", "--quiet", "--", implRel, evidenceRel).Run(); diff != nil {
 			fmt.Fprintf(o.out, "driver: warning — could not commit validation evidence: %v\n", err)
 		}
 	}

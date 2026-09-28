@@ -63,7 +63,7 @@ func (w *sourceInventoryOutput) Write(p []byte) (int, error) {
 func readGitSourceInventory(ctx context.Context, root, exclusion string, maxEntries, maxBytes int) ([]string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", "-C", root, "--no-pager", "--no-optional-locks", "ls-files", "-c", "-o", exclusion, "-z")
+	cmd := exec.CommandContext(ctx, "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "-C", root, "--no-pager", "--no-optional-locks", "ls-files", "-c", "-o", exclusion, "-z")
 	out := sourceInventoryOutput{limit: maxBytes, cancel: cancel}
 	cmd.Stdout = &out
 	// No stderr copy: diagnostics can contain private paths or source snippets.

@@ -553,7 +553,7 @@ func gitTreeClean(root string) bool {
 	// (index refresh writes .git) on the weakly-coherent virtio-fs mount
 	// (runner-hardening-kindly D8).
 	probe := func(args ...string) *exec.Cmd {
-		cmd := exec.Command("git", args...)
+		cmd := exec.Command("git", append([]string{"-c", "core.autocrlf=false", "-c", "core.eol=lf"}, args...)...)
 		cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
 		return cmd
 	}
