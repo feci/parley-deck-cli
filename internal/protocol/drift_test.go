@@ -89,7 +89,11 @@ func TestEmbeddedDefaultMatchesLiveDeck(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot read live deck %s — the drift guard fails closed rather than skip: %v", liveDeckPath, err)
 	}
-	deck := string(deckBytes)
+	// Row 29 (§D.7 split rule): the drift anchors are DOCUMENT-SEMANTIC
+	// comparisons — CRLF normalization is admissible here exactly as the
+	// signed rule states (a Windows checkout with autocrlf reads the deck
+	// with \r line endings; the anchors are unchanged in meaning).
+	deck := strings.ReplaceAll(string(deckBytes), "\r\n", "\n")
 
 	// Fail closed: each anchor must appear exactly once in each file so the
 	// normalizer can never swallow a wider region than the allowlist intends.
