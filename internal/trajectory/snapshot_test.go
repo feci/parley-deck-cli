@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/evidence"
+	"parley-deck-cli/internal/fsacl"
 )
 
 func snapshotWrite(t *testing.T, root, name string, data []byte, mode os.FileMode) {
@@ -29,10 +30,16 @@ func snapshotWrite(t *testing.T, root, name string, data []byte, mode os.FileMod
 	}
 }
 
+// snapshotStoreFixture models a store the product itself created (§D.1): the
+// fresh path goes through the same fsacl creation policy the product applies,
+// so on Unix the dir is 0700 exactly as before, and on Windows it carries the
+// owner-only protected DACL instead of the inheriting DACL a bare t.TempDir()
+// would leave (that is the AC-PRIV-5 refusal case, covered by its own tests
+// below and in internal/fsacl).
 func snapshotStoreFixture(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
-	if err := os.Chmod(dir, 0700); err != nil {
+	dir := filepath.Join(t.TempDir(), "store")
+	if err := fsacl.EnsurePrivateStore(dir); err != nil {
 		t.Fatal(err)
 	}
 	return dir
@@ -48,6 +55,31 @@ func snapshotFixture(t *testing.T) string {
 	gitFixture(t, root, "add", ".")
 	gitFixture(t, root, "commit", "-qm", "Snapshot fixture")
 	return root
+}
+
+// TestCaptureRefusesPermissivePreexistingStore keeps the AC-PRIV-5 refusal
+// exercised at the wired product boundary: a store someone else created with a
+// permissive policy is refused before any capture work with the sentence-stable
+// signature (the Unix message stays byte-identical to the historical guard;
+// the Windows refusal adds the trustee and the user-invoked repair, pinned in
+// internal/fsacl's own suite).
+func TestCaptureRefusesPermissivePreexistingStore(t *testing.T) {
+	root := snapshotFixture(t)
+	dir := filepath.Join(t.TempDir(), "store")
+	if err := os.MkdirAll(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	source, err := Observe(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CaptureSnapshot(context.Background(), root, dir, source)
+	if err == nil {
+		t.Fatal("permissive pre-existing store accepted")
+	}
+	if !strings.HasPrefix(err.Error(), "snapshot store must be a private real directory") {
+		t.Fatalf("refusal lost the sentence-stable prefix: %v", err)
+	}
 }
 
 func captureFixture(t *testing.T, root, dir string) (Source, SnapshotRef) {
@@ -121,8 +153,10 @@ func TestSnapshotRoundTripRetainsDirtySourceAndDoesNotWriteGit(t *testing.T) {
 		if _, err = os.Lstat(filepath.Join(restored, ".git")); !os.IsNotExist(err) {
 			t.Fatal("restore manufactured Git metadata")
 		}
-		if info, err := os.Stat(restored); err != nil || info.Mode().Perm()&0077 != 0 {
-			t.Fatal("restore directory is not private")
+		// Cross-platform expression of the same invariant: Unix perm bits on
+		// the restore dir, owner-only DACL on Windows (fsacl routes both).
+		if err := fsacl.VerifyPrivateStore(restored); err != nil {
+			t.Fatalf("restore directory is not private: %v", err)
 		}
 		if tc.dirty {
 			if string(snapshotRead(t, filepath.Join(restored, "source"))) != "changed\n" || !bytes.Equal(snapshotRead(t, filepath.Join(restored, "new/binary")), binary) {

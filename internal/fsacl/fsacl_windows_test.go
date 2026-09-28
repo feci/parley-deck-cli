@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"unsafe"
@@ -219,6 +220,7 @@ func TestPreexistingStoreRefusedAndNotRewritten(t *testing.T) {
 		t.Fatal(err)
 	}
 	grantTrustees(t, store, builtinUsersSID) // permissive pre-existing policy
+	protectedBefore, acesBefore := walkDACL(t, store)
 
 	err := EnsurePrivateStore(store)
 	if err == nil {
@@ -240,17 +242,18 @@ func TestPreexistingStoreRefusedAndNotRewritten(t *testing.T) {
 		}
 	}
 
-	// No in-place rewrite: the store still grants BUILTIN\Users and the user
-	// data is intact.
+	// No in-place rewrite: the DACL is exactly the state the test scaffolding
+	// itself installed (grantTrustees deliberately writes a PROTECTED DACL
+	// granting Users — protection and permissiveness are orthogonal), and the
+	// user data is intact.
 	protected, aces := walkDACL(t, store)
-	grantsUsers := false
-	for _, a := range aces {
-		if a == builtinUsersSID {
-			grantsUsers = true
-		}
+	if protected != protectedBefore || !slices.Equal(aces, acesBefore) {
+		t.Fatalf("pre-existing store DACL was rewritten (before: protected=%v aces=%v; after: protected=%v aces=%v)",
+			protectedBefore, acesBefore, protected, aces)
 	}
-	if !grantsUsers || protected {
-		t.Fatalf("pre-existing store DACL was rewritten (protected=%v aces=%v)", protected, aces)
+	grantsUsers := slices.Contains(aces, builtinUsersSID)
+	if !grantsUsers {
+		t.Fatalf("pre-existing store lost its permissive grant: %v", aces)
 	}
 	if data, err := os.ReadFile(marker); err != nil || string(data) != "user data" {
 		t.Fatalf("user data disturbed: err=%v data=%q", err, data)
