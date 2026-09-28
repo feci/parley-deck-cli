@@ -91,14 +91,16 @@ func TestEmbeddedDefaultMatchesLiveDeck(t *testing.T) {
 	}
 	// Row 29 (§D.7 split rule): the drift anchors are DOCUMENT-SEMANTIC
 	// comparisons — CRLF normalization is admissible here exactly as the
-	// signed rule states (a Windows checkout with autocrlf reads the deck
-	// with \r line endings; the anchors are unchanged in meaning).
+	// signed rule states. Hosted 36460436785 showed the EMBEDDED default is
+	// the CRLF side (go:embed embeds the checked-out file verbatim — an
+	// autocrlf Windows checkout bakes \r\n into the binary); the live deck
+	// read normalizes for the same reason.
 	deck := strings.ReplaceAll(string(deckBytes), "\r\n", "\n")
 
 	// Fail closed: each anchor must appear exactly once in each file so the
 	// normalizer can never swallow a wider region than the allowlist intends.
 	for _, f := range []struct{ name, text string }{
-		{"embedded default", defaultCooperation},
+		{"embedded default", strings.ReplaceAll(defaultCooperation, "\r\n", "\n")},
 		{"live deck", deck},
 	} {
 		assertExactLineOnce(t, f.name, f.text, rosterSectionLine)
