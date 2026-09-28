@@ -539,7 +539,9 @@ func inspectSnapshotFileAttempt(ctx context.Context, file string, ref SnapshotRe
 	if !ref.valid() || !sourceValid(want) {
 		return errors.New("invalid snapshot reference or source binding")
 	}
-	info, err := os.Lstat(file)
+	// Row 30: eager pin (sweep site completed by the archive_stability audit —
+	// this initial feeds checkSnapshotFileStability's identity comparisons).
+	info, err := fsutil.PinLstat(file)
 	if err != nil {
 		return err
 	}

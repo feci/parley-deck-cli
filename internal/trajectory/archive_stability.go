@@ -3,6 +3,7 @@ package trajectory
 import (
 	"errors"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 )
 
 func sameSnapshotFile(a, b os.FileInfo) bool {
@@ -17,7 +18,10 @@ func checkSnapshotFileStability(f *os.File, file string, initial, opened os.File
 	if err != nil {
 		return err
 	}
-	named, err := os.Lstat(file)
+	// Row-30 AFTER rule: a Root-derived stat — the lazy os.Lstat's implicit
+	// dwShareMode=0 identity open would refuse concurrent atomic replacements
+	// of this file (the claude-1 delete-pending consult finding).
+	named, err := fsutil.PinLstat(file)
 	if err != nil {
 		return err
 	}

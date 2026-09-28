@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -536,10 +537,9 @@ func TestRunParticipantsSubsetHardStopsSolo(t *testing.T) {
 // on a real invocation, so round-01 fails and the auto-driver is skipped.
 func writeFailingRoundAgentCLI(t *testing.T, dir, name, version string) {
 	t.Helper()
-	body := "#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo '" + version + "'; exit 0; fi\nexit 1\n"
-	if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	// §D.9 re-exec port: discoverable (--version) but exits nonzero on a real
+	// invocation — the role spec carries the per-test version.
+	writeRoleFixture(t, dir, name, "version-or-fail "+version)
 }
 
 func TestRunAnswerUpdatesQuestionAndEventLog(t *testing.T) {
@@ -1397,9 +1397,8 @@ func TestConsensusRequestSignoffsFailedInvalidAppendHasNoArtifactEvent(t *testin
 					t.Fatal(err)
 				}
 			} else {
-				if err := os.WriteFile(alpha, []byte("#!/bin/sh\ncat >/dev/null\nexit 7\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
+				// §D.9 re-exec port: drain stdin, exit 7.
+				alpha = writeRoleFixture(t, bin, "alpha", "drain-exit 7")
 			}
 			writeAgentsLocalConfig(t, root, fakeAgentConfig{ID: "alpha", Path: alpha, Backend: agents.ExternalLocal})
 			var stdout, stderr bytes.Buffer
@@ -1786,6 +1785,51 @@ func runFixtureRole(base string) (int, bool) {
 		}
 		return fakeParleyDeckSkillMain(), true
 	}
+	// Generic role-spec fixtures (§D.9): the behavior spec lives beside the
+	// binary copy as <name>.role, so parametric fixtures (per-test versions,
+	// exit modes) need no per-name dispatch.
+	if spec, err := os.ReadFile(filepath.Join(filepath.Dir(os.Args[0]), strings.TrimSuffix(base, ".exe")+".role")); err == nil {
+		return runRoleSpec(strings.TrimSpace(string(spec)))
+	}
+	return 0, false
+}
+
+// runRoleSpec executes a generic fixture behavior spec:
+//
+//	version-or-fail <v>   --version answers <v>; any other invocation exits 1
+//	version-or-drain <v>  --version answers <v>; otherwise drain stdin, exit 0
+//	drain-exit <n>        drain stdin, exit <n>
+func runRoleSpec(spec string) (int, bool) {
+	fields := strings.Fields(spec)
+	if len(fields) == 0 {
+		return 0, false
+	}
+	args := os.Args[1:]
+	switch fields[0] {
+	case "version-or-fail", "version-or-drain":
+		if len(fields) != 2 {
+			return 0, false
+		}
+		if len(args) > 0 && args[0] == "--version" {
+			fmt.Println(fields[1])
+			return 0, true
+		}
+		if fields[0] == "version-or-fail" {
+			return 1, true
+		}
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		return 0, true
+	case "drain-exit":
+		if len(fields) != 2 {
+			return 0, false
+		}
+		code, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return 0, false
+		}
+		_, _ = io.Copy(io.Discard, os.Stdin)
+		return code, true
+	}
 	return 0, false
 }
 
@@ -1823,10 +1867,23 @@ func fakeParleyDeckSkillMain() int {
 	return 0
 }
 
+// writeRoleFixture installs a re-exec fixture (a copy of this test binary)
+// with a sibling behavior spec at dir/name.role, returning the installed
+// path (the .exe suffix on Windows — direct-exec config paths must use it).
+func writeRoleFixture(t *testing.T, dir, name, spec string) string {
+	t.Helper()
+	path := writeReexecFixture(t, dir, name)
+	if err := os.WriteFile(filepath.Join(dir, name+".role"), []byte(spec), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
 // writeReexecFixture installs a copy of the test binary at dir/name as the
 // §D.9 test-binary re-exec port of an extension-less shell fixture (the .exe
-// suffix on Windows is resolved by LookPath through PATHEXT).
-func writeReexecFixture(t *testing.T, dir, name string) {
+// suffix on Windows is resolved by LookPath through PATHEXT), returning the
+// installed path.
+func writeReexecFixture(t *testing.T, dir, name string) string {
 	t.Helper()
 	src, err := os.Executable()
 	if err != nil {
@@ -1835,12 +1892,13 @@ func writeReexecFixture(t *testing.T, dir, name string) {
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}
+	installed := filepath.Join(dir, name)
 	in, err := os.Open(src)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer in.Close()
-	out, err := os.OpenFile(filepath.Join(dir, name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
+	out, err := os.OpenFile(installed, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1851,6 +1909,7 @@ func writeReexecFixture(t *testing.T, dir, name string) {
 	if err := out.Close(); err != nil {
 		t.Fatal(err)
 	}
+	return installed
 }
 func writeFakeLegacyParleyDeckSkill(t *testing.T, dir string) {
 	t.Helper()

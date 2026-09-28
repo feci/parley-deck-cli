@@ -906,9 +906,15 @@ cursor.go, evidence_table, evidence_verify:92, report.go, state.go:237,
 verification.go:235, protocolpacket:385, snapshot.go's pinned-compare sites,
 tui/live.go (both handle-derived, audited invocation 13). Root-derived
 after-operands (eager + share-correct): parent_recovery.go:157/:180
-(`dir.Lstat`). **Recorded unverified, not cleared:** archive_stability.go:9
-compares two caller-supplied FileInfos — its callers' derivations were not
-audited this invocation; named for the sweep.
+(`dir.Lstat`). **archive_stability audit CLOSED (invocation 16):** `sameSnapshotFile`
+compares caller-supplied FileInfos; the audit found TWO lazy operands on its
+paths and converted both: `checkSnapshotFileStability`'s own `named`
+(os.Lstat → PinLstat — the row-30 AFTER rule, same zero-share side effect)
+and — a MISSED SWEEP SITE — `inspectSnapshotFileAttempt`'s `info`
+(os.Lstat → PinLstat), the lazy BEFORE operand feeding the stability check's
+`initial` on the inspect path (the earlier sweep had verified the
+capture/verify paths; the inspect path slipped). Both conversions are the
+uniform one-liners; snapshot/stability tests green locally.
 
 **§D.6 gap named, not widened:** at the replace site a target-handle
 conflict surfaces as ERROR_ACCESS_DENIED (class 5), outside §D.6's signed
@@ -948,6 +954,24 @@ telemetry_test.go fixtures (~13 per the ledger). Design sketched for the
 parametric ones: a sibling `.role` spec file beside the binary copy (the
 role runner reads its behavior spec from os.Args[0]+".role"), so
 per-fixture versions/modes don't need per-name dispatch.
+
+
+## Rows 3/4 second tranche + identity audit closure (invocation 16, 2026-09-28T16:4x–16:5xZ)
+
+The generic **`.role` spec mechanism** landed for parametric fixtures: the
+behavior spec lives beside the binary copy as `<name>.role`
+(version-or-fail / version-or-drain / drain-exit specs), so per-test
+versions and exit modes need no per-name dispatch; `writeRoleFixture`
+returns the installed path (the .exe suffix on Windows — direct-exec config
+paths must use it, as the alpha-fixture call site now does). Converted this
+tranche: `writeFailingRoundAgentCLI` (version-or-fail) and the
+consensus-signoffs drain-exit-7 fixture. The consensus request-signoffs and
+version-all suites pass locally through the re-exec paths (20.1s).
+
+**Remainder (rows 4/23):** `writeFakeRoundAgentCLI` (the awk-over-stdin
+artifact writer — the largest port), `writeFakeForgedSignoffCLI` and the
+:1686/:1710/:1735 formatted bodies, and the launch_test.go /
+protocol_context_test.go / telemetry_test.go fixtures.
 
 ## Decision Log
 
