@@ -1544,6 +1544,19 @@ are the one-level equivalents (a recursive chmod would break cleanup
 removals — no delete-child carve-out in mode bits — recorded as the
 platform-true scoping).
 
+
+## Red-inventory families 7+6 fixed while legs run (invocation 25, 20:2xZ)
+
+- **Family 7 (LoadAgentSpecs second site):** the `{deck}` placeholder maps
+  to `filepath.Join(root, DeckDir)` (backslash-joined on Windows) with the
+  template's literal `/prompt.md` appended — the want now mirrors the
+  product's own expansion semantics exactly. Bounded PASS.
+- **Family 6 (WorktreeRegistration "/repo"):** the wire fixture's
+  POSIX-absolute paths are platform-true — on Windows the parser correctly
+  requires volume-absolute paths, so the fixture uses C:\-style paths
+  there; the parser test now runs everywhere with the same five
+  registration shapes.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`

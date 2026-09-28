@@ -79,7 +79,7 @@ model = "env-model"
 	if got, want := extra.Commands[0], root+"/bin/extra"; got != want {
 		t.Fatalf("extra command=%q, want %q", got, want)
 	}
-	if got, want := extra.HeadlessArgs[1], root+"/"+protocol.DeckDir+"/prompt.md"; got != want {
+	if got, want := extra.HeadlessArgs[1], filepath.Join(root, protocol.DeckDir)+"/prompt.md"; got != want {
 		t.Fatalf("headless arg=%q, want %q", got, want)
 	}
 	if extra.ExternalBackend != agents.ExternalLocal {

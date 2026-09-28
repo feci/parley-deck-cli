@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -351,12 +352,20 @@ func TestWorktreeRegistrationRefusesMalformedAuthority(t *testing.T) {
 // The strict parser must still accept every shape real Git does emit.
 func TestWorktreeRegistrationAcceptsStandardAttributes(t *testing.T) {
 	sha := strings.Repeat("b", 40)
+	// Row 10/W9 fixture port: "/repo" is POSIX-absolute; on Windows the
+	// parser correctly requires volume-absolute paths — the wire fixture
+	// uses the platform's absolute form so the parser test runs everywhere.
+	repo := "/repo"
+	a, b, c, d := "/a", "/b", "/c", "/d"
+	if runtime.GOOS == "windows" {
+		repo, a, b, c, d = `C:\repo`, `C:\a`, `C:\b`, `C:\c`, `C:\d`
+	}
 	got, err := parseWorktreeRegistrations(worktreeWire(
-		[]string{"worktree /repo", "bare"},
-		[]string{"worktree /a", "HEAD " + sha, "branch refs/heads/main"},
-		[]string{"worktree /b", "HEAD " + sha, "detached", "locked on removable media"},
-		[]string{"worktree /c", "HEAD " + sha, "detached", "prunable gitdir file points to non-existent location"},
-		[]string{"worktree /d", "HEAD " + strings.Repeat("c", 64), "detached", "locked"},
+		[]string{"worktree " + repo, "bare"},
+		[]string{"worktree " + a, "HEAD " + sha, "branch refs/heads/main"},
+		[]string{"worktree " + b, "HEAD " + sha, "detached", "locked on removable media"},
+		[]string{"worktree " + c, "HEAD " + sha, "detached", "prunable gitdir file points to non-existent location"},
+		[]string{"worktree " + d, "HEAD " + strings.Repeat("c", 64), "detached", "locked"},
 	))
 	if err != nil {
 		t.Fatalf("standard Git registration output refused: %v", err)
