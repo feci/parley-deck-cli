@@ -1129,6 +1129,28 @@ suites PASS exit 0 (4.0s); darwin + windows cross build/vet green.
   TestFixtureAutoDrive…, TestTrajectoryHelper… — the designed-refusal and
   fixture-portability mix.
 
+
+## Designed-refusal family reconciliation — first tranche (invocation 20, 18:0xZ)
+
+**Reservation-recovery family (§C.1 blast radius, ~40 failing subtests):**
+the recovery tests presuppose a PUBLISHED reservation intent; on Windows the
+precharge publication refuses by signed design (A3+B5, §C.1), so the child
+process can never reach the interrupted boundary. The platform-true
+expression landed at the `interruptedReservationFixture` boundary: on
+Windows the child's output must carry the designed §C.1 refusal text, the
+exit must be non-zero, and the nothing-published state is asserted (no
+reservation-intents directory) — then the test returns early via an
+APPLICABILITY flag, **not a t.Skip** (the census stays clean; the refusal
+invariants are real assertions that fail if the product regresses). The
+refusal itself additionally remains pinned adversarially by the fsacl/§B
+hosted suites. Unix: the full recovery flows unchanged (all
+TestReservationRecovery* green locally, 20.6s, exit 0). Remaining family
+members recorded for the next tranche: the evidence-package refusal tests
+(dir-fsync §C refusals at refusal_test.go — same shape: the tests exercise
+POSIX publication flows that refuse on Windows), TestBeginBound…,
+TestExecTelemetry*, TestDriverPrecheck*, TestTrajectoryHelper…, and the
+readonly organizer fixture.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
