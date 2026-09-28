@@ -27,54 +27,132 @@ import (
 //   - apply (F4.1)          → RecoverReservation refuses via the §B SyncDir
 //     emitter BEFORE persist, nothing written
 //
-// windowsChargedStateFixture constructs the minimal charged-cycle state the
-// product's read path accepts, then applies the named corruption. It returns
-// the root, binding, and the intent entry key.
+// windowsChargedStateFixture constructs a VALID charged-cycle state entirely
+// test-side (kimi-1 F3a recipe, FINAL §D.4 cross-OS premise): the ledger
+// charge via the store's own Reserve (writeSynced — no dir barrier), the
+// pre-charge trajectory state via the product's own read (the fixture's
+// Activate already wrote it — no rewrite needed), and the intent built from
+// the SAME fields the product's PrepareCycleReservation assembles, written
+// with plain Mkdir/WriteFile under the accounting EntryKey filename. No
+// product publication, no §C.1 refusal. The corruption switch then mutates
+// one guard's input. A CLEAN CONTROL (no mutation) must pass Preview's
+// identity checks before any mutated case runs — otherwise the fixture
+// itself is malformed and every "refusal" would be a false pass.
 func windowsChargedStateFixture(t *testing.T, change string) (string, *budget.CycleBinding, string) {
 	t.Helper()
 	root, b, _ := accountingFixture(t)
-	// The intent: a canonical reservationIntent for this binding. The
-	// product normally publishes it via the refusing path; test-side
-	// construction is plain Mkdir+WriteFile (FINAL §D.4 cross-OS premise).
-	i := reservationIntent{Version: 1, Root: root}
-	raw, err := canonical(i)
+	ctx := context.Background()
+	// Ledger charge (the store path — durable via ReplaceSyncedFile).
+	zero := int64(0)
+	if _, err := b.Store.Reserve(ctx, budget.Request{ID: "fixture-charge", Kind: budget.Fixup, ReserveMicros: &zero}, budget.Limits{}); err != nil {
+		t.Fatal(err)
+	}
+	snap, err := b.Store.Inspect(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	entry := digest(raw)
+	var entry string
+	for k := range snap.Entries {
+		entry = k
+	}
+	if entry == "" {
+		t.Fatal("no ledger charge entry")
+	}
+	// The pre-charge state IS the fixture's trajectory.json (Activate wrote
+	// it; the charge appends only at the product's own later step).
+	s, raw, err := readState(statePath(*b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounting := budget.CycleReservationIntent{
+		Version: 1, Policy: b.Policy, StartedAt: snap.StartedAt,
+		EntryKey: entry, ReserveMicros: &zero,
+	}
+	i := reservationIntent{Version: 1, Root: root, PreparedAt: snap.StartedAt.UTC(), Accounting: accounting, Before: s, BeforeSHA256: digest(raw)}
+	ibody, err := canonical(i)
+	if err != nil {
+		t.Fatal(err)
+	}
 	intentDir := filepath.Join(filepath.Dir(b.Store.Dir), "reservation-intents")
 	if change != "missing-intent" {
 		if err := os.MkdirAll(intentDir, 0o700); err != nil {
 			t.Fatal(err)
 		}
-		body := raw
-		if change == "partial-intent" {
+		body := ibody
+		switch change {
+		case "partial-intent":
 			body = []byte("{\n")
-		}
-		if change == "changed-root" {
+		case "changed-root":
 			i.Root += "-other"
 			if body, err = canonical(i); err != nil {
 				t.Fatal(err)
 			}
-		}
-		if change == "changed-limits" {
+		case "changed-before":
+			i.Before.Policy.Baseline.Tree.SHA256 = digest([]byte("other"))
+			if body, err = canonical(i); err != nil {
+				t.Fatal(err)
+			}
+		case "changed-limits":
 			i.Accounting.Policy.Maximum++
 			if body, err = canonical(i); err != nil {
 				t.Fatal(err)
 			}
+		case "changed-action":
+			i.Accounting.Action = &budget.ActionIdentity{Version: 1, EntrySHA256: digest([]byte("other"))}
+			if body, err = canonical(i); err != nil {
+				t.Fatal(err)
+			}
+		case "changed-trajectory":
+			i.Before.Policy.Implementer = "other"
+			i.BeforeSHA256 = digest([]byte("changed"))
+			if body, err = canonical(i); err != nil {
+				t.Fatal(err)
+			}
+		case "symlink-intent":
+			target := filepath.Join(t.TempDir(), "retained.json")
+			if err := os.WriteFile(target, ibody, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(target, filepath.Join(intentDir, entry+".json")); err != nil {
+				t.Fatal(err)
+			}
+			return root, b, entry
 		}
 		if err := os.WriteFile(filepath.Join(intentDir, entry+".json"), body, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// extra-charge and missing-archive mutate the STORE/STATE sides.
+	switch change {
+	case "extra-charge":
+		if _, err := b.Store.Reserve(ctx, budget.Request{ID: "unexpected", Kind: budget.Fixup, ReserveMicros: &zero}, budget.Limits{}); err != nil {
+			t.Fatal(err)
+		}
+	case "missing-archive":
+		if err := os.RemoveAll(snapshotDirectory(*b)); err != nil {
 			t.Fatal(err)
 		}
 	}
 	return root, b, entry
 }
 
-// The concrete refusal assertions: each case must return a NON-NIL error
-// naming the evidence problem (the read path refuses corrupted/missing
-// evidence rather than passing).
-func TestPreviewRefusesCorruptConstructedEvidence(t *testing.T) {
-	for _, change := range []string{"missing-intent", "partial-intent", "changed-root", "changed-limits"} {
+// The clean control FIRST (the discipline the correction demands): on the
+// unmutated construction, Preview must NOT refuse with an evidence error —
+// it may report a preview status, but any "incomplete or changed" text here
+// means the FIXTURE is malformed and every mutated case below would be a
+// false pass. Then each of the ten original adversarial cases runs with a
+// NON-NIL refusal (guard-specific evidence printed via t.Logf for hosted
+// pinning; missing-intent additionally pinned to its exact designed text).
+func TestPreviewAdversarialRefusalsOnConstructedState(t *testing.T) {
+	t.Run("clean-control", func(t *testing.T) {
+		root, _, entry := windowsChargedStateFixture(t, "")
+		_, err := PreviewReservationRecovery(context.Background(), root, "fixture", entry)
+		if err != nil && strings.Contains(err.Error(), "incomplete or changed") {
+			t.Fatalf("fixture is malformed (clean control refused): %v", err)
+		}
+		t.Logf("clean control outcome: err=%v", err)
+	})
+	for _, change := range []string{"missing-intent", "partial-intent", "changed-root", "changed-before", "changed-limits", "changed-action", "missing-archive", "extra-charge", "changed-trajectory", "symlink-intent"} {
 		t.Run(change, func(t *testing.T) {
 			root, _, entry := windowsChargedStateFixture(t, change)
 			_, err := PreviewReservationRecovery(context.Background(), root, "fixture", entry)

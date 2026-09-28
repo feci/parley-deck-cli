@@ -1339,6 +1339,35 @@ Per the applicability consult's construction recipes:
    scoping); the product-side guarantee is the F1 pre-mutation gate.
    Bounded PASS all three locally.
 
+
+## Constructed-state fixture v2 + F3c/F3d status (invocation 23, 19:1xZ)
+
+**The fixture was malformed — v2 rebuilds it complete:** the ledger charge
+via the store's own Reserve (the "extra-charge" precedent — works on
+Windows), the accounting intent assembled from the SAME fields
+PrepareCycleReservation uses (policy clone, snap.StartedAt, the REAL
+ledger EntryKey — the v1 bug was naming the file by a digest of the intent
+bytes instead of accounting.EntryKey), Before = the fixture's actual
+pre-charge trajectory state with its true BeforeSHA256, and the file named
+`<EntryKey>.json` under reservation-intents. All TEN original adversarial
+cases now have mutations (v1 covered four): missing/partial intent,
+changed root/before/limits/action/trajectory, missing-archive (store-side),
+extra-charge (store-side), symlink-intent. **The clean control runs FIRST**
+— if the unmutated construction refuses with "incomplete or changed", the
+fixture is malformed and every mutated case would be a false pass; only
+after the control passes do the mutated cases assert non-nil refusals
+(guard-specific texts logged hosted for pinning from evidence;
+missing-intent pinned to its exact designed text). The F4.1 apply pin
+inherits the same fixture (it needs validateIntentBefore to pass, which
+the control now verifies).
+
+**F3c/F3d status (previously absent from the salvage — correcting the
+record):** NOT yet delivered. F3c (Inspect incomplete-entry visibility +
+conflicting-identity detection via hand-written records) and F3d (alias
+rejection via MkdirAll+Symlink read-path) remain named units — this
+invocation's window went to the fixture repair the correction identified
+as blocking. No implication that the F3 unit is complete stands.
+
 ## Decision Log
 
 - (2026-09-25T18:16Z, zcode-1) Probe bundle placement: standalone `internal/winprobe`
