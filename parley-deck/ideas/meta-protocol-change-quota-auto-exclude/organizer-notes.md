@@ -604,3 +604,22 @@ The handoff authorizes manual Phase 5 and a separate codex-1 implementation proc
 written with the full two-stage plan before any code. Only the implementer process edits code and that
 living plan; the organizer owns handoffs, usage and phase transitions. Both use the same participant ID.
 The reviewer remains a separate claude-1 process with focused briefs. Further driver gaps will be recorded.
+
+While the separate codex-1 process implements stage 1, the organizer/implementer applied only the
+non-overlapping protocol and skill documentation hunks. All three copies received identical normative
+replacements; the stage-2 paragraph remains "not yet in force" pending delivery. Raw checks:
+`go test ./internal/protocol -run TestEmbeddedDefaultMatchesLiveDeck -count=1` exits 0;
+`parley protocol packet check --dir . --json` reports ok=true, 69 blocks; explicit optimized render
+experiments for phases 0, 5 and 8 include the rule and applicable cross-references. Normal launch context
+remains full. These are implementer check outputs, not independent criterion verdicts.
+
+A literal AC1 discrepancy exists in the pre-implementation baseline: the skill, embedded default and live
+source have deliberately different bootstrap/project headers and §2 host tables. The drift guard asserts
+the embedded template's generic shape. The new hunks preserve those existing zones and agree outside
+them. The reviewer must assess this recorded deviation from FINAL's skill byte-identity wording; do not
+claim a whole-file byte comparison passed. No drift allowlist or bootstrap test was weakened.
+
+Read-only release inventory at 2026-10-03 23:04Z: GitHub latest CLI 1.50.0 and skill 2.14.0; remote CLI
+main a8634cc, skill main a5664d8. Homebrew main checkout clean at 9855366. Local published core has 2.13.0
+and 2.10.0, no 2.14.0; `~/.parley/staging/COOPERATION-2.14.0.md` exists. Planned next versions remain
+CLI 1.51.0 / skill 2.15.0 / core 2.15.0, to be rechecked after the attended close. No release channel changed.

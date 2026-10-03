@@ -20,3 +20,19 @@ rows): uncached input 1984, cache read 178181140, cache write 8293438, output 12
 Session 4's row is a snapshot taken just before the owner proposal note, so its last few events are not
 included. Attribution is "attributed" when the ingest found the run-record window, and "ambiguous" when it
 did not, verbatim from the ingest. The relay's probes and the participants' usage are not included.
+
+## codex-1 implementation organizer (2026-10-04)
+
+The organizer changed to codex-1 at the owner's request. The following rows are client-reported cumulative
+Codex usage, not estimates. `input_tokens` includes cached input, and `reasoning_output_tokens` is a subset
+of output. Do not sum cumulative snapshots of the same transcript. Separate implementer invocations are
+recorded separately and never represented as independent review.
+
+| Boundary | Accounting time UTC | Input | Cached input | Output | Reasoning output | Total | Events | Attribution |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| Phase 5 entry / plan recorded, organizer snapshot | 2026-10-03T23:04:28Z | 1933169 | 1571584 | 12337 | 2609 | 1945506 | 23 | ambiguous |
+
+Source: `usage-ledger.jsonl`, codex-rollout/v1, organizer transcript
+`rollout-2026-10-04T00-53-58-01a103f9-65ad-7571-8244-83b744f65e63.jsonl`.
+The ingest reports no containing run-record window; idea/phase were explicitly supplied. This does not
+claim precise attribution to protocol phase 5 or any monetary cost.
