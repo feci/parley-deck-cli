@@ -197,3 +197,102 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
   and the driver is not started. The organizer process uses the same model and gateway and still gets
   responses. This is recorded as an observation only. codex-1's round-2 process keeps running normally.
   The one 503 line in its stderr is its own read of the evidence file (incident 4 quoted), not an error.
+
+## Phase 2: owner answer and claude-1 relaunch 2 (2026-10-03, from 18:04 CEST)
+
+- **Organizer gap 8: a headless organizer cannot wait in prose.** The previous resumed organizer (pid 57867)
+  committed `76dc2b7`, ended its turn with "I'm now waiting for codex-1's round-2 exit and the owner's
+  answer", and exited 0 at about 14:07 CEST. A headless `claude -p` session ends when its turn ends, so its
+  stated 16:30 watch never ran. From now on the organizer waits only with blocking tool calls (bounded
+  `until` loops on process exit plus file, under 10 minutes per call) and ends its turn only at the end of
+  the session's work or on a blocking escalation.
+- Resumed at about 18:04 CEST as organizer pid 1534 in the tmux session `qae-organizer`, per
+  `runs-handoff/.../RESUME-BRIEF-2.md`. Re-oriented from `parley organizer brief`, `parley status` and
+  these notes. No participant process was alive.
+- **codex-1 round 2 is complete.** Its relaunch exited 0 at 14:14:29 CEST after 724 s, with stderr reporting
+  "tokens used 139,878" and no provider error. `round-02/codex-1.md` is 18720 B of final content (it ends
+  "This file is a completed round-02 position") and validates. It replaced codex-1's own scaffold. Swept
+  unmodified as `7595ee1` under codex-1's prefix. `git status` showed no edit outside its own file.
+- **Owner answer** (non-blocking note `inbox/user-to-claude-1_…_quota-answer.md`, written 18:02 CEST):
+  "Relaunch once after 15:05 (Recommended)". It arrived after pid 57867 had exited, so the relaunch had not
+  happened. The relay reports a one-word liveness probe on `claude/claude-opus-5-5[1m]` through the same
+  gateway at about 18:04 CEST that returned `PONG` in 4.6 s. That is the relay's fact, not a participant
+  launch.
+- **Relaunch 2 inputs.** `runs/<id>/round-02/claude-1/relaunch-2/prompt.txt` is the relaunch-1 prompt with
+  only its notice block replaced: 172333 B, sha256 prefix `fd4e6a70e500d863`, and the diff against
+  relaunch 1 is 1 changed and 9 added notice lines, so the protocol context and the template are
+  unchanged. The notice adds three facts: the 14:04 failure with its verbatim stdout; the owner's answer
+  verbatim, which the participant is asked to quote under `## User direction` (§4), as the escalation was
+  claude-1's and the organizer writes no round file; and that codex-1's round 2 is complete and was
+  written from round 1 only, so claude-1 also writes from round 1 and does not read `round-02/codex-1.md`
+  in this round, with responses to it belonging to round 3 if one opens (Phase 2: "React in your own file
+  in the next round"). No position or opinion is passed.
+- **Relaunched at 18:07:21 CEST, once.** The launcher is `runs/<id>/round-02/relaunch-2-launcher.sh`,
+  claude-1 only, with the same argv, alarm (1800 s), marker env and `cleanParticipantEnv` strip as
+  relaunch 1. It also writes `launcher.pid`. macOS has no `setsid` binary, so the session is created with
+  `perl` fork plus `POSIX::setsid`. Wrapper pid 10966 is a session leader reparented to launchd, and agent
+  pid 10975 carries the three `PARLEY_*` marker keys and no `CLAUDECODE`, `CLAUDE_CODE_*` or `AI_AGENT*`
+  key. Per the owner's answer, a second quota or credit failure stops launching, with a new blocking note
+  that carries the verbatim error.
+
+## Phase 2: resume 3, round-2 sweep, owner instruction and round 3 (2026-10-03, from 19:00 CEST)
+
+- **Organizer pid 1534 died with the whole tmux server** after its relaunch-2 entry above (relay check at
+  18:57 CEST, `runs-handoff/.../RESUME-BRIEF-3.md`). There is no `tmux-exit.txt`, so its command never
+  exited. The participants launched with `perl` plus `POSIX::setsid` survived. Resumed at about 19:00 CEST
+  as organizer pid 53360, launched the same way (a session leader reparented to launchd, not under tmux).
+  Re-oriented from `parley organizer brief`, `parley status` and these notes. No participant process was
+  alive.
+- **claude-1 round 2 is complete.** Relaunch 2 exited 0 (`exit.json`: 16:07:21Z to 16:22:42Z, 921 s) with
+  an empty stderr. `round-02/claude-1.md` is 19522 B of final content. It records the attestation (full,
+  `b273af1e…f388`, no fallback), quotes the owner's quota answer verbatim under `## User direction`
+  (checked against the inbox note), and states that it did not read `round-02/codex-1.md`. The only other
+  files changed after the 18:07 launch are this file (the relaunch-2 entry, 18:08:21) and the git-ignored
+  `graphify-out/` cache. That cache was rebuilt at 18:07:51 by the graphify post-commit hook of the
+  codex-1 sweep `7595ee1`, committed at 18:07:48. No participant edited outside its own file. Swept
+  unmodified as `bc7a8cb` under the participant's prefix.
+- The answered quota escalation `claude-1-to-user_…_quota.md` and the owner's answer
+  `user-to-claude-1_…_quota-answer.md` are archived under `inbox/archived/`. The answer is quoted verbatim
+  in `round-02/claude-1.md`.
+- **New owner instruction** (relayed in RESUME-BRIEF-3, about 18:55 CEST, Slovak, verbatim): "sakra tak
+  pouzi len claude a codex" ("Damn, then just use claude and codex."). The relay's reading: the quorum is
+  codex-1 and claude-1 only, through FINAL. The owner proposal plans implementation and review with codex-1
+  and claude-1 only, without kimi-1 or zcode-1. With codex-1 implementing, claude-1 is the single
+  non-implementer reviewer, and the §15.5 role concentration applies. The instruction is quoted under
+  `## User direction` in `00-prompt.md` as the round-03 kickoff notice, which asks each participant to
+  quote it in its round-03 file. It supersedes the kickoff sentence that let a later implementation or
+  review phase add kimi-1 or zcode-1.
+- **Round 3 opens.** This is a procedural call, provisional under §15.5. The reasons: neither round-02
+  file responds to the other (codex-1 wrote from round 1 only, and the claude-1 participant was told not
+  to read `round-02/codex-1.md`), and both end with a list of remaining disagreements. Phase 2 says
+  "Address every other active agent explicitly" and "Continue until nobody has new substantive
+  objections". Round 3 is the second of the three cross-review rounds the §4.0 deliberation cap allows.
+  No position is adjudicated here.
+- `00-prompt.md` also gains a correction of the organizer's own record. The zcode-1 `excluded:` line's
+  "reset 2026-10-05 06:14 local" is the provider's UTC+8 wall clock. `reset_at` 2026-10-04T22:14:57Z is
+  2026-10-05 00:14:57 CEST (raised by codex-1 in round 1, confirmed by the claude-1 participant in round 2
+  as C5). The frontmatter line stays as recorded.
+- **Driver.** `git worktree list --porcelain | grep -c '^prunable'` returns 0. `parley continue`
+  (print-only) still recommends "Open round-02 (cross-review) before drafting consensus", because round 2
+  ran through the fallback and the driver cursor is at round 1. In `internal/driver/driver.go`
+  `advanceRound`, the re-entry check `roundComplete(2)` sees both valid round-02 files and promotes without
+  re-dispatch. It then opens round 3 only if `1 + cross_review_rounds > 2`. The default is 1
+  (`internal/driver/transport.go` `ReadCrossReviewRounds`), and the deliberation track caps it at 3
+  (`internal/track/track.go`). So the organizer set `cross_review_rounds: 2` in `00-prompt.md`. After round
+  3 the driver drafts consensus, requests signoffs and authors FINAL, and `--no-implement` stops it there
+  (`internal/driver/loop.go`). Its round launches use the runner's template inside the runner's
+  protocol-context envelope, with all prior rounds inline (`gatherPriorRounds`).
+- **Driver gap 9: the driver has no channel for an organizer notice.** `parley steer` records intent only.
+  `internal/steer/steer.go`: "records a QUEUED new attempt; it does NOT execute delivery". So the owner's
+  instruction cannot reach driver-launched prompts through steer. The runner's task text tells participants
+  to read `00-prompt.md`, so the notice is placed there.
+- **Driver gap 10: the drafting prompts are thinner than the round prompts.** `runHeadlessSignoffAgent`
+  (`internal/app/consensus_request_signoffs.go`) passes the drafting prompt unwrapped, with no
+  protocol-context envelope or attestation. The consensus prompt (`internal/app/driver_consensus.go`)
+  carries the §15.7 duties but not the §15.5 one-line role-concentration record. The FINAL prompt points
+  the drafter at `consensus.md` and the round files, not at the brief's FINAL list in `00-prompt.md`. The
+  organizer accepts this and records it. It checks `consensus.md` and `FINAL.md` against both when they
+  land.
+- Fact: `parley agents list` now shows codex-cli 0.160.0 (0.159.3 at preflight). Model and effort are
+  unchanged: gpt-6-astra at max, and claude/claude-opus-5-5[1m] at max. The organizer made no roster or
+  config change.

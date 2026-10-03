@@ -10,6 +10,7 @@ excluded: kimi-1 — weekly Kimi quota exhausted until about 2026-10-03, hosted-
 excluded: zcode-1 — HTTP 429 Weekly/Monthly Limit Exhausted, reset 2026-10-05 06:14 local (preflight class provider-failure:rate-limit) — confirmed 2026-10-03
 auto_implement: false
 require_model_diversity: true
+cross_review_rounds: 2
 status: round-02
 ---
 
@@ -112,6 +113,54 @@ relayed in the brief):
   codex-1 or the claude-1 participant hits a quota or credit failure, the organizer writes a blocking
   `inbox/claude-1-to-user_meta-protocol-change-quota-auto-exclude_quota.md` with the verbatim provider error
   and stops launching. Dropping either agent would leave one participant, below the owner's minimum of 2.
+
+## User direction
+
+Round-03 kickoff notice, added by the organizer (claude-1) on 2026-10-03 at about 19:10 CEST. After the
+claude-1 participant's round-2 quota failure, the owner gave this instruction at about 18:55 CEST. The
+relay passed it on verbatim (Slovak):
+
+> "sakra tak pouzi len claude a codex"
+
+Translation (the relay's): "Damn, then just use claude and codex."
+
+The relay's reading of it, as given to the organizer:
+
+- For this idea the quorum stays codex-1 and claude-1 only, through FINAL.
+- Implementation and review are planned with codex-1 and claude-1 only. kimi-1 and zcode-1 are not
+  planned back for either phase. This supersedes the sentence "The owner pre-authorized their rejoining,
+  so a later implementation or review phase may add them" in the quorum section above.
+- With codex-1 as the implementer (the global default implementer), claude-1 is the single
+  non-implementer reviewer, and the claude-1 role concentration (§15.5) carries into those phases.
+
+**Each participant quotes the owner's instruction verbatim under `## User direction` in its round-03
+file.** Where FINAL names agents for implementation or review, it names codex-1 and claude-1 only.
+
+## Round-03 kickoff (organizer, procedural)
+
+Round 3 is the second of at most three cross-review rounds after round 1 (§4.0, deliberation). It opens
+for two procedural reasons. Neither is a verdict on any position.
+
+- Neither round-02 file responds to the other. codex-1 wrote its round 2 from round 1 only, and the
+  claude-1 participant was told not to read `round-02/codex-1.md`. Phase 2 requires each agent to
+  address every other active agent explicitly.
+- Both round-02 files end with a list of remaining disagreements.
+
+In your round-03 file, list both round-02 files in `responding-to:` and respond to the other
+participant's round-02 file under `### @<agent-id>`. For each remaining disagreement, either accept it
+or keep it with a counter-proposal (Phase 2). Close with your current proposal. FINAL must answer the
+nine design questions above and list the items under "9. Size", so state there anything you want FINAL
+to carry.
+
+After round 3 the driver (`parley continue --auto --no-implement`) drafts consensus and requests
+signoffs. A blocking signoff reopens round 4, the last cross-review round the cap allows. After that, a
+remaining disagreement goes to the owner with both positions stated (§15.3).
+
+**Correction to this file (organizer).** The `excluded:` line for zcode-1 says "reset 2026-10-05 06:14
+local". That is wrong, as codex-1's round-01 file pointed out and the claude-1 participant's round-02
+file confirmed (claim C5). The evidence records
+`"reset_at":"2026-10-04T22:14:57.003Z"`, which is 2026-10-05 00:14:57 CEST. 06:14:57 is the provider's
+own UTC+8 wall clock. The line is left as written, because it is the recorded exclusion.
 
 ## Readiness (§9.0)
 
