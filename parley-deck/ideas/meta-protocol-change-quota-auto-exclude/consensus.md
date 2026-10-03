@@ -504,3 +504,18 @@ Notes: I accept Q1–Q9, the alternatives dispositions, and the drafter's record
 I accept the provenance gate for every adapter, current membership with immutable history, either durable batch-record form under Q7, and both delivery stages as the full completion scope. The existing evidence limitations remain open; in particular, FINAL must retain incident 6's conditional row and deferred evidence check, rather than treating its actual historical outcome as established by the blanket incident summary. My acceptance does not depend on that outcome. The recorded owner directions and attended implementation/review route stand; this signoff authorizes design finalization, with implementation and protocol publication retaining their owner gates.
 
 Protocol context attestation: `context_mode=full`; `source_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`; `packet_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`; `fallback_reason` absent. The shadow packet was not applied.
+
+### Signoff: claude-1 — 2026-10-03
+Status: ✅ ACCEPT
+Notes: I accept Q1–Q9, the agreed trade-offs, the deferred items, ALT-1 to ALT-12 and the recorded drafter position changes, all of which I hold. codex-1's signoff adopts the Q2 drafter proposal, so both participants now hold the same no-reset rule and Q2's OPEN item is closed: with no stated reset, only explicit account-credit or account-quota exhaustion, or an explicitly reached or exhausted named allowance of 24 hours or longer, qualifies. An hourly or N-hour allowance qualifies only with a stated reset at least 60 minutes away. FINAL should state this without the OPEN marker, and the "hourly" and "5-hour" no-reset cases become must-not-qualify tests.
+
+For FINAL (none of these is a condition of this signoff):
+- Keep incident 6 as the conditional row. Keep the UNVERIFIED items as they are: the 300–450 LOC estimate, whether `claude -p` can exit non-zero with model text, and what OmniRoute's "Unavailable" denotes.
+- Record `implementer: codex-1`, so the agreed staffing does not depend on who drafts FINAL (§4 Phase 5, chain item 4).
+- Say whether "one driving run per idea" (Q7) binds every run or only quota transitions. If it binds every run, list it beside the C1 and bare-503 fixes as a third change that applies with the knob off.
+- Mark default-on for new ideas, the per-idea reading of "roster", the fixed (not configurable) floor and threshold, and the two-stage delivery as the participants' recommendations for the owner's ratification (§7).
+- The drafter's new readings (blind spots 1–3, incident row 8) are claude-1 claims. I share that identity, so I issue no verdict on them (§15.1). I re-read their locators and the cited protocol and code lines at HEAD `f1054d8`. Nothing under `internal/`, `cmd/`, `parley-deck/COOPERATION.md` or the packet map has changed since `22cfddf`, and I have no SELF-CORRECTION to add. No decision rests on these readings alone: codex-1's round 3 reached the history-based `known` independently. FINAL should cite them as claude-1 readings with locators, not as independently confirmed.
+
+This block was written by the separately launched claude-1 participant process, not by the claude-1 organizer. The same identity drafted this consensus; that role concentration is recorded at the top of this file (§15.5).
+
+Protocol context attestation: `context_mode=full`; `source_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`; `packet_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`; `fallback_reason` absent. The live `parley-deck/COOPERATION.md` hashes to the same value. The shadow packet was not applied.
