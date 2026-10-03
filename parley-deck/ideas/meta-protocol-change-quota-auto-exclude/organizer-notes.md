@@ -350,3 +350,54 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
   effort max. The claude child env carries exactly the three `PARLEY_*` keys and no `CLAUDECODE`,
   `CLAUDE_CODE_*` or `AI_AGENT*` key. The round boundary is process exit plus final content (observer
   gap 5).
+
+## Phase 2: round 3, codex-1 gateway authentication failure and claude-1 timeout (2026-10-03, from 19:26 CEST)
+
+- **codex-1 round 3: final content, then exit 1.** `exit.json` records 17:14:16Z to 17:25:58Z, 702 s, exit
+  1. `round-03/codex-1.md` is 22646 B of final content. It records the attestation (full,
+  `b273af1e…f388`, no fallback). It quotes the owner's instruction verbatim under `## User direction`,
+  responds under `### @claude-1`, and ends "This is a completed round-03 position for consensus
+  drafting". The stderr shows its last patch (it filled "## Remaining disagreements") and then five
+  "Reconnecting..." lines. Verbatim, after that:
+  `ERROR: unexpected status 401 Unauthorized: [codex/gpt-6-astra] [401]: Encountered invalidated oauth token for user, failing request (reset after 12s), url: https://omniroute.marao.sk/v1/responses, request id: d39bb655-9da3-475f-b798-03fc31e6819b`.
+  The last line is "tokens used 288,926". The failure struck after the artifact was complete, so it is
+  an authentication failure, not a quota or credit error. The round-3 file counts as codex-1's completed
+  round. No participant edit outside its own file.
+- **Readiness check.** `parley preflight --dir . --json` ran from 19:27:08 to 19:28:44 CEST, read-only,
+  without `--yes`, and exited 3. Raw output: `runs/<id>/preflight-1927.json`. claude-1 is ready. codex-1
+  is `deadline-after-output`. kimi-1 is ready again. zcode-1 is `provider-failure:rate-limit`. kimi-1 is
+  not re-included: the quorum stays as the owner set it.
+- **One direct liveness probe.** It used codex-1's exact argv and a one-line PONG prompt, ran from
+  19:29:16 to 19:32:15 CEST, and exited 1 with an empty stdout. Logs: `runs/<id>/probe-codex-1929/`.
+  Verbatim: `ERROR: unexpected status 401 Unauthorized: [codex/gpt-6-astra] [401]: Encountered invalidated oauth token for user, failing request (reset after 1m 56s), url: https://omniroute.marao.sk/v1/responses, request id: 52d0e258-1aaf-4261-a3e4-6009bc64ce74`.
+  The gateway cooldown grew from 12 s to 1 m 56 s, so the failure persists. It is also live evidence for
+  C4: OmniRoute appends "(reset after N)" to an authentication error.
+- **Blocking escalation.** codex-1 cannot sign consensus or FINAL. It cannot be dropped: that would go
+  below the owner's minimum of 2, and the owner's instruction keeps the quorum. Fixing gateway credentials
+  is a non-goal for the organizer. So the blocking note `inbox/claude-1-to-user_…_codex-auth.md` carries
+  both verbatim errors. Option 1 (recommended) is that the owner re-authenticates the codex account on
+  the gateway and then asks the organizer to continue. Following the 14:04 quota-stop precedent, the
+  organizer launches no codex-1 process, no consensus draft and no driver run until the owner answers.
+  A push notification was attempted and not delivered ("Remote Control inactive").
+- **claude-1 round 3 timed out.** Its 1800 s alarm stopped the process at 19:44:16 CEST: `exit.json`
+  records 1800 s and exit 142 (SIGALRM), and stdout and stderr are empty. `round-03/claude-1.md` holds
+  only the participant's own 327 B stub, written at 19:41 ("(Being written by claude-1; not yet
+  complete.)"). That stub would pass the validator and the driver's `roundComplete` (observer gap 5), so
+  no driver may run before it is replaced. This was a timeout, not a provider error.
+- **claude-1 round 3 relaunched once with a longer limit.** `references/HEADLESS_LAUNCH.md:80` says
+  "if the agent times out, recover by re-invoking only that agent with a longer timeout". `:81` says to
+  ask before going above 60 minutes. So the limit is 2700 s. The relaunch is not a retry of a failing
+  provider, so the codex-1 stop does not cover it, and the codex-auth note says so.
+  - The prompt is `runs/<id>/round-03/claude-1/relaunch-1/prompt.txt`, 211374 B, sha256 prefix
+    `0cc28c43f760e3f1`. It is the round-3 prompt plus four notice lines: the timeout fact; the stub to
+    replace (overriding "Do not overwrite" for that one file only); the 2700 s limit; and the symmetry
+    rule from the round-2 relaunch. That rule says codex-1's round 3 was written from rounds 1 and 2, so
+    claude-1 writes from rounds 1 and 2 and does not read `round-03/codex-1.md`.
+  - The notice does not mention the codex-1 gateway error, which is not part of the kickoff material
+    codex-1 received.
+  - The launcher is `runs/<id>/round-03/relaunch-1-launcher.sh`, round 3's launcher with only the path,
+    comment and alarm changed.
+  - Launched at 19:45:09 CEST. Wrapper 34601 is a session leader reparented to launchd. Agent 34610
+    carries exactly the three `PARLEY_*` keys.
+  - The non-blocking note `inbox/claude-1-to-all_…_timeout.md` records the timeout, as the skill's policy
+    asks.
