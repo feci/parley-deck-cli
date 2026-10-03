@@ -11,7 +11,7 @@ implementation-pr: n/a
 
 ## Summary of work
 
-Implementation has started; no code has changed yet. Both stages of FINAL are required: kickoff and
+The first stage-1 invocation timed out after 1800 seconds; its code is preserved and partial. No adapter yet authorizes automatic exclusion. Stage 2 is pending. Both stages of FINAL are required: kickoff and
 mid-idea quota auto-exclusion. The owner ratified D1–D5 and authorized implementation, separate claude-1
 review, attended close, and release. The handoff is recorded in 00-prompt.md and commit c6f8b49.
 
@@ -57,6 +57,16 @@ files on the existing two quota-auto-exclude branches; no development PRs.
 
 ## Deviations from FINAL.md
 
+- The three protocol copies retain their pre-existing project/bootstrap headers and §2 tables.
+  Identical normative hunks were applied, and the embedded drift guard passes; the skill is NOT
+  whole-file byte-identical to the live deck as AC1 literally says. This deviation is open for review
+  and owner close; no test or allowlist was weakened.
+- AC2 is UNMET in the current prototype: all four adapters are diagnostic-only, and the private
+  semantic refinement has no production recognizer caller. A support table with installed-source
+  locators is in internal/telemetry/testdata/quota/README.md. The separate claude-1 focused review (review/round-01/claude-1.md, MAJOR-1) concludes that the configured zcode text path cannot establish the required terminal provenance. This is not a
+  substitute for AC2, not stage-1 completion, and not permission to release.
+
+
 The owner's ratification transfers the organizer role from claude-1 to codex-1, superseding FINAL §12's
 organizer assignment. No implementation-scope deviation is planned. Exact transition storage, field
 names, provenance support and redaction follow FINAL §13.8's implementation choices and will be logged.
@@ -70,10 +80,50 @@ configuration does not waive the attended close or permit unattended completion.
 
 ## Progress
 
+- 2026-10-03 23:33Z: claude-1 focused reviewer exited 0 after 553.4 seconds. Its own artifact is
+  structurally valid (parley wait: 1/1 filed-and-valid, 15656 bytes); it explicitly is NOT a full-scope
+  review. MAJOR-1 requires an owner scope decision for AC2; MAJOR-2 identifies the reset parser's
+  rejection of the recorded positive body; MINOR-1 asks for the decisive provenance limitations in
+  the support table. The support table now cites the review's terminal-binding/framing conclusions.
+- 2026-10-03 23:36Z: host `go build ./...`, `go vet ./...`, gofmt listing, diff whitespace check and
+  `go test ./internal/app -run '^TestQuota' -count=1` passed. Focused quota/drift cases in runcontrol,
+  quota, telemetry, config and protocol passed. runstate/runmanifest matched no quota-named tests,
+  so those no-test lines are not coverage evidence. Full current-tree Go suite remains owed.
+
+- 2026-10-03 23:33Z: stage-1 child stopped at its 1800-second limit (exit -15), not a provider failure.
+  Preserved shared quota policy/evidence/batch primitives; initial immutable records; presence-aware
+  config; kickoff C1 filtering; preflight report-only changes; bare-503 alignment; telemetry capture;
+  status/wait/organizer surfaces; associated tests. No independent acceptance verdict is claimed.
+  Stage 1 remains partial because AC2 has no supported recognizer and end-to-end coverage is incomplete.
+- 2026-10-03 23:33Z: organizer/implementer documentation changes are committed (CLI f1a7f80;
+  skill dfad28e/c0d7f58). All three normative rule texts agree; bootstrap-zone discrepancy remains open.
+  Phase 0/5/8 packets contain the rule/cross-references; packet check reports ok=true (69 blocks).
+  Skill required checks: 55/55. Full npm test: 399 Node and 54 Python tests pass; all manifests match.
+- Next concrete work: read the separate claude-1 provenance finding after process exit; resolve or
+  escalate its AC2 conclusions; finish stage-1 integration/tests; implement full mid-idea transitions,
+  serialization, replay, captured-consumer rebinding, known/required signers, preserved findings and gates.
+  Keep status in-progress and the protocol stage-2 paragraph not-yet-in-force until delivered.
+
+- 2026-10-03 23:07Z: scoped implementer read FINAL and this plan in full, ratification, handoff, and
+  freshly rendered full phase-5 deliberation protocol body with `--flag protocol_change`. Attestation:
+  `context_mode=full`, source and packet SHA256
+  `b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`, fallback_reason absent.
+  Shared memory recall returned `MCP tool call requires approval, but approval policy is never`; local
+  sources govern. No participants launched. Stage 2 and protocol/skill hunks remain for the next invocation.
+
 - 2026-10-03 23:00Z: owner handoff committed; FINAL and controlling brief read in full; full phase-5
   protocol context read. Plan recorded before code. Implementation pending.
 
 ## Decision Log
+
+- 2026-10-04 · codex-1: accept the need for an owner decision on claude-1 MAJOR-1. The supported path
+  cannot be invented from an adapter name, a diagnostic dump or synthetic policy tests. No Stage-2
+  process is launched while deciding whether the required terminal-attributed transport is in scope.
+  This is an early implementation blocker, not the attended close and not stage-1-only authorization.
+- 2026-10-04 · codex-1: retain MAJOR-2 as an open agreed issue for the next implementation pass.
+  Its suggested interpretation of unzoned human-readable text alongside machine reset fields must be
+  reconciled with FINAL's strict unparseable-reset rule and independently re-reviewed, never silently
+  changed to unknown. No reset correction or false positive fixture is claimed yet.
 
 - 2026-10-04 · codex-1: keep the existing worktrees and local-file transport override; no worktree pruning,
   declarations or legacy-record migration. D6 is a separate follow-up, outside this implementation.
@@ -93,7 +143,17 @@ configuration does not waive the attended close or permit unattended completion.
 
 ## Validation evidence
 
-Pending implementation and independent review. No acceptance criterion is claimed complete yet.
+No acceptance criterion is independently claimed complete. Producer checks so far:
+
+- `go test ./internal/quota ./internal/telemetry ./internal/config -count=1` on host: pass.
+- `go test ./internal/runner -run 'TestVerifierRecoveryRefusedEvidenceMutationFailsHandles|TestQuota' -count=1`
+  on host: pass, including the fixture denied by the subprocess sandbox.
+- The subprocess full suite failed on sandbox-denied cache/launch fixtures; no full-suite pass is claimed.
+- Protocol drift guard and packet checks pass; skill checks above pass. AC1's whole-file comparison is
+  still unmet, AC2 is unmet, stage-2 ACs are not implemented, and attended close/signoffs remain owed.
+
+Raw producer evidence is under `.parley-runtime/quota-implementation/` and `/tmp/quota-skill-full.log`.
+The focused reviewer owns `review/round-01/claude-1.md`; it is not a full-scope closing review.
 
 ## Outcomes & Retrospective
 

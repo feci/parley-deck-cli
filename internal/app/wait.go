@@ -153,12 +153,23 @@ func runWait(args []string, stdout, stderr interface{ Write([]byte) (int, error)
 		poll = waitMinPoll
 	}
 	for {
+		if current, err := protocol.ReadWorkspaceStatus(root); err == nil {
+			for _, st := range current.Ideas {
+				if st.Slug == *idea {
+					ideaStatus = st
+					break
+				}
+			}
+		} else {
+			fmt.Fprintf(stderr, "wait: %v\n", err)
+			return waitExitUsage
+		}
 		digest := driver.BuildPhaseDigest(root, *idea, ideaDir, ideaStatus.Participants)
 		// G5: unevaluable to-user notes ride every digest print (they may appear or
 		// repair mid-wait; re-scanned each iteration — the inbox is small and local).
-		notes := annotations
+		notes := append(append([]string{}, annotations...), quotaSurface(ideaDir)...)
 		if extra := unevaluatedNoteAnnotations(root); len(extra) > 0 {
-			notes = append(append([]string{}, annotations...), extra...)
+			notes = append(notes, extra...)
 		}
 		if reason, bad := invalidArtifact(digest, scope); bad {
 			printWaitDigest(out, digest, notes, *jsonOut)

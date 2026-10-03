@@ -17,6 +17,8 @@ const parserLimit = 256 * 1024
 // Collector interprets only explicitly structured adapter output. Text that a
 // model prints in a plain-text transport is not provider usage evidence.
 type Collector struct {
+	quotaStdout, quotaStderr []byte
+	quotaTruncated           bool
 	stdoutBytes, stderrBytes int64
 	mu                       sync.Mutex
 	adapter                  string
@@ -52,6 +54,15 @@ func (w streamWriter) Write(data []byte) (int, error) {
 	if len(data) > 0 && c.observation.FirstActivityMS == nil {
 		elapsed := time.Since(c.began).Milliseconds()
 		c.observation.FirstActivityMS = &elapsed
+	}
+	capture := &c.quotaStdout
+	if w.stream == "stderr" {
+		capture = &c.quotaStderr
+	}
+	if len(*capture)+len(data) <= parserLimit {
+		*capture = append(*capture, data...)
+	} else {
+		c.quotaTruncated = true
 	}
 	if w.stream == "stderr" {
 		c.stderrBytes += int64(len(data))

@@ -2,12 +2,15 @@ package runcontrol
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/sessionstore"
@@ -15,15 +18,17 @@ import (
 )
 
 type CreateOptions struct {
-	Root         string
-	Task         string
-	Participants []string
-	Excluded     []string
-	Discovered   []agents.Discovery
-	Auto         bool
-	Now          time.Time
-	Track        string // optional `track:` frontmatter (track-aware-driver)
-	Provenance   string // optional roster-preset provenance comment (named-roster-presets)
+	QuotaPolicy   *quota.Policy
+	QuotaDecision *quota.Decision
+	Root          string
+	Task          string
+	Participants  []string
+	Excluded      []string
+	Discovered    []agents.Discovery
+	Auto          bool
+	Now           time.Time
+	Track         string // optional `track:` frontmatter (track-aware-driver)
+	Provenance    string // optional roster-preset provenance comment (named-roster-presets)
 	// RosterSnapshot freezes each participant's effective launch identity at creation.
 	// The caller resolves it (the roster resolver lives a layer up); runcontrol only
 	// persists it, so a continuation reads the frozen row instead of re-discovering.
@@ -47,7 +52,9 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	if now.IsZero() {
 		now = time.Now()
 	}
-	idea, err := protocol.CreateIdeaFull(opts.Root, opts.Task, opts.Participants, opts.Excluded, opts.Track, opts.Provenance)
+	opts.Participants = quota.FilterConfirmed(opts.Participants, opts.Excluded)
+	runID := store.NewRunID(now)
+	idea, kickoff, err := protocol.CreateIdeaWithQuota(opts.Root, opts.Task, opts.Participants, opts.Excluded, opts.Track, opts.Provenance, runID, opts.QuotaPolicy, opts.QuotaDecision)
 	if err != nil {
 		return CreatedRun{}, err
 	}
@@ -57,23 +64,24 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	}
 
 	mode := ModeName(opts.Auto)
-	runID := store.NewRunID(now)
 	runDir := filepath.Join(opts.Root, protocol.DeckDir, "runs", runID)
 	runStore := store.New(runDir)
 	if err := runStore.Append(store.Event{
 		Time: now.UTC(),
 		Type: "run.created",
 		Data: map[string]any{
-			"task":         opts.Task,
-			"mode":         mode,
-			"idea":         idea.Slug,
-			"participants": opts.Participants,
-			"runtime":      RuntimeEventData(opts.Discovered),
+			"task":          opts.Task,
+			"mode":          mode,
+			"idea":          idea.Slug,
+			"participants":  opts.Participants,
+			"quota_kickoff": kickoff,
+			"runtime":       RuntimeEventData(opts.Discovered),
 		},
 	}); err != nil {
 		return CreatedRun{}, err
 	}
 	if err := writeManifest(opts.Root, runID, runmanifest.New(runmanifest.Options{
+		QuotaKickoff:   kickoff,
 		Root:           opts.Root,
 		RunID:          runID,
 		IdeaSlug:       idea.Slug,
@@ -90,6 +98,9 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	})); err != nil {
+		if kickoff != nil {
+			return CreatedRun{}, fmt.Errorf("quota kickoff pending: manifest: %w", err)
+		}
 		// Best-effort: a transient manifest-write failure on a weakly-coherent mount
 		// (e.g. virtio-fs) must NOT orphan an already-created run. The run is defined by
 		// events.jsonl; runstate degrades gracefully when run.json is absent. Record the
@@ -101,6 +112,24 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		})
 	}
 
+	if kickoff != nil && kickoff.Transition != nil {
+		path := filepath.Join(opts.Root, protocol.DeckDir, "inbox", "parley-to-user_"+kickoff.Transition.ID+".md")
+		f, e := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if e != nil {
+			return CreatedRun{}, e
+		}
+		_, e = f.WriteString(kickoff.Notice())
+		if e == nil {
+			e = f.Sync()
+		}
+		closeErr := f.Close()
+		if e != nil {
+			return CreatedRun{}, e
+		}
+		if closeErr != nil {
+			return CreatedRun{}, closeErr
+		}
+	}
 	registerSession(opts.Root, idea, runID, opts.Task, opts.Participants, now)
 
 	created := CreatedRun{

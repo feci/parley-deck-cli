@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -25,6 +26,7 @@ import (
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/hitl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runaction"
 	"parley-deck-cli/internal/runcontrol"
 	"parley-deck-cli/internal/runmanifest"
@@ -803,6 +805,9 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "Ideas:")
 		for _, idea := range status.Ideas {
 			fmt.Fprintf(stdout, "  %s  status=%s  participants=%s%s\n", idea.Slug, idea.Status, strings.Join(idea.Participants, ","), consensusTriageLabel(*root, idea.Slug))
+			for _, line := range quotaSurface(idea.Path) {
+				fmt.Fprintf(stdout, "    %s\n", line)
+			}
 		}
 	}
 	printRunsOverview(stdout, runs, 10)
@@ -1208,6 +1213,10 @@ func loopBudget(root string) (steps int, wall time.Duration, cost float64) {
 }
 
 func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noImplement bool, stdout, stderr io.Writer) int {
+	if run.QuotaPending != "" {
+		fmt.Fprintf(stderr, "quota transition pending: %s\n", run.QuotaPending)
+		return 1
+	}
 	if run.IdeaSlug == "" || run.IdeaSlug == "unknown" {
 		fmt.Fprintln(stderr, "continue --auto failed: run has no idea slug")
 		return 1
@@ -1807,6 +1816,14 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	noImplement := fs.Bool("no-implement", false, "stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)")
 	maxDriverSteps := fs.Int("max-driver-steps", 0, "auto-drive loop ceiling: max progress steps before escalating (explicit 0 = unlimited; omit to use ~/.parley [defaults.loop])")
 	maxWallClock := fs.Duration("max-wall-clock", 0, "auto-drive loop ceiling: total wall-clock budget before escalating, e.g. 90m (explicit 0 = unlimited; omit to use ~/.parley [defaults.loop])")
+	var quotaOverride *bool
+	fs.Func("quota-auto-exclude", "new idea quota exclusion policy (true or false)", func(raw string) error {
+		v, e := strconv.ParseBool(raw)
+		if e == nil {
+			quotaOverride = &v
+		}
+		return e
+	})
 	noPreflight := fs.Bool("no-preflight", false, "skip the pre-idea readiness check (CI escape)")
 	noPing := fs.Bool("no-ping", false, "preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
@@ -1917,13 +1934,25 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	// and never reads stdin; attended prints the gate + confirm command and stops.
 	// --no-preflight is the CI escape. Confirmed (--yes) exclusions are recorded in
 	// the created idea.
+	defs, configErr := config.LoadDefaults(*root)
+	if configErr != nil {
+		fmt.Fprintf(stderr, "quota policy config failed: %v\n", configErr)
+		return 1
+	}
+	quotaPolicy := quota.NewPolicy(defs.QuotaAutoExclude, quotaOverride)
+	var quotaDecision *quota.Decision
 	var preflightExcluded []string
 	if !*noPreflight {
-		code, excluded, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, stdout, stderr)
+		code, report, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, quotaPolicy, stdout, stderr)
 		if stop {
 			return code
 		}
-		preflightExcluded = excluded
+		preflightExcluded = report.Excluded
+		quotaDecision = report.QuotaDecision
+		if quotaDecision != nil && quotaDecision.Applied {
+			participants = quotaDecision.After
+		}
+		participants = quota.FilterConfirmed(participants, preflightExcluded)
 	}
 	if !*auto && !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
 		fmt.Fprintln(stdout, "No run started. Use `--yes` or `--auto` to launch without an interactive confirmation prompt.")
@@ -1937,6 +1966,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "warning: roster snapshot unavailable (%v) — this run will not record what each agent ran\n", snapErr)
 	}
 	created, err := runcontrol.Create(runcontrol.CreateOptions{
+		QuotaPolicy:    &quotaPolicy,
+		QuotaDecision:  quotaDecision,
 		Root:           *root,
 		Task:           task,
 		Participants:   participants,

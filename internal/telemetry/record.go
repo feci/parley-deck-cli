@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"parley-deck-cli/internal/quota"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -66,12 +67,13 @@ type Observation struct {
 }
 
 type Outcome struct {
-	Status         string      `json:"status"`
-	ExitCode       *int        `json:"exit_code"`
-	FailureClass   *string     `json:"failure_class"`
-	ArtifactSHA256 *string     `json:"artifact_sha256"`
-	Usage          Usage       `json:"usage"`
-	Observation    Observation `json:"observation"`
+	QuotaEvidence  *quota.Evidence `json:"quota_evidence,omitempty"`
+	Status         string          `json:"status"`
+	ExitCode       *int            `json:"exit_code"`
+	FailureClass   *string         `json:"failure_class"`
+	ArtifactSHA256 *string         `json:"artifact_sha256"`
+	Usage          Usage           `json:"usage"`
+	Observation    Observation     `json:"observation"`
 }
 
 type Record struct {

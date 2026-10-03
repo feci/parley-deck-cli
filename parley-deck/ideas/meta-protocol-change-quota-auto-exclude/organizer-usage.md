@@ -36,3 +36,12 @@ Source: `usage-ledger.jsonl`, codex-rollout/v1, organizer transcript
 `rollout-2026-10-04T00-53-58-01a103f9-65ad-7571-8244-83b744f65e63.jsonl`.
 The ingest reports no containing run-record window; idea/phase were explicitly supplied. This does not
 claim precise attribution to protocol phase 5 or any monetary cost.
+
+Phase-5 stage-1 timeout boundary (2026-10-04):
+
+- Separate codex-1 stage-1 implementer, final before timeout: input 6810745, cached input 6032640, output 39090, reasoning output 7637, total 6849835; 46 events; attribution ambiguous.
+- codex-1 organizer, cumulative snapshot (replaces earlier organizer snapshot): input 11688760, cached input 11024384, output 43572, reasoning output 16501, total 11732332; 73 events; attribution ambiguous.
+
+Separate focused claude-1 reviewer (phase 6, final process):
+
+- Input 192, cache read 12478234, cache write 439938, output 90979; client total 91171; 93 events; attribution ambiguous. The client total uses the Claude parser convention and is not comparable to Codex totals without separating caches.

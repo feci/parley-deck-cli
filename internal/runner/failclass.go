@@ -29,7 +29,7 @@ var failureRules = []failureRule{
 	{"billing", "Check your API account balance and credit card status.",
 		regexp.MustCompile(`(?i)billing[_ ](error|failed|required)|payment|credit (error|exhausted|balance)|quota exceeded`)},
 	{"overloaded", "Retry in a few minutes or choose a less busy model.",
-		regexp.MustCompile(`(?i)overloaded|overloaded_error|serverOverloaded|server[_ ]error|internalServerError|timeout_error|request timed out|deadline exceeded|(status|http|code|response|error)[^0-9]{0,40}5[0-9][0-9]|5[0-9][0-9][^0-9]{0,40}(status|http|code|response|error)`)},
+		regexp.MustCompile(`(?i)overloaded|overloaded_error|serverOverloaded|server[_ ]error|internalServerError|(^|[^0-9])503([^0-9]|$)|timeout_error|request timed out|deadline exceeded|(status|http|code|response|error)[^0-9]{0,40}5[0-9][0-9]|5[0-9][0-9][^0-9]{0,40}(status|http|code|response|error)`)},
 	{"model-not-found", "Check the model spelling and access permissions in your API settings.",
 		regexp.MustCompile(`(?i)model[_ ]not[_ ]found|model not found|not_found_error|unknown model`)},
 	{"context-window", "Reduce the prompt size or prune file attachments/logs from scope.",

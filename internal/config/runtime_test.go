@@ -542,3 +542,47 @@ model = "machine-model"
 		t.Fatalf("an inheriting deck reported masked fields: %v", fields)
 	}
 }
+
+func TestQuotaPresenceAwareDefaults(t *testing.T) {
+	var out CentralDefaults
+	tv, fv := true, false
+	mergeDefaults(&out, &globalDefaults{QuotaAutoExclude: &tv})
+	mergeDefaults(&out, &globalDefaults{})
+	if out.QuotaAutoExclude == nil || !*out.QuotaAutoExclude {
+		t.Fatal(out)
+	}
+	mergeDefaults(&out, &globalDefaults{QuotaAutoExclude: &fv})
+	if out.QuotaAutoExclude == nil || *out.QuotaAutoExclude {
+		t.Fatal(out)
+	}
+	root := t.TempDir()
+	t.Setenv("PARLEY_HOME", t.TempDir())
+	path := filepath.Join(root, "parley-deck", "agents.toml")
+	os.MkdirAll(filepath.Dir(path), 0755)
+	os.WriteFile(path, []byte("[defaults]\nquota_auto_exclude = \"malformed\"\n"), 0644)
+	if _, err := LoadDefaults(root); err == nil {
+		t.Fatal("malformed quota boolean accepted")
+	}
+}
+
+func TestQuotaDeckOverridesMachine(t *testing.T) {
+	parleyHome := t.TempDir()
+	t.Setenv(EnvParleyHome, parleyHome)
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, "parley-deck"), 0755)
+	machine := filepath.Join(parleyHome, "agents.toml")
+	deck := filepath.Join(root, "parley-deck", "agents.toml")
+	os.WriteFile(machine, []byte("[defaults]\nquota_auto_exclude = true\n"), 0644)
+	os.WriteFile(deck, []byte("[defaults]\nquota_auto_exclude = false\n"), 0644)
+	beforeMachine, _ := os.ReadFile(machine)
+	beforeDeck, _ := os.ReadFile(deck)
+	got, err := LoadDefaults(root)
+	if err != nil || got.QuotaAutoExclude == nil || *got.QuotaAutoExclude {
+		t.Fatal(got, err)
+	}
+	afterMachine, _ := os.ReadFile(machine)
+	afterDeck, _ := os.ReadFile(deck)
+	if string(beforeMachine) != string(afterMachine) || string(beforeDeck) != string(afterDeck) {
+		t.Fatal("config load mutated roster")
+	}
+}

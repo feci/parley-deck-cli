@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/quota"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -31,21 +32,22 @@ const (
 )
 
 type Manifest struct {
-	SchemaVersion int          `json:"schema_version"`
-	RunID         string       `json:"run_id"`
-	WorkspaceRoot string       `json:"workspace_root"`
-	IdeaSlug      string       `json:"idea_slug"`
-	Task          string       `json:"task,omitempty"`
-	Mode          string       `json:"mode,omitempty"`
-	Transport     string       `json:"transport,omitempty"`
-	Status        string       `json:"status,omitempty"`
-	Phase         string       `json:"phase,omitempty"`
-	IdeaStatus    string       `json:"idea_status,omitempty"`
-	CurrentRound  string       `json:"current_round,omitempty"`
-	ActiveSteps   []Step       `json:"active_steps,omitempty"`
-	LastActionAt  *time.Time   `json:"last_action_at,omitempty"`
-	NextActions   []NextAction `json:"next_actions,omitempty"`
-	Participants  []string     `json:"participants,omitempty"`
+	QuotaKickoff  *quota.Kickoff `json:"quota_kickoff,omitempty"`
+	SchemaVersion int            `json:"schema_version"`
+	RunID         string         `json:"run_id"`
+	WorkspaceRoot string         `json:"workspace_root"`
+	IdeaSlug      string         `json:"idea_slug"`
+	Task          string         `json:"task,omitempty"`
+	Mode          string         `json:"mode,omitempty"`
+	Transport     string         `json:"transport,omitempty"`
+	Status        string         `json:"status,omitempty"`
+	Phase         string         `json:"phase,omitempty"`
+	IdeaStatus    string         `json:"idea_status,omitempty"`
+	CurrentRound  string         `json:"current_round,omitempty"`
+	ActiveSteps   []Step         `json:"active_steps,omitempty"`
+	LastActionAt  *time.Time     `json:"last_action_at,omitempty"`
+	NextActions   []NextAction   `json:"next_actions,omitempty"`
+	Participants  []string       `json:"participants,omitempty"`
 	// RosterSnapshot freezes what each participant ACTUALLY runs, captured at run
 	// creation. Before it existed the manifest recorded participant IDs and nothing
 	// else, so a finished run could not tell you which model any agent had used — and
@@ -111,6 +113,7 @@ type Step struct {
 type NextAction = runaction.NextAction
 
 type Options struct {
+	QuotaKickoff   *quota.Kickoff
 	Root           string
 	RunID          string
 	IdeaSlug       string
@@ -154,6 +157,7 @@ func New(opts Options) Manifest {
 		lastActionAt = &value
 	}
 	return Manifest{
+		QuotaKickoff:   opts.QuotaKickoff,
 		SchemaVersion:  SchemaVersion,
 		RunID:          opts.RunID,
 		WorkspaceRoot:  root,

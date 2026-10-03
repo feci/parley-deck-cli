@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"parley-deck-cli/internal/quota"
 	"regexp"
 	"strings"
 	"time"
@@ -42,6 +43,7 @@ const (
 // readinessObservation is the typed probe result carried into the roster table
 // and (through it) into the readiness gates. Ready is true only for ClassReady.
 type readinessObservation struct {
+	QuotaEvidence *quota.Evidence
 	Class         ReadinessClass
 	Ready         bool
 	ExitCode      int    // -1 when the process never ran or was cut off by the probe deadline
@@ -631,7 +633,7 @@ var providerFailureRules = []struct {
 	{"rate-limit", regexp.MustCompile(`(?i)rate[-_ ]?limit|rate_limit_error|usageLimitExceeded|usage limit|session limit|too many requests|(^|[^0-9])429([^0-9]|$)`)},
 	{"auth", regexp.MustCompile(`(?i)authentication[_ ](failed|error|required)|unauthorized|forbidden|permission_error|oauth[_ ](org|error|failed|not allowed)|oauth_org_not_allowed|api key not valid|invalid api key|(^|[^0-9])401([^0-9]|$)`)},
 	{"billing", regexp.MustCompile(`(?i)billing[_ ](error|failed|required)|payment|credit (error|exhausted|balance)|quota exceeded`)},
-	{"overloaded", regexp.MustCompile(`(?i)overloaded|overloaded_error|serverOverloaded|server[_ ]error|internalServerError`)},
+	{"overloaded", regexp.MustCompile(`(?i)overloaded|overloaded_error|serverOverloaded|server[_ ]error|internalServerError|(^|[^0-9])503([^0-9]|$)`)},
 	{"model-not-found", regexp.MustCompile(`(?i)model[_ ]not[_ ]found|model not found|not_found_error|unknown model`)},
 }
 

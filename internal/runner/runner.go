@@ -18,6 +18,7 @@ import (
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
 )
@@ -68,19 +69,20 @@ type Options struct {
 }
 
 type Result struct {
-	InvocationID string
-	AgentID      string
-	OutputPath   string
-	StdoutPath   string
-	StderrPath   string
-	StartedAt    time.Time
-	CompletedAt  time.Time
-	ExitError    string
-	ArtifactOK   bool
-	Skipped      bool
-	SkipReason   string
-	Warning      string
-	Duration     time.Duration
+	QuotaEvidence *quota.Evidence
+	InvocationID  string
+	AgentID       string
+	OutputPath    string
+	StdoutPath    string
+	StderrPath    string
+	StartedAt     time.Time
+	CompletedAt   time.Time
+	ExitError     string
+	ArtifactOK    bool
+	Skipped       bool
+	SkipReason    string
+	Warning       string
+	Duration      time.Duration
 	// Killed is set when the attempt was terminated by Handle.KillAgent (vs a
 	// timeout or self-exit), so projection can show a distinct "killed" badge.
 	Killed bool
@@ -560,7 +562,12 @@ func runExecAttempt(parent context.Context, opts Options, agent agents.Discovery
 		RunID: opts.RunID, SegmentID: opts.SegmentID, Idea: opts.Idea.Slug,
 		Phase: protocolLaunchPhase(opts), AttemptOrdinal: attemptID,
 		RetryOf: base.InvocationID, Store: opts.Store, ArtifactPath: outputPath,
-		Observe: func(record telemetry.Record) { result.InvocationID = record.InvocationID },
+		Observe: func(record telemetry.Record) {
+			result.InvocationID = record.InvocationID
+			if record.Outcome != nil {
+				result.QuotaEvidence = record.Outcome.QuotaEvidence
+			}
+		},
 	})
 
 	// Register this attempt so Handle.KillAgent can cancel just this agent (the
@@ -745,6 +752,17 @@ func finalizeExecResult(opts Options, result *Result, agent agents.Discovery, ru
 		"error":       result.ExitError,
 		"segment_id":  opts.SegmentID,
 		"attempt_id":  attemptID,
+	}
+	if result.QuotaEvidence != nil {
+		if result.ArtifactOK {
+			result.QuotaEvidence.Eligible = false
+			result.QuotaEvidence.Reason = "valid completed artifact"
+		}
+		if cancellation {
+			result.QuotaEvidence.Eligible = false
+			result.QuotaEvidence.Reason = "watchdog or cancellation"
+		}
+		data["quota_evidence"] = result.QuotaEvidence
 	}
 	eventType := "agent.finished"
 	if failed {

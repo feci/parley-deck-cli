@@ -20,7 +20,9 @@ import (
 	"parley-deck-cli/internal/fsutil"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // centralPingSkips reports whether the central [defaults].ping_tier opts out of
@@ -52,6 +54,8 @@ const pongPrompt = "Reply with exactly the single token: PONG"
 // preflightOptions configures a readiness check shared by the standalone command
 // and the `parley run` pre-check.
 type preflightOptions struct {
+	QuotaPolicy *quota.Policy // non-nil only inside new-idea kickoff
+	QuotaRoles  quota.Roles
 	Root        string
 	JSON        bool
 	Yes         bool
@@ -103,11 +107,12 @@ type freshness struct {
 
 // rosterEntry is one row of the readiness roster table.
 type rosterEntry struct {
-	RosterID  string `json:"rosterId"`
-	Runtime   string `json:"runtime"`
-	Version   string `json:"version"`
-	Available bool   `json:"available"`
-	Reason    string `json:"reason,omitempty"`
+	QuotaEvidence *quota.Evidence `json:"quota_evidence,omitempty"`
+	RosterID      string          `json:"rosterId"`
+	Runtime       string          `json:"runtime"`
+	Version       string          `json:"version"`
+	Available     bool            `json:"available"`
+	Reason        string          `json:"reason,omitempty"`
 	// Class is the typed readiness observation (D7); empty for a present
 	// agent reported available by presence-only (--no-ping).
 	Class string `json:"class,omitempty"`
@@ -115,10 +120,11 @@ type rosterEntry struct {
 
 // preflightReport is the full readiness result.
 type preflightReport struct {
-	Freshness freshness     `json:"freshness"`
-	Roster    []rosterEntry `json:"roster"`
-	Pinged    bool          `json:"pinged"`
-	Gates     []gate        `json:"gates"`
+	QuotaDecision *quota.Decision `json:"quota_decision,omitempty"`
+	Freshness     freshness       `json:"freshness"`
+	Roster        []rosterEntry   `json:"roster"`
+	Pinged        bool            `json:"pinged"`
+	Gates         []gate          `json:"gates"`
 	// Excluded holds confirmed (--yes) participant exclusions, formatted as
 	// `<roster-id> — reason — confirmed <date>` for recording in the idea.
 	Excluded []string `json:"excluded,omitempty"`
@@ -273,18 +279,18 @@ func participantDiscoveries(discovered []agents.Discovery, participants []string
 // unattended both stop on a gate (we never auto-answer the new gates); the only
 // difference is unattended must never block on stdin, which this path honors
 // because it never reads stdin.
-func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, stdout, stderr io.Writer) (int, []string, bool) {
-	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes}
+func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, policy quota.Policy, stdout, stderr io.Writer) (int, preflightReport, bool) {
+	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes, QuotaPolicy: &policy}
 	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants, rosterMappingFor(opts.Root)), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
-		return 1, nil, true
+		return 1, report, true
 	}
 	if code == 0 {
 		if report.Freshness.Synced {
 			fmt.Fprintf(stdout, "preflight: %s\n", report.Freshness.Summary)
 		}
-		return 0, report.Excluded, false
+		return 0, report, false
 	}
 	// A gate or a hard failure: stop before runcontrol.Create. No half-open idea.
 	if code == 1 {
@@ -302,7 +308,7 @@ func runTaskPreflight(ctx context.Context, root string, discovered []agents.Disc
 			fmt.Fprintf(w, "    confirm: %s\n", g.Confirm)
 		}
 	}
-	return code, nil, true
+	return code, report, true
 }
 
 // confirmCommand is the command a gate advertises to clear it: re-run preflight
@@ -400,6 +406,28 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 
 	report.Pinged = !opts.NoPing
 	report.Roster = checkRoster(ctx, opts, discovered)
+	autoExcluded := map[string]bool{}
+	if opts.QuotaPolicy != nil {
+		proposed := []string{}
+		members := []quota.Member{}
+		for _, entry := range report.Roster {
+			proposed = append(proposed, entry.RosterID)
+			members = append(members, quota.Member{ID: entry.RosterID, Usable: entry.Available, Evidence: entry.QuotaEvidence})
+		}
+		decision := quota.Evaluate(*opts.QuotaPolicy, proposed, members, opts.QuotaRoles)
+		report.QuotaDecision = &decision
+		if decision.Block != "" {
+			report.Gates = append(report.Gates, gate{Kind: "quota-batch-blocked", Detail: decision.Block + fmt.Sprintf("; candidates: %v", quota.CandidateIDs(decision.Candidates)), Confirm: "owner confirmation required"})
+			if err := writeQuotaBlock(opts.Root, decision); err != nil {
+				return report, 1, err
+			}
+		}
+		if decision.Applied {
+			for _, c := range decision.Candidates {
+				autoExcluded[c.Agent] = true
+			}
+		}
+	}
 
 	// Gate construction (D7). A non-ready entry raises one of three gates:
 	// - definite unavailability (missing CLI or a plain non-provider process
@@ -410,6 +438,9 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	//   are NOT auto-excluded and NOT waivable into an exclusion by --yes.
 	available := 0
 	for _, entry := range report.Roster {
+		if autoExcluded[entry.RosterID] {
+			continue
+		}
 		if entry.Available {
 			available++
 			continue
@@ -872,6 +903,7 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 			obs := pingProbe(probeCtx, opts.Root, a, timeout)
 			entries[idx].Available = obs.Ready
 			entries[idx].Class = string(obs.Class)
+			entries[idx].QuotaEvidence = obs.QuotaEvidence
 			if !obs.Ready {
 				entries[idx].Reason = readinessReason(obs)
 			}
@@ -890,7 +922,8 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) readinessObservation {
 	probeCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	probeCtx = runner.WithLaunchInfo(probeCtx, runner.LaunchInfo{Phase: "preflight"})
+	var terminal *telemetry.Record
+	probeCtx = runner.WithLaunchInfo(probeCtx, runner.LaunchInfo{Phase: "preflight", Observe: func(r telemetry.Record) { terminal = &r }})
 
 	cmd, cleanup, err := runner.ProbeCommandFor(probeCtx, root, agent, pongPrompt)
 	if cleanup != nil {
@@ -942,6 +975,17 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 		stdoutText = runner.UnwrapKimiStreamJSON(stdoutText)
 	}
 	obs := classifyReadiness(stdoutText, errOut.String(), code, timedOut, truncated, reason)
+	if terminal != nil && terminal.Outcome != nil {
+		e := terminal.Outcome.QuotaEvidence
+		if e != nil {
+			copy := *e
+			obs.QuotaEvidence = &copy
+			if obs.Ready || timedOut || truncated {
+				obs.QuotaEvidence.Eligible = false
+				obs.QuotaEvidence.Reason = "readiness success, deadline or incomplete capture"
+			}
+		}
+	}
 	obs.Duration = time.Since(started)
 	obs.BuffersStdout = agent.BuffersStdout
 	return obs

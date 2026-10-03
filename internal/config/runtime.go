@@ -281,6 +281,7 @@ type rosterOverride struct {
 // globalDefaults is the optional [defaults] block of a layered config file —
 // non-agent policy knobs that apply project-wide.
 type globalDefaults struct {
+	QuotaAutoExclude   *bool  `toml:"quota_auto_exclude"`
 	Speed              string `toml:"speed"`
 	PingTier           string `toml:"ping_tier"`
 	PreferredTransport string `toml:"preferred_transport"`
@@ -317,6 +318,7 @@ type loopBlock struct {
 // config files (central ~/.parley/agents.toml first, then the project deck).
 // A zero-value field means "not set" — the consumer supplies its own fallback.
 type CentralDefaults struct {
+	QuotaAutoExclude   *bool
 	Speed              string
 	PingTier           string
 	PreferredTransport string
@@ -538,6 +540,10 @@ func ValidateAgentsConfigBytes(data []byte) error {
 }
 
 func mergeDefaults(out *CentralDefaults, gd *globalDefaults) {
+	if gd.QuotaAutoExclude != nil {
+		value := *gd.QuotaAutoExclude
+		out.QuotaAutoExclude = &value
+	}
 	if s := strings.TrimSpace(gd.Speed); s != "" {
 		out.Speed = s
 	}

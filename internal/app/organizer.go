@@ -247,6 +247,9 @@ func renderOrganizerBrief(st protocol.IdeaStatus, transport string, ctx protocol
 
 	fmt.Fprintf(&b, "## Idea state\n")
 	fmt.Fprintf(&b, "status: %s  participants: [%s]\n", st.Status, strings.Join(st.Participants, ", "))
+	for _, line := range quotaSurface(st.Path) {
+		fmt.Fprintln(&b, line)
+	}
 	if st.FacilitatorRole.Declared {
 		fmt.Fprintf(&b, "facilitator: %s (participates: %v)\n", st.FacilitatorRole.Facilitator, st.FacilitatorRole.Participates)
 	}

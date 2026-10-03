@@ -224,3 +224,10 @@ func TestExecTelemetryCancelledBeforeStart(t *testing.T) {
 		t.Fatalf("record: %+v", r)
 	}
 }
+
+func TestQuotaBare503RunnerGate(t *testing.T) {
+	class, _ := classifyFailure("", "", "503")
+	if class != "overloaded" {
+		t.Fatalf("bare503=%s", class)
+	}
+}

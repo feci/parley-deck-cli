@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"parley-deck-cli/internal/fsutil"
+	"parley-deck-cli/internal/quota"
 )
 
 const DeckDir = "parley-deck"
@@ -176,6 +177,7 @@ func CreateIdeaWithExclusions(root, task string, participants, excluded []string
 // the participants line (named-roster-presets). Both are advisory: `participants:`
 // stays the canonical quorum. Empty track/provenance reproduce the base behavior.
 func CreateIdeaFull(root, task string, participants, excluded []string, track, provenance string) (IdeaStatus, error) {
+	participants = quota.FilterConfirmed(participants, excluded)
 	now := time.Now()
 	slug := uniqueSlug(filepath.Join(root, DeckDir, "ideas"), timestampedSlug(task, now))
 	ideaDir := filepath.Join(root, DeckDir, "ideas", slug)

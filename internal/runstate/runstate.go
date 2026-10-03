@@ -1,9 +1,12 @@
 package runstate
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/quota"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -79,6 +82,8 @@ type EventSummary struct {
 // RunSummary is the intentionally small, unstable developer JSON surface for
 // this slice. Keep fields conservative until real consumers exist.
 type RunSummary struct {
+	QuotaKickoff  *quota.Kickoff       `json:"quota_kickoff,omitempty"`
+	QuotaPending  string               `json:"quota_pending,omitempty"`
 	RunID         string               `json:"run_id"`
 	RunDir        string               `json:"-"`
 	IdeaSlug      string               `json:"idea_slug"`
@@ -136,6 +141,17 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 		summary.Task = dataString(event.Data, "task")
 		summary.Mode = dataString(event.Data, "mode")
 		summary.Participants = dataStringSlice(event.Data, "participants")
+		if raw := event.Data["quota_kickoff"]; raw != nil {
+			b, e := json.Marshal(raw)
+			if e == nil {
+				var k quota.Kickoff
+				if json.Unmarshal(b, &k) == nil {
+					summary.QuotaKickoff = &k
+				} else {
+					summary.QuotaPending = "invalid quota creation record"
+				}
+			}
+		}
 	}
 	if !summary.LastEventAt.IsZero() {
 		summary.LastEventAge = now.Sub(summary.LastEventAt)
@@ -146,6 +162,23 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 
 	if len(summary.Participants) == 0 {
 		summary.Participants = inferParticipants(root, summary.IdeaSlug)
+	}
+	if summary.IdeaSlug != "unknown" && summary.IdeaSlug != "" {
+		ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", summary.IdeaSlug)
+		k, e := protocol.ReadQuotaState(ideaDir)
+		if e != nil && (summary.QuotaKickoff != nil || !os.IsNotExist(e)) {
+			summary.QuotaPending = e.Error()
+		} else if k != nil {
+			if summary.QuotaKickoff == nil || !reflect.DeepEqual(summary.QuotaKickoff, k) || !reflect.DeepEqual(quota.Unique(summary.Participants), quota.Unique(k.Participants)) {
+				summary.QuotaPending = "pending or contradictory quota run projections"
+			}
+			summary.QuotaKickoff = k
+			if !hasManifest {
+				summary.QuotaPending = "quota kickoff pending: missing manifest"
+			}
+		} else if summary.QuotaKickoff != nil {
+			summary.QuotaPending = "missing immutable quota kickoff history"
+		}
 	}
 	summary.State = ProjectEvents(summary.Participants, events, now)
 	if summary.CurrentRound == "" {
@@ -191,6 +224,7 @@ func loadManifestSnapshot(root, runID string) (runmanifest.Manifest, bool) {
 }
 
 func applyManifestDefaults(summary *RunSummary, manifest runmanifest.Manifest) {
+	summary.QuotaKickoff = manifest.QuotaKickoff
 	if manifest.IdeaSlug != "" && (summary.IdeaSlug == "" || summary.IdeaSlug == "unknown") {
 		summary.IdeaSlug = manifest.IdeaSlug
 	}

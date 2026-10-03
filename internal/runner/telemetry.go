@@ -227,7 +227,8 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 				status, failure = "failed", "trajectory_failure"
 			}
 		}
-		outcome := telemetry.Outcome{Status: status, ExitCode: exitCode,
+		quotaEvidence := l.collector.QuotaEvidence(telemetry.QuotaInput{InvocationID: l.invocation.ID, ObservedAt: time.Now().UTC(), ExitCode: exitCode, StructuredFailure: providerFailure != "", Watchdog: quotaCancellation(failure)})
+		outcome := telemetry.Outcome{QuotaEvidence: &quotaEvidence, Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,
 			ArtifactSHA256: observedArtifactHash(l.info.ArtifactPath)}
 		if err := l.invocation.Finish(outcome); err != nil {
@@ -277,4 +278,12 @@ func observedArtifactHash(path string) *string {
 		return nil
 	}
 	return telemetry.String(fmt.Sprintf("%x", hash.Sum(nil)))
+}
+
+func quotaCancellation(failure string) string {
+	switch failure {
+	case "no_first_output", "stalled", "timeout", "cancelled", "budget_refused", "telemetry_failure", "trajectory_failure", "start_failure":
+		return failure
+	}
+	return ""
 }
