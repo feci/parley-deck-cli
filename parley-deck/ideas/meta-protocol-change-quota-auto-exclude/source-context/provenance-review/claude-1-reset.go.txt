@@ -1,0 +1,24 @@
+package main
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+	"time"
+)
+
+// Regexes copied verbatim from quota-prototype.go:73-74.
+var resetAfter = regexp.MustCompile(`(?i)\breset after ([^);\n]+)`)
+var resetAtText = regexp.MustCompile(`(?i)\breset(?:s| will reset)? at ([^);\n]+)`)
+
+func main() {
+	msg := "[glm/glm-5.3] [429]: Weekly/Monthly Limit Exhausted. Your limit will reset at 2026-10-05 06:14:57 (reset after 49h 8m 50s)"
+	for _, m := range resetAfter.FindAllStringSubmatch(msg, -1) {
+		fmt.Printf("resetAfter capture: %q\n", m[1])
+	}
+	for _, m := range resetAtText.FindAllStringSubmatch(msg, -1) {
+		s := strings.TrimSpace(m[1])
+		_, err := time.Parse(time.RFC3339Nano, s) // same parse as prototype addAbsolute (line 141)
+		fmt.Printf("resetAtText capture: %q -> RFC3339Nano err: %v\n", s, err)
+	}
+}
