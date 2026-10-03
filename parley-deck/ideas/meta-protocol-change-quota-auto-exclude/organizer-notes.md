@@ -653,3 +653,40 @@ Full skill validation completed before the final phase-5 changes: `npm test` exi
 passed and 54 Python tests across seven files; all six payload manifests match. Raw logs retained at
 /tmp/quota-skill-full.log and /tmp/quota-skill-doc-checks.log. Regenerate the manifest and re-run affected
 checks if stage 2 changes protocol text. No whole-file protocol identity is claimed.
+
+## Supplemental provenance investigation (2026-10-04)
+
+The first focused claude-1 review exited 0 after 553.4 seconds. Its MAJOR-1/MAJOR-2 and
+MINOR-1 remain open; commit 40e44d4 preserves its artifact and offline examples unmodified.
+No full-scope verdict, consensus, or close is claimed. The stage-1 implementer timed out
+at 1800 seconds (exit -15), without an agent quota/auth failure; partial code is committed
+at 3aa05cf. The full host Go suite is now running to distinguish actual regressions from
+the child sandbox's denied fixtures; no pass is claimed before its exit.
+
+Before requesting a scope decision, codex-1 read the installed zcode source further.
+`createNodeLoggerFactory` uses `~/.zcode/cli/log` (singular) and accepts `ZCODE_LOG_DIR`;
+the first review's R6 named `logs` directories. A scoped search found a real structured
+`turn.failed` line for a 53h 41m 9s weekly/monthly failure on 2026-10-02. It is not the
+recorded AC2 49-hour fixture, and its runtime version at capture is not established.
+The source-context/provenance-review/ directory now contains a redacted native record
+and bounded source snippets, attributed to codex-1 as evidence, not a verdict. Headers
+and correlation identifiers are scrubbed; no credentials or unrelated logs are copied.
+
+This evidence may allow the same configured prompt invocation to expose terminal
+attribution through its native JSONL file, but data completeness, reset preservation,
+invocation binding and tool/nested-call counterexamples remain open. A separate configured
+claude-1 process is evaluating those exact questions in review/round-02/claude-1.md.
+It also checks whether the proposed reset interpretation fits FINAL or requires owner
+direction. No live provider or additional participant is invoked. The driver fallback
+is the same focused pre-completion feedback limitation as round 01; no fix-up cycle or
+full implementation review is claimed. Logs are under
+.parley-runtime/quota-implementation/structured-provenance-review/.
+
+The launch uses full phase-6 deliberation protocol context, source and packet SHA256
+8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416, no fallback.
+Stage 2 remains pending. Do not silently defer AC2 or enable a stderr recognizer.
+
+The OpenViking checkpoint write returned a 60-second queue timeout, but readback succeeded
+and scoped find returned the exact saved resource. Persistence and retrieval are verified:
+viking://resources/projects/parley-deck/quota-auto-exclude-stage1-blocker-20261004.md.
+It describes the earlier blocker checkpoint; later local canonical artifacts govern.

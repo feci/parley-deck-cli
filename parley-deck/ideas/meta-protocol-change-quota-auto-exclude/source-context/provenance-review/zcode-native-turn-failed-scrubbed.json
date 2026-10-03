@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-10-02T16:33:48.366Z",
+  "level": "error",
+  "event": "turn.failed",
+  "module": "core.runtime",
+  "message": "Turn failed",
+  "traceId": "fixture-id-1",
+  "spanId": "fixture-id-2",
+  "parentSpanId": "fixture-id-3",
+  "sessionId": "fixture-id-4",
+  "turnId": "fixture-id-5",
+  "status": "failed",
+  "context": {
+    "queryId": "fixture-id-6",
+    "turnNumber": 0,
+    "turnPhase": "processing_input"
+  },
+  "error": {
+    "name": "Error",
+    "message": "Turn execution failed",
+    "code": "UNKNOWN_ERROR",
+    "type": "unknown_error",
+    "context": {
+      "errorPayloadRole": "wrapper"
+    },
+    "cause": {
+      "name": "AiSdkModelAdapterError",
+      "message": "[glm/glm-5.3] [429]: Weekly/Monthly Limit Exhausted. Your limit will reset at 2026-10-05 06:14:57 (reset after 53h 41m 9s)",
+      "code": "model_request_failed",
+      "context": {
+        "attempt": 1,
+        "maxAttempts": 6,
+        "modelId": "glm-5.3",
+        "providerCode": "PROVIDER_BUSINESS_ERROR",
+        "responseBodySummary": {
+          "type": "error",
+          "error": {
+            "code": "PROVIDER_BUSINESS_ERROR",
+            "isProviderBusinessError": true,
+            "providerId": "zai",
+            "providerKind": "anthropic",
+            "providerMessage": "[glm/glm-5.3] [429]: Weekly/Monthly Limit Exhausted. Your limit will reset at 2026-10-05 06:14:57 (reset after 53h 41m 9s)",
+            "responseBodySummary": {
+              "keys": [
+                "error"
+              ],
+              "error": {
+                "keys": [
+                  "message",
+                  "retry_after",
+                  "reset_at"
+                ],
+                "message": "[glm/glm-5.3] [429]: Weekly/Monthly Limit Exhausted. Your limit will reset at 2026-10-05 06:14:57 (reset after 53h 41m 9s)"
+              }
+            },
+            "responseHeaders": {
+              "access-control-allow-headers": "<scrubbed-header>",
+              "access-control-allow-methods": "<scrubbed-header>",
+              "access-control-allow-origin": "<scrubbed-header>",
+              "alt-svc": "<scrubbed-header>",
+              "cache-control": "<scrubbed-header>",
+              "content-security-policy": "<scrubbed-header>",
+              "content-type": "<scrubbed-header>",
+              "date": "<scrubbed-header>",
+              "permissions-policy": "<scrubbed-header>",
+              "referrer-policy": "<scrubbed-header>",
+              "strict-transport-security": "<scrubbed-header>",
+              "vary": "<scrubbed-header>",
+              "via": "<scrubbed-header>",
+              "x-content-type-options": "<scrubbed-header>",
+              "x-frame-options": "<scrubbed-header>",
+              "x-omniroute-route-class": "<scrubbed-header>",
+              "x-request-id": "<scrubbed-header>"
+            },
+            "responseStatus": 200,
+            "name": "ProviderBusinessError"
+          }
+        },
+        "responseStatus": 200,
+        "providerId": "zai",
+        "providerKind": "anthropic",
+        "reason": "unknown",
+        "requestId": "fixture-id-7",
+        "retryable": false,
+        "source": "provider",
+        "traceId": "fixture-id-1",
+        "transport": "sse"
+      },
+      "cause": {
+        "name": "ProviderBusinessError",
+        "message": "[glm/glm-5.3] [429]: Weekly/Monthly Limit Exhausted. Your limit will reset at 2026-10-05 06:14:57 (reset after 53h 41m 9s)",
+        "code": "PROVIDER_BUSINESS_ERROR"
+      }
+    }
+  }
+}

@@ -80,6 +80,15 @@ configuration does not waive the attended close or permit unattended completion.
 
 ## Progress
 
+- 2026-10-04: a further read-only installed-source search located native JSONL logs under
+  `~/.zcode/cli/log` (singular), including a real `turn.failed` with provider attribution and a
+  53-hour quota message. The scrubbed record and source snippets are in
+  source-context/provenance-review/codex-1-structured-channel-evidence.md. This differs from AC2's
+  exact recorded 49-hour positive. A separate claude-1 supplemental feedback process is checking
+  unchanged-invocation capture, complete reset preservation, binding and adversarial negatives,
+  plus whether MAJOR-1/MAJOR-2 need owner scope interpretation. No AC verdict is asserted and
+  no classifier is enabled. The full Go suite is running on the host.
+
 - 2026-10-03 23:33Z: claude-1 focused reviewer exited 0 after 553.4 seconds. Its own artifact is
   structurally valid (parley wait: 1/1 filed-and-valid, 15656 bytes); it explicitly is NOT a full-scope
   review. MAJOR-1 requires an owner scope decision for AC2; MAJOR-2 identifies the reset parser's
@@ -99,8 +108,8 @@ configuration does not waive the attended close or permit unattended completion.
   skill dfad28e/c0d7f58). All three normative rule texts agree; bootstrap-zone discrepancy remains open.
   Phase 0/5/8 packets contain the rule/cross-references; packet check reports ok=true (69 blocks).
   Skill required checks: 55/55. Full npm test: 399 Node and 54 Python tests pass; all manifests match.
-- Next concrete work: read the separate claude-1 provenance finding after process exit; resolve or
-  escalate its AC2 conclusions; finish stage-1 integration/tests; implement full mid-idea transitions,
+- Next concrete work: obtain claude-1 supplemental review of the located native structured log; resolve
+  or escalate its AC2 conclusions; finish stage-1 integration/tests; implement full mid-idea transitions,
   serialization, replay, captured-consumer rebinding, known/required signers, preserved findings and gates.
   Keep status in-progress and the protocol stage-2 paragraph not-yet-in-force until delivered.
 
