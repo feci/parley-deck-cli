@@ -630,3 +630,26 @@ the kickoff handoff and its decisions recorded in IMPLEMENTATION.md. This clears
 Skill check output after payload-manifest regeneration: installer + lean-organizer 55 tests, 55 pass,
 0 fail. The initial 24 installer failures explicitly reported stale parley-addon.json for the three changed
 payload files; no test or installer behavior was changed. A full npm test is running before final review.
+
+An early focused reviewer feedback pass was launched while stage 1 finishes, because adapter provenance
+is an implementation-deferred decision in FINAL §13.8 and AC2 specifically requires zcode support. This
+is not a full implementation review and cannot close any criterion outside its stated scope. The exact
+output is review/round-01/claude-1.md; the separate claude-1 process owns it. The brief gives FINAL, the
+AC focus (2–4 and 18), a frozen copy of the in-progress classifier prototype and the installed zcode source
+hash. It asks the reviewer to test both false-positive recognition and unjustified diagnostic-only
+classification; it supplies no organizer verdict. The reviewer may report any discovered issue.
+
+Driver fallback for this feedback pass: the driver exposes whole implementation/review phases, not a
+focused pre-completion source-provenance feedback dispatch. The ordinary Phase-5 feedback mechanism is
+used with the configured claude argv and a 1800-second timeout. Logs and exact brief are retained under
+.parley-runtime/quota-implementation/provenance-review/. The full phase-6 renderer body has source and
+packet SHA256 8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416, context_mode=full, no fallback.
+
+The full skill npm test initially stopped on a missing declared commonmark development dependency.
+`npm ci` installed the unchanged lockfile; the rerun exited 0, including 54 Python tests across 7 files
+and every payload-manifest check. No dependency version or test behavior was changed.
+
+Full skill validation completed before the final phase-5 changes: `npm test` exited 0 with 399 Node tests
+passed and 54 Python tests across seven files; all six payload manifests match. Raw logs retained at
+/tmp/quota-skill-full.log and /tmp/quota-skill-doc-checks.log. Regenerate the manifest and re-run affected
+checks if stage 2 changes protocol text. No whole-file protocol identity is claimed.
