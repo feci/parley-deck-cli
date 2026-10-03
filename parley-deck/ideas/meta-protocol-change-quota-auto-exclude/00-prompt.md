@@ -1,7 +1,7 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
 author: user
-facilitator: claude-1
+facilitator: codex-1
 facilitator_participates: true
 created: 2026-10-03
 track: deliberation
@@ -13,6 +13,27 @@ require_model_diversity: true
 cross_review_rounds: 2
 status: final
 ---
+
+## Implementation organizer handoff — 2026-10-04
+
+The owner transferred organization from claude-1 to codex-1 for Phases 5 to 8 and release.
+The owner's words, quoted verbatim from the ratification (original language: Slovak):
+
+> "plati odpoved 1 ale ty si setri tokeny, nech to spravi codex, zadaj mu to a ty len minimalne kontroluj a setri si tokeny"
+
+Translation recorded in the ratification: "Answer 1 applies, but you save tokens: let codex do it,
+assign it to codex, and you only check minimally and save tokens."
+
+Role concentration (§15.5): codex-1 is the organizer and implementer, with
+`facilitator_participates: true`. codex-1 never grades its own implementation. claude-1 is the sole
+non-implementer reviewer, invoked in a separate headless process, and owns its reviews and signoffs.
+The quorum remains codex-1 and claude-1 only. The owner confirms the attended close before release.
+
+This handoff and `inbox/user-to-all_meta-protocol-change-quota-auto-exclude_ratification.md` supersede
+this file's historical design-only scope and FINAL section 12's organizer assignment. Both implementation
+stages are authorized and required. The controlling implementation/release brief is
+`/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/runs-handoff/quota-auto-exclude-2026-10-03/IMPL-ORGANIZER-BRIEF.md`.
+No historical participant artifact or signoff is rewritten.
 
 ## Problem / idea
 
