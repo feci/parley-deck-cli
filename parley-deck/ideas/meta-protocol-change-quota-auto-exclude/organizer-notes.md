@@ -623,3 +623,10 @@ Read-only release inventory at 2026-10-03 23:04Z: GitHub latest CLI 1.50.0 and s
 main a8634cc, skill main a5664d8. Homebrew main checkout clean at 9855366. Local published core has 2.13.0
 and 2.10.0, no 2.14.0; `~/.parley/staging/COOPERATION-2.14.0.md` exists. Planned next versions remain
 CLI 1.51.0 / skill 2.15.0 / core 2.15.0, to be rechecked after the attended close. No release channel changed.
+
+The already-answered proposal note was archived unmodified after the owner's ratification was quoted in
+the kickoff handoff and its decisions recorded in IMPLEMENTATION.md. This clears the wait surface's stale
+"pre-existing unanswered" annotation without changing the historical question or its author.
+Skill check output after payload-manifest regeneration: installer + lean-organizer 55 tests, 55 pass,
+0 fail. The initial 24 installer failures explicitly reported stale parley-addon.json for the three changed
+payload files; no test or installer behavior was changed. A full npm test is running before final review.
