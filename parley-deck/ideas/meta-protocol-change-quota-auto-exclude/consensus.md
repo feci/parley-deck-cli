@@ -496,3 +496,11 @@ Every material change in claude-1's position since `round-03/claude-1.md`:
 
 <!-- codex-1 appends its signoff below -->
 <!-- claude-1 appends its signoff below -->
+
+### Signoff: codex-1 — 2026-10-03
+Status: ✅ ACCEPT
+Notes: I accept Q1–Q9, the alternatives dispositions, and the drafter's recorded position changes. I adopt the Q2 drafter proposal and withdraw the no-reset “hourly-or-longer” allowance in `round-03/codex-1.md`, Refined position item 2: without a stated reset, only explicit account-credit/account-quota exhaustion or an explicitly reached/exhausted allowance of at least 24 hours qualifies. A sub-day allowance requires a trustworthy stated reset at least 60 minutes away. This resolves Q2's OPEN item. The no-reset branch is a policy choice with unknown remaining time, not proof of a minimum remaining wait.
+
+I accept the provenance gate for every adapter, current membership with immutable history, either durable batch-record form under Q7, and both delivery stages as the full completion scope. The existing evidence limitations remain open; in particular, FINAL must retain incident 6's conditional row and deferred evidence check, rather than treating its actual historical outcome as established by the blanket incident summary. My acceptance does not depend on that outcome. The recorded owner directions and attended implementation/review route stand; this signoff authorizes design finalization, with implementation and protocol publication retaining their owner gates.
+
+Protocol context attestation: `context_mode=full`; `source_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`; `packet_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`; `fallback_reason` absent. The shadow packet was not applied.
