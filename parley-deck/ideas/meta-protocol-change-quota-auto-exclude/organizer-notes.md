@@ -432,3 +432,64 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
   --no-implement`), whose drafting and signoff launches do not pass the gap-11 gate. Gap 10 still applies:
   the organizer checks the §15.5 role-concentration line and the brief's FINAL list when the artifacts
   land.
+
+## Phase 3: consensus draft, driver drafter timeout and fallback drafter (2026-10-03, from 19:58 CEST)
+
+- **Driver run 3** (`runs/<id>/driver-continue-3/`) was launched at 19:58:53 CEST in its own session with
+  the host-session keys stripped. It printed the designated-reviewer warning again and appended
+  reconstructed `round.completed` and `round.digest` events for round 3. `consensus.Draft` wrote the
+  488 B scaffold `consensus.md` and set `status: consensus`. Then the driver printed "drafting consensus via
+  claude-1 ...". The drafter (pid 58810) carried exactly the three `PARLEY_*` keys. Its transcript showed
+  27 tool calls by 20:18, all reads and source checks, and no write.
+- **The driver's drafter timed out.** At 20:28:59 CEST the driver exited 1 after 1806 s. Verbatim stderr:
+  `continue --auto: draft consensus: context deadline exceeded`. The drafter limit is the agent's
+  `TimeoutMS`, 1800000 ms (`requestSignoffTimeout`, `internal/app/consensus_request_signoffs.go:628`). The
+  driver rewrote its blocking note `inbox/claude-to-user_…_driver-error.md` in place, under the same
+  filename, with "draft consensus: context deadline exceeded". Its gap-11 version stays in git history
+  (`c5f492f`). No orphaned process remained.
+- **Owner answer** (`inbox/user-to-claude-1_…_codex-auth-answer.md`, `blocking: no`, which arrived during the
+  draft). Verbatim: "pokracuj" ("Continue."), recorded by the relay as option 1. The relay's probe at 20:23
+  CEST returned `PONG`. The answer directs: continue with consensus, signoffs by both participants and
+  FINAL; stop with a new blocking note if codex-1 fails again on an auth, quota or credit error. The
+  organizer quoted it under `## User direction` in `00-prompt.md` and asked the consensus drafter to
+  quote it in `consensus.md`. The codex-auth note and the answer are archived once the consensus
+  quotes them.
+- **Driver gap 12 (new): after a failed consensus draft, the driver would request signoffs on the
+  scaffold.**
+  - `Rebuild` (`internal/driver/cursor.go:299-300`) maps "`consensus.md` exists" to `PhaseConsensus`.
+  - `advanceConsensus` (`internal/driver/consensus.go`) then triages it. `parley consensus status` on the
+    scaffold reads "Consensus: partial", "Missing signoffs: codex-1,claude-1", so the next step would be
+    `RequestSignoffs`.
+  - `driverConsensusOps.Draft` (`internal/app/driver_consensus.go:43-53`) is not idempotent: it re-runs the
+    drafter even when `consensus.md` exists. But the cursor never returns to it once the scaffold exists.
+  - FINAL has a scaffold check (`finalScaffoldReason`), and consensus has none.
+  - So the driver may not run again until `consensus.md` holds a real draft.
+- **Fallback drafter (once, longer limit, per the skill's timeout policy).** The driver cannot give its
+  drafter a longer limit without a config change, and the organizer makes none.
+  - The renderer is `runs/<id>/consensus-draft/render_prompt.py`. It extracts the driver's own
+    `buildConsensusDraftPrompt` literal from the Go source and fills it from
+    `protocol.RequiredConsensusSections` and `ConditionalConsensusSections`, with the same `ideaDir` and
+    path.
+  - For gap 10, the renderer wraps that task in the runner's protocol-context envelope. The phase-3 render
+    (`parley protocol packet --phase 3 --track deliberation --idea <slug> --flag protocol_change`) is full,
+    with source = packet = `b273af1e…f388` and no fallback, and its body is byte-identical to the phase-2
+    body. The renderer drops the round's phase-2 shadow-packet audit lines. The skill requires an attested
+    context for every participant launch.
+  - One notice gives:
+    - the participant identity and the §15.5 role concentration;
+    - the timeout fact and the 2700 s limit;
+    - the §15.5 duties: the one-line role-concentration record and `## Drafter position changes`;
+    - the attestation to record;
+    - the brief's FINAL list in `00-prompt.md`;
+    - both owner directions, verbatim, to quote under `## User direction`;
+    - write only `consensus.md`.
+  - `consensus.md` validation has no required-section gate (`internal/consensus/consensus.go:540-547`:
+    "append-only signoffs remain the only machine-validated consensus gate"), so the extra
+    `## User direction` section is safe.
+  - The prompt is `runs/<id>/consensus-draft/claude-1/prompt.txt`, 119774 B, sha256 prefix
+    `d1e6f7f29962a0c2`. The launcher is `runs/<id>/consensus-draft/launcher.sh`, round 3's relaunch
+    launcher with only the path and comment changed (2700 s).
+  - **Launched at 20:32:47 CEST.** Wrapper 19685 is a session leader. Agent 19694 carries exactly the three
+    `PARLEY_*` keys.
+  - After the draft is checked, the driver is run again for the signoffs and FINAL. The FINAL drafter has
+    the same 1800 s limit, and if it times out, the same fallback applies.

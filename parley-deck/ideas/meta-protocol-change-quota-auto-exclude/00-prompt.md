@@ -11,7 +11,7 @@ excluded: zcode-1 — HTTP 429 Weekly/Monthly Limit Exhausted, reset 2026-10-05 
 auto_implement: false
 require_model_diversity: true
 cross_review_rounds: 2
-status: round-02
+status: consensus
 ---
 
 ## Problem / idea
@@ -135,6 +135,19 @@ The relay's reading of it, as given to the organizer:
 
 **Each participant quotes the owner's instruction verbatim under `## User direction` in its round-03
 file.** Where FINAL names agents for implementation or review, it names codex-1 and claude-1 only.
+
+**Owner answer during consensus (added by the organizer, 2026-10-03, about 20:35 CEST).** After its
+round-03 file, codex-1's gateway rejected it with "401 Unauthorized … invalidated oauth token". The
+organizer asked the owner (`inbox/claude-1-to-user_…_codex-auth.md`). The owner's answer, relayed in
+`inbox/user-to-claude-1_…_codex-auth-answer.md`, is verbatim (Slovak):
+
+> "pokracuj"
+
+Translation (the relay's): "Continue." The relay recorded this as option 1: re-authenticate the codex
+account on the gateway and continue. The relay's own probe at 20:23 CEST returned `PONG`. The answer
+directs consensus, signoffs by both participants (§5) and FINAL. If codex-1 fails again on an auth,
+quota or credit error, the organizer stops and writes a new blocking note with the verbatim error. The
+consensus drafter is asked to quote this answer under `## User direction` in `consensus.md`.
 
 ## Round-03 kickoff (organizer, procedural)
 
