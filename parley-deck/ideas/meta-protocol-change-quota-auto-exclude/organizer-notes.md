@@ -493,3 +493,88 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
     `PARLEY_*` keys.
   - After the draft is checked, the driver is run again for the signoffs and FINAL. The FINAL drafter has
     the same 1800 s limit, and if it times out, the same fallback applies.
+- **Consensus draft complete.** The fallback drafter exited 0 (`exit.json`: 18:32:47Z to 18:52:43Z, 1196 s)
+  with an empty stderr. Its stdout was only the path. `consensus.md` is 33615 B and replaced the scaffold.
+  The organizer checked it against gap 10 and the brief:
+  - the §15.5 one-line role-concentration record is present, `drafted-by: claude-1`;
+  - the attestation is present (full, `b273af1e…f388`, no fallback);
+  - `## User direction` quotes both owner directions verbatim;
+  - every required section is present, with `## Drafter position changes` carrying exact prior quotes;
+  - Q1 to Q9 are each answered, with one item marked **OPEN** (Q2, the no-stated-reset branch: codex-1
+    accepts an hourly-or-longer allowance and claude-1 requires 24 h or longer). Both positions are
+    stated, with a drafter proposal for the signoffs to accept or block;
+  - the Q9 inventory names all three COOPERATION.md copies, the stage-1 and stage-2 CLI files, the skill
+    files, the tests and what is deliberately left out;
+  - an incident table, which adds row 8 (this run's codex-1 401);
+  - `## Signoffs` holds only the two placeholders.
+
+  `parley consensus status` reads "partial", with both signoffs missing. The only other files changed in
+  the drafter's window are the organizer's committed `00-prompt.md` and these notes. Swept unmodified as
+  `0c7cbd0`. The codex-auth escalation and its answer, now quoted in `consensus.md`, are archived
+  (`f1054d8`).
+- **Driver run 4** (`runs/<id>/driver-continue-4/`) was launched at 20:53:49 CEST in its own session, for
+  the signoffs and FINAL. It re-entered at `PhaseConsensus` (gap 12 does not arise with a real draft) and
+  printed "Requesting signoff from codex-1 (headless)...". The signoff launch carries the runner's full
+  protocol-context envelope (attestation full, `b273af1e…f388`), unlike the drafting path (gap 10). The
+  driver log echoes codex's stderr, including codex's reads of the evidence file. Its one "ERROR:
+  unexpected status 503 … (reset after 5h 51m 11s)" line sits inside a fenced block quoting incident 4, so
+  it is not an error.
+
+## Phase 4: signoffs and FINAL (2026-10-03, 20:53 to 21:19 CEST)
+
+- **Signoffs.** Driver run 4 requested codex-1's signoff and then claude-1's, each as a separate headless
+  process. Its signoff run record `runs/20261003T185354.660080000Z/` has mode `consensus-signoff` and the
+  idea identity, so it adds nothing to gap 11. It logs 392.9 s for codex-1 and 473.4 s for claude-1.
+  - **codex-1: ✅ ACCEPT.** It adopts the Q2 drafter proposal (with no stated reset, only 24 h or longer),
+    which closes the one OPEN item.
+  - **claude-1: ✅ ACCEPT,** with notes for FINAL that are not conditions: `implementer: codex-1`
+    frontmatter, incident 6 kept conditional, the scope of "one driving run per idea", the ratification
+    items, and drafter readings cited as claude-1 readings.
+  - `parley consensus status` reads "ready".
+  - Swept separately. codex-1's block is `e79ff34`: the organizer staged the intermediate file state
+    through the index (`git hash-object` plus `update-index`), append-only against HEAD, without touching
+    the working tree. claude-1's block is `7285b28`.
+- **FINAL.** The driver printed "drafting FINAL via claude-1 ...", then "authored FINAL.md for
+  meta-protocol-change-quota-auto-exclude", then "auto-advance not enabled here (needs --auto and local-dir
+  transport); idea left at final". It exited 0 after 1540 s. The FINAL drafter stayed within its 1800 s
+  limit, and the driver set `status: final` in `00-prompt.md`.
+- **The organizer's check of FINAL.md** (55996 B), against gap 10 and the brief:
+  - frontmatter `idea`, `status: final`, `author: claude-1`, `participants` and `implementer: codex-1`;
+  - the §15.5 line and the attestation (full, `b273af1e…f388`, no fallback);
+  - all seven required headings;
+  - Q1 to Q9 answered, with Q2's OPEN item recorded as closed at signoff, and ratification items R1 to R5;
+  - protocol hunks with line locators for all three COOPERATION.md copies;
+  - the stage-1 and stage-2 CLI files, the skill files, the tests, the checks and the left-out list;
+  - the incident table (row 6 conditional, plus row 8) and 21 acceptance criteria;
+  - staffing per the owner's direction: codex-1 implements, claude-1 is the single non-implementer
+    reviewer, Phases 5 to 8 run attended, and kimi-1 and zcode-1 are not planned back.
+
+  No participant edited outside `FINAL.md`, and the skill worktree is clean. Swept as `c7748c4`.
+- **Usage.** `parley usage ingest` appended four rows to `usage-ledger.jsonl`. They are the final totals of
+  organizer sessions 1 to 3 (phase 2) and this session's snapshot at the FINAL boundary (phase 4).
+  `organizer-usage.md` now carries the table and the four-session total.
+- **Inbox housekeeping.**
+  - The driver's rewritten blocking note (the consensus-drafter timeout) is moved to
+    `inbox/archived/claude-to-user_…_driver-error-2.md`. The fallback drafter handled its cause, and the
+    new name avoids the earlier archived driver note.
+  - The gap-11 problem stays open. The non-blocking `claude-1-to-user_…_driver-gap-11.md` stays in the
+    inbox as an owner action item.
+  - `claude-1-to-all_…_timeout.md` stays as a record.
+- **Driver gaps over this run:**
+  - 1: no kickoff entry point;
+  - 2: the driver does not launch the current round;
+  - 3: no roster freeze for a seeded run;
+  - 4: one cross-review round by default;
+  - 5 (observer): stubs pass `wait`;
+  - 6: stale worktrees, resolved by the owner's prune;
+  - 7: no relaunch over a scaffold;
+  - 8 (organizer): a headless organizer cannot wait in prose;
+  - 9: `steer` is not delivered;
+  - 10: thin drafting prompts;
+  - 11: a legacy run without an idea identity blocks cross-review rounds;
+  - 12: after a failed draft, signoffs would be requested on the scaffold.
+
+  The driver itself did consensus scaffolding, both signoffs and FINAL. The fallbacks covered rounds 1 to
+  3 and the consensus draft.
+- **Next.** The blocking owner proposal note `inbox/claude-1-to-user_…_proposal.md`, then exit. Nothing is
+  implemented, published, pushed or merged.

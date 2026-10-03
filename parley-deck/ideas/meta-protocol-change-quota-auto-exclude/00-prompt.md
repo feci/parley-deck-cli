@@ -11,7 +11,7 @@ excluded: zcode-1 — HTTP 429 Weekly/Monthly Limit Exhausted, reset 2026-10-05 
 auto_implement: false
 require_model_diversity: true
 cross_review_rounds: 2
-status: consensus
+status: final
 ---
 
 ## Problem / idea
