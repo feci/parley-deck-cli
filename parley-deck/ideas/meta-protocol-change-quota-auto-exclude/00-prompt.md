@@ -10,7 +10,7 @@ excluded: kimi-1 — weekly Kimi quota exhausted until about 2026-10-03, hosted-
 excluded: zcode-1 — HTTP 429 Weekly/Monthly Limit Exhausted, reset 2026-10-05 06:14 local (preflight class provider-failure:rate-limit) — confirmed 2026-10-03
 auto_implement: false
 require_model_diversity: true
-status: round-01
+status: round-02
 ---
 
 ## Problem / idea

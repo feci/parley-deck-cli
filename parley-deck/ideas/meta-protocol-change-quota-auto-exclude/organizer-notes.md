@@ -105,3 +105,95 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
   candidate owner decisions. These go to cross-review, and nothing is escalated from round 1.
 - Committed as `f3345c6` (codex-1) and `f878287` (claude-1), each under its author's prefix and marked as
   swept by the organizer.
+
+## Phase 2: driver halt and round-2 fallback (2026-10-03, 13:00 CEST)
+
+- `nohup parley continue --dir <worktree> --auto --no-implement meta-protocol-change-quota-auto-exclude`
+  (pid 59040) reconstructed round 1's `round.completed` event and then halted in about 1 s. Verbatim:
+  `continue --auto: run round-02: cross-review accounting: historical worktree is unavailable:
+  /private/tmp/claude-501/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck/5dc331bd-5ddf-45e0-b6c2-d519d8c05128/scratchpad/f2repo`.
+  Before that it printed a notice: `designated run leaves a single non-implementer reviewer (claude-1);
+  codex-1 implements and never reviews itself`. That is a Phase 5/6 consideration recorded for the
+  proposal.
+- **Driver gap 6 (same as the designated-implementer run).** `internal/budget/binding.go` enumerates
+  `git worktree list` and refuses when a registered worktree path is missing, unless it is
+  operator-declared unavailable. The shared repository has **13 stale worktree registrations**: the
+  `/private/tmp/.../scratchpad/f2repo` and `/private/tmp/revert-test2` checkouts plus 11 `parley-*`
+  checkouts under `/private/var/folders/.../T/`. The gate is reached only through the driver's
+  cross-review round launch (`internal/driver/cycle_budget.go`, `admitCrossReviewCycle` /
+  `cycleRoundRunner.RunRound`). The consensus, signoff and FINAL launches use `runHeadlessSignoffAgent`
+  instead.
+- No worktree registration is pruned and no unavailable worktree is declared. Either act rewrites shared
+  git or budget history that the budget system treats as evidence, and that is the owner's call. It goes
+  in the proposal as an owner action item. The driver's blocking note
+  `inbox/claude-to-user_meta-protocol-change-quota-auto-exclude_driver-error.md` (author `claude`, the
+  driver default) is left in place unedited, because its cause is real and unresolved. The driver does
+  not gate on inbox notes, and `parley wait` reports a pre-existing note only as a digest note.
+- Fallback, as in round 1: the runner's own cross-review template (`BuildRoundPrompt` plus
+  `gatherPriorRounds`, both round-01 files inline, 52816 B) in the runner's envelope. The phase-2 packet
+  is full, with source = packet = `b273af1e…f388` and no fallback. The organizer set
+  `status: round-02` (the driver's promotion step) and launched both participants at 13:02 CEST with
+  1800 s alarms. The prompts are 170233 B (codex-1) and 170234 B (claude-1). Logs are in
+  `runs/<id>/round-02/<agent>/`.
+
+## Phase 2: interruption and round-2 relaunch (2026-10-03, from 13:54 CEST)
+
+- **Interruption, not a provider error.** The previous organizer (pid 1554) and both round-2 participant
+  processes were killed at about 13:02 to 13:08 CEST, when the owner's Claude Code session that had launched
+  them exited. The relay checked this at 13:52 CEST (`runs-handoff/.../RESUME-BRIEF-1.md`): codex-1's
+  round-2 stderr ends mid-work with no 429, 503 or limit text, and claude-1's round-2 logs are empty. The only
+  round-2 file is codex-1's own scaffold (456 B, "Cross-review in progress; this scaffold is not a completed
+  round or signoff"). It is not a completed round. claude-1 has no round-2 file. The owner asked for the
+  resume ("pokracuj", "continue").
+- Resumed at 13:54 CEST as a new organizer process (pid 57867) in the detached tmux session `qae-organizer`,
+  so it survives the owner's session. Re-oriented from `parley organizer brief`, `parley status` and these
+  notes. No round-2 participant process was alive.
+- **Owner decision on driver gap 6** (non-blocking inbox note `user-to-claude-1_…_worktree-prune.md`, 13:56):
+  "Yes, prune with a backup (Recommended)". The owner's session backed up the 13 admin directories to
+  `runs-handoff/worktree-prune-backup-20261003/` and ran `git worktree prune -v`. Checked here:
+  `git worktree list --porcelain | grep -c '^prunable'` returns 0, all 21 registered paths exist and none
+  is locked. Gap 6's cause is resolved, so the driver's note `claude-to-user_…_driver-error.md` is archived
+  under `inbox/archived/`, as the owner permitted. The organizer pruned and declared nothing.
+- **Driver gap 7 (new): the driver cannot relaunch an interrupted round over a participant's scaffold.**
+  `parley continue` (print-only) now recommends "Open round-02 (cross-review) before drafting consensus", so
+  `--auto` would call `RunRound(2)`. But `runAgent` skips any participant whose artifact already exists unless
+  `Overwrite` is set (`internal/runner/runner.go:406-418`, event `agent.skipped`, "artifact already
+  exists"), so only claude-1 would launch. And the round-2 gate `roundComplete` (`internal/driver/driver.go`)
+  checks only validity, `responding-to` and a `### @<other>` heading. codex-1's scaffold has all three, so the
+  driver would count the placeholder as codex-1's completed cross-review. The organizer may not edit or
+  remove a participant file, so round 2 is relaunched with the recorded runner-template fallback, as
+  RESUME-BRIEF-1 step 2 prescribes. The driver takes over again for the next step.
+- **Relaunch inputs.** The re-rendered phase-2 context (`parley protocol packet --phase 2 --track
+  deliberation --idea <slug> --flag protocol_change`) is full, with source = packet = `b273af1e…f388` and no
+  fallback. Its 115166 B body is byte-identical to the body embedded in the original round-2 prompts. Both
+  prompts also end with the two committed round-01 files verbatim (52816 B, regenerated as
+  `gatherPriorRounds` builds them). Each relaunch prompt is the agent's original round-2 prompt plus one
+  notice of orchestration facts, inserted after the "You are <agent>…" line. The notice says the earlier
+  processes were killed by the launching session's exit, not by a provider error. For codex-1 it says that the
+  existing file is its own interrupted scaffold and that it replaces it with its completed round, which
+  overrides the template's "Do not overwrite the file if it already exists" for that one file only. For
+  claude-1 it says that it has no round-2 file yet. No position or opinion is passed. The prompts are
+  `runs/<id>/round-02/<agent>/relaunch-1/prompt.txt`: codex-1 is 171300 B (sha256 prefix
+  `ded885798af6b7cc`, original plus 1067 B) and claude-1 is 170770 B (`f2f2b18342b2cf14`, original plus
+  536 B). The original attempt's prompts and logs stay where they were, as evidence.
+- Launcher: `runs/<id>/round-02/relaunch-1-launcher.sh`. It uses the same argv as `parley agents list`,
+  the prompt on stdin, a fresh 1800 s alarm (`perl alarm`), the runner's `PARLEY_RUN_ID` /
+  `PARLEY_AGENT_ID` / `PARLEY_PROC_MARKER` env, and for claude only the `cleanParticipantEnv` strip. Each
+  participant starts in its own session (`setsid`), so it survives this organizer process.
+- **Relaunched at 14:02:25 CEST.** codex-1 has wrapper pid 74002 and agent pid 74008. claude-1 has wrapper
+  pid 74009 and agent pid 74019. Each wrapper is a session leader reparented to launchd. The codex banner
+  confirms model gpt-6-astra, provider omniroute, approval never, sandbox workspace-write and reasoning effort
+  max. The claude child env carries the three `PARLEY_*` marker keys and no `CLAUDECODE`, `CLAUDE_CODE_*` or
+  `AI_AGENT*` key. Logs and `exit.json` go to `runs/<id>/round-02/<agent>/relaunch-1/`. The round boundary is
+  process exit plus final content (observer gap 5).
+- **claude-1 participant quota failure (14:04:32 CEST). Launching stopped.** The claude-1 round-2 process
+  exited 1 after 127 s, with empty stderr and no artifact. Its entire stdout, verbatim: `API Error: 503
+  [claude/claude-opus-5-5] Unavailable (reset after 55m 29s). This is a server-side issue, usually
+  temporary — try again in a moment. If it persists, check your inference gateway (omniroute.marao.sk).`
+  It has the same shape as evidence incident 4 (an omniroute 503 "reset after", a quota window). The reset
+  is due at about 15:00 CEST. As the brief requires (the current protocol applies, and dropping either agent
+  would go below the owner's minimum of 2), the organizer wrote the blocking note
+  `inbox/claude-1-to-user_…_quota.md` with the verbatim error and launches nothing more. There is no retry,
+  and the driver is not started. The organizer process uses the same model and gateway and still gets
+  responses. This is recorded as an observation only. codex-1's round-2 process keeps running normally.
+  The one 503 line in its stderr is its own read of the evidence file (incident 4 quoted), not an error.
