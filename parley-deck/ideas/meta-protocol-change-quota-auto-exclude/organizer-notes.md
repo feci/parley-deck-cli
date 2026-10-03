@@ -296,3 +296,57 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
 - Fact: `parley agents list` now shows codex-cli 0.160.0 (0.159.3 at preflight). Model and effort are
   unchanged: gpt-6-astra at max, and claude/claude-opus-5-5[1m] at max. The organizer made no roster or
   config change.
+- **Driver attempt at 19:09:23 CEST** (`runs/<id>/driver-continue-2/`, with its launcher, logs and
+  `exit.json`). It was launched in its own session with the host-session keys stripped. It printed the
+  designated-reviewer warning again ("designated run leaves a single non-implementer reviewer (claude-1);
+  codex-1 implements and never reviews itself — consider a third participant for review depth"). It
+  appended reconstructed `round.completed` and `round.digest` events for round 2. Then it halted after
+  5 s with exit 1, before launching anyone. Verbatim stderr: `continue --auto: run round-03: cross-review
+  accounting: historical cycle event lacks idea identity`. It wrote the blocking note
+  `inbox/claude-to-user_…_driver-error.md` (author `claude`, the driver default). The note is left
+  unedited, because its cause is real and unresolved. The driver did not change `status:` in
+  `00-prompt.md`.
+- **Driver gap 11 (new): a legacy run record without an idea identity blocks the driver's first
+  cross-review round of every new idea in this repository.**
+  - `internal/budget/cycle_binding.go:161` and `:187` call `refuseUnmigratedCycles` whenever an idea has
+    no cross-review cycle policy yet. It scans `parley-deck/runs/*/events.jsonl` in every worktree root.
+    `cycleRunEvents` (`internal/budget/cycle_history.go`) refuses any `run.created` or `run.phase` event
+    without `data.idea`.
+  - Of the 7 runs in this checkout, only one has such an event: line 1 of
+    `parley-deck/runs/20260510T194003Z/events.jsonl`,
+    `{"type":"run.created","data":{"mode":"auto","task":"smoke implementation run"}}`. It is a tracked
+    smoke run from the initial commit `3ec10ac` (2026-05-10), so every checkout carries it.
+  - The worktree check of gap 6 runs first in the same admission (`cycleScope` → `launchScope`), so it
+    masked this one until the prune.
+  - Read-only diagnostics: `parley budget cycle inspect --kind cross-review` returns "cycle policy is not
+    initialized". `parley budget migrate inspect --kind cross-review` returns "historical run identity is
+    missing or conflicting".
+  - The CLI's remedy is an operator accounting decision: `parley budget migrate apply --kind
+    cross-review` with `--declare-unscoped-run parley-deck/runs/20260510T194003Z=<manifest digest>`, a
+    decision id, a reason, `--writers-stopped` and explicit ceilings. That command "requires an attended
+    terminal and the operator's explicit accounting decision", so it is the owner's call. The organizer
+    migrates and declares nothing. This goes in the proposal as an owner action item.
+  - By the static reading recorded under gap 6, the consensus, signoff and FINAL launches do not pass
+    this gate. So the driver is retried after round 3.
+- **Round 3 fallback, as for round 2.** The re-rendered phase-2 context
+  (`parley protocol packet --phase 2 --track deliberation --idea <slug> --flag protocol_change`) is full,
+  with source = packet = `b273af1e…f388` and no fallback. The shadow-packet audit hash is unchanged
+  (`5419caea…`). The renderer `runs/<id>/round-03/render_prompts.py` reuses the round-02 envelope after
+  checking that its protocol body is byte-identical to the re-rendered body. It renders
+  `runner.BuildRoundPrompt` for round 3, with the prior rounds built as `gatherPriorRounds` builds them
+  (both round-01 and both round-02 files). It inserts one organizer notice after the "You are <agent>…"
+  line. Its self-test re-renders round 2 with the same code, and that matched both original round-02
+  prompts byte for byte. The notice gives orchestration facts only: why round 3 opens, the driver halt,
+  and the owner's instruction verbatim, with a pointer to the `00-prompt.md` sections and the request to
+  quote it under `## User direction`. The runner's cross-review template does not inline `00-prompt.md`
+  (round 1's did), so the notice also closes gap 9 for this round. Prompts: codex-1 is 210226 B (sha256
+  prefix `af6b5c184aa1bbaf`) and claude-1 is 210225 B (`5f16704e6efc385f`). They differ only in the six
+  agent-specific lines.
+- **Round 3 launched at 19:14:16 CEST** with `runs/<id>/round-03/launcher.sh`. That is relaunch 1's
+  launcher with only its paths changed and a `launcher.pid` line added: the same argv, a 1800 s alarm,
+  the marker env, and for claude the `cleanParticipantEnv` strip. Each wrapper is a session leader
+  reparented to launchd: codex-1 is 80729 (agent 80734) and claude-1 is 80735 (agent 80744). The codex
+  banner confirms gpt-6-astra, provider omniroute, approval never, sandbox workspace-write and reasoning
+  effort max. The claude child env carries exactly the three `PARLEY_*` keys and no `CLAUDECODE`,
+  `CLAUDE_CODE_*` or `AI_AGENT*` key. The round boundary is process exit plus final content (observer
+  gap 5).
