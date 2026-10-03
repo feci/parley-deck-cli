@@ -578,3 +578,29 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
   3 and the consensus draft.
 - **Next.** The blocking owner proposal note `inbox/claude-1-to-user_…_proposal.md`, then exit. Nothing is
   implemented, published, pushed or merged.
+
+## Phases 5–8 organizer handoff (2026-10-04)
+
+codex-1 read the controlling IMPL-ORGANIZER-BRIEF.md first and in full, then the ratification and FINAL.
+Its first mutation records facilitator: codex-1, retains facilitator_participates: true, quotes the owner,
+and discloses organizer/implementer concentration. Commit c6f8b49 includes that handoff and the ratification.
+The prior proposal is answered by the ratification; no new answer is requested for implementation.
+
+The full phase-5 protocol body was read with context_mode=full and source_sha256=packet_sha256=
+b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388 (no fallback). Parley Deck, OpenViking memory,
+and the existing graphify query were used for orientation. Relevant other work remains in its own scope.
+No worktree was pruned or declared. No other participant joins.
+
+Capability matrix (configured invocation, checked with parley agents list / roster show):
+
+| Identity | Role | CLI | Model | Effort | Speed | Timeout | Prompt/write mode |
+|---|---|---|---|---|---|---|---|
+| codex-1 | organizer and implementer | /opt/homebrew/bin/codex 0.160.0 | gpt-6-astra | max | deep | 1800 s | stdin; workspace-write; approval never |
+| claude-1 | independent reviewer | /Users/tomasfecko/.local/bin/claude 2.1.288 | claude/claude-opus-5-5[1m] | max | deep | 1800 s | stdin; text; bypassPermissions scoped via add-dir |
+
+`parley continue --dir . --auto meta-protocol-change-quota-auto-exclude` exits 0 after the single-reviewer
+warning and `driver: auto-advance not enabled here (needs --auto and local-dir transport); idea left at final`.
+The handoff authorizes manual Phase 5 and a separate codex-1 implementation process. IMPLEMENTATION.md is
+written with the full two-stage plan before any code. Only the implementer process edits code and that
+living plan; the organizer owns handoffs, usage and phase transitions. Both use the same participant ID.
+The reviewer remains a separate claude-1 process with focused briefs. Further driver gaps will be recorded.
