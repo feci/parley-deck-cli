@@ -3,9 +3,20 @@ from: claude-1
 to: user
 idea: meta-protocol-change-quota-auto-exclude
 phase: round-03
-blocking: yes
+blocking: no
+status: resolved
 date: 2026-10-03
 ---
+
+## Resolution (19:58 CEST, organizer)
+
+The blocking condition cleared before any answer arrived. A second liveness probe, with codex-1's exact
+launch command, ran from 19:57:00 to 19:57:06 CEST, exited 0 and replied `PONG` (logs:
+`runs/20261003T103229.878442000Z/probe-codex-1957/`). No answer from you was in the inbox at that time.
+So the note is now `blocking: no` and the run continues with consensus. The gateway's invalidated codex
+token may have been refreshed by the gateway or by you. Either way, codex-1 failed every check from
+19:25 to 19:32 CEST and worked again by 19:57 CEST. If it recurs at a codex-1 launch, the organizer
+stops and asks again. The original question is kept below for the record.
 
 ## Question
 

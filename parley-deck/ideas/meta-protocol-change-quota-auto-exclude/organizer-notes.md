@@ -401,3 +401,34 @@ Every claude-1 participant artifact comes from a separately launched claude-1 pr
     carries exactly the three `PARLEY_*` keys.
   - The non-blocking note `inbox/claude-1-to-all_…_timeout.md` records the timeout, as the skill's policy
     asks.
+- **claude-1 round 3 complete.** Relaunch 1 exited 0 (`exit.json`: 17:45:09Z to 17:55:45Z, 636 s) with an
+  empty stderr. `round-03/claude-1.md` is 28680 B of final content and replaced the participant's own
+  stub. It records the attestation (full, `b273af1e…f388`, no fallback). It quotes the owner's
+  instruction verbatim under `## User direction`, responds under `### @codex-1`, and states that it did
+  not read `round-03/codex-1.md`. No participant edit outside its own file. The skill worktree is clean.
+  Swept unmodified as `f8c77bb`. codex-1's round 3 was swept as `66fab5e`. `parley organizer brief`:
+  "round-03: 2/2 filed-and-valid".
+- **codex-1 is reachable again; escalation resolved.** A second liveness probe (same argv,
+  `runs/<id>/probe-codex-1957/`) ran from 19:57:00 to 19:57:06 CEST, exited 0 and replied `PONG`. No owner
+  answer was in the inbox. The organizer marked its own note `claude-1-to-user_…_codex-auth.md`
+  `blocking: no` / `status: resolved`, with a resolution section, and kept the original question for the
+  record. It stays in the inbox for the owner to see and will be archived once the proposal note
+  mentions it. If the 401 recurs at a codex-1 launch, the organizer stops and asks again.
+- **Procedural reading of round 3 (no verdict).** Both round-3 files are final, and each responds to the
+  other's round-02 file.
+  - codex-1's round 3 names three points that need claude-1's assent: the unsupported-text treatment, the
+    membership/recovery contract, and Stage-1 delivery versus full completion.
+  - claude-1's round 3 keeps two disagreements: the mid-idea representation, and a new narrowing of the
+    unknown-reset fallback to allowances of 24 h or longer. It lists two items as awaiting codex-1's first
+    response: the claude/text contract and staging.
+  - Each file was written in parallel without reading the other. codex-1's round 3 responds on the
+    claude/text contract and on staging, and claude-1's round 3 responds on membership representation.
+    The new narrowing and codex-1's new detail points have not been seen by the other participant. Those
+    points are event durability, the recorded scope and version, the incident-6 wording and ALT-8.
+- **Procedural call: open consensus,** as the round-03 kickoff announced. The call is provisional under
+  §15.5. The consensus draft synthesizes both round-3 files, and the signoffs are the gate. A ❌ reopens
+  round 4, the last cross-review round the §4.0 cap allows. Because of driver gap 11, round 4 would run
+  through the fallback. Consensus, signoffs and FINAL go to the driver (`parley continue --auto
+  --no-implement`), whose drafting and signoff launches do not pass the gap-11 gate. Gap 10 still applies:
+  the organizer checks the §15.5 role-concentration line and the brief's FINAL list when the artifacts
+  land.
