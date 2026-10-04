@@ -24,11 +24,12 @@ import (
 )
 
 type Options struct {
-	Root   string
-	RunID  string
-	Idea   protocol.IdeaStatus
-	Task   string
-	Agents []agents.Discovery
+	quotaMidIdea bool
+	Root         string
+	RunID        string
+	Idea         protocol.IdeaStatus
+	Task         string
+	Agents       []agents.Discovery
 	// RosterMapping is the roster-ID -> family map (from `[roster.*] adapter` in the
 	// deck config) used to resolve participants that are roster IDs (e.g. claude-1)
 	// rather than bare family ids. nil/empty falls back to exact spec-ID matching.
@@ -69,6 +70,8 @@ type Options struct {
 }
 
 type Result struct {
+	QuotaBlocked  bool // a deduplicated blocking escalation already exists
+	QuotaExcluded bool // failed invocation retained, no longer required by this quorum
 	QuotaEvidence *quota.Evidence
 	InvocationID  string
 	AgentID       string
@@ -200,6 +203,14 @@ func (h *Handle) setResults(results []Result) {
 }
 
 func RunRoundOne(ctx context.Context, opts Options) []Result {
+	var quotaRelease func()
+	var quotaErr error
+	ctx, opts, quotaRelease, quotaErr = quotaBefore(ctx, opts)
+	if quotaErr != nil {
+		return []Result{{AgentID: "runner/quota", ExitError: quotaErr.Error()}}
+	}
+	defer quotaRelease()
+
 	ctx = withRunnerActionInput(ctx, opts, "round")
 	ctx = withLaunchOrigin(ctx, opts.Root)
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
@@ -297,7 +308,7 @@ func RunRoundOne(ctx context.Context, opts Options) []Result {
 			ExitError:   "round event append failed: " + err.Error(),
 		})
 	}
-	return results
+	return quotaSettle(ctx, opts, results)
 }
 
 // appendSegmentStarted records a run.segment_started boundary and returns the
@@ -406,6 +417,16 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	if _, err := os.Stat(outputPath); err == nil && !opts.Overwrite {
+		if opts.quotaMidIdea {
+			if err := validateArtifactForPhase(opts, outputPath, agent.ID); err != nil {
+				result.ExitError = "preserved incomplete artifact: " + err.Error()
+				result.CompletedAt = time.Now().UTC()
+				_ = opts.Store.Append(store.Event{Type: "agent.failed", Data: map[string]any{"agent": agent.ID, "artifact": outputPath, "artifact_ok": false, "incomplete": true, "error": result.ExitError}})
+				return result
+			}
+			result.ArtifactOK = true
+		}
+
 		result.Skipped = true
 		result.SkipReason = "artifact already exists"
 		result.CompletedAt = time.Now().UTC()
@@ -1387,3 +1408,6 @@ func isolatedHermesHome() (string, error) {
 	}
 	return base, nil
 }
+
+// PreserveIncompleteArtifact retains invalid prior work when a survivor is retried.
+func PreserveIncompleteArtifact(path string) { moveAsideInvalidArtifact(path) }

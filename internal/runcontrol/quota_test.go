@@ -21,6 +21,7 @@ func TestQuotaC1KickoffReplayAndFrozenScope(t *testing.T) {
 	}
 	off := false
 	p := quota.NewPolicy(&off, nil)
+	p.Scope = quota.KickoffOnly
 	run, err := Create(CreateOptions{Root: root, Task: "quota kickoff", Participants: []string{"a", "b", "c"}, Excluded: []string{"c — missing — confirmed 2026-10-04"}, QuotaPolicy: &p})
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +87,7 @@ func TestQuotaAutomaticKickoffRecordsAndNotice(t *testing.T) {
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
-	policy := quota.NewPolicy(nil, nil)
+	policy := quota.Policy{Enabled: true, Scope: quota.KickoffOnly}
 	ev := quota.Evidence{InvocationID: "fixture", Adapter: "synthetic-test", RuleID: "synthetic-test", Provenance: "synthetic-test", Eligible: true}
 	decision := quota.Evaluate(policy, []string{"a", "b", "c"}, []quota.Member{{ID: "a", Usable: true}, {ID: "b", Usable: true}, {ID: "c", Evidence: &ev}}, quota.Roles{})
 	run, err := Create(CreateOptions{Root: root, Task: "automatic fixture", Participants: decision.After, QuotaPolicy: &policy, QuotaDecision: &decision})

@@ -171,7 +171,7 @@ func runWait(args []string, stdout, stderr interface{ Write([]byte) (int, error)
 		if extra := unevaluatedNoteAnnotations(root); len(extra) > 0 {
 			notes = append(notes, extra...)
 		}
-		if reason, bad := invalidArtifact(digest, scope); bad {
+		if reason, bad := invalidArtifact(digest, scope); bad && digest.QuotaPending == "" {
 			printWaitDigest(out, digest, notes, *jsonOut)
 			fmt.Fprintf(stderr, "wait: present-but-invalid artifact: %s\n", reason)
 			return waitExitInvalid
@@ -490,6 +490,9 @@ func firstDriverErrorBefore(events store.Store, startIndex int) string {
 
 // boundaryReached evaluates the awaited condition from tree state only.
 func boundaryReached(d driver.PhaseDigest, scope string) (bool, string) {
+	if d.QuotaPending != "" {
+		return false, "quota transition pending"
+	}
 	roundDone := d.Round != nil && d.Round.Completed == d.Round.Total && d.Round.Total > 0
 	reviewDone := d.Review != nil && d.Review.Completed == d.Review.Total && d.Review.Total > 0
 	consensusDone := d.Consensus != nil && d.Consensus.Triage == "ready"

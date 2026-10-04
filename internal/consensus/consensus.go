@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/track"
 )
@@ -56,6 +58,7 @@ type ReopenOptions struct {
 }
 
 type Summary struct {
+	Retained     []string  `json:"retained_obligations,omitempty"`
 	Idea         string    `json:"idea"`
 	Path         string    `json:"path"`
 	Review       bool      `json:"review"`
@@ -119,8 +122,31 @@ func Status(root, ideaSlug string, review bool) (Summary, error) {
 	// Passing the reduced list to validateDocument answered both with the first, so the
 	// implementer's own signoff became "unknown participant", and malformed outranks every other
 	// triage. Two in-flight ideas flipped to malformed.
-	return validateDocumentAwaiting(idea.Slug, idea.Participants,
-		reviewConsensusVoters(idea.Path, idea.Participants, review), review, doc), nil
+	_, known, kerr := protocol.QuotaMembers(idea.Path, idea.Participants)
+	if kerr != nil {
+		return Summary{}, kerr
+	}
+	originalSignoffs := append([]Signoff(nil), doc.Signoffs...)
+	for i, sig := range doc.Signoffs {
+		status, e := CanonicalStatus(sig.Status)
+		if e == nil && status == StatusBlock && !contains(idea.Participants, sig.Agent) && protocol.ResolvedQuotaVeto(idea.Path, path, sig.Agent) {
+			doc.Signoffs[i].Status = StatusAccept
+		}
+	}
+	result := validateDocumentAwaiting(idea.Slug, known,
+		reviewConsensusVoters(idea.Path, idea.Participants, review), review, doc)
+	result.Signoffs = originalSignoffs
+	obligations, oerr := protocol.UnresolvedQuotaObligations(idea.Path, path)
+	if oerr != nil {
+		return Summary{}, oerr
+	}
+	for _, ob := range obligations {
+		result.Retained = append(result.Retained, ob.ID+": "+ob.Kind+" from "+ob.Path)
+		if result.Triage != TriageMalformed {
+			result.Triage = TriageBlocked
+		}
+	}
+	return result, nil
 }
 
 // reviewConsensusVoters is who must SIGN a consensus — a different rule from who may AUTHOR a
@@ -157,6 +183,12 @@ func readIdeaTrack(ideaDir string) (track.Track, bool, error) {
 }
 
 func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
+	release, lockErr := membership.ProjectionLock(filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug))
+	if lockErr != nil {
+		return Summary{}, lockErr
+	}
+	defer release()
+
 	idea, err := findIdea(root, ideaSlug)
 	if err != nil {
 		return Summary{}, err
@@ -229,6 +261,12 @@ func validateReviewRound(roundDir, roundLabel, roundRel, ideaSlug string, expect
 }
 
 func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) {
+	release, lockErr := membership.ProjectionLock(filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug))
+	if lockErr != nil {
+		return Summary{}, lockErr
+	}
+	defer release()
+
 	idea, err := findIdea(root, ideaSlug)
 	if err != nil {
 		return Summary{}, err
@@ -255,7 +293,14 @@ func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) 
 	if err != nil {
 		return Summary{}, err
 	}
-	current := validateDocument(idea.Slug, idea.Participants, opts.Review, doc)
+	currentIDs, known, kerr := protocol.QuotaMembers(idea.Path, idea.Participants)
+	if kerr != nil {
+		return Summary{}, kerr
+	}
+	if !contains(currentIDs, opts.Agent) {
+		return Summary{}, fmt.Errorf("unknown current participant %q", opts.Agent)
+	}
+	current := validateDocumentAwaiting(idea.Slug, known, currentIDs, opts.Review, doc)
 	if len(current.Errors) > 0 {
 		return Summary{}, fmt.Errorf("cannot append to malformed consensus: %s", strings.Join(current.Errors, "; "))
 	}
@@ -285,6 +330,35 @@ func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) 
 }
 
 func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, error) {
+	dir := filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug)
+	view, viewErr := protocol.InspectQuota(dir)
+	if viewErr != nil {
+		return "", Summary{}, viewErr
+	}
+	if view.History.MidIdea() {
+		run := view.History.Kickoff.RunID
+		if n := len(view.History.Batches); n > 0 {
+			run = view.History.Batches[n-1].RunID
+		}
+		ctx, release, err := membership.Acquire(context.Background(), dir, run)
+		if err != nil {
+			return "", Summary{}, err
+		}
+		defer release()
+		h, err := membership.Before(ctx, root, dir, run)
+		if err != nil {
+			return "", Summary{}, err
+		}
+		if err = membership.CheckGates(root, dir, run, h.Current); err != nil {
+			return "", Summary{}, err
+		}
+	}
+	releaseProjection, err := membership.ProjectionLock(dir)
+	if err != nil {
+		return "", Summary{}, err
+	}
+	defer releaseProjection()
+
 	idea, err := findIdea(root, ideaSlug)
 	if err != nil {
 		return "", Summary{}, err
@@ -368,6 +442,12 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 }
 
 func Reopen(root, ideaSlug string, opts ReopenOptions) (string, error) {
+	release, lockErr := membership.ProjectionLock(filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug))
+	if lockErr != nil {
+		return "", lockErr
+	}
+	defer release()
+
 	if strings.TrimSpace(opts.Reason) == "" {
 		return "", errors.New("reason is required")
 	}
@@ -446,6 +526,11 @@ func findIdea(root, slug string) (protocol.IdeaStatus, error) {
 	}
 	for _, idea := range status.Ideas {
 		if idea.Slug == slug {
+			current, _, err := protocol.QuotaMembers(idea.Path, idea.Participants)
+			if err != nil {
+				return protocol.IdeaStatus{}, err
+			}
+			idea.Participants = current
 			return idea, nil
 		}
 	}

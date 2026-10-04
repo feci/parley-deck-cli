@@ -39,7 +39,11 @@ func NewRunID(t time.Time) string {
 	return t.UTC().Format("20060102T150405.000000000Z")
 }
 
-func (s Store) Append(event Event) error {
+func (s Store) Append(event Event) error { return s.appendEvent(event, false) }
+
+func (s Store) AppendDurable(event Event) error { return s.appendEvent(event, true) }
+
+func (s Store) appendEvent(event Event, durable bool) error {
 	appendMu.Lock()
 	defer appendMu.Unlock()
 
@@ -59,8 +63,24 @@ func (s Store) Append(event Event) error {
 	if err != nil {
 		return err
 	}
-	if _, err := file.Write(append(encoded, '\n')); err != nil {
+	if n, err := file.Write(append(encoded, '\n')); err != nil {
 		return err
+	} else if n != len(encoded)+1 {
+		return fmt.Errorf("short event write")
+	}
+	if durable {
+		if err := fsutil.SyncFile(file); err != nil {
+			return err
+		}
+		if err := file.Close(); err != nil {
+			return err
+		}
+		d, err := os.Open(s.dir)
+		if err != nil {
+			return err
+		}
+		defer d.Close()
+		return fsutil.SyncFile(d)
 	}
 	return nil
 }
@@ -90,4 +110,27 @@ func (s Store) Load() ([]Event, error) {
 		return nil, err
 	}
 	return events, nil
+}
+
+// Sync establishes the durability barrier again when a transition replay finds
+// its terminal evaluation already appended before an earlier failed sync.
+func (s Store) Sync() error {
+	f, err := os.Open(filepath.Join(s.dir, "events.jsonl"))
+	if err != nil {
+		return err
+	}
+	err = fsutil.SyncFile(f)
+	closeErr := f.Close()
+	if err != nil {
+		return err
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	d, err := os.Open(s.dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	return fsutil.SyncFile(d)
 }

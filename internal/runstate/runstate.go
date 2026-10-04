@@ -165,16 +165,19 @@ func LoadRunAt(root, runID string, now time.Time) (RunSummary, error) {
 	}
 	if summary.IdeaSlug != "unknown" && summary.IdeaSlug != "" {
 		ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", summary.IdeaSlug)
-		k, e := protocol.ReadQuotaState(ideaDir)
+		v, e := protocol.InspectQuota(ideaDir)
 		if e != nil && (summary.QuotaKickoff != nil || !os.IsNotExist(e)) {
 			summary.QuotaPending = e.Error()
-		} else if k != nil {
-			if summary.QuotaKickoff == nil || !reflect.DeepEqual(summary.QuotaKickoff, k) || !reflect.DeepEqual(quota.Unique(summary.Participants), quota.Unique(k.Participants)) {
-				summary.QuotaPending = "pending or contradictory quota run projections"
+		} else if v.History != nil {
+			h := v.History
+			summary.QuotaPending = v.Pending
+			if summary.QuotaKickoff == nil || !reflect.DeepEqual(summary.QuotaKickoff, h.Kickoff) {
+				summary.QuotaPending = "contradictory quota run history"
 			}
-			summary.QuotaKickoff = k
-			if !hasManifest {
-				summary.QuotaPending = "quota kickoff pending: missing manifest"
+			summary.QuotaKickoff = h.Kickoff
+			summary.Participants = append([]string(nil), h.Current...)
+			if !hasManifest || manifest.QuotaRevision != h.Revision || !reflect.DeepEqual(manifest.Participants, h.Current) {
+				summary.QuotaPending = "quota manifest projection pending"
 			}
 		} else if summary.QuotaKickoff != nil {
 			summary.QuotaPending = "missing immutable quota kickoff history"

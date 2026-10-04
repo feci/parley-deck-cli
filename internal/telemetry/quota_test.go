@@ -109,7 +109,7 @@ func TestQuotaUnsupportedAndAdversarialProvenance(t *testing.T) {
 		}
 	}
 	for _, s := range QuotaSupport() {
-		if s.Status != "diagnostic-only" {
+		if s.Adapter != "zcode" && s.Status != "diagnostic-only" {
 			t.Fatalf("unestablished support: %+v", s)
 		}
 	}

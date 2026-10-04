@@ -12,6 +12,7 @@ import (
 
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/trajectory"
 )
 
@@ -293,6 +294,9 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 		// or unverified execution escalates; textual PASS cannot replace criterion evidence.
 		if d.cfg.AutoImplement || d.cfg.StrictGate {
 			if ok, detail := d.cfg.Impl.GoalCheck(ctx); !ok {
+				if strings.HasPrefix(detail, "quota batch blocked:") {
+					return ActionEscalated, c, &membership.BlockedError{Reason: detail}
+				}
 				return ActionEscalated, c, fmt.Errorf("goal-done gate: the acceptance-criteria check did not pass (LE-7):\n%s", strings.TrimSpace(detail))
 			}
 		}

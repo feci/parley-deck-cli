@@ -18,9 +18,12 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/consensus"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 )
 
 func runConsensusRequestSignoffs(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -84,6 +87,12 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	if err != nil {
 		return err
 	}
+	ctx, quotaRun, quotaRelease, quotaHistory, qerr := quotaSignoffStart(ctx, opts.Root, opts.IdeaSlug, opts.DryRun)
+	if qerr != nil {
+		return qerr
+	}
+	defer quotaRelease()
+	quotaMembers := []quota.Member{}
 	summary, err := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 	if err != nil {
 		return err
@@ -135,8 +144,9 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 
 	successes := make([]string, 0, len(selected))
 	pending := make([]string, 0)
-	runID := store.NewRunID(time.Now())
-	{
+	var unresolved []error
+	runID := quotaRun
+	if !quotaHistory.MidIdea() {
 		runStore := store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))
 		if err := runStore.Append(store.Event{
 			Time: time.Now().UTC(),
@@ -149,6 +159,11 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 			},
 		}); err != nil {
 			return err
+		}
+	}
+	if quotaHistory.MidIdea() {
+		for _, sig := range summary.Signoffs {
+			quotaMembers = append(quotaMembers, quota.Member{ID: sig.Agent, Usable: true, ValidArtifact: true})
 		}
 	}
 	for _, agent := range selected {
@@ -185,6 +200,15 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		}
 		signoff, validateErr := validateRequestedSignoff(before, after, agent.ID, string(beforeRaw), string(afterRaw))
 		if validateErr != nil {
+			if quotaHistory.MidIdea() && runErr != nil && runResult.QuotaEvidence != nil && runResult.QuotaEvidence.Eligible && string(beforeRaw) == string(afterRaw) {
+				quotaMembers = append(quotaMembers, quota.Member{ID: agent.ID, Evidence: runResult.QuotaEvidence})
+				continue
+			}
+			if quotaHistory.MidIdea() && string(beforeRaw) == string(afterRaw) {
+				quotaMembers = append(quotaMembers, quota.Member{ID: agent.ID})
+				unresolved = append(unresolved, fmt.Errorf("%s signoff attempt: %w", agent.ID, errors.Join(runErr, validateErr)))
+				continue
+			}
 			printPartialProgress(stdout, successes)
 			if runErr != nil {
 				return fmt.Errorf("%s signoff attempt failed: %w (artifact validation: %v)", agent.ID, runErr, validateErr)
@@ -218,10 +242,23 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 			return fmt.Errorf("%s exited with error after appending valid signoff: %w", agent.ID, runErr)
 		}
 
+		quotaMembers = append(quotaMembers, quota.Member{ID: agent.ID, Usable: true, ValidArtifact: true})
 		successes = append(successes, agent.ID)
 		fmt.Fprintf(stdout, "Accepted signoff from %s: %s\n", agent.ID, signoff.Status)
 	}
 
+	if quotaHistory.MidIdea() && len(pending) == 0 {
+		phase := "consensus"
+		if opts.Review {
+			phase = "review-consensus"
+		}
+		if _, err := membership.Settle(ctx, opts.Root, filepath.Join(opts.Root, protocol.DeckDir, "ideas", opts.IdeaSlug), runID, phase, agentIDs(selected), quotaMembers); err != nil {
+			return err
+		}
+	}
+	if len(unresolved) > 0 {
+		return errors.Join(unresolved...)
+	}
 	finalSummary, err := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 	if err != nil {
 		return err
@@ -436,17 +473,24 @@ func printRequestSignoffsDryRun(stdout io.Writer, rootAbs string, summary consen
 }
 
 type signoffRunResult struct {
+	QuotaEvidence    *quota.Evidence
 	Pending          bool
 	InstructionsPath string
 }
 
-func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
+func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (result signoffRunResult, runErr error) {
 	idea, phase := signoffContext(consensusPath)
 	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: runID, Idea: idea, Phase: phase,
+		Observe: func(r telemetry.Record) {
+			if r.Outcome != nil {
+				result.QuotaEvidence = r.Outcome.QuotaEvidence
+			}
+		},
 		ArtifactPath: consensusPath, Store: store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))})
 	switch agents.LaunchModeOrDefault(agent.LaunchMode) {
 	case agents.LaunchHeadless:
-		return signoffRunResult{}, runHeadlessSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)
+		err := runHeadlessSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)
+		return result, err
 	case agents.LaunchInteractive:
 		return runInteractiveSignoffAgent(ctx, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout, stderr)
 	case agents.LaunchManual:

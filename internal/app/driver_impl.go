@@ -18,9 +18,12 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/evidence"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 	"parley-deck-cli/internal/track"
 	"parley-deck-cli/internal/trajectory"
 )
@@ -496,6 +499,12 @@ func (o driverImplOps) checkModelDiversity() error {
 }
 
 func (o driverImplOps) Implement(ctx context.Context) error {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	if o.roleErr != "" {
 		return fmt.Errorf("driver: %s", o.roleErr)
 	}
@@ -529,6 +538,9 @@ func (o driverImplOps) Implement(ctx context.Context) error {
 		}
 	}
 	r := runner.RunImplementation(ctx, o.withParticipants(o.implementer))
+	if r.QuotaBlocked {
+		return &membership.BlockedError{Reason: r.ExitError}
+	}
 	if !r.Success() {
 		return fmt.Errorf("implementer %s: %s", r.AgentID, r.ExitError)
 	}
@@ -536,6 +548,12 @@ func (o driverImplOps) Implement(ctx context.Context) error {
 }
 
 func (o driverImplOps) ImplementationStatus() (string, error) {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return "", qerr
+	}
+
 	meta, err := protocol.ReadFrontmatter(filepath.Join(o.ideaDir, "IMPLEMENTATION.md"))
 	if err != nil {
 		return "", err
@@ -554,6 +572,12 @@ func (o driverImplOps) ImplementationStatus() (string, error) {
 // real check: a fix-up that wrote a valid-shaped artifact but cannot be verified no
 // longer auto-passes (hermes #8).
 func (o driverImplOps) RunChecks(ctx context.Context) (bool, string) {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return false, qerr.Error()
+	}
+
 	run := func(name string, cmd *exec.Cmd) (bool, string) {
 		fmt.Fprintf(o.out, "driver: running checks (%s) ...\n", name)
 		cmd.Dir = o.root
@@ -588,6 +612,12 @@ func (o driverImplOps) RunChecks(ctx context.Context) (bool, string) {
 }
 
 func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	if o.roleErr != "" {
 		return fmt.Errorf("driver: %s", o.roleErr)
 	}
@@ -608,7 +638,7 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 		path := filepath.Join(dir, reviewer+".md")
 		if _, err := os.Stat(path); err == nil {
 			if runner.ValidateReviewArtifact(path, reviewer, o.ideaSlug, round) != nil {
-				_ = os.Remove(path)
+				runner.PreserveIncompleteArtifact(path)
 			}
 		}
 	}
@@ -617,7 +647,10 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 	results := runner.RunReviewRound(ctx, opts)
 	failed := 0
 	for _, r := range results {
-		if r.ExitError != "" {
+		if r.QuotaBlocked {
+			return &membership.BlockedError{Reason: r.ExitError}
+		}
+		if r.ExitError != "" && !r.QuotaExcluded {
 			failed++
 		}
 	}
@@ -628,6 +661,12 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 }
 
 func (o driverImplOps) ReviewRoundComplete(round int) (bool, error) {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return false, qerr
+	}
+
 	dir := filepath.Join(o.ideaDir, "review", roundDirLabel(round))
 	for _, reviewer := range o.reviewers {
 		path := filepath.Join(dir, reviewer+".md")
@@ -642,12 +681,21 @@ func (o driverImplOps) ReviewRoundComplete(round int) (bool, error) {
 }
 
 func (o driverImplOps) DraftReviewConsensus(ctx context.Context, round int) error {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	fmt.Fprintf(o.out, "driver: drafting review consensus via %s ...\n", o.drafter)
 	strict := driver.ReadStrictGate(o.ideaDir)
 	opts := o.withParticipants(o.drafter)
 	opts.Round = round
 	opts.StrictGate = strict // LE-2: emit the close fields under strict_gate
 	r := runner.RunReviewConsensus(ctx, opts)
+	if r.QuotaBlocked {
+		return &membership.BlockedError{Reason: r.ExitError}
+	}
 	if !r.Success() {
 		return fmt.Errorf("review-consensus drafter %s: %s", r.AgentID, r.ExitError)
 	}
@@ -670,6 +718,19 @@ func (o driverImplOps) DraftReviewConsensus(ctx context.Context, round int) erro
 }
 
 func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return driver.ReviewStatus{}, qerr
+	}
+
+	if v, err := protocol.InspectQuota(o.ideaDir); err != nil && !os.IsNotExist(err) {
+		return driver.ReviewStatus{}, err
+	} else if v.History.MidIdea() {
+		if err := o.checkModelDiversity(); err != nil {
+			return driver.ReviewStatus{}, err
+		}
+	}
 	summary, err := consensus.Status(o.root, o.ideaSlug, true)
 	if err != nil {
 		return driver.ReviewStatus{}, err
@@ -717,6 +778,12 @@ func (o driverImplOps) discoveryFor(id string) (agents.Discovery, bool) {
 // verdict prompt. Missing, self, failed or ambiguous execution cannot establish
 // completion. A textual pass remains defense in depth, not criterion evidence.
 func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return false, qerr.Error()
+	}
+
 	if o.roleErr != "" {
 		return false, "goal-check unavailable: " + o.roleErr
 	}
@@ -737,8 +804,14 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return false, "goal-check cannot create its evidence directory"
 	}
+	var observed *quota.Evidence
 	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: o.base.RunID,
-		Idea: o.ideaSlug, Phase: "goal-check", Store: o.base.Store})
+		Idea: o.ideaSlug, Phase: "goal-check", Store: o.base.Store,
+		Observe: func(r telemetry.Record) {
+			if r.Outcome != nil {
+				observed = r.Outcome.QuotaEvidence
+			}
+		}})
 	res := runner.RunConsult(ctx, runner.ConsultOptions{
 		Root:  o.root,
 		Agent: agent,
@@ -751,6 +824,12 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 		Progress:   o.out,
 	})
 	if res.ExitError != "" || res.AgentExit != 0 {
+		if observed != nil && observed.Eligible {
+			_, err := membership.Settle(ctx, o.root, o.ideaDir, o.base.RunID, "goal-check", []string{checker}, []quota.Member{{ID: checker, Evidence: observed}})
+			if err != nil {
+				return false, err.Error()
+			}
+		}
 		return false, "goal-check checker failed; completion is unverified"
 	}
 	switch parseGoalVerdict(res.Answer) {
@@ -800,6 +879,12 @@ func parseGoalVerdict(answer string) string {
 }
 
 func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []string) error {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	return requestConsensusSignoffs(ctx, requestSignoffsOptions{
 		Root:            o.root,
 		IdeaSlug:        o.ideaSlug,
@@ -810,10 +895,22 @@ func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []stri
 }
 
 func (o driverImplOps) PrecheckFixup(ctx context.Context) error {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	return runner.PrecheckFixup(ctx, o.withParticipants(o.implementer))
 }
 
 func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	if o.roleErr != "" {
 		return fmt.Errorf("driver: %s", o.roleErr)
 	}
@@ -822,6 +919,9 @@ func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 	}
 	fmt.Fprintf(o.out, "driver: running fix-up cycle %d via %s ...\n", cycle, o.implementer)
 	r := runner.RunFixup(ctx, o.withParticipants(o.implementer))
+	if r.QuotaBlocked {
+		return &membership.BlockedError{Reason: r.ExitError}
+	}
 	if !r.Success() {
 		return fmt.Errorf("fix-up implementer %s: %s", r.AgentID, r.ExitError)
 	}
@@ -832,6 +932,41 @@ func (o driverImplOps) Fixup(ctx context.Context, cycle int) error {
 // write by the orchestrator (NOT an implementer agent), so an implementer cannot
 // short-circuit review (consensus D5).
 func (o driverImplOps) Complete(ctx context.Context) error {
+	var release func()
+	var err error
+	ctx, release, err = membership.Acquire(ctx, o.ideaDir, o.base.RunID)
+	if err != nil {
+		return err
+	}
+	defer release()
+	h, err := membership.Before(ctx, o.root, o.ideaDir, o.base.RunID)
+	if err != nil {
+		return err
+	}
+	if h.MidIdea() {
+		if err := membership.CheckGates(o.root, o.ideaDir, o.base.RunID, h.Current); err != nil {
+			return err
+		}
+		s, err := consensus.Status(o.root, o.ideaSlug, true)
+		if err != nil {
+			return err
+		}
+		if s.Triage != consensus.TriageReady {
+			return fmt.Errorf("quota close requires current clean signoffs: %s", s.Triage)
+		}
+	}
+	releaseProjection, err := membership.ProjectionLock(o.ideaDir)
+	if err != nil {
+		return err
+	}
+	defer releaseProjection()
+
+	var qerr error
+	o, qerr = o.quotaCurrent()
+	if qerr != nil {
+		return qerr
+	}
+
 	return evidence.WithReportWriter(ctx, o.ideaDir, func(_ *evidence.ReportWriter) error { return o.completeWithWriter(ctx) })
 }
 
@@ -932,3 +1067,10 @@ func (o driverImplOps) completeWithWriter(ctx context.Context) error {
 }
 
 func roundDirLabel(n int) string { return fmt.Sprintf("round-%02d", n) }
+
+func (o driverImplOps) WithParticipants(ids []string) driver.ImplOps {
+	o.base.Idea.Participants = append([]string(nil), ids...)
+	n := newDriverImplOps(o.base, o.root, o.ideaSlug, o.ideaDir, ids, o.out).(driverImplOps)
+	n.verificationCLI = o.verificationCLI
+	return n
+}

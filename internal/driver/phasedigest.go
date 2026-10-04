@@ -85,6 +85,8 @@ type PhaseImplSection struct {
 // PhaseDigest is the whole-idea snapshot. Deterministic and byte-identical over an
 // unchanged tree: no timestamps, no absolute-clock values, rows sorted by agent.
 type PhaseDigest struct {
+	QuotaPending   string                 `json:"quota_pending,omitempty"`
+	Participants   []string               `json:"participants,omitempty"`
 	Idea           string                 `json:"idea"`
 	Round          *PhaseRoundSection     `json:"round,omitempty"`
 	Review         *PhaseRoundSection     `json:"review,omitempty"`
@@ -130,6 +132,15 @@ func IsValidNextAction(s string) bool { return nextActionVocabulary[s] }
 // unparsed row. participants is the idea's participant list.
 func BuildPhaseDigest(root, ideaSlug, ideaDir string, participants []string) PhaseDigest {
 	d := PhaseDigest{Idea: ideaSlug}
+	if v, e := protocol.InspectQuota(ideaDir); e != nil && !os.IsNotExist(e) {
+		d.QuotaPending = e.Error()
+	} else {
+		d.QuotaPending = v.Pending
+		if v.History != nil {
+			participants = v.History.Current
+			d.Participants = append([]string(nil), participants...)
+		}
+	}
 	if sec, ok := latestRoundSection(ideaDir, participants, false); ok {
 		d.Round = sec
 	}

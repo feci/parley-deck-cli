@@ -7,10 +7,14 @@ native-error provenance, explicit exhaustion semantics, a fixed 60-minute reset 
 24-hour no-reset allowance floor, a whole-batch floor of two usable non-facilitators, protected
 roles, checked-durable transitions, immutable membership history, current required vs historical
 known signers, preserved vetoes/findings, deduplicated owner notices and fail-closed recovery.
-Mid-idea application is marked not yet in force until stage 2 ships. §5 and Phases 0/3/5/6/7 gain
+The 2026-10-04 owner scope/reset answer adds the bounded zcode stderr exception and the same-record,
+one-second-agreement display-clock interpretation. Other adapters remain diagnostic-only without native
+provenance. Both kickoff and mid-idea implementation are included in this release candidate;
+the staged not-yet-in-force wording is removed for full review. §5 and Phases 0/3/5/6/7 gain
 membership and gate cross-references; §0 gains the policy key and §9's checklist reads notices.
 The same normative hunks are applied to all three COOPERATION.md copies; existing project/bootstrap
-zones remain distinct. No heading or packet-map classification changes. No global core publication
+zones stay generic in the CLI bootstrap; the skill snapshot now matches the live source byte-for-byte
+under AC1. No heading or packet-map classification changes. No global core publication
 has occurred; attended publication remains the owner's action after review and release staging.
 
 ## 2026-09-25 — designated implementer: per-idea `implementer:` + layered `default_implementer` (UNRELEASED)

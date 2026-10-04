@@ -76,6 +76,16 @@ func Plan(root string, input Input) []NextAction {
 
 	ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", input.IdeaSlug)
 	participants := participantOrder(input)
+	view, quotaErr := protocol.InspectQuota(ideaDir)
+	if quotaErr != nil && (!os.IsNotExist(quotaErr) || view.History != nil) {
+		return appendInspectIfEmpty(actions, input, "Inspect quota history integrity: "+quotaErr.Error())
+	}
+	if view.History != nil {
+		participants = append([]string(nil), view.History.Current...)
+		if view.Pending != "" {
+			return appendInspectIfEmpty(actions, input, "Resume the driving run to reconcile quota membership before acting")
+		}
+	}
 	if len(participants) == 0 {
 		return appendInspectIfEmpty(actions, input, "Inspect run state; no participants are known")
 	}

@@ -30,6 +30,7 @@ type WorkspaceStatus struct {
 }
 
 type IdeaStatus struct {
+	QuotaPending string `json:"quota_pending,omitempty"`
 	Slug         string
 	Status       string
 	Participants []string
@@ -352,10 +353,21 @@ func readIdeas(path string) ([]IdeaStatus, error) {
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prompt, err)
 		}
+		current := parseList(meta["participants"])
+		pending := ""
+		if v, e := InspectQuota(filepath.Dir(prompt)); e != nil {
+			pending = e.Error()
+		} else {
+			pending = v.Pending
+			if v.History != nil {
+				current = v.History.Current
+			}
+		}
 		ideas = append(ideas, IdeaStatus{
 			Slug:            first(meta["idea"], entry.Name()),
 			Status:          first(meta["status"], "unknown"),
-			Participants:    parseList(meta["participants"]),
+			Participants:    current,
+			QuotaPending:    pending,
 			Path:            filepath.Dir(prompt),
 			FacilitatorRole: FacilitatorRoleFromMeta(meta),
 		})

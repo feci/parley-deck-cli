@@ -22,6 +22,14 @@ import (
 // IMPLEMENTATION.md (and code on a branch) per FINAL.md. opts.Idea.Participants
 // must contain exactly the implementer. Reuses the shared launch machinery.
 func RunImplementation(ctx context.Context, opts Options) Result {
+	var release func()
+	var err error
+	ctx, opts, release, err = quotaBefore(ctx, opts)
+	if err != nil {
+		return Result{AgentID: "runner/quota", ExitError: err.Error()}
+	}
+	defer release()
+
 	ctx = withRunnerActionInput(ctx, opts, "implementation")
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
@@ -36,7 +44,7 @@ func RunImplementation(ctx context.Context, opts Options) Result {
 		return Result{AgentID: "implementer", ExitError: "no implementer available in participants"}
 	}
 	opts.SegmentID = appendSegmentStarted(opts, "continue", agentIDs(selected))
-	return runAgent(ctx, opts, selected[0])
+	return quotaSettleSingle(ctx, opts, runAgent(ctx, opts, selected[0]))
 }
 
 // RunReviewRound runs Phase 6 review round N: each reviewer (opts.Idea.Participants
@@ -69,6 +77,16 @@ func PrecheckFixup(ctx context.Context, opts Options) error {
 // an ordinary nonzero exit with a valid artifact succeeds with agent_exit
 // (consensus D7). opts.Idea.Participants must be [implementer].
 func RunFixup(ctx context.Context, opts Options) Result {
+	var release func()
+	var err error
+	ctx, opts, release, err = quotaBefore(ctx, opts)
+	if err != nil {
+		return Result{AgentID: "runner/quota", ExitError: err.Error()}
+	}
+	defer release()
+
+	opts.Phase = "fixup"
+	opts.RoundLabel = "fixup"
 	ctx = withRunnerActionInput(ctx, opts, "fixup")
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
@@ -96,7 +114,12 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	defer cancel()
 	cctx = WithLaunchInfo(cctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
 		Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1, Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
-		Observe: func(record telemetry.Record) { result.InvocationID = record.InvocationID },
+		Observe: func(record telemetry.Record) {
+			result.InvocationID = record.InvocationID
+			if record.Outcome != nil {
+				result.QuotaEvidence = record.Outcome.QuotaEvidence
+			}
+		},
 	})
 
 	// The fix-up runs through the same hardened exec path as every other agent
@@ -181,7 +204,7 @@ func RunFixup(ctx context.Context, opts Options) Result {
 		data["agent_exit_kind"] = result.AgentExitKind
 	}
 	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: data})
-	return result
+	return quotaSettleSingle(ctx, opts, result)
 }
 
 // ValidateFixupArtifact checks that a fix-up cycle left IMPLEMENTATION.md in a
@@ -354,11 +377,20 @@ func validateArtifactForPhase(opts Options, outputPath, agentID string) error {
 // the machine-readable Phase-7 contract (outstanding_agreed_fixes). Overwrites
 // any prior draft so each fix-up cycle records the current count.
 func RunReviewConsensus(ctx context.Context, opts Options) Result {
+	var release func()
+	var err error
+	ctx, opts, release, err = quotaBefore(ctx, opts)
+	if err != nil {
+		return Result{AgentID: "runner/quota", ExitError: err.Error()}
+	}
+	defer release()
+
 	ctx = withRunnerActionInput(ctx, opts, "review-consensus")
 	ctx, finishStep := budget.GroupStepSession(ctx, opts.Root, opts.Idea.Slug)
 	defer finishStep()
 
 	opts.Phase = "review-consensus"
+	opts.RoundLabel = "review-consensus"
 	opts.ArtifactName = filepath.Join("review", "consensus.md")
 	opts.Overwrite = true
 	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
@@ -366,7 +398,7 @@ func RunReviewConsensus(ctx context.Context, opts Options) Result {
 		return Result{AgentID: "drafter", ExitError: "no drafter available in participants"}
 	}
 	opts.SegmentID = appendSegmentStarted(opts, "continue", agentIDs(selected))
-	return runAgent(ctx, opts, selected[0])
+	return quotaSettleSingle(ctx, opts, runAgent(ctx, opts, selected[0]))
 }
 
 // BuildReviewConsensusPrompt is the Phase 7 drafter prompt; it MUST set the

@@ -9,7 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
+	"parley-deck-cli/internal/telemetry"
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/consensus"
@@ -41,9 +46,25 @@ func (o driverConsensusOps) Status() (consensus.Summary, error) {
 // Draft creates the consensus.md scaffold (+ sets idea status=consensus) if absent,
 // then invokes a drafter agent to author the real synthesis into consensus.md.
 func (o driverConsensusOps) Draft(ctx context.Context) error {
+	ctx, _, release, _, err := quotaSignoffStart(ctx, o.root, o.ideaSlug, false)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	path := filepath.Join(o.ideaDir, "consensus.md")
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		if _, derr := consensus.Draft(o.root, o.ideaSlug, consensus.DraftOptions{}); derr != nil {
+		ids, _, qerr := protocol.QuotaMembers(o.ideaDir, o.participants)
+		if qerr != nil {
+			return qerr
+		}
+		role := protocol.ReadFacilitatorRole(o.ideaDir)
+		preferNot := designatedImplementerPreference(o.root, o.ideaDir, ids, role)
+		drafter, ok := firstEligibleHeadlessAgentPreferring(o.discovered, ids, rosterMappingFor(o.root), role, preferNot)
+		if !ok {
+			return fmt.Errorf("no headless current participant available to draft consensus")
+		}
+		if _, derr := consensus.Draft(o.root, o.ideaSlug, consensus.DraftOptions{By: drafter.ID}); derr != nil {
 			return derr
 		}
 	} else if err != nil {
@@ -81,6 +102,17 @@ func (o driverConsensusOps) Reopen(ctx context.Context, reason string) error {
 // runDrafter invokes the first available headless agent to author the target file
 // per the given prompt. Drafting is a single-agent facilitator action (D6).
 func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string) error {
+	ctx, run, release, history, err := quotaSignoffStart(ctx, o.root, o.ideaSlug, false)
+	if err != nil {
+		return err
+	}
+	defer release()
+	ids, _, err := protocol.QuotaMembers(o.ideaDir, o.participants)
+	if err != nil {
+		return err
+	}
+	o.participants = ids
+
 	role := protocol.ReadFacilitatorRole(o.ideaDir)
 	// R36 drafter separation: under a live designation, prefer an eligible drafter
 	// that is not the designated implementer (the designee remains the fallback).
@@ -94,7 +126,38 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 		return err
 	}
 	fmt.Fprintf(o.out, "driver: drafting %s via %s ...\n", kind, drafter.ID)
-	return runHeadlessSignoffAgent(ctx, rootAbs, drafter, prompt, o.out, o.out)
+	var observed *quota.Evidence
+	target := filepath.Join(o.ideaDir, "consensus.md")
+	if kind == "FINAL" {
+		target = filepath.Join(o.ideaDir, "FINAL.md")
+	}
+	if history.MidIdea() {
+		if err := membership.MarkDraftStarted(o.ideaDir, target, drafter.ID); err != nil {
+			return err
+		}
+		prompt += "\nPreserve drafted-by: " + drafter.ID + " in the target frontmatter.\n"
+	}
+	ctx = runner.WithLaunchInfo(ctx, runner.LaunchInfo{RunID: run, Idea: o.ideaSlug, Phase: strings.ToLower(kind),
+		ArtifactPath: target, Store: store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", run)),
+		Observe: func(r telemetry.Record) {
+			if r.Outcome != nil {
+				observed = r.Outcome.QuotaEvidence
+			}
+		}})
+	runErr := runHeadlessSignoffAgent(ctx, rootAbs, drafter, prompt, o.out, o.out)
+	if history.MidIdea() && runErr != nil && observed != nil && observed.Eligible {
+		valid := false
+		if kind == "FINAL" {
+			if raw, e := os.ReadFile(target); e == nil {
+				valid = protocol.ValidateFinal(string(raw), o.ideaSlug) == ""
+			}
+		}
+		_, settleErr := membership.Settle(ctx, rootAbs, o.ideaDir, run, kind, []string{drafter.ID}, []quota.Member{{ID: drafter.ID, ValidArtifact: valid, Evidence: observed}})
+		if settleErr != nil {
+			return settleErr
+		}
+	}
+	return runErr
 }
 
 // designatedImplementerPreference returns the designation that drafter selection
@@ -244,4 +307,9 @@ present — a heading that is absent cannot be answered N/A deliberately.
 
 No placeholders, no unexpanded <...> tokens. Be concrete. English only. Write the file now and
 report only the path.`, ideaDir, path, slug, sections.String())
+}
+
+func (o driverConsensusOps) WithParticipants(ids []string) driver.ConsensusOps {
+	o.participants = append([]string(nil), ids...)
+	return o
 }

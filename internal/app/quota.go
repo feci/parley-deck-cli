@@ -41,18 +41,28 @@ func writeQuotaBlock(root string, d quota.Decision) error {
 	return closeErr
 }
 func quotaSurface(ideaDir string) []string {
-	k, err := protocol.ReadQuotaState(ideaDir)
+	v, err := protocol.InspectQuota(ideaDir)
 	if err != nil {
 		return []string{"quota transition pending/integrity gate: " + err.Error()}
 	}
-	if k == nil {
+	h := v.History
+	if h == nil {
 		return nil
 	}
-	lines := []string{fmt.Sprintf("quota policy: enabled=%t scope=%s revision=%d", k.Policy.Enabled, k.Policy.Scope, k.Revision)}
-	if k.Transition != nil {
-		for _, c := range k.Transition.Decision.Candidates {
-			lines = append(lines, fmt.Sprintf("automatic exclusion: %s; reset=%s; transition=%s", c.Agent, c.Evidence.ResetHint(), k.Transition.ID))
+	lines := []string{fmt.Sprintf("quota policy: enabled=%t scope=%s revision=%d", h.Kickoff.Policy.Enabled, h.Kickoff.Policy.Scope, h.Revision)}
+	if v.Pending != "" {
+		lines = append(lines, "quota transition pending: "+v.Pending)
+	}
+	add := func(id string, cs []quota.Candidate) {
+		for _, c := range cs {
+			lines = append(lines, fmt.Sprintf("automatic exclusion: %s; reset=%s; transition=%s", c.Agent, c.Evidence.ResetHint(), id))
 		}
+	}
+	if h.Kickoff.Transition != nil {
+		add(h.Kickoff.Transition.ID, h.Kickoff.Transition.Decision.Candidates)
+	}
+	for _, b := range h.Batches {
+		add(b.ID, b.Decision.Candidates)
 	}
 	return lines
 }

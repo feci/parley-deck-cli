@@ -25,6 +25,7 @@ import (
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/hitl"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runaction"
@@ -1213,10 +1214,6 @@ func loopBudget(root string) (steps int, wall time.Duration, cost float64) {
 }
 
 func continueAuto(ctx context.Context, root string, run runstate.RunSummary, noImplement bool, stdout, stderr io.Writer) int {
-	if run.QuotaPending != "" {
-		fmt.Fprintf(stderr, "quota transition pending: %s\n", run.QuotaPending)
-		return 1
-	}
 	if run.IdeaSlug == "" || run.IdeaSlug == "unknown" {
 		fmt.Fprintln(stderr, "continue --auto failed: run has no idea slug")
 		return 1
@@ -1984,6 +1981,13 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 
+	var quotaRelease func()
+	ctx, quotaRelease, err = membership.Acquire(ctx, created.Idea.Path, created.RunID)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	defer quotaRelease()
 	fmt.Fprintf(stdout, "Created idea %s and run %s\n", created.Idea.Slug, created.RunID)
 	fmt.Fprintf(stdout, "Starting round-01 with participants: %s\n", strings.Join(participants, ", "))
 	runOpts := created.RunOptions
@@ -2459,7 +2463,13 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 		if len(participants) == 0 {
 			return tui.LaunchResult{}, fmt.Errorf("no installed agents found")
 		}
+		defs, err := config.LoadDefaults(root)
+		if err != nil {
+			return tui.LaunchResult{}, err
+		}
+		policy := quota.NewPolicy(defs.QuotaAutoExclude, nil)
 		created, err := runcontrol.Create(runcontrol.CreateOptions{
+			QuotaPolicy:  &policy,
 			Root:         root,
 			Task:         req.Task,
 			Participants: participants,
@@ -2611,7 +2621,7 @@ func anyRunFailed(results []runner.Result) bool {
 		return true
 	}
 	for _, result := range results {
-		if !result.Success() {
+		if !result.Success() && !result.QuotaExcluded {
 			return true
 		}
 	}
@@ -2627,6 +2637,8 @@ func printRunResults(stdout io.Writer, results []runner.Result) bool {
 	failed := false
 	for _, result := range results {
 		switch {
+		case result.QuotaExcluded:
+			fmt.Fprintf(stdout, "  %-8s failed; automatically excluded from this idea (evidence retained)\n", result.AgentID)
 		case result.Warning != "" && result.ExitError == "":
 			fmt.Fprintf(stdout, "  %-8s warning: %s\n", result.AgentID, result.Warning)
 		case result.Skipped && result.ExitError == "":

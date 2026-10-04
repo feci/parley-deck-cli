@@ -32,12 +32,25 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	ctx = WithLaunchInfo(ctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
 		Idea: opts.Idea.Slug, Phase: protocolLaunchPhase(opts), AttemptOrdinal: attemptID,
 		RetryOf: result.InvocationID, Store: opts.Store, ArtifactPath: outputPath,
-		Observe: func(r telemetry.Record) { result.InvocationID = r.InvocationID },
+		Observe: func(r telemetry.Record) {
+			result.InvocationID = r.InvocationID
+			if r.Outcome != nil {
+				result.QuotaEvidence = r.Outcome.QuotaEvidence
+			}
+		},
 	})
 	ctx, prompt, evidence, err := beginProtocolLaunch(ctx, opts.Root, opts.RunID, agent, prompt)
 	if err != nil {
 		return failEarly(opts, result, err)
 	}
+	defer func() {
+		returned.InvocationID = result.InvocationID
+		returned.QuotaEvidence = result.QuotaEvidence
+		if returned.QuotaEvidence != nil && returned.ArtifactOK {
+			returned.QuotaEvidence.Eligible = false
+			returned.QuotaEvidence.Reason = "valid artifact"
+		}
+	}()
 	// Setup failures have no finishACP call; they still own a terminal record.
 	defer func() {
 		var setupErr error
@@ -319,6 +332,13 @@ func finishACP(opts Options, result Result, agent agents.Discovery, process *acp
 		"launch":      agents.LaunchACP,
 		"segment_id":  opts.SegmentID,
 		"attempt_id":  attemptID,
+	}
+	if result.QuotaEvidence != nil {
+		if result.ArtifactOK || cancellation {
+			result.QuotaEvidence.Eligible = false
+			result.QuotaEvidence.Reason = "valid artifact or cancellation"
+		}
+		data["quota_evidence"] = result.QuotaEvidence
 	}
 	eventType := "agent.finished"
 	if failed {

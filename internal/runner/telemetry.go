@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/membership"
+	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
 	"parley-deck-cli/internal/trajectory"
@@ -82,6 +84,27 @@ func launchRequestInfo(ctx context.Context, root, runID string) (string, LaunchI
 
 func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
 	root, info := launchRequestInfo(ctx, root, runID)
+	if info.Idea != "" && info.Phase != "preflight" {
+		dir := filepath.Join(root, protocol.DeckDir, "ideas", info.Idea)
+		v, err := protocol.InspectQuota(dir)
+		if err != nil && (!os.IsNotExist(err) || v.History != nil) {
+			return nil, err
+		}
+		if v.History != nil {
+			if v.Pending != "" {
+				return nil, fmt.Errorf("quota transition pending: %s", v.Pending)
+			}
+			if !membership.Has(v.History.Current, agent.ID) {
+				return nil, fmt.Errorf("excluded participant %s cannot dispatch", agent.ID)
+			}
+			if v.History.MidIdea() {
+				if err := membership.CheckLease(ctx, dir, info.RunID); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
 	ctx = withLaunchActionInput(ctx, info, agent)
 	handoff := len(intent) == 1 && intent[0] == launchHandoff
 	if !handoff {

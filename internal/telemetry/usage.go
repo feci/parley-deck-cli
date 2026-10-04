@@ -19,6 +19,8 @@ const parserLimit = 256 * 1024
 type Collector struct {
 	quotaStdout, quotaStderr []byte
 	quotaTruncated           bool
+	quotaStderrObservations  []quotaStreamObservation
+	quotaClock               func() time.Time
 	stdoutBytes, stderrBytes int64
 	mu                       sync.Mutex
 	adapter                  string
@@ -61,6 +63,13 @@ func (w streamWriter) Write(data []byte) (int, error) {
 	}
 	if len(*capture)+len(data) <= parserLimit {
 		*capture = append(*capture, data...)
+		if w.stream == "stderr" && len(data) > 0 {
+			now := time.Now()
+			if c.quotaClock != nil {
+				now = c.quotaClock()
+			}
+			c.quotaStderrObservations = append(c.quotaStderrObservations, quotaStreamObservation{End: len(*capture), At: now.UTC()})
+		}
 	} else {
 		c.quotaTruncated = true
 	}

@@ -3,6 +3,7 @@
 package quota
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -19,6 +20,27 @@ type Policy struct {
 	Scope   string `json:"scope"`
 }
 
+// Presence is authority: an omitted false value cannot silently disable a saved policy.
+func (p *Policy) UnmarshalJSON(raw []byte) error {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return err
+	}
+	if len(fields) != 2 || fields["enabled"] == nil || fields["scope"] == nil {
+		return fmt.Errorf("incomplete quota policy")
+	}
+	var enabled *bool
+	var scope *string
+	if err := json.Unmarshal(fields["enabled"], &enabled); err != nil || enabled == nil {
+		return fmt.Errorf("invalid quota policy boolean")
+	}
+	if err := json.Unmarshal(fields["scope"], &scope); err != nil || scope == nil {
+		return fmt.Errorf("invalid quota policy scope")
+	}
+	p.Enabled, p.Scope = *enabled, *scope
+	return p.Validate()
+}
+
 func NewPolicy(defaultValue, ideaValue *bool) Policy {
 	enabled := true
 	if defaultValue != nil {
@@ -27,7 +49,7 @@ func NewPolicy(defaultValue, ideaValue *bool) Policy {
 	if ideaValue != nil {
 		enabled = *ideaValue
 	}
-	return Policy{Enabled: enabled, Scope: KickoffOnly}
+	return Policy{Enabled: enabled, Scope: KickoffAndMidIdea}
 }
 func (p Policy) Validate() error {
 	if p.Scope != KickoffOnly && p.Scope != KickoffAndMidIdea {

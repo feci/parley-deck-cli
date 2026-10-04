@@ -1,12 +1,10 @@
 package quota
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -119,14 +117,8 @@ func ReadKickoff(ideaDir string) (*Kickoff, error) {
 		return nil, err
 	}
 	var k Kickoff
-	d := json.NewDecoder(bytes.NewReader(b))
-	d.DisallowUnknownFields()
-	if err = d.Decode(&k); err != nil {
+	if err = strictDecode(b, &k); err != nil {
 		return nil, fmt.Errorf("invalid quota history: %w", err)
-	}
-	var more any
-	if d.Decode(&more) != io.EOF {
-		return nil, fmt.Errorf("trailing quota history")
 	}
 	if err = k.Validate(); err != nil {
 		return nil, err

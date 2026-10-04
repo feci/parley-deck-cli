@@ -32,6 +32,7 @@ const (
 )
 
 type Manifest struct {
+	QuotaRevision int            `json:"quota_revision,omitempty"`
 	QuotaKickoff  *quota.Kickoff `json:"quota_kickoff,omitempty"`
 	SchemaVersion int            `json:"schema_version"`
 	RunID         string         `json:"run_id"`
@@ -209,6 +210,9 @@ func Write(root, runID string, manifest Manifest) error {
 		return err
 	}
 	data = append(data, '\n')
+	if manifest.QuotaKickoff != nil {
+		return quota.DurableWrite(path, data, false)
+	}
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".run.*.tmp")
 	if err != nil {
 		return err

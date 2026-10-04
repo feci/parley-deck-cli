@@ -13,6 +13,7 @@ import (
 
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/evidence"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
@@ -285,6 +286,14 @@ func (d *Driver) autoDriveEnabled() bool {
 // is a no-op when its output already exists, so a duplicated tick or crash-restart
 // cannot double-produce.
 func (d *Driver) Advance(ctx context.Context) (Action, Cursor, error) {
+	var release func()
+	var qerr error
+	ctx, release, qerr = d.quotaBefore(ctx)
+	if qerr != nil {
+		return ActionEscalated, Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds), qerr
+	}
+	defer release()
+
 	c := Rebuild(d.cfg.IdeaDir, d.cfg.MaxRounds)
 	// Rebuild derives the cursor from idea artifacts, which is right for phase and round
 	// — but the fix-up budget is a SAFETY count and must not be recoverable by editing
@@ -649,10 +658,21 @@ func (a roundRunnerAdapter) RunRound(ctx context.Context, round int) error {
 	opts.Round = round
 	opts.RoundLabel = roundLabel(round)
 	opts.Overwrite = false
-	for _, result := range runner.RunRound(ctx, opts) {
-		if result.ExitError != "" {
+	results := runner.RunRound(ctx, opts)
+	for _, result := range results {
+		if result.QuotaBlocked {
+			return &membership.BlockedError{Reason: result.ExitError}
+		}
+	}
+	for _, result := range results {
+		if result.ExitError != "" && !result.QuotaExcluded {
 			return fmt.Errorf("agent %s failed: %s", result.AgentID, result.ExitError)
 		}
 	}
 	return nil
+}
+
+func (a roundRunnerAdapter) WithParticipants(ids []string) RoundRunner {
+	a.base.Idea.Participants = append([]string(nil), ids...)
+	return a
 }

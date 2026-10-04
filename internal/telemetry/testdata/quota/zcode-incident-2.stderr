@@ -1,0 +1,4 @@
+statusCode: 429
+'retry-after': '176930'
+responseBody: '{"error":{"message":"[glm/glm-5.3] [429]: Weekly/Monthly Limit Exhausted. Your limit will reset at 2026-10-05 06:14:57 (reset after 49h 8m 50s)","retry_after":176930,"reset_at":"2026-10-04T22:14:57.003Z"}}'
+Error: Turn execution failed

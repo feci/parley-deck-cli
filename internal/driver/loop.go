@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"parley-deck-cli/internal/budget"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/store"
 )
 
@@ -27,6 +28,14 @@ const roundDeadline = 30 * time.Minute
 // contract is single-driver + idempotent re-entry, NOT multi-writer (consensus
 // D10): if the lock is held, Run stops cleanly without driving.
 func (d *Driver) Run(ctx context.Context) error {
+	var ideaRelease func()
+	var ideaErr error
+	ctx, ideaRelease, ideaErr = d.quotaBefore(ctx)
+	if ideaErr != nil {
+		return ideaErr
+	}
+	defer ideaRelease()
+
 	release, err := acquireLock(filepath.Join(d.cfg.RunDir, "driver.lock"))
 	if err != nil {
 		fmt.Fprintf(d.cfg.Out, "driver: not auto-advancing — %v\n", err)
@@ -96,9 +105,11 @@ func (d *Driver) Run(ctx context.Context) error {
 			// A runner failure or a malformed event log halts the driver; capture
 			// it in a durable blocking inbox note (consensus D4/AF3), not just
 			// stderr, so an unattended --auto run leaves a recovery artifact.
-			d.escalate(c, "driver-error",
-				fmt.Sprintf("The auto-driver halted with an error while advancing %s:\n\n    %v\n\nInspect the run (events.jsonl / agent logs), fix the cause, then re-run 'parley run --auto'.",
-					roundLabel(c.CurrentRound), err))
+			if !membership.IsBlocked(err) {
+				d.escalate(c, "driver-error",
+					fmt.Sprintf("The auto-driver halted with an error while advancing %s:\n\n    %v\n\nInspect the run (events.jsonl / agent logs), fix the cause, then re-run 'parley run --auto'.",
+						roundLabel(c.CurrentRound), err))
+			}
 			return err
 		}
 		// LE-5: count progress Advances and record budget burn for the TUI/state.

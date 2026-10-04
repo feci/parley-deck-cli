@@ -84,7 +84,7 @@ func TestQuotaFloorRolesAndSuccess(t *testing.T) {
 }
 func TestQuotaFrozenKickoffAndTruncation(t *testing.T) {
 	dir := t.TempDir()
-	p := NewPolicy(nil, nil)
+	p := Policy{Enabled: true, Scope: KickoffOnly}
 	k := NewKickoff("idea", "run", p, []string{"a", "b"}, nil, time.Now())
 	if err := WriteKickoff(dir, k); err != nil {
 		t.Fatal(err)

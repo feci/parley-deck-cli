@@ -1,0 +1,14 @@
+{
+  "source": "source-context/EVIDENCE-quota-incidents.md incident 1",
+  "kind": "recorded-readiness-plus-paired-provider-replay",
+  "provider_fixture": "zcode-incident-2.stderr",
+  "provider_observed_at": "2026-10-02T21:06:07.003Z",
+  "raw_incident_1_stderr_available": false,
+  "facilitator": "claude-1",
+  "readiness": [
+    {"id":"claude-1","available":true,"class":"ready"},
+    {"id":"codex-1","available":true,"class":"ready"},
+    {"id":"kimi-1","available":false,"class":"deadline-after-output"},
+    {"id":"zcode-1","available":false,"class":"provider-failure:rate-limit"}
+  ]
+}
