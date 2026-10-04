@@ -11,7 +11,7 @@ implementation-pr: n/a
 
 ## Summary of work
 
-The first stage-1 invocation timed out after 1800 seconds; its code is preserved and partial. No adapter yet authorizes automatic exclusion. Stage 2 is pending. Both stages of FINAL are required: kickoff and
+Implementation resumed after the owner's 2026-10-04 scope/reset answer. The owner authorizes the bounded zcode stderr recognizer as an explicit deviation from FINAL and the bounded display-clock interpretation. Both stages remain required. The prior stage-1 prototype is preserved; completion and independent acceptance remain pending. Both stages of FINAL are required: kickoff and
 mid-idea quota auto-exclusion. The owner ratified D1–D5 and authorized implementation, separate claude-1
 review, attended close, and release. The handoff is recorded in 00-prompt.md and commit c6f8b49.
 
@@ -68,7 +68,7 @@ files on the existing two quota-auto-exclude branches; no development PRs.
 
 
 The owner's ratification transfers the organizer role from claude-1 to codex-1, superseding FINAL §12's
-organizer assignment. The two proposed owner rulings below are not approved. Exact transition storage, field
+organizer assignment. The owner answered both scope/reset questions on 2026-10-04; the exact direction is quoted below and supersedes the historical pending-request entries. Exact transition storage, field
 names, provenance support and redaction remain bound by FINAL §13.8 until an owner ruling is recorded.
 
 ## Notes for reviewers
@@ -197,3 +197,58 @@ The focused reviewer owns `review/round-01/claude-1.md`; it is not a full-scope 
 ## Outcomes & Retrospective
 
 Pending both stages, review and attended close.
+
+## User direction — scope/reset answer, 2026-10-04
+
+The following owner relay is quoted verbatim as required by the controlling brief. Its original Slovak quotations are retained with the supplied English translations.
+
+## Owner answers to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_scope-reset.md`
+
+Relayed by the owner's Claude Code session on 2026-10-04 at about 02:35 CEST. The relay asked both questions
+in Slovak and gave three options for question 1: A (build a reliable zcode channel, codex-1's
+recommendation), B (defer, no supported adapter) and a pragmatic option. The selected options are below,
+verbatim. A translation follows each one.
+
+**Question 1, AC2 and zcode support.** Selected: **"Pragmaticky: stderr zcode stačí"** ("Pragmatic: zcode's
+stderr is enough"). The option read (Slovak, verbatim): "Moje odporúčanie, ide o najrýchlejšiu funkčnú
+cestu. Pri zcode stačí JSON `responseBody` v stderr, ak proces skončil chybou, nenechal výstup a každý
+záznam o chybe je 429 „Limit Exhausted“ s `reset_at`. Je to výslovná výnimka z FINAL. Riziko: chyba
+sub-agenta by mohla vyradiť agenta, ktorý zlyhal z iného dôvodu. Tlmia to minimum 2 a notifikácia."
+
+Translation: "My recommendation, the fastest path that works. For zcode, the `responseBody` JSON in stderr is
+enough when the process ended with an error, left no output, and every error record is a 429 'Limit
+Exhausted' with `reset_at`. This is an explicit exception to FINAL. Risk: a sub-agent's error could exclude an
+agent that failed for a different reason. The minimum of 2 and the notice soften that."
+
+**Question 2, display time without a timezone.** Selected: **"Áno, podľa návrhu claude-1 (Recommended)"**.
+This adopts the bounded interpretation exactly as your note states it. A display clock counts only when it
+appears together with a machine reset value (`reset_at` or `retry_after`) in the same record and agrees with
+it within one second. Missing, contradictory or display-only resets still gate.
+
+## What this authorizes (an owner-directed deviation from FINAL; record it in IMPLEMENTATION.md)
+
+- The zcode adapter becomes a **supported** recognizer, but only under this owner-defined evidence rule. All
+  of the following must hold:
+  - the zcode process exited non-zero;
+  - it produced no valid artifact, and no later attempt in the batch succeeded;
+  - stderr contains at least one provider error record whose `responseBody` JSON is a 429 with explicit
+    exhaustion text ("Limit Exhausted", or allowance semantics as in FINAL §4.4) and a machine reset value;
+  - **every** provider error record in that stderr agrees: each is that same exhaustion class, and their
+    reset values agree within the tolerance. A mixed or contradictory record set gates;
+  - the run ends with zcode's turn-failure line;
+  - the reset clears FINAL's 60-minute threshold.
+- Positive fixtures are this run's recorded zcode stderr (evidence incidents 1 and 2). Adversarial fixtures
+  include a quoted 429 in assistant or tool text, a mixed 429 plus other-error stderr, a reset under 60
+  minutes, a display-clock-only reset and a success after a 429.
+- Everything else in FINAL is unchanged: the floor of 2, the role guards, fail-closed, the record and
+  notice, both stages and claude-1's binding full review. Other adapters stay diagnostic-only unless they
+  have native evidence.
+- Record the deviation in `IMPLEMENTATION.md` with this note quoted, and carry the protocol wording into the
+  §9.0 hunk under §7. The claude-1 review checks the deviation as implemented, not whether to make it.
+
+## Resumed implementation boundary
+
+- Protocol context read in full: context_mode=full; source_sha256=8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416; packet_sha256=8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416; fallback_reason absent.
+- Owner-directed deviations: the zcode stderr rule replaces FINAL's unavailable native terminal binding for zcode only; zone-less display clocks are supplemental only under the exact same-record, real-offset, one-second agreement conditions in the answered note. No other adapter gains support.
+- A separate codex-1 implementation invocation owns Go code/tests and its implementation-evidence file. This organizer owns IMPLEMENTATION.md, protocol text and skill files, usage/organizer notes, and inbox. Edits are disjoint and commits are serialized after the child exits. Existing worktrees/branches are reused exactly as the owner brief requires; no worktree declaration/pruning.
+- Full-scope claude-1 review follows both delivered stages. Prior rounds 01/02 are focused feedback only. The organizer/implementer does not issue an independent verdict on its own work.

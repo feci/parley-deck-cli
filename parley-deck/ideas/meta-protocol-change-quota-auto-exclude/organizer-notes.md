@@ -731,3 +731,11 @@ Current code checks: host build/vet/gofmt/focused tests and full Go suite pass, 
 full skill suite. Literal AC1 whole-file identity remains an open bootstrap-zone deviation;
 no whole-file equality or AC-level independent acceptance is asserted. Usage at this
 boundary is ingested and recorded in organizer-usage.md (ambiguous run-window attribution).
+
+## Owner-answer resumption — 2026-10-04
+
+Read the controlling implementation brief, owner scope/reset answer and ratification, FINAL, IMPLEMENTATION, organizer tail, computed brief/status and full phase-5 context. The prior handoff already set codex-1 as participating organizer and implementer; it is not repeated. Scoped OpenViking recall returned the prior blocker and was checked against the new local answer. Installed CLI 1.50.0; installer and all eight core runtime skill copies 2.14.0. Source-deck metadata remains 2.12.0 and stale; dry-run sync saved under .parley-runtime/quota-implementation/resume-skill-dry-run.json. Metadata refresh remains release work.
+
+Driver-first attempt: `parley continue --auto meta-protocol-change-quota-auto-exclude` prematurely selected review-consensus drafting from the two focused feedback files while IMPLEMENTATION is in-progress. The organizer stopped exactly that driver and its child before any consensus artifact was written. The generated context-canceled driver note is archived as resolved orchestration evidence. This is a dispatch-state gap, not a provider/auth/quota failure, and not a new owner decision. Manual Phase 5 remains the recorded fallback. Legacy-record migration stays outside scope.
+
+Implementation resumption uses configured codex-1 / gpt-6-astra / max, with a recorded 5400-second ceiling for the two required stages. claude-1 / claude/claude-opus-5-5[1m] / max remains the sole independent reviewer, in a separate process at the full review boundary. The implementation child owns Go code/tests and its evidence file; the organizer owns protocol/skill text and orchestration files. Same-file edits and commits are serialized.
