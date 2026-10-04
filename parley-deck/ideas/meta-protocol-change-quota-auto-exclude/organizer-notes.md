@@ -690,3 +690,10 @@ The OpenViking checkpoint write returned a 60-second queue timeout, but readback
 and scoped find returned the exact saved resource. Persistence and retrieval are verified:
 viking://resources/projects/parley-deck/quota-auto-exclude-stage1-blocker-20261004.md.
 It describes the earlier blocker checkpoint; later local canonical artifacts govern.
+
+The host full-suite run with the default timeout passed every package except trajectory,
+which hit Go's 10-minute package ceiling while still progressing (no assertion failure).
+The rerun `go test ./... -timeout 45m` exited 0, all packages passed, including app
+(496.176 s), runner (117.534 s), and trajectory (548.381 s). Current evidence is
+.parley-runtime/quota-implementation/stage1-full-host-45m.log. The code remains the
+partial stage-1 checkpoint; full-suite success is not an independent AC verdict.

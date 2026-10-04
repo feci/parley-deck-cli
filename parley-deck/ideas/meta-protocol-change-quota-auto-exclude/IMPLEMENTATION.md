@@ -80,6 +80,13 @@ configuration does not waive the attended close or permit unattended completion.
 
 ## Progress
 
+- 2026-10-04: host `go test ./... -timeout 45m` exited 0 on the current stage-1 code.
+  Every package passed; app took 496.176 s and trajectory 548.381 s. The prior host
+  command hit the default 10-minute package ceiling in trajectory, with no assertion failure.
+  The longer rerun is the current full-suite evidence; log:
+  `.parley-runtime/quota-implementation/stage1-full-host-45m.log`. This does not establish
+  the missing AC2 recognizer or any not-yet-implemented stage-2 acceptance criterion.
+
 - 2026-10-04: a further read-only installed-source search located native JSONL logs under
   `~/.zcode/cli/log` (singular), including a real `turn.failed` with provider attribution and a
   53-hour quota message. The scrubbed record and source snippets are in
@@ -157,7 +164,10 @@ No acceptance criterion is independently claimed complete. Producer checks so fa
 - `go test ./internal/quota ./internal/telemetry ./internal/config -count=1` on host: pass.
 - `go test ./internal/runner -run 'TestVerifierRecoveryRefusedEvidenceMutationFailsHandles|TestQuota' -count=1`
   on host: pass, including the fixture denied by the subprocess sandbox.
-- The subprocess full suite failed on sandbox-denied cache/launch fixtures; no full-suite pass is claimed.
+- The subprocess full suite encountered sandbox-denied cache/launch fixtures. The later host full
+  suite (`go test ./... -timeout 45m`) passed every package at this stage-1 checkpoint. The first
+  host run reached the default 10-minute trajectory timeout; the longer rerun exited 0.
+  Full checks must run again after further implementation changes.
 - Protocol drift guard and packet checks pass; skill checks above pass. AC1's whole-file comparison is
   still unmet, AC2 is unmet, stage-2 ACs are not implemented, and attended close/signoffs remain owed.
 
