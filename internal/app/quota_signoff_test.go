@@ -46,7 +46,7 @@ func TestQuotaSignoffProcessSettlesBatchAndKeepsCurrentRequiredSet(t *testing.T)
 	alpha := writeFakeSignoffCLI(t, bin, "alpha", "accept", 0)
 	beta := writeFakeSignoffCLI(t, bin, "beta", "accept", 0)
 	failed := filepath.Join(bin, "zcode")
-	script := fmt.Sprintf("#!/bin/sh\ncat >/dev/null\ncat >&2 <<'QUOTA'\nstatusCode: 429\nresponseBody: '{\"error\":{\"message\":\"Weekly Limit Exhausted\",\"reset_at\":\"%s\"}}'\nError: Turn execution failed\nQUOTA\nexit 1\n", time.Now().UTC().Add(3*time.Hour).Format(time.RFC3339Nano))
+	script := fmt.Sprintf("#!/bin/sh\ncat >/dev/null\ncat >&2 <<'QUOTA'\nAPICallError [AI_APICallError]: Weekly Limit Exhausted\n    at fixture (stub.js:1:1) {\n  cause: undefined,\n  url: 'https://provider.invalid',\n  requestBodyValues: undefined,\n  statusCode: 429,\n  responseHeaders: {},\n  responseBody: '{\"error\":{\"message\":\"Weekly Limit Exhausted\",\"reset_at\":\"%s\"}}',\n  isRetryable: true,\n  data: undefined,\n  Symbol(vercel.ai.error): true,\n  Symbol(vercel.ai.error.AI_APICallError): true\n}\nError: Turn execution failed\nQUOTA\nexit 1\n", time.Now().UTC().Add(3*time.Hour).Format(time.RFC3339Nano))
 	if err = os.WriteFile(failed, []byte(script), 0700); err != nil {
 		t.Fatal(err)
 	}

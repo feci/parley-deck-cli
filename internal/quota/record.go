@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -94,7 +95,7 @@ func WriteKickoff(ideaDir string, k Kickoff) error {
 		f.Close()
 		return err
 	}
-	if err = f.Sync(); err != nil {
+	if err = fsutil.SyncFile(f); err != nil {
 		f.Close()
 		return err
 	}
@@ -106,7 +107,7 @@ func WriteKickoff(ideaDir string, k Kickoff) error {
 		return err
 	}
 	defer dir.Close()
-	return dir.Sync()
+	return fsutil.SyncFile(dir)
 }
 func ReadKickoff(ideaDir string) (*Kickoff, error) {
 	b, err := os.ReadFile(filepath.Join(ideaDir, KickoffFile))
@@ -145,5 +146,5 @@ func (k Kickoff) Notice() string {
 	for _, c := range tr.Decision.Candidates {
 		body += fmt.Sprintf("- %s: %s (%s), reset %s. %s\n", c.Agent, c.Evidence.Excerpt, c.Evidence.RuleID, c.Evidence.ResetHint(), c.Evidence.RelaunchHint())
 	}
-	return body + fmt.Sprintf("\nSurvivors: %v. Existing review, diversity and close gates remain in force.\n", k.Participants)
+	return body + fmt.Sprintf("\nSurvivors: %v. Remaining gates: reviewer count for the selected track; LE-7/LE-11 two-reviewer close (auto_implement); independent goal-checker eligibility (auto_implement or strict_gate); require_model_diversity (when enabled, and fast track); strict_gate (when enabled); retained vetoes, DISPUTED claims and findings.\n", k.Participants)
 }

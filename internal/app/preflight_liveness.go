@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/telemetry"
 	"regexp"
 	"strings"
 	"time"
@@ -633,7 +634,7 @@ var providerFailureRules = []struct {
 	{"rate-limit", regexp.MustCompile(`(?i)rate[-_ ]?limit|rate_limit_error|usageLimitExceeded|usage limit|session limit|too many requests|(^|[^0-9])429([^0-9]|$)`)},
 	{"auth", regexp.MustCompile(`(?i)authentication[_ ](failed|error|required)|unauthorized|forbidden|permission_error|oauth[_ ](org|error|failed|not allowed)|oauth_org_not_allowed|api key not valid|invalid api key|(^|[^0-9])401([^0-9]|$)`)},
 	{"billing", regexp.MustCompile(`(?i)billing[_ ](error|failed|required)|payment|credit (error|exhausted|balance)|quota exceeded`)},
-	{"overloaded", regexp.MustCompile(`(?i)overloaded|overloaded_error|serverOverloaded|server[_ ]error|internalServerError|(^|[^0-9])503([^0-9]|$)`)},
+	{"overloaded", regexp.MustCompile(telemetry.ProviderUnavailablePattern)},
 	{"model-not-found", regexp.MustCompile(`(?i)model[_ ]not[_ ]found|model not found|not_found_error|unknown model`)},
 }
 

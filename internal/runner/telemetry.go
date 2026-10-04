@@ -84,6 +84,19 @@ func launchRequestInfo(ctx context.Context, root, runID string) (string, LaunchI
 
 func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
 	root, info := launchRequestInfo(ctx, root, runID)
+	target, err := CanonicalArtifactIdea(root, info.ArtifactPath)
+	if err != nil {
+		return nil, err
+	}
+	if target != "" {
+		if info.Idea != "" && info.Idea != target {
+			return nil, fmt.Errorf("artifact idea conflicts with launch identity")
+		}
+		info.Idea = target
+		if info.Phase == "preflight" {
+			return nil, fmt.Errorf("preflight cannot target a canonical idea artifact")
+		}
+	}
 	if info.Idea != "" && info.Phase != "preflight" {
 		dir := filepath.Join(root, protocol.DeckDir, "ideas", info.Idea)
 		v, err := protocol.InspectQuota(dir)

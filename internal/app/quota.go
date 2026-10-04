@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,7 +33,7 @@ func writeQuotaBlock(root string, d quota.Decision) error {
 	}
 	_, err = fmt.Fprintf(f, "---\nfrom: parley\nto: user\nphase: kickoff\nblocking: yes\ndate: %s\n---\n\nQuota batch blocked: %s\n\nCandidates: %v\n\nProposed: %v\n\nUsable non-facilitator survivors: %d; fixed floor: %d. No quota exclusions applied.\n\nEvidence:\n```json\n%s\n```\n", time.Now().UTC().Format("2006-01-02"), d.Block, quota.CandidateIDs(d.Candidates), d.Before, d.UsableSurvivors, quota.Floor, b)
 	if err == nil {
-		err = f.Sync()
+		err = fsutil.SyncFile(f)
 	}
 	closeErr := f.Close()
 	if err != nil {
@@ -49,13 +50,20 @@ func quotaSurface(ideaDir string) []string {
 	if h == nil {
 		return nil
 	}
-	lines := []string{fmt.Sprintf("quota policy: enabled=%t scope=%s revision=%d", h.Kickoff.Policy.Enabled, h.Kickoff.Policy.Scope, h.Revision)}
+	lines := []string{fmt.Sprintf("quota policy: enabled=%t scope=%s revision=%d", h.Policy().Enabled, h.Policy().Scope, h.Revision)}
+	lines = append(lines, "quota current participants: "+strings.Join(h.Current, ", "), "quota known participants: "+strings.Join(h.Known, ", "))
 	if v.Pending != "" {
 		lines = append(lines, "quota transition pending: "+v.Pending)
 	}
 	add := func(id string, cs []quota.Candidate) {
 		for _, c := range cs {
-			lines = append(lines, fmt.Sprintf("automatic exclusion: %s; reset=%s; transition=%s", c.Agent, c.Evidence.ResetHint(), id))
+			label := "automatic exclusion"
+			for _, member := range h.Current {
+				if member == c.Agent {
+					label = "historical automatic exclusion (now re-included)"
+				}
+			}
+			lines = append(lines, fmt.Sprintf("%s: %s; reset=%s; transition=%s", label, c.Agent, c.Evidence.ResetHint(), id))
 		}
 	}
 	if h.Kickoff.Transition != nil {

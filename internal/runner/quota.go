@@ -56,7 +56,7 @@ func quotaSettle(ctx context.Context, opts Options, results []Result) []Result {
 	for _, r := range results {
 		if r.ExitError != "" && (r.AgentID == "runner" || strings.HasPrefix(r.AgentID, "runner/")) {
 			roles, _ := membership.Roles(opts.Idea.Path)
-			decision := quota.Evaluate(h.Kickoff.Policy, h.Current, members, roles)
+			decision := quota.Evaluate(h.Policy(), h.Current, members, roles)
 			decision.Block = "integrity/recovery gate: " + r.ExitError
 			err := membership.Block(opts.Root, opts.Idea.Path, opts.RunID, opts.RoundLabel, decision)
 			return append(results, Result{AgentID: "runner/quota", ExitError: err.Error(), QuotaBlocked: membership.IsBlocked(err)})

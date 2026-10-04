@@ -18,6 +18,14 @@ parley resume --dir . <run-id-or-idea>
 
 ## Commands
 
+### `parley quota revise|recover --dir DIR --idea IDEA --run RUN`
+
+`revise --request FILE` records an explicit owner-confirmed membership or policy revision.
+`recover` reconciles broken mutable receipts against immutable history and checked projections.
+See [recorded quota membership and recovery](quota-membership.md) for the request schema,
+committed owner-answer binding, ordinary knob-off confirmations and evidence limits.
+
+
 ### `parley init [--dir DIR]`
 
 Create the repository-local `parley-deck/` workspace with protocol, ideas,

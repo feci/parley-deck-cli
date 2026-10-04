@@ -10,17 +10,23 @@ import (
 // that device-specific operation with ENOTTY but support ordinary fsync.
 // Require the latter to succeed; never ignore an I/O or persistence failure.
 func SyncFile(file *os.File) error {
-	err := file.Sync()
-	if errors.Is(err, syscall.ENOTTY) {
-		raw, controlErr := file.SyscallConn()
-		if controlErr != nil {
-			return controlErr
+	return syncWithFallback(file.Sync, func() error {
+		raw, err := file.SyscallConn()
+		if err != nil {
+			return err
 		}
 		var syncErr error
-		if controlErr = raw.Control(func(fd uintptr) { syncErr = syscall.Fsync(int(fd)) }); controlErr != nil {
-			return controlErr
+		if err = raw.Control(func(fd uintptr) { syncErr = syscall.Fsync(int(fd)) }); err != nil {
+			return err
 		}
 		return syncErr
+	})
+}
+
+func syncWithFallback(full, plain func() error) error {
+	err := full()
+	if errors.Is(err, syscall.ENOTTY) {
+		return plain()
 	}
 	return err
 }

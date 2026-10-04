@@ -12,17 +12,22 @@ import (
 	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/quotatest"
 	"parley-deck-cli/internal/runmanifest"
 )
 
 func quotaConsensusFixture(t *testing.T) (string, protocol.IdeaStatus, context.Context) {
+	t.Helper()
+	return quotaConsensusFixturePolicy(t, quota.NewPolicy(nil, nil))
+}
+
+func quotaConsensusFixturePolicy(t *testing.T, p quota.Policy) (string, protocol.IdeaStatus, context.Context) {
 	t.Helper()
 	root := t.TempDir()
 	t.Setenv("PARLEY_HOME", t.TempDir())
 	if err := protocol.InitWorkspace(root); err != nil {
 		t.Fatal(err)
 	}
-	p := quota.NewPolicy(nil, nil)
 	idea, k, err := protocol.CreateIdeaWithQuota(root, "quota consensus", []string{"a", "b", "c", "d"}, nil, "deliberation", "", "test-run", &p, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -146,7 +151,10 @@ func TestQuotaRetainedVetoOnlyOwnerRulingCanDispose(t *testing.T) {
 	if err != nil || s.Triage != TriageBlocked {
 		t.Fatal(s, err)
 	}
-	writeFile(t, filepath.Join(idea.Path, "round-02", "a.md"), "---\nagent: a\n---\n## User direction\nOwner ruling for "+ob.ID+": retain the original evidence and adopt the alternative.\n")
+	quote := "Owner ruling for " + ob.ID + ": retain the original evidence and adopt the alternative."
+	authority := quotatest.Authority(t, root, idea.Slug, "ruling", quote)
+	writeFile(t, path, raw+disposition+quotatest.Fields(authority))
+	writeFile(t, filepath.Join(idea.Path, "round-02", "a.md"), "---\nagent: a\nidea: "+idea.Slug+"\n---\n## User direction\n"+quote+"\n")
 	s, err = Status(root, idea.Slug, false)
 	if err != nil || s.Triage != TriageReady || len(s.Signoffs) != 3 {
 		t.Fatal(s, err)
@@ -154,5 +162,135 @@ func TestQuotaRetainedVetoOnlyOwnerRulingCanDispose(t *testing.T) {
 	after, _ := os.ReadFile(path)
 	if !bytes.HasPrefix(after, []byte(raw)) {
 		t.Fatal("filed veto rewritten")
+	}
+}
+
+func TestQuotaFixupReincludeWithdrawThenAppendSignoff(t *testing.T) {
+	root, idea, ctx := quotaConsensusFixture(t)
+	path := filepath.Join(idea.Path, "consensus.md")
+	raw := "---\nidea: " + idea.Slug + "\ndrafted-by: a\n---\n## Signoffs\n" + signoffBlock("a", "2026-10-04", StatusAccept, "", "") + signoffBlock("b", "2026-10-04", StatusAccept, "", "") + signoffBlock("c", "2026-10-04", StatusBlock, "Data loss.", "Retain records.")
+	writeFile(t, path, raw)
+	batch, e := membership.Settle(ctx, root, idea.Path, "test-run", "consensus", idea.Participants, quotaConsensusMembers())
+	if e != nil {
+		t.Fatal(e)
+	}
+	ids := []string{"a", "b", "c"}
+	p := quota.NewPolicy(nil, nil)
+	a := quotatest.Authority(t, root, idea.Slug, "reinclusion", (quota.RevisionDirective{Participants: ids, Policy: p}).Text())
+	revision, e := membership.Revise(ctx, root, idea.Path, "test-run", ids, p, a, nil)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if s, e := Status(root, idea.Slug, false); e != nil || s.Triage != TriageBlocked {
+		t.Fatal(s, e)
+	}
+	ob := batch.Retained[0]
+	disposition := "\n\n" + ob.ID + "\nDisposition: withdrawn\nRationale: Author read the corrected design after owner-confirmed return.\nAuthority: c\nEvidence: round-02/c.md\n"
+	writeFile(t, path, raw+disposition)
+	for _, binding := range []string{"", "batch-invented", revision.ID} {
+		writeFile(t, filepath.Join(idea.Path, "round-02/c.md"), "---\nagent: c\nidea: "+idea.Slug+"\nquota-revision: 2\nreinclusion: "+binding+"\n---\nWithdrawal: "+ob.ID+"\n")
+		s, e := Status(root, idea.Slug, false)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if binding != revision.ID && s.Triage != TriageBlocked {
+			t.Fatal("unbound withdrawal released veto", s)
+		}
+		if binding == revision.ID && (s.Triage == TriageBlocked || s.Triage == TriageReady) {
+			t.Fatal("withdrawal either kept veto or counted as fresh signoff", s)
+		}
+	}
+	s, e := AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "c", Status: "accept"})
+	if e != nil || s.Triage != TriageReady {
+		t.Fatal(s, e)
+	}
+	after, _ := os.ReadFile(path)
+	if !bytes.HasPrefix(after, []byte(raw)) {
+		t.Fatal("historical veto bytes changed")
+	}
+	// Re-inclusion authority survives permitted deletion from the inbox.
+	os.Remove(filepath.Join(root, a.Path))
+	if s, e = Status(root, idea.Slug, false); e != nil || s.Triage != TriageReady {
+		t.Fatal(s, e)
+	}
+	// A later new veto is never disposed merely because an earlier veto was.
+	writeFile(t, path, string(after)+signoffBlock("c", "2026-10-05", StatusBlock, "A new defect.", "Fix new defect."))
+	s, e = Status(root, idea.Slug, false)
+	if e != nil || s.Triage == TriageReady {
+		t.Fatal("later veto swallowed", s, e)
+	}
+}
+
+func TestQuotaFixupOffModeReturnWithdrawalAndSignoff(t *testing.T) {
+	root, idea, _ := quotaConsensusFixturePolicy(t, quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea})
+	path := filepath.Join(idea.Path, "consensus.md")
+	raw := "---\nidea: " + idea.Slug + "\ndrafted-by: a\n---\n## Signoffs\n" + signoffBlock("a", "2026-10-04", StatusAccept, "", "") + signoffBlock("b", "2026-10-04", StatusAccept, "", "") + signoffBlock("c", "2026-10-04", StatusBlock, "Old defect.", "Retain records.")
+	writeFile(t, path, raw)
+	promptPath := filepath.Join(idea.Path, "00-prompt.md")
+	prompt, _ := os.ReadFile(promptPath)
+	prompt = bytes.Replace(prompt, []byte("participants: [a, b, c, d]"), []byte("participants: [a, b]\nexcluded: [c — unavailable — confirmed 2026-10-04]\nexcluded: [d — unavailable — confirmed 2026-10-04]"), 1)
+	os.WriteFile(promptPath, prompt, 0600)
+	if e := membership.RecordManual(root, idea.Path); e != nil {
+		t.Fatal(e)
+	}
+	h, e := quota.ReadHistory(idea.Path)
+	if e != nil || len(h.Batches[0].Retained) != 1 {
+		t.Fatal(h, e)
+	}
+	ob := h.Batches[0].Retained[0]
+	prompt, _ = os.ReadFile(promptPath)
+	prompt = bytes.Replace(prompt, []byte("participants: [a, b]"), []byte("participants: [a, b, c]\nincluded: [c — returned — confirmed 2026-10-04]"), 1)
+	os.WriteFile(promptPath, prompt, 0600)
+	if e = membership.RecordManual(root, idea.Path); e != nil {
+		t.Fatal(e)
+	}
+	h, e = quota.ReadHistory(idea.Path)
+	if e != nil {
+		t.Fatal(e)
+	}
+	writeFile(t, filepath.Join(idea.Path, "round-02/c.md"), "---\nagent: c\nidea: "+idea.Slug+"\nquota-revision: 2\nreinclusion: "+h.Batches[1].ID+"\n---\nWithdrawal: "+ob.ID+"\n")
+	writeFile(t, path, raw+"\n\n"+ob.ID+"\nDisposition: withdrawn\nRationale: Checked correction on return.\nAuthority: c\nEvidence: round-02/c.md\n")
+	s, e := AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "c", Status: "accept"})
+	if e != nil || s.Triage != TriageReady {
+		t.Fatal(s, e)
+	}
+	after, _ := os.ReadFile(path)
+	if !bytes.HasPrefix(after, []byte(raw)) {
+		t.Fatal("old veto changed")
+	}
+	t.Log("ordinary off-mode exclusion and known return imported without revision CLI; author-bound withdrawal then fresh signoff succeeds; old veto bytes preserved")
+}
+
+func TestQuotaFixupWithdrawalMatchesBlankLineSignoffAndNotNewVeto(t *testing.T) {
+	root, idea, ctx := quotaConsensusFixture(t)
+	path := filepath.Join(idea.Path, "consensus.md")
+	veto := strings.Replace(signoffBlock("c", "2026-10-04", StatusBlock, "Data loss.", "Retain records."), "\nStatus:", "\n\nStatus:", 1)
+	raw := "---\nidea: " + idea.Slug + "\ndrafted-by: a\n---\n## Signoffs\n" + signoffBlock("a", "2026-10-04", StatusAccept, "", "") + signoffBlock("b", "2026-10-04", StatusAccept, "", "") + veto
+	writeFile(t, path, raw)
+	batch, e := membership.Settle(ctx, root, idea.Path, "test-run", "consensus", idea.Participants, quotaConsensusMembers())
+	if e != nil {
+		t.Fatal(e)
+	}
+	ids := []string{"a", "b", "c"}
+	p := quota.NewPolicy(nil, nil)
+	a := quotatest.Authority(t, root, idea.Slug, "blank-veto", (quota.RevisionDirective{Participants: ids, Policy: p}).Text())
+	rev, e := membership.Revise(ctx, root, idea.Path, "test-run", ids, p, a, nil)
+	if e != nil {
+		t.Fatal(e)
+	}
+	ob := batch.Retained[0]
+	writeFile(t, filepath.Join(idea.Path, "round-02/c.md"), "---\nagent: c\nidea: "+idea.Slug+"\nquota-revision: 2\nreinclusion: "+rev.ID+"\n---\nWithdrawal: "+ob.ID+"\n")
+	disposition := "\n\n" + ob.ID + "\nDisposition: withdrawn\nRationale: Returned author withdraws.\nAuthority: c\nEvidence: round-02/c.md\n"
+	writeFile(t, path, raw+disposition)
+	s, e := AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "c", Status: "accept"})
+	if e != nil || s.Triage != TriageReady {
+		t.Fatal(s, e)
+	}
+	after, _ := os.ReadFile(path)
+	// An identical signoff filed again on the same day is a new veto, not the old one.
+	writeFile(t, path, string(after)+veto)
+	s, e = Status(root, idea.Slug, false)
+	if e != nil || s.Triage == TriageReady {
+		t.Fatal("new identical veto swallowed", s, e)
 	}
 }

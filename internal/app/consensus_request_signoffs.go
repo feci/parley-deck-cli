@@ -494,11 +494,11 @@ func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Di
 	case agents.LaunchInteractive:
 		return runInteractiveSignoffAgent(ctx, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout, stderr)
 	case agents.LaunchManual:
-		return runManualSignoffAgent(rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
+		return runManualSignoffAgent(ctx, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
 	case agents.LaunchACP:
 		// Consensus signoff via ACP not yet wired; route through manual until the
 		// ACP runtime is plumbed end-to-end through the signoff flow.
-		return runManualSignoffAgent(rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
+		return runManualSignoffAgent(ctx, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout)
 	default:
 		return signoffRunResult{}, fmt.Errorf("%s has invalid launch_mode %q", agent.ID, agent.LaunchMode)
 	}
@@ -530,7 +530,7 @@ func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.D
 func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout, stderr io.Writer) (signoffRunResult, error) {
 	agentCtx, cancel := context.WithTimeout(ctx, requestInteractiveSignoffTimeout(agent))
 	defer cancel()
-	packet, err := writeSignoffHandoff(rootAbs, runID, agent, prompt, consensusPath)
+	packet, err := writeSignoffHandoff(ctx, rootAbs, runID, agent, prompt, consensusPath)
 	if err != nil {
 		return signoffRunResult{}, err
 	}
@@ -581,8 +581,8 @@ func runInteractiveSignoffAgent(ctx context.Context, rootAbs, runID string, agen
 	}
 }
 
-func runManualSignoffAgent(rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout io.Writer) (signoffRunResult, error) {
-	packet, err := writeSignoffHandoff(rootAbs, runID, agent, prompt, consensusPath)
+func runManualSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath, beforeRaw string, stdout io.Writer) (signoffRunResult, error) {
+	packet, err := writeSignoffHandoff(ctx, rootAbs, runID, agent, prompt, consensusPath)
 	if err != nil {
 		return signoffRunResult{}, err
 	}
@@ -610,9 +610,10 @@ func appendSignoffEvent(rootAbs, runID, eventType string, data map[string]any) e
 	return runStore.Append(store.Event{Time: time.Now().UTC(), Type: eventType, Data: data})
 }
 
-func writeSignoffHandoff(rootAbs, runID string, agent agents.Discovery, prompt, consensusPath string) (runner.HandoffPacket, error) {
+func writeSignoffHandoff(ctx context.Context, rootAbs, runID string, agent agents.Discovery, prompt, consensusPath string) (runner.HandoffPacket, error) {
 	idea, phase := signoffContext(consensusPath)
 	return runner.WriteHandoffPacket(runner.HandoffOptions{
+		Context:            ctx,
 		Root:               rootAbs,
 		RunID:              runID,
 		Idea:               idea,

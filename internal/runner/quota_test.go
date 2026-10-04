@@ -123,7 +123,7 @@ func TestQuotaRunnerProcessFailureTransitionsAfterWritersStop(t *testing.T) {
 	opts := quotaRunnerFixture(t)
 	writeLaunchProtocol(t, opts.Root)
 	reset := time.Now().UTC().Add(3 * time.Hour).Format(time.RFC3339Nano)
-	stderr := "statusCode: 429\nresponseBody: '{\"error\":{\"message\":\"Weekly Limit Exhausted\",\"reset_at\":\"" + reset + "\"}}'\nError: Turn execution failed\n"
+	stderr := "APICallError [AI_APICallError]: Weekly Limit Exhausted\n    at fixture (stub.js:1:1) {\n  cause: undefined,\n  url: 'https://provider.invalid',\n  requestBodyValues: undefined,\n  statusCode: 429,\n  responseHeaders: {},\n  responseBody: '{\"error\":{\"message\":\"Weekly Limit Exhausted\",\"reset_at\":\"" + reset + "\"}}',\n  isRetryable: true,\n  data: undefined,\n  Symbol(vercel.ai.error): true,\n  Symbol(vercel.ai.error.AI_APICallError): true\n}\nError: Turn execution failed\n"
 	capture := filepath.Join(opts.Root, "quota.stderr")
 	os.WriteFile(capture, []byte(stderr), 0600)
 	stub := filepath.Join(opts.Idea.Path, "round-01", "c.md")
@@ -182,5 +182,42 @@ func TestQuotaRunnerLostRoundEventBlocksReduction(t *testing.T) {
 	h, err := quota.ReadHistory(opts.Idea.Path)
 	if err != nil || h.Revision != 0 || !results[len(results)-1].QuotaBlocked {
 		t.Fatal(h, err, results)
+	}
+}
+
+func TestQuotaFixupCanonicalTargetIdentityAndGenericWork(t *testing.T) {
+	opts := quotaRunnerFixture(t)
+	ctx, live, r, e := quotaBefore(context.Background(), opts)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer r()
+	quotaSettle(ctx, live, quotaRunnerResults(t, opts))
+	target := filepath.Join(opts.Idea.Path, "round-02/c.md")
+	for _, info := range []LaunchInfo{{RunID: opts.RunID, ArtifactPath: target}, {RunID: opts.RunID, Idea: "other-idea", ArtifactPath: target}, {RunID: opts.RunID, Phase: "preflight", ArtifactPath: target}} {
+		if _, e := beginLaunch(WithLaunchInfo(ctx, info), opts.Root, opts.RunID, agents.Discovery{Spec: agents.Spec{ID: "c"}}); e == nil {
+			t.Fatal("excluded/conflicting canonical launch admitted", info)
+		}
+	}
+	info := LaunchInfo{RunID: "unbound-work", Phase: "manual", ArtifactPath: filepath.Join(opts.Root, "scratch/result.txt")}
+	if idea, e := CanonicalArtifactIdea(opts.Root, info.ArtifactPath); e != nil || idea != "" {
+		t.Fatal(idea, e)
+	}
+	link := filepath.Join(opts.Idea.Path, "link")
+	os.Symlink(opts.Root, link)
+	if _, e := CanonicalArtifactIdea(opts.Root, filepath.Join(link, "x")); e == nil {
+		t.Fatal("symlink ambiguity accepted")
+	}
+}
+func TestQuotaFixupRunnerBare503AndNoise(t *testing.T) {
+	for _, s := range []string{"503", " 503 \n", "503 Service Unavailable", "HTTP/2 503", "statusCode: 503", "API error 503"} {
+		if got, _ := classifyFailure("", "", s); got != "overloaded" {
+			t.Fatalf("%q: %q", s, got)
+		}
+	}
+	for _, s := range []string{"size=503 bytes", "at source.js:503:1", "processed 503 records", "HTTP/2 200 (503 bytes)", "line 503", "build 1503"} {
+		if got, _ := classifyFailure("", "", s); got != "unknown" {
+			t.Fatalf("noise %q: %q", s, got)
+		}
 	}
 }

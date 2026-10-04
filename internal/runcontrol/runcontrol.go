@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"time"
 
@@ -120,7 +121,7 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		}
 		_, e = f.WriteString(kickoff.Notice())
 		if e == nil {
-			e = f.Sync()
+			e = fsutil.SyncFile(f)
 		}
 		closeErr := f.Close()
 		if e != nil {

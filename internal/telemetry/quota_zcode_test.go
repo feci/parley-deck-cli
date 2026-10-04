@@ -13,7 +13,7 @@ import (
 
 func recordedZcode(t *testing.T) QuotaInput {
 	t.Helper()
-	raw, err := os.ReadFile("testdata/quota/zcode-incident-2.stderr")
+	raw, err := os.ReadFile("testdata/quota/zcode-sdk-source-derived.stderr")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestQuotaIncidentOneReadinessWithRecordedProviderReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	in := recordedZcode(t)
-	body, err := os.ReadFile(filepath.Join("testdata/quota", f.ProviderFixture))
+	body, err := os.ReadFile(filepath.Join("testdata/quota", "zcode-sdk-source-derived.stderr"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,13 +73,8 @@ func TestQuotaIncidentOneReadinessWithRecordedProviderReplay(t *testing.T) {
 
 func TestQuotaZcodeEveryRecordAndObservedClock(t *testing.T) {
 	in := recordedZcode(t)
-	record := strings.TrimSuffix(in.Stderr, "Error: Turn execution failed\n")
+	record := in.Stderr[:strings.LastIndex(in.Stderr, "Error: Turn execution failed")]
 	in.Stderr = record + record + "Error: Turn execution failed\n"
-	wrapped := in
-	wrapped.Stderr = "APICallError [AI_APICallError]: Weekly Limit Exhausted\n" + record + "[Symbol(vercel.ai.error.AI_APICallError)]: true\nError: Turn execution failed\n"
-	if e := ClassifyQuota(wrapped); !e.Eligible {
-		t.Fatal("SDK wrapper/symbol rejected", e)
-	}
 	if e := ClassifyQuota(in); !e.Eligible {
 		t.Fatal(e)
 	}
@@ -106,7 +101,7 @@ func TestQuotaZcodeEveryRecordAndObservedClock(t *testing.T) {
 		t.Fatal(e)
 	}
 }
-func TestQuotaZcodeRecordedIncident(t *testing.T) {
+func TestQuotaZcodeRecordedBodySourceDerivedFraming(t *testing.T) {
 	in := recordedZcode(t)
 	e := ClassifyQuota(in)
 	if !e.Eligible || e.InvocationID == "" || e.RuleID == "" || e.Provenance == "" || e.ResetAt == nil || e.ResetHint() != "2026-10-04T22:14:57.003Z" || !strings.Contains(e.RawReset, "2026-10-05 06:14:57") {

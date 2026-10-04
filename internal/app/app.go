@@ -68,6 +68,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runTrajectory(ctx, args[1:], stdout, stderr)
 	case "evidence":
 		return runEvidenceVerify(ctx, args[1:], stdout, stderr)
+	case "quota":
+		return runQuota(ctx, args[1:], stdout, stderr)
 	case "consensus":
 		return runConsensus(ctx, args[1:], stdout, stderr)
 	case "pipeline":
@@ -1804,6 +1806,11 @@ func ideaForRun(status protocol.WorkspaceStatus, run runstate.RunSummary) protoc
 	return idea
 }
 
+// These two operation seams let lifetime tests drive UI exit and driver cleanup
+// deterministically, while production uses the real UI and driver.
+var runTaskLive = tui.RunLive
+var runTaskDrive = func(ctx context.Context, d *driver.Driver) error { return d.Run(ctx) }
+
 func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -2024,7 +2031,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 				MaxCostUSD:        lbCost,
 				Out:               stdout,
 			}, driver.NewRunnerAdapter(runOpts))
-			if err := d.Run(runCtx); err != nil {
+			if err := runTaskDrive(runCtx, d); err != nil {
 				fmt.Fprintf(stderr, "driver: %v\n", err)
 			}
 			if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
@@ -2047,11 +2054,17 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	// lets a --no-auto run kick it on demand. The driver emits run.phase/agent
 	// events the TUI renders; its output is io.Discard so it never corrupts the
 	// render, and quitting the TUI cancels runCtx, which stops the driver.
+	var driveWait sync.WaitGroup
+	// Drain the driver before the parent releases its idea lease. Cancellation
+	// alone does not join a goroutine which is finishing a quota projection.
+	defer func() { cancelRun(); driveWait.Wait() }()
 	var driveOnce sync.Once
 	startAutoDrive := func() {
 		driveOnce.Do(func() {
 			runcontrol.StartAutoAnswerer(runCtx, created.RunDir)
+			driveWait.Add(1)
 			go func() {
+				defer driveWait.Done()
 				select {
 				case <-runCtx.Done():
 					return
@@ -2078,7 +2091,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 					MaxCostUSD:        lbCost,
 					Out:               io.Discard,
 				}, driver.NewRunnerAdapter(runOpts))
-				if err := d.Run(runCtx); err != nil {
+				if err := runTaskDrive(runCtx, d); err != nil {
 					_ = runOpts.Store.Append(store.Event{Time: time.Now().UTC(), Type: "driver.error", Data: map[string]any{"error": err.Error()}})
 				}
 				if run, err := runstate.LoadRun(*root, created.RunID); err == nil {
@@ -2092,7 +2105,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	workspaceStatus.Ideas = []protocol.IdeaStatus{created.Idea}
 	steerFn, killFn, livenessFn := liveSteerKillSeams(runCtx, handle)
-	if err := tui.RunLive(tui.LiveOptions{
+	if err := runTaskLive(tui.LiveOptions{
 		Status:           workspaceStatus,
 		Idea:             created.Idea,
 		Participants:     participants,

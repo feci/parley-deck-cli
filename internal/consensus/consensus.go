@@ -127,12 +127,7 @@ func Status(root, ideaSlug string, review bool) (Summary, error) {
 		return Summary{}, kerr
 	}
 	originalSignoffs := append([]Signoff(nil), doc.Signoffs...)
-	for i, sig := range doc.Signoffs {
-		status, e := CanonicalStatus(sig.Status)
-		if e == nil && status == StatusBlock && !contains(idea.Participants, sig.Agent) && protocol.ResolvedQuotaVeto(idea.Path, path, sig.Agent) {
-			doc.Signoffs[i].Status = StatusAccept
-		}
-	}
+	doc.Signoffs = quotaEffectiveSignoffs(idea.Path, path, idea.Participants, doc)
 	result := validateDocumentAwaiting(idea.Slug, known,
 		reviewConsensusVoters(idea.Path, idea.Participants, review), review, doc)
 	result.Signoffs = originalSignoffs
@@ -183,6 +178,9 @@ func readIdeaTrack(ideaDir string) (track.Track, bool, error) {
 }
 
 func Draft(root, ideaSlug string, opts DraftOptions) (Summary, error) {
+	if err := membership.RecordManual(root, filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug)); err != nil {
+		return Summary{}, err
+	}
 	release, lockErr := membership.ProjectionLock(filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug))
 	if lockErr != nil {
 		return Summary{}, lockErr
@@ -261,6 +259,9 @@ func validateReviewRound(roundDir, roundLabel, roundRel, ideaSlug string, expect
 }
 
 func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) {
+	if err := membership.RecordManual(root, filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug)); err != nil {
+		return Summary{}, err
+	}
 	release, lockErr := membership.ProjectionLock(filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug))
 	if lockErr != nil {
 		return Summary{}, lockErr
@@ -300,6 +301,7 @@ func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) 
 	if !contains(currentIDs, opts.Agent) {
 		return Summary{}, fmt.Errorf("unknown current participant %q", opts.Agent)
 	}
+	doc.Signoffs = quotaEffectiveSignoffs(idea.Path, path, currentIDs, doc)
 	current := validateDocumentAwaiting(idea.Slug, known, currentIDs, opts.Review, doc)
 	if len(current.Errors) > 0 {
 		return Summary{}, fmt.Errorf("cannot append to malformed consensus: %s", strings.Join(current.Errors, "; "))
@@ -330,7 +332,14 @@ func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) 
 }
 
 func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, error) {
+	return FinalizeContext(context.Background(), root, ideaSlug, opts)
+}
+
+func FinalizeContext(ctx context.Context, root, ideaSlug string, opts FinalizeOptions) (string, Summary, error) {
 	dir := filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug)
+	if err := membership.RecordManual(root, dir); err != nil {
+		return "", Summary{}, err
+	}
 	view, viewErr := protocol.InspectQuota(dir)
 	if viewErr != nil {
 		return "", Summary{}, viewErr
@@ -340,7 +349,10 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 		if n := len(view.History.Batches); n > 0 {
 			run = view.History.Batches[n-1].RunID
 		}
-		ctx, release, err := membership.Acquire(context.Background(), dir, run)
+		if active := membership.DrivingRunID(ctx); active != "" {
+			run = active
+		}
+		ctx, release, err := membership.Acquire(ctx, dir, run)
 		if err != nil {
 			return "", Summary{}, err
 		}
@@ -442,6 +454,9 @@ func Finalize(root, ideaSlug string, opts FinalizeOptions) (string, Summary, err
 }
 
 func Reopen(root, ideaSlug string, opts ReopenOptions) (string, error) {
+	if err := membership.RecordManual(root, filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug)); err != nil {
+		return "", err
+	}
 	release, lockErr := membership.ProjectionLock(filepath.Join(root, protocol.DeckDir, "ideas", ideaSlug))
 	if lockErr != nil {
 		return "", lockErr
@@ -1159,4 +1174,30 @@ func frontmatterField(raw, key string) string {
 // (lean-organizer open item 5: do not fork the consensus-side parsing).
 func ExpectedRoundParticipants(ideaDir string, participants []string, review bool) []string {
 	return expectedRoundParticipants(ideaDir, participants, review)
+}
+
+// Preserve every filed byte. A withdrawn retained veto no longer counts as the
+// re-included author's fresh signoff; they must append their own new position.
+func quotaEffectiveSignoffs(dir, path string, current []string, doc document) []Signoff {
+	out := []Signoff{}
+	consumed := map[string]bool{}
+	lines := strings.Split(doc.Raw, "\n")
+	for _, sig := range doc.Signoffs {
+		start := sig.Line - 1
+		suffix := strings.TrimSpace(strings.Join(lines[start:], "\n"))
+		status, e := CanonicalStatus(sig.Status)
+		key, resolved := "", false
+		if e == nil && status == StatusBlock {
+			key, resolved = protocol.ResolvedQuotaVetoIdentity(dir, path, sig.Agent, suffix)
+		}
+		if resolved && !consumed[key] {
+			consumed[key] = true
+			if contains(current, sig.Agent) {
+				continue
+			}
+			sig.Status = StatusAccept
+		}
+		out = append(out, sig)
+	}
+	return out
 }

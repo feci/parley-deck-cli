@@ -47,7 +47,7 @@ func WriteHandoffPacket(opts HandoffOptions) (packet HandoffPacket, returnedErr 
 	if phase == "" {
 		phase = "handoff"
 	}
-	info := LaunchInfo{RunID: opts.RunID, Idea: opts.Idea, Phase: phase,
+	info := LaunchInfo{RunID: opts.RunID, Idea: opts.Idea, Phase: phase, ArtifactPath: opts.TargetPath,
 		Store: store.New(filepath.Join(opts.Root, protocol.DeckDir, "runs", opts.RunID))}
 	prompt, protocolContext, contextErr := prepareProtocolPrompt(opts.Root, opts.Prompt, info)
 	info.Context = protocolContext

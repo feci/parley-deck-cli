@@ -29,6 +29,7 @@ type Obligation struct {
 }
 
 type Batch struct {
+	Owner         *Revision    `json:"owner,omitempty"`
 	Retained      []Obligation `json:"retained,omitempty"`
 	Version       int          `json:"version"`
 	ID            string       `json:"id"`
@@ -52,7 +53,7 @@ type History struct {
 }
 
 func (h *History) MidIdea() bool {
-	return h != nil && h.Kickoff != nil && h.Kickoff.Policy.Enabled && h.Kickoff.Policy.Scope == KickoffAndMidIdea
+	return h != nil && h.Kickoff != nil && h.Policy().Enabled && h.Policy().Scope == KickoffAndMidIdea
 }
 func (b Batch) digest() string {
 	b.ID = ""
@@ -60,12 +61,15 @@ func (b Batch) digest() string {
 	return fmt.Sprintf("batch-%x", sha256.Sum256(raw))
 }
 func NewBatch(h *History, run, round string, expected []string, d Decision, now time.Time) Batch {
-	b := Batch{Version: 1, Idea: h.Kickoff.Idea, RunID: run, PriorRevision: h.Revision, Policy: h.Kickoff.Policy, Decision: d, RecordedAt: now.UTC(), Round: round, Expected: append([]string(nil), expected...)}
+	b := Batch{Version: 1, Idea: h.Kickoff.Idea, RunID: run, PriorRevision: h.Revision, Policy: h.Policy(), Decision: d, RecordedAt: now.UTC(), Round: round, Expected: append([]string(nil), expected...)}
 	b.ID = b.digest()
 	return b
 }
 func (b Batch) Validate(h *History) error {
-	if !h.MidIdea() || b.Version != 1 || b.Idea != h.Kickoff.Idea || b.RunID == "" || b.ID != b.digest() || b.PriorRevision != h.Revision || b.Policy != h.Kickoff.Policy || b.RecordedAt.IsZero() {
+	if b.Owner != nil {
+		return b.validateRevision(h)
+	}
+	if !h.MidIdea() || b.Version != 1 || b.Idea != h.Kickoff.Idea || b.RunID == "" || b.ID != b.digest() || b.PriorRevision != h.Revision || b.Policy != h.Policy() || b.RecordedAt.IsZero() {
 		return fmt.Errorf("contradictory quota batch identity/policy/revision")
 	}
 	d := b.Decision
@@ -148,7 +152,11 @@ func ReadHistory(ideaDir string) (*History, error) {
 		if e = b.Validate(h); e != nil {
 			return nil, e
 		}
+		if e = b.validateOwnerAuthority(ideaDir); e != nil {
+			return nil, e
+		}
 		h.Batches = append(h.Batches, b)
+		h.Known = FilterConfirmed(append(h.Known, b.Decision.After...), nil)
 		h.Current = append([]string(nil), b.Decision.After...)
 		h.Revision++
 	}
@@ -169,6 +177,10 @@ func strictDecode(raw []byte, v any) error {
 	}
 	return nil
 }
+
+// DecodeRevisionRequest applies the same no-duplicate/no-trailing-data grammar
+// as immutable records before any authority or filesystem mutation.
+func DecodeRevisionRequest(raw []byte, v any) error { return strictDecode(raw, v) }
 
 // DurableWrite publishes complete bytes with checked file and directory sync.
 // Exclusive records are immutable. Failures after publication leave readable
@@ -294,6 +306,9 @@ func CommitBatch(ideaDir string, b Batch) error {
 	if err = b.Validate(h); err != nil {
 		return err
 	}
+	if err = b.validateOwnerAuthority(ideaDir); err != nil {
+		return err
+	}
 	raw, err := json.MarshalIndent(b, "", "  ")
 	if err != nil {
 		return err
@@ -305,6 +320,9 @@ func (b Batch) Markers() []string {
 	return k.Markers()
 }
 func (b Batch) Notice() string {
+	if b.Owner != nil {
+		return fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nblocking: no\ntransition: %s\n---\n\nOwner-confirmed membership/policy revision. Current participants: %v. Policy: %+v.\n", b.Idea, b.ID, b.Decision.After, b.Policy)
+	}
 	k := Kickoff{Idea: b.Idea, Participants: b.Decision.After, Transition: &Transition{ID: b.ID, RecordedAt: b.RecordedAt, Decision: b.Decision}}
 	return strings.Replace(k.Notice(), "phase: kickoff", "phase: "+b.Round, 1) + fmt.Sprintf("\nArithmetic: %d before - %d candidates = %d current; %d usable non-facilitators >= %d.\n", len(b.Decision.Before), len(CandidateIDs(b.Decision.Candidates)), len(b.Decision.After), b.Decision.UsableSurvivors, Floor)
 }

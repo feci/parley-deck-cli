@@ -4,10 +4,14 @@ package membership
 
 import (
 	"context"
+	"crypto/sha256"
+	"errors"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/pidlease"
 	"path/filepath"
 	"sync/atomic"
+	"time"
 
 	"parley-deck-cli/internal/protocol"
 )
@@ -16,6 +20,7 @@ type leaseKey struct{}
 type lease struct {
 	path, run string
 	active    atomic.Bool
+	owner     *pidlease.Lease
 }
 
 // Acquire holds the idea lock for the entire driving operation. Nested calls may
@@ -32,42 +37,40 @@ func Acquire(ctx context.Context, ideaDir, run string) (context.Context, func(),
 	if !v.History.MidIdea() {
 		return ctx, func() {}, nil
 	}
-	path, err := filepath.Abs(filepath.Join(ideaDir, "quota-driver.lock"))
+	return acquireScoped(ctx, ideaDir, run)
+}
+
+func acquireScoped(ctx context.Context, ideaDir, run string) (context.Context, func(), error) {
+	path, err := lockPath(ideaDir, "driver")
 	if err != nil {
 		return ctx, nil, err
 	}
 	if l, _ := ctx.Value(leaseKey{}).(*lease); l != nil && l.path == path && l.run == run && l.active.Load() {
+		if err := l.owner.Check(); err != nil {
+			return ctx, nil, err
+		}
 		return ctx, func() {}, nil
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	owner, err := pidlease.TryAcquire(path, filepath.Base(ideaDir)+"/"+run)
 	if err != nil {
-		return ctx, nil, err
+		return ctx, nil, fmt.Errorf("idea driving lock held: %s (competing run %s): %w", filepath.Base(ideaDir), run, err)
 	}
-	ok, err := tryLock(f)
-	if err != nil || !ok {
-		f.Close()
-		if err == nil {
-			err = fmt.Errorf("idea driving lock held: %s (competing run %s)", filepath.Base(ideaDir), run)
-		}
-		return ctx, nil, err
-	}
-	l := &lease{path: path, run: run}
+	l := &lease{path: path, run: run, owner: owner}
 	l.active.Store(true)
 	release := func() {
 		if l.active.Swap(false) {
-			unlock(f)
-			f.Close()
+			owner.Release()
 		}
 	}
 	return context.WithValue(ctx, leaseKey{}, l), release, nil
 }
 func requireLease(ctx context.Context, ideaDir string) error {
-	path, _ := filepath.Abs(filepath.Join(ideaDir, "quota-driver.lock"))
+	path, _ := lockPath(ideaDir, "driver")
 	l, _ := ctx.Value(leaseKey{}).(*lease)
 	if l == nil || l.path != path || !l.active.Load() {
 		return fmt.Errorf("quota mutation requires idea driving lease")
 	}
-	return nil
+	return l.owner.Check()
 }
 
 func DrivingRunID(ctx context.Context) string {
@@ -88,20 +91,26 @@ func ProjectionLock(ideaDir string) (func(), error) {
 	if !h.History.MidIdea() {
 		return func() {}, nil
 	}
-	path := filepath.Join(ideaDir, "quota-projection.lock")
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	return projectionLock(ideaDir)
+}
+
+func projectionLock(ideaDir string) (func(), error) {
+	path, err := lockPath(ideaDir, "projection")
 	if err != nil {
 		return nil, err
 	}
-	ok, err := tryLock(f)
-	if err != nil || !ok {
-		f.Close()
+	deadline := time.Now().Add(projectionWait)
+	for {
+		owner, err := pidlease.TryAcquire(path, filepath.Base(ideaDir)+"/projection")
 		if err == nil {
-			err = fmt.Errorf("quota projection lock held")
+			return owner.Release, nil
 		}
-		return nil, err
+		if !errors.Is(err, pidlease.ErrHeld) || !time.Now().Before(deadline) {
+			return nil, fmt.Errorf("quota projection lock held: %w", err)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
-	return func() { unlock(f); f.Close() }, nil
+
 }
 
 // CheckLease binds a launch to this exact idea and driving run, not just any lease.
@@ -114,3 +123,32 @@ func CheckLease(ctx context.Context, ideaDir, run string) error {
 	}
 	return nil
 }
+
+// Lock state stays on the deck filesystem, in the already ignored runtime tree.
+// Relative identity is stable when different hosts mount the deck at other paths.
+func lockPath(ideaDir, kind string) (string, error) {
+	dir, err := filepath.EvalSymlinks(ideaDir)
+	if err != nil {
+		return "", err
+	}
+	dir, err = filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	deck := dir
+	for filepath.Base(deck) != protocol.DeckDir {
+		parent := filepath.Dir(deck)
+		if parent == deck {
+			return "", fmt.Errorf("idea is outside a deck")
+		}
+		deck = parent
+	}
+	rel, err := filepath.Rel(deck, dir)
+	if err != nil {
+		return "", err
+	}
+	key := fmt.Sprintf("%x", sha256.Sum256([]byte(filepath.ToSlash(rel))))
+	return filepath.Join(filepath.Dir(deck), ".parley-runtime", "membership", key, kind+".lease"), nil
+}
+
+var projectionWait = 2 * time.Second

@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -15,6 +16,7 @@ import (
 // fields means legacy confirmation. Partial or contradictory records fail closed.
 type QuotaView struct {
 	History *quota.History `json:"history,omitempty"`
+	Manual  *quota.Batch   `json:"-"`
 	Pending string         `json:"pending,omitempty"`
 }
 
@@ -58,12 +60,35 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 		return v, nil
 	}
 	k := h.Kickoff
-	if !hasPolicy || !hasScope || value != fmt.Sprint(k.Policy.Enabled) || scope != k.Policy.Scope || meta["idea"] != k.Idea {
-		return v, fmt.Errorf("contradictory immutable quota policy")
+	if !hasPolicy || !hasScope || value != fmt.Sprint(h.Policy().Enabled) || scope != h.Policy().Scope || meta["idea"] != k.Idea {
+		priorPolicy := value == fmt.Sprint(k.Policy.Enabled) && scope == k.Policy.Scope
+		for _, b := range h.Batches {
+			priorPolicy = priorPolicy || value == fmt.Sprint(b.Policy.Enabled) && scope == b.Policy.Scope
+		}
+		if !hasPolicy || !hasScope || meta["idea"] != k.Idea || !priorPolicy {
+			return v, fmt.Errorf("contradictory immutable quota policy")
+		}
+		v.Pending = "quota policy projection pending"
 	}
 	current := parseList(meta["participants"])
 	matches := func(ids []string) bool {
 		return reflect.DeepEqual(quota.Unique(current), quota.Unique(ids)) && len(current) == len(ids)
+	}
+	allApplied := true
+	for _, b := range h.Batches {
+		raw, e := os.ReadFile(filepath.Join(ideaDir, "quota-applied", b.ID))
+		if e != nil || string(raw) != b.ID+"\n" {
+			allApplied = false
+		}
+	}
+	if !matches(h.Current) && !h.Policy().Enabled && v.Pending == "" && allApplied {
+		b, e := manualQuotaRevision(ideaDir, h, string(raw), current)
+		if e != nil {
+			return v, e
+		}
+		v.Manual = &b
+		h.Current = append([]string(nil), current...)
+		h.Known = quota.FilterConfirmed(append(h.Known, current...), nil)
 	}
 	if !matches(h.Current) {
 		prior := matches(k.Participants)
@@ -85,7 +110,7 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 			return v, e
 		}
 		if string(applied) != b.ID+"\n" {
-			return v, fmt.Errorf("contradictory quota applied record")
+			v.Pending = "corrupt quota applied receipt; checked recovery required: " + b.ID
 		}
 	}
 	return v, nil
@@ -145,6 +170,12 @@ func ReconcileQuotaPrompt(ideaDir string, h *quota.History) error {
 			end = i
 			break
 		}
+		if strings.HasPrefix(lines[i], "quota_auto_exclude:") {
+			lines[i] = fmt.Sprintf("quota_auto_exclude: %t", h.Policy().Enabled)
+		}
+		if strings.HasPrefix(lines[i], "quota_auto_exclude_scope:") {
+			lines[i] = "quota_auto_exclude_scope: " + h.Policy().Scope
+		}
 		if strings.HasPrefix(lines[i], "participants:") {
 			lines[i] = "participants: [" + strings.Join(h.Current, ", ") + "]"
 		}
@@ -165,6 +196,13 @@ func ReconcileQuotaPrompt(ideaDir string, h *quota.History) error {
 	out := strings.Join(lines, "\n")
 	if out == string(raw) {
 		return quota.SyncPath(path)
+	}
+	meta, err := ReadFrontmatter(path)
+	if err != nil {
+		return err
+	}
+	if meta["status"] == "final" || meta["status"] == "closed" {
+		return fmt.Errorf("closed quota prompt is frozen")
 	}
 	return quota.DurableWrite(path, []byte(out), false)
 }
@@ -234,7 +272,7 @@ func CreateIdeaWithQuota(root, task string, participants, excluded []string, tra
 	if err != nil {
 		return idea, &k, err
 	}
-	err = f.Sync()
+	err = fsutil.SyncFile(f)
 	closeErr := f.Close()
 	if err != nil {
 		return idea, &k, err
@@ -255,7 +293,7 @@ func CreateIdeaWithQuota(root, task string, participants, excluded []string, tra
 	if err != nil {
 		return idea, &k, err
 	}
-	err = dir.Sync()
+	err = fsutil.SyncFile(dir)
 	dir.Close()
 	if err != nil {
 		return idea, &k, err

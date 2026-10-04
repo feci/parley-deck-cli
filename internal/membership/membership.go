@@ -38,18 +38,26 @@ func Before(ctx context.Context, root, ideaDir, runID string) (history *quota.Hi
 		return v.History, err
 	}
 	h := v.History
+	if v.Manual != nil {
+		if err := RecordManual(root, ideaDir); err != nil {
+			return h, err
+		}
+		h, err = quota.ReadHistory(ideaDir)
+		if err != nil {
+			return h, err
+		}
+	}
 	history = h
 	if h == nil {
 		return nil, nil
 	}
-	if !h.MidIdea() {
-		if v.Pending != "" {
-			return nil, fmt.Errorf("%s", v.Pending)
-		}
+	if !h.MidIdea() && h.Revision == 0 {
 		return h, nil
 	}
-	if err = requireLease(ctx, ideaDir); err != nil {
-		return nil, err
+	if h.MidIdea() {
+		if err = requireLease(ctx, ideaDir); err != nil {
+			return nil, err
+		}
 	}
 	if err = RequireStopped(root, h.Kickoff.Idea); err != nil {
 		return h, err
@@ -69,8 +77,10 @@ func Reconcile(ctx context.Context, root, ideaDir, runID string, h *quota.Histor
 	return reconcileLocked(ctx, root, ideaDir, runID, h)
 }
 func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.History) error {
-	if err := requireLease(ctx, ideaDir); err != nil {
-		return err
+	if h.MidIdea() {
+		if err := requireLease(ctx, ideaDir); err != nil {
+			return err
+		}
 	}
 	for i := range h.Batches {
 		if err := quota.SyncPath(filepath.Join(ideaDir, quota.HistoryDir, fmt.Sprintf("%06d.json", i+1))); err != nil {
@@ -82,6 +92,17 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 	runs := map[string]bool{runID: true, h.Kickoff.RunID: true}
 	for _, b := range h.Batches {
 		runs[b.RunID] = true
+	}
+	paths, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "run.json"))
+	if err != nil {
+		return err
+	}
+	for _, path := range paths {
+		id := filepath.Base(filepath.Dir(path))
+		m, e := runmanifest.Load(root, id)
+		if e == nil && m.IdeaSlug == h.Kickoff.Idea {
+			runs[id] = true
+		}
 	}
 	manifests := map[string]runmanifest.Manifest{}
 	for id := range runs {
@@ -137,14 +158,6 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 	}
 	for _, b := range h.Batches {
 		receipt := filepath.Join(ideaDir, "quota-applied", b.ID)
-		if _, err := os.Stat(receipt); err == nil {
-			if err := quota.SyncPath(receipt); err != nil {
-				return err
-			}
-			continue
-		} else if !os.IsNotExist(err) {
-			return err
-		}
 		if err := projectionFault("evaluation"); err != nil {
 			return err
 		}
@@ -160,7 +173,7 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		if err := projectionFault("applied"); err != nil {
 			return err
 		}
-		if err := quota.DurableWrite(receipt, []byte(b.ID+"\n"), true); err != nil {
+		if err := quota.DurableWrite(receipt, []byte(b.ID+"\n"), false); err != nil {
 			return err
 		}
 	}
@@ -269,7 +282,7 @@ func Settle(ctx context.Context, root, ideaDir, runID, round string, expected []
 		return nil, nil
 	}
 	roles, roleErr := Roles(ideaDir)
-	d := quota.Evaluate(h.Kickoff.Policy, h.Current, members, roles)
+	d := quota.Evaluate(h.Policy(), h.Current, members, roles)
 	if roleErr != nil && len(d.Candidates) > 0 {
 		d.Applied = false
 		d.Block = roleErr.Error()

@@ -25,7 +25,7 @@ import (
 // RunRound). Shared by `pipeline run-block` and `pipeline auto`.
 func launchBlockRound(ctx context.Context, root, deck, slug, blockID string, participants []string, discovered []agents.Discovery, round int) []runner.Result {
 	blockWS := pipeline.BlockWorkspace(deck, slug, blockID)
-	runID := fmt.Sprintf("pipe-%s-r%02d-%s", blockID, round, time.Now().UTC().Format("20060102T150405.000000Z"))
+	runID := quotaPipelineRun(ctx, fmt.Sprintf("pipe-%s-r%02d-%s", blockID, round, time.Now().UTC().Format("20060102T150405.000000Z")))
 	idea := protocol.IdeaStatus{Slug: slug + "__" + blockID, Path: blockWS, Participants: participants}
 	opts := runner.Options{
 		Root:    root,
@@ -676,6 +676,12 @@ func contains(xs []string, x string) bool {
 	return false
 }
 
+// Stage seams preserve the real pipeline orchestration in local lifecycle tests.
+var pipelineRunImplementation = runner.RunImplementation
+var pipelineRunReviewRound = runner.RunReviewRound
+var pipelineRunReviewConsensus = runner.RunReviewConsensus
+var pipelineRunFixup = runner.RunFixup
+
 // autoDriveDeliberationBlock runs the rounds + consensus + finalize for one
 // deliberation block. Returns 0 on success, non-zero (an exit code) on a stop.
 func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, block pipeline.Block, participantsFlag, drafter string, rounds int, yes bool, stdout, stderr io.Writer) int {
@@ -705,6 +711,12 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
 		by = participants[0]
 	}
 	blockIdeaSlug := slug + "__" + block.ID
+	ctx, release, err := quotaPipelineStart(ctx, root, pipeline.BlockWorkspace(deck, slug, block.ID))
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	defer release()
 
 	first := nextBlockRound(pipeline.BlockWorkspace(deck, slug, block.ID))
 	last := 1 + rounds
@@ -740,7 +752,7 @@ func autoDriveDeliberationBlock(ctx context.Context, root, deck, slug string, bl
 	//
 	// A pipeline cannot write the specification itself, so it stops here and says what is owed
 	// instead of claiming a closure that did not happen.
-	_, finalSummary, ferr := consensus.Finalize(root, blockIdeaSlug, consensus.FinalizeOptions{By: by})
+	_, finalSummary, ferr := consensus.FinalizeContext(ctx, root, blockIdeaSlug, consensus.FinalizeOptions{By: by})
 	if ferr != nil {
 		fmt.Fprintf(stderr, "auto: finalize failed: %v\n", ferr)
 		return 1
@@ -783,13 +795,19 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 	}
 	blockWS := pipeline.BlockWorkspace(deck, slug, block.ID)
 	idea := protocol.IdeaStatus{Slug: slug + "__" + block.ID, Path: blockWS}
+	ctx, release, err := quotaPipelineStart(ctx, root, blockWS)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	defer release()
 
 	if _, statErr := os.Stat(filepath.Join(blockWS, "IMPLEMENTATION.md")); os.IsNotExist(statErr) {
 		fmt.Fprintf(stdout, "auto: block %q Phase 5 implementation by %s\n", block.ID, implementer)
 		ideaImpl := idea
 		ideaImpl.Participants = []string{implementer}
-		runID := fmt.Sprintf("pipe-%s-impl-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z"))
-		res := runner.RunImplementation(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaImpl, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})
+		runID := quotaPipelineRun(ctx, fmt.Sprintf("pipe-%s-impl-%s", block.ID, time.Now().UTC().Format("20060102T150405.000000Z")))
+		res := pipelineRunImplementation(ctx, runner.Options{Root: root, RunID: runID, Idea: ideaImpl, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", runID))})
 		if !res.Success() {
 			fmt.Fprintf(stderr, "auto: implementation failed: %s\n", res.ExitError)
 			return 1
@@ -817,16 +835,16 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 			fmt.Fprintf(stdout, "auto: block %q Phase 6 review round-%02d (%s)\n", block.ID, cycle, strings.Join(reviewers, ", "))
 			ideaRev := idea
 			ideaRev.Participants = reviewers
-			rid := fmt.Sprintf("pipe-%s-rev%02d-%s", block.ID, cycle, stamp())
-			if printRunResults(stdout, runner.RunReviewRound(ctx, runner.Options{Root: root, RunID: rid, Idea: ideaRev, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", rid))})) {
+			rid := quotaPipelineRun(ctx, fmt.Sprintf("pipe-%s-rev%02d-%s", block.ID, cycle, stamp()))
+			if printRunResults(stdout, pipelineRunReviewRound(ctx, runner.Options{Root: root, RunID: rid, Idea: ideaRev, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", rid))})) {
 				return 1
 			}
 		}
 		fmt.Fprintf(stdout, "auto: block %q Phase 7 review consensus (drafter %s)\n", block.ID, implementer)
 		ideaDraft := idea
 		ideaDraft.Participants = []string{implementer}
-		cid := fmt.Sprintf("pipe-%s-rc%02d-%s", block.ID, cycle, stamp())
-		rc := runner.RunReviewConsensus(ctx, runner.Options{Root: root, RunID: cid, Idea: ideaDraft, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", cid))})
+		cid := quotaPipelineRun(ctx, fmt.Sprintf("pipe-%s-rc%02d-%s", block.ID, cycle, stamp()))
+		rc := pipelineRunReviewConsensus(ctx, runner.Options{Root: root, RunID: cid, Idea: ideaDraft, Round: cycle, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", cid))})
 		if !rc.Success() {
 			fmt.Fprintf(stderr, "auto: review consensus draft failed: %s\n", rc.ExitError)
 			return 1
@@ -851,10 +869,10 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 			return 0
 		case pipeline.Phase8Fixup:
 			fmt.Fprintf(stdout, "auto: block %q Phase 8 fix-up cycle %d (%d agreed fixes) by %s\n", block.ID, cycle, count, implementer)
-			fid := fmt.Sprintf("pipe-%s-fix%02d-%s", block.ID, cycle, stamp())
+			fid := quotaPipelineRun(ctx, fmt.Sprintf("pipe-%s-fix%02d-%s", block.ID, cycle, stamp()))
 			ideaFix := idea
 			ideaFix.Participants = []string{implementer}
-			fr := runner.RunFixup(ctx, runner.Options{Root: root, RunID: fid, Idea: ideaFix, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", fid))})
+			fr := pipelineRunFixup(ctx, runner.Options{Root: root, RunID: fid, Idea: ideaFix, Agents: discovered, Timeout: 30 * time.Minute, Store: store.New(filepath.Join(deck, "runs", fid))})
 			if !fr.Success() {
 				fmt.Fprintf(stderr, "auto: fix-up failed: %s\n", fr.ExitError)
 				return 1
