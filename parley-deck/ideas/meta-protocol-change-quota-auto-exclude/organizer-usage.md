@@ -59,3 +59,9 @@ The same parser/cache conventions and ambiguous run-window qualification above a
 - New codex-1 organizer session, cumulative snapshot: input 24776640, cached input 23768960, output 56744, reasoning output 28754, total 24833384; 141 events; attribution ambiguous; accounting 2026-10-04T02:04:47.086291Z.
 
 The organizer transcript is rollout-2026-10-04T02-33-50-01a10454-d471-7521-89b0-aad8df27aea1.jsonl; this is a new session after the prior blocker. Later snapshots replace this row, not add to it. Child is 02-40-20-01a1045a-c604-77e3-9100-eb902188d1db. Input includes cached input; reasoning is a subset of output. The ambiguous run-window qualification remains; no monetary estimate is asserted.
+
+## Final producer checks / full-review dispatch (2026-10-04)
+
+New organizer session cumulative snapshot: input 30507286, cached input 28984832, output 89081, reasoning output 40912, total 30596367; 186 events; attribution ambiguous; accounting 2026-10-04T02:34:01.055346Z. This replaces, rather than adds to, the prior 02:33:50 organizer transcript snapshot. Full-review claude-1 usage will be ingested on its completion.
+
+Separate claude-1 full-review round-03 final: input 292, cache read 25815959, cache write 1746448, output 228716, client total 229008; 146 events; attribution ambiguous; accounting 2026-10-04T02:43:25.136456Z. Claude cache convention applies; this is a separate transcript, not an organizer snapshot.

@@ -1,27 +1,32 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: in-progress
+status: implemented
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: e8081ab
+head-commit: 78ac536
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Both stages are implemented at CLI `e8081ab`; the skill counterpart is `21f82e7`. Stage 1 applies the
+Both stages are implemented at CLI `e8081ab`, with protocol compression at `78ac536`; the current
+skill counterpart is `dc85b53`. Stage 1 applies the
 owner-authorized bounded zcode stderr recognizer at kickoff. Stage 2 supplies durable membership
 transitions, replay and serialization, current-member consumers, retained historical obligations, role
 and review gates, and read-only pending-state views. Full independent acceptance is pending.
 
-Host build, vet, changed-file gofmt and protocol drift pass. The first full HOST suite finished with
-one failure: new quota prose exceeded the existing facilitator packet guardrail by 150 bytes. No other
-package failed. The prose was shortened identically in all three copies; the unchanged guard passes.
-The full HOST suite is rerunning after that correction. The preceding final skill suite passed 399 Node
-tests and 54 Python tests, with all six payload manifests matching; its post-correction rerun is pending. The separate claude-1 full-scope review follows it; earlier review rounds
-01/02 were focused provenance feedback only. No merge, release or installation has occurred.
+Host build, vet and changed-file gofmt pass. The first full HOST suite found one regression: the new
+quota prose exceeded the existing facilitator packet guardrail by 150 bytes. Shortening only the new
+prose fixes it: the unchanged guard now measures 69,966 bytes against 70,000. The full HOST rerun exits 0
+with every package passing. Final frozen protocol/drift/packet checks and skill/deck byte comparison pass;
+the final skill suite passes 399 Node and 54 Python tests, with all six manifests matching.
+
+The last prose-only edits occurred during the full HOST rerun, while all Go code stayed frozen. Separate
+final frozen protocol tests cover those edits. The separate claude-1 full-scope review completed against
+CLI `78ac536` and skill `dc85b53`; prior rounds 01/02 were focused provenance feedback only. No merge,
+release or installation has occurred.
 
 Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1 process
 owns every independent review and its signoffs. The owner confirms the attended close after both
@@ -47,7 +52,8 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
   exact skill/deck byte comparison and phase 0/5/8 packet checks.
 - [x] Focused adversarial, whole-batch, fault/replay, serialization, history, consumer and race tests;
   host build/vet, changed/new-file formatting and final skill suite.
-- [ ] Complete full HOST `go test ./... -count=1 -timeout 45m` and preserve the result.
+- [x] Complete full HOST `go test ./... -count=1 -timeout 45m` and preserve the result; final frozen
+  protocol/packet/drift checks and full skill suite also pass.
 - [ ] Separate full-scope claude-1 review, binding findings, review consensus, and at most five fix-up cycles.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, blocking attended-close note.
 - [ ] Only after owner close confirmation: complete, merge, release channels, independent channel verification.
@@ -99,13 +105,23 @@ The single-reviewer configuration still requires the attended close. The reviewe
 - Product commits: CLI `e8081ab`, skill `21f82e7` (preceded by owner amendment/snapshot `844a8b0`).
   Independent full review, consensus, fix-up if needed, owner close and release remain pending.
 
+## Full review outcome — round-03
+
+claude-1's separate process exited 0 after 1116.5 seconds and authored the 31,389-byte review. The
+validator reports 1/1 filed-and-valid, unparsed=false. It reports 2 CRITICAL, 4 MAJOR, 5 MINOR and 4 NIT
+findings, with no quota/auth failure. The current code is not ready to merge. Shared-volume creation and
+locking, manual membership/return/scope paths, stderr framing and signoff handoffs require fixes. The
+first review consensus proposes nine grouped fixes; its signoffs precede fix-up cycle 1. Detailed
+criterion verdicts and limitations are in the unmodified reviewer artifact. Producer test passes are
+not independent acceptance. No owner-close request is made at this defective checkpoint.
+
 ## Packet-size correction before full review
 
 The first complete HOST run finished after 679 seconds; all packages except internal/app passed.
 `TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail` measured 70,150 bytes against its unchanged 70,000-byte
 limit. The correction shortens only newly added quota prose identically across all normative copies.
 No guardrail, applicability map, omission rule or test is changed. The focused guard passes; final full
-Go and skill checks are recorded under `.parley-runtime/quota-implementation/`. This is pre-review
+Go and skill checks pass and are recorded under `.parley-runtime/quota-implementation/`. This is pre-review
 implementation validation, not a Phase-8 fix-up cycle or independent acceptance.
 
 ## Decision Log
@@ -140,7 +156,7 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 
 | Criterion | Current producer evidence / remaining gate |
 | --- | --- |
-| AC1 | Three normative copies, exact skill/deck `cmp`, drift test, changelog, phase 0/5/8 packets and packet-map check pass. Full suite exposed a packet-size failure; shortened new prose makes the unchanged guard pass. Final rerun pending. |
+| AC1 | Three normative copies, exact skill/deck `cmp`, drift test, changelog, phase 0/5/8 packets and packet-map check pass. Full suite exposed a packet-size failure; shortened new prose makes the unchanged guard pass. Final frozen checks pass; full HOST rerun exits 0. |
 | AC2 | Recorded incident-2 fixture, incident-1 labeled replay, every-record/receipt-clock and bounded display-reset tests pass. |
 | AC3 | Adversarial class/reset/quoted/mixed/duplicate/truncated/success/watchdog fixtures pass. |
 | AC4 | Support table: only bounded zcode is supported; unsupported/adversarial provenance tests pass. |
@@ -149,7 +165,7 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 | AC7 | Shared bare-503 gate/preflight tests pass. |
 | AC8 | Designee/pin/started-draft, global-default and stub/protected-batch tests pass. |
 | AC9 | Historical veto remains TriageBlocked, current-only append gate, kickoff-never-known and retained-finding tests pass. |
-| AC10 | Prospective review/diversity/strict gates and consumer rebinding tests pass; first complete host gate coverage passed, final rerun running. |
+| AC10 | Prospective review/diversity/strict gates and consumer rebinding tests pass; both complete host runs passed that gate coverage. |
 | AC11 | Commit/projection fault injection, pending-action refusal, replay/dedup and stale-dispatch tests pass. |
 | AC12 | Lifetime/cross-process lease, different-run/off-scope and unsettled-prior-writer tests pass. |
 | AC13 | Preserved partial files/failed events and survivor-validation terminal evaluation tests pass. |
@@ -158,14 +174,14 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 | AC16 | Layered/presence-aware defaults, malformed records, legacy/off/frozen scope and upgrade tests pass. |
 | AC17 | Roster-free design, immutable scope and reset-hint tests pass; no timer/rejoin path added. |
 | AC18 | Provider-evidence-only candidacy and adversarial fixtures pass under the explicit owner exception. |
-| AC19 | Both stages present; status remains in-progress pending full checks/review, never complete here. |
-| AC20 | Host build/vet, changed-file formatting, drift and preceding skill suite pass. First full HOST suite had only the packet-size failure, now corrected; final Go/skill reruns pending. |
+| AC19 | Both stages present; status is implemented, with full review and attended close pending; never complete here. |
+| AC20 | Host build/vet, changed-file formatting, final drift/packet checks and full skill suite pass. First full HOST suite had only the packet-size failure, corrected; full HOST rerun exits 0. See the prose-only timing qualification above. |
 | AC21 | Attended close pending both independent review evidence and review-consensus signoffs, then owner answer. |
 
 Protocol attestation read by organizer/implementer at resumption: context_mode=full; source and packet
 SHA256 `8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416`; no fallback reason.
 The final both-stage packet-check source/packet SHA256 is
-`d1841e1c9a93f2ccd20314bd20a43705ab0c166d3d5678cc9aaa2e259fc22132` for phases 0/5/8 (full, no fallback).
+`73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e` for phases 0/5/6/8 (full, no fallback).
 
 ## User direction — scope/reset answer
 

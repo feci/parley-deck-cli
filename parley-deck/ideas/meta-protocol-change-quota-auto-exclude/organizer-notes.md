@@ -758,3 +758,30 @@ guard measured 70,150 bytes versus its 70,000-byte maximum. All other packages p
 change. Focused guard passes; final full Go and skill checks rerun. Independent full review still goes
 to claude-1 review/round-03. Representation choices and return/scope paths remain explicitly exposed for
 review. This producer correction is not counted as a Phase-8 fix-up cycle.
+
+## Full review dispatch / final producer checks — 2026-10-04 02:31Z
+
+CLI 78ac536 / skill dc85b53 are the review product snapshots. The separate configured claude-1 process
+(Opus 5.5/max, 2400-second configured timeout) started at 02:23:54Z and owns review/round-03/claude-1.md.
+The brief supplies complete 326,901-byte CLI and 37,596-byte skill diffs, full phase-6 context, frozen FINAL,
+owner answer, criterion list and check logs; no organizer verdict. It explicitly asks about return and
+scope-change paths, retained obligations, record representation and the OS-lock choice. The manual
+configured-CLI fallback remains the previously recorded driver limitation.
+
+Full HOST rerun exits 0: internal/app 575 seconds, trajectory 631 seconds, all packages pass. The final
+few prose-only edits happened during that run; Go code remained frozen. Final frozen protocol/drift/packet
+checks and exact skill/deck comparison all pass. Packet body 69,966 bytes versus unchanged 70,000 guard.
+Final frozen skill suite passes 399 Node / 54 Python tests and all six manifests. Full context SHA is
+73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e. Phase-5 status becomes implemented,
+not complete. Independent review, binding fixes/consensus and attended owner close remain.
+
+## Full review returned — 2026-10-04 02:42Z
+
+Separate claude-1 exited 0 after 1116.5 seconds; no provider/auth/quota failure. Its unmodified
+review/round-03/claude-1.md is 31,389 bytes, validator 1/1 valid, unparsed=false. Counts are 2 CRITICAL,
+4 MAJOR, 5 MINOR, 4 NIT; verdict not ready to merge. Shared-volume probes exposed sync and flock failures
+that APFS temp-dir tests missed. The nine-item first review-consensus fix list accepts all blocking
+findings and addresses the smaller findings/secondary leads within FINAL. A routine implementation
+choice supplies owner-confirmed revisions; no new owner policy or scope waiver is sought. Reviewer
+context/coverage was explicitly partial despite the prompt; the next launch requires the complete
+emitted body/diff and records that limitation rather than treating round-03 as full acceptance.
