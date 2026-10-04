@@ -809,3 +809,47 @@ body with hash verification. R1–R4 are logged under Open items deferred to imp
 by codex-1; reserved triage permits this fix-up under the Phase-3/7 rule, never code acceptance or close.
 Configured codex-1/gpt-6-astra/max starts cycle 1 with a recorded 7200-second ceiling. It owns code/tests
 plus producer evidence; root owns protocol/skill/orchestration. No commit until child exits.
+
+Cycle-1 organizer parallel work: skill guidance now describes quota revise/recover, committed ruling
+authority, retained veto withdrawal, ordinary knob-off confirmation and conservative foreign-host lease
+recovery. The flags were read from the child-created API; behavior remains subject to final integration
+and independent review. Skill-only full npm test exits 0 (399 Node / 54 Python / all 6 manifests), input hashes
+unchanged during the run; normative snapshot still byte-identical and protocol hash unchanged. No commit
+while child writes. Logs and hashes: .parley-runtime/quota-implementation/fixup-1/skill-host-full.log and
+skill-input-hashes.json. OpenViking full-review checkpoint write timed out indexing, but readback and later
+targeted find confirmed persistence/retrieval of quota-auto-exclude-full-review-20261004.md.
+
+## Fix-up cycle 1 producer return — 2026-10-04 04:30Z
+
+The existing configured codex-1 process exited 0 after 5018.3 seconds, within its 7200-second ceiling;
+no duplicate implementation process, quota/auth failure or wrapper timeout. Its producer evidence maps
+G1–G9 and R1–R4 to code, tests and logs. All 53 listed source hashes match the delivered tree. Child
+focused/build/vet/format checks passed; broader checks retained sandbox budget-lock and native-boot
+failures without weakening tests. Host native boot identity and the unmodified native lease test now
+pass. Full host and both-filesystem/race verification are running against frozen product code.
+
+The original reviewer programs were rerun unchanged on both filesystems. Creation with both knob values
+and the legacy nil-policy API now returns success; competing lease acquisition is refused. The old
+knob-off probe's free-form `reason; user confirmed DATE` marker is still refused, while the new tests use
+the protocol's documented `reason — confirmed DATE` form. Its catch-up probe has no late-round/owner
+proof, and policy-on prompt edits still lack a committed revision. These distinctions must be exposed
+for independent R2/G2 evaluation; program exit 0 alone is not acceptance. Full native zcode capture
+evidence remains missing. No close or release is authorized by this producer checkpoint.
+
+## Cycle-1 host verification / re-review boundary — 2026-10-04
+
+CLI product 906857b and skill dcb7d59 are committed. Full host Go suite passes every package (529.055 s),
+build/vet pass, race passes, both actual-filesystem acceptance runs pass, all 83 changed Go files are
+formatted, source hashes stayed stable and roster hashes are unchanged. Child source hashes and skill
+suite inputs match. Windows remains compile-only. Host/source evidence files record exact commands,
+provenance limits and original-probe distinctions; no independent acceptance is inferred.
+
+The cycle-1 signed consensus was moved unchanged to review/round-03/consensus.md, SHA256
+0feba15329cf5ea795f9919b31f40d3a11ff68de2b8fc775525b20453927cccc. The driver's reopen path is BLOCK-only;
+manual archival uses its normal archive shape for this reserved-consensus boundary. No reviewer block
+or signoff was edited. The recorded driver dispatch/accounting gaps remain untouched.
+
+The next separate configured claude-1 invocation owns review/round-04/claude-1.md, with a 2400-second
+ceiling, complete current protocol body, complete CLI/skill product diffs, G1–G9/R1–R4 and every AC.
+It receives the old free-form marker refusal and missing full native capture explicitly for its own
+judgment. Both clean-consensus signoffs and a NEW attended-close owner answer remain later gates.

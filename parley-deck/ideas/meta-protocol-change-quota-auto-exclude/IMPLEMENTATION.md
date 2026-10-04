@@ -1,32 +1,32 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: implemented
+status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: 78ac536
+head-commit: 906857b9af33306158d3b0e91b94e6ef4b6f7458
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Both stages are implemented at CLI `e8081ab`, with protocol compression at `78ac536`; the current
-skill counterpart is `dc85b53`. Stage 1 applies the
-owner-authorized bounded zcode stderr recognizer at kickoff. Stage 2 supplies durable membership
-transitions, replay and serialization, current-member consumers, retained historical obligations, role
-and review gates, and read-only pending-state views. Full independent acceptance is pending.
+Both stages and fix-up cycle 1 are delivered at CLI `906857b`; the skill counterpart is
+`dcb7d59`. Cycle 1 implements signed G1–G9 and conditions R1–R4 after the binding round-03 review.
+Independent re-review is pending; these producer results are not acceptance or authority to close.
 
-Host build, vet and changed-file gofmt pass. The first full HOST suite found one regression: the new
-quota prose exceeded the existing facilitator packet guardrail by 150 bytes. Shortening only the new
-prose fixes it: the unchanged guard now measures 69,966 bytes against 70,000. The full HOST rerun exits 0
-with every package passing. Final frozen protocol/drift/packet checks and skill/deck byte comparison pass;
-the final skill suite passes 399 Node and 54 Python tests, with all six manifests matching.
+The full HOST `go test ./... -count=1 -timeout 45m` passes every package (529 seconds), as do host
+build/vet, meaningful race checks, all shared-volume/local-control tests and formatting of all 83
+changed Go files. Native boot identity/stale takeover passes on the host; the earlier child sandbox
+failures remain recorded. Product hashes stayed fixed during checks; roster hashes are unchanged.
+The final skill suite remains valid (399 Node / 54 Python / six manifests), with unchanged inputs.
+Protocol drift, exact skill/deck equality and the unchanged packet guard pass.
 
-The last prose-only edits occurred during the full HOST rerun, while all Go code stayed frozen. Separate
-final frozen protocol tests cover those edits. The separate claude-1 full-scope review completed against
-CLI `78ac536` and skill `dc85b53`; prior rounds 01/02 were focused provenance feedback only. No merge,
-release or installation has occurred.
+Full-native AC2 evidence is still missing: the strict framing allowlist rejects the partial retained
+excerpts. Positive body/reset paths use clearly labeled source-derived SDK fixtures. The original
+reviewer's free-form knob-off confirmation remains refused; documented-format ordinary confirmations
+pass without a new command. Both limitations are exposed for claude-1's own evaluation. No merge,
+release, installation or new owner close has occurred.
 
 Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1 process
 owns every independent review and its signoffs. The owner confirms the attended close after both
@@ -67,9 +67,17 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - Incident 1 preserves readiness results but no raw stderr; its replay fixture pairs those facts with
   incident 2's preserved provider body. It is never described as a second native capture. The actual
   incident's survivor arithmetic still blocks. See the producer evidence and support table.
-- Idea serialization uses OS file locks from existing dependencies, a lifetime lease and short projection
-  locks, instead of directly reusing the driver's PID-file primitive named in FINAL §10. This choice and
-  crash/recovery behavior require independent review; no extra dependency or off-scope singleton is added.
+- The initial OS-flock deviation failed independent shared-volume review and is superseded in cycle 1.
+  Serialization now uses a deck-filesystem PID/token lease with host/boot identity, exclusive complete
+  owner publication and per-generation stale-reaper claims. Unknown/foreign identity remains blocked.
+  The ignored runtime location, bounded projection waiting and off-scope behavior require re-review.
+- Cycle 1's owner revision/withdrawal contract binds committed path/blob/digest and verbatim ruling,
+  surviving permitted inbox cleanup. Ordinary off-mode changes import documented confirmation markers
+  without a new CLI. The old review probe's free-form marker still refuses; R2 equivalence is explicitly
+  left to independent evaluation rather than silently counted as accepted.
+- Complete native stderr framing could not be recovered. Strict allowlisting rejects the retained
+  excerpts alone; source-derived SDK positives are not relabeled native. This unresolved AC2 evidence
+  limit is a deviation/remaining gate, not an inferred owner waiver.
 - The exact deferred record representation uses `quota-history/NNNNNN.json`, hash-bound batch records,
   `quota-applied/<batch-id>` receipts, and optional manifest/digest membership fields. Retained obligations
   have immutable snapshots and structured disposition paragraphs with authority, rationale and independent
@@ -158,27 +166,27 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 
 | Criterion | Current producer evidence / remaining gate |
 | --- | --- |
-| AC1 | Three normative copies, exact skill/deck `cmp`, drift test, changelog, phase 0/5/8 packets and packet-map check pass. Full suite exposed a packet-size failure; shortened new prose makes the unchanged guard pass. Final frozen checks pass; full HOST rerun exits 0. |
-| AC2 | Recorded incident-2 fixture, incident-1 labeled replay, every-record/receipt-clock and bounded display-reset tests pass. |
-| AC3 | Adversarial class/reset/quoted/mixed/duplicate/truncated/success/watchdog fixtures pass. |
-| AC4 | Support table: only bounded zcode is supported; unsupported/adversarial provenance tests pass. |
-| AC5 | Whole-batch permutations, 4→2/3→1, duplicates, facilitator/unresolved floor cases pass. |
-| AC6 | Kickoff C1 filtering, replay, automatic records and standalone report-only preflight tests pass. |
-| AC7 | Shared bare-503 gate/preflight tests pass. |
-| AC8 | Designee/pin/started-draft, global-default and stub/protected-batch tests pass. |
-| AC9 | Historical veto remains TriageBlocked, current-only append gate, kickoff-never-known and retained-finding tests pass. |
-| AC10 | Prospective review/diversity/strict gates and consumer rebinding tests pass; both complete host runs passed that gate coverage. |
-| AC11 | Commit/projection fault injection, pending-action refusal, replay/dedup and stale-dispatch tests pass. |
-| AC12 | Lifetime/cross-process lease, different-run/off-scope and unsettled-prior-writer tests pass. |
-| AC13 | Preserved partial files/failed events and survivor-validation terminal evaluation tests pass. |
-| AC14 | Immutable history, later-run discovery, contradiction and consumer-rebind tests pass. |
-| AC15 | Status/wait/brief pending/applied agreement, notices and wait exit behavior tests pass. |
-| AC16 | Layered/presence-aware defaults, malformed records, legacy/off/frozen scope and upgrade tests pass. |
-| AC17 | Roster-free design, immutable scope and reset-hint tests pass; no timer/rejoin path added. |
-| AC18 | Provider-evidence-only candidacy and adversarial fixtures pass under the explicit owner exception. |
-| AC19 | Both stages present; status is implemented, with full review and attended close pending; never complete here. |
-| AC20 | Host build/vet, changed-file formatting, final drift/packet checks and full skill suite pass. First full HOST suite had only the packet-size failure, corrected; full HOST rerun exits 0. See the prose-only timing qualification above. |
-| AC21 | Attended close pending both independent review evidence and review-consensus signoffs, then owner answer. |
+| AC1 | Normative copies unchanged during fix-up; exact skill/deck equality, full-suite bootstrap drift and unchanged 70,000-byte guard pass; prior full packets remain hash-identical. |
+| AC2 | OPEN native-evidence gap: retained partial excerpts are rejected by strict framing. Complete source-derived SDK fixtures pass positive body/reset paths; no complete native capture or independent acceptance is claimed. |
+| AC3 | Allowlisted complete framing, mixed/free-prose/quoted/unknown fields, retry consistency, reset boundaries, success precedence and original zadv negatives pass in host full/focused coverage. |
+| AC4 | Only bounded zcode implementation is supported; other adapters remain diagnostic-only. Native capture compatibility remains an explicit AC2 limitation. |
+| AC5 | Whole-batch permutations, survivor floor, duplicate/unresolved and facilitator cases pass in the host full suite. |
+| AC6 | Kickoff filtering/records and standalone report-only preflight pass; real stubbed Run creation succeeds knob on/off on AppleVirtIOFS and /tmp. |
+| AC7 | Shared runner/preflight bare-503 grammar passes positive and size/line-number noise negatives. |
+| AC8 | Designee, pin, started-draft, global-default and protected-batch tests pass in host full coverage. |
+| AC9 | Committed owner dispositions and authorized-return/author-withdrawal/fresh-signoff tests pass; old bytes and later new vetoes remain tested. |
+| AC10 | Review-count/diversity/strict/goal gates and consumer rebinding pass the full host suite; only claude-1 supplies independent acceptance. |
+| AC11 | Fault/pending/replay tests plus checked corrupt-receipt recovery, all-manifest reconciliation and dedup pass; actual recover CLI is exercised twice. |
+| AC12 | Native and synthetic cross-process PID leases, same-PID refusal, stale/release races, bounded projection contention and full pipeline/TUI lifetime pass on shared/local filesystems and under race. |
+| AC13 | Partial files, failed invocations, prior events and survivor terminal validation remain covered by the passing full suite. |
+| AC14 | Immutable auto/owner/manual revisions, later-run discovery, current/known membership and archived/deleted owner evidence are exercised; policy-on prompt edits remain non-authoritative. |
+| AC15 | Status/wait/brief pending/applied/current-policy views, named gate notices, replay and wait exits pass existing/new host coverage. |
+| AC16 | Presence-aware layered policy, legacy/off/frozen scope and explicit widening pass. Ordinary documented off-mode confirmations work without quota revise; original free-form-marker refusal is exposed for R2 review. |
+| AC17 | Roster hashes are unchanged; no timer/rejoin worker or binary-inferred scope change. Authorized revision paths are explicitly exercised. |
+| AC18 | Complete allowlisted provider records, invocation facts and reset agreement retain owner gates and accepted subagent ambiguity. AC2 native evidence is still missing. |
+| AC19 | Both stages and cycle-1 code delivered; separate re-review, final consensus and attended close remain required. Status is fix-up-cycle-1, never complete. |
+| AC20 | Full host suite/build/vet/race/shared/local pass; all 83 changed Go files formatted. Skill 399 Node/54 Python/six manifests pass with identical inputs; Windows compile only. |
+| AC21 | NOT MET: new attended-close request must follow independent current-tree evidence and both final review-consensus signoffs, then receive a new owner answer. |
 
 Protocol attestation read by organizer/implementer at resumption: context_mode=full; source and packet
 SHA256 `8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416`; no fallback reason.
@@ -249,3 +257,26 @@ same-file edits or commits. A recorded 7200-second ceiling accommodates the nine
 model/effort remain gpt-6-astra/max. The child must exercise this AppleVirtIOFS workspace directly.
 Full re-review must read the entire emitted protocol body and complete product diff; earlier limited
 coverage is not retroactively upgraded. Both-stage completion and a new owner close remain pending.
+
+## Fix-up cycle 1 — producer complete, re-review pending
+
+status: complete (producer fix-up only)
+completed: 2026-10-04
+head-commit: 906857b9af33306158d3b0e91b94e6ef4b6f7458
+skill-commit: dcb7d593130247709cfad19715aa1f53e5cc8be0
+
+G1–G9 are implemented in the product snapshot; detailed source/test mapping is in
+`source-context/codex-1-fixup-1-evidence.md`. Full host execution, unchanged reviewer reproductions,
+source/roster hashes and remaining limitations are in `source-context/codex-1-fixup-1-host-evidence.md`.
+The child exited 0 after 5018.3 seconds, with no quota/auth failure. Host verification resolved its
+native-boot and budget-lock sandbox failures without changing tests. Normative protocol text did not
+change in this cycle. The separate configured claude-1 round-04 re-review must read the complete body
+and complete product diff, evaluate every G/R/AC and own its artifact. Cycle count is 1 of 5.
+
+### Deviations from agreed fixes
+
+The full historical zcode stderr is unavailable; the native-capture portion of G4/AC2 remains unresolved.
+No excluded provider was launched. Source-derived positives and the rejected partial native excerpts
+remain distinct, as R4 requires. The documented versus free-form off-mode confirmation distinction is
+exposed for R2 adjudication. Windows runtime remains unexecuted. No other owner policy or D6 repair was
+inferred, and no final signoff, attended close, merge or release is claimed.

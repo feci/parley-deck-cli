@@ -65,3 +65,16 @@ The organizer transcript is rollout-2026-10-04T02-33-50-01a10454-d471-7521-89b0-
 New organizer session cumulative snapshot: input 30507286, cached input 28984832, output 89081, reasoning output 40912, total 30596367; 186 events; attribution ambiguous; accounting 2026-10-04T02:34:01.055346Z. This replaces, rather than adds to, the prior 02:33:50 organizer transcript snapshot. Full-review claude-1 usage will be ingested on its completion.
 
 Separate claude-1 full-review round-03 final: input 292, cache read 25815959, cache write 1746448, output 228716, client total 229008; 146 events; attribution ambiguous; accounting 2026-10-04T02:43:25.136456Z. Claude cache convention applies; this is a separate transcript, not an organizer snapshot.
+
+Separate claude-1 cycle-1 consensus signer final: input 50, cache read 2034509, cache write 236622, output 43727, client total 43777; 25 events; attribution ambiguous; accounting 2026-10-04T03:07:03.066405Z. It recovered from an internal Request timed out event and exited 0; no extra signer process was started.
+
+## Fix-up cycle 1 producer handoff (2026-10-04)
+
+Separate codex-1 fix-up implementer, final: input 15672766, cached input 14806144, output 117021,
+reasoning output 34205, total 15789787; 109 events; attribution ambiguous; accounting
+2026-10-04T04:33:18.727504Z. Source rollout is
+`rollout-2026-10-04T05-07-03-01a104e1-19a8-7121-aeb0-89bf627569a6.jsonl`.
+It exited 0 after 5018.3 seconds, without wrapper timeout or provider quota/auth failure. This is a
+separate implementer transcript, not independent review and not an organizer snapshot.
+
+Organizer cumulative cycle-1 handoff snapshot: input 65114504, cached input 62962304, output 187168, reasoning output 90146, total 65301672; 398 events; attribution ambiguous; accounting 2026-10-04T04:42:53.749521Z. This replaces earlier snapshots of the 02:33:50 organizer transcript; it is not added to them.
