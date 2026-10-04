@@ -45,3 +45,10 @@ Phase-5 stage-1 timeout boundary (2026-10-04):
 Separate focused claude-1 reviewer (phase 6, final process):
 
 - Input 192, cache read 12478234, cache write 439938, output 90979; client total 91171; 93 events; attribution ambiguous. The client total uses the Claude parser convention and is not comparable to Codex totals without separating caches.
+
+## Supplemental source-review / owner-scope boundary (2026-10-04)
+
+- separate claude-1 supplemental reviewer, final process: input 350, cached input 36169728, cache write 2170376, output 317666, reasoning output 0, client total 318016; 173 events; attribution ambiguous; accounting time 2026-10-04T00:21:56.664655Z.
+- codex-1 organizer, cumulative snapshot replacing earlier snapshots: input 22445133, cached input 21107200, cache write 0, output 94816, reasoning output 44684, client total 22539949; 156 events; attribution ambiguous; accounting time 2026-10-04T00:22:54.388125Z.
+
+The same parser/cache conventions and ambiguous run-window qualification above apply. Do not sum the organizer snapshots. These are reported client counters, not a monetary estimate.

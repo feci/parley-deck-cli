@@ -697,3 +697,37 @@ The rerun `go test ./... -timeout 45m` exited 0, all packages passed, including 
 (496.176 s), runner (117.534 s), and trajectory (548.381 s). Current evidence is
 .parley-runtime/quota-implementation/stage1-full-host-45m.log. The code remains the
 partial stage-1 checkpoint; full-suite success is not an independent AC verdict.
+
+## Owner scope gate after supplemental review (2026-10-04)
+
+The second separate claude-1 process exited 0 after 1729.8 seconds, before its 1800-second
+limit, with empty stderr and no quota/credit/auth failure. It owns review/round-02/claude-1.md
+(26442 bytes). `parley wait --for review` returns boundary reached, 1/1 filed-and-valid and
+unparsed=false. Commit 3ea19c6 sweeps the artifact without editing it. It is narrow early
+feedback, not full implementation acceptance, review consensus, or a fix-up cycle.
+
+MAJOR-1 remains: the structured JSONL candidate cannot satisfy AC2 either. It loses reset
+values for business errors, and the recorded HTTP-429 path loses exhaustion text entirely.
+The app-server payload is smaller; a switch to it alone cannot resolve this. The reviewer
+also requires root-session binding beyond traceId, which subagents share. Its own R6
+self-correction acknowledges the singular `log` directory and the different native event.
+
+MAJOR-2 now requires owner interpretation. The reviewer withdraws its earlier suggested
+implementer-only normalization: FINAL's strict reset gate conflicts with its own positive
+message. It proposes a bounded interpretation only when complete machine reset values
+agree, the display matches a real offset, and raw evidence is retained; unavailable
+values, contradictions or a lone display clock still gate. MINOR-1 remains, and MINOR-2
+is the independent regex parenthesis defect. Neither minor is claimed resolved.
+
+The organizer records a blocking scope/reset question before ending this turn. It asks
+for two concrete owner rulings and recommends preserving AC2 and both stages through
+additional zcode terminal-error work, together with the review's bounded interpretation.
+An explicit AC2 deferral is an alternative with a stated consequence: all current adapters
+remain diagnostic-only, so no automatic exclusion occurs. This is not the attended close.
+Stage 2 has not started; no merge, release, installation, roster or provider change occurs.
+The original FINAL and every claude-1 artifact remain unchanged.
+
+Current code checks: host build/vet/gofmt/focused tests and full Go suite pass, plus the
+full skill suite. Literal AC1 whole-file identity remains an open bootstrap-zone deviation;
+no whole-file equality or AC-level independent acceptance is asserted. Usage at this
+boundary is ingested and recorded in organizer-usage.md (ambiguous run-window attribution).

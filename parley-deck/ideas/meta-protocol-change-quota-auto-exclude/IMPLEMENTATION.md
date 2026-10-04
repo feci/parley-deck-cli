@@ -68,8 +68,8 @@ files on the existing two quota-auto-exclude branches; no development PRs.
 
 
 The owner's ratification transfers the organizer role from claude-1 to codex-1, superseding FINAL §12's
-organizer assignment. No implementation-scope deviation is planned. Exact transition storage, field
-names, provenance support and redaction follow FINAL §13.8's implementation choices and will be logged.
+organizer assignment. The two proposed owner rulings below are not approved. Exact transition storage, field
+names, provenance support and redaction remain bound by FINAL §13.8 until an owner ruling is recorded.
 
 ## Notes for reviewers
 
@@ -79,6 +79,18 @@ but unreconciled transitions, and overlapping runs. Both stages are mandatory. T
 configuration does not waive the attended close or permit unattended completion.
 
 ## Progress
+
+- 2026-10-04: the separate claude-1 supplemental reviewer exited 0 after 1729.8 seconds,
+  with no quota/auth failure. Its unmodified artifact is committed as 3ea19c6; `parley wait`
+  validates round-02 as 1/1 filed-and-valid, 26442 bytes, unparsed=false. It extends MAJOR-1
+  to native JSONL/app-server channels: AC2's HTTP-429 path loses exhaustion text; the business-error
+  path loses reset values; traceId alone is shared with subagents. MAJOR-2 now explicitly requires
+  an owner interpretation of zone-less display clocks; its earlier suggested implementer-only
+  fix is withdrawn. MINOR-1 remains and MINOR-2 splits out the parenthesis overcapture bug.
+  This remains early focused feedback, not a full-scope acceptance review or a fix-up cycle.
+- The blocking scope/reset question is `../../inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_scope-reset.md`.
+  No scope amendment, AC2 deferral, parser interpretation, stage-1-only completion, or release is
+  authorized by the question itself. Contributions pause at that gate pending the owner's answer.
 
 - 2026-10-04: host `go test ./... -timeout 45m` exited 0 on the current stage-1 code.
   Every package passed; app took 496.176 s and trajectory 548.381 s. The prior host
@@ -131,6 +143,14 @@ configuration does not waive the attended close or permit unattended completion.
   protocol context read. Plan recorded before code. Implementation pending.
 
 ## Decision Log
+
+- 2026-10-04 · codex-1: accept claude-1 round-02's binding need for an owner decision on
+  both MAJOR findings. Proposed route: retain AC2 and both stages, authorize a separately reviewed
+  zcode terminal-error channel that preserves all decisive data, and adopt the review's tightly
+  bounded display-clock interpretation. Alternatively the owner may explicitly defer/amend AC2.
+  No interpretation is silently applied; FINAL remains immutable and any necessary normative
+  amendment follows §7. Both stages, full independent review, both signoffs and attended close
+  remain required. MINOR-1/MINOR-2 are retained for the next implementation pass.
 
 - 2026-10-04 · codex-1: accept the need for an owner decision on claude-1 MAJOR-1. The supported path
   cannot be invented from an adapter name, a diagnostic dump or synthetic policy tests. No Stage-2
