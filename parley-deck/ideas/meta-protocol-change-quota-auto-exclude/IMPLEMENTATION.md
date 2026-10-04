@@ -111,7 +111,9 @@ claude-1's separate process exited 0 after 1116.5 seconds and authored the 31,38
 validator reports 1/1 filed-and-valid, unparsed=false. It reports 2 CRITICAL, 4 MAJOR, 5 MINOR and 4 NIT
 findings, with no quota/auth failure. The current code is not ready to merge. Shared-volume creation and
 locking, manual membership/return/scope paths, stderr framing and signoff handoffs require fixes. The
-first review consensus proposes nine grouped fixes; its signoffs precede fix-up cycle 1. Detailed
+first review consensus carries nine grouped fixes; codex-1 ACCEPT and claude-1 ACCEPT-WITH-RESERVATIONS
+authorize fix-up cycle 1 under the logged Phase-3/7 reservation rule. R1–R4 are recorded as open items
+deferred to implementation and bind the fix-up. Detailed
 criterion verdicts and limitations are in the unmodified reviewer artifact. Producer test passes are
 not independent acceptance. No owner-close request is made at this defective checkpoint.
 
@@ -237,3 +239,13 @@ it within one second. Missing, contradictory or display-only resets still gate.
 Pending full-scope review, any agreed fixes, both signoffs and attended close. Release preparation is in
 `release-plan-codex-1.md`; the owner-only npm OTP and attended protocol publication remain later steps.
 No completion, merge, release or channel verification is claimed.
+
+## Fix-up cycle 1 — started 2026-10-04 03:05Z
+
+Status: in progress; no completion claim. Review consensus G1–G9 plus claude-1 reservations R1–R4 govern.
+The implementer accepts all four conditions. The configured codex-1 child owns Go/code tests/CLI docs
+and its own producer evidence; the organizer owns protocol/skill/orchestration files. No concurrent
+same-file edits or commits. A recorded 7200-second ceiling accommodates the nine grouped corrections;
+model/effort remain gpt-6-astra/max. The child must exercise this AppleVirtIOFS workspace directly.
+Full re-review must read the entire emitted protocol body and complete product diff; earlier limited
+coverage is not retroactively upgraded. Both-stage completion and a new owner close remain pending.

@@ -785,3 +785,27 @@ findings and addresses the smaller findings/secondary leads within FINAL. A rout
 choice supplies owner-confirmed revisions; no new owner policy or scope waiver is sought. Reviewer
 context/coverage was explicitly partial despite the prompt; the next launch requires the complete
 emitted body/diff and records that limitation rather than treating round-03 as full acceptance.
+
+## Fix-consensus signoff dispatch — 2026-10-04
+
+The CLI drafted review/consensus.md from round-03; codex-1 authored the nine grouped fixes and appended
+only its own implementer ACCEPT. Commit c66c240 records the review and draft. A separate configured
+claude-1 Phase-7 process owns only its own signoff/addendum; focused timeout is 1200 seconds (recorded
+override, no global-setting change). At 02:56:25Z its client recorded `Request timed out.` and an internal
+retry. No quota/credit/auth failure has been recorded. Wait for that bounded process; no duplicate launch
+or Phase-8 code edit occurs before the review-consensus boundary.
+
+Historical recovery located the original probe command and a retained stderr tail in the relay's Parley
+transcript. Original /tmp/probe-20261002/zcode.err (24,833 bytes) is absent. The scrubbed second excerpt of
+incident 2 is source-context/provenance-review/codex-1-retained-native-tail.md; it is not a full capture or
+a new incident. No excluded provider was launched.
+
+## Fix consensus boundary / cycle 1 — 2026-10-04 03:05Z
+
+The configured claude-1 signer exited 0 after 988.2 seconds (no wrapper timeout); its internal request
+timeout recovered without a second organizer launch. No quota/credit/auth error. It appended only its
+own ACCEPT-WITH-RESERVATIONS, agrees on G1–G9/dispositions, and read the full emitted 1,501-line protocol
+body with hash verification. R1–R4 are logged under Open items deferred to implementation and accepted
+by codex-1; reserved triage permits this fix-up under the Phase-3/7 rule, never code acceptance or close.
+Configured codex-1/gpt-6-astra/max starts cycle 1 with a recorded 7200-second ceiling. It owns code/tests
+plus producer evidence; root owns protocol/skill/orchestration. No commit until child exits.

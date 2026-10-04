@@ -97,6 +97,22 @@ visible in the next review. Re-review must use the complete product diff and ful
 round-03 explicitly read selected body sections and spot-checked some callers, so its coverage is limited
 as disclosed. The next review must complete that required context/coverage before acceptance.
 
+## Open items deferred to implementation
+
+claude-1's ACCEPT-WITH-RESERVATIONS is accepted by codex-1 for cycle 1 under the Phase-3/7 reservation
+rule; no participant upgrades it to BLOCK. The following conditions apply to G1–G9 and are checked at
+re-review. The signed blocks below remain verbatim.
+
+- **R1 / G2,G6:** bind the verbatim owner ruling to its committed path/blob digest, preserving authority
+  after permitted inbox archival/deletion. Missing/changed/unrelated/fabricated references fail closed.
+- **R2 / G2:** ordinary recorded §9.0 owner confirmations for knob-off ideas must continue working. A
+  mandatory new CLI command for that existing path would be a third knob-off change requiring an owner
+  decision; implement within the existing behavior instead of silently adding that deviation.
+- **R3 / G3:** use an ignored deck-filesystem runtime lease; unknown/different host or boot identity is
+  not stale merely because its PID is absent locally. Fail closed to an owner-visible release.
+- **R4 / G4:** framing is an allowlist, never a finite bad-line denylist. Keep any remaining AC2 native
+  evidence gap visible for the owner; no reconstruction is represented as native, and no gate is loosened.
+
 ## Signoffs
 
 <!-- Each participant appends only its own block. Signoff accepts the fix list, not the current code. -->
@@ -104,3 +120,19 @@ as disclosed. The next review must complete that required context/coverage befor
 ### Signoff: codex-1 — 2026-10-04
 Status: ✅ ACCEPT
 Notes: I accept G1–G9 as the implementer fix list for cycle 1, including the shared-volume reproductions and owner-confirmed return/scope obligations. This is agreement to correct the code, not an independent verdict on my implementation. The stated limited review coverage and capture provenance remain explicit. Both stages, separate re-review, both clean-consensus signoffs and a new attended owner close remain required.
+
+### Signoff: claude-1 — 2026-10-04
+Status: 🟡 ACCEPT-WITH-RESERVATIONS
+Notes: Phase 7 signoff on the cycle-1 fix list (G1-G9) only. It is not a code verdict, not acceptance of 78ac536 or later code, and not a close, merge, release or owner close.
+
+Protocol context: `parley protocol packet --dir . --phase 7 --track deliberation --idea meta-protocol-change-quota-auto-exclude --flag protocol_change --json` gave context_mode=full, source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e, fallback_reason absent. I read the ENTIRE emitted body (1,501 lines, 125,862 B; body-file sha256 verified equal); the shadow packet was not used. I also read review/round-03/claude-1.md, FINAL sections 5/7/9/10/11 in full, the owner scope-reset-answer (quoted in round-03) and this draft in full. My round-03 coverage limitation (selected body sections, spot-checked callers) stands: product acceptance needs a complete full-scope re-review after fix-up.
+
+Mapping: every round-03 finding is carried (CRITICAL-1 G1; CRITICAL-2 and MAJOR-1 G2 plus G6; MAJOR-2, MINOR-1, MINOR-4 G3; MAJOR-3 and AC2 G4; MAJOR-4 G5; MINOR-2 G6; MINOR-5 G7; MINOR-3 and open question 3 G8; NIT-2/3 G9). G2's recorded owner-confirmed revision (my option B) needs no new owner policy: FINAL section 9 already keeps "every authorized revision" in immutable history and section 11 records the resolved policy at kickoff. This answers my open question 2.
+
+Dispositions: I concur on round-02 MAJOR-1/2 (owner ruling) and MINOR-1/2; on NIT-1 (FINAL section 7 "has started" read literally, fails closed); on NIT-4 under literal AC1, with its residual (deck header and host table in the skill copy) kept disclosed; and on the deferred items and coverage section.
+
+Reservations (conditions my re-review will check; they do not reopen G1-G9):
+R1 (G2, G6): Authority binding must fit section 4. There the inbox answer "is then moved to inbox/archived/ or deleted - it is not the authoritative record" (COOPERATION.md:746), and section 5 accepts a ruling "quoted into the next artifact" (:759). Bind to the verbatim quote plus a digest of the answer as committed (path and commit/blob). Then a permitted move or delete neither revives a disposed veto nor voids a revision. Missing, changed, unrelated, self-authored or fabricated references still fail closed.
+R2 (G2, knob off): "Preserve ordinary owner-confirmed exclusion/catch-up" means the section 9.0 recorded confirmation (`excluded: ... - confirmed <date>`, :889-892; re-inclusion :984-985) keeps working for knob-off ideas. If the fix instead makes the new CLI path mandatory for them, that is a third knob-off behavior change. FINAL sections 10 and 11 reserve that to the owner, listed beside C1 and the bare 503, so record it as a deviation for the owner instead of absorbing it.
+R3 (G3): Keep the lease deck-scoped on the deck filesystem in an ignored runtime path, neither tracked nor machine-local. On this shared volume, stale takeover must not rely on PID absence alone when the holder's host or boot identity differs or is unknown; it fails closed to an owner-visible release.
+R4 (G4): Implement the framing as an allowlist: any line not recognized as SDK dump framing gates. The demonstrated cases are the minimum fixture set, not a denylist. If strict framing rejects the retained incident-2 excerpt and no complete native capture is recovered, record that AC2 gap for the owner. Do not loosen the framing or label a reconstruction native.
