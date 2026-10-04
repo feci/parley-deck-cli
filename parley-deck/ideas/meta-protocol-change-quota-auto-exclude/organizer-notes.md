@@ -739,3 +739,22 @@ Read the controlling implementation brief, owner scope/reset answer and ratifica
 Driver-first attempt: `parley continue --auto meta-protocol-change-quota-auto-exclude` prematurely selected review-consensus drafting from the two focused feedback files while IMPLEMENTATION is in-progress. The organizer stopped exactly that driver and its child before any consensus artifact was written. The generated context-canceled driver note is archived as resolved orchestration evidence. This is a dispatch-state gap, not a provider/auth/quota failure, and not a new owner decision. Manual Phase 5 remains the recorded fallback. Legacy-record migration stays outside scope.
 
 Implementation resumption uses configured codex-1 / gpt-6-astra / max, with a recorded 5400-second ceiling for the two required stages. claude-1 / claude/claude-opus-5-5[1m] / max remains the sole independent reviewer, in a separate process at the full review boundary. The implementation child owns Go code/tests and its evidence file; the organizer owns protocol/skill text and orchestration files. Same-file edits and commits are serialized.
+
+Resumption documentation checkpoint (producer evidence): §9.0 now carries the owner's exact bounded zcode exception and display-reset rule in all three normative copies. The skill reference is byte-identical to the live deck under literal AC1; the CLI bootstrap retains its tested generic zones and unchanged drift guard. The skill explains replacement of upstream header/host mappings at bootstrap. `cmp` and `TestEmbeddedDefaultMatchesLiveDeck` pass. Full skill npm test passes (399 Node tests; 54 Python tests; six payload manifests match). Phase 0/5/8 full packets include the amendment and cross-references; packet map check ok=true. Source and packet SHA256 at this checkpoint: b222df64ca44b93da1ff588ea41b8cf5119060ca619dddeddeb0ad37374dfaf9. Mid-idea activation wording remains pending code delivery. No independent acceptance is claimed.
+
+Review dispatch preparation: the installed driver concatenates all earlier review artifacts via `gatherReviewContext` and has no focused Phase-6 brief override. In this run its existing review directories also caused premature consensus dispatch while implementation was in-progress (recorded above). The upcoming full-scope review will therefore use the already recorded configured-CLI fallback with a short explicit FINAL/AC/owner-ruling/diff/check brief. The reviewer can inspect any issue; prior dispositions are supplied for independent evaluation, not suppression. Validator/status/wait remain driver tools. No driver gap is repaired in this idea.
+
+## Both-stage implementation handoff — 2026-10-04 02:02Z
+
+The configured codex-1 child exited 0 after 4942.3 seconds (no timeout or provider/auth/quota failure). Its producer evidence is source-context/codex-1-implementation-evidence.md. Both stages are present, with focused/affected-package/race/build/vet checks reported. The raw final producer logs were retained under .parley-runtime/quota-implementation/producer-checks/. Broader sandbox-denied checks were not weakened; the full HOST suite is now running. Host build/vet and changed/new-file gofmt checks pass (50 Go files); an all-file gofmt inventory lists five pre-existing, untouched files, so no whole-repository formatting-clean claim is made.
+
+The mid-idea not-yet-in-force paragraph is now replaced with delivered-scope wording across all three normative copies. The skill snapshot remains byte-identical to the live deck. Packets 0/5/8 include the updated rule and cross-references; packet-map check passes. Full skill npm test is running for this final wording. No independent acceptance or attended close is claimed.
+
+## Host validation correction before full review — 2026-10-04
+
+The first full HOST suite finished with exactly one failing test: the unchanged phase-1 facilitator packet
+guard measured 70,150 bytes versus its 70,000-byte maximum. All other packages passed, including trajectory
+(679 seconds). Shortened only new quota prose across the three copies; no map, omission rule or ceiling
+change. Focused guard passes; final full Go and skill checks rerun. Independent full review still goes
+to claude-1 review/round-03. Representation choices and return/scope paths remain explicitly exposed for
+review. This producer correction is not counted as a Phase-8 fix-up cycle.

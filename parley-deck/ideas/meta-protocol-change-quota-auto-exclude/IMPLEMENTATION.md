@@ -4,203 +4,173 @@ status: in-progress
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: c6f8b49
+head-commit: e8081ab
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Implementation resumed after the owner's 2026-10-04 scope/reset answer. The owner authorizes the bounded zcode stderr recognizer as an explicit deviation from FINAL and the bounded display-clock interpretation. Both stages remain required. The prior stage-1 prototype is preserved; completion and independent acceptance remain pending. Both stages of FINAL are required: kickoff and
-mid-idea quota auto-exclusion. The owner ratified D1–D5 and authorized implementation, separate claude-1
-review, attended close, and release. The handoff is recorded in 00-prompt.md and commit c6f8b49.
+Both stages are implemented at CLI `e8081ab`; the skill counterpart is `21f82e7`. Stage 1 applies the
+owner-authorized bounded zcode stderr recognizer at kickoff. Stage 2 supplies durable membership
+transitions, replay and serialization, current-member consumers, retained historical obligations, role
+and review gates, and read-only pending-state views. Full independent acceptance is pending.
 
-Role concentration (§15.5): codex-1 organizes and implements; the separate claude-1 process reviews,
-issues independent criterion verdicts, and owns its review and signoff files. codex-1 never reviews itself.
+Host build, vet, changed-file gofmt and protocol drift pass. The first full HOST suite finished with
+one failure: new quota prose exceeded the existing facilitator packet guardrail by 150 bytes. No other
+package failed. The prose was shortened identically in all three copies; the unchanged guard passes.
+The full HOST suite is rerunning after that correction. The preceding final skill suite passed 399 Node
+tests and 54 Python tests, with all six payload manifests matching; its post-correction rerun is pending. The separate claude-1 full-scope review follows it; earlier review rounds
+01/02 were focused provenance feedback only. No merge, release or installation has occurred.
 
-Protocol attestation: context_mode=full;
-source_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388;
-packet_sha256=b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388;
-fallback_reason absent. The complete phase-5 body was read. Transport: owner-authorized local canonical
-files on the existing two quota-auto-exclude branches; no development PRs.
+Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1 process
+owns every independent review and its signoffs. The owner confirms the attended close after both
+review-consensus signoffs and current-tree AC evidence. There is one non-implementer reviewer, so the
+unattended two-reviewer gate is not relaxed. Transport is owner-authorized local canonical files on the
+two existing quota-auto-exclude branches; no development PRs.
 
 ## Implementation plan / checklist
 
-- [ ] Establish native terminal-error provenance from installed CLI source/behavior. Record a support
-  table and positive/adversarial fixtures. claude/text remains diagnostic-only. Recover incident 6 if
-  reachable; otherwise retain the conditional record. Do not infer provenance from adapter names.
-- [ ] Stage 1: implement a typed shared classifier in internal/telemetry/quota.go, strict reset parsing,
-  scrubbed evidence, native-only recognition, and valid-artifact/later-success precedence. Wire terminal
-  results and preflight; align bare-503 provider gates.
-- [ ] Stage 1: add presence-aware layered quota_auto_exclude policy, freeze resolved policy/scope at
-  kickoff, evaluate the entire readiness batch with fixed floor 2, apply protected-role gates and the
-  C1 filter before initial prompt, creation event, manifest and dispatch. Standalone preflight reports only.
-- [ ] Stage 2: add idea-scoped serialization only for recorded mid-idea-enabled policies, immutable
-  membership history and one checked-durable transition per batch. Reconcile projections before all
-  dispatch, signoff evaluation and close; truncated/contradictory history blocks. Keep legacy/off and
-  kickoff-only semantics and never widen scope on upgrade.
-- [ ] Stage 2: rebind current membership consumers and historical known signers, preserving filed vetoes,
-  disputes and findings; reject excluded signoff appends. Re-evaluate role, reviewer, diversity,
-  strict-gate and independent goal-check requirements. Preserve failed invocations and incomplete files;
-  require a new survivor-validated terminal round evaluation before resuming.
-- [ ] Deliver one deduplicated notice or blocking escalation, complete automatic markers and reset hints,
-  read-only pending-state reporting, and current membership agreement in status/wait/organizer brief.
-- [ ] Apply FINAL §13.1 protocol hunks identically across the three copies and add the changelog entry;
-  update skill SKILL.md and ROSTER_AND_PROTOCOL.md. Check packet rendering at phases 0, 5 and 8.
-- [ ] Run focused adversarial, batch-permutation, kickoff, replay/fault, serialization and history tests
-  corresponding to AC2–AC18; then gofmt, go build ./..., go vet ./..., the full go test ./..., drift guard,
-  three-copy comparison, and the skill's installer/lean-organizer checks (plus its required suite).
-- [ ] Publish current-tree test evidence mapped to AC1–AC21 and open separate claude-1 review. Process
-  binding findings through review consensus and at most five fix-up cycles; no self-issued verdicts.
-- [ ] Obtain both review-consensus signoffs and write the blocking owner close note. Only after the owner
-  confirms: mark complete, merge, release the current next versions and independently verify channels.
+The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This is its current checklist.
+
+- [x] Stage 1 classifier/reset parsing, scrubbed evidence, owner-defined zcode support, diagnostic-only
+  fallback adapters, artifact/later-success precedence and bare-503 provider gates.
+- [x] Layered presence-aware policy, frozen scope, complete readiness batch/floor/protected-role checks,
+  kickoff filtering before every initial membership consumer, report-only standalone preflight.
+- [x] Stage 2 immutable history, one durable batch record, idea lifetime serialization, checked projection
+  recovery, pending/integrity gates and no automatic scope widening for old/off/kickoff-only ideas.
+- [x] Rebind dispatch/await/signoff/close consumers; historical-known/current-required signers; retain
+  vetoes/disputes/findings, partial files, failed invocations and prior round events; validate survivors.
+- [x] Protected designee/pin/drafter and review/diversity/goal-check/strict gates; deduplicated notices and
+  blocking escalation; same membership/reset/pending views in status/wait/organizer brief.
+- [x] Apply normative protocol hunks in all three copies, owner exception, skill guidance, changelog,
+  exact skill/deck byte comparison and phase 0/5/8 packet checks.
+- [x] Focused adversarial, whole-batch, fault/replay, serialization, history, consumer and race tests;
+  host build/vet, changed/new-file formatting and final skill suite.
+- [ ] Complete full HOST `go test ./... -count=1 -timeout 45m` and preserve the result.
+- [ ] Separate full-scope claude-1 review, binding findings, review consensus, and at most five fix-up cycles.
+- [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, blocking attended-close note.
+- [ ] Only after owner close confirmation: complete, merge, release channels, independent channel verification.
 
 ## Deviations from FINAL.md
 
-- The three protocol copies retain their pre-existing project/bootstrap headers and §2 tables.
-  Identical normative hunks were applied, and the embedded drift guard passes; the skill is NOT
-  whole-file byte-identical to the live deck as AC1 literally says. This deviation is open for review
-  and owner close; no test or allowlist was weakened.
-- AC2 is UNMET in the current prototype: all four adapters are diagnostic-only, and the private
-  semantic refinement has no production recognizer caller. A support table with installed-source
-  locators is in internal/telemetry/testdata/quota/README.md. The separate claude-1 focused review (review/round-01/claude-1.md, MAJOR-1) concludes that the configured zcode text path cannot establish the required terminal provenance. This is not a
-  substitute for AC2, not stage-1 completion, and not permission to release.
-
-
-The owner's ratification transfers the organizer role from claude-1 to codex-1, superseding FINAL §12's
-organizer assignment. The owner answered both scope/reset questions on 2026-10-04; the exact direction is quoted below and supersedes the historical pending-request entries. Exact transition storage, field
-names, provenance support and redaction remain bound by FINAL §13.8 until an owner ruling is recorded.
+- The owner's 2026-10-04 scope/reset answer below explicitly replaces unavailable native root attribution
+  for zcode with the bounded stderr rule and adopts the bounded display-clock interpretation. The
+  accepted risk is a subagent quota error accompanying an unrelated root failure. All other adapters
+  remain diagnostic-only without native evidence. These are owner rulings, not implementer inferences.
+- Incident 1 preserves readiness results but no raw stderr; its replay fixture pairs those facts with
+  incident 2's preserved provider body. It is never described as a second native capture. The actual
+  incident's survivor arithmetic still blocks. See the producer evidence and support table.
+- Idea serialization uses OS file locks from existing dependencies, a lifetime lease and short projection
+  locks, instead of directly reusing the driver's PID-file primitive named in FINAL §10. This choice and
+  crash/recovery behavior require independent review; no extra dependency or off-scope singleton is added.
+- The exact deferred record representation uses `quota-history/NNNNNN.json`, hash-bound batch records,
+  `quota-applied/<batch-id>` receipts, and optional manifest/digest membership fields. Retained obligations
+  have immutable snapshots and structured disposition paragraphs with authority, rationale and independent
+  evidence. These structural checks do not establish the truth of the supplied claims. The detailed
+  grammar and limitations are in `source-context/codex-1-implementation-evidence.md`.
+- Historical AC1 discrepancy resolved: the skill reference now matches the source deck byte-for-byte.
+  The CLI embedded bootstrap keeps its existing generic headers/tables and unchanged drift assertions.
+  The skill instructs a bootstrapper to replace upstream project header/host mappings under Appendix A.
+- The owner transferred organization from claude-1 to codex-1 for Phases 5–8/release; the frozen FINAL's
+  old organizer assignment is superseded by the ratification and handoff, not edited in place.
 
 ## Notes for reviewers
 
-Review FINAL and AC1–AC21 against the complete implementation diff. Attempt counterexamples, particularly
-native-vs-content error provenance, saved policy scope, lost vetoes, stale captured membership, committed
-but unreconciled transitions, and overlapping runs. Both stages are mandatory. The single-reviewer
-configuration does not waive the attended close or permit unattended completion.
+Review the complete CLI product diff since FINAL `27e42b8`, all follow-up fixes, and the skill diff since
+`a5664d8`. The producer map below is not an acceptance verdict. Attempt counterexamples against the
+owner's exact zcode rule, all consumers after a transition, incomplete writers, missing/truncated history,
+replay/idempotence, protected roles, historical veto/dispute/finding force and every review/close gate.
+Also inspect owner-confirmed re-inclusion/withdrawal and scope-change behavior against the frozen rules.
+The single-reviewer configuration still requires the attended close. The reviewer may report any issue.
 
 ## Progress
 
-- 2026-10-04: the separate claude-1 supplemental reviewer exited 0 after 1729.8 seconds,
-  with no quota/auth failure. Its unmodified artifact is committed as 3ea19c6; `parley wait`
-  validates round-02 as 1/1 filed-and-valid, 26442 bytes, unparsed=false. It extends MAJOR-1
-  to native JSONL/app-server channels: AC2's HTTP-429 path loses exhaustion text; the business-error
-  path loses reset values; traceId alone is shared with subagents. MAJOR-2 now explicitly requires
-  an owner interpretation of zone-less display clocks; its earlier suggested implementer-only
-  fix is withdrawn. MINOR-1 remains and MINOR-2 splits out the parenthesis overcapture bug.
-  This remains early focused feedback, not a full-scope acceptance review or a fix-up cycle.
-- The blocking scope/reset question is `../../inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_scope-reset.md`.
-  No scope amendment, AC2 deferral, parser interpretation, stage-1-only completion, or release is
-  authorized by the question itself. Contributions pause at that gate pending the owner's answer.
+- 2026-10-04 00:40Z: owner scope answer recorded in `550fbf8`; answered scope gate archived. Configured
+  codex-1 implementation child started (gpt-6-astra/max, 5400-second ceiling). The organizer owned protocol,
+  skill and orchestration files; the child owned Go/tests/fixtures and its producer evidence. Commits
+  were serialized after it exited. Existing worktrees were reused; no declarations or pruning.
+- 2026-10-04 02:02Z: child exited 0 after 4942.3 seconds, without timeout or real provider/auth/quota
+  failure. Both stages, focused/affected-package/race checks and build/vet are recorded in
+  `source-context/codex-1-implementation-evidence.md`; raw final logs are retained in
+  `.parley-runtime/quota-implementation/producer-checks/`.
+- 2026-10-04 02:03Z onward: host build/vet, changed/new-file gofmt, exact skill/deck comparison, drift test
+  and packets pass; full HOST suite is running. Both-stage protocol wording and skill suite are complete.
+- Product commits: CLI `e8081ab`, skill `21f82e7` (preceded by owner amendment/snapshot `844a8b0`).
+  Independent full review, consensus, fix-up if needed, owner close and release remain pending.
 
-- 2026-10-04: host `go test ./... -timeout 45m` exited 0 on the current stage-1 code.
-  Every package passed; app took 496.176 s and trajectory 548.381 s. The prior host
-  command hit the default 10-minute package ceiling in trajectory, with no assertion failure.
-  The longer rerun is the current full-suite evidence; log:
-  `.parley-runtime/quota-implementation/stage1-full-host-45m.log`. This does not establish
-  the missing AC2 recognizer or any not-yet-implemented stage-2 acceptance criterion.
+## Packet-size correction before full review
 
-- 2026-10-04: a further read-only installed-source search located native JSONL logs under
-  `~/.zcode/cli/log` (singular), including a real `turn.failed` with provider attribution and a
-  53-hour quota message. The scrubbed record and source snippets are in
-  source-context/provenance-review/codex-1-structured-channel-evidence.md. This differs from AC2's
-  exact recorded 49-hour positive. A separate claude-1 supplemental feedback process is checking
-  unchanged-invocation capture, complete reset preservation, binding and adversarial negatives,
-  plus whether MAJOR-1/MAJOR-2 need owner scope interpretation. No AC verdict is asserted and
-  no classifier is enabled. The full Go suite is running on the host.
-
-- 2026-10-03 23:33Z: claude-1 focused reviewer exited 0 after 553.4 seconds. Its own artifact is
-  structurally valid (parley wait: 1/1 filed-and-valid, 15656 bytes); it explicitly is NOT a full-scope
-  review. MAJOR-1 requires an owner scope decision for AC2; MAJOR-2 identifies the reset parser's
-  rejection of the recorded positive body; MINOR-1 asks for the decisive provenance limitations in
-  the support table. The support table now cites the review's terminal-binding/framing conclusions.
-- 2026-10-03 23:36Z: host `go build ./...`, `go vet ./...`, gofmt listing, diff whitespace check and
-  `go test ./internal/app -run '^TestQuota' -count=1` passed. Focused quota/drift cases in runcontrol,
-  quota, telemetry, config and protocol passed. runstate/runmanifest matched no quota-named tests,
-  so those no-test lines are not coverage evidence. Full current-tree Go suite remains owed.
-
-- 2026-10-03 23:33Z: stage-1 child stopped at its 1800-second limit (exit -15), not a provider failure.
-  Preserved shared quota policy/evidence/batch primitives; initial immutable records; presence-aware
-  config; kickoff C1 filtering; preflight report-only changes; bare-503 alignment; telemetry capture;
-  status/wait/organizer surfaces; associated tests. No independent acceptance verdict is claimed.
-  Stage 1 remains partial because AC2 has no supported recognizer and end-to-end coverage is incomplete.
-- 2026-10-03 23:33Z: organizer/implementer documentation changes are committed (CLI f1a7f80;
-  skill dfad28e/c0d7f58). All three normative rule texts agree; bootstrap-zone discrepancy remains open.
-  Phase 0/5/8 packets contain the rule/cross-references; packet check reports ok=true (69 blocks).
-  Skill required checks: 55/55. Full npm test: 399 Node and 54 Python tests pass; all manifests match.
-- Next concrete work: obtain claude-1 supplemental review of the located native structured log; resolve
-  or escalate its AC2 conclusions; finish stage-1 integration/tests; implement full mid-idea transitions,
-  serialization, replay, captured-consumer rebinding, known/required signers, preserved findings and gates.
-  Keep status in-progress and the protocol stage-2 paragraph not-yet-in-force until delivered.
-
-- 2026-10-03 23:07Z: scoped implementer read FINAL and this plan in full, ratification, handoff, and
-  freshly rendered full phase-5 deliberation protocol body with `--flag protocol_change`. Attestation:
-  `context_mode=full`, source and packet SHA256
-  `b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388`, fallback_reason absent.
-  Shared memory recall returned `MCP tool call requires approval, but approval policy is never`; local
-  sources govern. No participants launched. Stage 2 and protocol/skill hunks remain for the next invocation.
-
-- 2026-10-03 23:00Z: owner handoff committed; FINAL and controlling brief read in full; full phase-5
-  protocol context read. Plan recorded before code. Implementation pending.
+The first complete HOST run finished after 679 seconds; all packages except internal/app passed.
+`TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail` measured 70,150 bytes against its unchanged 70,000-byte
+limit. The correction shortens only newly added quota prose identically across all normative copies.
+No guardrail, applicability map, omission rule or test is changed. The focused guard passes; final full
+Go and skill checks are recorded under `.parley-runtime/quota-implementation/`. This is pre-review
+implementation validation, not a Phase-8 fix-up cycle or independent acceptance.
 
 ## Decision Log
 
-- 2026-10-04 · codex-1: accept claude-1 round-02's binding need for an owner decision on
-  both MAJOR findings. Proposed route: retain AC2 and both stages, authorize a separately reviewed
-  zcode terminal-error channel that preserves all decisive data, and adopt the review's tightly
-  bounded display-clock interpretation. Alternatively the owner may explicitly defer/amend AC2.
-  No interpretation is silently applied; FINAL remains immutable and any necessary normative
-  amendment follows §7. Both stages, full independent review, both signoffs and attended close
-  remain required. MINOR-1/MINOR-2 are retained for the next implementation pass.
-
-- 2026-10-04 · codex-1: accept the need for an owner decision on claude-1 MAJOR-1. The supported path
-  cannot be invented from an adapter name, a diagnostic dump or synthetic policy tests. No Stage-2
-  process is launched while deciding whether the required terminal-attributed transport is in scope.
-  This is an early implementation blocker, not the attended close and not stage-1-only authorization.
-- 2026-10-04 · codex-1: retain MAJOR-2 as an open agreed issue for the next implementation pass.
-  Its suggested interpretation of unzoned human-readable text alongside machine reset fields must be
-  reconciled with FINAL's strict unparseable-reset rule and independently re-reviewed, never silently
-  changed to unknown. No reset correction or false positive fixture is claimed yet.
-
-- 2026-10-04 · codex-1: keep the existing worktrees and local-file transport override; no worktree pruning,
-  declarations or legacy-record migration. D6 is a separate follow-up, outside this implementation.
-- 2026-10-04 · codex-1: driver-first attempt `parley continue --auto <slug>` stopped at FINAL because
-  auto_implement is false and the per-idea transport override exists only in prose. The normal manual
-  Phase 5 path is authorized; use a separate configured codex-1 implementation process to bound context.
-  The organizer retains phase transitions and release. Driver use will resume at review boundaries.
+- Owner scope/reset direction governs the prior MAJOR-1/MAJOR-2 choices. Their reviewer-authored files
+  remain unchanged; the next full review must evaluate the actual implementation of the ruling.
+- Driver-first resumption prematurely drafted review consensus from focused feedback while implementation
+  was in-progress. It was stopped before a consensus artifact existed and its context-canceled note was
+  archived. The recorded configured-CLI fallback is used for the focused full-scope review brief; status,
+  wait and validators remain in use. Driver gap 11 and legacy accounting migration stay outside scope (D6).
+- Normative hunks are identical in all copies; the skill snapshot obeys literal AC1. No drift test,
+  bootstrap assertion, test behavior, model/provider/effort setting or roster file was weakened/changed.
+- Both stages are required. There is no stage-1-only completion or waiver of independent evidence.
 
 ## Surprises & Discoveries
 
-- Installed CLI 1.50.0, skill installer and runtime copies 2.14.0. Project source-role metadata is stale
-  (2.12.0); dry-run sync reports only a metadata refresh. Do not replace the live source with the packaged
-  protocol. Metadata refresh belongs to the authorized release work.
-- The graphify query covers design documents, not the code graph; source inspection remains necessary.
-- Shared OpenViking scoped recall is available and returned prior release/Windows notes, not this idea's
-  current implementation. Current local owner direction and artifacts govern.
+- Child sandbox denied the default Go cache and some host budget-lock helpers. A temporary Go cache
+  allowed focused checks; broader denied tests were deferred honestly to the HOST suite, not suppressed.
+- An all-file gofmt inventory lists five pre-existing untouched files; all 50 changed/new Go files are
+  clean. This is not a claim that the entire pre-existing repository is gofmt-clean.
+- Source metadata is still 2.12.0, while installed CLI is 1.50.0 and installer/runtime core skills 2.14.0.
+  Dry-run sync is recorded; metadata refresh is authorized release work, not a source-protocol overwrite.
+- Root OpenViking recall and the owner-answer update were verified by readback and retrieval. The child
+  could not use memory under its sandbox approval policy and relied on local authority. Graphify's current
+  graph covers design documents, so code relationships were inspected directly.
 
 ## Validation evidence
 
-No acceptance criterion is independently claimed complete. Producer checks so far:
+Producer results only; independent criterion verdicts will be cited from claude-1's own artifact.
+Full command logs are under `.parley-runtime/quota-implementation/`; exact child checks and evidence
+limits are in `source-context/codex-1-implementation-evidence.md`.
 
-- `go test ./internal/quota ./internal/telemetry ./internal/config -count=1` on host: pass.
-- `go test ./internal/runner -run 'TestVerifierRecoveryRefusedEvidenceMutationFailsHandles|TestQuota' -count=1`
-  on host: pass, including the fixture denied by the subprocess sandbox.
-- The subprocess full suite encountered sandbox-denied cache/launch fixtures. The later host full
-  suite (`go test ./... -timeout 45m`) passed every package at this stage-1 checkpoint. The first
-  host run reached the default 10-minute trajectory timeout; the longer rerun exited 0.
-  Full checks must run again after further implementation changes.
-- Protocol drift guard and packet checks pass; skill checks above pass. AC1's whole-file comparison is
-  still unmet, AC2 is unmet, stage-2 ACs are not implemented, and attended close/signoffs remain owed.
+| Criterion | Current producer evidence / remaining gate |
+| --- | --- |
+| AC1 | Three normative copies, exact skill/deck `cmp`, drift test, changelog, phase 0/5/8 packets and packet-map check pass. Full suite exposed a packet-size failure; shortened new prose makes the unchanged guard pass. Final rerun pending. |
+| AC2 | Recorded incident-2 fixture, incident-1 labeled replay, every-record/receipt-clock and bounded display-reset tests pass. |
+| AC3 | Adversarial class/reset/quoted/mixed/duplicate/truncated/success/watchdog fixtures pass. |
+| AC4 | Support table: only bounded zcode is supported; unsupported/adversarial provenance tests pass. |
+| AC5 | Whole-batch permutations, 4→2/3→1, duplicates, facilitator/unresolved floor cases pass. |
+| AC6 | Kickoff C1 filtering, replay, automatic records and standalone report-only preflight tests pass. |
+| AC7 | Shared bare-503 gate/preflight tests pass. |
+| AC8 | Designee/pin/started-draft, global-default and stub/protected-batch tests pass. |
+| AC9 | Historical veto remains TriageBlocked, current-only append gate, kickoff-never-known and retained-finding tests pass. |
+| AC10 | Prospective review/diversity/strict gates and consumer rebinding tests pass; first complete host gate coverage passed, final rerun running. |
+| AC11 | Commit/projection fault injection, pending-action refusal, replay/dedup and stale-dispatch tests pass. |
+| AC12 | Lifetime/cross-process lease, different-run/off-scope and unsettled-prior-writer tests pass. |
+| AC13 | Preserved partial files/failed events and survivor-validation terminal evaluation tests pass. |
+| AC14 | Immutable history, later-run discovery, contradiction and consumer-rebind tests pass. |
+| AC15 | Status/wait/brief pending/applied agreement, notices and wait exit behavior tests pass. |
+| AC16 | Layered/presence-aware defaults, malformed records, legacy/off/frozen scope and upgrade tests pass. |
+| AC17 | Roster-free design, immutable scope and reset-hint tests pass; no timer/rejoin path added. |
+| AC18 | Provider-evidence-only candidacy and adversarial fixtures pass under the explicit owner exception. |
+| AC19 | Both stages present; status remains in-progress pending full checks/review, never complete here. |
+| AC20 | Host build/vet, changed-file formatting, drift and preceding skill suite pass. First full HOST suite had only the packet-size failure, now corrected; final Go/skill reruns pending. |
+| AC21 | Attended close pending both independent review evidence and review-consensus signoffs, then owner answer. |
 
-Raw producer evidence is under `.parley-runtime/quota-implementation/` and `/tmp/quota-skill-full.log`.
-The focused reviewer owns `review/round-01/claude-1.md`; it is not a full-scope closing review.
+Protocol attestation read by organizer/implementer at resumption: context_mode=full; source and packet
+SHA256 `8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416`; no fallback reason.
+The final both-stage packet-check source/packet SHA256 is
+`d1841e1c9a93f2ccd20314bd20a43705ab0c166d3d5678cc9aaa2e259fc22132` for phases 0/5/8 (full, no fallback).
 
-## Outcomes & Retrospective
+## User direction — scope/reset answer
 
-Pending both stages, review and attended close.
-
-## User direction — scope/reset answer, 2026-10-04
-
-The following owner relay is quoted verbatim as required by the controlling brief. Its original Slovak quotations are retained with the supplied English translations.
+The owner relay below is quoted verbatim, including its original Slovak phrases and supplied English
+translations, as the controlling brief requires.
 
 ## Owner answers to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_scope-reset.md`
 
@@ -246,9 +216,8 @@ it within one second. Missing, contradictory or display-only resets still gate.
 - Record the deviation in `IMPLEMENTATION.md` with this note quoted, and carry the protocol wording into the
   §9.0 hunk under §7. The claude-1 review checks the deviation as implemented, not whether to make it.
 
-## Resumed implementation boundary
+## Outcomes & Retrospective
 
-- Protocol context read in full: context_mode=full; source_sha256=8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416; packet_sha256=8e9213bd45059069d484bd10e5ca1a1c509297039dfd8fc67d5e9ebda7590416; fallback_reason absent.
-- Owner-directed deviations: the zcode stderr rule replaces FINAL's unavailable native terminal binding for zcode only; zone-less display clocks are supplemental only under the exact same-record, real-offset, one-second agreement conditions in the answered note. No other adapter gains support.
-- A separate codex-1 implementation invocation owns Go code/tests and its implementation-evidence file. This organizer owns IMPLEMENTATION.md, protocol text and skill files, usage/organizer notes, and inbox. Edits are disjoint and commits are serialized after the child exits. Existing worktrees/branches are reused exactly as the owner brief requires; no worktree declaration/pruning.
-- Full-scope claude-1 review follows both delivered stages. Prior rounds 01/02 are focused feedback only. The organizer/implementer does not issue an independent verdict on its own work.
+Pending full-scope review, any agreed fixes, both signoffs and attended close. Release preparation is in
+`release-plan-codex-1.md`; the owner-only npm OTP and attended protocol publication remain later steps.
+No completion, merge, release or channel verification is claimed.

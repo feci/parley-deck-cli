@@ -52,3 +52,10 @@ Separate focused claude-1 reviewer (phase 6, final process):
 - codex-1 organizer, cumulative snapshot replacing earlier snapshots: input 22445133, cached input 21107200, cache write 0, output 94816, reasoning output 44684, client total 22539949; 156 events; attribution ambiguous; accounting time 2026-10-04T00:22:54.388125Z.
 
 The same parser/cache conventions and ambiguous run-window qualification above apply. Do not sum the organizer snapshots. These are reported client counters, not a monetary estimate.
+
+## Owner-answer resumption / both-stage handoff (2026-10-04)
+
+- Separate codex-1 both-stage implementer, final: input 20944906, cached input 19082240, output 116912, reasoning output 36555, total 21061818; 134 events; attribution ambiguous; accounting 2026-10-04T02:04:47.060393Z.
+- New codex-1 organizer session, cumulative snapshot: input 24776640, cached input 23768960, output 56744, reasoning output 28754, total 24833384; 141 events; attribution ambiguous; accounting 2026-10-04T02:04:47.086291Z.
+
+The organizer transcript is rollout-2026-10-04T02-33-50-01a10454-d471-7521-89b0-aad8df27aea1.jsonl; this is a new session after the prior blocker. Later snapshots replace this row, not add to it. Child is 02-40-20-01a1045a-c604-77e3-9100-eb902188d1db. Input includes cached input; reasoning is a subset of output. The ambiguous run-window qualification remains; no monetary estimate is asserted.
