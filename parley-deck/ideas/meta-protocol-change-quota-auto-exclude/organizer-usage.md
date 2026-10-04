@@ -78,3 +78,11 @@ It exited 0 after 5018.3 seconds, without wrapper timeout or provider quota/auth
 separate implementer transcript, not independent review and not an organizer snapshot.
 
 Organizer cumulative cycle-1 handoff snapshot: input 65114504, cached input 62962304, output 187168, reasoning output 90146, total 65301672; 398 events; attribution ambiguous; accounting 2026-10-04T04:42:53.749521Z. This replaces earlier snapshots of the 02:33:50 organizer transcript; it is not added to them.
+
+## Round-04 quota-stop boundary (2026-10-04)
+
+Separate claude-1 incomplete round-04 review: input 96, cached input 6602281, cache write 789671, output 62745, reasoning output 0, client total 62841; 50 events; attribution ambiguous; accounting 2026-10-04T04:57:13.626448Z.
+
+Organizer cumulative snapshot (replaces earlier same-transcript snapshots): input 67065317, cached input 64889856, cache write 0, output 199929, reasoning output 94534, client total 67265246; 413 events; attribution ambiguous; accounting 2026-10-04T04:57:13.649263Z.
+
+The review ended on quota exhaustion without a canonical artifact; partial client usage is still spend, never a completed review. Claude cache and Codex cumulative-snapshot conventions above apply. No monetary estimate is claimed.

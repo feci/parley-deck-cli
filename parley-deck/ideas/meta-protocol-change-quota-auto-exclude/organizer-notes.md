@@ -853,3 +853,14 @@ The next separate configured claude-1 invocation owns review/round-04/claude-1.m
 ceiling, complete current protocol body, complete CLI/skill product diffs, G1–G9/R1–R4 and every AC.
 It receives the old free-form marker refusal and missing full native capture explicitly for its own
 judgment. Both clean-consensus signoffs and a NEW attended-close owner answer remain later gates.
+
+## Round-04 failed on quota — 2026-10-04 04:54Z
+
+The single configured claude-1 process exited 1 after 400.7 seconds without wrapper timeout. Final
+stdout is the verbatim 429 all-Claude-accounts-exhausted error preserved in the blocking owner note
+`codex-1-to-user_meta-protocol-change-quota-auto-exclude_review-quota-stop-20261004.md` and committed
+raw evidence. Stderr is empty; no round-04 artifact exists. The Python launcher exited 0 only after
+recording that child exit 1. No independent verdict or completed review is inferred. All further agent
+launches stop under the controlling brief; five-minute reset is an estimate, never retry authorization.
+Code/skill snapshots and host checks are unchanged. Await owner capacity confirmation and an explicit
+single-review relaunch; no new fix-up cycle, attended close, merge or release occurred.

@@ -13,7 +13,7 @@ implementation-pr: n/a
 
 Both stages and fix-up cycle 1 are delivered at CLI `906857b`; the skill counterpart is
 `dcb7d59`. Cycle 1 implements signed G1–G9 and conditions R1–R4 after the binding round-03 review.
-Independent re-review is pending; these producer results are not acceptance or authority to close.
+Independent re-review is blocked by the round-04 quota failure; these producer results are not acceptance or authority to close.
 
 The full HOST `go test ./... -count=1 -timeout 45m` passes every package (529 seconds), as do host
 build/vet, meaningful race checks, all shared-volume/local-control tests and formatting of all 83
@@ -280,3 +280,13 @@ No excluded provider was launched. Source-derived positives and the rejected par
 remain distinct, as R4 requires. The documented versus free-form off-mode confirmation distinction is
 exposed for R2 adjudication. Windows runtime remains unexecuted. No other owner policy or D6 repair was
 inferred, and no final signoff, attended close, merge or release is claimed.
+
+## Round-04 quota stop — 2026-10-04 04:54Z
+
+The separate claude-1 process exited 1 after 400.7 seconds on an explicit 429 quota failure; it wrote
+no review artifact. Raw stdout/empty stderr, launch/exit metadata and hashes are retained in
+`source-context/review-round-04-quota-stop-20261004/`. The organizer stopped launches under the
+controlling brief and filed the blocking `review-quota-stop-20261004` owner note. No retry, model
+change, reviewer substitution or quota exclusion is authorized by the reset estimate. Cycle count
+remains 1 of 5; top-level status remains fix-up-cycle-1. Full host results remain producer evidence.
+This is not an attended-close request, and no completion/merge/release is claimed.
