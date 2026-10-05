@@ -1,0 +1,27 @@
+I've written the round-04 review to `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-04/claude-1.md` (sha256 `499afc78…`). It passes the CLI's own review-artifact check. I did not commit it, sign anything or touch any other file. It finished about 16 minutes into the 40-minute limit, with no quota, credit or auth error.
+
+**Counts:** 0 critical, 3 major, 2 minor, 1 nit.
+
+**What's fixed:** I checked the fixes on the shared volume and on `/tmp`.
+- New ideas are created with the knob on and off.
+- The idea lease is exclusive across processes.
+- A lease left by a foreign or unknown host or boot is never taken over.
+- A committed owner answer still counts after it is archived or deleted.
+- All 54 of my round-03 wrong-positive cases are now rejected.
+
+All 13 affected packages pass their focused tests on the shared volume.
+
+**Blockers:**
+1. **R4-MAJOR-1:** zcode's standard "retries exhausted" report is always rejected. The code requires every retry's message to match exactly, but the provider's message contains a countdown that changes between attempts. I fed it the two real retained values (176930 / 49h 8m 50s and 176890 / 49h 8m 10s, same absolute reset) and it rejected them. The only retry fixture that passes repeats one error object three times, which can't happen in a real run.
+2. **R4-MAJOR-2 (my R2 condition):** on new knob-off ideas, bringing an agent back now requires an `included:` marker. A catch-up join requires a committed owner answer with an exact directive line. Neither the protocol nor the skill defines these, and the skill says knob-off ideas keep their ordinary confirmations. That makes it a third knob-off behavior change, which needs an owner decision.
+3. **R4-MAJOR-3:** there is still no native zcode capture for AC2. Only the owner can close this, either by authorizing a capture or by ruling on it.
+
+AC21 (the close) is still unmet: it needs review consensus, both signoffs and a new owner close answer.
+
+The two minor findings are:
+- the knob-off exclusion line must use exactly three em-dash fields, and its error doesn't say so;
+- on policy-on ideas, editing `participants:` by hand is either blocked without naming `parley quota revise`, or silently reverted.
+
+The nit is a misleading reason string when zcode framing is rejected. The artifact also lists three open questions, about inspect depth, crashed writers and manifest ordering.
+
+My probe programs and logs are in `.parley-runtime/claude1-r4/`.

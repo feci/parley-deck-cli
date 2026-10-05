@@ -1,0 +1,9 @@
+ok  	parley-deck-cli/internal/app	6.877s
+ok  	parley-deck-cli/internal/membership	7.681s
+ok  	parley-deck-cli/internal/pidlease	0.375s
+ok  	parley-deck-cli/internal/fsutil	0.187s
+ok  	parley-deck-cli/internal/consensus	5.917s
+ok  	parley-deck-cli/internal/quota	0.959s
+ok  	parley-deck-cli/internal/telemetry	0.223s
+ok  	parley-deck-cli/internal/protocol	0.208s
+exit=0

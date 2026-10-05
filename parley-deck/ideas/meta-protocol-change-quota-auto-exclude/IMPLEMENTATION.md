@@ -13,7 +13,7 @@ implementation-pr: n/a
 
 Both stages and fix-up cycle 1 are delivered at CLI `906857b`; the skill counterpart is
 `dcb7d59`. Cycle 1 implements signed G1–G9 and conditions R1–R4 after the binding round-03 review.
-Independent re-review is blocked by the round-04 quota failure; these producer results are not acceptance or authority to close.
+Independent round-04 re-review completed on the unchanged product snapshot and requires further repairs plus an AC2 owner decision; these producer results are not acceptance or authority to close.
 
 The full HOST `go test ./... -count=1 -timeout 45m` passes every package (529 seconds), as do host
 build/vet, meaningful race checks, all shared-volume/local-control tests and formatting of all 83
@@ -290,3 +290,32 @@ controlling brief and filed the blocking `review-quota-stop-20261004` owner note
 change, reviewer substitution or quota exclusion is authorized by the reset estimate. Cycle count
 remains 1 of 5; top-level status remains fix-up-cycle-1. Full host results remain producer evidence.
 This is not an attended-close request, and no completion/merge/release is claimed.
+
+## Round-04 owner-authorized resumption — 2026-10-05
+
+The new owner answer authorizes exactly one repeat of round-04 on CLI product 906857b, review
+snapshot d8b729a, skill dcb7d59. Product and retained review-input hashes are unchanged. The separate
+configured claude-1 process is running under the same 2400-second ceiling. The reviewer must quote
+the new answer in its own canonical artifact. Cycle count stays 1 of 5; no acceptance, close or release
+is inferred. A further quota/credit/auth failure stops launches and requires a new blocking owner note.
+
+## Round-04 outcome and proposed cycle 2 — 2026-10-05
+
+The sole authorized repeat completed successfully in 954.6 seconds, with no quota/credit/auth failure.
+claude-1 authored review/round-04/claude-1.md (35965 bytes, SHA256
+499afc780113d788a6c83c721e171cdc30bc8a3b4a957fa0d590e261cbed3453), validated 1/1, unparsed=false.
+Its binding counts are 0 CRITICAL, 3 MAJOR, 2 MINOR, 1 NIT; both previous CRITICALs are resolved in
+its stated scopes. Full protocol/product coverage is now recorded by the reviewer. No close is granted.
+
+The new review/consensus.md proposes G10–G14: realistic retry semantics and diagnostics; preserve
+ordinary knob-off return/catch-up (R4-MAJOR-2 option b); visible policy-on revision handling; investigate
+and resolve the crashed-writer/missing-manifest recovery leads; prepare exact native framing evidence
+without an excluded-provider invocation. codex-1 accepts the fix list. claude-1's own signoff is pending;
+no cycle-2 code edit begins before that boundary. AC2 stays open for a later concrete owner decision,
+not deferred or waived. Cycle count remains one completed fix-up out of five.
+
+Independent current-tree evidence: round-04 records PRIMARY focused passes for 13 packages and shared/
+local reproductions, with full suite/race/vet/skill still SECONDARY producer evidence. AC2 is not met;
+AC16/17 retain the knob-off compatibility issue; AC20 is scoped/partial; AC21 remains unmet. Other
+criteria carry only the reviewer’s explicit scopes, not an organizer upgrade. Raw selected evidence
+is copied verbatim to source-context/review-round-04-relaunch-20261005/.

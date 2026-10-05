@@ -1,0 +1,12 @@
+{
+  "authorized_by": "parley-deck/inbox/user-to-codex-1_meta-protocol-change-quota-auto-exclude_review-quota-answer.md",
+  "authorization_sha256": "b606c2fe0436f5bba0b8da36ba90ce83ce742e8865ffdd27077ccd1435fb0b6e",
+  "relaunch_number": 1,
+  "phase": "review-cycle-1-relaunch-20261005",
+  "prelaunch_head": "a6f0b74bebc0b328ae2a8dd3e3fffc81ce34d70e",
+  "product_commit": "906857b9af33306158d3b0e91b94e6ef4b6f7458",
+  "review_snapshot": "d8b729af187a18ebe3891a36dfc379c4b04c8b95",
+  "skill_commit": "dcb7d593130247709cfad19715aa1f53e5cc8be0",
+  "verified_diff_chunks": 37,
+  "recorded_at": "2026-10-05T19:31:25.137420+00:00"
+}

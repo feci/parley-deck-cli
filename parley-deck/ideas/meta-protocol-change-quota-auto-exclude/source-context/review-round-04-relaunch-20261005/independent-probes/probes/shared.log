@@ -1,0 +1,53 @@
+### volume=shared base=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base date=2026-10-05T19:33:53Z
+$ create
+root=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/create knob=false -> slug="2026-10-05T21-33-53-virtiofs-create" kickoff=true err=<nil>
+root=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/create knob=true -> slug="2026-10-05T21-33-53-virtiofs-create-2" kickoff=true err=<nil>
+root=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/create nil policy (legacy API) -> slug="2026-10-05T21-33-53-legacy-nil-polic" err=<nil>
+exit=0
+$ TMPDIR=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/tmp knoboff
+policy={Enabled:false Scope:kickoff-and-mid-idea} kickoff written=true MidIdea=false
+--- created prompt frontmatter ---
+---
+idea: 2026-10-05T21-33-54-knob-off-demo-ta
+author: user
+created: 2026-10-05
+participants: [a, b, c, d]
+track: deliberation
+quota_auto_exclude: false
+quota_auto_exclude_scope: kickoff-and-mid-idea
+status: round-01
+---
+
+## Problem / idea
+
+knob off demo task
+
+## Constraints
+
+- Local-directory trans
+before manual edit: current=[a b c d] known=[a b c d] err=<nil>
+after owner-confirmed manual exclusion of d (knob off): current=[] known=[] err=manual exclusion d lacks recorded owner confirmation
+after catch-up join of e (knob off): current=[] err=manual inclusion e lacks recorded owner confirmation
+exit=0
+$ TMPDIR=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/tmp reinclude
+1 reconciled after transition (participants a,b,c)         inspectErr=<nil> pending="" | QuotaMembers current=[a b c] known=[a b c d] err=<nil>
+2 owner re-includes d by editing participants:             inspectErr=<nil> pending="quota membership projection pending" | QuotaMembers current=[] known=[] err=quota membership projection pending
+   ReconcileQuotaPrompt (run by next driver Before) rewrote participants: "participants: [a, b, c, d]" -> "participants: [a, b, c]"
+3 owner adds new agent e (catch-up join)                   inspectErr=contradictory quota membership projection pending="" | QuotaMembers current=[] known=[] err=contradictory quota membership projection
+4 owner edits recorded scope line                          inspectErr=contradictory immutable quota policy pending="" | QuotaMembers current=[] known=[] err=contradictory immutable quota policy
+5 kickoff-only idea; owner widens prompt scope line        inspectErr=contradictory immutable quota policy pending="" | QuotaMembers current=[] known=[] err=contradictory immutable quota policy
+   history MidIdea() after widening edit: false
+exit=0
+$ lease setup/hold/try
+setup ok /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/lease/parley-deck/ideas/demo
+exit=0
+run-B acquire (while run-A holds) err: idea driving lock held: demo (competing run run-B): lease held: demo/run-A pid=1016 host="Tomass-Virtual-Machine.local" boot="{ sec = 1791044926, usec = 597398 } Sat Oct  3 18:28:46 2026" at /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r4/probes/shared-base/lease/.parley-runtime/membership/76c253116a294f249bcb895802ca46b55045492780ab3f9c8d4f853a7a72bdd8/driver.lease; only a proven dead local owner may be reclaimed
+try exit=0
+run-A acquire err: <nil>
+run-B acquire (while run-A holds) err: <nil>
+post-release try exit=0
+total 4
+drwxr-xr-x  4 tomasfecko  staff  128 Oct  5 21:33 .
+drwxr-xr-x  3 tomasfecko  staff   96 Oct  5 21:33 ..
+-rw-r--r--  1 tomasfecko  staff  131 Oct  5 21:33 00-prompt.md
+-rw-------  1 tomasfecko  staff  211 Oct  5 21:33 quota-kickoff.json

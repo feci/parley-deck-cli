@@ -86,3 +86,15 @@ Separate claude-1 incomplete round-04 review: input 96, cached input 6602281, ca
 Organizer cumulative snapshot (replaces earlier same-transcript snapshots): input 67065317, cached input 64889856, cache write 0, output 199929, reasoning output 94534, client total 67265246; 413 events; attribution ambiguous; accounting 2026-10-04T04:57:13.649263Z.
 
 The review ended on quota exhaustion without a canonical artifact; partial client usage is still spend, never a completed review. Claude cache and Codex cumulative-snapshot conventions above apply. No monetary estimate is claimed.
+
+## Round-04 owner-answer resumption — 2026-10-05
+
+New organizer transcript: `rollout-2026-10-05T21-28-37-01a10d8a-1d2f-7303-bc7b-d04f6f392530.jsonl`.
+Dispatch-boundary ingestion: `ingest appended: codex-rollout/v1 idea=meta-protocol-change-quota-auto-exclude phase=6 agent=codex-1 events=13 total_tokens=817839 attribution=ambiguous`. This is a new session, not the October 4 cumulative snapshot.
+Later snapshots replace this session row; do not add them. Reviewer relaunch usage will be recorded
+after the process ends. Client attribution is ambiguous, and these counts are not monetary estimates.
+
+Successful single round-04 relaunch (claude-1, new transcript 2a3d2bae-1c17-4c60-afab-6fb90afea1d4):
+input 242, cache read 39420645, cache write 1950702, output 269637, reasoning output 0, client total
+269879; 121 events; attribution ambiguous; accounting 2026-10-05T19:48:39.685598Z. This is distinct
+from the failed October 4 review. Claude parser/cache conventions apply; no monetary estimate.

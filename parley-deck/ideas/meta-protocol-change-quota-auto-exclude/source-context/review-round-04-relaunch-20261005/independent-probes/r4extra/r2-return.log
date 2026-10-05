@@ -1,0 +1,8 @@
+R2 this-idea-unbracketed              QuotaMembers current=[a b c] known=[a b c d] err=<nil> | RecordManual err=<nil> | revision=1 readErr=<nil>
+R2 return-d-without-included-marker   QuotaMembers current=[] err=manual inclusion d lacks recorded owner confirmation
+R2 return-d-with-included-marker      QuotaMembers current=[a b c d] err=<nil> | RecordManual err=<nil> revision=2 current=[a b c d]
+R2 documented-bracketed               QuotaMembers current=[a b c] known=[a b c d] err=<nil> | RecordManual err=<nil> | revision=1 readErr=<nil>
+R2 reason-contains-emdash             QuotaMembers current=[] known=[] err=manual exclusion d lacks recorded owner confirmation | RecordManual err=manual exclusion d lacks recorded owner confirmation | revision=0 readErr=<nil>
+R2 date-with-trailing-note            QuotaMembers current=[] known=[] err=manual exclusion d lacks recorded owner confirmation | RecordManual err=manual exclusion d lacks recorded owner confirmation | revision=0 readErr=<nil>
+R2 inbox-reference-style              QuotaMembers current=[] known=[] err=manual exclusion d lacks recorded owner confirmation | RecordManual err=manual exclusion d lacks recorded owner confirmation | revision=0 readErr=<nil>
+R2 hyphen-separators                  QuotaMembers current=[] known=[] err=manual exclusion d lacks recorded owner confirmation | RecordManual err=manual exclusion d lacks recorded owner confirmation | revision=0 readErr=<nil>

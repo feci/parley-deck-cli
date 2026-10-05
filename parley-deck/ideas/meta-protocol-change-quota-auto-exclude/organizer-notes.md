@@ -864,3 +864,48 @@ recording that child exit 1. No independent verdict or completed review is infer
 launches stop under the controlling brief; five-minute reset is an estimate, never retry authorization.
 Code/skill snapshots and host checks are unchanged. Await owner capacity confirmation and an explicit
 single-review relaunch; no new fix-up cycle, attended close, merge or release occurred.
+
+## Owner-authorized round-04 relaunch — 2026-10-05 19:31Z
+
+Read the controlling organizer brief and both owner answers. The owner authorizes exactly one repeat
+of round-04 on CLI product 906857b / review snapshot d8b729a / skill dcb7d59. Verified no product
+change since those snapshots; all 37 retained diff chunks and complete diff hashes match. The separate
+configured claude-1 process started once at 19:31:25Z (Opus 5.5/max, 2400-second ceiling), reusing the
+original focused brief plus the new owner answer. It alone owns review/round-04/claude-1.md. No second
+launch or new fix-up cycle is authorized by this retry. Raw launch/authorization/exit records live under
+.parley-runtime/quota-implementation/review-cycle-1-relaunch-20261005/.
+
+Existing configured-CLI fallback remains necessary: the installed driver lacks a focused review brief
+override, concatenates old reviews, previously dispatched consensus prematurely, and has unresolved
+legacy accounting gap 11. These gaps are not changed. Organizer brief and status were recomputed;
+canonical round-04 is still missing at dispatch. Await with the CLI and the same process, never end
+while waiting. Any actual quota/credit/auth failure produces a new blocking owner note.
+
+Version check: parley 1.50.0; installer and all eight runtime markers 2.14.0. This source deck retains
+2.12.0 metadata with expected reviewed protocol drift; sync-project dry-run proposes metadata only.
+No sync is applied during the owner-required frozen review. Resumption packet attestation is full,
+source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e,
+fallback_reason absent; lean reorientation uses the unchanged source attested in earlier phases.
+Owner override retains local canonical transport and codex-1 organizer/implementer role concentration;
+claude-1 remains the sole independent reviewer. Machine-active kimi-1 and zcode-1 do not participate.
+
+## Round-04 completion / cycle-2 fix-consensus preparation — 2026-10-05 19:47Z
+
+The single owner-authorized configured claude-1 process exited 0 after 954.6 seconds. No provider quota,
+credit or auth error and no timeout; no extra review relaunch. Raw canonical review is 35965 bytes,
+SHA256 499afc780113d788a6c83c721e171cdc30bc8a3b4a957fa0d590e261cbed3453; validator 1/1, unparsed=false.
+Reviewed product remains 906857b / skill dcb7d59. Counts 0 CRITICAL / 3 MAJOR / 2 MINOR / 1 NIT.
+Both old CRITICALs resolved; six remaining findings are fewer than the old fifteen and confined to
+remaining/fix-up paths, so one further bounded cycle is proposed under stopping judgment.
+
+The CLI drafted review/consensus.md; codex-1 mapped all findings and open questions into G10–G14 and
+appended only its own ACCEPT. Choose R4-MAJOR-2 option (b), preserving existing knob-off behavior.
+AC2/native evidence remains an owner-dependent held thread; prepare concrete repairs/evidence before
+asking, as Phase 8 allows unrelated fixes to continue. No source edit starts before the separate
+claude-1 signoff. The signer also receives the exact user-answer quote mismatch (IMPLEMENTATION.md
+versus IMPL-ORGANIZER-BRIEF.md) for its own correction/addendum; the organizer never edits its review.
+The answered old quota-stop note is archived after the owner answer was quoted into round-04.
+
+Graphify's existing 434-node documentation graph was queried with its actual vocabulary; it points to
+round-03 findings/FINAL, not the current code. Current round-04 locators govern the fix list. No graph
+rebuild or tooling upgrade was done; installed graphify reports runtime skill-version drift.

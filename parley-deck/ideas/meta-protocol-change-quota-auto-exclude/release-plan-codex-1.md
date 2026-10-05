@@ -45,3 +45,11 @@ Read-only GitHub and git observations at 2026-10-03 23:04Z:
 The skill repository's RELEASING.md and package.json define its checks. The CLI's hosted workflow uses
 `go build ./...` and `go test ./... -count=1 -timeout 45m` on Linux, macOS and Windows; Windows failures
 must be assessed as actual evidence, never silently omitted or relabeled as passes.
+
+## Read-only resumption check — 2026-10-05 19:33Z
+
+GitHub still reports CLI v1.50.0 and skill v2.14.0 as latest (published 2026-09-25).
+The planned next versions therefore remain 1.51.0 / 2.15.0, subject to the final pre-release check.
+Staged core 2.14.0 exists; staged 2.15.0 does not. No channel mutation or staging occurred.
+Round-04 review is running on the owner-authorized unchanged product snapshot; its independent
+verdict, final consensus and attended close remain prerequisites for the release steps above.

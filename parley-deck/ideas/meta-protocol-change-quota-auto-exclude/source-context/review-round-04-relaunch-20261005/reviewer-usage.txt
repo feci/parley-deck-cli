@@ -1,0 +1,1 @@
+ingest appended: claude-jsonl/v1 idea=meta-protocol-change-quota-auto-exclude phase=6 agent=claude-1 events=121 total_tokens=269879 attribution=ambiguous

@@ -1,0 +1,6 @@
+ok  	parley-deck-cli/internal/driver	0.379s
+ok  	parley-deck-cli/internal/runner	0.744s
+ok  	parley-deck-cli/internal/config	0.213s
+ok  	parley-deck-cli/internal/runcontrol	0.326s
+ok  	parley-deck-cli/internal/runstate	0.196s [no tests to run]
+exit=0
