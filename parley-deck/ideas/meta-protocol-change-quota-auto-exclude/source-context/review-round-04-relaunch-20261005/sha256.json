@@ -27,10 +27,6 @@
     "bytes": 2534,
     "sha256": "a44f9e9438405838fe71284e925b397b23609c22de3adc2cb918c4051a7c14c2"
   },
-  "independent-probes/zretry/main.go": {
-    "bytes": 7436,
-    "sha256": "140bb3bf1e71f82c56cf067454830070f3140e71664e344ec19e9d448410c4e0"
-  },
   "independent-probes/probes/rerun.sh": {
     "bytes": 1508,
     "sha256": "96f1960b56ba8c04e7d6ddf470d43303b886d58b75b68386966128caf4169880"
@@ -59,10 +55,6 @@
     "bytes": 123,
     "sha256": "f69f11a030ee8bfd2b7b29550e161e530b7f25a1663d4197c7f3c35ea05fe064"
   },
-  "independent-probes/tail/main.go": {
-    "bytes": 514,
-    "sha256": "4064b821039dde4855ae654eb9d744a7adcbdf30ca7ebccd9c6bda7c630fbfb3"
-  },
   "independent-probes/r4extra/r4extra.log": {
     "bytes": 8397,
     "sha256": "39db269e7a3162468405e4735e9840407887aefadc5d3960549f75f7538aad1a"
@@ -71,12 +63,23 @@
     "bytes": 1450,
     "sha256": "0a330ee5a13f4ca1db97b7cab79a183797d1958cc21ee6da4a6d9c5bb132fb80"
   },
-  "independent-probes/r4extra/main.go": {
-    "bytes": 7090,
-    "sha256": "916a09bad587cc48a0c04331950e3e6af38966f3aab41bab75bc1f5c23263d87"
-  },
   "canonical-review": {
     "bytes": 35965,
     "sha256": "499afc780113d788a6c83c721e171cdc30bc8a3b4a957fa0d590e261cbed3453"
+  },
+  "independent-probes/zretry/main.go.txt": {
+    "bytes": 7436,
+    "sha256": "140bb3bf1e71f82c56cf067454830070f3140e71664e344ec19e9d448410c4e0",
+    "original_relative_path": "independent-probes/zretry/main.go"
+  },
+  "independent-probes/tail/main.go.txt": {
+    "bytes": 514,
+    "sha256": "4064b821039dde4855ae654eb9d744a7adcbdf30ca7ebccd9c6bda7c630fbfb3",
+    "original_relative_path": "independent-probes/tail/main.go"
+  },
+  "independent-probes/r4extra/main.go.txt": {
+    "bytes": 7090,
+    "sha256": "916a09bad587cc48a0c04331950e3e6af38966f3aab41bab75bc1f5c23263d87",
+    "original_relative_path": "independent-probes/r4extra/main.go"
   }
 }

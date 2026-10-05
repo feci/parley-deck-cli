@@ -98,3 +98,13 @@ Successful single round-04 relaunch (claude-1, new transcript 2a3d2bae-1c17-4c60
 input 242, cache read 39420645, cache write 1950702, output 269637, reasoning output 0, client total
 269879; 121 events; attribution ambiguous; accounting 2026-10-05T19:48:39.685598Z. This is distinct
 from the failed October 4 review. Claude parser/cache conventions apply; no monetary estimate.
+
+## Phase-7 quota-stop boundary — 2026-10-05
+
+claude-1 (a23a4ff5-8d32-4f47-a6ab-e019561a0a38.jsonl): input_tokens 62, cached_input_tokens 2648360, cache_write_input_tokens 201791, output_tokens 12117, reasoning_output_tokens 0, total_tokens 12179; 32 events; attribution ambiguous; accounting 2026-10-05T19:59:33.268184Z.
+
+codex-1 (rollout-2026-10-05T21-28-37-01a10d8a-1d2f-7303-bc7b-d04f6f392530.jsonl): input_tokens 5836019, cached_input_tokens 5681408, cache_write_input_tokens 0, output_tokens 37263, reasoning_output_tokens 19085, total_tokens 5873282; 57 events; attribution ambiguous; accounting 2026-10-05T19:59:33.279095Z.
+
+The organizer row replaces the earlier October 5 dispatch snapshot; do not sum those snapshots.
+The failed signer is a distinct invocation and still consumed tokens. Claude cache conventions apply.
+No monetary estimate or completed signoff is claimed.

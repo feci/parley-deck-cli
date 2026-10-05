@@ -1,0 +1,30 @@
+{
+  "exit.json": {
+    "bytes": 152,
+    "sha256": "caa1a0cd19ef3c1d05b7cbd4644ca1560548befabb527f42b93caa56c231d19e"
+  },
+  "stderr.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "protocol-attestation.json": {
+    "bytes": 426,
+    "sha256": "986f4b04d0c1816555ad9e87de88c5cf3f29966db36a87980fb853245f5ff52d"
+  },
+  "stdout.log": {
+    "bytes": 199,
+    "sha256": "daa56cab5e8fd71f753d9ef6113bee6c4c0d32c5547ab9c683aba2ab48604b7e"
+  },
+  "organizer-usage-stop.txt": {
+    "bytes": 154,
+    "sha256": "334faa1899849c1d3355f766a9e14777fd2f849701eb988ea59694502b334dcc"
+  },
+  "reviewer-usage.txt": {
+    "bytes": 152,
+    "sha256": "2ef3c97148a12462f77bf4e59db41de8409331fbe428b841a2c97ac8b4a34897"
+  },
+  "launch.json": {
+    "bytes": 547,
+    "sha256": "b752329c36501a3d58ffd51ea3b5fc379aeefea3dd14d21e2c5a5f74706071af"
+  }
+}

@@ -310,7 +310,7 @@ its stated scopes. Full protocol/product coverage is now recorded by the reviewe
 The new review/consensus.md proposes G10–G14: realistic retry semantics and diagnostics; preserve
 ordinary knob-off return/catch-up (R4-MAJOR-2 option b); visible policy-on revision handling; investigate
 and resolve the crashed-writer/missing-manifest recovery leads; prepare exact native framing evidence
-without an excluded-provider invocation. codex-1 accepts the fix list. claude-1's own signoff is pending;
+without an excluded-provider invocation. codex-1 accepts the fix list. claude-1's own signoff is blocked by the subsequent Phase-7 quota failure;
 no cycle-2 code edit begins before that boundary. AC2 stays open for a later concrete owner decision,
 not deferred or waived. Cycle count remains one completed fix-up out of five.
 
@@ -319,3 +319,13 @@ local reproductions, with full suite/race/vet/skill still SECONDARY producer evi
 AC16/17 retain the knob-off compatibility issue; AC20 is scoped/partial; AC21 remains unmet. Other
 criteria carry only the reviewer’s explicit scopes, not an organizer upgrade. Raw selected evidence
 is copied verbatim to source-context/review-round-04-relaunch-20261005/.
+
+## Phase-7 quota stop — 2026-10-05 19:57Z
+
+The separate claude-1 cycle-2 signer exited 1 in 187.8 seconds on a 429 cached quota exhaustion,
+without timeout or a signoff. The complete round-04 review is unchanged. No further agent launch
+occurred. Raw metadata/error/hash evidence is source-context/fix-consensus-2-quota-stop-20261005/; the
+blocking owner note is codex-1-to-user_meta-protocol-change-quota-auto-exclude_fix-consensus-quota-stop-20261005.md.
+Review consensus remains partial, with codex-1 ACCEPT and claude-1 missing. G10–G14 is a concrete
+proposed fix plan, not a signed code-change authorization. Cycle count is still 1 of 5; no cycle-2
+source edit, final signoff, attended close, merge or release has occurred.

@@ -1,0 +1,1 @@
+ingest appended: codex-rollout/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=codex-1 events=57 total_tokens=5873282 attribution=ambiguous

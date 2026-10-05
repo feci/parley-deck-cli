@@ -909,3 +909,19 @@ The answered old quota-stop note is archived after the owner answer was quoted i
 Graphify's existing 434-node documentation graph was queried with its actual vocabulary; it points to
 round-03 findings/FINAL, not the current code. Current round-04 locators govern the fix list. No graph
 rebuild or tooling upgrade was done; installed graphify reports runtime skill-version drift.
+
+## Phase-7 signoff quota stop — 2026-10-05 19:57Z
+
+The single configured claude-1 cycle-2 signer exited 1 after 187.8 seconds, without wrapper timeout,
+on a 429 cached account-quota error. No canonical signoff or review edit was written; review SHA256
+remains 499afc780113d788a6c83c721e171cdc30bc8a3b4a957fa0d590e261cbed3453. The prepared owner-quote
+erratum is still pending for the reviewer. All further agent launches stop. The blocking
+fix-consensus-quota-stop-20261005 owner note preserves the verbatim error and requests one Phase-7
+attempt after confirmed capacity, not a repeated round-04 review. No cycle-2 code edit begins.
+
+parley wait --for consensus reports the old design boundary here; review status --review --json
+correctly reports partial, missing claude-1. The process completion and explicit review status govern.
+This is recorded use of the existing Phase-7 fallback, not a driver repair. The automatic installed
+graphify post-commit hook rebuilt the local graph deterministically (code only, no LLM); no manual
+rebuild/provider launch occurred. Go probe evidence copies now use .go.txt filenames so they do not
+become extra go test ./... packages; their bytes/hashes remain unchanged.
