@@ -975,3 +975,10 @@ to the existing round-04/FINAL evidence, not current implementation proof. Exist
 version drift was reported; no graphify upgrade/rebuild was manually requested.
 
 Shared-memory checkpoint: OpenViking write to viking://resources/projects/parley-deck/quota-auto-exclude-signoff-timeout-20261006.md reported queue processing timeout at 60 seconds. Direct readback returned the exact saved note, confirming persistence; scoped find still returned older notes, so search indexing is not yet verified. Local canonical handoff remains authoritative. No repeated write was attempted.
+
+
+## Timeout-standing-permission resumption — 2026-10-06T11:29:26.170848+00:00
+
+The owner authorized the unchanged Phase-7 cycle-2 signoff at 2400 seconds, then 3600 seconds on a further silent timeout (maximum two timeout relaunches per step). This is timeout relaunch 1/2. Qualifying quota retries remain separately bounded at three; one prior quota relaunch has been used. No model/provider/roster change. The prior timeout had no provider error to quote (both streams empty). Fresh attempt: `.parley-runtime/quota-implementation/fix-consensus-2-timeout-relaunch-20261006-1/`.
+
+Lean reorientation: IMPLEMENTATION, raw review consensus, notes tail, computed organizer brief/status and current Phase-7 renderer. Context mode full, source/packet SHA256 `73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e`; facilitator audience falls back because facilitator participates. Existing driver gaps and stale advisory phase pointer still require the recorded focused configured-CLI fallback. Explicit review-consensus status and canonical signoff govern. Installer/all runtime markers 2.14.0, CLI 1.50.0, source metadata 2.12.0 with expected reviewed drift; no metadata/protocol overwrite.
