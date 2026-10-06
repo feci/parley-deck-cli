@@ -1120,3 +1120,34 @@ Apply timeout-standing-permission: same G15–G17 step/inputs, unchanged Opus 5.
 first timeout relaunch at 2400 seconds. Timeout relaunches 1/2; quota relaunches 0/3.
 No new owner question, exclusion or model/provider change. Raw attempts stay separate
 under .parley-runtime/quota-implementation/fix-consensus-3[-timeout-1].
+
+Cycle-3 signoff timeout relaunch 1: client transcript 2a37f224-1dc7-410d-8167-87e6e4ee4e7b reports an internal API transport timeout at 2026-10-06T14:29:36.721Z, verbatim `Request timed out.` (retryAttempt 1, retryInMs 607, client maxRetries 9). The process has not terminated, and the organizer has not launched another invocation. This is not a quota/credit/auth classification; the existing 2400-second outer ceiling remains.
+
+Timeout investigation (read-only, 2026-10-06): installed Claude CLI resolves to
+~/.local/share/claude/versions/2.1.291. Its binary contains the supported per-process
+API_TIMEOUT_MS control, a 300000 ms default request window (oZt), and diagnostic text
+recommending API_TIMEOUT_MS or CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS when a gateway holds
+responses until completion. Parent API_TIMEOUT_MS is unset. Internal request errors at
+14:29:36.721Z, 14:34:37.348Z and 14:39:38.530Z are all exactly `Request timed out.`
+with client retryAttempt 1, 2 and 3; spacing is consistent with that five-minute window.
+This does not prove the gateway's internal cause. No credentials/config were read or
+changed. If the current process exhausts its 2400-second ceiling, the final authorized
+3600-second timeout relaunch will align its per-process API_TIMEOUT_MS to 3600000 too.
+That changes only the authorized timeout ceiling, not model/provider/effort or task inputs.
+The current invocation remains alive until its configured deadline, per the skill.
+
+
+## Cycle-3 plan signoff timeout / final authorized relaunch — 2026-10-06 14:59Z
+
+Attempt started 14:19:11.374147Z, ended 14:59:12.091325Z, 2400.7 seconds,
+child exit 143, timeout=true. Stdout/stderr empty. The client reported 6 internal
+errors, all exactly `Request timed out.`; raw timestamps/retry counters are retained in
+fix-consensus-3-timeout-1/client-errors.json. No quota/credit/auth error. The canonical
+draft remains 5525bb84e54fc664fe3ce7b6cf804a83522bf223e56a5c8c4df3dad27b62977a; no signoff or product edit.
+
+The second and final timeout relaunch is 3600 seconds, with per-invocation
+API_TIMEOUT_MS=3600000. The user/project Claude settings contain neither API_TIMEOUT_MS
+nor CLAUDE_STREAM_FIRST_BYTE_TIMEOUT_MS; only those two timeout keys were inspected and
+reported. No settings file, model/provider/effort, quorum or task input was changed.
+Timeout relaunches 2/2, quota relaunches 0/3. If the timeout allowance is exhausted, stop
+and write a blocking owner note, never infer a signoff.

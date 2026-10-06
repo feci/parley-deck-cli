@@ -1,0 +1,80 @@
+[
+  {
+    "timestamp": "2026-10-06T14:29:36.721Z",
+    "error": {
+      "message": "Request timed out.",
+      "formatted": "Request timed out.",
+      "connection": null,
+      "isNetworkDown": false,
+      "rateLimits": null,
+      "noResponse": null
+    },
+    "retryAttempt": 1,
+    "retryInMs": 607
+  },
+  {
+    "timestamp": "2026-10-06T14:34:37.348Z",
+    "error": {
+      "message": "Request timed out.",
+      "formatted": "Request timed out.",
+      "connection": null,
+      "isNetworkDown": false,
+      "rateLimits": null,
+      "noResponse": null
+    },
+    "retryAttempt": 2,
+    "retryInMs": 1163
+  },
+  {
+    "timestamp": "2026-10-06T14:39:38.530Z",
+    "error": {
+      "message": "Request timed out.",
+      "formatted": "Request timed out.",
+      "connection": null,
+      "isNetworkDown": false,
+      "rateLimits": null,
+      "noResponse": null
+    },
+    "retryAttempt": 3,
+    "retryInMs": 2141
+  },
+  {
+    "timestamp": "2026-10-06T14:44:40.690Z",
+    "error": {
+      "message": "Request timed out.",
+      "formatted": "Request timed out.",
+      "connection": null,
+      "isNetworkDown": false,
+      "rateLimits": null,
+      "noResponse": null
+    },
+    "retryAttempt": 4,
+    "retryInMs": 4025
+  },
+  {
+    "timestamp": "2026-10-06T14:49:44.725Z",
+    "error": {
+      "message": "Request timed out.",
+      "formatted": "Request timed out.",
+      "connection": null,
+      "isNetworkDown": false,
+      "rateLimits": null,
+      "noResponse": null
+    },
+    "retryAttempt": 5,
+    "retryInMs": 9229
+  },
+  {
+    "timestamp": "2026-10-06T14:54:53.968Z",
+    "error": {
+      "message": "Request timed out.",
+      "formatted": "Request timed out.",
+      "connection": null,
+      "isNetworkDown": false,
+      "rateLimits": null,
+      "noResponse": null
+    },
+    "retryAttempt": 6,
+    "retryInMs": 19383
+  }
+]

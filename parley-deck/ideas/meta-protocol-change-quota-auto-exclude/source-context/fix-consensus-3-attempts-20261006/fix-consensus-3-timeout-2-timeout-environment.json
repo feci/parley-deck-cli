@@ -1,0 +1,5 @@
+{
+  "API_TIMEOUT_MS": "3600000",
+  "scope": "this invocation only",
+  "authority": "user timeout-standing-permission; installed Claude 2.1.291 timeout control"
+}

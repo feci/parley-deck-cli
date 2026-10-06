@@ -634,3 +634,11 @@ error.
 - [ ] Frozen host full Go/build/vet/gofmt/race/shared/local and skill checks.
 - [ ] Full-scope separate claude-1 round-06 review, with independent AC1–AC21 evidence.
 - [ ] Both final review-consensus signoffs and NEW attended-close request.
+
+
+## Cycle-3 Phase-7 progress — 2026-10-06 14:59Z
+
+G15–G17 remains unsigned by claude-1 after 1200- and 2400-second silent process
+timeouts. No cycle-3 code has begun. The final owner-authorized timeout retry uses a
+3600-second process and request ceiling, unchanged Opus 5.5/max and plan inputs.
+The native-positive AC2 waiver is recorded, not converted into a PASS.
