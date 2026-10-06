@@ -11,34 +11,20 @@ implementation-pr: n/a
 
 ## Summary of work
 
-Both stages and fix-up cycles 1–2 are delivered at CLI `0ee1888`; the skill counterpart is
-`e2f3649`. Cycle 2 delivers changes for signed G10–G14 and V1–V9. The separate claude-1 fix-list
-signoff completed after the authorized 2400-second relaunch; it approves the plan, not the code.
-The separate full-scope round-05 review is complete: 0 CRITICAL, 2 MAJOR, 1 MINOR, 0 NIT.
-It finds V4 only partly met: the ordinary CLI catch-up join and kickoff-excluded return
-regress with the policy off. A fresh MAJOR on G11 triggers the signed stopping condition.
-Work is deliberately paused for the owner; cycle 3, AC2 disposition and close are not authorized.
+Both stages and cycles 1–2 are delivered at CLI `0ee1888` / skill `e2f3649`.
+The owner answered round-05 on 2026-10-06: narrow cycle 3 is authorized for the
+policy-off CLI join/return regression and archived-notice replay; AC2 native-positive
+evidence is waived for this release as an owner-accepted known limitation with a linked
+follow-up. R5-MAJOR-2 is deferred, not fixed. The new Phase-7 G15–G17 plan awaits
+claude-1's separate signoff before product edits. The old stop is resolved by that answer.
 
-The frozen HOST full Go suite passes every package (607.553 seconds), along with build/vet,
-race, shared-volume/local-control checks and all 86 changed-file formatting checks. Native
-crash recovery, idempotent settlement and stale-lease takeover pass on the host; sandbox failures
-remain recorded. Product hashes stayed fixed and both roster hashes are unchanged. The final
-skill suite passes 399 Node / 54 Python tests and six manifests. Protocol drift, exact skill/deck
-equality and the unchanged packet guard pass; normative bytes did not change in cycle 2.
-
-AC2 remains OPEN: complete source-derived records qualify, while both retained partial native
-excerpts and the default-console [Object] shape reject. The 24,833-byte native capture is missing.
-The reviewer also found several real V8 stack forms reject. The code accepts realistic decreasing
-countdowns against terminal receipt time, independently confirmed. A known policy-off return
-works without manufacturing owner authority, but the CLI join/return counterexamples in
-R5-MAJOR-1 supersede the producer's broader compatibility claim. The review is authoritative.
-
-Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1
-process owns every independent review/signoff. The owner decides the AC2 evidence boundary
-after concrete repairs, and confirms a NEW attended close after both final signoffs and current
-criterion evidence. The one-reviewer configuration does not waive unattended-close protection.
-Transport remains owner-authorized local canonical files on the two existing branches, without
-development PRs. No merge, release, installation or new owner close has occurred.
+Prior HOST and skill checks passed on the cycle-2 product; they are not evidence on an
+unwritten cycle 3. Both standing retry permissions continue unchanged. codex-1 organizes
+and implements under §15.5, and never supplies the independent code verdict. claude-1
+owns every review/signoff in a separate configured Opus 5.5/max process. Only these two
+participants act in this run. Transport remains owner-authorized local canonical files
+on the existing branches with no development PRs. A NEW attended close still requires
+current-tree evidence, both final signoffs and a new owner answer before merge/release.
 
 ## Implementation plan / checklist
 
@@ -61,11 +47,14 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - [x] Complete full HOST `go test ./... -count=1 -timeout 45m` and preserve the result; final frozen
   protocol/packet/drift checks and full skill suite also pass.
 - [x] Separate full-scope claude-1 round-05 review; raw findings read and preserved without edits.
-- [ ] Owner trajectory/AC2 decisions, then authorized fixes and both review-consensus signoffs.
+- [x] Owner trajectory/AC2 decisions received; Q1 authorizes narrow cycle 3 and Q2 waives native-positive AC2 for this release.
+- [ ] G15–G17 signed plan, narrow cycle-3 fixes and separate full-scope re-review.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, blocking attended-close note.
 - [ ] Only after owner close confirmation: complete, merge, release channels, independent channel verification.
 
 ## Deviations from FINAL.md
+
+- 2026-10-06 owner round05-answer Q2 expressly waives AC2 native-positive evidence for this release. zcode auto-exclusion may not fire on real native output; unrecognized failures use the owner-confirmed path. R5-MAJOR-2 is owner-accepted and deferred to `quota-zcode-native-exhaustion-capture`, never fixed or passed. No capture or grammar relaxation is authorized.
 
 - The owner's 2026-10-04 scope/reset answer below explicitly replaces unavailable native root attribution
   for zcode with the bounded stderr rule and adopts the bounded display-clock interpretation. The
@@ -583,3 +572,65 @@ next review/close; the unverified container/PID-namespace concern is a question,
 Selected original evidence is preserved in `source-context/round-05-review-20261006/` with
 copy hashes. Products, normative bytes, roster and previous reviewer/signoff bytes are frozen.
 Organization ends deliberately at the blocking owner note; no participant is still running.
+
+
+## User direction — cycle-3 authorization and AC2 release waiver, 2026-10-06
+
+## Owner answers to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_round05-trajectory-ac2.md`
+
+Relayed by the owner's Claude Code session on 2026-10-06 at about 15:50 CEST. The questions and answers
+below are verbatim (Slovak), each followed by a translation.
+
+**Q1.** "Po druhom kole opráv zostali 3 nálezy (predtým 15, potom 6). Prvý je nový MAJOR: pri vypnutom
+nastavení oprava pokazila neskoré pripojenie agenta k idei a návrat agenta, ktorý bol vyradený pri štarte.
+Povoliť tretí, úzko ohraničený cyklus opráv?"
+
+Selected: **"Áno, úzky cyklus 3 (Recommended)"**. The option read: "Vrátiť pôvodné správanie pri vypnutom
+nastavení a opraviť drobnosť s archivovanou notifikáciou. Plán podpíše claude-1 a potom urobí review."
+
+Translation of the answer: "Yes, narrow cycle 3. Restore the original behavior with the setting off and fix
+the small issue with the archived notice. claude-1 signs the plan and then reviews."
+
+**Q2.** "Druhý MAJOR: rozpoznávač chyby zcode môže byť v praxi neúčinný. Reálny stderr zcode vnorené objekty
+skracuje na „[Object]“ a rozpoznávač taký záznam odmietne. Codex navrhuje zachytiť skutočný výstup zcode.
+Overil som však, že zcode má teraz kvótu: o 14:57 vrátil PONG. Takto by sa zachytila len úspešná odpoveď,
+nie chyba kvóty. Čo s tým?"
+
+Selected: **"Vydať s obmedzením + follow-up (Recommended)"**. The option read: "Vydať so známym obmedzením:
+rozpoznávanie zcode môže byť neúčinné a namiesto automatiky sa agent opýta teba, čo je bezpečné. Výstup
+najbližšieho skutočného vyčerpania zcode sa zachytí a gramatika sa podľa neho upraví v nadväzujúcej idei."
+
+Translation of the answer: "Release with the limitation plus a follow-up. Release with a known limitation:
+zcode recognition may be inert, so instead of the automatic path you are asked, which is safe. The output of
+the next real zcode exhaustion is captured, and the grammar is adjusted to it in a follow-up idea."
+
+**Relay fact (PRIMARY).** At 14:57 CEST the relay ran one zcode invocation with the prompt "Reply exactly
+PONG. Do not call tools, read or write files, or execute commands." It exited 0 and printed `PONG`, with
+empty stderr. zcode is not exhausted now, so a capture today could not produce the qualifying native
+error.
+
+## What this authorizes
+
+- **Q1.** One narrow fix-up cycle 3 within the bounds in your note (R5-MAJOR-1 and R5-MINOR-1), with the
+  normal Phase-7 plan signed by claude-1 and a separate full re-review. A fresh CRITICAL or MAJOR on the
+  cycle-3 fix code escalates again, as you proposed.
+- **Q2.** An explicit owner waiver of AC2's native positive evidence for this release, with no capture and no
+  grammar relaxation now. Record it in `IMPLEMENTATION.md` as an owner-accepted known limitation, and state
+  it in the protocol or skill wording and in the release notes. The wording should say that zcode
+  auto-exclusion may not fire on real native output, and that unrecognized failures fall back to the
+  owner-confirmed path. Open a linked follow-up idea whose precondition is a captured native zcode
+  exhaustion. If cheap and in scope, the CLI should retain the raw scrubbed stderr of a failed zcode
+  invocation privately, so the next real exhaustion becomes that capture. Otherwise, name this in the
+  follow-up. R5-MAJOR-2 is dispositioned as owner-accepted and deferred, not fixed.
+- Everything else is unchanged: the claude-1 signoffs, a NEW attended-close request with current-tree
+  evidence, then the release. Both standing retry permissions still apply to failed invocations.
+
+## Cycle-3 plan / checklist (before code)
+
+- [ ] Independent claude-1 signoff on G15–G17.
+- [ ] G15 actual CLI catch-up and kickoff-excluded-return compatibility; retained gates.
+- [ ] G16 durable notice archival/recovery regression.
+- [ ] G17 skill/support/release limitation and linked native-capture follow-up.
+- [ ] Frozen host full Go/build/vet/gofmt/race/shared/local and skill checks.
+- [ ] Full-scope separate claude-1 round-06 review, with independent AC1–AC21 evidence.
+- [ ] Both final review-consensus signoffs and NEW attended-close request.

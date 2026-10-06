@@ -1078,3 +1078,32 @@ reported queue-processing timeout after 45 seconds. Direct readback matches the 
 note, confirming persistence. Scoped find still returned earlier notes, so search indexing is
 not yet verified. No repeated write/retry or direct-gateway workaround was attempted; canonical
 local artifacts remain the resume authority.
+
+
+## Cycle-3 owner-answer resumption — 2026-10-06
+
+Read controlling brief and all six owner notes; Q1 authorizes one narrow cycle 3 and Q2
+waives native-positive AC2 for this release. Quoted answer in the new Phase-7 consensus
+and IMPLEMENTATION; prior trajectory gate archived without changing reviewer bytes.
+The new G15–G17 plan awaits the independent signoff; no product edit has started.
+
+Lean reorientation: IMPLEMENTATION, raw round-05, prior signed fix plan, organizer tail,
+computed brief/status. Phase-7 packet full, source=packet SHA256
+73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e, no fallback reason.
+Existing current context and Phase 7/8/5/7/15.5 provisions read; no optimized-context claim.
+Installed CLI 1.50.0; installer/core runtime skills 2.14.0; source metadata 2.12.0 is
+stale as previously recorded. Dry-run sync only; refresh belongs to authorized release.
+
+Driver-first attempt: `parley continue --auto --json <idea>` started a claude-1 draft
+from the stale IMPLEMENTATION/review snapshot at 13:54:11Z, before the new owner answer
+was incorporated. Its generated prompt includes no owner-answer source. Stopped that
+process before any canonical artifact; exact error `context canceled`. All processes
+exited. This is the same stale-context draft fallback as earlier, not quota/auth/timeout
+or a consumed retry allowance. Its generated escalation is archived as resolved by the
+recorded focused configured-CLI fallback. D6 and run-accounting migration remain out of
+scope. No roster/model/provider/effort changes and no new worktree or pruning.
+
+Capability matrix unchanged: codex-1 / Codex CLI / gpt-6-astra / max (organizer+implementer);
+claude-1 / Claude CLI / claude/claude-opus-5-5[1m] / max (independent signer/reviewer).
+Both commands installed. Focused signoff starts at 1200 seconds; timeout retries 2400 then
+3600, max two; short quota reset <=60m waits reset+2m, max three, per standing permissions.
