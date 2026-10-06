@@ -1,0 +1,75 @@
+[
+  {
+    "argv": [
+      "/opt/homebrew/bin/node",
+      "internal/telemetry/testdata/quota/sdk-framing-harness.cjs",
+      "retained-retries"
+    ],
+    "env": {
+      "LC_ALL": "C",
+      "LANG": "C",
+      "TZ": "UTC"
+    },
+    "exit": 0,
+    "stdout_sha256": "12414abb9ad2645bb2ae7c2d59da3dbee174e3490dce771bf16e60dc97e5d560",
+    "fixture_equal": true,
+    "source_label_stderr": "Source SHA256 3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f; SOURCE-DERIVED retained-retries framing, not native capture\n"
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/node",
+      "internal/telemetry/testdata/quota/sdk-framing-harness.cjs",
+      "retained-top-level"
+    ],
+    "env": {
+      "LC_ALL": "C",
+      "LANG": "C",
+      "TZ": "UTC"
+    },
+    "exit": 0,
+    "stdout_sha256": "178d340f68567bc95921760468ef427a7a1c451dc94f03796c21e4c3bc1ad7b8",
+    "fixture_equal": true,
+    "source_label_stderr": "Source SHA256 3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f; SOURCE-DERIVED retained-top-level framing, not native capture\n"
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/node",
+      "internal/telemetry/testdata/quota/sdk-framing-harness.cjs",
+      "backoff-retries"
+    ],
+    "env": {
+      "LC_ALL": "C",
+      "LANG": "C",
+      "TZ": "UTC"
+    },
+    "exit": 0,
+    "stdout_sha256": "0d1a3d457139b00fb5fa3970bc53bd52b44f3591f1ed249111ccaea625a824bb",
+    "fixture_equal": true,
+    "source_label_stderr": "Source SHA256 3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f; SOURCE-DERIVED backoff-retries framing, not native capture\n"
+  },
+  {
+    "argv": [
+      "/opt/homebrew/bin/node",
+      "internal/telemetry/testdata/quota/sdk-framing-harness.cjs",
+      "default-console"
+    ],
+    "env": {
+      "LC_ALL": "C",
+      "LANG": "C",
+      "TZ": "UTC"
+    },
+    "exit": 0,
+    "stdout_sha256": "fbc61c72ec9f4ac15d2f45bc89c6eb591775d03d59fb48f39eae0880a7766526",
+    "fixture_equal": true,
+    "source_label_stderr": "Source SHA256 3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f; SOURCE-DERIVED default-console framing, not native capture\n"
+  },
+  {
+    "node_default_console_depth": "{\"node\":\"26.10.0\",\"inspectDepth\":2}",
+    "exit": 0,
+    "env": {
+      "LC_ALL": "C",
+      "LANG": "C",
+      "TZ": "UTC"
+    }
+  }
+]

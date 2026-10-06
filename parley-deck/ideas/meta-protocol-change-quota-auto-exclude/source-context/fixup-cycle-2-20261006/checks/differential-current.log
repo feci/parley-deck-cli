@@ -1,0 +1,25 @@
+excluded reason with em dash exit=0 stdout=Appended signoff for a to /tmp/quota-cycle2-v4-current/parley-deck/ideas/2026-10-06T14-04-53-cycle2-different/consensus.md
+Consensus: partial
+Path: /tmp/quota-cycle2-v4-current/parley-deck/ideas/2026-10-06T14-04-53-cycle2-different/consensus.md
+Missing signoffs: b,c
+Signoffs:
+  a          ✅ ACCEPT
+ stderr=
+known return plain participants edit exit=0 stdout=Appended signoff for d to /tmp/quota-cycle2-v4-current/parley-deck/ideas/2026-10-06T14-04-53-cycle2-different/consensus.md
+Consensus: partial
+Path: /tmp/quota-cycle2-v4-current/parley-deck/ideas/2026-10-06T14-04-53-cycle2-different/consensus.md
+Missing signoffs: b,c
+Signoffs:
+  a          ✅ ACCEPT
+  d          ✅ ACCEPT
+ stderr=
+late round-1 and plain participants join exit=0 stdout=Appended signoff for e to /tmp/quota-cycle2-v4-current/parley-deck/ideas/2026-10-06T14-04-53-cycle2-different/consensus.md
+Consensus: partial
+Path: /tmp/quota-cycle2-v4-current/parley-deck/ideas/2026-10-06T14-04-53-cycle2-different/consensus.md
+Missing signoffs: b,c
+Signoffs:
+  a          ✅ ACCEPT
+  d          ✅ ACCEPT
+  e          ✅ ACCEPT
+ stderr=
+three immutable manual revisions; no owner-confirmed authority

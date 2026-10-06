@@ -1,0 +1,10 @@
+27e42b87f7d084c7c8d4f8aae419760a4fbc7047
+
+archive=/tmp/quota-cycle2-prechange-27e42b8
+method=git archive 27e42b8 | tar -x -C /tmp/quota-cycle2-prechange-27e42b8
+no git worktree operations
+{
+  "/tmp/quota-cycle2-prechange-27e42b8/internal/app/app.go": "6761f62df147a08fd461a11069fe30dbf4d77ab653613c962853122e23ff6dc2",
+  "/tmp/quota-cycle2-prechange-27e42b8/internal/consensus/consensus.go": "3b9fbac38ac900285c749822906b9e51753cd47425d77970a437f1fa67602999",
+  "/tmp/quota-cycle2-prechange-27e42b8/parley-deck/COOPERATION.md": "b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388"
+}

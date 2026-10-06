@@ -1,0 +1,15 @@
+cwd=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+argv=["go", "test", "-race", "./internal/membership", "./internal/pidlease", "./internal/telemetry", "-run", "TestQuota|TestLease", "-count=1", "-timeout", "3m"]
+GOCACHE=/tmp/quota-auto-exclude-go-cache
+PATH-prefix=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/checks/no-provider-bin
+extra={}
+--- FAIL: TestQuotaCycle2NativeCrashWriter (1.24s)
+    cycle2_test.go:213: unsettled writer for idea native-crash: f7a1386a-2d45-4c6c-96bf-07b9bb10ae6f: only proven-dead local supervisor, writer and process group may be settled; stop/verify the original host's supervisor and writer, then run parley quota recover; legacy or unknown identity requires restoration of authentic terminal evidence, never a fabricated settlement
+FAIL
+FAIL	parley-deck-cli/internal/membership	12.446s
+--- FAIL: TestLeaseProcess (0.05s)
+    lease_test.go:59: stale takeover lease held: idea/child-run pid=78205 host="Tomass-Virtual-Machine.local" boot="" at /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestLeaseProcess1566782019/001/driver.lease; only a proven dead local owner may be reclaimed
+FAIL
+FAIL	parley-deck-cli/internal/pidlease	0.343s
+ok  	parley-deck-cli/internal/telemetry	1.299s
+FAIL

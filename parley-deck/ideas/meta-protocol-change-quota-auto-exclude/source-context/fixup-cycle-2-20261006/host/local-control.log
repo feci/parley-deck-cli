@@ -1,0 +1,379 @@
+UTC start: 2026-10-06T12:26:43.417895+00:00
+cwd: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+host execution; PATH=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/host/no-provider-bin:<inherited>; TMPDIR=/tmp/quota-auto-exclude-fixup2-host-control
+$ go test ./internal/app ./internal/membership ./internal/pidlease ./internal/fsutil -run 'TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile' -count=1 -v
+=== RUN   TestQuotaFixupCreateRunOnFilesystem
+=== RUN   TestQuotaFixupCreateRunOnFilesystem/true
+    quota_fixup_test.go:67: command: parley ["run" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001" "--no-tui" "--no-auto" "--no-ping" "--no-preflight" "--yes" "--quota-auto-exclude=true" "--participants" "codex" "Shared filesystem acceptance"]
+        exit=0
+        stdout:
+        Resolved agent runtime:
+        adapter/runtime inventory — NOT the roster (see `parley roster show`)
+        AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  AUTO  BACKEND
+        codex    yes       local-stub 1.0          headless     configured workspace-write  never        cli-default  5000     no    yes   local
+          sources: sandbox=built-in approval=built-in model=built-in timeout=parley-deck/agents.local.toml
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/003/codex exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy="never" -
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          note: Codex ACP is not enabled by default because the local codex CLI exposes no stable ACP launch args; configure acp_args locally when available
+        claude   no        -                       headless     configured cli-default      bypassPermissions claude-opus-4-8[1m] 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent -p --model claude-opus-4-8[1m] --effort max --output-format text --permission-mode bypassPermissions --add-dir {root}
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--experimental-acp"]
+          note: ACP mode is available with --experimental-acp
+        agy      no        -                       headless     configured cli-default      dangerously-skip-permissions Gemini 3.6 Flash (High) 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent --print-timeout 30m --dangerously-skip-permissions --model Gemini 3.6 Flash (High) --add-dir {root} --print {prompt}
+          note: Antigravity CLI (active Gemini-family participant); agy 1.1.8 exposes --model. Strongest Gemini model as of 2026-07-29: Gemini 3.6 Flash (High); see `agy models` (3.6/3.5 Flash Low/Med/High, 3.1 Pro Low/High)
+        gemini   no        -                       headless     configured cli-default      auto_edit    cli-default  1800000  yes   no    hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent --prompt Follow the Parley Deck participant instructions provided on stdin. --skip-trust --approval-mode auto_edit --output-format text
+          note: DEPRECATED legacy Gemini CLI support; prefer agy. Uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang
+        hermes   no        -                       headless     configured cli-default      yolo         xai/grok-4.3 1800000  yes   yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent --yolo --oneshot {prompt} --model xai/grok-4.3 --accept-hooks
+          ** effort-unknown: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["acp"]
+          note: first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs; ACP mode is available with hermes acp
+        kimi     no        -                       headless     configured cli-default      print-mode default cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent --output-format stream-json -p {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["acp"]
+          note: Kimi Code. Headless is `kimi -p <prompt>` (now defaulted to --output-format stream-json, unwrapped by the runner); --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.
+        opencode no        -                       headless     configured cli-default      auto         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent run --auto {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["acp"]
+          note: OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.
+        zcode    no        -                       headless     configured cli-default      yolo         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent --prompt={prompt} --mode yolo --cwd {root}
+          note: ZCode (Z.AI). Headless is `zcode --prompt=<text> --mode yolo --cwd <root>` - the EQUALS form is required: the separate-token form is rejected when the prompt starts with a dash ("Option '--prompt' argument is ambiguous", exit 1, measured 2026-08-19); the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.
+        qwen     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qwen --acp
+        codebuddy no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with codebuddy --acp
+        goose    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with goose acp
+        auggie   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with auggie --acp
+        droid    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["exec", "--output-format", "acp"]
+          note: ACP backend; spawned with droid exec --output-format acp
+        copilot  no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--acp", "--stdio"]
+          note: ACP backend; spawned with copilot --acp --stdio
+        qoder    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qodercli --acp
+        vibe     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent []
+          note: ACP backend; spawned with vibe-acp (no args)
+        cursor   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["acp"]
+          note: Cursor CLI binary is the generic name `agent`; PATH lookup may collide with other tools
+        kiro     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with kiro-cli acp
+        snow     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with snow --acp
+        Created idea 2026-10-06T14-26-44-shared-filesyste and run 20261006T122644.023226000Z
+        Starting round-01 with participants: codex
+          codex    wrote /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemtrue2174727401/001/parley-deck/ideas/2026-10-06T14-26-44-shared-filesyste/round-01/codex.md in 94ms
+        stderr:
+        warning: roster snapshot unavailable (no roster: declare [roster.<id>] in parley-deck/agents.toml (or keep a legacy §2 table in COOPERATION.md)) — this run will not record what each agent ran
+=== RUN   TestQuotaFixupCreateRunOnFilesystem/false
+    quota_fixup_test.go:67: command: parley ["run" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001" "--no-tui" "--no-auto" "--no-ping" "--no-preflight" "--yes" "--quota-auto-exclude=false" "--participants" "codex" "Shared filesystem acceptance"]
+        exit=0
+        stdout:
+        Resolved agent runtime:
+        adapter/runtime inventory — NOT the roster (see `parley roster show`)
+        AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  AUTO  BACKEND
+        codex    yes       local-stub 1.0          headless     configured workspace-write  never        cli-default  5000     no    yes   local
+          sources: sandbox=built-in approval=built-in model=built-in timeout=parley-deck/agents.local.toml
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/003/codex exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy="never" -
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          note: Codex ACP is not enabled by default because the local codex CLI exposes no stable ACP launch args; configure acp_args locally when available
+        claude   no        -                       headless     configured cli-default      bypassPermissions claude-opus-4-8[1m] 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent -p --model claude-opus-4-8[1m] --effort max --output-format text --permission-mode bypassPermissions --add-dir {root}
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--experimental-acp"]
+          note: ACP mode is available with --experimental-acp
+        agy      no        -                       headless     configured cli-default      dangerously-skip-permissions Gemini 3.6 Flash (High) 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent --print-timeout 30m --dangerously-skip-permissions --model Gemini 3.6 Flash (High) --add-dir {root} --print {prompt}
+          note: Antigravity CLI (active Gemini-family participant); agy 1.1.8 exposes --model. Strongest Gemini model as of 2026-07-29: Gemini 3.6 Flash (High); see `agy models` (3.6/3.5 Flash Low/Med/High, 3.1 Pro Low/High)
+        gemini   no        -                       headless     configured cli-default      auto_edit    cli-default  1800000  yes   no    hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent --prompt Follow the Parley Deck participant instructions provided on stdin. --skip-trust --approval-mode auto_edit --output-format text
+          note: DEPRECATED legacy Gemini CLI support; prefer agy. Uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang
+        hermes   no        -                       headless     configured cli-default      yolo         xai/grok-4.3 1800000  yes   yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent --yolo --oneshot {prompt} --model xai/grok-4.3 --accept-hooks
+          ** effort-unknown: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["acp"]
+          note: first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs; ACP mode is available with hermes acp
+        kimi     no        -                       headless     configured cli-default      print-mode default cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent --output-format stream-json -p {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["acp"]
+          note: Kimi Code. Headless is `kimi -p <prompt>` (now defaulted to --output-format stream-json, unwrapped by the runner); --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.
+        opencode no        -                       headless     configured cli-default      auto         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent run --auto {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["acp"]
+          note: OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.
+        zcode    no        -                       headless     configured cli-default      yolo         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent --prompt={prompt} --mode yolo --cwd {root}
+          note: ZCode (Z.AI). Headless is `zcode --prompt=<text> --mode yolo --cwd <root>` - the EQUALS form is required: the separate-token form is rejected when the prompt starts with a dash ("Option '--prompt' argument is ambiguous", exit 1, measured 2026-08-19); the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.
+        qwen     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qwen --acp
+        codebuddy no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with codebuddy --acp
+        goose    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with goose acp
+        auggie   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with auggie --acp
+        droid    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["exec", "--output-format", "acp"]
+          note: ACP backend; spawned with droid exec --output-format acp
+        copilot  no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--acp", "--stdio"]
+          note: ACP backend; spawned with copilot --acp --stdio
+        qoder    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qodercli --acp
+        vibe     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent []
+          note: ACP backend; spawned with vibe-acp (no args)
+        cursor   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["acp"]
+          note: Cursor CLI binary is the generic name `agent`; PATH lookup may collide with other tools
+        kiro     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with kiro-cli acp
+        snow     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with snow --acp
+        Created idea 2026-10-06T14-26-44-shared-filesyste and run 20261006T122644.407202000Z
+        Starting round-01 with participants: codex
+          codex    wrote /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCreateRunOnFilesystemfalse2949216293/001/parley-deck/ideas/2026-10-06T14-26-44-shared-filesyste/round-01/codex.md in 87ms
+        stderr:
+        warning: roster snapshot unavailable (no roster: declare [roster.<id>] in parley-deck/agents.toml (or keep a legacy §2 table in COOPERATION.md)) — this run will not record what each agent ran
+--- PASS: TestQuotaFixupCreateRunOnFilesystem (0.60s)
+    --- PASS: TestQuotaFixupCreateRunOnFilesystem/true (0.39s)
+    --- PASS: TestQuotaFixupCreateRunOnFilesystem/false (0.21s)
+=== RUN   TestQuotaFixupCLIRevisionRecovery
+    quota_fixup_test.go:103: parley ["quota" "revise" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCLIRevisionRecovery3544487228/001" "--idea" "2026-10-06T14-26-44-fixup-app-histor" "--run" "recorded-run" "--request" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCLIRevisionRecovery3544487228/001/request.json"]
+        Recorded owner revision batch-6f804d7f56b14837ab03a050fcef52cc094a003d1da2bcbcd3983ec50b1318e1; current participants: alpha, beta; policy enabled=true scope=kickoff-and-mid-idea
+    quota_fixup_test.go:120: parley ["quota" "recover" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCLIRevisionRecovery3544487228/001" "--idea" "2026-10-06T14-26-44-fixup-app-histor" "--run" "recorded-run"]
+        Reconciled 2026-10-06T14-26-44-fixup-app-histor at revision 1; current participants: alpha, beta
+    quota_fixup_test.go:120: parley ["quota" "recover" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupCLIRevisionRecovery3544487228/001" "--idea" "2026-10-06T14-26-44-fixup-app-histor" "--run" "recorded-run"]
+        Reconciled 2026-10-06T14-26-44-fixup-app-histor at revision 1; current participants: alpha, beta
+--- PASS: TestQuotaFixupCLIRevisionRecovery (0.85s)
+=== RUN   TestQuotaFixupManualAndInteractiveHandoffKeepLease
+    quota_fixup_test.go:169: manual with history revision 1: handoff succeeded, competing run and unleased handoff refused
+    quota_fixup_test.go:169: interactive with history revision 1: handoff succeeded, competing run and unleased handoff refused
+--- PASS: TestQuotaFixupManualAndInteractiveHandoffKeepLease (0.59s)
+=== RUN   TestQuotaFixupTUIExitDrainsDriverBeforeRelease
+    quota_fixup_test.go:247: UI returned; driver cancellation observed; competing acquisition refused until cleanup joined; acquired after run returned
+--- PASS: TestQuotaFixupTUIExitDrainsDriverBeforeRelease (0.32s)
+=== RUN   TestQuotaFixupPipelineLifetimeAcrossStages
+    quota_fixup_test.go:282: all pipeline stages use one live idea-bound run; between-stage competitors refused; release permits next driver
+--- PASS: TestQuotaFixupPipelineLifetimeAcrossStages (0.17s)
+=== RUN   TestQuotaFixupPreflightBare503AndNoise
+--- PASS: TestQuotaFixupPreflightBare503AndNoise (0.00s)
+=== RUN   TestQuotaFixupOffModeManualExclusionThroughSignoffCLI
+    quota_fixup_test.go:325: parley ["consensus" "signoff" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI2173961994/001" "--agent" "alpha" "--status" "accept" "2026-10-06T14-26-46-fixup-app-histor"]
+        Appended signoff for alpha to /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI2173961994/001/parley-deck/ideas/2026-10-06T14-26-46-fixup-app-histor/consensus.md
+        Consensus: partial
+        Path: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI2173961994/001/parley-deck/ideas/2026-10-06T14-26-46-fixup-app-histor/consensus.md
+        Missing signoffs: beta
+        Signoffs:
+          alpha      ✅ ACCEPT
+    quota_fixup_test.go:325: parley ["consensus" "signoff" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI2173961994/001" "--agent" "beta" "--status" "accept" "2026-10-06T14-26-46-fixup-app-histor"]
+        Appended signoff for beta to /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI2173961994/001/parley-deck/ideas/2026-10-06T14-26-46-fixup-app-histor/consensus.md
+        Consensus: ready
+        Path: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI2173961994/001/parley-deck/ideas/2026-10-06T14-26-46-fixup-app-histor/consensus.md
+        Signoffs:
+          alpha      ✅ ACCEPT
+          beta       ✅ ACCEPT
+--- PASS: TestQuotaFixupOffModeManualExclusionThroughSignoffCLI (0.11s)
+=== RUN   TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea
+    quota_fixup_test.go:357: parley ["agents" "exec" "--dir" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea1318078555/001" "--agent" "gamma" "--prompt-file" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea1318078555/001/prompt.txt" "--artifact" "/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea1318078555/001/parley-deck/ideas/2026-10-06T14-26-46-fixup-app-histor/round-02/gamma.md" "--yes"]
+        agents exec: launch setup failed before an invocation could be recorded: excluded participant gamma cannot dispatch
+    quota_fixup_test.go:367: unbound generic exec allowed: Invocation: 55582813-94a3-4a43-8c57-2dc8dfe29139
+        Evidence: /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea1318078555/001/.parley-runtime/invocations/55582813-94a3-4a43-8c57-2dc8dfe29139/terminal.json
+--- PASS: TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea (0.32s)
+=== RUN   TestQuotaFixupPipelineBlockDriverOwnsAllStages
+    quota_fixup_test.go:460: actual block driver, locally stubbed stage dispatch; stages=[implementation review-1 consensus-1 fixup review-2 consensus-2] run=pipe-drive-20261006T122646.952199000Z
+        auto: block "build" Phase 5 implementation by alpha
+        auto: block "build" Phase 6 review round-01 (beta, gamma)
+          beta     wrote  in 0s
+          gamma    wrote  in 0s
+        auto: block "build" Phase 7 review consensus (drafter alpha)
+        auto: block "build" Phase 8 fix-up cycle 1 (1 agreed fixes) by alpha
+        auto: block "build" Phase 6 review round-02 (beta, gamma)
+          beta     wrote  in 0s
+          gamma    wrote  in 0s
+        auto: block "build" Phase 7 review consensus (drafter alpha)
+        auto: block "build" implementation complete (0 outstanding agreed fixes).
+--- PASS: TestQuotaFixupPipelineBlockDriverOwnsAllStages (0.16s)
+PASS
+ok  	parley-deck-cli/internal/app	3.249s
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/applied
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/missing
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/corrupt
+--- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten (0.81s)
+    --- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/applied (0.36s)
+    --- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/missing (0.24s)
+    --- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/corrupt (0.20s)
+=== RUN   TestQuotaCycle2MissingManifestBeforeManualCommitAndCheckedRecovery
+--- PASS: TestQuotaCycle2MissingManifestBeforeManualCommitAndCheckedRecovery (0.16s)
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/dead
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-host
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-boot
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-host
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-boot
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/legacy
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-writer
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-supervisor
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-group
+--- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay (0.71s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/dead (0.15s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-host (0.06s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-boot (0.08s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-host (0.08s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-boot (0.06s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/legacy (0.07s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-writer (0.09s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-supervisor (0.07s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-group (0.06s)
+=== RUN   TestQuotaCycle2NativeCrashWriter
+    cycle2_test.go:222: native local-stub crash settled idempotently at /tmp/quota-auto-exclude-fixup2-host-control/TestQuotaCycle2NativeCrashWriter1224093793/001/.parley-runtime/invocations/c9f88e1a-fad1-4e8b-b973-0fa8331209b0/crash-settlement.json
+--- PASS: TestQuotaCycle2NativeCrashWriter (0.26s)
+=== RUN   TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority
+--- PASS: TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority (0.22s)
+=== RUN   TestQuotaFixupProjectionWaitAndProcessExclusivity
+    fixup_test.go:64: /private/tmp/quota-auto-exclude-fixup2-host-control/TestQuotaFixupProjectionWaitAndProcessExclusivity3434267693/001/.parley-runtime/membership/d9344def22b69c64e8151b9d703dd96475866b33dfa3151d364f1da56a8124b9/projection.lease: different-process refusal after bounded wait; waiter acquired after release
+--- PASS: TestQuotaFixupProjectionWaitAndProcessExclusivity (2.18s)
+=== RUN   TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections
+=== RUN   TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/#00
+=== RUN   TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/wrong-transition_
+--- PASS: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections (0.70s)
+    --- PASS: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/#00 (0.33s)
+    --- PASS: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/wrong-transition_ (0.37s)
+=== RUN   TestQuotaFixupReleasedContextCannotBeReused
+--- PASS: TestQuotaFixupReleasedContextCannotBeReused (0.05s)
+=== RUN   TestQuotaFixupLegacyHasNoLifetimeOrProjectionSingleton
+--- PASS: TestQuotaFixupLegacyHasNoLifetimeOrProjectionSingleton (0.00s)
+=== RUN   TestQuotaLifetimeLockDifferentRunAndOffScope
+--- PASS: TestQuotaLifetimeLockDifferentRunAndOffScope (0.18s)
+=== RUN   TestQuotaCrossProcessLease
+--- PASS: TestQuotaCrossProcessLease (0.06s)
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/missing
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-idea
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-quote
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/changed-hash
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/fabricated-blob
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/uncommitted
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/self-authored
+--- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority (1.33s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/missing (0.01s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-idea (0.09s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-quote (0.02s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/changed-hash (0.02s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/fabricated-blob (0.01s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/uncommitted (0.01s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/self-authored (0.02s)
+=== RUN   TestQuotaFixupScopeWideningIsExplicit
+--- PASS: TestQuotaFixupScopeWideningIsExplicit (0.44s)
+=== RUN   TestQuotaFixupKnobOffRecordedManualChanges
+--- PASS: TestQuotaFixupKnobOffRecordedManualChanges (0.21s)
+=== RUN   TestQuotaFixupOffModeCatchupKeepsPreChangePath
+    revision_test.go:185: off-mode catch-up: plain participants edit plus late round accepted through ordinary Before; immutable manual snapshot survives artifact cleanup
+--- PASS: TestQuotaFixupOffModeCatchupKeepsPreChangePath (0.11s)
+=== RUN   TestQuotaFixupClosedRevisionFrozen
+--- PASS: TestQuotaFixupClosedRevisionFrozen (0.11s)
+PASS
+ok  	parley-deck-cli/internal/membership	7.590s
+=== RUN   TestLeaseProcess
+    lease_test.go:65: /tmp/quota-auto-exclude-fixup2-host-control/TestLeaseProcess3112594758/001/driver.lease: different-process refusal, proven-dead local takeover, ownership intact
+--- PASS: TestLeaseProcess (0.11s)
+=== RUN   TestLeaseProcessSyntheticIdentity
+    lease_test.go:65: /tmp/quota-auto-exclude-fixup2-host-control/TestLeaseProcessSyntheticIdentity2736557837/001/driver.lease: different-process refusal, proven-dead local takeover, ownership intact
+--- PASS: TestLeaseProcessSyntheticIdentity (0.11s)
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/empty
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/partial
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-host
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-boot
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-host
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-boot
+--- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity (0.17s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/empty (0.02s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/partial (0.03s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-host (0.01s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-boot (0.02s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-host (0.01s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-boot (0.01s)
+=== RUN   TestLeaseStaleReaperGenerationClaim
+--- PASS: TestLeaseStaleReaperGenerationClaim (0.06s)
+PASS
+ok  	parley-deck-cli/internal/pidlease	0.515s
+=== RUN   TestSyncFileFallbackENOTTYAndFatalFailures
+=== RUN   TestSyncFileFallbackENOTTYAndFatalFailures/full-success
+    sync_darwin_test.go:28: full=<nil> fallback_calls=0 final=<nil>
+=== RUN   TestSyncFileFallbackENOTTYAndFatalFailures/ENOTTY-fallback
+    sync_darwin_test.go:28: full=shared volume: inappropriate ioctl for device fallback_calls=1 final=<nil>
+=== RUN   TestSyncFileFallbackENOTTYAndFatalFailures/fallback-failure
+    sync_darwin_test.go:28: full=inappropriate ioctl for device fallback_calls=1 final=input/output error
+=== RUN   TestSyncFileFallbackENOTTYAndFatalFailures/full-failure
+    sync_darwin_test.go:28: full=input/output error fallback_calls=0 final=input/output error
+--- PASS: TestSyncFileFallbackENOTTYAndFatalFailures (0.00s)
+    --- PASS: TestSyncFileFallbackENOTTYAndFatalFailures/full-success (0.00s)
+    --- PASS: TestSyncFileFallbackENOTTYAndFatalFailures/ENOTTY-fallback (0.00s)
+    --- PASS: TestSyncFileFallbackENOTTYAndFatalFailures/fallback-failure (0.00s)
+    --- PASS: TestSyncFileFallbackENOTTYAndFatalFailures/full-failure (0.00s)
+PASS
+ok  	parley-deck-cli/internal/fsutil	0.067s
+
+exit=0 elapsed_seconds=8.032

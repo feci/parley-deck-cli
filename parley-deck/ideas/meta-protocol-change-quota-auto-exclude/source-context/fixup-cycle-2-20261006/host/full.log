@@ -1,0 +1,42 @@
+UTC start: 2026-10-06T12:16:05.138344+00:00
+cwd: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+host execution; PATH=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/host/no-provider-bin:<inherited>; 
+$ go test ./... -count=1 -timeout 45m
+?   	parley-deck-cli/cmd/parley	[no test files]
+ok  	parley-deck-cli/internal/acp	2.808s
+ok  	parley-deck-cli/internal/agents	0.189s
+ok  	parley-deck-cli/internal/app	465.395s
+ok  	parley-deck-cli/internal/budget	76.605s
+ok  	parley-deck-cli/internal/config	0.856s
+ok  	parley-deck-cli/internal/consensus	12.522s
+ok  	parley-deck-cli/internal/driver	23.776s
+ok  	parley-deck-cli/internal/evidence	9.043s
+ok  	parley-deck-cli/internal/fsutil	0.337s
+ok  	parley-deck-cli/internal/hitl	0.328s
+ok  	parley-deck-cli/internal/loop	0.441s
+ok  	parley-deck-cli/internal/membership	17.637s
+ok  	parley-deck-cli/internal/pidlease	0.512s
+ok  	parley-deck-cli/internal/pipeline	0.538s
+ok  	parley-deck-cli/internal/procctl	0.386s
+ok  	parley-deck-cli/internal/protocol	0.556s
+ok  	parley-deck-cli/internal/protocolcore	1.052s
+ok  	parley-deck-cli/internal/protocolpacket	1.913s
+ok  	parley-deck-cli/internal/quota	1.339s
+?   	parley-deck-cli/internal/quotatest	[no test files]
+ok  	parley-deck-cli/internal/repomap	0.312s
+ok  	parley-deck-cli/internal/retro	0.417s
+ok  	parley-deck-cli/internal/runaction	0.202s
+ok  	parley-deck-cli/internal/runcontrol	0.613s
+ok  	parley-deck-cli/internal/runmanifest	0.242s
+ok  	parley-deck-cli/internal/runner	128.688s
+ok  	parley-deck-cli/internal/runplan	0.658s
+ok  	parley-deck-cli/internal/runstate	0.658s
+ok  	parley-deck-cli/internal/sessionstore	0.201s
+ok  	parley-deck-cli/internal/steer	0.231s
+ok  	parley-deck-cli/internal/store	0.208s
+ok  	parley-deck-cli/internal/telemetry	3.180s
+ok  	parley-deck-cli/internal/track	0.190s
+ok  	parley-deck-cli/internal/trajectory	600.757s
+ok  	parley-deck-cli/internal/tui	1.412s
+
+exit=0 elapsed_seconds=607.553

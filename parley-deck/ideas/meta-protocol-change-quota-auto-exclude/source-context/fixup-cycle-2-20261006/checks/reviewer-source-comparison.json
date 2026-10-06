@@ -1,0 +1,34 @@
+[
+  {
+    "name": "zretry",
+    "committed": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/review-round-04-relaunch-20261005/independent-probes/zretry/main.go.txt",
+    "runtime": ".parley-runtime/claude1-r4/zretry/main.go",
+    "equal": true,
+    "committed_sha256": "140bb3bf1e71f82c56cf067454830070f3140e71664e344ec19e9d448410c4e0",
+    "runtime_sha256": "140bb3bf1e71f82c56cf067454830070f3140e71664e344ec19e9d448410c4e0"
+  },
+  {
+    "name": "r4extra",
+    "committed": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/review-round-04-relaunch-20261005/independent-probes/r4extra/main.go.txt",
+    "runtime": ".parley-runtime/claude1-r4/r4extra/main.go",
+    "equal": true,
+    "committed_sha256": "916a09bad587cc48a0c04331950e3e6af38966f3aab41bab75bc1f5c23263d87",
+    "runtime_sha256": "916a09bad587cc48a0c04331950e3e6af38966f3aab41bab75bc1f5c23263d87"
+  },
+  {
+    "name": "tail",
+    "committed": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/review-round-04-relaunch-20261005/independent-probes/tail/main.go.txt",
+    "runtime": ".parley-runtime/claude1-r4/tail/main.go",
+    "equal": true,
+    "committed_sha256": "4064b821039dde4855ae654eb9d744a7adcbdf30ca7ebccd9c6bda7c630fbfb3",
+    "runtime_sha256": "4064b821039dde4855ae654eb9d744a7adcbdf30ca7ebccd9c6bda7c630fbfb3"
+  },
+  {
+    "name": "rerun",
+    "committed": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/review-round-04-relaunch-20261005/independent-probes/probes/rerun.sh",
+    "runtime": ".parley-runtime/claude1-r4/probes/rerun.sh",
+    "equal": true,
+    "committed_sha256": "96f1960b56ba8c04e7d6ddf470d43303b886d58b75b68386966128caf4169880",
+    "runtime_sha256": "96f1960b56ba8c04e7d6ddf470d43303b886d58b75b68386966128caf4169880"
+  }
+]

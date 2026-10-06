@@ -1,0 +1,45 @@
+{
+  "packets": [
+    {
+      "phase": 0,
+      "context_mode": "full",
+      "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+      "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+      "fallback_reason": null,
+      "checks": {
+        "quota_rule": true,
+        "frozen_scope": true,
+        "protected_reference": true,
+        "source_hash_matches": true
+      }
+    },
+    {
+      "phase": 5,
+      "context_mode": "full",
+      "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+      "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+      "fallback_reason": null,
+      "checks": {
+        "quota_rule": true,
+        "frozen_scope": true,
+        "protected_reference": true,
+        "source_hash_matches": true
+      }
+    },
+    {
+      "phase": 8,
+      "context_mode": "full",
+      "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+      "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+      "fallback_reason": null,
+      "checks": {
+        "quota_rule": true,
+        "frozen_scope": true,
+        "protected_reference": true,
+        "source_hash_matches": true
+      }
+    }
+  ],
+  "skill_deck_byte_equal": true,
+  "protocol_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e"
+}

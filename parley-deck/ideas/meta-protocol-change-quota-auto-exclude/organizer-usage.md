@@ -144,3 +144,15 @@ claude-1: input_tokens 126, cached_input_tokens 8088933, cache_write_input_token
 codex-1: input_tokens 4141063, cached_input_tokens 3983872, cache_write_input_tokens 0, output_tokens 18693, reasoning_output_tokens 8757, total_tokens 4159756; 38 events; attribution ambiguous; accounting 2026-10-06T11:44:38.067722Z.
 
 The organizer row replaces the earlier same-transcript dispatch snapshot; never sum them. Claude cache inputs are separate under the parser convention; no monetary estimate. Successful signer artifacts and raw exit metadata were checked.
+
+
+## Cycle-2 implementation subprocess boundary — 2026-10-06
+
+Separate codex-1 transcript: `rollout-2026-10-06T13-46-05-01a11109-01db-7f60-91fd-a49427e09c8c.jsonl`. input_tokens 8046859, cached_input_tokens 7445760, cache_write_input_tokens 0, output_tokens 51138, reasoning_output_tokens 8203, total_tokens 8097997; 64 events; attribution ambiguous. It exited 0 in 1754.7 seconds without timeout. This is a distinct implementation session, not another organizer cumulative snapshot; no monetary estimate.
+
+
+## Cycle-2 organizer validation / review dispatch boundary — 2026-10-06
+
+Organizer cumulative snapshot: input_tokens 16573427, cached_input_tokens 16327040, cache_write_input_tokens 0, output_tokens 62692, reasoning_output_tokens 34452, total_tokens 16636119; 102 events; attribution ambiguous; accounting 2026-10-06T12:30:32.162925Z.
+This replaces earlier snapshots of the 13:26:57 organizer transcript, never adds to them.
+Child implementation usage is a distinct session. No monetary estimate or independent acceptance.

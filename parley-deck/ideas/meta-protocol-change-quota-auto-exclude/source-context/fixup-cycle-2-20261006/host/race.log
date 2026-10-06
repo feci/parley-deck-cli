@@ -1,0 +1,674 @@
+UTC start: 2026-10-06T12:26:19.451484+00:00
+cwd: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+host execution; PATH=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/host/no-provider-bin:<inherited>; 
+$ go test -race ./internal/pidlease ./internal/membership ./internal/app ./internal/consensus ./internal/telemetry ./internal/runner -run 'TestLease|TestQuotaFixup|TestQuotaCrossProcessLease|TestQuotaLifetimeLock|TestQuota' -count=1 -v
+=== RUN   TestLeaseProcess
+    lease_test.go:65: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestLeaseProcess4105597723/001/driver.lease: different-process refusal, proven-dead local takeover, ownership intact
+--- PASS: TestLeaseProcess (0.08s)
+=== RUN   TestLeaseProcessSyntheticIdentity
+    lease_test.go:65: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestLeaseProcessSyntheticIdentity2091148337/001/driver.lease: different-process refusal, proven-dead local takeover, ownership intact
+--- PASS: TestLeaseProcessSyntheticIdentity (0.07s)
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/empty
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/partial
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-host
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-boot
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-host
+=== RUN   TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-boot
+--- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity (0.13s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/empty (0.01s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/partial (0.01s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-host (0.01s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/foreign-boot (0.02s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-host (0.01s)
+    --- PASS: TestLeaseSamePIDPartialForeignAndReleaseIdentity/unknown-boot (0.02s)
+=== RUN   TestLeaseStaleReaperGenerationClaim
+--- PASS: TestLeaseStaleReaperGenerationClaim (0.05s)
+PASS
+ok  	parley-deck-cli/internal/pidlease	1.630s
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/applied
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/missing
+=== RUN   TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/corrupt
+--- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten (0.53s)
+    --- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/applied (0.21s)
+    --- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/missing (0.17s)
+    --- PASS: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/corrupt (0.15s)
+=== RUN   TestQuotaCycle2MissingManifestBeforeManualCommitAndCheckedRecovery
+--- PASS: TestQuotaCycle2MissingManifestBeforeManualCommitAndCheckedRecovery (0.12s)
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/dead
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-host
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-boot
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-host
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-boot
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/legacy
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-writer
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-supervisor
+=== RUN   TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-group
+--- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay (0.54s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/dead (0.09s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-host (0.05s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-boot (0.05s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-host (0.04s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-boot (0.08s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/legacy (0.06s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-writer (0.06s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-supervisor (0.05s)
+    --- PASS: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-group (0.06s)
+=== RUN   TestQuotaCycle2NativeCrashWriter
+    cycle2_test.go:222: native local-stub crash settled idempotently at /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaCycle2NativeCrashWriter748998393/001/.parley-runtime/invocations/e11f946e-bb8d-4183-9d22-558ba814f4e0/crash-settlement.json
+--- PASS: TestQuotaCycle2NativeCrashWriter (1.28s)
+=== RUN   TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority
+--- PASS: TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority (0.22s)
+=== RUN   TestQuotaFixupProjectionWaitAndProcessExclusivity
+    fixup_test.go:64: /private/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupProjectionWaitAndProcessExclusivity1898191337/001/.parley-runtime/membership/e829b771cacb558b43b0bbfbd2ee12a79b27fbf6a9b280eb421e8330f8b989c8/projection.lease: different-process refusal after bounded wait; waiter acquired after release
+--- PASS: TestQuotaFixupProjectionWaitAndProcessExclusivity (3.18s)
+=== RUN   TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections
+=== RUN   TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/#00
+=== RUN   TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/wrong-transition_
+--- PASS: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections (1.23s)
+    --- PASS: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/#00 (0.74s)
+    --- PASS: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/wrong-transition_ (0.49s)
+=== RUN   TestQuotaFixupReleasedContextCannotBeReused
+--- PASS: TestQuotaFixupReleasedContextCannotBeReused (0.08s)
+=== RUN   TestQuotaFixupLegacyHasNoLifetimeOrProjectionSingleton
+--- PASS: TestQuotaFixupLegacyHasNoLifetimeOrProjectionSingleton (0.00s)
+=== RUN   TestQuotaTransitionReplayHistoryAndIncompletePreservation
+--- PASS: TestQuotaTransitionReplayHistoryAndIncompletePreservation (0.39s)
+=== RUN   TestQuotaProjectionFaultsPendingReadOnlyAndRecovery
+=== RUN   TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/prompt
+=== RUN   TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/manifest
+=== RUN   TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/evaluation
+=== RUN   TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/notice
+=== RUN   TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/applied
+--- PASS: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery (1.28s)
+    --- PASS: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/prompt (0.30s)
+    --- PASS: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/manifest (0.34s)
+    --- PASS: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/evaluation (0.22s)
+    --- PASS: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/notice (0.19s)
+    --- PASS: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/applied (0.22s)
+=== RUN   TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch
+=== RUN   TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/stub
+=== RUN   TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/designee
+=== RUN   TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/pin
+=== RUN   TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/drafter
+--- PASS: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch (0.52s)
+    --- PASS: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/stub (0.10s)
+    --- PASS: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/designee (0.13s)
+    --- PASS: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/pin (0.16s)
+    --- PASS: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/drafter (0.13s)
+=== RUN   TestQuotaLifetimeLockDifferentRunAndOffScope
+--- PASS: TestQuotaLifetimeLockDifferentRunAndOffScope (0.15s)
+=== RUN   TestQuotaCrossProcessLease
+--- PASS: TestQuotaCrossProcessLease (1.07s)
+=== RUN   TestQuotaLaterRunReadsHistoryAndContradictionsBlock
+--- PASS: TestQuotaLaterRunReadsHistoryAndContradictionsBlock (0.27s)
+=== RUN   TestQuotaUnsettledWriterFromPriorRunBlocksRecovery
+--- PASS: TestQuotaUnsettledWriterFromPriorRunBlocksRecovery (0.09s)
+=== RUN   TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers
+=== RUN   TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/auto-two-reviewers
+=== RUN   TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/model-diversity
+=== RUN   TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/fast-diversity
+=== RUN   TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/strict-retains-minor
+--- PASS: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers (0.47s)
+    --- PASS: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/auto-two-reviewers (0.08s)
+    --- PASS: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/model-diversity (0.09s)
+    --- PASS: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/fast-diversity (0.09s)
+    --- PASS: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/strict-retains-minor (0.20s)
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/missing
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-idea
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-quote
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/changed-hash
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/fabricated-blob
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/uncommitted
+=== RUN   TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/self-authored
+--- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority (1.86s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/missing (0.02s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-idea (0.16s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/wrong-quote (0.03s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/changed-hash (0.03s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/fabricated-blob (0.02s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/uncommitted (0.01s)
+    --- PASS: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority/self-authored (0.03s)
+=== RUN   TestQuotaFixupScopeWideningIsExplicit
+--- PASS: TestQuotaFixupScopeWideningIsExplicit (0.45s)
+=== RUN   TestQuotaFixupKnobOffRecordedManualChanges
+--- PASS: TestQuotaFixupKnobOffRecordedManualChanges (0.18s)
+=== RUN   TestQuotaFixupOffModeCatchupKeepsPreChangePath
+    revision_test.go:185: off-mode catch-up: plain participants edit plus late round accepted through ordinary Before; immutable manual snapshot survives artifact cleanup
+--- PASS: TestQuotaFixupOffModeCatchupKeepsPreChangePath (0.09s)
+=== RUN   TestQuotaFixupClosedRevisionFrozen
+--- PASS: TestQuotaFixupClosedRevisionFrozen (0.11s)
+PASS
+ok  	parley-deck-cli/internal/membership	15.345s
+=== RUN   TestQuotaFixupCreateRunOnFilesystem
+=== RUN   TestQuotaFixupCreateRunOnFilesystem/true
+    quota_fixup_test.go:67: command: parley ["run" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001" "--no-tui" "--no-auto" "--no-ping" "--no-preflight" "--yes" "--quota-auto-exclude=true" "--participants" "codex" "Shared filesystem acceptance"]
+        exit=0
+        stdout:
+        Resolved agent runtime:
+        adapter/runtime inventory — NOT the roster (see `parley roster show`)
+        AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  AUTO  BACKEND
+        codex    yes       local-stub 1.0          headless     configured workspace-write  never        cli-default  5000     no    yes   local
+          sources: sandbox=built-in approval=built-in model=built-in timeout=parley-deck/agents.local.toml
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/003/codex exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy="never" -
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          note: Codex ACP is not enabled by default because the local codex CLI exposes no stable ACP launch args; configure acp_args locally when available
+        claude   no        -                       headless     configured cli-default      bypassPermissions claude-opus-4-8[1m] 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent -p --model claude-opus-4-8[1m] --effort max --output-format text --permission-mode bypassPermissions --add-dir {root}
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--experimental-acp"]
+          note: ACP mode is available with --experimental-acp
+        agy      no        -                       headless     configured cli-default      dangerously-skip-permissions Gemini 3.6 Flash (High) 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent --print-timeout 30m --dangerously-skip-permissions --model Gemini 3.6 Flash (High) --add-dir {root} --print {prompt}
+          note: Antigravity CLI (active Gemini-family participant); agy 1.1.8 exposes --model. Strongest Gemini model as of 2026-07-29: Gemini 3.6 Flash (High); see `agy models` (3.6/3.5 Flash Low/Med/High, 3.1 Pro Low/High)
+        gemini   no        -                       headless     configured cli-default      auto_edit    cli-default  1800000  yes   no    hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent --prompt Follow the Parley Deck participant instructions provided on stdin. --skip-trust --approval-mode auto_edit --output-format text
+          note: DEPRECATED legacy Gemini CLI support; prefer agy. Uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang
+        hermes   no        -                       headless     configured cli-default      yolo         xai/grok-4.3 1800000  yes   yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent --yolo --oneshot {prompt} --model xai/grok-4.3 --accept-hooks
+          ** effort-unknown: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["acp"]
+          note: first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs; ACP mode is available with hermes acp
+        kimi     no        -                       headless     configured cli-default      print-mode default cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent --output-format stream-json -p {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["acp"]
+          note: Kimi Code. Headless is `kimi -p <prompt>` (now defaulted to --output-format stream-json, unwrapped by the runner); --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.
+        opencode no        -                       headless     configured cli-default      auto         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent run --auto {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["acp"]
+          note: OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.
+        zcode    no        -                       headless     configured cli-default      yolo         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent --prompt={prompt} --mode yolo --cwd {root}
+          note: ZCode (Z.AI). Headless is `zcode --prompt=<text> --mode yolo --cwd <root>` - the EQUALS form is required: the separate-token form is rejected when the prompt starts with a dash ("Option '--prompt' argument is ambiguous", exit 1, measured 2026-08-19); the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.
+        qwen     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qwen --acp
+        codebuddy no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with codebuddy --acp
+        goose    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with goose acp
+        auggie   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with auggie --acp
+        droid    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["exec", "--output-format", "acp"]
+          note: ACP backend; spawned with droid exec --output-format acp
+        copilot  no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--acp", "--stdio"]
+          note: ACP backend; spawned with copilot --acp --stdio
+        qoder    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qodercli --acp
+        vibe     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent []
+          note: ACP backend; spawned with vibe-acp (no args)
+        cursor   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["acp"]
+          note: Cursor CLI binary is the generic name `agent`; PATH lookup may collide with other tools
+        kiro     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with kiro-cli acp
+        snow     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with snow --acp
+        Created idea 2026-10-06T14-26-26-shared-filesyste and run 20261006T122626.506827000Z
+        Starting round-01 with participants: codex
+          codex    wrote /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemtrue3625814860/001/parley-deck/ideas/2026-10-06T14-26-26-shared-filesyste/round-01/codex.md in 301ms
+        stderr:
+        warning: roster snapshot unavailable (no roster: declare [roster.<id>] in parley-deck/agents.toml (or keep a legacy §2 table in COOPERATION.md)) — this run will not record what each agent ran
+=== RUN   TestQuotaFixupCreateRunOnFilesystem/false
+    quota_fixup_test.go:67: command: parley ["run" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001" "--no-tui" "--no-auto" "--no-ping" "--no-preflight" "--yes" "--quota-auto-exclude=false" "--participants" "codex" "Shared filesystem acceptance"]
+        exit=0
+        stdout:
+        Resolved agent runtime:
+        adapter/runtime inventory — NOT the roster (see `parley roster show`)
+        AGENT    INSTALLED  VERSION                 LAUNCH       HEADLESS  SANDBOX          APPROVAL     MODEL        TIMEOUT  HOME  AUTO  BACKEND
+        codex    yes       local-stub 1.0          headless     configured workspace-write  never        cli-default  5000     no    yes   local
+          sources: sandbox=built-in approval=built-in model=built-in timeout=parley-deck/agents.local.toml
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/003/codex exec --skip-git-repo-check --cd {root} --sandbox workspace-write -c approval_policy="never" -
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          note: Codex ACP is not enabled by default because the local codex CLI exposes no stable ACP launch args; configure acp_args locally when available
+        claude   no        -                       headless     configured cli-default      bypassPermissions claude-opus-4-8[1m] 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent -p --model claude-opus-4-8[1m] --effort max --output-format text --permission-mode bypassPermissions --add-dir {root}
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--experimental-acp"]
+          note: ACP mode is available with --experimental-acp
+        agy      no        -                       headless     configured cli-default      dangerously-skip-permissions Gemini 3.6 Flash (High) 1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent --print-timeout 30m --dangerously-skip-permissions --model Gemini 3.6 Flash (High) --add-dir {root} --print {prompt}
+          note: Antigravity CLI (active Gemini-family participant); agy 1.1.8 exposes --model. Strongest Gemini model as of 2026-07-29: Gemini 3.6 Flash (High); see `agy models` (3.6/3.5 Flash Low/Med/High, 3.1 Pro Low/High)
+        gemini   no        -                       headless     configured cli-default      auto_edit    cli-default  1800000  yes   no    hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent --prompt Follow the Parley Deck participant instructions provided on stdin. --skip-trust --approval-mode auto_edit --output-format text
+          note: DEPRECATED legacy Gemini CLI support; prefer agy. Uses isolated GEMINI_CLI_HOME for oauth-personal profiles that hang
+        hermes   no        -                       headless     configured cli-default      yolo         xai/grok-4.3 1800000  yes   yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent --yolo --oneshot {prompt} --model xai/grok-4.3 --accept-hooks
+          ** effort-unknown: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["acp"]
+          note: first supported command found on PATH is used; uses isolated HERMES_HOME for writable logs; ACP mode is available with hermes acp
+        kimi     no        -                       headless     configured cli-default      print-mode default cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent --output-format stream-json -p {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["acp"]
+          note: Kimi Code. Headless is `kimi -p <prompt>` (now defaulted to --output-format stream-json, unwrapped by the runner); --auto/--yolo cannot combine with -p. ACP remains available via `kimi acp`. NOTE: the official installer puts the binary at ~/.kimi-code/bin/kimi and does NOT add it to PATH, so discovery reports INSTALLED=no unless you set `command` for this agent in ~/.parley/agents.toml or the deck config.
+        opencode no        -                       headless     configured cli-default      auto         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent run --auto {prompt}
+          ** model-unbound: the launch passes no such flag, so the vendor CLI's own configuration decides — the configured value is NOT in effect **
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["acp"]
+          note: OpenCode. Headless is `opencode run --auto <prompt>`; the message is argv, not stdin. Per-invocation model is `-m provider/model`, reasoning effort is `--variant`. ACP remains available via `opencode acp`.
+        zcode    no        -                       headless     configured cli-default      yolo         cli-default  1800000  no    yes   hosted
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          headless: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent --prompt={prompt} --mode yolo --cwd {root}
+          note: ZCode (Z.AI). Headless is `zcode --prompt=<text> --mode yolo --cwd <root>` - the EQUALS form is required: the separate-token form is rejected when the prompt starts with a dash ("Option '--prompt' argument is ambiguous", exit 1, measured 2026-08-19); the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.
+        qwen     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qwen --acp
+        codebuddy no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with codebuddy --acp
+        goose    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with goose acp
+        auggie   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with auggie --acp
+        droid    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["exec", "--output-format", "acp"]
+          note: ACP backend; spawned with droid exec --output-format acp
+        copilot  no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--acp", "--stdio"]
+          note: ACP backend; spawned with copilot --acp --stdio
+        qoder    no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with qodercli --acp
+        vibe     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent []
+          note: ACP backend; spawned with vibe-acp (no args)
+        cursor   no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["acp"]
+          note: Cursor CLI binary is the generic name `agent`; PATH lookup may collide with other tools
+        kiro     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["acp"]
+          note: ACP backend; spawned with kiro-cli acp
+        snow     no        -                       acp          missing   cli-default      cli-default  cli-default  1800000  no    no    unknown
+          sources: sandbox=built-in approval=built-in model=built-in timeout=built-in
+          acp: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/absent-local-test-agent ["--acp"]
+          note: ACP backend; spawned with snow --acp
+        Created idea 2026-10-06T14-26-27-shared-filesyste and run 20261006T122627.170857000Z
+        Starting round-01 with participants: codex
+          codex    wrote /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCreateRunOnFilesystemfalse3429610286/001/parley-deck/ideas/2026-10-06T14-26-27-shared-filesyste/round-01/codex.md in 315ms
+        stderr:
+        warning: roster snapshot unavailable (no roster: declare [roster.<id>] in parley-deck/agents.toml (or keep a legacy §2 table in COOPERATION.md)) — this run will not record what each agent ran
+--- PASS: TestQuotaFixupCreateRunOnFilesystem (1.31s)
+    --- PASS: TestQuotaFixupCreateRunOnFilesystem/true (0.77s)
+    --- PASS: TestQuotaFixupCreateRunOnFilesystem/false (0.54s)
+=== RUN   TestQuotaFixupCLIRevisionRecovery
+    quota_fixup_test.go:103: parley ["quota" "revise" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCLIRevisionRecovery3621435169/001" "--idea" "2026-10-06T14-26-27-fixup-app-histor" "--run" "recorded-run" "--request" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCLIRevisionRecovery3621435169/001/request.json"]
+        Recorded owner revision batch-b6f5c557142768c79f43cffb99f21d41260f926d0eb2a01cadd55a05694dfc95; current participants: alpha, beta; policy enabled=true scope=kickoff-and-mid-idea
+    quota_fixup_test.go:120: parley ["quota" "recover" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCLIRevisionRecovery3621435169/001" "--idea" "2026-10-06T14-26-27-fixup-app-histor" "--run" "recorded-run"]
+        Reconciled 2026-10-06T14-26-27-fixup-app-histor at revision 1; current participants: alpha, beta
+    quota_fixup_test.go:120: parley ["quota" "recover" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupCLIRevisionRecovery3621435169/001" "--idea" "2026-10-06T14-26-27-fixup-app-histor" "--run" "recorded-run"]
+        Reconciled 2026-10-06T14-26-27-fixup-app-histor at revision 1; current participants: alpha, beta
+--- PASS: TestQuotaFixupCLIRevisionRecovery (1.17s)
+=== RUN   TestQuotaFixupManualAndInteractiveHandoffKeepLease
+    quota_fixup_test.go:169: manual with history revision 1: handoff succeeded, competing run and unleased handoff refused
+    quota_fixup_test.go:169: interactive with history revision 1: handoff succeeded, competing run and unleased handoff refused
+--- PASS: TestQuotaFixupManualAndInteractiveHandoffKeepLease (1.66s)
+=== RUN   TestQuotaFixupTUIExitDrainsDriverBeforeRelease
+    quota_fixup_test.go:247: UI returned; driver cancellation observed; competing acquisition refused until cleanup joined; acquired after run returned
+--- PASS: TestQuotaFixupTUIExitDrainsDriverBeforeRelease (0.53s)
+=== RUN   TestQuotaFixupPipelineLifetimeAcrossStages
+    quota_fixup_test.go:282: all pipeline stages use one live idea-bound run; between-stage competitors refused; release permits next driver
+--- PASS: TestQuotaFixupPipelineLifetimeAcrossStages (0.16s)
+=== RUN   TestQuotaFixupPreflightBare503AndNoise
+--- PASS: TestQuotaFixupPreflightBare503AndNoise (0.00s)
+=== RUN   TestQuotaFixupOffModeManualExclusionThroughSignoffCLI
+    quota_fixup_test.go:325: parley ["consensus" "signoff" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI399301907/001" "--agent" "alpha" "--status" "accept" "2026-10-06T14-26-31-fixup-app-histor"]
+        Appended signoff for alpha to /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI399301907/001/parley-deck/ideas/2026-10-06T14-26-31-fixup-app-histor/consensus.md
+        Consensus: partial
+        Path: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI399301907/001/parley-deck/ideas/2026-10-06T14-26-31-fixup-app-histor/consensus.md
+        Missing signoffs: beta
+        Signoffs:
+          alpha      ✅ ACCEPT
+    quota_fixup_test.go:325: parley ["consensus" "signoff" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI399301907/001" "--agent" "beta" "--status" "accept" "2026-10-06T14-26-31-fixup-app-histor"]
+        Appended signoff for beta to /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI399301907/001/parley-deck/ideas/2026-10-06T14-26-31-fixup-app-histor/consensus.md
+        Consensus: ready
+        Path: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupOffModeManualExclusionThroughSignoffCLI399301907/001/parley-deck/ideas/2026-10-06T14-26-31-fixup-app-histor/consensus.md
+        Signoffs:
+          alpha      ✅ ACCEPT
+          beta       ✅ ACCEPT
+--- PASS: TestQuotaFixupOffModeManualExclusionThroughSignoffCLI (0.09s)
+=== RUN   TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea
+    quota_fixup_test.go:357: parley ["agents" "exec" "--dir" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea3931853060/001" "--agent" "gamma" "--prompt-file" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea3931853060/001/prompt.txt" "--artifact" "/var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea3931853060/001/parley-deck/ideas/2026-10-06T14-26-31-fixup-app-histor/round-02/gamma.md" "--yes"]
+        agents exec: launch setup failed before an invocation could be recorded: excluded participant gamma cannot dispatch
+    quota_fixup_test.go:367: unbound generic exec allowed: Invocation: 726a6bb3-8897-4f05-b0ae-6b08bfb99639
+        Evidence: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea3931853060/001/.parley-runtime/invocations/726a6bb3-8897-4f05-b0ae-6b08bfb99639/terminal.json
+--- PASS: TestQuotaFixupAgentsExecCanonicalTargetWithoutIdea (0.62s)
+=== RUN   TestQuotaFixupPipelineBlockDriverOwnsAllStages
+    quota_fixup_test.go:460: actual block driver, locally stubbed stage dispatch; stages=[implementation review-1 consensus-1 fixup review-2 consensus-2] run=pipe-drive-20261006T122631.897246000Z
+        auto: block "build" Phase 5 implementation by alpha
+        auto: block "build" Phase 6 review round-01 (beta, gamma)
+          beta     wrote  in 0s
+          gamma    wrote  in 0s
+        auto: block "build" Phase 7 review consensus (drafter alpha)
+        auto: block "build" Phase 8 fix-up cycle 1 (1 agreed fixes) by alpha
+        auto: block "build" Phase 6 review round-02 (beta, gamma)
+          beta     wrote  in 0s
+          gamma    wrote  in 0s
+        auto: block "build" Phase 7 review consensus (drafter alpha)
+        auto: block "build" implementation complete (0 outstanding agreed fixes).
+--- PASS: TestQuotaFixupPipelineBlockDriverOwnsAllStages (0.13s)
+=== RUN   TestQuotaSignoffProcessSettlesBatchAndKeepsCurrentRequiredSet
+--- PASS: TestQuotaSignoffProcessSettlesBatchAndKeepsCurrentRequiredSet (1.72s)
+=== RUN   TestQuotaStatusWaitBriefAgreePendingAndAppliedReadOnly
+--- PASS: TestQuotaStatusWaitBriefAgreePendingAndAppliedReadOnly (0.26s)
+=== RUN   TestQuotaPreflightReportsOnlyAndBare503
+--- PASS: TestQuotaPreflightReportsOnlyAndBare503 (0.62s)
+=== RUN   TestQuotaPreflightWholeBatchAndOneBlock
+--- PASS: TestQuotaPreflightWholeBatchAndOneBlock (0.81s)
+PASS
+ok  	parley-deck-cli/internal/app	10.413s
+=== RUN   TestQuotaExcludedVetoRemainsBlockedKnownAndAppendGateNarrow
+--- PASS: TestQuotaExcludedVetoRemainsBlockedKnownAndAppendGateNarrow (0.25s)
+=== RUN   TestQuotaPendingBlocksSignoffAndCloseWithoutRewritingArtifacts
+--- PASS: TestQuotaPendingBlocksSignoffAndCloseWithoutRewritingArtifacts (0.29s)
+=== RUN   TestQuotaKickoffExcludedIdentityNeverKnown
+--- PASS: TestQuotaKickoffExcludedIdentityNeverKnown (0.05s)
+=== RUN   TestQuotaRetainedVetoOnlyOwnerRulingCanDispose
+--- PASS: TestQuotaRetainedVetoOnlyOwnerRulingCanDispose (0.46s)
+=== RUN   TestQuotaFixupReincludeWithdrawThenAppendSignoff
+--- PASS: TestQuotaFixupReincludeWithdrawThenAppendSignoff (3.02s)
+=== RUN   TestQuotaFixupOffModeReturnCannotAuthorizeWithdrawal
+    quota_test.go:265: ordinary off-mode return imported without extra record; manual revision cannot authorize retained-veto withdrawal; original bytes preserved
+--- PASS: TestQuotaFixupOffModeReturnCannotAuthorizeWithdrawal (0.26s)
+=== RUN   TestQuotaFixupWithdrawalMatchesBlankLineSignoffAndNotNewVeto
+--- PASS: TestQuotaFixupWithdrawalMatchesBlankLineSignoffAndNotNewVeto (1.12s)
+PASS
+ok  	parley-deck-cli/internal/consensus	6.667s
+=== RUN   TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt
+=== RUN   TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt/retained-retries
+=== RUN   TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt/retained-top-level
+=== RUN   TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt/backoff-retries
+--- PASS: TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt (0.03s)
+    --- PASS: TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt/retained-retries (0.01s)
+    --- PASS: TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt/retained-top-level (0.01s)
+    --- PASS: TestQuotaCycle2SourceDerivedRetriesAndSingleReceipt/backoff-retries (0.01s)
+=== RUN   TestQuotaCycle2TerminalThresholdAndObservationOrder
+--- PASS: TestQuotaCycle2TerminalThresholdAndObservationOrder (0.01s)
+=== RUN   TestQuotaCycle2DefaultConsoleDepthStaysRejected
+--- PASS: TestQuotaCycle2DefaultConsoleDepthStaysRejected (0.00s)
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/The_earlier_probe_said:
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/$_cat_zcode-incident-2.stderr
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/```assistant
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/{"role":"tool","content":"quoted"}
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/API_Error:_429_Weekly_Limit_Exhausted
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/Error:_ENOENT_open_x
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/TypeError:_x_is_not_a_function
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/RangeError:_Maximum_call_stack_size_exceeded
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/SyntaxError:_Unexpected_token_<_in_JSON
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/AbortError:_This_operation_was_aborted
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/FetchError:_request_to_https://x_failed,_reason:_socket_hang_up
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/Unhandled_promise_rejection:_ZodError:_invalid_type
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/AI_RetryError:_Failed_after_3_attempts._Last_error:_Internal_Server_Error
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/statusCode:_500
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/AI_APICallError:_dangling
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/unknown_ordinary_text
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/truncated-request
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/double-terminal
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-wrapper
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-close
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-symbol
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/other-cause
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/header-status-mismatch
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/unknown-field
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/duplicate-header
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/contradictory-header
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/other-data
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/duplicate-field
+=== RUN   TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/header-message-mismatch
+--- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives (0.01s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/The_earlier_probe_said: (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/$_cat_zcode-incident-2.stderr (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/```assistant (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/{"role":"tool","content":"quoted"} (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/API_Error:_429_Weekly_Limit_Exhausted (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/Error:_ENOENT_open_x (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/TypeError:_x_is_not_a_function (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/RangeError:_Maximum_call_stack_size_exceeded (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/SyntaxError:_Unexpected_token_<_in_JSON (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/AbortError:_This_operation_was_aborted (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/FetchError:_request_to_https://x_failed,_reason:_socket_hang_up (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/Unhandled_promise_rejection:_ZodError:_invalid_type (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/AI_RetryError:_Failed_after_3_attempts._Last_error:_Internal_Server_Error (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/statusCode:_500 (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/AI_APICallError:_dangling (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/unknown_ordinary_text (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/truncated-request (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/double-terminal (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-wrapper (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-close (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-symbol (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/other-cause (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/header-status-mismatch (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/unknown-field (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/duplicate-header (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/contradictory-header (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/other-data (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/duplicate-field (0.00s)
+    --- PASS: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/header-message-mismatch (0.00s)
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency/wrong-reason
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency/wrong-last-message
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency/nested-mixed-status
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency/missing-last
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency/incomplete-inspect
+=== RUN   TestQuotaFixupRetryFramingAndNestedConsistency/wrong-count
+--- PASS: TestQuotaFixupRetryFramingAndNestedConsistency (0.01s)
+    --- PASS: TestQuotaFixupRetryFramingAndNestedConsistency/wrong-reason (0.00s)
+    --- PASS: TestQuotaFixupRetryFramingAndNestedConsistency/wrong-last-message (0.00s)
+    --- PASS: TestQuotaFixupRetryFramingAndNestedConsistency/nested-mixed-status (0.00s)
+    --- PASS: TestQuotaFixupRetryFramingAndNestedConsistency/missing-last (0.00s)
+    --- PASS: TestQuotaFixupRetryFramingAndNestedConsistency/incomplete-inspect (0.00s)
+    --- PASS: TestQuotaFixupRetryFramingAndNestedConsistency/wrong-count (0.00s)
+=== RUN   TestQuotaFixupPerRecordReceiptTimes
+--- PASS: TestQuotaFixupPerRecordReceiptTimes (0.00s)
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"retry_after":3600
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"retry_after":3599
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/5-hour_usage_limit_reached"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Hourly_limit_exhausted"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Too_Many_Requests"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/quota_exceeded"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/credit_balance"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Your_weekly_limit_has_not_been_reached"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Rate_limited;_weekly_limit_reached_soon?_no:_the_weekly_limit_reached_warning_threshold_is_80%"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"reset_at":null,"retry_after":7200
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"reset_at":"2026-10-05_00:00:00"
+=== RUN   TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"reset_at":"2026-10-01T00:00:00Z"
+--- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries (0.01s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"retry_after":3600 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"retry_after":3599 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/5-hour_usage_limit_reached"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Hourly_limit_exhausted"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Too_Many_Requests"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/quota_exceeded"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/credit_balance"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Your_weekly_limit_has_not_been_reached"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Rate_limited;_weekly_limit_reached_soon?_no:_the_weekly_limit_reached_warning_threshold_is_80%"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"reset_at":null,"retry_after":7200 (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"reset_at":"2026-10-05_00:00:00" (0.00s)
+    --- PASS: TestQuotaFixupCompleteFramingSemanticBoundaries/Weekly_limit_exhausted"reset_at":"2026-10-01T00:00:00Z" (0.00s)
+=== RUN   TestQuotaStrictSemantics
+=== RUN   TestQuotaStrictSemantics/daily
+=== RUN   TestQuotaStrictSemantics/weekly
+=== RUN   TestQuotaStrictSemantics/account
+=== RUN   TestQuotaStrictSemantics/credit
+=== RUN   TestQuotaStrictSemantics/sixty
+=== RUN   TestQuotaStrictSemantics/24hour
+=== RUN   TestQuotaStrictSemantics/49hours
+=== RUN   TestQuotaStrictSemantics/bare429
+=== RUN   TestQuotaStrictSemantics/generic
+=== RUN   TestQuotaStrictSemantics/credit-balance
+=== RUN   TestQuotaStrictSemantics/bare503
+=== RUN   TestQuotaStrictSemantics/503long
+=== RUN   TestQuotaStrictSemantics/503short
+=== RUN   TestQuotaStrictSemantics/401
+=== RUN   TestQuotaStrictSemantics/400
+=== RUN   TestQuotaStrictSemantics/hourly
+=== RUN   TestQuotaStrictSemantics/five-hour
+=== RUN   TestQuotaStrictSemantics/short
+=== RUN   TestQuotaStrictSemantics/past
+=== RUN   TestQuotaStrictSemantics/malformed
+=== RUN   TestQuotaStrictSemantics/unknown-reset
+=== RUN   TestQuotaStrictSemantics/contradictory
+=== RUN   TestQuotaStrictSemantics/naive-clock
+=== RUN   TestQuotaStrictSemantics/policy-name
+=== RUN   TestQuotaStrictSemantics/pool
+--- PASS: TestQuotaStrictSemantics (0.00s)
+    --- PASS: TestQuotaStrictSemantics/daily (0.00s)
+    --- PASS: TestQuotaStrictSemantics/weekly (0.00s)
+    --- PASS: TestQuotaStrictSemantics/account (0.00s)
+    --- PASS: TestQuotaStrictSemantics/credit (0.00s)
+    --- PASS: TestQuotaStrictSemantics/sixty (0.00s)
+    --- PASS: TestQuotaStrictSemantics/24hour (0.00s)
+    --- PASS: TestQuotaStrictSemantics/49hours (0.00s)
+    --- PASS: TestQuotaStrictSemantics/bare429 (0.00s)
+    --- PASS: TestQuotaStrictSemantics/generic (0.00s)
+    --- PASS: TestQuotaStrictSemantics/credit-balance (0.00s)
+    --- PASS: TestQuotaStrictSemantics/bare503 (0.00s)
+    --- PASS: TestQuotaStrictSemantics/503long (0.00s)
+    --- PASS: TestQuotaStrictSemantics/503short (0.00s)
+    --- PASS: TestQuotaStrictSemantics/401 (0.00s)
+    --- PASS: TestQuotaStrictSemantics/400 (0.00s)
+    --- PASS: TestQuotaStrictSemantics/hourly (0.00s)
+    --- PASS: TestQuotaStrictSemantics/five-hour (0.00s)
+    --- PASS: TestQuotaStrictSemantics/short (0.00s)
+    --- PASS: TestQuotaStrictSemantics/past (0.00s)
+    --- PASS: TestQuotaStrictSemantics/malformed (0.00s)
+    --- PASS: TestQuotaStrictSemantics/unknown-reset (0.00s)
+    --- PASS: TestQuotaStrictSemantics/contradictory (0.00s)
+    --- PASS: TestQuotaStrictSemantics/naive-clock (0.00s)
+    --- PASS: TestQuotaStrictSemantics/policy-name (0.00s)
+    --- PASS: TestQuotaStrictSemantics/pool (0.00s)
+=== RUN   TestQuotaSuccessAndWatchdogsWin
+=== RUN   TestQuotaSuccessAndWatchdogsWin/valid-artifact
+=== RUN   TestQuotaSuccessAndWatchdogsWin/later-success
+=== RUN   TestQuotaSuccessAndWatchdogsWin/zero-exit
+=== RUN   TestQuotaSuccessAndWatchdogsWin/no-exit
+=== RUN   TestQuotaSuccessAndWatchdogsWin/no_first_output
+=== RUN   TestQuotaSuccessAndWatchdogsWin/stalled
+=== RUN   TestQuotaSuccessAndWatchdogsWin/timeout
+=== RUN   TestQuotaSuccessAndWatchdogsWin/cancelled
+=== RUN   TestQuotaSuccessAndWatchdogsWin/truncated
+--- PASS: TestQuotaSuccessAndWatchdogsWin (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/valid-artifact (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/later-success (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/zero-exit (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/no-exit (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/no_first_output (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/stalled (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/timeout (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/cancelled (0.00s)
+    --- PASS: TestQuotaSuccessAndWatchdogsWin/truncated (0.00s)
+=== RUN   TestQuotaUnsupportedAndAdversarialProvenance
+--- PASS: TestQuotaUnsupportedAndAdversarialProvenance (0.00s)
+=== RUN   TestQuotaScrubbedEvidenceAndCollector
+--- PASS: TestQuotaScrubbedEvidenceAndCollector (0.00s)
+=== RUN   TestQuotaIncidentOneReadinessWithRecordedProviderReplay
+--- PASS: TestQuotaIncidentOneReadinessWithRecordedProviderReplay (0.00s)
+=== RUN   TestQuotaZcodeEveryRecordAndObservedClock
+--- PASS: TestQuotaZcodeEveryRecordAndObservedClock (0.00s)
+=== RUN   TestQuotaZcodeRecordedBodySourceDerivedFraming
+--- PASS: TestQuotaZcodeRecordedBodySourceDerivedFraming (0.00s)
+=== RUN   TestQuotaZcodeAdversarialFixtures
+=== RUN   TestQuotaZcodeAdversarialFixtures/assistant-quoted
+=== RUN   TestQuotaZcodeAdversarialFixtures/tool-quoted
+=== RUN   TestQuotaZcodeAdversarialFixtures/mixed-error
+=== RUN   TestQuotaZcodeAdversarialFixtures/malformed
+=== RUN   TestQuotaZcodeAdversarialFixtures/short-reset
+=== RUN   TestQuotaZcodeAdversarialFixtures/display-only
+=== RUN   TestQuotaZcodeAdversarialFixtures/contradictory
+=== RUN   TestQuotaZcodeAdversarialFixtures/valid-artifact
+=== RUN   TestQuotaZcodeAdversarialFixtures/later-success
+=== RUN   TestQuotaZcodeAdversarialFixtures/zero-exit
+=== RUN   TestQuotaZcodeAdversarialFixtures/stdout-only
+=== RUN   TestQuotaZcodeAdversarialFixtures/no-terminal
+=== RUN   TestQuotaZcodeAdversarialFixtures/unfinished-record
+--- PASS: TestQuotaZcodeAdversarialFixtures (0.01s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/assistant-quoted (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/tool-quoted (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/mixed-error (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/malformed (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/short-reset (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/display-only (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/contradictory (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/valid-artifact (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/later-success (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/zero-exit (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/stdout-only (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/no-terminal (0.00s)
+    --- PASS: TestQuotaZcodeAdversarialFixtures/unfinished-record (0.00s)
+=== RUN   TestQuotaDisplayClockBoundsAndParentheses
+--- PASS: TestQuotaDisplayClockBoundsAndParentheses (0.00s)
+PASS
+ok  	parley-deck-cli/internal/telemetry	1.310s
+=== RUN   TestQuotaRunnerRebindAndStaleLowLevelDispatchRefusal
+--- PASS: TestQuotaRunnerRebindAndStaleLowLevelDispatchRefusal (0.45s)
+=== RUN   TestQuotaRunnerValidArtifactAndLaterSuccessCancelCandidate
+=== RUN   TestQuotaRunnerValidArtifactAndLaterSuccessCancelCandidate/artifact
+=== RUN   TestQuotaRunnerValidArtifactAndLaterSuccessCancelCandidate/later-success
+--- PASS: TestQuotaRunnerValidArtifactAndLaterSuccessCancelCandidate (0.38s)
+    --- PASS: TestQuotaRunnerValidArtifactAndLaterSuccessCancelCandidate/artifact (0.17s)
+    --- PASS: TestQuotaRunnerValidArtifactAndLaterSuccessCancelCandidate/later-success (0.21s)
+=== RUN   TestQuotaRunnerProcessFailureTransitionsAfterWritersStop
+--- PASS: TestQuotaRunnerProcessFailureTransitionsAfterWritersStop (0.47s)
+=== RUN   TestQuotaRunnerLostRoundEventBlocksReduction
+--- PASS: TestQuotaRunnerLostRoundEventBlocksReduction (0.25s)
+=== RUN   TestQuotaFixupCanonicalTargetIdentityAndGenericWork
+--- PASS: TestQuotaFixupCanonicalTargetIdentityAndGenericWork (0.44s)
+=== RUN   TestQuotaFixupRunnerBare503AndNoise
+--- PASS: TestQuotaFixupRunnerBare503AndNoise (0.00s)
+=== RUN   TestQuotaBare503RunnerGate
+--- PASS: TestQuotaBare503RunnerGate (0.00s)
+PASS
+ok  	parley-deck-cli/internal/runner	3.243s
+
+exit=0 elapsed_seconds=17.17

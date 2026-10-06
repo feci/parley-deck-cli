@@ -1,0 +1,26 @@
+{
+  "step": "phase-8-fixup-cycle-2",
+  "timeout_seconds": 1800,
+  "timeout_relaunches_used": 0,
+  "quota_relaunches_used": 0,
+  "agreed_fixes": [
+    "G10",
+    "G11",
+    "G12",
+    "G13",
+    "G14"
+  ],
+  "reservations": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9"
+  ],
+  "code_ownership": "Go, tests, fixtures, CLI docs, own producer evidence only",
+  "protocol_skill_ownership": "organizer"
+}

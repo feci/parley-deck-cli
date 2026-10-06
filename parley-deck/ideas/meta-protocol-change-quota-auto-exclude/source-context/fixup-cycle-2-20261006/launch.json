@@ -1,0 +1,23 @@
+{
+  "started": "2026-10-06T11:46:05.329713+00:00",
+  "argv": [
+    "/opt/homebrew/bin/codex",
+    "exec",
+    "--skip-git-repo-check",
+    "--cd",
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "--sandbox",
+    "workspace-write",
+    "--add-dir",
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude-skill",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "model_reasoning_effort=max",
+    "-m",
+    "gpt-6-astra",
+    "-"
+  ],
+  "timeout_seconds": 1800,
+  "identity": "codex-1"
+}

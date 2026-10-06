@@ -1,0 +1,6 @@
+UTC start: 2026-10-06T12:26:15.971695+00:00
+cwd: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+host execution; PATH=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/host/no-provider-bin:<inherited>; GOOS=windows GOARCH=amd64
+$ go build ./...
+
+exit=0 elapsed_seconds=3.478

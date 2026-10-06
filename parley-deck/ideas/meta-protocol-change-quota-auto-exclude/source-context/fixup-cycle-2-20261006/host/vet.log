@@ -1,0 +1,6 @@
+UTC start: 2026-10-06T12:26:14.390037+00:00
+cwd: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+host execution; PATH=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/host/no-provider-bin:<inherited>; 
+$ go vet ./...
+
+exit=0 elapsed_seconds=1.58

@@ -1,0 +1,104 @@
+{
+  "source": "/opt/homebrew/lib/node_modules/zcode-app-cli/vendor/zcode.cjs",
+  "source_sha256": "3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f",
+  "coordinate": "zero-based Unicode character offsets, end exclusive",
+  "slices": {
+    "stream-default-error-sink": {
+      "start": 4900280,
+      "end": 4901600,
+      "sha256": "f15dc4df707cf997cc67d29ec738608f3def07f58ff2de17e88dbe874e336ac4",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-stream-default-error-sink.txt"
+    },
+    "stream-options": {
+      "start": 7119632,
+      "end": 7121400,
+      "sha256": "b7f8859efb1974f718fafea9bf2690f15a3ae30cf7d9ed286145fdd0a77f533e",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-stream-options.txt"
+    },
+    "undefined-option-filter": {
+      "start": 7123374,
+      "end": 7123630,
+      "sha256": "8f3584cb915d03cf648b1c83a5a49b1736605696767d9b8252eed5c35af1fb53",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-undefined-option-filter.txt"
+    },
+    "adapter-call": {
+      "start": 7167600,
+      "end": 7171000,
+      "sha256": "0cc3db856424aeb77e6c66e4497a9ada7c559d7b5fe453553bc5a52cf9a6beac",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-adapter-call.txt"
+    },
+    "adapter-runtime": {
+      "start": 7185750,
+      "end": 7187500,
+      "sha256": "56f9b1accfa01b9bc21d73f581f54f8eb81232ab5b3a4df13b6ab3c447e42583",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-adapter-runtime.txt"
+    },
+    "own-retry-defaults": {
+      "start": 4442400,
+      "end": 4445100,
+      "sha256": "f1bec97e8aaade61a90c55fb4b2fb4fed0a662c86700b3929d9f714a3822f619",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-own-retry-defaults.txt"
+    },
+    "sdk-retry": {
+      "start": 4854200,
+      "end": 4857100,
+      "sha256": "1006c7e78d632fd9d2d09706419fec61ed18c4e6e3a866270ad7a0bc5c954c6b",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-sdk-retry.txt"
+    },
+    "stream-retry": {
+      "start": 7179790,
+      "end": 7185860,
+      "sha256": "14ffadbe6c93e62afe51dea874c8316fa0721879527918085575a2fa008ec234",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-stream-retry.txt"
+    },
+    "run-error-sinks": {
+      "start": 13079000,
+      "end": 13086800,
+      "sha256": "92af11c5d4b9f5d9ae6bb84e1cef3caf192ba421e6f35bef6c428b06495ffc36",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-run-error-sinks.txt"
+    },
+    "console-constructor": {
+      "start": 12436500,
+      "end": 12439000,
+      "sha256": "4a7d6c39e8115d038f4cc8758a778f778f8c7304b8f7b028f2d7398feecd52aa",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-console-constructor.txt"
+    },
+    "console-assignment": {
+      "start": 7542100,
+      "end": 7543000,
+      "sha256": "4a8db4986a9996c23524c2cdaba14063727a573b32d73d6b3d4f5b8a8910ca9b",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-console-assignment.txt"
+    },
+    "depth-unrelated-1": {
+      "start": 10659100,
+      "end": 10661000,
+      "sha256": "37b340831c5a9a20e711f7105792fa6c250deda25223c5ed5ca97f85d4247eec",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-depth-unrelated-1.txt"
+    },
+    "depth-unrelated-2": {
+      "start": 11967800,
+      "end": 11969200,
+      "sha256": "207380c43e3e61d5ca90ac4650888adaab80b005335dcacf6b22c5c833b6c2e5",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-depth-unrelated-2.txt"
+    },
+    "api-class": {
+      "start": 2535780,
+      "end": 2536688,
+      "sha256": "155ae700f067c05cdc51bbded68ba0611d198547109049654ec820ce2336a8e4",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-api-class.txt"
+    },
+    "retry-class": {
+      "start": 4908888,
+      "end": 4909204,
+      "sha256": "9c4676cebbc5eb41b118e3bd2800a673f8ea6c6c77bdaa401caff7123119410c",
+      "path": ".parley-runtime/quota-implementation/fixup-2/checks/g14-retry-class.txt"
+    }
+  },
+  "literal_counts": {
+    "inspect.defaultOptions": 0,
+    "inspectOptions": 0,
+    "console.error=": 0,
+    "depth:null": 2,
+    "console.error(q)": 1
+  }
+}

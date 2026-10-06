@@ -1,0 +1,6 @@
+$ go test ./internal/membership -run ^TestQuotaCycle2NativeCrashWriter$ -count=1 -v
+=== RUN   TestQuotaCycle2NativeCrashWriter
+    cycle2_test.go:222: native local-stub crash settled idempotently at /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaCycle2NativeCrashWriter3139383997/001/.parley-runtime/invocations/f8817990-22d2-49f0-a3ef-ccfe4173ae48/crash-settlement.json
+--- PASS: TestQuotaCycle2NativeCrashWriter (0.25s)
+PASS
+ok  	parley-deck-cli/internal/membership	0.334s

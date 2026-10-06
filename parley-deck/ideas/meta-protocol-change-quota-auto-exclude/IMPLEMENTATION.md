@@ -1,38 +1,40 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: 906857b9af33306158d3b0e91b94e6ef4b6f7458
+head-commit: 0ee18889977a29d6baf53d3016b501112760ae12
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Both stages and fix-up cycle 1 are delivered at CLI `906857b`; the skill counterpart is
-`dcb7d59`. Cycle 1 implements signed G1–G9 and conditions R1–R4 after the binding round-03 review.
-Independent round-04 re-review completed on the unchanged product snapshot and requires further repairs plus an AC2 owner decision; these producer results are not acceptance or authority to close.
+Both stages and fix-up cycles 1–2 are delivered at CLI `0ee1888`; the skill counterpart is
+`e2f3649`. Cycle 2 implements signed G10–G14 and V1–V9. The separate claude-1 fix-list
+signoff completed after the authorized 2400-second relaunch; it approves the plan, not the code.
+The complete current product is ready for its independent round-05 re-review.
 
-The full HOST `go test ./... -count=1 -timeout 45m` passes every package (529 seconds), as do host
-build/vet, meaningful race checks, all shared-volume/local-control tests and formatting of all 83
-changed Go files. Native boot identity/stale takeover passes on the host; the earlier child sandbox
-failures remain recorded. Product hashes stayed fixed during checks; roster hashes are unchanged.
-The final skill suite remains valid (399 Node / 54 Python / six manifests), with unchanged inputs.
-Protocol drift, exact skill/deck equality and the unchanged packet guard pass.
+The frozen HOST full Go suite passes every package (607.553 seconds), along with build/vet,
+race, shared-volume/local-control checks and all 86 changed-file formatting checks. Native
+crash recovery, idempotent settlement and stale-lease takeover pass on the host; sandbox failures
+remain recorded. Product hashes stayed fixed and both roster hashes are unchanged. The final
+skill suite passes 399 Node / 54 Python tests and six manifests. Protocol drift, exact skill/deck
+equality and the unchanged packet guard pass; normative bytes did not change in cycle 2.
 
-Full-native AC2 evidence is still missing: the strict framing allowlist rejects the partial retained
-excerpts. Positive body/reset paths use clearly labeled source-derived SDK fixtures. The original
-reviewer's free-form knob-off confirmation remains refused; documented-format ordinary confirmations
-pass without a new command. Both limitations are exposed for claude-1's own evaluation. No merge,
-release, installation or new owner close has occurred.
+AC2 remains OPEN: complete source-derived records qualify, while both retained partial native
+excerpts and the default-console [Object] shape reject. The 24,833-byte native capture is missing.
+The code now accepts realistic decreasing countdowns against terminal receipt time; ordinary
+policy-off return/join is preserved against the actual pre-change CLI without manufacturing
+owner authority. These are producer results and require independent review.
 
-Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1 process
-owns every independent review and its signoffs. The owner confirms the attended close after both
-review-consensus signoffs and current-tree AC evidence. There is one non-implementer reviewer, so the
-unattended two-reviewer gate is not relaxed. Transport is owner-authorized local canonical files on the
-two existing quota-auto-exclude branches; no development PRs.
+Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1
+process owns every independent review/signoff. The owner decides the AC2 evidence boundary
+after concrete repairs, and confirms a NEW attended close after both final signoffs and current
+criterion evidence. The one-reviewer configuration does not waive unattended-close protection.
+Transport remains owner-authorized local canonical files on the two existing branches, without
+development PRs. No merge, release, installation or new owner close has occurred.
 
 ## Implementation plan / checklist
 
@@ -71,10 +73,9 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
   Serialization now uses a deck-filesystem PID/token lease with host/boot identity, exclusive complete
   owner publication and per-generation stale-reaper claims. Unknown/foreign identity remains blocked.
   The ignored runtime location, bounded projection waiting and off-scope behavior require re-review.
-- Cycle 1's owner revision/withdrawal contract binds committed path/blob/digest and verbatim ruling,
-  surviving permitted inbox cleanup. Ordinary off-mode changes import documented confirmation markers
-  without a new CLI. The old review probe's free-form marker still refuses; R2 equivalence is explicitly
-  left to independent evaluation rather than silently counted as accepted.
+- Cycle 2 preserves the ordinary policy-off return/join path against the actual pre-change CLI.
+  Manual imports are not owner authority and cannot withdraw retained vetoes. The signed V4
+  distinction removes the extra return/join schemas from cycle 1; independent re-review is pending.
 - Complete native stderr framing could not be recovered. Strict allowlisting rejects the retained
   excerpts alone; source-derived SDK positives are not relabeled native. This unresolved AC2 evidence
   limit is a deviation/remaining gate, not an inferred owner waiver.
@@ -167,7 +168,7 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 | Criterion | Current producer evidence / remaining gate |
 | --- | --- |
 | AC1 | Normative copies unchanged during fix-up; exact skill/deck equality, full-suite bootstrap drift and unchanged 70,000-byte guard pass; prior full packets remain hash-identical. |
-| AC2 | OPEN native-evidence gap: retained partial excerpts are rejected by strict framing. Complete source-derived SDK fixtures pass positive body/reset paths; no complete native capture or independent acceptance is claimed. |
+| AC2 | OPEN: source-derived complete top-level/retry records qualify with realistic countdowns; partial native tails and default-console [Object] reject. Complete native capture and owner disposition remain missing. |
 | AC3 | Allowlisted complete framing, mixed/free-prose/quoted/unknown fields, retry consistency, reset boundaries, success precedence and original zadv negatives pass in host full/focused coverage. |
 | AC4 | Only bounded zcode implementation is supported; other adapters remain diagnostic-only. Native capture compatibility remains an explicit AC2 limitation. |
 | AC5 | Whole-batch permutations, survivor floor, duplicate/unresolved and facilitator cases pass in the host full suite. |
@@ -181,11 +182,11 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 | AC13 | Partial files, failed invocations, prior events and survivor terminal validation remain covered by the passing full suite. |
 | AC14 | Immutable auto/owner/manual revisions, later-run discovery, current/known membership and archived/deleted owner evidence are exercised; policy-on prompt edits remain non-authoritative. |
 | AC15 | Status/wait/brief pending/applied/current-policy views, named gate notices, replay and wait exits pass existing/new host coverage. |
-| AC16 | Presence-aware layered policy, legacy/off/frozen scope and explicit widening pass. Ordinary documented off-mode confirmations work without quota revise; original free-form-marker refusal is exposed for R2 review. |
+| AC16 | Layered policy/frozen scope pass. Cycle-2 differential against actual 27e42b8 app.Run preserves plain policy-off return and late-round join as manual revisions, never owner authority; independent V4 evaluation remains. |
 | AC17 | Roster hashes are unchanged; no timer/rejoin worker or binary-inferred scope change. Authorized revision paths are explicitly exercised. |
 | AC18 | Complete allowlisted provider records, invocation facts and reset agreement retain owner gates and accepted subagent ambiguity. AC2 native evidence is still missing. |
-| AC19 | Both stages and cycle-1 code delivered; separate re-review, final consensus and attended close remain required. Status is fix-up-cycle-1, never complete. |
-| AC20 | Full host suite/build/vet/race/shared/local pass; all 83 changed Go files formatted. Skill 399 Node/54 Python/six manifests pass with identical inputs; Windows compile only. |
+| AC19 | Both stages and cycle-1 code delivered; separate re-review, final consensus and attended close remain required. Status is fix-up-cycle-2, never complete. |
+| AC20 | Full host suite/build/vet/race/shared/local pass; all 86 changed Go files formatted. Final skill 399 Node/54 Python/six manifests pass with identical inputs; Windows/amd64 compile only. |
 | AC21 | NOT MET: new attended-close request must follow independent current-tree evidence and both final review-consensus signoffs, then receive a new owner answer. |
 
 Protocol attestation read by organizer/implementer at resumption: context_mode=full; source and packet
@@ -462,3 +463,47 @@ The draft's earlier “13-package” wording means 13 invoked packages but only 
 internal/runstate had no matching tests. The next consensus will contain Drafter position changes.
 The reviewer's own appended quote erratum changes no verdict. Raw signed-step evidence is
 source-context/fix-consensus-2-signed-20261006/.
+
+
+## Fix-up cycle 2
+status: complete
+completed: 2026-10-06
+head-commit: 0ee18889977a29d6baf53d3016b501112760ae12
+skill-commit: e2f3649eb938e870367c76943b441382fe7acf65
+
+This marks the authorized repair cycle delivered, not overall implementation completion.
+The native AC2 thread remains held for the owner and full-scope round-05 review is pending.
+
+### Fixes applied
+
+- G10 / V1–V3: realistic top-level and nested retry consistency, terminal-receipt threshold,
+  monotonic/start/receipt checks, exact lastError and specific rejection reasons; source-derived fixtures.
+- G11 / V4–V5: actual pre-change CLI differential for policy-off return/catch-up, manual-history
+  imports without owner authority, retained-veto protection and tolerant exclusion grammar.
+- G12 / V6–V7: durable receipt discriminator for later edits vs pending projections, actionable
+  revise/correction paths and matching CLI/skill guidance. No normative protocol text delta.
+- G13 / V8: precommit manifest validation and checked native crash settlements with supervisor,
+  writer and process-group proof; unknown/foreign identities remain gated. Host regressions pass.
+- G14 / V9: source-only SDK/default-sink evidence with credential-free offline reproductions,
+  explicit accepted/rejected shape map and concrete AC2 decision boundary. No zcode/provider launch.
+
+### Deviations from agreed fixes
+
+None in the authorized repair/evidence-preparation scope. G14 deliberately retains the AC2 owner
+decision. Under V7 the command-level clarification needs no COOPERATION wording change. Windows
+runtime/native recovery remains unverified/unavailable; cross-build is compile evidence only.
+
+### Current validation evidence
+
+The producer maps `source-context/codex-1-fixup-2-evidence.md` and
+`source-context/codex-1-fixup-2-host-evidence.md` bind exact source/log/check identities.
+Selected raw bytes are retained in `source-context/fixup-cycle-2-20261006/`. All required host and
+skill checks pass without source changes during validation. This supersedes sandbox-only failures
+by actual host execution; those failures remain recorded. Current independent AC verdicts must
+come from claude-1's own round-05 artifact; no older scoped PASS is automatically upgraded.
+
+### Open boundaries and stopping judgment
+
+AC2 is OPEN; no owner waiver/capture exists. Full-scope re-review and both final signoffs are
+still needed, followed by a NEW attended owner close. A fresh CRITICAL/MAJOR on cycle-2 fix
+code triggers trajectory escalation under the signed condition; cycle 3 is not automatic.

@@ -1,0 +1,14 @@
+{
+  "name": "native-crash-host",
+  "command": [
+    "go",
+    "test",
+    "./internal/membership",
+    "-run",
+    "^TestQuotaCycle2NativeCrashWriter$",
+    "-count=1",
+    "-v"
+  ],
+  "exit_code": 0,
+  "seconds": 0.723
+}

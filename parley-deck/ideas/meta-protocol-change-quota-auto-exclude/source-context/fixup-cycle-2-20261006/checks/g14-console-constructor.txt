@@ -1,0 +1,56 @@
+ent.path}:${e.document.hash}`).slice(0,24)}`,meta:e.document.meta,name:e.document.meta.name,scope:HFn(e.document.path,e.workingDirectory),scriptHash:e.document.hash,scriptPath:e.document.path,source:"user"});if(e.resumeFromRunId){let r=await e.store.getScriptWorkflowRun(e.resumeFromRunId);if(!r)throw new Error(`Workflow run not found: ${e.resumeFromRunId}`);return r}return e.store.createScriptWorkflowRun({args:e.args,argsHash:e.args===void 0?void 0:Z8(e.args),cwd:e.workingDirectory,definitionId:t.id,id:e.runId??`wf_${crypto.randomUUID()}`,name:e.document.meta.name,parentSessionId:e.parentSessionId,scriptHash:e.document.hash,scriptPath:e.document.path,stats:cE()})}var JFn=S(()=>{"use strict";mRe();d9t();hRe();s(KFn,"prepareScriptWorkflowRun")});var QFn,YFn=S(()=>{"use strict";QFn=String.raw`
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createInterface } from "node:readline";
+import { Console } from "node:console";
+
+const nodeProcess = process;
+const payload = JSON.parse(Buffer.from(nodeProcess.argv.at(-1), "base64url").toString("utf8"));
+const stderrConsole = new Console({ stdout: nodeProcess.stderr, stderr: nodeProcess.stderr });
+globalThis.console = stderrConsole;
+
+let nextRequestId = 0;
+let currentPhase;
+let spentTokens = 0;
+const pending = new Map();
+const contextStore = new AsyncLocalStorage();
+const rootContext = { nextAgent: 0, nextBlock: 0, path: "root" };
+
+const reader = createInterface({ input: nodeProcess.stdin });
+reader.on("line", (line) => {
+  if (!line.trim()) return;
+  let message;
+  try {
+    message = JSON.parse(line);
+  } catch (error) {
+    stderrConsole.error("Invalid workflow runner response", error);
+    return;
+  }
+  if (message.kind !== "response") return;
+  const waiter = pending.get(message.id);
+  if (!waiter) return;
+  pending.delete(message.id);
+  if (message.ok) waiter.resolve(message.value);
+  else waiter.reject(new Error(message.error || "Workflow runner request failed"));
+});
+
+function send(message) {
+  nodeProcess.stdout.write(JSON.stringify(message) + "\n");
+}
+
+function notify(type, payloadValue) {
+  send({ kind: "event", type, payload: payloadValue });
+}
+
+function callParent(type, payloadValue) {
+  const id = "req_" + ++nextRequestId;
+  send({ id, kind: "request", payload: payloadValue, type });
+  return new Promise((resolve, reject) => {
+    pending.set(id, { reject, resolve });
+  });
+}
+
+function currentContext() {
+  return contextStore.getStore() || rootContext;
+}
+
+function childContext(parent, label) 

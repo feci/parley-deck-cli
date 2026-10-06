@@ -1006,3 +1006,36 @@ trajectory escalation rather than an automatic cycle 3. AC2 remains open after c
 Configured implementation continuation uses codex-1 / gpt-6-astra / max / deep with workspace writes;
 only the separate claude-1 process reviews. Existing focused CLI fallback persists for driver gap 11.
 No other participant, new worktree, roster change, D6 repair, merge or publication.
+
+
+## Cycle-2 implementation subprocess finished — 2026-10-06 12:15Z
+
+The configured codex-1 child exited 0 in 1754.7 seconds with timeout=false and no actual
+provider/quota/auth failure. It implemented G10–G14/V1–V9 and filed its producer evidence.
+No implementation relaunch was needed. Its exact code/check/source map is
+source-context/codex-1-fixup-2-evidence.md. Build/vet/core tests pass; native boot/crash/lease
+and broad budget-cache tests report sandbox denials, retained verbatim for HOST verification.
+The HOST native boot query and existing native lease checks pass; the full frozen host suite
+is running. The code is stable. Producer evidence is not independent acceptance.
+
+V7: no new COOPERATION wording is needed; command guidance is in CLI docs and the skill.
+All normative bytes remain at the prior 73613f95… hash; phase 0/5/8 checks and exact skill/deck
+equality pass. The skill core is 19819 bytes under its unchanged 20000-byte guard. After
+aligning operator guidance to the completed supervisor/writer/process-group proof and prompt
+preservation steps, the final full skill suite is running. AC2 remains open: complete source-derived
+records may qualify; default-console [Object] and partial native tails remain rejected.
+
+
+## Cycle-2 host boundary / round-05 preparation — 2026-10-06
+
+Product commits: CLI 0ee18889977a29d6baf53d3016b501112760ae12, skill e2f3649eb938e870367c76943b441382fe7acf65. Full host suite 607.553 s, build/vet/race,
+Windows/amd64 compile, actual shared/local/native crash and lease checks all pass. All 86 changed
+Go files formatted, source hashes frozen, roster hashes unchanged, no provider guard denial.
+Final skill suite passes 399 Node/54 Python/six manifests; input hashes match. Normative text remains
+unchanged. Raw child failures remain alongside executed host proof.
+
+Signed cycle-2 consensus archived byte-for-byte at review/round-04/consensus.md, SHA256 b46924b171e379266ff5af71a0fb67147e2c2aee2b2b26a93c1df3485428b175.
+Round-05 directory is prepared for claude-1 only. The existing driver gap/stale run pointer and
+focused full-scope brief fallback remain; no D6/accounting or roster edit. The next review must
+cover complete product diffs and V1–V9; no producer verdict is supplied. AC2 still needs owner
+judgment after the concrete repair review. No close or release claim.

@@ -1,0 +1,4 @@
+cwd=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+command=["go", "run", ".parley-runtime/claude1-r4/tail/main.go"]
+env overrides={"GOCACHE": "/tmp/quota-auto-exclude-go-cache", "PATH-prefix": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/checks/no-provider-bin"}
+retained native tail alone: eligible=false reason="zcode evidence rejected: framing: unknown SDK error header"

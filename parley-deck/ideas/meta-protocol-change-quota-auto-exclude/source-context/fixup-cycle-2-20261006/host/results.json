@@ -1,0 +1,159 @@
+[
+  {
+    "name": "native-boot",
+    "command": [
+      "sysctl",
+      "-n",
+      "kern.boottime"
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 0.008
+  },
+  {
+    "name": "native-lease",
+    "command": [
+      "go",
+      "test",
+      "./internal/pidlease",
+      "-count=1",
+      "-v"
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 1.0
+  },
+  {
+    "name": "full",
+    "command": [
+      "go",
+      "test",
+      "./...",
+      "-count=1",
+      "-timeout",
+      "45m"
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 607.553
+  },
+  {
+    "name": "build",
+    "command": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 1.686
+  },
+  {
+    "name": "vet",
+    "command": [
+      "go",
+      "vet",
+      "./..."
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 1.58
+  },
+  {
+    "name": "windows-build",
+    "command": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "env": {
+      "GOOS": "windows",
+      "GOARCH": "amd64"
+    },
+    "exit_code": 0,
+    "seconds": 3.478
+  },
+  {
+    "name": "race",
+    "command": [
+      "go",
+      "test",
+      "-race",
+      "./internal/pidlease",
+      "./internal/membership",
+      "./internal/app",
+      "./internal/consensus",
+      "./internal/telemetry",
+      "./internal/runner",
+      "-run",
+      "TestLease|TestQuotaFixup|TestQuotaCrossProcessLease|TestQuotaLifetimeLock|TestQuota",
+      "-count=1",
+      "-v"
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 17.17
+  },
+  {
+    "name": "shared-volume",
+    "command": [
+      "go",
+      "test",
+      "./internal/app",
+      "./internal/membership",
+      "./internal/pidlease",
+      "./internal/fsutil",
+      "-run",
+      "TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+      "-count=1",
+      "-v"
+    ],
+    "env": {
+      "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/host/shared-temp"
+    },
+    "exit_code": 0,
+    "seconds": 6.792
+  },
+  {
+    "name": "local-control",
+    "command": [
+      "go",
+      "test",
+      "./internal/app",
+      "./internal/membership",
+      "./internal/pidlease",
+      "./internal/fsutil",
+      "-run",
+      "TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+      "-count=1",
+      "-v"
+    ],
+    "env": {
+      "TMPDIR": "/tmp/quota-auto-exclude-fixup2-host-control"
+    },
+    "exit_code": 0,
+    "seconds": 8.032
+  },
+  {
+    "name": "reviewer-zadv",
+    "command": [
+      "go",
+      "run",
+      ".parley-runtime/claude1-r3/zadv/main.go"
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 0.368
+  },
+  {
+    "name": "reviewer-changing-countdowns",
+    "command": [
+      "go",
+      "run",
+      ".parley-runtime/quota-implementation/fixup-2/checks/reviewer-zretry/main.go"
+    ],
+    "env": {},
+    "exit_code": 0,
+    "seconds": 3.409
+  }
+]

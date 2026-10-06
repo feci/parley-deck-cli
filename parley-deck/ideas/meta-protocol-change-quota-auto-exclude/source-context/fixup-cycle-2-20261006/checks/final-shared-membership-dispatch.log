@@ -1,0 +1,12 @@
+cwd=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+argv=["go", "test", "./internal/membership", "./internal/runner", "./internal/app", "-run", "TestQuota", "-count=1", "-timeout", "3m"]
+GOCACHE=/tmp/quota-auto-exclude-go-cache
+PATH-prefix=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/checks/no-provider-bin
+extra={"TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/checks/shared-acceptance/tmp"}
+--- FAIL: TestQuotaCycle2NativeCrashWriter (0.25s)
+    cycle2_test.go:213: unsettled writer for idea native-crash: bdf2d790-c6f4-436e-863a-9fc048d895c3: only proven-dead local supervisor, writer and process group may be settled; stop/verify the original host's supervisor and writer, then run parley quota recover; legacy or unknown identity requires restoration of authentic terminal evidence, never a fabricated settlement
+FAIL
+FAIL	parley-deck-cli/internal/membership	8.274s
+ok  	parley-deck-cli/internal/runner	0.956s
+ok  	parley-deck-cli/internal/app	5.443s
+FAIL

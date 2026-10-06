@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "seconds": 119.983,
+  "before": {
+    "skills/parley-deck/SKILL.md": "59246973bf46583254979daf632f02eff6986ee4a099531ae81e63a2950fd7dd",
+    "skills/parley-deck/references/ROSTER_AND_PROTOCOL.md": "a2c07bec3328dccce392c2a632193b8c0b2d2f438d287289a32e89c1254ed67c",
+    "skills/parley-deck/references/COOPERATION.md": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+    "skills/parley-deck/parley-addon.json": "4f39435fb65d0a4a232a18153ab63c38209757decbef4298ef29de5c03fb62b9"
+  },
+  "after": {
+    "skills/parley-deck/SKILL.md": "59246973bf46583254979daf632f02eff6986ee4a099531ae81e63a2950fd7dd",
+    "skills/parley-deck/references/ROSTER_AND_PROTOCOL.md": "a2c07bec3328dccce392c2a632193b8c0b2d2f438d287289a32e89c1254ed67c",
+    "skills/parley-deck/references/COOPERATION.md": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+    "skills/parley-deck/parley-addon.json": "4f39435fb65d0a4a232a18153ab63c38209757decbef4298ef29de5c03fb62b9"
+  }
+}

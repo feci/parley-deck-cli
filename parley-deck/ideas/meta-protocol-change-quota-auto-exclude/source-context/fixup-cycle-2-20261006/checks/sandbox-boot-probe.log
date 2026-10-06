@@ -1,0 +1,6 @@
+cwd=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+argv=["sysctl", "-n", "kern.boottime"]
+GOCACHE=/tmp/quota-auto-exclude-go-cache
+PATH-prefix=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-2/checks/no-provider-bin
+extra={}
+sysctl: sysctl fmt -1 1024 1: Operation not permitted
