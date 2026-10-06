@@ -1,0 +1,10 @@
+settle: batch=true err=<nil>
+notices after settle: 1
+mode=annotate-live notices in inbox after owner action: 1; archived: 0
+Before #1 err=quota batch blocked: integrity/recovery gate: immutable quota record differs: <R>/parley-deck/inbox/parley-to-user_batch-b247d5496f98637215d2dcc78c5e54ee4e7269671546e9439ab71f3ed22e1810.md; inbox notices now: 1
+Before #2 err=quota batch blocked: integrity/recovery gate: immutable quota record differs: <R>/parley-deck/inbox/parley-to-user_batch-b247d5496f98637215d2dcc78c5e54ee4e7269671546e9439ab71f3ed22e1810.md; inbox notices now: 1
+status text: "Transport: local-dir\nIdeas:\n  2026-10-06T18-22-03-notice-probe  status=round-01  participants=a,b\n    quota policy: enabled=true scope=kickoff-and-mid-idea revision=1\n    quota current participants: a, b\n    quota known participants: a, b, c, d\n    automatic exclusion: c; reset=2026-10-06T18:22:03.581343Z; transition=batch-b247d5496f98637215d2dcc78c5e54ee4e7269671546e9439ab71f3
+survivor a consensus signoff exit=0 stderr=""
+status exit=0 integrity-gate=false pending=false corrupt=false
+final inbox notices: 1 archived: 0
+round.completed events: 1

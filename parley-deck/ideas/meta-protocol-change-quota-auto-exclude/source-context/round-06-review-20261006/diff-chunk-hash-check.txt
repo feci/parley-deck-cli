@@ -1,0 +1,4 @@
+cli-product chunks 29 bad 0 concat_sha_ok True concat_bytes 565265 565265
+cli-fixup chunks 4 bad 0 concat_sha_ok True concat_bytes 61623 61623
+skill-product chunks 3 bad 0 concat_sha_ok True concat_bytes 44443 44443
+skill-fixup chunks 1 bad 0 concat_sha_ok True concat_bytes 10693 10693

@@ -1,0 +1,192 @@
+{
+  "review_path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-06/claude-1.md",
+  "review_sha256": "63fd03de97f24a850f0c96b1d9fe7c1469c02850e1dd9b00eff8e2f41829e59e",
+  "copies": [
+    {
+      "file": "checks-summary-go.json",
+      "source": ".parley-runtime/claude1-r6/checks/summary-go.json",
+      "bytes": 3953,
+      "sha256": "10b0660885a7af34d97a706373dde967ced5f7cd88a44766ba325333f29c0af9"
+    },
+    {
+      "file": "checks-summary-skill.json",
+      "source": ".parley-runtime/claude1-r6/checks/summary-skill.json",
+      "bytes": 595,
+      "sha256": "a88367d425948a69b1313c7e066f951f6f0c08934747a26190fe70f262ec05b2"
+    },
+    {
+      "file": "checks-heads.json",
+      "source": ".parley-runtime/claude1-r6/checks/heads.json",
+      "bytes": 121,
+      "sha256": "82caa706098f20b5f3f2d282c14ac3da7b5d75a0c4291c275857aa83312dc280"
+    },
+    {
+      "file": "notice7-cycle2-local-annotate-archived.log",
+      "source": ".parley-runtime/claude1-r6/notice7/cycle2-local-annotate-archived.log",
+      "bytes": 783,
+      "sha256": "18338c76470fb321cdfb7f595acc91eebdf421289c1ceeb47b89d28050de066e"
+    },
+    {
+      "file": "notice7-local-annotate-archived.log",
+      "source": ".parley-runtime/claude1-r6/notice7/local-annotate-archived.log",
+      "bytes": 1421,
+      "sha256": "01a519f73811314af609786b13aef2bc6a9c0d299387d425bfe99a9d8058eb38"
+    },
+    {
+      "file": "notice7-cycle2-local-annotate-live.log",
+      "source": ".parley-runtime/claude1-r6/notice7/cycle2-local-annotate-live.log",
+      "bytes": 1145,
+      "sha256": "2932a86e1792c2b55e2fae128d6cbd3deb405f1d0fd66e3768657955cadcd6a5"
+    },
+    {
+      "file": "notice7-shared-annotate-archived.log",
+      "source": ".parley-runtime/claude1-r6/notice7/shared-annotate-archived.log",
+      "bytes": 864,
+      "sha256": "0b0c47d33dbf732e5bdc6d7b64b6515374be1697096207cd6650a5932fb89af2"
+    },
+    {
+      "file": "notice7-shared-annotate-live.log",
+      "source": ".parley-runtime/claude1-r6/notice7/shared-annotate-live.log",
+      "bytes": 833,
+      "sha256": "889f0ed471b787ac7446f44cbfdcdf151d6242ebc94279ab9a1cddaf0f2485dc"
+    },
+    {
+      "file": "notice7-local-annotate-live.log",
+      "source": ".parley-runtime/claude1-r6/notice7/local-annotate-live.log",
+      "bytes": 1381,
+      "sha256": "a99cc0a259e3b1ddf5e856cd55d99411bb58f64290d51ece07e79364c61dc8c8"
+    },
+    {
+      "file": "notice6-local-archive.log",
+      "source": ".parley-runtime/claude1-r6/notice6/local-archive.log",
+      "bytes": 357,
+      "sha256": "8d2ac1ee1f34cf563b3578c177bbb54f9828b44eb5b10afc29a2f9939e83fe49"
+    },
+    {
+      "file": "notice6-shared-delete.log",
+      "source": ".parley-runtime/claude1-r6/notice6/shared-delete.log",
+      "bytes": 356,
+      "sha256": "65395df160137e2a903e29213f5377bf5e43b07dac824bd9dd9cfdf8b95bc54a"
+    },
+    {
+      "file": "notice6-local-delete.log",
+      "source": ".parley-runtime/claude1-r6/notice6/local-delete.log",
+      "bytes": 356,
+      "sha256": "65395df160137e2a903e29213f5377bf5e43b07dac824bd9dd9cfdf8b95bc54a"
+    },
+    {
+      "file": "notice6-shared-archive.log",
+      "source": ".parley-runtime/claude1-r6/notice6/shared-archive.log",
+      "bytes": 357,
+      "sha256": "8d2ac1ee1f34cf563b3578c177bbb54f9828b44eb5b10afc29a2f9939e83fe49"
+    },
+    {
+      "file": "vprobe-baseline-local.log",
+      "source": ".parley-runtime/claude1-r6/vprobe/baseline-local.log",
+      "bytes": 6210,
+      "sha256": "18c10f66fc3bc7f4ab6635f3e91640551df723bbb17c5aeade84bdcb3547fed6"
+    },
+    {
+      "file": "vprobe-current-local.log",
+      "source": ".parley-runtime/claude1-r6/vprobe/current-local.log",
+      "bytes": 6799,
+      "sha256": "d0931858e6cbcf63ee860a32366ffcf609d096b4e3af8a35c3907261f8245dda"
+    },
+    {
+      "file": "vprobe-current-shared.log",
+      "source": ".parley-runtime/claude1-r6/vprobe/current-shared.log",
+      "bytes": 9247,
+      "sha256": "f629369008a45c97f6dc3d2335b1637a68216bd81344500ac603c3891d73dcdf"
+    },
+    {
+      "file": "vprobe-baseline-shared.log",
+      "source": ".parley-runtime/claude1-r6/vprobe/baseline-shared.log",
+      "bytes": 8658,
+      "sha256": "fc01ce184a4f15e51fa1446d144f1e6e2740efa7ca2802444d87e7cb84b9f9b3"
+    },
+    {
+      "file": "vprobe-exits.txt",
+      "source": ".parley-runtime/claude1-r6/vprobe/exits.txt",
+      "bytes": 45,
+      "sha256": "3b8f15e95baef931c71ab0a066dda7a624a73cf5dd09c5d2cc40d9cc92bfbb6a"
+    },
+    {
+      "file": "d14-baseline-local.log",
+      "source": ".parley-runtime/claude1-r6/d14/baseline-local.log",
+      "bytes": 2993,
+      "sha256": "33f0d5bccfc59993bd0c1be1583b8ac1fe4dfdceff11a280edf62105a332b937"
+    },
+    {
+      "file": "d14-current-shared.log",
+      "source": ".parley-runtime/claude1-r6/d14/current-shared.log",
+      "bytes": 4865,
+      "sha256": "b2e56c2356ee5cd2aed144e3e0d055c000e2f2f5df062948891eb74d6ee96ba1"
+    },
+    {
+      "file": "d14-baseline-shared.log",
+      "source": ".parley-runtime/claude1-r6/d14/baseline-shared.log",
+      "bytes": 4060,
+      "sha256": "cc8b0c4cc8f0ab0d026354f0ae477f126d076ee37c193fc48eabab6aa940213d"
+    },
+    {
+      "file": "d14-current-local.log",
+      "source": ".parley-runtime/claude1-r6/d14/current-local.log",
+      "bytes": 3701,
+      "sha256": "32f8670b8c445dcba2541d75bc6185ff689b512bbd4a734531b19241ddff9f0e"
+    },
+    {
+      "file": "diff-chunk-hash-check.txt",
+      "source": ".parley-runtime/claude1-r6/diff/chunk-hash-check.txt",
+      "bytes": 287,
+      "sha256": "36433d3b5fa4b06567453aa60563570efe56b35f41c1b0e94fec61ce327cc0ed"
+    },
+    {
+      "file": "diff-unchanged-since-r5.txt",
+      "source": ".parley-runtime/claude1-r6/diff/unchanged-since-r5.txt",
+      "bytes": 82,
+      "sha256": "1f4252f3b05bacc521defa356de8d190e6ae8175978681bd86a75139ea2a9a4d"
+    },
+    {
+      "file": "packet-attestation.txt",
+      "source": ".parley-runtime/claude1-r6/packet/attestation.txt",
+      "bytes": 129,
+      "sha256": "f3df04c94afcb2d5a0bdd02e07a1672701bfa4779d045c0a7fdbd5d1bd8c8ea3"
+    },
+    {
+      "file": "review-process-launch.json",
+      "source": ".parley-runtime/quota-implementation/review-cycle-3/launch.json",
+      "bytes": 547,
+      "sha256": "da28408cc87049ae595b77624b60c9cd49f65a205ee54d1f989a762d75e774a6"
+    },
+    {
+      "file": "review-process-exit.json",
+      "source": ".parley-runtime/quota-implementation/review-cycle-3/exit.json",
+      "bytes": 153,
+      "sha256": "81f9aef798f81a4e9c250027161357689ff3a3b986f5c888070b249ef227046d"
+    },
+    {
+      "file": "review-process-stdout.log",
+      "source": ".parley-runtime/quota-implementation/review-cycle-3/stdout.log",
+      "bytes": 2922,
+      "sha256": "858f606f66032d43678155b35800edd0df39af823bc3f0cd39e9cea7c0c21b4f"
+    },
+    {
+      "file": "review-process-stderr.log",
+      "source": ".parley-runtime/quota-implementation/review-cycle-3/stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "crash-shared-ev-result.json",
+      "source": ".parley-runtime/claude1-r6/crash/shared-ev/result.json",
+      "bytes": 1525,
+      "sha256": "276f8e4722c5fe5102b33ed57f972c499f04e21b5e17a40815efbbc6bc3c6a58"
+    },
+    {
+      "file": "crash-shared-live-ev-result.json",
+      "source": ".parley-runtime/claude1-r6/crash/shared-live-ev/result.json",
+      "bytes": 1535,
+      "sha256": "87e386e480be1445d25a6e9f49768afa9d04aa91ced75f04d5646c8b2295a851"
+    }
+  ]
+}

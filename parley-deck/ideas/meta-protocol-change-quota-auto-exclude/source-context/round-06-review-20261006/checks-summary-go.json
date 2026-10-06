@@ -1,0 +1,152 @@
+{
+  "stage": "go",
+  "heads": {
+    "cli_head": "25ea1da73ab0eab5e6099f759e2720aff54ada88",
+    "skill_head": "e976f7c9515f3250761380c1e09295e0f6c59985"
+  },
+  "results": [
+    {
+      "name": "full",
+      "command": [
+        "go",
+        "test",
+        "./...",
+        "-count=1",
+        "-timeout",
+        "45m"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 527.998
+    },
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 1.63
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 1.097
+    },
+    {
+      "name": "windows-cross-build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "GOOS": "windows",
+        "GOARCH": "amd64"
+      },
+      "exit_code": 0,
+      "seconds": 1.777
+    },
+    {
+      "name": "windows-cross-vet",
+      "command": [
+        "go",
+        "vet",
+        "./internal/pidlease",
+        "./internal/membership",
+        "./internal/fsutil"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "GOOS": "windows",
+        "GOARCH": "amd64"
+      },
+      "exit_code": 0,
+      "seconds": 0.688
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/pidlease",
+        "./internal/membership",
+        "./internal/app",
+        "./internal/consensus",
+        "./internal/telemetry",
+        "./internal/runner",
+        "-run",
+        "TestLease|TestQuotaFixup|TestQuotaCrossProcessLease|TestQuotaLifetimeLock|TestQuota",
+        "-count=1",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 19.333
+    },
+    {
+      "name": "focused-shared",
+      "command": [
+        "go",
+        "test",
+        "./internal/app",
+        "./internal/membership",
+        "./internal/consensus",
+        "./internal/pidlease",
+        "./internal/fsutil",
+        "-run",
+        "TestQuotaCycle3|TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+        "-count=1",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r6/shared-tmp"
+      },
+      "exit_code": 0,
+      "seconds": 9.559
+    },
+    {
+      "name": "focused-local",
+      "command": [
+        "go",
+        "test",
+        "./internal/app",
+        "./internal/membership",
+        "./internal/consensus",
+        "./internal/pidlease",
+        "./internal/fsutil",
+        "-run",
+        "TestQuotaCycle3|TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+        "-count=1",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "TMPDIR": "/tmp/claude1-r6-local-tmp"
+      },
+      "exit_code": 0,
+      "seconds": 11.025
+    }
+  ],
+  "gofmt_files": 93,
+  "gofmt_unformatted": [],
+  "gofmt_exit": 0,
+  "cli_source_changes": [],
+  "skill_source_changes": [],
+  "guard_denied": ""
+}

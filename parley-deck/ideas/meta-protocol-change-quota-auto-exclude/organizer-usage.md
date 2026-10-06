@@ -206,3 +206,12 @@ transcript, not this subprocess row. No monetary estimate.
 ## Cycle-3 host validation / round-06 dispatch boundary — 2026-10-06
 
 Organizer cumulative snapshot of the 15:50:29 transcript: 183 events, total_tokens 29291794, attribution ambiguous. Replaces earlier snapshots of this same session, never adds to them. Distinct subprocess usage remains separate. No monetary estimate.
+
+
+## Round-06 review / trajectory-stop boundary — 2026-10-06
+
+claude-1: input_tokens 446, cached_input_tokens 80696797, cache_write_input_tokens 1690507, output_tokens 286484, reasoning_output_tokens 0, total_tokens 286930; 223 events; attribution ambiguous.
+
+codex-1: input_tokens 34499713, cached_input_tokens 33231616, cache_write_input_tokens 0, output_tokens 115845, reasoning_output_tokens 45917, total_tokens 34615558; 213 events; attribution ambiguous.
+
+Claude is the distinct 19d1b00b round-06 transcript; its exact source path is in the ledger. The parent is the cumulative 15:50:29 organizer transcript and replaces every earlier snapshot of that session, never adds to them. A first ingest used a mistyped directory and failed without a row; corrected ingest succeeded. No monetary estimate.

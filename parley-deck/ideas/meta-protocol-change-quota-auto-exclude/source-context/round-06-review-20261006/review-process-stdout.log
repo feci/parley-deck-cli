@@ -1,0 +1,29 @@
+I've written the round-06 review to `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-06/claude-1.md`. The implementation is not ready for the attended close: there is one new MAJOR on the cycle-3 fix code, which means another owner trajectory stop rather than an automatic cycle 4.
+
+**Counts:** CRITICAL 0, MAJOR 1, MINOR 2, NIT 0 (trend 15 → 6 → 3 → 3).
+
+**Findings:**
+- **R6-MAJOR-1 (blocker).** If the owner adds a note to an applied exclusion notice, in the inbox or after archiving it, the whole idea is blocked. `parley status` reports an error state, a remaining participant's signoff fails, the driver stops, and a blocking escalation calls the note "corrupt". The protocol explicitly lets the owner answer by appending to the file. I confirmed this on both volumes, and confirmed that the cycle-2 product `0ee1888` did not block in this case.
+- **R6-MINOR-1.** An agent excluded at kickoff can rejoin during round 1 only while the prompt still carries its `excluded:` line. If the re-inclusion edit also deletes that stale line, its signoff is refused until it writes its round-1 file; the pre-change CLI accepted it. Confirmed on both volumes.
+- **R6-MINOR-2.** The CHANGELOG and draft release notes say policy-off membership behavior is preserved. The remaining differences from the pre-change CLI are not listed, as condition W1 required.
+
+**What now passes:**
+- **Catch-up and return (D1–D4).** All four give the same exit codes as the pre-change CLI on both volumes. The declined joiner staying in the missing-signoff list is the difference the plan required.
+- **Notices.** Archiving or deleting an applied notice no longer re-publishes it or blocks anything.
+- **AC2 disclosure.** It is consistent everywhere: native-positive AC2 is NOT MET and owner-waived for this release, never recorded as PASS.
+- **Linked follow-up.** It is an inactive candidate with no quorum list.
+- **Checks I ran myself, all passing:**
+  - full Go suite, build, vet, race, Windows cross-build;
+  - focused suites on both volumes;
+  - skill suite (399 Node and 54 Python tests);
+  - packets for phases 0, 5, 6 and 8;
+  - my own runs of the real `parley` crash harness on both volumes, plus a variant showing recovery refuses to settle while writers are still alive.
+
+**Coverage:** I read the full protocol packet (full context, hash `73613f95…`) and every product chunk in the manifest: all 29 CLI chunks, all 3 skill chunks and the fix-up chunks. No provider was invoked, and the prior review and consensus files are byte-unchanged.
+
+**Limits:**
+- Windows runtime was not executed; I infer nothing from cross-compilation.
+- The container/PID-namespace concern remains unverified reasoning.
+- The CRLF risk to the byte-exact checks is untested reasoning.
+
+`IMPLEMENTATION.md` shows an uncommitted change made at 16:15:59Z. It isn't mine; it looks like the organizer marking this review as active.

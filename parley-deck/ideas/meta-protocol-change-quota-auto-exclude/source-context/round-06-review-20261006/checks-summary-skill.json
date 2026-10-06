@@ -1,0 +1,26 @@
+{
+  "stage": "skill",
+  "heads": {
+    "cli_head": "25ea1da73ab0eab5e6099f759e2720aff54ada88",
+    "skill_head": "e976f7c9515f3250761380c1e09295e0f6c59985"
+  },
+  "results": [
+    {
+      "name": "skill-npm-test",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude-skill",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 82.857
+    }
+  ],
+  "gofmt_files": 93,
+  "gofmt_unformatted": [],
+  "gofmt_exit": 0,
+  "cli_source_changes": [],
+  "skill_source_changes": [],
+  "guard_denied": ""
+}

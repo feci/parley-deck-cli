@@ -4,23 +4,25 @@ status: fix-up-cycle-3
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: 0ee18889977a29d6baf53d3016b501112760ae12
+head-commit: fac40aaa1bba5350351bab0310ea8ede30ed3e6e
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Both stages and cycles 1–2 are delivered at CLI `0ee1888` / skill `e2f3649`.
-The owner answered round-05 on 2026-10-06: narrow cycle 3 is authorized for the
-policy-off CLI join/return regression and archived-notice replay; AC2 native-positive
-evidence is waived for this release as an owner-accepted known limitation with a linked
-follow-up. R5-MAJOR-2 is deferred, not fixed. The separate Phase-7 signer accepted G15–G17 with W1–W5; implementation may now
-proceed with those conditions. The old trajectory stop is resolved by the owner answer.
+Both stages and authorized fix-up cycle 3 are delivered at CLI `fac40aa` / skill `e976f7c`.
+The review snapshot is `25ea1da`; source-context records the frozen host checks and raw
+copy hashes. The separate claude-1 round-06 review found a new MAJOR and two MINORs; a blocking owner trajectory decision is required. The owner answered round-05:
+native-positive AC2 is NOT MET and explicitly waived for this release as a known limitation
+with the linked `quota-zcode-native-exhaustion-capture` follow-up. R5-MAJOR-2 is owner-accepted
+and deferred, never fixed. G15–G17/W1–W5 implementation is recorded below; independent
+acceptance is withheld by round-06; no automatic cycle 4 is authorized. The old trajectory stop was resolved by the owner answer.
 
-Prior HOST and skill checks passed on the cycle-2 product; they are not evidence on an
-unwritten cycle 3. Both standing retry permissions continue unchanged. codex-1 organizes
-and implements under §15.5, and never supplies the independent code verdict. claude-1
+Current cycle-3 HOST and skill checks pass on the frozen product; the newest Validation
+evidence subsection is the producer record. Historical cycle-2 records below remain
+historical. Both standing retry permissions continue unchanged. codex-1 organizes and
+implements under §15.5, and never supplies the independent code verdict. claude-1
 owns every review/signoff in a separate configured Opus 5.5/max process. Only these two
 participants act in this run. Transport remains owner-authorized local canonical files
 on the existing branches with no development PRs. A NEW attended close still requires
@@ -635,11 +637,11 @@ error.
 ## Cycle-3 plan / checklist (before code)
 
 - [x] Independent claude-1 signoff on G15–G17, ACCEPT-WITH-RESERVATIONS W1–W5.
-- [x] G15 actual CLI catch-up and kickoff-excluded-return compatibility; retained gates.
-- [x] G16 durable notice archival/recovery regression.
+- [ ] G15 full compatibility: delivered/tested, but round-06 retains marker-removal return and disclosure residuals (R6-MINOR-1/2).
+- [ ] G16: archive/delete repair delivered, but new owner-annotation gate is R6-MAJOR-1.
 - [x] G17 skill/support/release limitation and linked native-capture follow-up.
 - [x] Frozen host full Go/build/vet/gofmt/race/shared/local and skill checks.
-- [ ] Full-scope separate claude-1 round-06 review, with independent AC1–AC21 evidence.
+- [x] Full-scope separate claude-1 round-06 review, with independent AC1–AC21 evidence; trajectory stop triggered.
 - [ ] Both final review-consensus signoffs and NEW attended-close request.
 
 
@@ -745,3 +747,67 @@ SHA256 ed4d88914bae41a7f7117e2f70c227f1095ed98bbae8eb89639d8f0fdadbe041.
 Separate round-06 full-scope review is next, followed by both final signoffs and a NEW
 attended owner close. Any fresh CRITICAL/MAJOR on cycle-3 fix code triggers trajectory
 escalation; no automatic cycle 4 is authorized.
+
+
+Living-summary maintenance during round-06 (2026-10-06): corrected the top summary and
+head-commit from the historical cycle-2 snapshot to the delivered cycle-3 product. This
+changes only implementer-owned orchestration text; the reviewed CLI/skill product,
+review snapshot commit and all prior review/signoff bytes remain frozen.
+
+
+## Independent round-06 outcome / owner trajectory stop — 2026-10-06
+
+Separate configured claude-1 completed at 16:31:49.235148Z, exit 0, 1227.2 seconds,
+no timeout, no quota/credit/auth failure and no relaunch. Raw review:
+`review/round-06/claude-1.md`, 37274 bytes, SHA256
+63fd03de97f24a850f0c96b1d9fe7c1469c02850e1dd9b00eff8e2f41829e59e.
+The final wait validator reports 1/1 filed-and-valid, unparsed=false. Parent read the
+whole final artifact; raw verdict governs. Prior reviewer/signoff bytes are unchanged.
+
+Counts: 0 CRITICAL, 1 MAJOR, 2 MINOR, 0 NIT. Trajectory 15 → 6 → 3 → 3.
+R6-MAJOR-1 is fresh on cycle-3 fix code, so owner Q1 and the signed stopping condition
+require escalation before any further repair. The remaining numeric cycle budget
+cannot authorize cycle 4. This is not an attended-close request.
+
+### Binding findings and resolved items
+
+- R6-MAJOR-1: byte-exact validation of a non-authoritative applied notice means an
+  owner's appended answer, live or archived, now integrity-gates status, signoff and
+  driving. Independently executed on both volumes. The raw review distinguishes
+  cycle-2 live Before behavior from the newly widened read/write gate.
+- R6-MINOR-1: kickoff-excluded round-1 return fails if the ordinary re-inclusion edit
+  also removes the stale exclusion marker. Baseline accepts; both volumes reproduced.
+- R6-MINOR-2: policy-off differences are not fully listed in owner-facing CHANGELOG
+  and release draft, despite W1. General preservation wording overclaims.
+- D1–D4, exact §5 decline/W2, normal archive/delete and AC2 disclosure/W4 plus inactive
+  follow-up/W5 pass within their tested scope. R5-MAJOR-2 remains owner-accepted and
+  deferred under Q2, never fixed or AC2 PASS.
+
+### Current independent AC map (round-06, not implementer re-grading)
+
+| Criterion | claude-1 result / evidence scope |
+| --- | --- |
+| AC1 | PASS scoped: own full phase0/5/6/8 packets, hashes, drift, full product hunks. |
+| AC2 | NOT MET / expressly owner-waived for this release; linked native-capture follow-up. |
+| AC3–AC10 | PASS under the raw review's execution/source scopes, including whole-batch floor, C1, roles, retained vetoes and gates. |
+| AC11 | PARTIAL: durability/replay/crash and archive/delete pass; R6-MAJOR-1 owner annotation. |
+| AC12–AC14 | PASS: own shared/local/race, partial retry and immutable history checks. |
+| AC15 | PARTIAL: R6-MAJOR-1. |
+| AC16 | PARTIAL: R6-MINOR-1/2. |
+| AC17 | PASS scoped, with explicit R6-MINOR-1 return caveat. |
+| AC18 | PASS: quoted/tool/content negatives. |
+| AC19 | CONDITIONAL, honored: overall status remains fix-up-cycle-3. |
+| AC20 | PASS on macOS host: independently executed full Go/build/vet/race/skill/packets/gofmt and Windows cross-build; Windows runtime unexecuted. |
+| AC21 | NOT MET: final signoffs and NEW attended close absent. |
+
+Unlike round-05, the reviewer independently ran all broad required checks, actual
+supervisor/worker crash recovery on both volumes and a variant that refuses settlement
+while workers are alive. Full 117-file CLI and 5-file skill diffs were read. Native zcode
+capture, Windows execution and container/PID namespace behavior remain unexecuted;
+those limitations are not converted into passes. Selected original evidence is copied
+and hash-verified in source-context/round-06-review-20261006.
+
+Blocking owner note: `parley-deck/inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_round06-trajectory.md`.
+No cycle-4 code, new consensus draft, signoff, close, merge or release was made. All
+participant processes and their validation subprocesses have finished. Organization
+ends deliberately at this owner gate under the controlling brief.

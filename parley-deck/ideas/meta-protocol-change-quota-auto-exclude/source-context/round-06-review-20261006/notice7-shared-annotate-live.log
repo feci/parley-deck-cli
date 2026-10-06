@@ -1,0 +1,6 @@
+mode=annotate-live notices in inbox after owner action: 1; archived: 0
+Before #1 err=quota batch blocked: integrity/recovery gate: corrupt or mismatched quota notice: <R>/parley-deck/inbox/parley-to-user_batch-5f05ed7572bbe01a3e58b58af327a9b8667dd8b8ee4cc2aba3ca56eeb1c2fd0a.md; inbox notices now: 1
+Before #2 err=quota batch blocked: integrity/recovery gate: corrupt or mismatched quota notice: <R>/parley-deck/inbox/parley-to-user_batch-5f05ed7572bbe01a3e58b58af327a9b8667dd8b8ee4cc2aba3ca56eeb1c2fd0a.md; inbox notices now: 1
+survivor a consensus signoff exit=1 stderr="consensus signoff failed: corrupt or mismatched quota notice: <R>/parley-deck/inbox/parley-to-user_batch-5f05ed7572bbe01a3e58b58af327a9b8667dd8b8ee4cc2aba3ca56eeb1c2fd0a.md"
+status exit=0 integrity-gate=true pending=true corrupt=true
+round.completed events: 1

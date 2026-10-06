@@ -1,0 +1,2 @@
+baseline-shared exit=0
+current-shared exit=0

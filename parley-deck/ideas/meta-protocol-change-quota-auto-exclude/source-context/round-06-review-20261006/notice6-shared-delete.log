@@ -1,0 +1,8 @@
+settle: batch=true err=<nil>
+notices after settle: 1
+mode=delete notices in inbox after owner action: 0; archived: 0
+Before #1 err=<nil>; inbox notices now: 0
+Before #2 err=<nil>; inbox notices now: 0
+status exit=0 integrity-gate=false pending=false corrupt=false
+final inbox notices: 0 archived: 0 applied-receipt=true err=<nil>
+round.completed events: 1
