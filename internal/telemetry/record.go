@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"parley-deck-cli/internal/pidlease"
+	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/quota"
 	"path/filepath"
 	"regexp"
@@ -76,18 +78,28 @@ type Outcome struct {
 	Observation    Observation     `json:"observation"`
 }
 
+// WriterIdentity binds crash recovery to the original host/boot, supervisor and
+// supervised process group. Legacy records lack it and remain fail-closed.
+type WriterIdentity struct {
+	Host          string `json:"host"`
+	Boot          string `json:"boot"`
+	SupervisorPID int    `json:"supervisor_pid"`
+	ProcessGroup  int    `json:"process_group"`
+}
+
 type Record struct {
-	SchemaVersion int        `json:"schema_version"`
-	Type          string     `json:"type"`
-	InvocationID  string     `json:"invocation_id"`
-	Metadata      Metadata   `json:"metadata"`
-	RequestedAt   time.Time  `json:"requested_at"`
-	StartedAt     *time.Time `json:"started_at"`
-	CompletedAt   *time.Time `json:"completed_at"`
-	DurationMS    *int64     `json:"duration_ms"`
-	PID           *int       `json:"pid"`
-	Outcome       *Outcome   `json:"outcome"`
-	Warnings      []string   `json:"warnings"`
+	Writer        *WriterIdentity `json:"writer,omitempty"`
+	SchemaVersion int             `json:"schema_version"`
+	Type          string          `json:"type"`
+	InvocationID  string          `json:"invocation_id"`
+	Metadata      Metadata        `json:"metadata"`
+	RequestedAt   time.Time       `json:"requested_at"`
+	StartedAt     *time.Time      `json:"started_at"`
+	CompletedAt   *time.Time      `json:"completed_at"`
+	DurationMS    *int64          `json:"duration_ms"`
+	PID           *int            `json:"pid"`
+	Outcome       *Outcome        `json:"outcome"`
+	Warnings      []string        `json:"warnings"`
 }
 
 // Invocation owns one unique directory. It never appends competing process data
@@ -297,6 +309,8 @@ func (i *Invocation) Started(pid int) error {
 	now := time.Now().UTC()
 	i.record.Type = "invocation.started"
 	i.record.StartedAt, i.record.PID = &now, &pid
+	host, _ := os.Hostname()
+	i.record.Writer = &WriterIdentity{Host: host, Boot: procctl.CurrentBootID(), SupervisorPID: os.Getpid(), ProcessGroup: pidlease.ProcessGroup(pid)}
 	return i.write("started.json")
 }
 

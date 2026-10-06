@@ -62,6 +62,9 @@ func RecordManual(root, dir string) error {
 		return err
 	}
 	b = b.BindRetained(obs)
+	if _, err = validateManifests(root, b.RunID, v.History); err != nil {
+		return err
+	}
 	if err = quota.CommitBatch(dir, b); err != nil {
 		return err
 	}
@@ -167,6 +170,9 @@ func Revise(ctx context.Context, root, dir, run string, ids []string, p quota.Po
 		return nil, err
 	}
 	b = b.BindRetained(obs)
+	if _, err = validateManifests(root, run, h); err != nil {
+		return nil, err
+	}
 	if err = quota.CommitBatch(dir, b); err != nil {
 		return nil, err
 	}

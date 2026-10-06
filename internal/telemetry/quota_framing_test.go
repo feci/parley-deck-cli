@@ -109,8 +109,8 @@ func TestQuotaFixupPerRecordReceiptTimes(t *testing.T) {
 		t.Fatal(e)
 	}
 	delayed.Stderr = record + second + term
-	if ClassifyQuota(delayed).Eligible {
-		t.Fatal("inconsistent receipt timing accepted")
+	if e := ClassifyQuota(delayed); !e.Eligible || !e.ObservedAt.Equal(delayed.ObservedAt) {
+		t.Fatal("complete aggregate should use its terminal receipt", e)
 	}
 }
 

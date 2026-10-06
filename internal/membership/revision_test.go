@@ -143,7 +143,7 @@ func TestQuotaFixupKnobOffRecordedManualChanges(t *testing.T) {
 		t.Fatal(h, e)
 	}
 	raw, _ = os.ReadFile(path)
-	raw = bytes.Replace(raw, []byte("participants: [a, b, c]"), []byte("participants: [a, b, c, d]\nincluded: [d — available — confirmed 2026-10-04]"), 1)
+	raw = bytes.Replace(raw, []byte("participants: [a, b, c]"), []byte("participants: [a, b, c, d]"), 1)
 	os.WriteFile(path, raw, 0600)
 	if _, e = Before(context.Background(), root, dir, run); e != nil {
 		t.Fatal(e)
@@ -164,35 +164,25 @@ func TestQuotaFixupKnobOffRecordedManualChanges(t *testing.T) {
 	r2()
 }
 
-func TestQuotaFixupOffModeCatchupNeedsCommittedOwnerAnswer(t *testing.T) {
+func TestQuotaFixupOffModeCatchupKeepsPreChangePath(t *testing.T) {
 	root, dir, run := fixture(t, quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea})
 	path := filepath.Join(dir, "00-prompt.md")
 	raw, _ := os.ReadFile(path)
-	raw = bytes.Replace(raw, []byte("participants: [a, b, c, d]"), []byte("participants: [a, b, c, d, e]\nincluded: [e — catching up — confirmed 2026-10-04]"), 1)
+	raw = bytes.Replace(raw, []byte("participants: [a, b, c, d]"), []byte("participants: [a, b, c, d, e]"), 1)
 	os.WriteFile(path, raw, 0600)
 	validRound(t, dir, filepath.Base(dir), "e")
 	late := filepath.Join(dir, "round-01/e.md")
-	body, _ := os.ReadFile(late)
-	body = bytes.Replace(body, []byte("---\n"), []byte("---\ncatch-up: true\nread-priors: [round-01/a.md, round-01/b.md]\njoin-from: round-02\n"), 1)
-	os.WriteFile(late, body, 0600)
-	if _, e := Before(context.Background(), root, dir, run); e == nil {
-		t.Fatal("new catch-up join without owner answer")
-	}
-	a := quotatest.Authority(t, root, filepath.Base(dir), "off-catchup", "Catch-up join: e from round-02")
-	fields := strings.ReplaceAll(quotatest.Fields(a), "Owner-", "owner-")
-	body = bytes.Replace(body, []byte("---\n"), []byte("---\n"+fields), 1)
-	os.WriteFile(late, body, 0600)
+
 	if _, e := Before(context.Background(), root, dir, run); e != nil {
 		t.Fatal(e)
 	}
 	// The snapshot is immutable; permitted inbox cleanup does not revoke it.
-	os.Remove(filepath.Join(root, a.Path))
 	os.Remove(late)
 	h, e := quota.ReadHistory(dir)
 	if e != nil || !Has(h.Known, "e") || !Has(h.Current, "e") || h.Policy().Enabled {
 		t.Fatal(h, e)
 	}
-	t.Log("off-mode catch-up: missing answer refused; committed answer + late round accepted through ordinary Before; archived authority and snapshot survive inbox/artifact cleanup")
+	t.Log("off-mode catch-up: plain participants edit plus late round accepted through ordinary Before; immutable manual snapshot survives artifact cleanup")
 }
 func TestQuotaFixupClosedRevisionFrozen(t *testing.T) {
 	root, dir, run := fixture(t, quota.NewPolicy(nil, nil))

@@ -36,6 +36,7 @@ type QuotaInput struct {
 	Adapter, InvocationID       string
 	Stdout, Stderr              string
 	ObservedAt                  time.Time
+	StartedAt                   time.Time // optional supervisor-recorded invocation start
 	ExitCode                    *int
 	StructuredFailure           bool
 	ValidArtifact, LaterSuccess bool

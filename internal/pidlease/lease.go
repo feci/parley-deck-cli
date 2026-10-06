@@ -42,6 +42,16 @@ func identity() (string, string) {
 	return host, procctl.CurrentBootID()
 }
 
+// ProvenDeadLocal is the shared crash-recovery predicate. Unknown/foreign host
+// or boot and ambiguous liveness (including permission failures) never prove death.
+func ProvenDeadLocal(host, boot string, pid int) bool {
+	localHost, localBoot := identity()
+	return deadLocal(host, boot, pid, localHost, localBoot)
+}
+func deadLocal(host, boot string, pid int, localHost, localBoot string) bool {
+	return localHost != "" && localBoot != "" && host == localHost && boot == localBoot && pid > 0 && pid <= 2147483647 && pid != os.Getpid() && definitelyDead(pid)
+}
+
 // TryAcquire publishes a fully written owner by exclusive hard link. A partial,
 // unreadable or foreign owner is never stale. Unknown host/boot identity permits
 // ownership but disables automatic stale takeover.
@@ -81,7 +91,7 @@ func tryAcquire(path, id, host, boot string) (*Lease, error) {
 		if parseErr != nil || !bytes.Equal(canonical, old) || o.Version != 1 || o.PID <= 0 || o.PID > 2147483647 || o.Identity == "" || !tokenPattern.MatchString(o.Token) {
 			return nil, fmt.Errorf("%w: partial or invalid owner at %s; owner-visible recovery required", ErrHeld, path)
 		}
-		if host == "" || boot == "" || o.Host != host || o.Boot != boot || o.PID == os.Getpid() || !definitelyDead(o.PID) {
+		if !deadLocal(o.Host, o.Boot, o.PID, host, boot) {
 			return nil, fmt.Errorf("%w: %s pid=%d host=%q boot=%q at %s; only a proven dead local owner may be reclaimed", ErrHeld, o.Identity, o.PID, o.Host, o.Boot, path)
 		}
 		if e = reap(path, old, o.Token); e != nil {

@@ -12,7 +12,7 @@ import (
 )
 
 // Existing knob-off §9.0 confirmations stay usable without a new CLI command.
-// The prompt remains their recorded authority. We read the explicit current set;
+// The prompt records a manual change, never owner-confirmed authority. We read the explicit current set;
 // excluded markers only validate a requested change, never subtract membership.
 func manualQuotaRevision(dir string, h *quota.History, raw string, ids []string) (quota.Batch, error) {
 	if len(ids) == 0 || len(quota.Unique(ids)) != len(ids) {
@@ -31,7 +31,7 @@ func manualQuotaRevision(dir string, h *quota.History, raw string, ids []string)
 	}
 	for _, id := range h.Current {
 		if !has(ids, id) && !confirmed("excluded", id) {
-			return quota.Batch{}, fmt.Errorf("manual exclusion %s lacks recorded owner confirmation", id)
+			return quota.Batch{}, quota.ManualExclusionError(id)
 		}
 	}
 	catchup := map[string]string{}
@@ -39,12 +39,9 @@ func manualQuotaRevision(dir string, h *quota.History, raw string, ids []string)
 		if has(h.Current, id) {
 			continue
 		}
-		if !confirmed("included", id) {
-			return quota.Batch{}, fmt.Errorf("manual inclusion %s lacks recorded owner confirmation", id)
-		}
 		if !has(h.Known, id) {
 			path := filepath.Join(dir, "round-01", id+".md")
-			if err := ValidateQuotaCatchup(path, h.Kickoff.Idea, id); err != nil {
+			if err := ValidateParticipantRoundArtifact(path, id, h.Kickoff.Idea, 1); err != nil {
 				return quota.Batch{}, err
 			}
 			// Capture bytes via the caller below; immutable history retains the proof.
@@ -53,16 +50,6 @@ func manualQuotaRevision(dir string, h *quota.History, raw string, ids []string)
 				return quota.Batch{}, err
 			}
 			catchup[id] = data
-			a, e := quota.CatchupAuthority(data)
-			if e != nil {
-				return quota.Batch{}, e
-			}
-			if e = quota.ValidateAuthority(quota.IdeaRoot(dir), h.Kickoff.Idea, a); e != nil {
-				return quota.Batch{}, e
-			}
-			if !quota.HasDirective(a.Quote, "Catch-up join: "+id+" from round-02") {
-				return quota.Batch{}, fmt.Errorf("owner answer does not authorize catch-up %s", id)
-			}
 		}
 	}
 	return quota.NewRevision(h, h.Kickoff.RunID, ids, h.Policy(), quota.Revision{ManualPrompt: raw, Catchup: catchup}, time.Now()), nil

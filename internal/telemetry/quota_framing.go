@@ -29,18 +29,21 @@ var sdkHeader = regexp.MustCompile(`^(APICallError \[AI_APICallError\]|AI_APICal
 var sdkStack = regexp.MustCompile(`^at (?:async )?(?:[^\s()]+(?: \[as [^\s\]]+\])? \([^\r\n()]+:[0-9]+:[0-9]+\)|[^\s()]+:[0-9]+:[0-9]+)(?: \{)?$`)
 var sdkAttempts = regexp.MustCompile(`^Failed after ([1-9][0-9]*) attempts\. Last error: (.+)$`)
 
-func parseSDKCapture(raw string) ([]sdkRecord, bool) {
+func parseSDKCapture(raw string) ([]sdkRecord, error) {
 	p := &sdkDump{raw: strings.TrimRight(raw, "\r\n")}
 	for {
 		p.space()
 		if p.pos >= len(p.raw) {
-			return nil, false
+			return nil, fmt.Errorf("missing terminal turn-failure line")
 		}
 		if zcodeTerminal.MatchString(p.raw[p.pos:]) {
-			return p.records, len(p.records) > 0
+			if len(p.records) == 0 {
+				return nil, fmt.Errorf("missing provider record")
+			}
+			return p.records, nil
 		}
 		if _, err := p.failure(0); err != nil {
-			return nil, false
+			return nil, err
 		}
 	}
 }
@@ -138,10 +141,13 @@ func (p *sdkDump) failure(depth int) (string, error) {
 			}
 			fields[key] = errorFingerprints
 		case retry && key == "lastError":
+			recordStart := len(p.records)
 			last, err = p.failure(depth + 1)
 			if err != nil {
 				return "", err
 			}
+			// lastError is a fingerprint-checked duplicate, not a later observation.
+			p.records = p.records[:recordStart]
 			lastFingerprint = p.fingerprint
 			fields[key] = lastFingerprint
 		default:
@@ -191,11 +197,6 @@ func (p *sdkDump) failure(depth int) (string, error) {
 		n, _ := strconv.Atoi(match[1])
 		if n != len(retryMessages) || last != match[2] || len(errorFingerprints) == 0 || lastFingerprint != errorFingerprints[len(errorFingerprints)-1] {
 			return "", fmt.Errorf("contradictory retry wrapper")
-		}
-		for _, msg := range retryMessages {
-			if msg != last {
-				return "", fmt.Errorf("mixed retry errors")
-			}
 		}
 		encoded, _ := json.Marshal(fields)
 		p.fingerprint = message + "\n" + string(encoded)

@@ -200,7 +200,7 @@ func quotaDisposition(ideaDir, raw string, ob quota.Obligation) bool {
 					continue
 				}
 				r := h.Batches[revision-1]
-				if meta["reinclusion"] != r.ID || r.Owner == nil || (r.Owner.Authority == nil && r.Owner.ManualPrompt == "") || !quotaContains(r.Decision.After, author) || quotaContains(r.Decision.Before, author) || !quotaContains(h.Current, author) {
+				if meta["reinclusion"] != r.ID || r.Owner == nil || r.Owner.Authority == nil || !quotaContains(r.Decision.After, author) || quotaContains(r.Decision.Before, author) || !quotaContains(h.Current, author) {
 					continue
 				}
 				oldRound := quotaArtifactRound(ob.Path)

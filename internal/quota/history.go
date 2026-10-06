@@ -320,6 +320,9 @@ func (b Batch) Markers() []string {
 	return k.Markers()
 }
 func (b Batch) Notice() string {
+	if b.Owner != nil && b.Owner.Authority == nil {
+		return fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nblocking: no\ntransition: %s\n---\n\nManual policy-off membership revision (not owner-confirmed authority). Current participants: %v. Retained obligations remain in force.\n", b.Idea, b.ID, b.Decision.After)
+	}
 	if b.Owner != nil {
 		return fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nblocking: no\ntransition: %s\n---\n\nOwner-confirmed membership/policy revision. Current participants: %v. Policy: %+v.\n", b.Idea, b.ID, b.Decision.After, b.Policy)
 	}

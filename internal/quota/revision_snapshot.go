@@ -49,12 +49,26 @@ func ConfirmedInPrompt(raw, key, id string) bool {
 			continue
 		}
 		value := strings.TrimSpace(strings.TrimPrefix(line, prefix))
-		value = strings.Trim(value, "[]")
-		parts := strings.Split(value, " — ")
-		if len(parts) != 3 || parts[0] != id || strings.TrimSpace(parts[1]) == "" || !strings.HasPrefix(parts[2], "confirmed ") {
+		if strings.HasPrefix(value, "[") {
+			if !strings.HasSuffix(value, "]") {
+				continue
+			}
+			value = value[1 : len(value)-1]
+		}
+		value = strings.TrimSpace(value)
+		prefixID := id + " — "
+		if !strings.HasPrefix(value, prefixID) {
 			continue
 		}
-		if _, e := time.Parse("2006-01-02", strings.TrimPrefix(parts[2], "confirmed ")); e == nil {
+		reason, date, ok := strings.Cut(value[len(prefixID):], " — confirmed ")
+		// Reasons can themselves contain em dashes (and the word confirmed).
+		if at := strings.LastIndex(value[len(prefixID):], " — confirmed "); at >= 0 {
+			reason, date, ok = value[len(prefixID):len(prefixID)+at], value[len(prefixID)+at+len(" — confirmed "):], true
+		}
+		if !ok || strings.TrimSpace(reason) == "" {
+			continue
+		}
+		if _, e := time.Parse("2006-01-02", date); e == nil {
 			return true
 		}
 	}
@@ -67,16 +81,11 @@ func validateManualSnapshot(b Batch, h *History) error {
 	}
 	var ids []string
 	if yaml.Unmarshal([]byte(m["participants"]), &ids) != nil || !reflect.DeepEqual(ids, b.Decision.After) || m["idea"] != b.Idea || m["quota_auto_exclude"] != "false" || m["quota_auto_exclude_scope"] != b.Policy.Scope {
-		return fmt.Errorf("manual snapshot does not authorize recorded membership/policy")
+		return fmt.Errorf("manual snapshot does not match recorded membership/policy")
 	}
 	for _, id := range h.Current {
 		if !contains(ids, id) && !ConfirmedInPrompt(b.Owner.ManualPrompt, "excluded", id) {
-			return fmt.Errorf("manual exclusion %s lacks recorded confirmation", id)
-		}
-	}
-	for _, id := range ids {
-		if !contains(h.Current, id) && !ConfirmedInPrompt(b.Owner.ManualPrompt, "included", id) {
-			return fmt.Errorf("manual inclusion %s lacks recorded confirmation", id)
+			return ManualExclusionError(id)
 		}
 	}
 	return nil
@@ -84,21 +93,41 @@ func validateManualSnapshot(b Batch, h *History) error {
 
 var priorArtifact = regexp.MustCompile(`^(?:review/)?round-[0-9]{2}/[A-Za-z0-9][A-Za-z0-9._-]*\.md$`)
 
+func ManualExclusionError(id string) error {
+	return fmt.Errorf("manual exclusion %s requires excluded: [%s — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date", id, id)
+}
+
 func ValidateCatchupSnapshot(raw, idea, id string) error {
+	return validateCatchupSnapshot(raw, idea, id, true)
+}
+
+// A policy-off catch-up uses the pre-change late round-1 path. Reading priors and
+// joining from round 2 remain protocol duties, not a newly mandated record format.
+func ValidateManualCatchupSnapshot(raw, idea, id string) error {
+	return validateCatchupSnapshot(raw, idea, id, false)
+}
+
+func validateCatchupSnapshot(raw, idea, id string, explicit bool) error {
 	m, e := snapshotMeta(raw)
 	if e != nil {
 		return e
 	}
-	if strings.Trim(m["agent"], "\"'") != id || strings.Trim(m["idea"], "\"'") != idea || m["round"] != "1" || m["catch-up"] != "true" || m["join-from"] != "round-02" {
+	if strings.Trim(m["agent"], "\"'") != id || strings.Trim(m["idea"], "\"'") != idea || m["round"] != "1" {
 		return fmt.Errorf("invalid catch-up attribution or round")
 	}
-	var priors []string
-	if yaml.Unmarshal([]byte(m["read-priors"]), &priors) != nil || len(priors) == 0 {
-		return fmt.Errorf("catch-up requires recorded prior reading")
-	}
-	for _, p := range priors {
-		if !priorArtifact.MatchString(p) || filepath.Base(p) == id+".md" {
-			return fmt.Errorf("invalid catch-up prior %s", p)
+	if explicit {
+		if m["catch-up"] != "true" || m["join-from"] != "round-02" {
+			return fmt.Errorf("invalid catch-up attribution or round")
+		}
+
+		var priors []string
+		if yaml.Unmarshal([]byte(m["read-priors"]), &priors) != nil || len(priors) == 0 {
+			return fmt.Errorf("catch-up requires recorded prior reading")
+		}
+		for _, p := range priors {
+			if !priorArtifact.MatchString(p) || filepath.Base(p) == id+".md" {
+				return fmt.Errorf("invalid catch-up prior %s", p)
+			}
 		}
 	}
 	for _, heading := range []string{"## Summary", "## Proposed approach", "## Concerns / open questions", "## Risks", "## Existing alternatives"} {
@@ -121,8 +150,8 @@ func ValidateCatchupSnapshot(raw, idea, id string) error {
 	return nil
 }
 
-// The normal off-mode catch-up path reads this recorded answer from the late
-// round artifact; it does not require running the quota revision command.
+// CatchupAuthority decodes historical explicit authority metadata. The ordinary
+// policy-off compatibility path does not require or infer this authority.
 func CatchupAuthority(raw string) (Authority, error) {
 	m, e := snapshotMeta(raw)
 	if e != nil {

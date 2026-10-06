@@ -87,44 +87,11 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 			return err
 		}
 	}
-	// Validate every touched projection before writing any of them. Missing original
-	// run identity is an integrity gate, not an opportunity to repair legacy gap 11.
-	runs := map[string]bool{runID: true, h.Kickoff.RunID: true}
-	for _, b := range h.Batches {
-		runs[b.RunID] = true
-	}
-	paths, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "run.json"))
+	manifests, err := validateManifests(root, runID, h)
 	if err != nil {
 		return err
 	}
-	for _, path := range paths {
-		id := filepath.Base(filepath.Dir(path))
-		m, e := runmanifest.Load(root, id)
-		if e == nil && m.IdeaSlug == h.Kickoff.Idea {
-			runs[id] = true
-		}
-	}
-	manifests := map[string]runmanifest.Manifest{}
-	for id := range runs {
-		m, err := runmanifest.Load(root, id)
-		if err != nil {
-			return fmt.Errorf("quota manifest %s: %w", id, err)
-		}
-		if m.IdeaSlug != h.Kickoff.Idea || m.RunID != id || m.QuotaKickoff == nil || !reflect.DeepEqual(m.QuotaKickoff, h.Kickoff) {
-			return fmt.Errorf("contradictory quota manifest %s", id)
-		}
-		if m.QuotaRevision < 0 || m.QuotaRevision > h.Revision {
-			return fmt.Errorf("contradictory quota manifest revision")
-		}
-		expected := h.Kickoff.Participants
-		if m.QuotaRevision > 0 {
-			expected = h.Batches[m.QuotaRevision-1].Decision.After
-		}
-		if !reflect.DeepEqual(m.Participants, expected) {
-			return fmt.Errorf("contradictory quota manifest membership")
-		}
-		manifests[id] = m
-	}
+
 	if h.Revision > 0 {
 		if err := projectionFault("prompt"); err != nil {
 			return err
@@ -167,7 +134,7 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		if err := projectionFault("notice"); err != nil {
 			return err
 		}
-		if err := quota.DurableWrite(filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_"+b.ID+".md"), []byte(b.Notice()), true); err != nil {
+		if err := publishNotice(root, b); err != nil {
 			return err
 		}
 		if err := projectionFault("applied"); err != nil {
@@ -178,6 +145,65 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		}
 	}
 	return nil
+}
+
+// Preserve exact historical notices without treating their old display label as
+// authority. New manual imports use the corrected label; old notices get a
+// separate immutable clarification instead of rewriting history.
+func publishNotice(root string, b quota.Batch) error {
+	path := filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_"+b.ID+".md")
+	if b.Owner != nil && b.Owner.Authority == nil {
+		legacy := fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nblocking: no\ntransition: %s\n---\n\nOwner-confirmed membership/policy revision. Current participants: %v. Policy: %+v.\n", b.Idea, b.ID, b.Decision.After, b.Policy)
+		if raw, err := os.ReadFile(path); err == nil && string(raw) == legacy {
+			if err := quota.SyncPath(path); err != nil {
+				return err
+			}
+			return quota.DurableWrite(strings.TrimSuffix(path, ".md")+"-manual-authority.md", []byte(b.Notice()), true)
+		}
+	}
+	return quota.DurableWrite(path, []byte(b.Notice()), true)
+}
+
+func validateManifests(root, runID string, h *quota.History) (map[string]runmanifest.Manifest, error) {
+	// Validate every touched projection before writing any of them. Missing original
+	// run identity is an integrity gate, not an opportunity to repair legacy gap 11.
+	runs := map[string]bool{runID: true, h.Kickoff.RunID: true}
+	for _, b := range h.Batches {
+		runs[b.RunID] = true
+	}
+	paths, err := filepath.Glob(filepath.Join(root, protocol.DeckDir, "runs", "*", "run.json"))
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range paths {
+		id := filepath.Base(filepath.Dir(path))
+		m, e := runmanifest.Load(root, id)
+		if e == nil && m.IdeaSlug == h.Kickoff.Idea {
+			runs[id] = true
+		}
+	}
+	manifests := map[string]runmanifest.Manifest{}
+	for id := range runs {
+		m, err := runmanifest.Load(root, id)
+		if err != nil {
+			return nil, fmt.Errorf("quota manifest %s: %w", id, err)
+		}
+		if m.IdeaSlug != h.Kickoff.Idea || m.RunID != id || m.QuotaKickoff == nil || !reflect.DeepEqual(m.QuotaKickoff, h.Kickoff) {
+			return nil, fmt.Errorf("contradictory quota manifest %s", id)
+		}
+		if m.QuotaRevision < 0 || m.QuotaRevision > h.Revision {
+			return nil, fmt.Errorf("contradictory quota manifest revision")
+		}
+		expected := h.Kickoff.Participants
+		if m.QuotaRevision > 0 {
+			expected = h.Batches[m.QuotaRevision-1].Decision.After
+		}
+		if !reflect.DeepEqual(m.Participants, expected) {
+			return nil, fmt.Errorf("contradictory quota manifest membership")
+		}
+		manifests[id] = m
+	}
+	return manifests, nil
 }
 
 var projectionFault = func(stage string) error { return nil }
@@ -316,6 +342,9 @@ func Settle(ctx context.Context, root, ideaDir, runID, round string, expected []
 	if err != nil {
 		return nil, err
 	}
+	if _, err = validateManifests(root, runID, h); err != nil {
+		return nil, err
+	}
 	b := quota.NewBatch(h, runID, round, expected, d, time.Now()).BindRetained(retained)
 	if err = quota.CommitBatch(ideaDir, b); err != nil {
 		return nil, err
@@ -429,8 +458,14 @@ func RequireStopped(root, idea string) error {
 			continue
 		}
 		terminal, err := os.ReadFile(filepath.Join(filepath.Dir(path), "terminal.json"))
+		if os.IsNotExist(err) {
+			if err = settleCrashedWriter(path, raw, started, idea); err != nil {
+				return err
+			}
+			continue
+		}
 		if err != nil {
-			return fmt.Errorf("unsettled writer for idea %s: %s", idea, filepath.Base(filepath.Dir(path)))
+			return fmt.Errorf("unreadable terminal writer evidence: %w", err)
 		}
 		var result telemetry.Record
 		if json.Unmarshal(terminal, &result) != nil || result.Type != "invocation.terminal" || result.InvocationID != started.InvocationID || result.InvocationID != filepath.Base(filepath.Dir(path)) || result.Metadata.Idea != idea || result.Outcome == nil || result.Outcome.Status == "" || result.CompletedAt == nil || result.StartedAt == nil || result.CompletedAt.Before(*result.StartedAt) {

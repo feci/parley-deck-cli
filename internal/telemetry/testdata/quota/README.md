@@ -24,8 +24,8 @@ A zone-less display clock is accepted only alongside `reset_at` or `retry_after`
 in the same JSON record. All interpreted instants must fit within one second;
 possible display UTC offsets are restricted to -12:00 through +14:00 in 15-minute
 steps. The provider display text is retained with the machine reset. The canonical
-UTC reset remains the earliest machine/reset-duration instant. Observation times
-come from receipt of the provider record, not eventual process teardown.
+UTC reset remains the earliest machine/reset-duration instant. Attempt observation times are inferred from agreeing reset/duration values when available;
+the 60-minute threshold uses terminal-line receipt, not eventual process teardown.
 
 The assistant/tool quotation, mixed-error, malformed, short-reset, display-only and
 contradictory fixtures are derived adversarial captures. Success/artifact precedence
@@ -59,3 +59,23 @@ are rejected by an allowlist grammar. Retry wrapper count, reason, lastError and
 all nested records must agree. Source-derived stacks/request fields are not native
 evidence. Untested SDK inspect shapes remain fail-closed; the native AC2 gap needs
 independent review and owner disposition rather than an invented capture.
+
+## Cycle 2: changing observations and the default sink
+
+The installed SDK source is unchanged (bundle SHA-256
+`3e3433d90fa502e5d02498dfde6c2090df898331359bcfe5f3dbc9a1d00b685f`).
+`sdk-framing-harness.cjs` runs isolated extracted error classes only. Its added modes are:
+
+- `retained-retries`: distinct errors using both retained 176930/176890 countdowns.
+- `retained-top-level`: those errors as separate complete records sharing one receipt.
+- `backoff-retries`: distinct errors at 6/4/0-second deltas (2/4-second backoff).
+- `default-console`: a realistic nested message request sent to the source-located
+  default Node console sink. It renders `[Object]`, which remains rejected.
+
+The generated `zcode-*-source-derived.stderr` files are **source-derived**, not native
+captures. The original identical-retry fixture remains a parser control only. Located
+zcode `w9r` supplies `maxRetries:0`, and `k7r` runs its own retry loop, so the aggregate
+fixture proves SDK grammar support, not that this adapter emitted an aggregate natively.
+A complete captured stderr is still missing. The two partial native excerpts remain
+rejected. Source offsets, extraction, hashes and the accepted/rejected shape map are in
+`source-context/codex-1-fixup-2-evidence.md` and its referenced raw checks.

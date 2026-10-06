@@ -221,7 +221,7 @@ func TestQuotaFixupReincludeWithdrawThenAppendSignoff(t *testing.T) {
 	}
 }
 
-func TestQuotaFixupOffModeReturnWithdrawalAndSignoff(t *testing.T) {
+func TestQuotaFixupOffModeReturnCannotAuthorizeWithdrawal(t *testing.T) {
 	root, idea, _ := quotaConsensusFixturePolicy(t, quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea})
 	path := filepath.Join(idea.Path, "consensus.md")
 	raw := "---\nidea: " + idea.Slug + "\ndrafted-by: a\n---\n## Signoffs\n" + signoffBlock("a", "2026-10-04", StatusAccept, "", "") + signoffBlock("b", "2026-10-04", StatusAccept, "", "") + signoffBlock("c", "2026-10-04", StatusBlock, "Old defect.", "Retain records.")
@@ -239,7 +239,7 @@ func TestQuotaFixupOffModeReturnWithdrawalAndSignoff(t *testing.T) {
 	}
 	ob := h.Batches[0].Retained[0]
 	prompt, _ = os.ReadFile(promptPath)
-	prompt = bytes.Replace(prompt, []byte("participants: [a, b]"), []byte("participants: [a, b, c]\nincluded: [c — returned — confirmed 2026-10-04]"), 1)
+	prompt = bytes.Replace(prompt, []byte("participants: [a, b]"), []byte("participants: [a, b, c]"), 1)
 	os.WriteFile(promptPath, prompt, 0600)
 	if e = membership.RecordManual(root, idea.Path); e != nil {
 		t.Fatal(e)
@@ -250,15 +250,19 @@ func TestQuotaFixupOffModeReturnWithdrawalAndSignoff(t *testing.T) {
 	}
 	writeFile(t, filepath.Join(idea.Path, "round-02/c.md"), "---\nagent: c\nidea: "+idea.Slug+"\nquota-revision: 2\nreinclusion: "+h.Batches[1].ID+"\n---\nWithdrawal: "+ob.ID+"\n")
 	writeFile(t, path, raw+"\n\n"+ob.ID+"\nDisposition: withdrawn\nRationale: Checked correction on return.\nAuthority: c\nEvidence: round-02/c.md\n")
-	s, e := AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "c", Status: "accept"})
-	if e != nil || s.Triage != TriageReady {
-		t.Fatal(s, e)
+	s, e := Status(root, idea.Slug, false)
+	if e != nil || s.Triage != TriageBlocked {
+		t.Fatal("manual return released veto", s, e)
 	}
+	if _, e = AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "c", Status: "accept"}); e == nil {
+		t.Fatal("manual return permitted replacing retained veto")
+	}
+
 	after, _ := os.ReadFile(path)
 	if !bytes.HasPrefix(after, []byte(raw)) {
 		t.Fatal("old veto changed")
 	}
-	t.Log("ordinary off-mode exclusion and known return imported without revision CLI; author-bound withdrawal then fresh signoff succeeds; old veto bytes preserved")
+	t.Log("ordinary off-mode return imported without extra record; manual revision cannot authorize retained-veto withdrawal; original bytes preserved")
 }
 
 func TestQuotaFixupWithdrawalMatchesBlankLineSignoffAndNotNewVeto(t *testing.T) {

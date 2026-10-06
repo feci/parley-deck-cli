@@ -57,22 +57,47 @@ The initial command checks the referenced prior artifacts and captures the catch
 immutable history. The owner directive must authorize the new current set. Neither an elapsed
 reset time nor a binary upgrade is a join or scope-widening instruction.
 
-## Normal knob-off confirmations
+## Normal knob-off confirmations and catch-up
 
-For a recorded policy with `enabled: false`, existing protocol confirmations still work without
-`quota revise`. Record the actual current `participants:` in `00-prompt.md` and the ordinary
-`excluded: [agent-id — reason — confirmed YYYY-MM-DD]`. A known return uses an explicit
-`included: [agent-id — reason — confirmed YYYY-MM-DD]`. These markers validate the requested
-current set; the CLI never subtracts markers to derive membership. At the next normal mutation
-boundary, it snapshots and reconciles the confirmation into immutable history. It retains filed
-obligations and keeps the policy off. Ordinary off, legacy and kickoff-only driving has no idea-wide
-singleton lease.
+For a recorded policy with `enabled: false`, edit the actual `participants:` in
+`00-prompt.md`. An exclusion keeps the ordinary §9.0 confirmation:
 
-A new off-mode catch-up join also needs the late round and prior-reading conditions above, plus an
-owner answer. Record `owner-answer`, `owner-commit`, `owner-blob`, `owner-sha256` and `owner-quote`
-in the late round's frontmatter. The committed quote must contain the standalone directive
-`Catch-up join: new-id from round-02`. This uses the existing confirmation path; no new CLI command
-is required. Legacy ideas without quota history keep their existing protocol behavior.
+```text
+excluded: [agent-id — reason — confirmed YYYY-MM-DD]
+excluded: agent-id — reason — confirmed YYYY-MM-DD
+excluded: [agent-id — unavailable — quota exhausted — confirmed YYYY-MM-DD]
+```
+
+The trailing ` — confirmed YYYY-MM-DD` is the delimiter. Reasons may contain em
+dashes. Use a real calendar date. A note after the date, hyphen separators, an inbox
+reference alone, and `unavailable; user confirmed ...` are rejected; rewrite the marker
+in the displayed grammar. Markers validate an exclusion; the CLI never subtracts them
+from membership.
+
+A known agent returns through a `participants:` edit. A new participant uses the existing
+§5 catch-up path: read prior rounds, write a valid late `round-01/agent-id.md`, edit
+`participants:`, and join from round 2. No `included:` marker, new return/join record,
+committed-answer schema, exact directive or new command is required on this path.
+Prior-reading and joining from round 2 remain protocol duties; this compatibility path
+does not require new frontmatter to attest them.
+
+At the next normal mutation boundary the CLI captures the prompt and late round, if any,
+as an immutable **manual revision**. It does not label the edit owner-confirmed, infer
+owner authorization, or release a retained veto. Explicit owner confirmation remains a
+protocol obligation for re-inclusion, and authority-sensitive gates require additional
+proof through the owner ruling/committed authority paths below. Manual revision history,
+old artifacts and retained obligations are preserved. An exact historical notice carrying
+the former owner-confirmed display label is preserved with a separate manual-authority
+clarification; its label grants no authority. Legacy ideas without quota history
+keep their pre-existing behavior. Ordinary off, legacy and kickoff-only driving has no
+idea-wide singleton lease.
+
+For policy-on ideas, an edit after an applied revision is blocked, including an edit back
+to an older participant set. Preserve the proposed edit for owner review, restore the
+recorded prompt, then use `parley quota revise` with the committed owner decision. The
+error names that command. `quota recover` replays only a genuinely pending transition:
+the latest durable receipt must be missing or invalid, and the prompt must match that
+transition's before/after membership and policy. It does not overwrite unrelated edits.
 
 ## Retained vetoes and dispositions
 
@@ -83,11 +108,11 @@ The independent participant's evidence artifact must quote that same answer unde
 `## User direction` and identify the obligation. Deleting the inbox copy later does not undo a
 committed ruling. Missing or changed committed evidence does block it.
 
-Alternatively, after authorized re-inclusion, the original veto author can file a later round
+Alternatively, after re-inclusion bound to committed owner authority, the original veto author can file a later round
 artifact under their own canonical filename. Bind it with `quota-revision: N` and
 `reinclusion: batch-HASH`, and record `Withdrawal: obligation-HASH`. The consensus disposition
 uses `Disposition: withdrawn`, `Authority: author-id`, rationale and that `Evidence:` path.
-Withdrawal removes only the retained veto it identifies. The returning author must append a new
+A manual policy-off revision, even with an optional `included:` marker, cannot authorize this withdrawal. Withdrawal removes only the retained veto it identifies. The returning author must append a new
 signoff; a later new veto is still a veto. Closed artifacts remain frozen.
 
 These checks establish recorded attribution and exact content. They cannot authenticate the human
@@ -104,6 +129,12 @@ actions fail closed. After stopping writers, run:
 parley quota recover --dir WORKSPACE --idea IDEA --run EXISTING_RUN
 ```
 
+New imports validate the kickoff and every affected run manifest before committing an
+immutable revision. If an older interrupted import already committed without its original
+manifest, it stays pending. Restore the original manifest from trustworthy recorded
+history/backup, then run checked recovery. Do not construct a replacement identity or
+rewrite the immutable revision to make recovery pass.
+
 Recovery validates immutable history and the idea-bound run manifests, reconciles the prompt,
 all extant idea manifests, round evaluation and notices, then replaces mutable receipts with checked
 durable writes. Existing receipt bytes are never proof that projections are sound. Repeating recovery
@@ -118,12 +149,37 @@ different host/boot, partial owners and interrupted reclamation fail closed for 
 Per-generation reclamation claims prevent a delayed stale reader from deleting a newer winner.
 Do not remove a lock while its owner or a possible remote owner may still be alive.
 
+A crashed invocation with `started.json` but no `terminal.json` can be settled by checked
+recovery only when its recorded host and boot match this host and boot, its supervisor
+and writer PIDs are proven absent, and its recorded supervised process group is absent.
+The group must have been the writer's own group. The CLI writes an immutable
+`crash-settlement.json` containing invocation identity, start-record digest, proof and time;
+replay validates and syncs that record without changing it. It never manufactures a normal
+terminal result, provider error, completed artifact or budget accounting settlement.
+Live descendants, ambiguous liveness, foreign/unknown identity and older identity-less
+records stay blocked. Investigate on the original host and restore authentic terminal
+evidence if available; no force-unlock or synthetic owner-authorization route is provided.
+Windows automatic crash settlement remains unavailable until runtime proof exists.
+
 ## Zcode evidence limit
 
 The stderr recognizer requires complete allowlisted SDK error framing, matching response bodies,
-all retry records, reset values, terminal failure and invocation facts. Arbitrary prose, mixed errors,
+all retry records, reset values, terminal failure and invocation facts. Complete top-level
+records and complete SDK retry aggregates may contain decreasing countdowns when their
+exhaustion class and absolute resets agree within one second. Each record's duration,
+header and countdown must agree. Inferred attempt times must be monotonic within one
+second, no later than receipt and no earlier than a recorded invocation start. The fixed
+60-minute threshold uses the terminal line's receipt, never an earlier inferred attempt. Arbitrary prose, mixed errors,
 unknown fields, incomplete captures and SDK inspect truncation gate. Source-derived SDK fixtures
 exercise the retained incident's positive body/reset, but are not native captures. The two retained
 native excerpts do not recover the missing 24,833-byte original; full-native AC2 evidence remains
 unverified. Other adapters remain diagnostic-only. The owner's accepted subagent-source ambiguity
 is unchanged.
+
+Offline inspection of installed zcode 3.7.7-13 locates the SDK stream error sink's default
+`console.error(error)` with no inspect options added by the adapter. The located streaming
+adapter disables SDK retries (`maxRetries: 0`) and implements its own attempt loop; complete
+top-level records are therefore a relevant source-derived shape. Its default-console
+reproduction with realistic request messages contains `[Object]` and is rejected. Deep
+inspect fixtures and retry aggregates are source-derived tests, not proof of the historical
+incident's exact runtime path or a complete native capture. AC2 remains an owner decision.

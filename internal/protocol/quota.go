@@ -60,28 +60,38 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 		return v, nil
 	}
 	k := h.Kickoff
-	if !hasPolicy || !hasScope || value != fmt.Sprint(h.Policy().Enabled) || scope != h.Policy().Scope || meta["idea"] != k.Idea {
-		priorPolicy := value == fmt.Sprint(k.Policy.Enabled) && scope == k.Policy.Scope
-		for _, b := range h.Batches {
-			priorPolicy = priorPolicy || value == fmt.Sprint(b.Policy.Enabled) && scope == b.Policy.Scope
-		}
-		if !hasPolicy || !hasScope || meta["idea"] != k.Idea || !priorPolicy {
-			return v, fmt.Errorf("contradictory immutable quota policy")
-		}
-		v.Pending = "quota policy projection pending"
-	}
 	current := parseList(meta["participants"])
 	matches := func(ids []string) bool {
 		return reflect.DeepEqual(quota.Unique(current), quota.Unique(ids)) && len(current) == len(ids)
 	}
-	allApplied := true
-	for _, b := range h.Batches {
-		raw, e := os.ReadFile(filepath.Join(ideaDir, "quota-applied", b.ID))
-		if e != nil || string(raw) != b.ID+"\n" {
-			allApplied = false
+	allApplied, latestApplied := true, true
+	for i, b := range h.Batches {
+		receipt, e := os.ReadFile(filepath.Join(ideaDir, "quota-applied", b.ID))
+		applied := e == nil && string(receipt) == b.ID+"\n"
+		allApplied = allApplied && applied
+		if i == len(h.Batches)-1 {
+			latestApplied = applied
+		}
+		if !applied {
+			v.Pending = "committed quota transition pending; checked recovery required: " + b.ID
 		}
 	}
-	if !matches(h.Current) && !h.Policy().Enabled && v.Pending == "" && allApplied {
+	// Only the latest transition's durable receipt determines whether a stale
+	// prompt can be interrupted projection work. Matching old content is no proof.
+	before := k.Participants
+	beforePolicy := k.Policy
+	if len(h.Batches) > 0 {
+		before = h.Batches[len(h.Batches)-1].Decision.Before
+		for _, b := range h.Batches[:len(h.Batches)-1] {
+			beforePolicy = b.Policy
+		}
+	}
+	policyMatches := hasPolicy && hasScope && value == fmt.Sprint(h.Policy().Enabled) && scope == h.Policy().Scope
+	priorPolicy := hasPolicy && hasScope && value == fmt.Sprint(beforePolicy.Enabled) && scope == beforePolicy.Scope
+	if meta["idea"] != k.Idea || !policyMatches && (latestApplied || !priorPolicy) {
+		return v, fmt.Errorf("contradictory immutable quota policy; restore the recorded prompt, then use parley quota revise for an owner-authorized change")
+	}
+	if !matches(h.Current) && !h.Policy().Enabled && policyMatches && allApplied {
 		b, e := manualQuotaRevision(ideaDir, h, string(raw), current)
 		if e != nil {
 			return v, e
@@ -90,29 +100,10 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 		h.Current = append([]string(nil), current...)
 		h.Known = quota.FilterConfirmed(append(h.Known, current...), nil)
 	}
-	if !matches(h.Current) {
-		prior := matches(k.Participants)
-		for _, b := range h.Batches {
-			prior = prior || matches(b.Decision.After)
-		}
-		if !prior {
-			return v, fmt.Errorf("contradictory quota membership projection")
-		}
-		v.Pending = "quota membership projection pending"
+	if !matches(h.Current) && (latestApplied || !matches(before)) {
+		return v, fmt.Errorf("contradictory quota membership projection; preserve the edit for the owner, restore recorded participants, then use parley quota revise; checked recovery only replays a pending transition's before/after set")
 	}
-	for _, b := range h.Batches {
-		applied, e := os.ReadFile(filepath.Join(ideaDir, "quota-applied", b.ID))
-		if os.IsNotExist(e) {
-			v.Pending = "committed quota transition pending: " + b.ID
-			continue
-		}
-		if e != nil {
-			return v, e
-		}
-		if string(applied) != b.ID+"\n" {
-			v.Pending = "corrupt quota applied receipt; checked recovery required: " + b.ID
-		}
-	}
+
 	return v, nil
 }
 

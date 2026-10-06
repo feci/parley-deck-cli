@@ -263,7 +263,11 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 				status, failure = "failed", "trajectory_failure"
 			}
 		}
-		quotaEvidence := l.collector.QuotaEvidence(telemetry.QuotaInput{InvocationID: l.invocation.ID, ObservedAt: time.Now().UTC(), ExitCode: exitCode, StructuredFailure: providerFailure != "", Watchdog: quotaCancellation(failure)})
+		var quotaStart time.Time
+		if start := l.invocation.Snapshot().StartedAt; start != nil {
+			quotaStart = *start
+		}
+		quotaEvidence := l.collector.QuotaEvidence(telemetry.QuotaInput{InvocationID: l.invocation.ID, StartedAt: quotaStart, ObservedAt: time.Now().UTC(), ExitCode: exitCode, StructuredFailure: providerFailure != "", Watchdog: quotaCancellation(failure)})
 		outcome := telemetry.Outcome{QuotaEvidence: &quotaEvidence, Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,
 			ArtifactSHA256: observedArtifactHash(l.info.ArtifactPath)}

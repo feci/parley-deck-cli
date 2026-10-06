@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Revision is an explicit owner decision. Automatic batches never add members
+// Revision records either an explicit owner decision or a manual policy-off edit. Automatic batches never add members
 // or alter policy. Catchup snapshots are canonical late round-1 artifacts, not
 // replacement agents or a timer-based rejoin.
 type Revision struct {
@@ -66,8 +66,12 @@ func (b Batch) validateRevision(h *History) error {
 	}
 	for _, id := range b.Decision.After {
 		if !contains(h.Known, id) {
-			if err := ValidateCatchupSnapshot(b.Owner.Catchup[id], b.Idea, id); err != nil {
-				return fmt.Errorf("new identity %s needs owner-authorized catch-up: %w", id, err)
+			validate := ValidateCatchupSnapshot
+			if b.Owner.Authority == nil {
+				validate = ValidateManualCatchupSnapshot
+			}
+			if err := validate(b.Owner.Catchup[id], b.Idea, id); err != nil {
+				return fmt.Errorf("new identity %s needs a valid catch-up artifact: %w", id, err)
 			}
 		}
 	}
@@ -94,18 +98,6 @@ func (b Batch) validateOwnerAuthority(ideaDir string) error {
 	}
 	if b.Owner.Authority != nil {
 		return ValidateAuthority(IdeaRoot(ideaDir), b.Idea, *b.Owner.Authority)
-	}
-	for id, raw := range b.Owner.Catchup {
-		a, e := CatchupAuthority(raw)
-		if e != nil {
-			return e
-		}
-		if e = ValidateAuthority(IdeaRoot(ideaDir), b.Idea, a); e != nil {
-			return e
-		}
-		if !HasDirective(a.Quote, "Catch-up join: "+id+" from round-02") {
-			return fmt.Errorf("owner answer does not authorize catch-up %s", id)
-		}
 	}
 	return nil
 }
