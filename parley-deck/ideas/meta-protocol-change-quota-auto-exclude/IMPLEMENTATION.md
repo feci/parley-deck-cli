@@ -427,3 +427,38 @@ before. It stops only on an auth or credit error, or when it runs out of attempt
 Relaunch claude-1's Phase-7 signoff on the unchanged cycle-2 plan with a 2400 s ceiling. Then continue with
 fix-up cycle 2, re-review, the attended-close request and the release, all as `IMPL-ORGANIZER-BRIEF.md`
 says. Routine procedural steps that these rules or the skill already cover need no owner question.
+
+
+## Cycle-2 plan authorized — 2026-10-06
+
+The separate claude-1 signer completed in 807.3 seconds, exit 0, no timeout/provider error.
+Its ACCEPT-WITH-RESERVATIONS on G10–G14 is authoritative; explicit review status is reserved,
+no signer missing. Under the Phase-3 reservation rule used by Phase 7, the conditions below
+are open items deferred to implementation; no participant has upgraded them to BLOCK.
+Cycle 2 may proceed, with no code acceptance, AC2 waiver or close authority.
+
+### Open items deferred to implementation — V1–V9
+
+- V1: G10 uses the terminal receipt for the fixed 60-minute threshold; reject the 61-minute-first / 59-minute-terminal case.
+- V2: inferred per-record observations cannot run backward, exceed receipt or precede a known invocation start (one-second tolerance).
+- V3: cover changing-countdown top-level records as well as SDK retry wrappers; source findings determine shape labels.
+- V4: for policy-off return and catch-up, differential-test the pre-change CLI path. A plain membership edit may be preserved as a manual revision, never owner-confirmed authority or permission to withdraw a retained veto. Do not require a new return/join record. Explicit confirmation remains required for authority-sensitive gates.
+- V5: anchor exclusion grammar on trailing em dash plus confirmed date, allow em dashes inside reasons, explain rejected suffix/hyphen variants.
+- V6: distinguish applied manual edits from interrupted projections using durable receipt state, never matching an old set alone; unresolved state escalates.
+- V7: put command guidance in CLI docs/skill. Any necessary normative-neutral protocol wording must match across all three hunks and be disclosed verbatim as post-ratification text for attended owner review.
+- V8: settle crashed writers only with same-host/boot and dead-PID proof, durable settlement evidence and idempotence; unknown/foreign identity stays blocked.
+- V9: offline SDK/extracted-function evidence only, no network/credentials/zcode entry point; later AC2 question must show accepted and rejected native-shaped inputs.
+
+### Implementation checklist
+
+- [ ] Apply G10–G13 with V1–V8 and meaningful counterexample regressions.
+- [ ] Complete G14 offline source/framing evidence under V9; keep AC2 OPEN.
+- [ ] Update CLI/skill guidance; disclose any protocol text delta.
+- [ ] Run frozen host full Go suite, vet/build/gofmt/race/shared/local checks and full skill checks.
+- [ ] Separate claude-1 full-scope re-review of both stages and cycle 2.
+- [ ] Apply stopping judgment: fresh CRITICAL/MAJOR on cycle-2 fix code requires trajectory escalation; do not assume cycle 3.
+
+The draft's earlier “13-package” wording means 13 invoked packages but only 12 with tests;
+internal/runstate had no matching tests. The next consensus will contain Drafter position changes.
+The reviewer's own appended quote erratum changes no verdict. Raw signed-step evidence is
+source-context/fix-consensus-2-signed-20261006/.

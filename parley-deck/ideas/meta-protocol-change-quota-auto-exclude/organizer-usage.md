@@ -127,3 +127,20 @@ The organizer row replaces the earlier October 6 same-transcript snapshot; do no
 Claude cache reads/writes are reported separately under the parser convention. Its timed-out
 process consumed recorded tokens without producing a signoff; no completed phase is inferred.
 No monetary estimate. Raw transcripts remain outside canonical evidence; the ledger binds their hashes.
+
+
+## Timeout-standing-permission resumption — 2026-10-06
+
+New organizer transcript: `rollout-2026-10-06T13-26-57-01a110f7-7cfd-73c1-a192-9eafe182a23e.jsonl`.
+Phase-7 dispatch snapshot: 17 events, client total_tokens 1278016, attribution ambiguous.
+Later snapshots replace this same-transcript row; never sum them. The separate claude-1 signer
+runs with unchanged Opus 5.5/max, first timeout relaunch at 2400 seconds. No monetary estimate.
+
+
+## Phase-7 cycle-2 signoff complete — 2026-10-06
+
+claude-1: input_tokens 126, cached_input_tokens 8088933, cache_write_input_tokens 952401, output_tokens 119782, reasoning_output_tokens 0, total_tokens 119908; 63 events; attribution ambiguous; accounting 2026-10-06T11:44:38.056593Z.
+
+codex-1: input_tokens 4141063, cached_input_tokens 3983872, cache_write_input_tokens 0, output_tokens 18693, reasoning_output_tokens 8757, total_tokens 4159756; 38 events; attribution ambiguous; accounting 2026-10-06T11:44:38.067722Z.
+
+The organizer row replaces the earlier same-transcript dispatch snapshot; never sum them. Claude cache inputs are separate under the parser convention; no monetary estimate. Successful signer artifacts and raw exit metadata were checked.

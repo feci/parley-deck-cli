@@ -1,0 +1,18 @@
+{
+  "owner_note": "parley-deck/inbox/user-to-codex-1_meta-protocol-change-quota-auto-exclude_timeout-standing-permission.md",
+  "step": "phase-7-cycle-2-fix-consensus",
+  "timeout_relaunch": 1,
+  "max_timeout_relaunches": 2,
+  "quota_relaunches_used": 1,
+  "max_quota_relaunches": 3,
+  "timeout_seconds": 2400,
+  "consensus_sha256": "82fddfef92c9bc2206a5b832da75654939702d7801bbc983d58cf5f3dca8235c",
+  "prior_timeout": {
+    "started": "2026-10-06T10:20:50.232957+00:00",
+    "ended": "2026-10-06T10:40:50.943202+00:00",
+    "seconds": 1200.7,
+    "exit": 143,
+    "timeout": true
+  },
+  "inputs_unchanged": true
+}

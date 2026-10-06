@@ -982,3 +982,27 @@ Shared-memory checkpoint: OpenViking write to viking://resources/projects/parley
 The owner authorized the unchanged Phase-7 cycle-2 signoff at 2400 seconds, then 3600 seconds on a further silent timeout (maximum two timeout relaunches per step). This is timeout relaunch 1/2. Qualifying quota retries remain separately bounded at three; one prior quota relaunch has been used. No model/provider/roster change. The prior timeout had no provider error to quote (both streams empty). Fresh attempt: `.parley-runtime/quota-implementation/fix-consensus-2-timeout-relaunch-20261006-1/`.
 
 Lean reorientation: IMPLEMENTATION, raw review consensus, notes tail, computed organizer brief/status and current Phase-7 renderer. Context mode full, source/packet SHA256 `73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e`; facilitator audience falls back because facilitator participates. Existing driver gaps and stale advisory phase pointer still require the recorded focused configured-CLI fallback. Explicit review-consensus status and canonical signoff govern. Installer/all runtime markers 2.14.0, CLI 1.50.0, source metadata 2.12.0 with expected reviewed drift; no metadata/protocol overwrite.
+
+Scoped OpenViking recall matched the prior round-04/signoff stops; current owner notes supersede
+the earlier retry limitations. The graphify query used actual graph vocabulary `quota membership retry
+framing recovery consensus` (509 nodes), locating round-04/round-03/FINAL evidence rather than
+current Go proof. Existing graphify skill 0.9.48/package 0.9.53 drift was reported; no upgrade or
+manual rebuild. The normal post-commit hook ran its existing background rebuild.
+
+
+## Phase-7 cycle-2 signoff completed — 2026-10-06 11:43Z
+
+Timeout relaunch 1/2 completed: child exit 0 in 807.3 seconds, timeout false, no quota/credit/auth
+error. claude-1 appended its own ACCEPT-WITH-RESERVATIONS with V1–V9 and its own round-04 quote
+erratum. Review status reserved, no missing signer; raw artifacts bind. The Phase-3/7 reservation
+rule permits Phase 8 after logging V1–V9 as open implementation items, now done in IMPLEMENTATION.
+No reviewer content was proxy-written or edited. One prior quota relaunch and one timeout relaunch
+were used for this step; no further signoff retry is needed.
+
+V4 distinguishes compatibility-preserving manual imports from owner-confirmed authority. V1/V2
+anchor reset timing safely at receipt. V7 keeps all text changes visible, V8 governs orphan proof,
+and V9 holds the native-capture thread. A fresh MAJOR/CRITICAL on cycle-2 fix code will trigger
+trajectory escalation rather than an automatic cycle 3. AC2 remains open after concrete repairs.
+Configured implementation continuation uses codex-1 / gpt-6-astra / max / deep with workspace writes;
+only the separate claude-1 process reviews. Existing focused CLI fallback persists for driver gap 11.
+No other participant, new worktree, roster change, D6 repair, merge or publication.

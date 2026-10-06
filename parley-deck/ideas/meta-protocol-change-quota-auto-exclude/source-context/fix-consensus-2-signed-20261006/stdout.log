@@ -1,0 +1,27 @@
+I signed the cycle-2 fix list as 🟡 ACCEPT-WITH-RESERVATIONS, and appended an erratum to my round-04 review. The read-only `parley consensus status --review --json` reads both signoffs (codex-1 ✅, claude-1 🟡), shows triage `reserved` and lists no missing signer. No quota, credit or auth error occurred in this run, and I committed nothing.
+
+I accept all five fixes. G11's option (b) is the one I proposed for R4-MAJOR-2. AC2 stays an open owner decision. The signoff waives no native evidence, approves no code, and authorizes no close, merge or release. Nothing blocks the plan. The cycle-2 re-review will check these nine reservations:
+
+- **V1 (G10):** the 60-minute threshold must be measured from the terminal record's receipt, never from an earlier retry. Otherwise a reset only 59 minutes away at receipt could qualify. A fixture with 61 minutes at the first record and 59 at receipt must be rejected.
+- **V2 (G10):** observation times inferred from each record must not decrease from record to record and must not be later than the receipt. A violation counts as contradictory.
+- **V3 (G10):** the fix must also cover several separate error records in one captured stderr, not only the nested retry wrapper. In the installed zcode bundle (`3e3433d9…`) I found `maxRetries:0` in the request options that the organizer's lead attributes to the request builder. So the SDK's retry wrapper may not be what zcode actually produces. G14's source findings should decide which shapes G10 accepts.
+- **V4 (G11):** I accept it on this reading:
+  - The `excluded:` marker stays in the tolerant grammar.
+  - A return or late join on a knob-off idea is accepted as the pre-change CLI accepted it, and that is checked with a test against the pre-change code.
+  - Such an edit is recorded in history but never labeled owner-confirmed, and it never lets a re-included author withdraw a retained ❌.
+  - Requiring any extra record for return or join would be a knob-off behavior change, so it goes to the owner as a blocker.
+- **V5 (G11):** the parse anchors on the trailing `— confirmed <date>`, the error prints the accepted grammar, and the docs list the forms still rejected.
+- **V6 (G12):** telling an interrupted update from a later manual edit must rely on the durable revision state, not on prompt content. If that state is unreadable and the prompt matches neither the old nor the new set, escalate.
+- **V7 (G11/G12):** command-level guidance goes in the CLI docs and the skill. Any wording change to the ratified, unpublished §9.0 text must stay identical across all three copies and be shown to the owner as a change made after ratification.
+- **V8 (G13):** a crashed writer may be settled only if it is proven dead (same host and boot, dead process). Each settlement leaves a durable record and is safe to repeat.
+- **V9 (G14):** offline reproductions run with no network, no credentials and never through zcode's own CLI. The AC2 question to the owner must say which native-like inputs the fixed recognizer accepts and which it rejects.
+
+I also left two small, non-blocking notes on the draft's accuracy. The "13-package" checks were really 12 packages with tests, because `internal/runstate` had no matching tests. The draft also has no `## Drafter position changes` section, which the role-concentration rule may require.
+
+Protocol context: `context_mode=full`, source and packet SHA-256 both `73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e`, no `fallback_reason`. I read the entire body (all 1,501 lines) without re-rendering. Both owner standing-permission answers are quoted in full under User direction, and a diff confirms the quotes match the source files.
+
+The erratum: my round-04 quote said `IMPLEMENTATION.md`, but the owner's answer says `IMPL-ORGANIZER-BRIEF.md`. A diff showed this is the only mismatch. The erratum is appended and the original line is kept, so no verdict changed.
+
+Your artifact paths:
+- `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md` (my signoff appended, 243 lines, nothing deleted; new SHA-256 `b46924b1…b175`)
+- `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-04/claude-1.md` (erratum appended, 17 lines; new SHA-256 `8b4093df…afcc`)

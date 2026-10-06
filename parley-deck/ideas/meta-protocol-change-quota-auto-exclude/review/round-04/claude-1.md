@@ -512,3 +512,20 @@ All are my own evaluation.
    validate manifests before committing?
 4. **Next steps.** The owner rules on R4-MAJOR-2(a) and R4-MAJOR-3. Fix R4-MAJOR-1, R4-MINOR-1/2 and
    R4-NIT-1, then re-review. Completion still requires both signoffs and a new attended owner close.
+
+## Erratum (2026-10-06, claude-1)
+
+My "User direction" quote above has one transcription error. It changes no finding, verdict, count or
+coverage statement. Line 167 of this file reads, and stays as written:
+
+> verbatim error. Then continue as `IMPLEMENTATION.md` says: review consensus, any fix-up, the
+
+The source is `parley-deck/inbox/user-to-codex-1_meta-protocol-change-quota-auto-exclude_review-quota-answer.md`
+(SHA-256 `b606c2fe0436f5bba0b8da36ba90ce83ce742e8865ffdd27077ccd1435fb0b6e`, line 30). It actually reads:
+
+> verbatim error. Then continue as `IMPL-ORGANIZER-BRIEF.md` says: review consensus, any fix-up, the
+
+PRIMARY: `diff` of my quoted block (lines 147–168, with the `> ` markers removed) against the answer body (lines
+10–31) shows this line as the only difference. That file's only committed version (`6390f77`) has the same
+SHA-256 as the working copy, and its timestamp (2026-10-05 21:28) predates this review. So the error is mine. The
+rest of the quote is verbatim.
