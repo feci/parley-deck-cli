@@ -1107,3 +1107,16 @@ Capability matrix unchanged: codex-1 / Codex CLI / gpt-6-astra / max (organizer+
 claude-1 / Claude CLI / claude/claude-opus-5-5[1m] / max (independent signer/reviewer).
 Both commands installed. Focused signoff starts at 1200 seconds; timeout retries 2400 then
 3600, max two; short quota reset <=60m waits reset+2m, max three, per standing permissions.
+
+
+## Cycle-3 plan signoff timeout / authorized relaunch 1 — 2026-10-06 14:18Z
+
+Configured claude-1 started 13:58:28.433226Z, ended 14:18:29.123906Z,
+1200.7 seconds; child exit 143, timeout=true. Both stdout and stderr are empty; no
+verbatim provider error exists. Review consensus remains exactly 5525bb84e54fc664fe3ce7b6cf804a83522bf223e56a5c8c4df3dad27b62977a
+(10073 bytes). No product or reviewer artifact changed.
+
+Apply timeout-standing-permission: same G15–G17 step/inputs, unchanged Opus 5.5/max,
+first timeout relaunch at 2400 seconds. Timeout relaunches 1/2; quota relaunches 0/3.
+No new owner question, exclusion or model/provider change. Raw attempts stay separate
+under .parley-runtime/quota-implementation/fix-consensus-3[-timeout-1].

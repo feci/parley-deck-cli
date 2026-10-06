@@ -53,3 +53,14 @@ The planned next versions therefore remain 1.51.0 / 2.15.0, subject to the final
 Staged core 2.14.0 exists; staged 2.15.0 does not. No channel mutation or staging occurred.
 Round-04 review is running on the owner-authorized unchanged product snapshot; its independent
 verdict, final consensus and attended close remain prerequisites for the release steps above.
+
+
+## Read-only cycle-3 resumption check — 2026-10-06 14:26Z
+
+GitHub latest remains CLI v1.50.0 and skill v2.14.0 (2026-09-25 releases).
+Local published core directories remain 2.10.0 and 2.13.0; staged core 2.14.0
+SHA256 is 51476d69ed4291b77db63f6855554cd251461c0b8743a303c2a3b0eacaabf67a.
+Core 2.15.0 is not staged. Planned release versions are still CLI 1.51.0, skill/core
+2.15.0, rechecked at release. Only inventory reads occurred. Owner Q2 requires the
+native-zcode limitation and quota-zcode-native-exhaustion-capture follow-up in final
+release notes. Final review, both signoffs and NEW attended-close answer are pending.

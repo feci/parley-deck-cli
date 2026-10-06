@@ -171,3 +171,17 @@ estimate or completed implementation/close is inferred. Later organizer snapshot
 supersede this boundary row without changing reviewer usage.
 
 Final durable-stop organizer snapshot (supersedes the row above): input_tokens 22471691, cached_input_tokens 21571200, cache_write_input_tokens 0, output_tokens 99460, reasoning_output_tokens 46334, total_tokens 22571151; 155 events; attribution ambiguous; accounting 2026-10-06T12:59:52.648677Z. This is the same organizer transcript, never additive.
+
+
+## Cycle-3 owner-answer / Phase-7 dispatch — 2026-10-06
+
+New organizer transcript: `rollout-2026-10-06T15-50-29-01a1117a-e4fd-7022-a08f-4383a6fd5361.jsonl`.
+ingest appended: codex-rollout/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=codex-1 events=25 total_tokens=2455232 attribution=ambiguous
+This is a cumulative session snapshot; later snapshots replace it and must not be added.
+Client attribution is ambiguous; no monetary estimate. The separately launched claude-1
+G15–G17 signer has its own usage at the phase boundary. The canceled stale driver draft
+will be retained as a distinct failed invocation, not a completed signoff.
+
+Cycle-3 signoff initial timeout: claude-1 (`8db7e84f-44bc-4369-938b-790be5d5d656.jsonl`): ingest appended: claude-jsonl/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=claude-1 events=57 total_tokens=55688 attribution=ambiguous. Organizer is cumulative and replaces its earlier same-session snapshot; reviewer is a distinct timed-out invocation, not a signoff. No monetary estimate.
+
+Cycle-3 signoff initial timeout: codex-1 (`rollout-2026-10-06T15-50-29-01a1117a-e4fd-7022-a08f-4383a6fd5361.jsonl`): ingest appended: codex-rollout/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=codex-1 events=50 total_tokens=6538389 attribution=ambiguous. Organizer is cumulative and replaces its earlier same-session snapshot; reviewer is a distinct timed-out invocation, not a signoff. No monetary estimate.
