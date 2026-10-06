@@ -1213,3 +1213,16 @@ only these three findings, with signed plan/re-review/new attended close retaine
 Prior reviewer/signoff and product bytes unchanged. No provider/native capture,
 settings/roster/model/worktree changes, merge/release/install. Both standing retry
 permissions remain available for a future authorized step; none consumed on round 06.
+
+
+Shared-memory stop checkpoint: wrote
+viking://resources/projects/parley-deck/quota-auto-exclude-round-06-owner-gate-20261006.md
+through MCPAnywhere. The wait-for-index operation timed out after 60s; a subsequent
+read returned the full exact note, so file persistence is confirmed. Scoped semantic
+find still returned earlier notes: indexing/retrieval is pending, not claimed verified.
+Local authoritative resume sources remain IMPLEMENTATION, raw round-06 review and the
+blocking owner note. No gateway retry or direct connection workaround was used.
+
+The final computed organizer brief still reports a generic await-review action and the
+reserved cycle-3 plan. Those summaries do not disposition the raw round-06 findings or
+the new blocking owner note. Resume must read those canonical files before acting.

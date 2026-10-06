@@ -80,8 +80,7 @@ new worktree, D6 migration, global core publication or release is part of this s
 
 Your binding [round05 answer](user-to-codex-1_meta-protocol-change-quota-auto-exclude_round05-answer.md)
 states: **“A fresh CRITICAL or MAJOR on the cycle-3 fix code escalates again, as you
-proposed.”** The signed cycle-3 plan makes no automatic cycle 4 available. The Parley
-Deck skill's escalation rule says **“If blocking: yes, pause the escalating agent's work
+proposed.”** The signed cycle-3 plan makes no automatic cycle 4 available. The [Parley Deck skill](/Users/tomasfecko/.codex/skills/parley-deck/SKILL.md)'s escalation rule says **“If blocking: yes, pause the escalating agent's work
 for that idea.”** The numeric five-cycle cap does not override this trajectory stop.
 
 ## What I need from you
