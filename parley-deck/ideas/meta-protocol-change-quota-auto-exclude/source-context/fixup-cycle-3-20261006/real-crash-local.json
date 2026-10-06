@@ -1,0 +1,43 @@
+{
+  "utc": "2026-10-06T16:02:51.133429+00:00",
+  "supervisor_pid": 20991,
+  "writer_pids": [
+    21072,
+    21074
+  ],
+  "results": [
+    {
+      "command": [
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+        "quota",
+        "recover",
+        "--dir",
+        "/private/tmp/codex1-fixup3-real-crash-parent/workspace",
+        "--idea",
+        "2026-10-06T18-02-50-native-superviso",
+        "--run",
+        "20261006T160250.686875000Z"
+      ],
+      "exit": 0
+    },
+    {
+      "command": [
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+        "quota",
+        "recover",
+        "--dir",
+        "/private/tmp/codex1-fixup3-real-crash-parent/workspace",
+        "--idea",
+        "2026-10-06T18-02-50-native-superviso",
+        "--run",
+        "20261006T160250.686875000Z"
+      ],
+      "exit": 0
+    }
+  ],
+  "receipt_hashes": {
+    ".parley-runtime/invocations/6ccce2b4-333a-4df8-b575-a286d0cf4c84/crash-settlement.json": "00599d7365c05f12b2e0395d7c5bca9379186a88b9bcb7a702db68ab80656e90",
+    ".parley-runtime/invocations/dba334c8-de4d-4d97-8236-ef58d49b949d/crash-settlement.json": "6cf5d7ea3cd8ed6ecc8d7f92bfa253762ed782931dbb365f6a7334a2d29f9e78"
+  },
+  "normal_terminals_created": false
+}

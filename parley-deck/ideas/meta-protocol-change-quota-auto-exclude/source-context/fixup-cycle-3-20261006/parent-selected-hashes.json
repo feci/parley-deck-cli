@@ -1,0 +1,122 @@
+{
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/protocol-hashes.json": {
+    "bytes": 527,
+    "sha256": "2fcd955d665e9706896ec37504d490b20394d787f4199a76b4ec6241c51bd2a1"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/packet-attestations.json": {
+    "bytes": 1422,
+    "sha256": "62530ff77f04b0504d352726686c600e6012f081852d548b71e6d941bdaacabf"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/results.json": {
+    "bytes": 3783,
+    "sha256": "ac1da54d787357fe82ef02eac0a843a078a8284d46fea7a3091544cfdd30fd58"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-results.json": {
+    "bytes": 270,
+    "sha256": "083526288753d1b8a36c55aab28b313303b03f8cce1a5c4f0f5d381c7b3d5069"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-results-v3.json": {
+    "bytes": 491,
+    "sha256": "d4994b11dc75fa3fc6a41c1cbefca83da50f1cc8ca7628dc770abf95409ce5aa"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/installer-status.json": {
+    "bytes": 53784,
+    "sha256": "39b8cd650587ff925844404c4d30309bc05c147c79c505e8f837348a004dcc9c"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/sync-dry-run.json": {
+    "bytes": 3481,
+    "sha256": "84e723d608d86bc51c2787dad17c6a0603df38f4aed988287efddf4cc22bfe65"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/baseline-local.log": {
+    "bytes": 3238,
+    "sha256": "c4d4913a4b56ffda6dc8904a9cd361b6faa6470ba38a558d5a9eb0c391fa8c33"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/current-shared.log": {
+    "bytes": 5580,
+    "sha256": "95c96853ef67eb21ecbe4c29c52c0259d63d3fea8c140055ec5081a028573c80"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-local-v3.log": {
+    "bytes": 95,
+    "sha256": "bc2e74e2ec85d3b5183204b10bf4aec89f3abd5208ba7af86c0a4f02946e84e6"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/packet-phase8.log": {
+    "bytes": 27360,
+    "sha256": "1136ab5c12a425a98a158c98a6586c74e61b4ef4cf2b05b740a27f8c24f0247a"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/baseline-shared.log": {
+    "bytes": 4666,
+    "sha256": "939bdd02ece65707fdd4948b94fd134a89d7690d7b4491d664f150ddb3d0ed73"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/binary.log": {
+    "bytes": 314,
+    "sha256": "2325287ad2b18d7077c2f341234fdab340fb0abaffcef04889a2fc6d322e6804"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/packet-phase0.log": {
+    "bytes": 27636,
+    "sha256": "9e0cb80c12c1b382ada6a5f37a91afe1fcbacbeba7002a8b639c974fe16e4c2e"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/packet-phase5.log": {
+    "bytes": 27498,
+    "sha256": "0e308f6b87b1c6266fe22c92d939fd876ce67a102c0e17f0955f9d3d99f6b9f0"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3.log": {
+    "bytes": 209,
+    "sha256": "539667c95562b93eeeec664cbb2ab194fa1608c94bd791da34a0b1fc735459fc"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v2.log": {
+    "bytes": 310,
+    "sha256": "d37f9cc7ec8964eda88631ab5458ba7af80a1b7d706ef6e05be876df81a0ebe5"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/embedded-drift.log": {
+    "bytes": 149,
+    "sha256": "da81ecf79e66d6f311415d7eb7e7f6b8fcb38dd3e47f59109b30620704495d54"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/current-local.log": {
+    "bytes": 4033,
+    "sha256": "fd2b69848a2cadc86a1ccbe429279f8bd478c944c778b4b9d2eca83f6bee8ded"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/real-crash/run.py": {
+    "bytes": 5263,
+    "sha256": "7691edecc40f0ee74033f7d7686c61e67cd2e5188f066a3f7305c70ee8ef321b"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/real-crash/init.go": {
+    "bytes": 295,
+    "sha256": "28d83fdb15044288e3ad399732597bd10b8cc7a3d0d005e26e0efde2aac3f491"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/host-checks.py": {
+    "bytes": 5754,
+    "sha256": "08cf9e92ac0bdfd463b8db305bc9234c482db5ecebb57ed985735751afe51f3e"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/skill/result.json": {
+    "bytes": 160,
+    "sha256": "135926631751e0dac3de72d8721a6d89fe5bf2222f18856a3103ceffef8ae9d9"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/skill/npm-test.log": {
+    "bytes": 33859,
+    "sha256": "eb2301e206b5a080eb950bb6a0f6724fd2ae1daf9aae1f85f56d3ae91e8503e9"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3/result.json": {
+    "bytes": 1640,
+    "sha256": "357a5257585b8c9d70a496dc7295d3140c93b24148f95e47470677531680ca0d"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3/recover-1.log": {
+    "bytes": 109,
+    "sha256": "d67e0e481d233d0265f35e474c9b927ae2901757c5c6c948ae4d4725d013e05c"
+  },
+  ".parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3/recover-2.log": {
+    "bytes": 109,
+    "sha256": "d67e0e481d233d0265f35e474c9b927ae2901757c5c6c948ae4d4725d013e05c"
+  },
+  "/tmp/codex1-fixup3-real-crash-parent/result.json": {
+    "bytes": 1412,
+    "sha256": "7b0a951bf6b13b231d9ac752bf75204088f0bbf894bb95d12fd3a5bcaf65f0d4"
+  },
+  "/tmp/codex1-fixup3-real-crash-parent/recover-1.log": {
+    "bytes": 109,
+    "sha256": "d67e0e481d233d0265f35e474c9b927ae2901757c5c6c948ae4d4725d013e05c"
+  },
+  "/tmp/codex1-fixup3-real-crash-parent/recover-2.log": {
+    "bytes": 109,
+    "sha256": "d67e0e481d233d0265f35e474c9b927ae2901757c5c6c948ae4d4725d013e05c"
+  }
+}

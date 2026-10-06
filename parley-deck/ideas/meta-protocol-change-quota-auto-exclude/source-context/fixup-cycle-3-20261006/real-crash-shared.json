@@ -1,0 +1,43 @@
+{
+  "utc": "2026-10-06T16:02:50.486884+00:00",
+  "supervisor_pid": 20749,
+  "writer_pids": [
+    20845,
+    20844
+  ],
+  "results": [
+    {
+      "command": [
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+        "quota",
+        "recover",
+        "--dir",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3/workspace",
+        "--idea",
+        "2026-10-06T18-02-50-native-superviso",
+        "--run",
+        "20261006T160250.027707000Z"
+      ],
+      "exit": 0
+    },
+    {
+      "command": [
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+        "quota",
+        "recover",
+        "--dir",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3/workspace",
+        "--idea",
+        "2026-10-06T18-02-50-native-superviso",
+        "--run",
+        "20261006T160250.027707000Z"
+      ],
+      "exit": 0
+    }
+  ],
+  "receipt_hashes": {
+    ".parley-runtime/invocations/7aaac252-9748-4139-be07-c861b0698019/crash-settlement.json": "1c29010a26c1a27f12139b8a87523b62837130b6e21b32eb05c56c897184819e",
+    ".parley-runtime/invocations/8bf7f803-dfcd-4a27-bf31-03b15178c42e/crash-settlement.json": "ce63fdcc61b37f667f91411850a2c95505636b00b4202d121a03b9e49523f23c"
+  },
+  "normal_terminals_created": false
+}

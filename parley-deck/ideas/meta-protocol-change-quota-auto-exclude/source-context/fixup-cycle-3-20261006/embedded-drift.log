@@ -1,0 +1,4 @@
+=== RUN   TestEmbeddedDefaultMatchesLiveDeck
+--- PASS: TestEmbeddedDefaultMatchesLiveDeck (0.00s)
+PASS
+ok  	parley-deck-cli/internal/protocol	0.074s

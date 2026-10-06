@@ -29,3 +29,26 @@ in CLI guidance and the skill reference; the 20000-byte core skill cap is unchan
 No provider/native capture, parser relaxation, roster/config/model changes, worktree
 operations or edits to Claude's review/signoff bytes were made. Q2 remains native AC2
 NOT MET / owner-waived, R5-MAJOR-2 owner-accepted and deferred.
+
+
+## Actual baseline differential after W2
+
+The unchanged extended main (`7a87344bd7f4420372a48c711fafdc1b099df1923dcdc97e55f9a6de968b1c12`)
+ran against 27e42b8 and product fac40aa on both volumes. D1 through D4 all now match
+success/error exit outcomes and consensus triage. D4's missing-signoff diagnostic
+additionally retains the declined joiner as missing, unlike the baseline: this is the
+explicit G15 requirement not to treat an incomplete joiner as a completed vote. The
+canonical BLOCK form, refusal of literal NON-PARTICIPANT status and continued appends
+by existing members are unchanged. No closure or membership is granted. D2's extra
+missing events-ledger line belongs to the unchanged current probe setup; the permanent
+CLI fixtures contain the ledger and test the intended pending diagnostic. Logs are in
+`.parley-runtime/quota-implementation/fixup-3/parent-checks/`.
+
+A verification harness initially required raw equality for all three protocol copies.
+The embedded bootstrap intentionally substitutes workspace/date/host handles and omits
+the project sync line; only that harness assumption failed. Deck/skill remain byte-identical,
+and the existing unmodified TestEmbeddedDefaultMatchesLiveDeck passes. No protocol or
+normalizer was edited. The first actual crash harness saw its local shell just before
+exec; it now waits for the exact verified Python worker. The next attempt looked for
+manifest.json instead of the actual run.json. Both failed harness runs remain recorded,
+with their owned local workers stopped; no recovery success is claimed for them.

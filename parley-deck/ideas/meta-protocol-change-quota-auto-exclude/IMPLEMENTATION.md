@@ -635,10 +635,10 @@ error.
 ## Cycle-3 plan / checklist (before code)
 
 - [x] Independent claude-1 signoff on G15–G17, ACCEPT-WITH-RESERVATIONS W1–W5.
-- [ ] G15 actual CLI catch-up and kickoff-excluded-return compatibility; retained gates.
-- [ ] G16 durable notice archival/recovery regression.
-- [ ] G17 skill/support/release limitation and linked native-capture follow-up.
-- [ ] Frozen host full Go/build/vet/gofmt/race/shared/local and skill checks.
+- [x] G15 actual CLI catch-up and kickoff-excluded-return compatibility; retained gates.
+- [x] G16 durable notice archival/recovery regression.
+- [x] G17 skill/support/release limitation and linked native-capture follow-up.
+- [x] Frozen host full Go/build/vet/gofmt/race/shared/local and skill checks.
 - [ ] Full-scope separate claude-1 round-06 review, with independent AC1–AC21 evidence.
 - [ ] Both final review-consensus signoffs and NEW attended-close request.
 
@@ -702,3 +702,46 @@ G17/W4/W5 wording is applied to support/docs/skill/release notes and the inactiv
 follow-up. Membership dispatch/decline and notice-recovery guidance now matches the code.
 All three COOPERATION copies remain unchanged in cycle 3. No independent acceptance,
 AC2 PASS, final consensus, close, merge or release is inferred.
+
+
+## Fix-up cycle 3 delivered — 2026-10-06
+status: complete
+product-commit: fac40aa
+skill-commit: e976f7c9515f3250761380c1e09295e0f6c59985
+
+This subsection records the authorized repair delivery, not overall completion. The top
+status remains fix-up-cycle-3 until independent review, final consensus and attended close.
+
+G15/W1/W2 restores actual CLI catch-up in both orders and incomplete-stub retries,
+kickoff-excluded round-1 return and the existing BLOCK/NON-PARTICIPANT decline form.
+The pending decline retains the joiner as missing rather than a completed vote; its
+exit/triage and existing-member append behavior match the pre-change baseline. Known
+and immutable membership, retained-veto force and policy-on gates remain protected.
+G16/W3 preserves archived/deleted applied notices and checked interrupted publication;
+one benign re-publication is permitted only after deletion before delivery receipt.
+G17/W4/W5 is disclosure and inactive follow-up only. Native AC2 is NOT MET / expressly
+owner-waived for this release; R5-MAJOR-2 is owner-accepted and deferred, never fixed.
+
+### Validation evidence — frozen cycle 3 (producer, not independent acceptance)
+
+`source-context/codex-1-fixup-3-host-evidence.md` binds all commands, exits, input/output
+hashes and copy hashes. Eleven host checks pass: full Go suite (567.410 seconds), build,
+vet, Windows cross-build, race, shared/local affected suites, native boot/lease checks
+and the original adversarial recognizer probes. gofmt finds no unformatted file among
+93 changed Go files. Full skill suite passes 399 Node and 54 Python tests and all six
+manifests; SKILL.md is 19992 bytes under the unchanged 20000 cap. No product bytes or
+roster hashes changed during checks; both no-provider guard-denial logs are absent.
+
+Actual baseline/current D1–D4 probes run on both volumes. The real-parley crash harness
+kills only its own verified local supervisor/workers; both volumes recover twice with
+two stable immutable settlements and no fabricated terminal. Original harness errors
+remain documented. Deck/skill protocol bytes match exactly; embedded bootstrap passes
+the existing normalization guard. Phase 0/5/8 full packet hashes match the live source.
+Windows execution/native recovery and foreign/container namespace behavior remain
+unverified; compilation is not runtime evidence. Native-positive AC2 remains waived.
+
+The signed cycle-3 plan is preserved byte-for-byte at review/round-05/consensus.md,
+SHA256 ed4d88914bae41a7f7117e2f70c227f1095ed98bbae8eb89639d8f0fdadbe041.
+Separate round-06 full-scope review is next, followed by both final signoffs and a NEW
+attended owner close. Any fresh CRITICAL/MAJOR on cycle-3 fix code triggers trajectory
+escalation; no automatic cycle 4 is authorized.

@@ -1,0 +1,9 @@
+{
+  "sha256": {
+    "parley-deck/COOPERATION.md": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+    "internal/protocol/defaults/COOPERATION.md": "a92d8123ff2e924fff699497636e300fa176899fe5f56f7371a7399aaa5aef66",
+    "../quota-auto-exclude-skill/skills/parley-deck/references/COOPERATION.md": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e"
+  },
+  "deck_skill_exact": true,
+  "embedded": "normalized drift gate required; workspace/date/sync/host-handle substitutions are intentional"
+}

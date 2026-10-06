@@ -1182,3 +1182,20 @@ owner-gate note; current owner round05-answer supersedes its capture proposal. G
 query vocabulary [consensus, signoff, membership, quota, participant, known] selected
 from the graph. Its bounded traversal reached design/review artifacts, not the new
 consensus implementation; direct current sources govern. No graph rebuild was needed.
+
+
+## Frozen cycle-3 host checks / round-06 dispatch — 2026-10-06
+
+CLI product fac40aa and skill e976f7c pass all required host checks and full skill suite;
+no product/roster drift during execution. Producer proof binds actual baseline/current
+D1–D4, notice archive/delete recovery and real parley supervisor-crash recovery on both
+filesystems. Full raw/hashes are in source-context/fixup-cycle-3-20261006. The earlier
+sandbox boot-proof failure and three harness setup assumptions remain honestly recorded.
+
+Use the recorded focused configured-CLI fallback: the driver's latest auto attempt
+omitted the new owner answer and drafted stale context, so it was stopped before an
+artifact. No D6 fix or new auto attempt is inferred. Round-06 gets full product diffs
+since 27e42b8/a5664d8, current owner rulings and AC1–AC21, not a history dump. The review
+step uses Opus 5.5/max, 1800s process ceiling and per-process API_TIMEOUT_MS=1800000.
+Timeout relaunches available 2400s then3600s; short-quota reset+2m up to3 as authorized.
+No provider/model/settings/roster change. Canonical prior review/signoff hashes frozen.

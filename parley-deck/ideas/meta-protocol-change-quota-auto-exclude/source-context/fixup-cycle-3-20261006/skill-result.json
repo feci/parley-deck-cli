@@ -1,0 +1,10 @@
+{
+  "command": [
+    "npm",
+    "test"
+  ],
+  "exit": 0,
+  "seconds": 163.923,
+  "commit": "e976f7c9515f3250761380c1e09295e0f6c59985",
+  "skill_bytes": 19992
+}

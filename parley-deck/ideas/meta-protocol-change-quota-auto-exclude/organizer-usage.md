@@ -193,3 +193,16 @@ Cycle-3 signoff timeout relaunch 1: codex-1 (`rollout-2026-10-06T15-50-29-01a111
 Cycle-3 Phase-7 successful signoff boundary: claude-1 (`6129d5a4-9152-40a2-8b72-f2a54842f5cd.jsonl`): ingest appended: claude-jsonl/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=claude-1 events=51 total_tokens=103325 attribution=ambiguous. Organizer cumulative snapshot supersedes earlier same-session counts; reviewer is a separate successful invocation. No monetary estimate.
 
 Cycle-3 Phase-7 successful signoff boundary: codex-1 (`rollout-2026-10-06T15-50-29-01a1117a-e4fd-7022-a08f-4383a6fd5361.jsonl`): ingest appended: codex-rollout/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=codex-1 events=119 total_tokens=19216612 attribution=ambiguous. Organizer cumulative snapshot supersedes earlier same-session counts; reviewer is a separate successful invocation. No monetary estimate.
+
+
+## Cycle-3 implementation subprocess boundary — 2026-10-06
+
+Distinct codex-1 transcript `rollout-2026-10-06T17-18-00-01a111cb-07a1-7453-a2ab-525c8b9280aa.jsonl`
+(start 15:18Z): ingest appended, 42 events, total_tokens 5717964, attribution ambiguous.
+Exit 0 in 1734.8 seconds. Parent W2 completion is in the separate cumulative organizer
+transcript, not this subprocess row. No monetary estimate.
+
+
+## Cycle-3 host validation / round-06 dispatch boundary — 2026-10-06
+
+Organizer cumulative snapshot of the 15:50:29 transcript: 183 events, total_tokens 29291794, attribution ambiguous. Replaces earlier snapshots of this same session, never adds to them. Distinct subprocess usage remains separate. No monetary estimate.

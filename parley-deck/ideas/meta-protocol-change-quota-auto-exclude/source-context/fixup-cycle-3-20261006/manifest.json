@@ -1,0 +1,158 @@
+{
+  "copies": [
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/host-summary.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/summary.json",
+      "bytes": 3923,
+      "sha256": "103591dbf5cef6581e47f768faef55282890892a6a447774608d7bfa710aac43"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/host-input-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/input-hashes.json",
+      "bytes": 64118,
+      "sha256": "2badf65d2b0d1bb32df05c21d1e38141f1aee50dbf2334db31346dd5109e6c75"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/host-output-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/output-hashes.json",
+      "bytes": 64118,
+      "sha256": "2badf65d2b0d1bb32df05c21d1e38141f1aee50dbf2334db31346dd5109e6c75"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/gofmt.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/gofmt.json",
+      "bytes": 3555,
+      "sha256": "84f9c2152ba11719ceedef0f833694026017209c8406bf167b5742c2021bff9f"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/skill-result.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/skill/result.json",
+      "bytes": 160,
+      "sha256": "135926631751e0dac3de72d8721a6d89fe5bf2222f18856a3103ceffef8ae9d9"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/parent-command-results.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/results.json",
+      "bytes": 3783,
+      "sha256": "ac1da54d787357fe82ef02eac0a843a078a8284d46fea7a3091544cfdd30fd58"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/protocol-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/protocol-hashes.json",
+      "bytes": 527,
+      "sha256": "2fcd955d665e9706896ec37504d490b20394d787f4199a76b4ec6241c51bd2a1"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/packet-attestations.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/packet-attestations.json",
+      "bytes": 1422,
+      "sha256": "62530ff77f04b0504d352726686c600e6012f081852d548b71e6d941bdaacabf"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/real-crash-shared.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/real-crash-shared-v3/result.json",
+      "bytes": 1640,
+      "sha256": "357a5257585b8c9d70a496dc7295d3140c93b24148f95e47470677531680ca0d"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/real-crash-local.json",
+      "source": "/tmp/codex1-fixup3-real-crash-parent/result.json",
+      "bytes": 1412,
+      "sha256": "7b0a951bf6b13b231d9ac752bf75204088f0bbf894bb95d12fd3a5bcaf65f0d4"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/parent-selected-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-selected-hashes.json",
+      "bytes": 5603,
+      "sha256": "a663d0ee77b348a2a5dd46c96ebf2e07466887fd96137ef6e05feeb6b5f7da95"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/embedded-drift.log",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/embedded-drift.log",
+      "bytes": 149,
+      "sha256": "da81ecf79e66d6f311415d7eb7e7f6b8fcb38dd3e47f59109b30620704495d54"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/real-crash-run.py",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/real-crash/run.py",
+      "bytes": 5263,
+      "sha256": "7691edecc40f0ee74033f7d7686c61e67cd2e5188f066a3f7305c70ee8ef321b"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/real-crash-init.go",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/real-crash/init.go",
+      "bytes": 295,
+      "sha256": "28d83fdb15044288e3ad399732597bd10b8cc7a3d0d005e26e0efde2aac3f491"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/baseline-local.log",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/baseline-local.log",
+      "bytes": 3238,
+      "sha256": "c4d4913a4b56ffda6dc8904a9cd361b6faa6470ba38a558d5a9eb0c391fa8c33"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/baseline-shared.log",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/baseline-shared.log",
+      "bytes": 4666,
+      "sha256": "939bdd02ece65707fdd4948b94fd134a89d7690d7b4491d664f150ddb3d0ed73"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/current-local.log",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/current-local.log",
+      "bytes": 4033,
+      "sha256": "fd2b69848a2cadc86a1ccbe429279f8bd478c944c778b4b9d2eca83f6bee8ded"
+    },
+    {
+      "copy": "source-context/fixup-cycle-3-20261006/current-shared.log",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/current-shared.log",
+      "bytes": 5580,
+      "sha256": "95c96853ef67eb21ecbe4c29c52c0259d63d3fea8c140055ec5081a028573c80"
+    }
+  ],
+  "private_host_logs": {
+    ".parley-runtime/quota-implementation/fixup-3/host/vet.log": {
+      "bytes": 353,
+      "sha256": "f5ffee13508d2c308e3729f20dbeee783903d43bc0105d453aa002ee03f78656"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/full.log": {
+      "bytes": 2030,
+      "sha256": "3e7c137010a43138e942fb3de600f6a94d96a1fc53d4ea6226dbf28c55136918"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/local-control.log": {
+      "bytes": 85136,
+      "sha256": "5f2da79971f4961edad87377147ad09036916a54a7de2a29789221eb834617c0"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/windows-build.log": {
+      "bytes": 380,
+      "sha256": "8d302aef10503e6e55e0e78cf1909e7b6b6f5e6d9f630db8849106d663b665ab"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/native-lease.log": {
+      "bytes": 2119,
+      "sha256": "4606a3b98598ad48933a0a45778a5cfc0bfaf40e3d50c1681adfab1984562e96"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/native-boot.log": {
+      "bytes": 425,
+      "sha256": "61906febde42368577e93c8b2acf9e83bebb7eac26836b4c98901da513521069"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/race.log": {
+      "bytes": 107126,
+      "sha256": "75d364f250b84a9c807d54c2e6ffb21c659c02ffb4cc03be233a5d9043c8baa3"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/reviewer-changing-countdowns.log": {
+      "bytes": 3174,
+      "sha256": "b76793a38f6eb2f8bb04b6db86fb305486e7d1cffded68282bc76fa10cad726d"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/shared-volume.log": {
+      "bytes": 104406,
+      "sha256": "90f513c259a5ee67d3dd28951749e9dbd370f68ab675d6045c700afb21e20b16"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/reviewer-zadv.log": {
+      "bytes": 10850,
+      "sha256": "2f4914f9ef7321b7ce96f6d09d9a915d890ba3fa2a83e6df06cf79efda6be7a6"
+    },
+    ".parley-runtime/quota-implementation/fixup-3/host/build.log": {
+      "bytes": 355,
+      "sha256": "035fff7eb2361167e4a1debbe128a2a171b2e75eeb008c65751bc59782d7db71"
+    }
+  }
+}

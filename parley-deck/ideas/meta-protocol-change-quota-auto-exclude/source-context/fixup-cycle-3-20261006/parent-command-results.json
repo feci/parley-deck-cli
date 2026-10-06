@@ -1,0 +1,129 @@
+[
+  {
+    "label": "baseline-local",
+    "argv": [
+      "go",
+      "run",
+      "./.parley-runtime/codex1-fixup3",
+      "/tmp/codex1-fixup3-parent-baseline"
+    ],
+    "cwd": "/tmp/claude1-r5-prechange-27e42b8",
+    "exit": 0,
+    "seconds": 6.751
+  },
+  {
+    "label": "baseline-shared",
+    "argv": [
+      "go",
+      "run",
+      "./.parley-runtime/codex1-fixup3",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/baseline-shared"
+    ],
+    "cwd": "/tmp/claude1-r5-prechange-27e42b8",
+    "exit": 0,
+    "seconds": 1.484
+  },
+  {
+    "label": "current-local",
+    "argv": [
+      "go",
+      "run",
+      "./.parley-runtime/quota-implementation/fixup-3/producer/diff-current",
+      "/tmp/codex1-fixup3-parent-current"
+    ],
+    "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "exit": 0,
+    "seconds": 2.567
+  },
+  {
+    "label": "current-shared",
+    "argv": [
+      "go",
+      "run",
+      "./.parley-runtime/quota-implementation/fixup-3/producer/diff-current",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/parent-checks/current-shared"
+    ],
+    "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "exit": 0,
+    "seconds": 1.815
+  },
+  {
+    "label": "binary",
+    "argv": [
+      "go",
+      "build",
+      "-o",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+      "./cmd/parley"
+    ],
+    "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "exit": 0,
+    "seconds": 1.328
+  },
+  {
+    "label": "packet-phase0",
+    "argv": [
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+      "protocol",
+      "packet",
+      "--dir",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "--phase",
+      "0",
+      "--track",
+      "deliberation",
+      "--idea",
+      "meta-protocol-change-quota-auto-exclude",
+      "--flag",
+      "protocol_change",
+      "--json"
+    ],
+    "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "exit": 0,
+    "seconds": 0.365
+  },
+  {
+    "label": "packet-phase5",
+    "argv": [
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+      "protocol",
+      "packet",
+      "--dir",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "--phase",
+      "5",
+      "--track",
+      "deliberation",
+      "--idea",
+      "meta-protocol-change-quota-auto-exclude",
+      "--flag",
+      "protocol_change",
+      "--json"
+    ],
+    "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "exit": 0,
+    "seconds": 0.092
+  },
+  {
+    "label": "packet-phase8",
+    "argv": [
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-3/host/parley",
+      "protocol",
+      "packet",
+      "--dir",
+      "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "--phase",
+      "8",
+      "--track",
+      "deliberation",
+      "--idea",
+      "meta-protocol-change-quota-auto-exclude",
+      "--flag",
+      "protocol_change",
+      "--json"
+    ],
+    "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "exit": 0,
+    "seconds": 0.101
+  }
+]
