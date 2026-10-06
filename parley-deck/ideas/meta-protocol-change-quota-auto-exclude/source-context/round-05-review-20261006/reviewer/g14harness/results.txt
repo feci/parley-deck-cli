@@ -1,0 +1,5 @@
+default-console exit=0 cmp=equal
+retained-retries exit=0 cmp=equal
+retained-top-level exit=0 cmp=equal
+backoff-retries exit=0 cmp=equal
+2

@@ -1,0 +1,4 @@
+cli-product chunks 27/27 match concat==diff: True True
+cli-fixup chunks 5/5 match concat==diff: True True
+skill-product chunks 3/3 match concat==diff: True True
+skill-fixup chunks 1/1 match concat==diff: True True

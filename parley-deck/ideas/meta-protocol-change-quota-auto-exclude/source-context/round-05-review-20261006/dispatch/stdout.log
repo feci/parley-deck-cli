@@ -1,0 +1,22 @@
+The round-05 review is written. The implementation is not ready for an attended close, and I recommend escalating to the owner instead of opening fix-up cycle 3 by default.
+
+**Artifact:** `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-05/claude-1.md` (SHA-256 `73305207…4e4f`). My raw evidence is in `.parley-runtime/claude1-r5/`, hashed in `evidence-sha256.txt`.
+
+**Counts:** 0 CRITICAL, 2 MAJOR, 1 MINOR, 0 NIT. Findings went from 15 in round 03 to 6 in round 04 to 3 now.
+
+**Blockers:**
+- **R5-MAJOR-1 (new, in the policy-off membership path).** With the policy off, a late joiner can no longer catch up through the CLI, and an agent excluded at kickoff cannot simply be re-added. I ran the same program on the pre-change CLI (`27e42b8`) and the current tree, on the shared volume and on `/tmp`. All three cases work before the change and fail now:
+  - `parley agents exec` refuses to launch the joiner to write its late round-1 file ("excluded participant e cannot dispatch").
+  - Adding the joiner to `participants:` before that file exists blocks the whole idea with a raw "no such file" error.
+  - Re-adding a kickoff-excluded agent during round 1 blocks the same way.
+
+  This is a third behavior change with the policy off, beyond the two FINAL allows. It is a fresh MAJOR in the cycle-2 membership path, so under my signed stopping condition the owner should choose: a narrow cycle 3, or recording it as an accepted change.
+- **R5-MAJOR-2 (AC2 still open; owner decision).** There is still no complete native zcode capture. The realistic native output is rejected: Node's default depth prints `[Object]`, and three common real stack-frame forms fail the grammar. So the only supported recognizer will most likely never fire on real zcode output. It fails closed, so nothing is wrongly excluded. The owner needs to pick one:
+  - (a) authorize one native capture;
+  - (b) accept AC2 as unmet and ship zcode support knowing it is effectively inert;
+  - (c) allow a narrowly bounded grammar extension, validated by (a).
+- **R5-MINOR-1.** After the owner archives an exclusion notice, the next driver pass puts it back in `inbox/` (confirmed on both volumes).
+
+**What cycle 2 fixed:** the retry-countdown problem from round 04 is resolved, and reservations V1–V3 and V5–V9 are met. V4 is only partly met, because of R5-MAJOR-1. I ran the focused tests for 13 packages on both volumes (12 have matching tests; all pass), reran my round-04 probes, and reproduced the offline SDK harness byte-for-byte. AC2 and AC21 are not met.
+
+I did not run the full suite, race, vet, the Windows compile, the skill suite, or a real kill of a running `parley` process; those rely on the producer's host results. Nothing was signed, committed or invoked, and no product files were edited.

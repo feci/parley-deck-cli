@@ -1,0 +1,8 @@
+control (synthetic frame)    eligible=true  reason="explicit provider exhaustion"
+bundle path frame            eligible=true  reason="explicit provider exhaustion"
+async Promise.all frame      eligible=false reason="zcode evidence rejected: framing: unknown SDK stack framing"
+anonymous frame              eligible=false reason="zcode evidence rejected: framing: unknown SDK stack framing"
+Generator.next frame         eligible=false reason="zcode evidence rejected: framing: unknown SDK stack framing"
+V1 single record (61m inferred), terminal receipt 61m before reset: eligible=true  reason="explicit provider exhaustion"
+V1 single record (61m inferred), terminal receipt 59m before reset: eligible=false reason="zcode evidence rejected: known reset below 60 minutes at terminal receipt"
+exit=0

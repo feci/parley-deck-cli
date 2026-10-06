@@ -1,0 +1,106 @@
+// claude-1 round-05 differential (policy-off catch-up/re-inclusion via the actual CLI app.Run).
+// Identical on baseline 27e42b8 and current; only setup.go differs. Local stub agent only.
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"parley-deck-cli/internal/app"
+	"parley-deck-cli/internal/protocol"
+)
+
+func must(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func run(label string, args ...string) int {
+	var out, errb bytes.Buffer
+	code := app.Run(args, &out, &errb)
+	fmt.Printf("%s: exit=%d stdout=%q stderr=%q\n", label, code, strings.TrimSpace(out.String()), strings.TrimSpace(errb.String()))
+	return code
+}
+
+func workspace(base, name string) string {
+	root := filepath.Join(base, name)
+	must(os.MkdirAll(root, 0700))
+	must(protocol.InitWorkspace(root))
+	meta := filepath.Join(root, "parley-deck", "meta")
+	must(os.MkdirAll(meta, 0755))
+	must(os.WriteFile(filepath.Join(meta, "version.json"), []byte(`{"protocolRole":"source"}`), 0600))
+	return root
+}
+
+func roundOne(id, slug string) string {
+	raw := "---\nagent: " + id + "\nidea: " + slug + "\nround: 1\n---\n"
+	for _, h := range []string{"Summary", "Proposed approach", "Concerns / open questions", "Risks", "Existing alternatives"} {
+		raw += "\n## " + h + "\nRead prior proposals; join deliberation from round 2.\n"
+	}
+	return raw
+}
+
+func edit(p, from, to string) {
+	raw, e := os.ReadFile(p)
+	must(e)
+	next := strings.Replace(string(raw), from, to, 1)
+	if next == string(raw) {
+		panic("edit missed " + from)
+	}
+	must(os.WriteFile(p, []byte(next), 0600))
+}
+
+func consensus(dir, slug string) {
+	must(os.WriteFile(filepath.Join(dir, "consensus.md"), []byte("---\nidea: "+slug+"\ndrafted-by: a\n---\n\n## Signoffs\n"), 0600))
+}
+
+func main() {
+	base := os.Args[1]
+	must(os.MkdirAll(base, 0700))
+
+	// D1: catch-up joiner e writes its late round-1 through the CLI's canonical artifact exec.
+	root := workspace(base, "d1-exec-catchup")
+	idea := setup(root, []string{"a", "b", "c", "d"}, nil)
+	target := filepath.Join(idea.Path, "round-01", "e.md")
+	stub := filepath.Join(root, "stub-e.sh")
+	must(os.WriteFile(stub, []byte("#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo local-stub-e; exit 0; fi\ncat >/dev/null\ncat > '"+target+"' <<'ART'\n"+roundOne("e", idea.Slug)+"ART\nexit 0\n"), 0700))
+	must(os.WriteFile(filepath.Join(root, "parley-deck", "agents.local.toml"), []byte("[agents.e]\ncommand = \""+stub+"\"\nprompt_mode = \"stdin\"\nexternal_backend = \"local\"\ntimeout_ms = 5000\n"), 0644))
+	prompt := filepath.Join(root, "prompt.txt")
+	must(os.WriteFile(prompt, []byte("Read priors and write your late round-1 catch-up artifact."), 0600))
+	run("D1 agents exec canonical late round-1 for joiner e", "agents", "exec", "--dir", root, "--agent", "e", "--prompt-file", prompt, "--artifact", filepath.Join("parley-deck", "ideas", idea.Slug, "round-01", "e.md"), "--yes")
+	_, statErr := os.Stat(target)
+	fmt.Printf("D1 late round-1 written by CLI-dispatched joiner: %v\n", statErr == nil)
+
+	// D2: join edit made BEFORE the joiner's late round-1 exists (then a normal signoff op).
+	root = workspace(base, "d2-edit-first")
+	idea = setup(root, []string{"a", "b", "c", "d"}, nil)
+	consensus(idea.Path, idea.Slug)
+	edit(filepath.Join(idea.Path, "00-prompt.md"), "participants: [a, b, c, d]", "participants: [a, b, c, d, e]")
+	run("D2 status after participants edit adding e (no artifact yet)", "status", "--dir", root)
+	run("D2 consensus signoff a after join edit (no artifact yet)", "consensus", "signoff", "--dir", root, "--agent", "a", "--status", "accept", idea.Slug)
+
+	// D3: re-include an agent excluded (with confirmation) at kickoff, during round 1.
+	root = workspace(base, "d3-kickoff-excluded-return")
+	idea = setup(root, []string{"a", "b", "c"}, []string{"d — unavailable — confirmed 2026-10-04"})
+	consensus(idea.Path, idea.Slug)
+	raw, _ := os.ReadFile(filepath.Join(idea.Path, "00-prompt.md"))
+	fmt.Printf("D3 kickoff prompt participants/excluded lines: %q\n", grep(string(raw)))
+	edit(filepath.Join(idea.Path, "00-prompt.md"), "participants: [a, b, c]", "participants: [a, b, c, d]")
+	run("D3 consensus signoff a after re-including kickoff-excluded d", "consensus", "signoff", "--dir", root, "--agent", "a", "--status", "accept", idea.Slug)
+	run("D3 consensus signoff d (returned)", "consensus", "signoff", "--dir", root, "--agent", "d", "--status", "accept", idea.Slug)
+	verify(root, idea.Path)
+}
+
+func grep(s string) []string {
+	out := []string{}
+	for _, l := range strings.Split(s, "\n") {
+		if strings.HasPrefix(l, "participants:") || strings.HasPrefix(l, "excluded:") || strings.HasPrefix(l, "quota_") {
+			out = append(out, l)
+		}
+	}
+	return out
+}

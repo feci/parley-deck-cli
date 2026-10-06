@@ -1,0 +1,13 @@
+A source-derived retry fixture (identical retries)         eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57"
+B aggregated retry, changing countdown, obs=final          eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57"
+B aggregated retry, changing countdown, obs=first          eligible=false rule="" reason="zcode evidence rejected: contradictory inferred observation order/start/receipt" reset=unknown raw=""
+B2 aggregated retry of the two retained countdowns         eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57"
+B3 control: probe-built identical retries                  eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176890; 49h 8m 10s; 2026-10-05 06:14:57"
+C two top-level records, one clock (obs=first)             eligible=false rule="" reason="zcode evidence rejected: contradictory inferred observation order/start/receipt" reset=unknown raw=""
+C two top-level records, one clock (obs=final)             eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57"
+C1 first record alone (obs=first)                          eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57"
+C2 second record alone (obs=final)                         eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-04T22:14:57.003Z raw="2026-10-04T22:14:57.003Z; 176890; 49h 8m 10s; 2026-10-05 06:14:57"
+D two records, real collector clock 2 s apart              eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-06T14:43:53Z observed=2026-10-06T12:43:55.892977Z
+E aggregated, backoff-like countdowns 6s/4s/0s, one write  eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-06T14:43:56Z
+E-control identical nested, same clock                     eligible=true  rule="quota.named-reset-ge-60m.v1" reason="explicit provider exhaustion" reset=2026-10-06T14:43:56Z raw="2026-10-06T14:43:56Z; 7200; 2h; 2026-10-06 22:43:56"
+exit=0

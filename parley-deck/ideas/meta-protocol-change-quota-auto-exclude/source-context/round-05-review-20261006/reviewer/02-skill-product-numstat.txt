@@ -1,0 +1,4 @@
+28	2	skills/parley-deck/SKILL.md
+4	4	skills/parley-deck/parley-addon.json
+119	11	skills/parley-deck/references/COOPERATION.md
+55	1	skills/parley-deck/references/ROSTER_AND_PROTOCOL.md

@@ -1,0 +1,73 @@
+// claude-1 r5: does an applied transition's owner notice reappear after permitted inbox archival?
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"parley-deck-cli/internal/membership"
+	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/runmanifest"
+	"parley-deck-cli/internal/store"
+)
+
+func must(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+func notices(root string) []string {
+	m, _ := filepath.Glob(filepath.Join(root, "parley-deck/inbox/parley-to-user_batch-*.md"))
+	return m
+}
+func main() {
+	root := os.Args[1]
+	must(os.MkdirAll(root, 0700))
+	must(protocol.InitWorkspace(root))
+	p := quota.NewPolicy(nil, nil)
+	idea, k, err := protocol.CreateIdeaWithQuota(root, "notice probe", []string{"a", "b", "c", "d"}, nil, "deliberation", "", "run-1", &p, nil)
+	must(err)
+	must(runmanifest.Write(root, "run-1", runmanifest.New(runmanifest.Options{Root: root, RunID: "run-1", IdeaSlug: idea.Slug, Participants: idea.Participants, QuotaKickoff: k})))
+	must(store.New(filepath.Join(root, "parley-deck/runs/run-1")).AppendDurable(store.Event{Type: "run.created", Data: map[string]any{"idea": idea.Slug, "participants": idea.Participants, "quota_kickoff": k}}))
+	for _, id := range []string{"a", "b"} {
+		s := fmt.Sprintf("---\nagent: %s\nidea: %s\nround: 1\n---\n", id, idea.Slug)
+		for _, h := range []string{"Summary", "Proposed approach", "Concerns / open questions", "Risks", "Existing alternatives"} {
+			s += "\n## " + h + "\nprobe.\n"
+		}
+		must(os.WriteFile(filepath.Join(idea.Path, "round-01", id+".md"), []byte(s), 0600))
+	}
+	ctx, release, err := membership.Acquire(context.Background(), idea.Path, "run-1")
+	must(err)
+	defer release()
+	now := time.Now().UTC()
+	reset := now.Add(2 * time.Hour)
+	ec := quota.Evidence{Eligible: true, InvocationID: "inv-c", Adapter: "synthetic-probe", RuleID: "probe", Provenance: "synthetic-probe", ObservedAt: now, ResetAt: &reset, RawReset: "2h", Excerpt: "weekly limit exhausted"}
+	ed := ec
+	ed.InvocationID = "inv-d"
+	b, err := membership.Settle(ctx, root, idea.Path, "run-1", "round-01", []string{"a", "b", "c", "d"}, []quota.Member{{ID: "a", Usable: true}, {ID: "b", Usable: true}, {ID: "c", Evidence: &ec}, {ID: "d", Evidence: &ed}})
+	fmt.Printf("settle: batch=%v err=%v\n", b != nil, err)
+	n := notices(root)
+	fmt.Printf("notices after settle: %d\n", len(n))
+	arch := filepath.Join(root, "parley-deck/inbox/archived")
+	must(os.MkdirAll(arch, 0755))
+	for _, f := range n {
+		must(os.Rename(f, filepath.Join(arch, filepath.Base(f))))
+	}
+	fmt.Printf("notices after owner archived them: %d\n", len(notices(root)))
+	for i := 1; i <= 2; i++ {
+		_, err = membership.Before(ctx, root, idea.Path, "run-1")
+		fmt.Printf("Before #%d err=%v; inbox notices now: %d\n", i, err, len(notices(root)))
+	}
+	ev, _ := store.New(filepath.Join(root, "parley-deck/runs/run-1")).Load()
+	c := 0
+	for _, e := range ev {
+		if e.Type == "round.completed" {
+			c++
+		}
+	}
+	fmt.Printf("round.completed events: %d\n", c)
+}

@@ -1,0 +1,8 @@
+## independent diff regeneration 2026-10-06T12:32:18Z
+e7780acf2a91c8f95016de3a0a7eedfd5baefe105140caf24f148e7b2d566257  -
+  517979
+product commit 0ee1888 vs HEAD e7bf96c product-path diff bytes:
+       0
+6f7d4ca3f1c4737dbde57747c1083eb7e6d32e4ca10b96e4782cbfc3d0097c15  -
+ 109 files changed, 10270 insertions(+), 336 deletions(-)
+untracked/ignored product files?

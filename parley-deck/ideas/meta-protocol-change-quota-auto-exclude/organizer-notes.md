@@ -1039,3 +1039,42 @@ Round-05 directory is prepared for claude-1 only. The existing driver gap/stale 
 focused full-scope brief fallback remain; no D6/accounting or roster edit. The next review must
 cover complete product diffs and V1–V9; no producer verdict is supplied. AC2 still needs owner
 judgment after the concrete repair review. No close or release claim.
+
+
+## Round-05 review complete; deliberate trajectory/AC2 stop — 2026-10-06 12:49Z
+
+Configured claude-1 review began 12:31:28.735758Z, ended 12:49:04.172859Z, exit 0,
+timeout=false, 1055.4 seconds. First attempt; quota relaunches 0/3 and timeout relaunches
+0/2. No verbatim provider failure exists because neither stream reports one. Stdout is
+the review summary, stderr empty. Canonical artifact is 25323 bytes, SHA-256
+73305207c6c57f9cb8bd76af2b22d3b14e86ea43185f8994de1d1cbd5e6d4e4f; final wait validator
+1/1 filed-and-valid, unparsed=false. The raw 313-line artifact was read after process exit.
+
+Reviewer verdict: 0 CRITICAL, 2 MAJOR, 1 MINOR, 0 NIT. V1–V3/V5–V9 are met; V4 is partial.
+R5-MAJOR-1 is the real CLI catch-up/kickoff-excluded-return regression on G11, demonstrated
+against actual 27e42b8 on both volumes. The producer's prewritten catch-up artifact hid the
+CLI deadlock; IMPLEMENTATION now corrects that claim. R5-MAJOR-2 retains native AC2 and adds
+concrete default-inspect/stack-form limits. R5-MINOR-1 shows notice re-publication after archive.
+15 → 6 → 3 findings still invokes the specifically signed fresh-MAJOR stopping condition.
+No automatic cycle 3, extra reviewer, provider capture, fix-plan signoff or product mutation.
+
+The owner note round05-trajectory-ac2 proposes a narrow cycle 3 plus one bounded evidence-only
+zcode capture and evidence-based framing fixes, preserving the owner stderr rule and all gates.
+It expressly does not authorize itself or waive AC2. The current standing permissions remain
+for future authorized participant steps; they do not replace a product/scope decision.
+
+Frozen CLI product 0ee1888, reviewed snapshot e7bf96c, skill e2f3649. All producer host checks
+pass; independent broad-check limitations remain explicit in the review and future close.
+Selected dispatch/reviewer bytes were copied verbatim to source-context/round-05-review-20261006
+with hashes; Go source copies use .go.txt to avoid extra product packages. No canonical reviewer
+or signoff byte was edited. No review consensus is drafted while the owner's next-step decision
+is outstanding. Existing stale driver/accounting gaps are unchanged and outside scope (D6).
+The two pre-existing untracked run directories are preserved. No new worktree, roster change,
+installation, merge, publication or attended close occurred. All child sessions have exited.
+
+Shared-memory checkpoint: OpenViking create at
+`viking://resources/projects/parley-deck/quota-auto-exclude-round05-owner-gate-20261006.md`
+reported queue-processing timeout after 45 seconds. Direct readback matches the complete saved
+note, confirming persistence. Scoped find still returned earlier notes, so search indexing is
+not yet verified. No repeated write/retry or direct-gateway workaround was attempted; canonical
+local artifacts remain the resume authority.

@@ -1,0 +1,3 @@
+00cdf5824e1286d62bfbd72a19b3491fa8008d39acd405fdf522098fad34ea28  .parley-runtime/claude1-r5/diff-common/main.go
+cf92e1e577d786f3fbcb4748158392b347bc72695a6ac7dd5b354edc57c3b2c1  .parley-runtime/claude1-r5/diff-common/setup-baseline.go.txt
+d09f50ffb1ea87ad84f28c50d3671bb80d2fc41545589cc139780a24b9aa0d0a  .parley-runtime/claude1-r5/diff-common/setup-current.go.txt

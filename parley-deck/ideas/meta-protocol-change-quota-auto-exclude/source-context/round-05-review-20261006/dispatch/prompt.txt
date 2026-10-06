@@ -1,0 +1,59 @@
+You are claude-1, the sole independent non-implementer reviewer for meta-protocol-change-quota-auto-exclude. This is the full-scope Phase-6 re-review after cycle 2. Author only parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-05/claude-1.md. No product edits, signoff, commit, provider/participant invocation, worktree operation, merge or publication. Preserve all prior artifacts. The owner maintains codex-1 as organizer/implementer; your review is independent and binding.
+
+Read the immutable FINAL and scope-reset owner answer in full, the living IMPLEMENTATION plan/deviations/evidence, your round-04 raw review (including your erratum), and the unchanged signed cycle-2 review consensus (including all V1–V9). The latter will be archived at review/round-04/consensus.md. Earlier round-03 findings/reservations remain available if needed to evaluate a retained obligation. Read both current owner standing-permission notes; the organizer alone manages retries. No owner has waived AC2 or approved close.
+
+Required protocol context: render the actual phase-6 deliberation packet with protocol_change, read its entire emitted body in bounded chunks, and record context_mode/source_sha256/packet_sha256/fallback_reason plus actual coverage. Do not claim a full read if tool output was truncated. No optimized or shadow packet.
+
+Cover the COMPLETE CLI product diff since FINAL 27e42b8 and COMPLETE skill diff since a5664d8, including both stages and both fix-up cycles. Read all product chunks in the dispatch manifest and record a concise table for every changed product file. The cycle-2 incremental diffs are aids, never substitutes for full scope. Product hashes and inventory will be supplied at dispatch. No whole-history dump is needed.
+
+Independently attempt counterexamples against G10–G14, V1–V9 and AC1–AC21, and give your own dispositions of every prior unresolved finding. Reuse your original round-04 P2/P3 inputs, including top-level and nested changing countdowns, lastError identity, the two retained reset durations, 61-min-first/59-min-terminal threshold, and contradictory/start/receipt ordering. Check policy-off return and catch-up against the actual pre-change CLI path, without mandatory new included/directive/schema fields; distinguish compatibility imports from owner-confirmed authority and ensure they cannot withdraw a retained veto. Verify tolerant exclusion grammar and actionable diagnostics. Check policy-on later edits versus genuinely interrupted projections using durable receipts, idempotent notice/evaluation recovery, and missing-manifest precommit validation. Reproduce crashed-before-terminal writers with same-host/boot dead-PID proof; foreign/unknown identity stays unresolved. Execute actual API paths with stubbed dispatch on the workspace shared filesystem and /tmp controls.
+
+G14 is evidence preparation only. Inspect the located SDK sink, runtime/retry path, default inspect depth and offline harnesses. Record which source-derived/native-shaped inputs are accepted and rejected by the final code. Partial native tails are partial; source-derived fixtures are not complete native capture. Do not loosen the allowlist, invoke zcode or load its configuration, or waive AC2. Offline SDK/extracted-function checks have no network or credentials. If an owner ruling is still needed, state the exact remaining behavior/evidence gap and a concrete decision.
+
+The producer logs are evidence, never supplied verdicts. Any issue at any severity is in scope. PRIMARY means your execution or direct source reading; producer tests are SECONDARY. Preserve exact commands/results in .parley-runtime/claude1-r5/. Test discovery may use the supplied no-provider PATH stubs. No Windows runtime pass may be inferred from compilation. Check every protected-role, reviewer/diversity/strict/goal gate and retained veto/dispute/finding force. Give scoped AC results and name unexecuted checks. Under your signed stopping judgment, a fresh CRITICAL/MAJOR on cycle-2 fix code needs trajectory escalation; do not assume another cycle is authorized.
+
+Artifact frontmatter: agent claude-1, idea slug, review-round 5, date, exact reviewed CLI/skill commits. Sections: Summary; Protocol context and coverage; User direction (reference your exact existing quotes, quote any new direction); Refutation attempts; Findings with stable R5- IDs and CRITICAL/MAJOR/MINOR/NIT labels; Prior finding dispositions; Open questions. Only you own this review. Your final response is short: artifact path, counts and blockers. No code acceptance, consensus signoff or close by implication.
+
+Configured model claude/claude-opus-5-5[1m], effort max, initial ceiling 1800 seconds. On a terminal auth/credit/quota error, stop with verbatim output; no participant-side retry. The organizer applies the existing short-quota and silent-timeout standing rules with the same model/provider/inputs. Write honest coverage before timeout when possible.
+
+
+DISPATCH SNAPSHOT
+CLI worktree: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude
+Skill worktree: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude-skill
+Reviewed CLI HEAD: e7bf96c2f8914fea151ed1b862ba658b6f3852b9
+CLI product commit: 0ee18889977a29d6baf53d3016b501112760ae12
+Skill product commit: e2f3649eb938e870367c76943b441382fe7acf65
+Canonical output: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-05/claude-1.md
+Signed cycle-2 consensus: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-04/consensus.md
+Signed consensus SHA256: b46924b171e379266ff5af71a0fb67147e2c2aee2b2b26a93c1df3485428b175
+
+Complete product diff authority is /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/review-cycle-2/diff-manifest.json. It records full bytes/hashes and every <=20KB chunk.
+Read all cli-product-chunks (517979 bytes total) and skill-product-chunks (41259 bytes total).
+cli-changed-files.tsv and skill-changed-files.tsv are exhaustive inventories. cli-fixup/skill-fixup
+chunks are only supplemental changes from the previously reviewed 906857b/dcb7d59 products.
+
+PRODUCER EVIDENCE (check independently; these are no supplied code verdicts)
+- source-context/codex-1-fixup-2-evidence.md maps every G10-G14/V1-V9 and exact source/fixture/probe locators.
+- source-context/codex-1-fixup-2-host-evidence.md maps final HOST commands and limits.
+- .parley-runtime/quota-implementation/fixup-2/host/summary.json: full suite 607.553s exit 0; build, full vet, race, actual /Volumes and /tmp checks all exit 0; 86 changed Go files gofmt-clean; source hashes fixed; both rosters unchanged; no provider guard denial.
+- HOST native TestQuotaCycle2NativeCrashWriter passes, as do shared/local/race runs containing it. Child sandbox boot/budget-cache failures are retained, not hidden or renamed passes.
+- Final skill suite: fixup-2/skill-checks/final-result.json and final-npm-test.log: 399 Node, 54 Python, six manifests; input/output hashes match. Core 19819 bytes under unchanged 20000-byte guard.
+- Phase-0/5/8 packets and source hashes are unchanged at 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e; exact skill/deck equality holds. Cycle 2 makes no normative protocol text change.
+- Windows/amd64 build only, no Windows runtime or native crash-settlement proof; no CLI winget release.
+- Selected original evidence copied verbatim with SHA256 inventory at source-context/fixup-cycle-2-20261006/. Raw runtime logs remain available.
+
+COUNTEREXAMPLE INPUTS
+Your original P2/P3 source is .parley-runtime/claude1-r4. The implementer's copied zretry changes ONLY
+the output locator; its preparation script and source comparison hashes are retained. New regressions
+are internal/telemetry/quota_cycle2_test.go and internal/membership/cycle2_test.go, plus existing suites.
+The actual pre-change CLI oracle is a git archive of 27e42b8 in /tmp/quota-cycle2-prechange-27e42b8;
+reproduction scripts and baseline hashes are in fixup-2/checks/prepare-differential.py and
+baseline-identity.txt. Use fresh scratch roots if rerunning; do not edit original reviewer files.
+G14 source audit uses only extracted SDK classes under a minimal environment, never the zcode entry
+point/config. Verify the concrete accepted/rejected shape table yourself. Complete native AC2 capture
+is still absent; no owner disposition has arrived.
+
+Use host tools for your checks; PATH can prepend fixup-2/host/no-provider-bin to prevent accidental
+provider discovery launches. Save new independent evidence under .parley-runtime/claude1-r5.
+Both current standing-permission notes govern ONLY organizer relaunches. No retries/provider probes
+inside your process. Full review and honest coverage remain your own responsibility.

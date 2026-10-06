@@ -1,0 +1,11 @@
+package main
+
+import "parley-deck-cli/internal/protocol"
+
+func setup(root string, ids, excluded []string) protocol.IdeaStatus {
+	i, e := protocol.CreateIdeaFull(root, "claude1 r5 differential", ids, excluded, "deliberation", "")
+	must(e)
+	return i
+}
+
+func verify(root, dir string) {}

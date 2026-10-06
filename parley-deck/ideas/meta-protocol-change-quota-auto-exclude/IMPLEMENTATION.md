@@ -12,9 +12,12 @@ implementation-pr: n/a
 ## Summary of work
 
 Both stages and fix-up cycles 1–2 are delivered at CLI `0ee1888`; the skill counterpart is
-`e2f3649`. Cycle 2 implements signed G10–G14 and V1–V9. The separate claude-1 fix-list
+`e2f3649`. Cycle 2 delivers changes for signed G10–G14 and V1–V9. The separate claude-1 fix-list
 signoff completed after the authorized 2400-second relaunch; it approves the plan, not the code.
-The complete current product is ready for its independent round-05 re-review.
+The separate full-scope round-05 review is complete: 0 CRITICAL, 2 MAJOR, 1 MINOR, 0 NIT.
+It finds V4 only partly met: the ordinary CLI catch-up join and kickoff-excluded return
+regress with the policy off. A fresh MAJOR on G11 triggers the signed stopping condition.
+Work is deliberately paused for the owner; cycle 3, AC2 disposition and close are not authorized.
 
 The frozen HOST full Go suite passes every package (607.553 seconds), along with build/vet,
 race, shared-volume/local-control checks and all 86 changed-file formatting checks. Native
@@ -25,9 +28,10 @@ equality and the unchanged packet guard pass; normative bytes did not change in 
 
 AC2 remains OPEN: complete source-derived records qualify, while both retained partial native
 excerpts and the default-console [Object] shape reject. The 24,833-byte native capture is missing.
-The code now accepts realistic decreasing countdowns against terminal receipt time; ordinary
-policy-off return/join is preserved against the actual pre-change CLI without manufacturing
-owner authority. These are producer results and require independent review.
+The reviewer also found several real V8 stack forms reject. The code accepts realistic decreasing
+countdowns against terminal receipt time, independently confirmed. A known policy-off return
+works without manufacturing owner authority, but the CLI join/return counterexamples in
+R5-MAJOR-1 supersede the producer's broader compatibility claim. The review is authoritative.
 
 Role concentration (§15.5): codex-1 organizes and implements; a separate configured claude-1
 process owns every independent review/signoff. The owner decides the AC2 evidence boundary
@@ -56,7 +60,8 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
   host build/vet, changed/new-file formatting and final skill suite.
 - [x] Complete full HOST `go test ./... -count=1 -timeout 45m` and preserve the result; final frozen
   protocol/packet/drift checks and full skill suite also pass.
-- [ ] Separate full-scope claude-1 review, binding findings, review consensus, and at most five fix-up cycles.
+- [x] Separate full-scope claude-1 round-05 review; raw findings read and preserved without edits.
+- [ ] Owner trajectory/AC2 decisions, then authorized fixes and both review-consensus signoffs.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, blocking attended-close note.
 - [ ] Only after owner close confirmation: complete, merge, release channels, independent channel verification.
 
@@ -73,9 +78,10 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
   Serialization now uses a deck-filesystem PID/token lease with host/boot identity, exclusive complete
   owner publication and per-generation stale-reaper claims. Unknown/foreign identity remains blocked.
   The ignored runtime location, bounded projection waiting and off-scope behavior require re-review.
-- Cycle 2 preserves the ordinary policy-off return/join path against the actual pre-change CLI.
-  Manual imports are not owner authority and cannot withdraw retained vetoes. The signed V4
-  distinction removes the extra return/join schemas from cycle 1; independent re-review is pending.
+- Cycle 2 removes the extra return/join schemas and preserves a known policy-off return.
+  Manual imports are not owner authority and cannot withdraw retained vetoes. Independent
+  round-05 R5-MAJOR-1 proves the catch-up and kickoff-excluded return paths still regress;
+  the broader producer compatibility claim is superseded, and G11/V4 remains incomplete.
 - Complete native stderr framing could not be recovered. Strict allowlisting rejects the retained
   excerpts alone; source-derived SDK positives are not relabeled native. This unresolved AC2 evidence
   limit is a deviation/remaining gate, not an inferred owner waiver.
@@ -161,7 +167,7 @@ implementation validation, not a Phase-8 fix-up cycle or independent acceptance.
 
 ## Validation evidence
 
-Producer results only; independent criterion verdicts will be cited from claude-1's own artifact.
+Producer results at dispatch; the independent round-05 section below now governs acceptance.
 Full command logs are under `.parley-runtime/quota-implementation/`; exact child checks and evidence
 limits are in `source-context/codex-1-implementation-evidence.md`.
 
@@ -177,15 +183,15 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 | AC8 | Designee, pin, started-draft, global-default and protected-batch tests pass in host full coverage. |
 | AC9 | Committed owner dispositions and authorized-return/author-withdrawal/fresh-signoff tests pass; old bytes and later new vetoes remain tested. |
 | AC10 | Review-count/diversity/strict/goal gates and consumer rebinding pass the full host suite; only claude-1 supplies independent acceptance. |
-| AC11 | Fault/pending/replay tests plus checked corrupt-receipt recovery, all-manifest reconciliation and dedup pass; actual recover CLI is exercised twice. |
+| AC11 | Fault/pending/replay checks pass, but round-05 R5-MINOR-1 independently reproduces re-publication after notice archival. PARTIAL. |
 | AC12 | Native and synthetic cross-process PID leases, same-PID refusal, stale/release races, bounded projection contention and full pipeline/TUI lifetime pass on shared/local filesystems and under race. |
 | AC13 | Partial files, failed invocations, prior events and survivor terminal validation remain covered by the passing full suite. |
 | AC14 | Immutable auto/owner/manual revisions, later-run discovery, current/known membership and archived/deleted owner evidence are exercised; policy-on prompt edits remain non-authoritative. |
-| AC15 | Status/wait/brief pending/applied/current-policy views, named gate notices, replay and wait exits pass existing/new host coverage. |
-| AC16 | Layered policy/frozen scope pass. Cycle-2 differential against actual 27e42b8 app.Run preserves plain policy-off return and late-round join as manual revisions, never owner authority; independent V4 evaluation remains. |
-| AC17 | Roster hashes are unchanged; no timer/rejoin worker or binary-inferred scope change. Authorized revision paths are explicitly exercised. |
+| AC15 | Surface checks pass, but R5-MINOR-1 recreates an archived notice on the next Before. PARTIAL. |
+| AC16 | Layering/frozen scope pass; R5-MAJOR-1 shows the producer differential missed CLI dispatch of the catch-up artifact. Catch-up and kickoff-excluded return regress against 27e42b8 on both volumes. PARTIAL. |
+| AC17 | Roster hashes are unchanged and no timer/rejoin worker exists; the kickoff-excluded return regression in R5-MAJOR-1 leaves the criterion PARTIAL. |
 | AC18 | Complete allowlisted provider records, invocation facts and reset agreement retain owner gates and accepted subagent ambiguity. AC2 native evidence is still missing. |
-| AC19 | Both stages and cycle-1 code delivered; separate re-review, final consensus and attended close remain required. Status is fix-up-cycle-2, never complete. |
+| AC19 | Both stages and cycles 1–2 delivered; round-05 found unresolved defects. Owner decisions, authorized repairs, final consensus and attended close remain required. Status is fix-up-cycle-2, never complete. |
 | AC20 | Full host suite/build/vet/race/shared/local pass; all 86 changed Go files formatted. Final skill 399 Node/54 Python/six manifests pass with identical inputs; Windows/amd64 compile only. |
 | AC21 | NOT MET: new attended-close request must follow independent current-tree evidence and both final review-consensus signoffs, then receive a new owner answer. |
 
@@ -452,12 +458,12 @@ Cycle 2 may proceed, with no code acceptance, AC2 waiver or close authority.
 
 ### Implementation checklist
 
-- [ ] Apply G10–G13 with V1–V8 and meaningful counterexample regressions.
-- [ ] Complete G14 offline source/framing evidence under V9; keep AC2 OPEN.
-- [ ] Update CLI/skill guidance; disclose any protocol text delta.
-- [ ] Run frozen host full Go suite, vet/build/gofmt/race/shared/local checks and full skill checks.
-- [ ] Separate claude-1 full-scope re-review of both stages and cycle 2.
-- [ ] Apply stopping judgment: fresh CRITICAL/MAJOR on cycle-2 fix code requires trajectory escalation; do not assume cycle 3.
+- [ ] Fully satisfy G10–G13/V1–V8: code delivered, but round-05 finds G11/V4 incomplete (R5-MAJOR-1).
+- [x] Complete G14 offline source/framing evidence under V9; keep AC2 OPEN.
+- [x] Update CLI/skill guidance; no cycle-2 protocol text delta.
+- [x] Run frozen host full Go suite, vet/build/gofmt/race/shared/local checks and full skill checks.
+- [x] Separate claude-1 full-scope re-review of both stages and cycle 2.
+- [x] Apply stopping judgment: fresh MAJOR on cycle-2 fix code requires trajectory escalation; cycle 3 held for owner.
 
 The draft's earlier “13-package” wording means 13 invoked packages but only 12 with tests;
 internal/runstate had no matching tests. The next consensus will contain Drafter position changes.
@@ -472,7 +478,8 @@ head-commit: 0ee18889977a29d6baf53d3016b501112760ae12
 skill-commit: e2f3649eb938e870367c76943b441382fe7acf65
 
 This marks the authorized repair cycle delivered, not overall implementation completion.
-The native AC2 thread remains held for the owner and full-scope round-05 review is pending.
+The native AC2 thread remains held for the owner; full-scope round-05 review found G11/V4
+incomplete and requires trajectory escalation before any cycle 3.
 
 ### Fixes applied
 
@@ -489,9 +496,12 @@ The native AC2 thread remains held for the owner and full-scope round-05 review 
 
 ### Deviations from agreed fixes
 
-None in the authorized repair/evidence-preparation scope. G14 deliberately retains the AC2 owner
-decision. Under V7 the command-level clarification needs no COOPERATION wording change. Windows
-runtime/native recovery remains unverified/unavailable; cross-build is compile evidence only.
+The producer reported no intended deviation, but round-05 R5-MAJOR-1 proves G11/V4 is incomplete:
+its differential created the late round-1 file directly rather than dispatching its author through
+the CLI. CLI catch-up and kickoff-excluded return still regress. This is not accepted behavior.
+G14 deliberately retains the AC2 owner decision. Under V7 the command-level clarification needs
+no COOPERATION wording change. Windows runtime/native recovery remains unverified/unavailable;
+cross-build is compile evidence only.
 
 ### Current validation evidence
 
@@ -499,11 +509,77 @@ The producer maps `source-context/codex-1-fixup-2-evidence.md` and
 `source-context/codex-1-fixup-2-host-evidence.md` bind exact source/log/check identities.
 Selected raw bytes are retained in `source-context/fixup-cycle-2-20261006/`. All required host and
 skill checks pass without source changes during validation. This supersedes sandbox-only failures
-by actual host execution; those failures remain recorded. Current independent AC verdicts must
-come from claude-1's own round-05 artifact; no older scoped PASS is automatically upgraded.
+by actual host execution; those failures remain recorded. Current independent AC verdicts are
+in claude-1's own round-05 artifact and the record below; no older scoped PASS is automatically upgraded.
 
 ### Open boundaries and stopping judgment
 
-AC2 is OPEN; no owner waiver/capture exists. Full-scope re-review and both final signoffs are
-still needed, followed by a NEW attended owner close. A fresh CRITICAL/MAJOR on cycle-2 fix
-code triggers trajectory escalation under the signed condition; cycle 3 is not automatic.
+AC2 is OPEN; no owner waiver/capture exists. Round-05 is complete with unresolved findings;
+any authorized repairs need fresh full-scope review and both final signoffs, followed by a
+NEW attended owner close. R5-MAJOR-1 now triggers trajectory escalation under the signed
+condition; cycle 3 is not automatic.
+
+
+## Independent round-05 outcome — 2026-10-06
+
+The separate configured claude-1 process exited 0 after 1055.4 seconds, timeout=false, with
+no quota/credit/auth failure and no relaunch. It authored `review/round-05/claude-1.md`
+(SHA-256 `73305207c6c57f9cb8bd76af2b22d3b14e86ea43185f8994de1d1cbd5e6d4e4f`).
+The final `parley wait` validator reports 1/1 filed-and-valid, unparsed=false, 25323 bytes.
+The organizer read the entire final artifact; its raw verdict governs over the digest.
+
+Counts: 0 CRITICAL, 2 MAJOR, 1 MINOR, 0 NIT. Findings declined 15 → 6 → 3, but the fresh
+R5-MAJOR-1 lands on G11 fix code. The signed cycle-2 stopping condition therefore applies.
+No cycle 3 is authorized by the remaining numeric budget. Blocking owner note:
+`parley-deck/inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_round05-trajectory-ac2.md`.
+No new review-consensus draft or signoff has been manufactured at this gate.
+
+### Binding findings and corrected producer claims
+
+- R5-MAJOR-1: CLI-dispatched policy-off catch-up is refused, edit-first catch-up blocks signers,
+  and a kickoff-excluded agent's plain return blocks. The same real app.Run probes succeed
+  on 27e42b8 and fail now on both volumes. Our differential pre-created round-1 bytes and
+  missed dispatch. G11/V4 is incomplete, not accepted as an extra knob-off behavior change.
+- R5-MAJOR-2: native AC2 remains absent; realistic default-console [Object] and three real
+  V8 stack forms reject. The reviewer reproduced offline shapes, not a native invocation.
+  Capture and any bounded grammar extension require the concrete owner decision in the note.
+- R5-MINOR-1: reconciliation recreates a notice after normal owner archival. One terminal
+  evaluation is retained, but one durable notice publication is not yet respected.
+
+The reviewer resolves R4-MAJOR-1, R4-MINOR-1/2 and R4-NIT-1. G12/G13 and V1–V3/V5–V9 are
+met within their stated scope. R4-MAJOR-2 is only partially resolved and R4-MAJOR-3 carries
+forward as R5-MAJOR-2. Existing round-03 dispositions and owner rulings remain in force.
+
+### Independent current-tree acceptance map
+
+This records claude-1's scoped verdicts, not an organizer re-grade. See the raw review for
+PRIMARY execution/source locators and SECONDARY producer evidence.
+
+| Criteria | Independent round-05 result |
+| --- | --- |
+| AC1 | PASS scoped: live packet/hash and drift; phase 0/5/8 re-render remains SECONDARY. |
+| AC2 | NOT MET: R5-MAJOR-2, native evidence/behavior decision. |
+| AC3–AC5 | PASS: negatives/support boundary and whole-batch floor/permutations. |
+| AC6 | PASS kickoff filtering; catch-up launch regression remains R5-MAJOR-1. |
+| AC7–AC8 | PASS: bare 503 and protected-role checks. |
+| AC9 | PASS retained vetoes; knob-off return of new identities is R5-MAJOR-1. |
+| AC10 | PASS: prospective membership gates. |
+| AC11 | PARTIAL: durability/replay pass; archived notice is re-created (R5-MINOR-1). |
+| AC12–AC14 | PASS: serialization, partial artifacts and history. |
+| AC15 | PARTIAL: R5-MINOR-1. |
+| AC16–AC17 | PARTIAL: R5-MAJOR-1. |
+| AC18 | PASS: quoted/tool/content negatives. |
+| AC19 | CONDITIONAL, honored: top-level status remains fix-up-cycle-2. |
+| AC20 | PARTIAL: independent focused shared/local checks pass; broad host/skill evidence is SECONDARY, Windows runtime unexecuted. |
+| AC21 | NOT MET: no final consensus signoffs or NEW attended owner close. |
+
+Full-scope review covered all 109 changed CLI product files and four skill files. Independent
+focused suites ran 13 packages on each volume, with 12 containing matching tests. The reviewer
+also reran its original probes and the sterile SDK harness. It did not rerun the full Go suite,
+race, vet, build, full skill suite, Windows compile, G14 extraction or phases 0/5/8 packets,
+and did not kill a real running parley process. Those provenance limits remain visible for the
+next review/close; the unverified container/PID-namespace concern is a question, not a finding.
+
+Selected original evidence is preserved in `source-context/round-05-review-20261006/` with
+copy hashes. Products, normative bytes, roster and previous reviewer/signoff bytes are frozen.
+Organization ends deliberately at the blocking owner note; no participant is still running.

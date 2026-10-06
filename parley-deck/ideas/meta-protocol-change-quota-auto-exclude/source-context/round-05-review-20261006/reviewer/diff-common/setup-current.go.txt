@@ -1,0 +1,26 @@
+package main
+
+import (
+	"fmt"
+
+	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/runmanifest"
+)
+
+func setup(root string, ids, excluded []string) protocol.IdeaStatus {
+	p := quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea}
+	i, k, e := protocol.CreateIdeaWithQuota(root, "claude1 r5 differential", ids, excluded, "deliberation", "", "run-1", &p, nil)
+	must(e)
+	must(runmanifest.Write(root, "run-1", runmanifest.New(runmanifest.Options{Root: root, RunID: "run-1", IdeaSlug: i.Slug, Participants: k.Participants, QuotaKickoff: k})))
+	return i
+}
+
+func verify(root, dir string) {
+	h, e := quota.ReadHistory(dir)
+	fmt.Printf("current history: err=%v", e)
+	if h != nil {
+		fmt.Printf(" revision=%d current=%v known=%v", h.Revision, h.Current, h.Known)
+	}
+	fmt.Println()
+}

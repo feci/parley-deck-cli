@@ -1,0 +1,3 @@
+6761f62df147a08fd461a11069fe30dbf4d77ab653613c962853122e23ff6dc2  /tmp/claude1-r5-prechange-27e42b8/internal/app/app.go
+3b9fbac38ac900285c749822906b9e51753cd47425d77970a437f1fa67602999  /tmp/claude1-r5-prechange-27e42b8/internal/consensus/consensus.go
+b273af1e0649a365bf384083d27c319ddb9cb62e0efe1b757eb5e0ccfc22f388  /tmp/claude1-r5-prechange-27e42b8/parley-deck/COOPERATION.md

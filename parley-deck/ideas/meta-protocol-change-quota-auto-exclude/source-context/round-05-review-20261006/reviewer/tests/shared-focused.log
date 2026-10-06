@@ -1,0 +1,13 @@
+ok  	parley-deck-cli/internal/telemetry	0.224s
+ok  	parley-deck-cli/internal/membership	10.022s
+ok  	parley-deck-cli/internal/app	7.541s
+ok  	parley-deck-cli/internal/pidlease	1.021s
+ok  	parley-deck-cli/internal/fsutil	0.196s
+ok  	parley-deck-cli/internal/consensus	7.921s
+ok  	parley-deck-cli/internal/quota	2.318s
+ok  	parley-deck-cli/internal/protocol	0.452s
+ok  	parley-deck-cli/internal/driver	0.975s
+ok  	parley-deck-cli/internal/runner	2.348s
+ok  	parley-deck-cli/internal/config	0.218s
+ok  	parley-deck-cli/internal/runcontrol	1.017s
+ok  	parley-deck-cli/internal/runstate	0.203s [no tests to run]

@@ -156,3 +156,18 @@ Separate codex-1 transcript: `rollout-2026-10-06T13-46-05-01a11109-01db-7f60-91f
 Organizer cumulative snapshot: input_tokens 16573427, cached_input_tokens 16327040, cache_write_input_tokens 0, output_tokens 62692, reasoning_output_tokens 34452, total_tokens 16636119; 102 events; attribution ambiguous; accounting 2026-10-06T12:30:32.162925Z.
 This replaces earlier snapshots of the 13:26:57 organizer transcript, never adds to them.
 Child implementation usage is a distinct session. No monetary estimate or independent acceptance.
+
+
+## Round-05 review / trajectory-stop boundary — 2026-10-06
+
+claude-1: input_tokens 310, cached_input_tokens 57178199, cache_write_input_tokens 1784776, output_tokens 237589, reasoning_output_tokens 0, total_tokens 237899; 155 events; attribution ambiguous; accounting 2026-10-06T12:50:33.820343Z.
+
+codex-1: input_tokens 21288751, cached_input_tokens 20456320, cache_write_input_tokens 0, output_tokens 83929, reasoning_output_tokens 42879, total_tokens 21372680; 143 events; attribution ambiguous; accounting 2026-10-06T12:50:33.910307Z.
+
+claude-1 is the distinct b31f341e round-05 transcript. The codex-1 row is a cumulative
+snapshot of the 13:26:57 organizer transcript and replaces its earlier snapshots; never sum them.
+Claude cache read/write inputs are separate under the client parser convention. No monetary
+estimate or completed implementation/close is inferred. Later organizer snapshots, if present,
+supersede this boundary row without changing reviewer usage.
+
+Final durable-stop organizer snapshot (supersedes the row above): input_tokens 22471691, cached_input_tokens 21571200, cache_write_input_tokens 0, output_tokens 99460, reasoning_output_tokens 46334, total_tokens 22571151; 155 events; attribution ambiguous; accounting 2026-10-06T12:59:52.648677Z. This is the same organizer transcript, never additive.

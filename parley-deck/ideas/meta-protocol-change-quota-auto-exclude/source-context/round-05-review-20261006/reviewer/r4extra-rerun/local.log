@@ -1,0 +1,25 @@
+R2 this-idea-unbracketed              QuotaMembers current=[a b c] known=[a b c d] err=<nil> | RecordManual err=<nil> | revision=1 readErr=<nil>
+R2 return-d-without-included-marker   QuotaMembers current=[a b c d] err=<nil>
+R2 return-d-with-included-marker      QuotaMembers current=[a b c d] err=<nil> | RecordManual err=<nil> revision=2 current=[a b c d]
+R2 documented-bracketed               QuotaMembers current=[a b c] known=[a b c d] err=<nil> | RecordManual err=<nil> | revision=1 readErr=<nil>
+R2 reason-contains-emdash             QuotaMembers current=[a b c] known=[a b c d] err=<nil> | RecordManual err=<nil> | revision=1 readErr=<nil>
+R2 date-with-trailing-note            QuotaMembers current=[] known=[] err=manual exclusion d requires excluded: [d — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date | RecordManual err=manual exclusion d requires excluded: [d — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date | revision=0 readErr=<nil>
+R2 inbox-reference-style              QuotaMembers current=[] known=[] err=manual exclusion d requires excluded: [d — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date | RecordManual err=manual exclusion d requires excluded: [d — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date | revision=0 readErr=<nil>
+R2 hyphen-separators                  QuotaMembers current=[] known=[] err=manual exclusion d requires excluded: [d — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date | RecordManual err=manual exclusion d requires excluded: [d — reason — confirmed YYYY-MM-DD] (brackets optional; em dashes allowed in reason); record the owner's confirmation in that form, with no suffix after the date | revision=0 readErr=<nil>
+R3 local host="Tomass-Virtual-Machine.local" boot="{ sec = 1791044926, usec = 597398 } Sat Oct  3 18:28:46 2026"
+R3 foreign-host-dead-pid      acquired=false err=lease held: demo/run-dead pid=2147480000 host="Tomass-Virtual-Machine.local-other" boot="{ sec = 1791044926, usec = 597398 } Sat Oct  3 18:28:46 2026" at /tmp/claude1-r5-local/r4extra-1791290829/lease/foreign-host-dead-pid.lease; only a proven dead local owner may be reclaimed ownerUnchanged=true
+R3 foreign-boot-dead-pid      acquired=false err=lease held: demo/run-dead pid=2147480000 host="Tomass-Virtual-Machine.local" boot="{ sec = 1791044926, usec = 597398 } Sat Oct  3 18:28:46 2026-previous-boot" at /tmp/claude1-r5-local/r4extra-1791290829/lease/foreign-boot-dead-pid.lease; only a proven dead local owner may be reclaimed ownerUnchanged=true
+R3 unknown-host-dead-pid      acquired=false err=lease held: demo/run-dead pid=2147480000 host="" boot="{ sec = 1791044926, usec = 597398 } Sat Oct  3 18:28:46 2026" at /tmp/claude1-r5-local/r4extra-1791290829/lease/unknown-host-dead-pid.lease; only a proven dead local owner may be reclaimed ownerUnchanged=true
+R3 unknown-boot-dead-pid      acquired=false err=lease held: demo/run-dead pid=2147480000 host="Tomass-Virtual-Machine.local" boot="" at /tmp/claude1-r5-local/r4extra-1791290829/lease/unknown-boot-dead-pid.lease; only a proven dead local owner may be reclaimed ownerUnchanged=true
+R3 same-host-boot-dead-pid    acquired=true err=<nil> ownerUnchanged=false
+R1 bind committed answer err=<nil> sha=25b125a5d798
+R1 live inbox copy present                  validate err=<nil>
+R1 moved to inbox/archived (permitted)      validate err=<nil>
+R1 deleted from inbox (permitted)           validate err=<nil>
+R1 modified archived copy present           validate err=user-answer working copy changed: parley-deck/inbox/archived/user-to-all_r4-return.md
+R1 unrelated/fabricated path                validate err=committed authority unavailable: exit status 128
+R1 fabricated commit                        validate err=committed authority unavailable: exit status 128
+R1 wrong sha256                             validate err=user-answer digest changed
+R1 quote not in committed answer            validate err=wrong user-answer attribution, idea or verbatim quote
+R1 wrong idea                               validate err=wrong user-answer attribution, idea or verbatim quote
+exit=0

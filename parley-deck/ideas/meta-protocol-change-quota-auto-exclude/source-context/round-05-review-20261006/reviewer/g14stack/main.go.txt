@@ -1,0 +1,45 @@
+// claude-1 r5: offline; replaces only the synthetic stack frame of the producer's source-derived
+// fixture with common real V8 frame forms; plus V1 single-record 61-min-first/59-min-terminal.
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+	"time"
+
+	"parley-deck-cli/internal/telemetry"
+)
+
+func main() {
+	raw, err := os.ReadFile("internal/telemetry/testdata/quota/zcode-sdk-source-derived.stderr")
+	if err != nil {
+		panic(err)
+	}
+	obs, _ := time.Parse(time.RFC3339Nano, "2026-10-02T21:06:07.003Z")
+	code := 1
+	frame := "    at offlineFixture (sdk-framing-harness.cjs:1:1) {"
+	cases := map[string]string{
+		"control (synthetic frame)": frame,
+		"bundle path frame":          "    at /opt/homebrew/lib/node_modules/zcode-app-cli/vendor/zcode.cjs:3:123456\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async k7r (/opt/homebrew/lib/node_modules/zcode-app-cli/vendor/zcode.cjs:3:7169744) {",
+		"async Promise.all frame":    "    at k7r (/opt/homebrew/lib/node_modules/zcode-app-cli/vendor/zcode.cjs:3:7169744)\n    at async Promise.all (index 0) {",
+		"anonymous frame":            "    at k7r (/opt/homebrew/lib/node_modules/zcode-app-cli/vendor/zcode.cjs:3:7169744)\n    at <anonymous> {",
+		"Generator.next frame":       "    at k7r (/opt/homebrew/lib/node_modules/zcode-app-cli/vendor/zcode.cjs:3:7169744)\n    at Generator.next (<anonymous>) {",
+	}
+	for _, name := range []string{"control (synthetic frame)", "bundle path frame", "async Promise.all frame", "anonymous frame", "Generator.next frame"} {
+		s := strings.Replace(string(raw), frame, cases[name], 1)
+		e := telemetry.ClassifyQuota(telemetry.QuotaInput{Adapter: "zcode", InvocationID: "r5-stack", Stderr: s, ObservedAt: obs, ExitCode: &code})
+		fmt.Printf("%-28s eligible=%-5v reason=%q\n", name, e.Eligible, e.Reason)
+	}
+	// V1 single record: inferred observation 61 min before reset, terminal receipt 59 min before.
+	reset := time.Date(2026, 10, 6, 15, 0, 0, 0, time.UTC)
+	s := string(raw)
+	s = strings.ReplaceAll(s, "2026-10-04T22:14:57.003Z", reset.Format(time.RFC3339Nano))
+	s = strings.ReplaceAll(s, "2026-10-05 06:14:57", reset.In(time.FixedZone("UTC+8", 8*3600)).Format("2006-01-02 15:04:05"))
+	s = strings.ReplaceAll(s, "176930", "3660")
+	s = strings.ReplaceAll(s, "49h 8m 50s", "1h 1m 0s")
+	for _, m := range []int{61, 59} {
+		e := telemetry.ClassifyQuota(telemetry.QuotaInput{Adapter: "zcode", InvocationID: "r5-v1", Stderr: s, ObservedAt: reset.Add(-time.Duration(m) * time.Minute), ExitCode: &code})
+		fmt.Printf("V1 single record (61m inferred), terminal receipt %dm before reset: eligible=%-5v reason=%q\n", m, e.Eligible, e.Reason)
+	}
+}

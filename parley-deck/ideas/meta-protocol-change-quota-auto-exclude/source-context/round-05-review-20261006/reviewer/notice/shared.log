@@ -1,0 +1,7 @@
+settle: batch=true err=<nil>
+notices after settle: 1
+notices after owner archived them: 0
+Before #1 err=<nil>; inbox notices now: 1
+Before #2 err=<nil>; inbox notices now: 1
+round.completed events: 1
+exit=0
