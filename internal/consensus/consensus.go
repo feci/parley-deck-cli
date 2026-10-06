@@ -128,8 +128,12 @@ func Status(root, ideaSlug string, review bool) (Summary, error) {
 	}
 	originalSignoffs := append([]Signoff(nil), doc.Signoffs...)
 	doc.Signoffs = quotaEffectiveSignoffs(idea.Path, path, idea.Participants, doc)
-	result := validateDocumentAwaiting(idea.Slug, known,
-		reviewConsensusVoters(idea.Path, idea.Participants, review), review, doc)
+	decliners, _, err := quotaCatchupDecliners(idea.Path, review)
+	if err != nil {
+		return Summary{}, err
+	}
+	result := validateDocumentWithDecliners(idea.Slug, known,
+		reviewConsensusVoters(idea.Path, idea.Participants, review), decliners, review, doc)
 	result.Signoffs = originalSignoffs
 	obligations, oerr := protocol.UnresolvedQuotaObligations(idea.Path, path)
 	if oerr != nil {
@@ -301,8 +305,18 @@ func AppendSignoff(root, ideaSlug string, opts SignoffOptions) (Summary, error) 
 	if !contains(currentIDs, opts.Agent) {
 		return Summary{}, fmt.Errorf("unknown current participant %q", opts.Agent)
 	}
+	decliners, pending, err := quotaCatchupDecliners(idea.Path, opts.Review)
+	if err != nil {
+		return Summary{}, err
+	}
+	if !contains(known, opts.Agent) && !(contains(decliners, opts.Agent) && catchupDecline(Signoff{Status: status, Notes: opts.Notes, CounterProposal: opts.CounterProposal})) {
+		if pending != "" {
+			return Summary{}, errors.New(pending)
+		}
+		return Summary{}, fmt.Errorf("unknown participant %q", opts.Agent)
+	}
 	doc.Signoffs = quotaEffectiveSignoffs(idea.Path, path, currentIDs, doc)
-	current := validateDocumentAwaiting(idea.Slug, known, currentIDs, opts.Review, doc)
+	current := validateDocumentWithDecliners(idea.Slug, known, currentIDs, decliners, opts.Review, doc)
 	if len(current.Errors) > 0 {
 		return Summary{}, fmt.Errorf("cannot append to malformed consensus: %s", strings.Join(current.Errors, "; "))
 	}
@@ -623,6 +637,12 @@ func validateDocument(ideaSlug string, participants []string, review bool, doc d
 // validateDocumentAwaiting separates who may SIGN (known) from who is AWAITED (required).
 // A signoff from a known participant is always valid; only `required` drives missing/triage.
 func validateDocumentAwaiting(ideaSlug string, known, required []string, review bool, doc document) Summary {
+	return validateDocumentWithDecliners(ideaSlug, known, required, nil, review, doc)
+}
+
+// A pending policy-off joiner may record the existing §5 decline without being
+// imported as a historical signer. It remains a BLOCK, never a completed vote.
+func validateDocumentWithDecliners(ideaSlug string, known, required, decliners []string, review bool, doc document) Summary {
 	summary := Summary{
 		Idea:         ideaSlug,
 		Path:         doc.Path,
@@ -646,16 +666,21 @@ func validateDocumentAwaiting(ideaSlug string, known, required []string, review 
 	// must NOT gate pre-existing or hand-written consensus documents — a gate that
 	// rejects live work is a worse defect than the one it fixes.
 	signed := map[string]bool{}
+	seen := map[string]bool{}
 	hasReservations := false
 	hasBlock := false
 	for _, signoff := range doc.Signoffs {
+		decline := !review && !contains(known, signoff.Agent) && contains(decliners, signoff.Agent) && catchupDecline(signoff)
 		switch {
-		case !contains(known, signoff.Agent):
+		case !contains(known, signoff.Agent) && !decline:
 			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: unknown participant %s", signoff.Line, signoff.Agent))
-		case signed[signoff.Agent]:
+		case seen[signoff.Agent]:
 			summary.Errors = append(summary.Errors, fmt.Sprintf("line %d: duplicate signoff for %s", signoff.Line, signoff.Agent))
 		default:
-			signed[signoff.Agent] = true
+			seen[signoff.Agent] = true
+			if !decline {
+				signed[signoff.Agent] = true
+			}
 		}
 		status, err := CanonicalStatus(signoff.Status)
 		if err != nil {

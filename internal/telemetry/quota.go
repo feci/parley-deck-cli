@@ -17,7 +17,7 @@ type AdapterQuotaSupport struct{ Adapter, Status, Source, Limitation string }
 
 func QuotaSupport() []AdapterQuotaSupport {
 	return []AdapterQuotaSupport{
-		{"zcode", "supported-owner-deviation", "owner scope-reset answer 2026-10-04; zcode-app-cli 3.7.7-13 stderr responseBody", "subagent-source ambiguity explicitly accepted by owner; every provider record must agree"},
+		{"zcode", "supported-owner-deviation", "owner scope-reset answer 2026-10-04; zcode-app-cli 3.7.7-13 stderr responseBody", "native-positive evidence NOT MET and owner-waived for this release; real native output may not trigger auto-exclusion; unrecognized failures use the owner-confirmed path; subagent-source ambiguity accepted; every provider record must agree"},
 		{"codex", "diagnostic-only", "codex-cli 0.159.3; native source not established in this worktree", "turn.failed alone does not establish terminal provider-error provenance"},
 		{"kimi", "diagnostic-only", "kimi 0.42.0 installed binary; stream-json role envelopes", "no located terminal provider-error discriminator"},
 		{"claude", "diagnostic-only", "configured --output-format text", "assistant and error prose are not distinguishable"},

@@ -1166,3 +1166,19 @@ Configured codex-1 subprocess implements only G15/G16 Go/tests and its own produ
 report; parent owns disjoint docs/skill/orchestration. Initial implementation ceiling
 1800 seconds, with the two standing timeout relaunches available. No excluded-provider
 invocation, native capture or grammar change. Independent round-06 still required.
+
+
+## Cycle-3 producer exit and parent W2 completion — 2026-10-06
+
+Separate codex-1 subprocess ended 15:46:55.603234Z, exit 0, 1734.8 seconds, no timeout.
+It delivered G15/G16 but declined to edit consensus outside its delegated ownership.
+Parent resumed that bounded G15/W2 change directly after its exit; no owner scope
+expansion was needed. Exact baseline BLOCK/NON-PARTICIPANT output is preserved without
+Known membership/quorum authority. New shared API and actual CLI checks pass. Frozen
+host verification follows; sandbox boot-proof failures remain in producer evidence.
+
+Parley Deck and OpenViking skills applied. Scoped recall returned the earlier round05
+owner-gate note; current owner round05-answer supersedes its capture proposal. Graphify
+query vocabulary [consensus, signoff, membership, quota, participant, known] selected
+from the graph. Its bounded traversal reached design/review artifacts, not the new
+consensus implementation; direct current sources govern. No graph rebuild was needed.

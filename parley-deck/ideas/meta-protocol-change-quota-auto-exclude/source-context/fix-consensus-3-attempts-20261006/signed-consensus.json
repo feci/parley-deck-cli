@@ -1,0 +1,15 @@
+{
+  "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+  "bytes": 17197,
+  "sha256": "ed4d88914bae41a7f7117e2f70c227f1095ed98bbae8eb89639d8f0fdadbe041",
+  "draft_prefix_unchanged": true,
+  "claude_verdict": "ACCEPT-WITH-RESERVATIONS",
+  "conditions": [
+    "W1",
+    "W2",
+    "W3",
+    "W4",
+    "W5"
+  ],
+  "complete_code_acceptance": false
+}

@@ -38,6 +38,9 @@ func Before(ctx context.Context, root, ideaDir, runID string) (history *quota.Hi
 		return v.History, err
 	}
 	h := v.History
+	if len(v.Catchup) > 0 {
+		return h, fmt.Errorf("%s", v.Pending)
+	}
 	if v.Manual != nil {
 		if err := RecordManual(root, ideaDir); err != nil {
 			return h, err
@@ -125,6 +128,10 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 	}
 	for _, b := range h.Batches {
 		receipt := filepath.Join(ideaDir, "quota-applied", b.ID)
+		applied, err := quota.ReadApplied(ideaDir, b.ID)
+		if err != nil {
+			return err
+		}
 		if err := projectionFault("evaluation"); err != nil {
 			return err
 		}
@@ -134,7 +141,7 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		if err := projectionFault("notice"); err != nil {
 			return err
 		}
-		if err := publishNotice(root, b); err != nil {
+		if err := publishNotice(root, ideaDir, b, applied); err != nil {
 			return err
 		}
 		if err := projectionFault("applied"); err != nil {
@@ -145,23 +152,6 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		}
 	}
 	return nil
-}
-
-// Preserve exact historical notices without treating their old display label as
-// authority. New manual imports use the corrected label; old notices get a
-// separate immutable clarification instead of rewriting history.
-func publishNotice(root string, b quota.Batch) error {
-	path := filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_"+b.ID+".md")
-	if b.Owner != nil && b.Owner.Authority == nil {
-		legacy := fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nblocking: no\ntransition: %s\n---\n\nOwner-confirmed membership/policy revision. Current participants: %v. Policy: %+v.\n", b.Idea, b.ID, b.Decision.After, b.Policy)
-		if raw, err := os.ReadFile(path); err == nil && string(raw) == legacy {
-			if err := quota.SyncPath(path); err != nil {
-				return err
-			}
-			return quota.DurableWrite(strings.TrimSuffix(path, ".md")+"-manual-authority.md", []byte(b.Notice()), true)
-		}
-	}
-	return quota.DurableWrite(path, []byte(b.Notice()), true)
 }
 
 func validateManifests(root, runID string, h *quota.History) (map[string]runmanifest.Manifest, error) {

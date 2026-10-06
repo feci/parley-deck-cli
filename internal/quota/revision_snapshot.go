@@ -169,3 +169,10 @@ func CatchupPriors(raw string) ([]string, error) {
 	e = yaml.Unmarshal([]byte(m["read-priors"]), &ids)
 	return ids, e
 }
+
+// The existing excluded marker plus the plain round-1 participant edit records
+// a manual return, not evidence that this identity belonged to kickoff quorum.
+func ManualRoundOneReturn(raw, id string) bool {
+	m, err := snapshotMeta(raw)
+	return err == nil && m["status"] == "round-01" && ConfirmedInPrompt(raw, "excluded", id)
+}

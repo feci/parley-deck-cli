@@ -1,0 +1,22 @@
+**Status: 🟡 ACCEPT-WITH-RESERVATIONS.** No blocker.
+
+I accept G15–G17 as the narrow cycle-3 plan. It carries out the owner's round05 answer honestly: one narrow cycle for R5-MAJOR-1 and R5-MINOR-1, and the AC2 waiver for this release. R5-MAJOR-2 is recorded as owner-accepted and deferred, never as fixed or passed. The plan includes no zcode invocation, capture, parser relaxation or fixture relabelling. I agree with the stopping rule: a fresh CRITICAL or MAJOR on cycle-3 code escalates, and there is no cycle 4 by default.
+
+**Reservations** (the cycle-3 re-review checks each one):
+- **W1 (G15):** "Restored" means the same outcomes as `27e42b8` in my D1–D3 cases, not just clearer error messages.
+  - After a join edit that comes before the artifact, other participants must still be able to sign off.
+  - Any remaining difference must be listed as an owner-visible change for the setting-off case.
+  - The new route must cover only the launching agent's own `round-01/<id>.md`, for an agent that is not already a known member, and retries over its own incomplete stub must work.
+  - It must never let an excluded known member dispatch.
+- **W2 (G15):** §5 gives a joiner two options, catch up or decline with a "❌ NON-PARTICIPANT" note. The plan covers only catch-up. As worded, it would stop a joiner on a setting-off idea from filing that decline. I infer the pre-change CLI allowed it, but I did not run that case. Either add it to the differential and restore the old outcome, or list it as a deviation.
+- **W3 (G16):** §4 also lets the owner delete a notice, not just archive it. Test that deletion after the applied receipt never re-publishes. Archiving or deleting must never count as the ambiguous state that blocks the idea.
+- **W4 (G17):**
+  - The option the owner picked says the next real exhaustion "is captured". Since retention is deferred, the skill and release notes must say capture is not automatic in this release. They should give a manual step: keep that run's private, unscrubbed per-agent `stderr.log` and never commit it.
+  - `docs/quota-membership.md:185` and the AC2 rows in `IMPLEMENTATION.md` must be updated to match the waiver. They must never say PASS.
+- **W5 (G17):** The follow-up's `00-prompt.md` has `status: open` and lists participants. An agent's session-start check could treat it as active and start round 1, which would invoke zcode. It should use `status: candidate`, with the intended roster in prose instead of a `participants:` list.
+
+Still required: my full cycle-3 re-review, both final signoffs and a new attended owner close.
+
+Protocol context: the packet was read in full (`context_mode=full`, both hashes `73613f95…4f4e`, `fallback_reason=null`), and it is byte-identical to the deck's `COOPERATION.md`. No quota, credit or auth error occurred. The only change is an append-only block of 41 added lines and no deletions.
+
+Artifact: `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md`

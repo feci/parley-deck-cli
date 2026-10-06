@@ -104,10 +104,11 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 			return nil, err
 		}
 		if v.History != nil {
-			if v.Pending != "" {
+			catchup := protocol.ManualCatchupTarget(dir, v, agent.ID, info.ArtifactPath)
+			if v.Pending != "" && !catchup {
 				return nil, fmt.Errorf("quota transition pending: %s", v.Pending)
 			}
-			if !membership.Has(v.History.Current, agent.ID) {
+			if (!membership.Has(v.History.Current, agent.ID) || !membership.Has(v.History.Known, agent.ID)) && !catchup {
 				return nil, fmt.Errorf("excluded participant %s cannot dispatch", agent.ID)
 			}
 			if v.History.MidIdea() {

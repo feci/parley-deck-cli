@@ -4,9 +4,8 @@ author: codex-1
 facilitator: claude-1
 created: 2026-10-06
 track: deliberation
-participants: [codex-1, kimi-1, zcode-1]
 auto_implement: false
-status: open
+status: candidate
 ---
 
 ## Problem / idea
@@ -52,6 +51,17 @@ independent review and release. The parent release never claims this work shippe
 - Parent `IMPLEMENTATION.md`, the AC2 waiver and immutable earlier evidence.
 
 Backlog only: no readiness probe, participant invocation or active deliberation has been
-started. Listed facilitator/quorum are the owner's current defaults for a future new run;
+started. The intended future organizer is claude-1 and the intended quorum is codex-1, kimi-1
+and zcode-1, the owner's current defaults for a future new run;
 readiness and effective config are checked at that launch. They do not alter the parent
 idea's two-agent quorum or authorize participation in it.
+
+## Manual preservation until capture retention is implemented
+
+Capture is not automatic in the parent release. If an ordinary zcode invocation
+later fails, keep that run's private, unscrubbed per-agent `stderr.log` in place;
+never commit or copy the raw file. Its normal runner location is
+`parley-deck/runs/<run-id>/agents/<agent-id>/stderr.log`. Completeness and cleanup
+are unverified, so its existence alone does not satisfy this idea's precondition.
+A later authorized follow-up must verify provenance/completeness and prepare only
+reviewed scrubbed evidence for canonical artifacts. Do not launch a capture now.

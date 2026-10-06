@@ -72,8 +72,8 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
   round-05 R5-MAJOR-1 proves the catch-up and kickoff-excluded return paths still regress;
   the broader producer compatibility claim is superseded, and G11/V4 remains incomplete.
 - Complete native stderr framing could not be recovered. Strict allowlisting rejects the retained
-  excerpts alone; source-derived SDK positives are not relabeled native. This unresolved AC2 evidence
-  limit is a deviation/remaining gate, not an inferred owner waiver.
+  excerpts alone; source-derived SDK positives are not relabeled native. The 2026-10-06 Q2 ruling now explicitly waives native-positive AC2 for this release;
+  R5-MAJOR-2 remains an owner-accepted known limitation with the linked follow-up, not a fix.
 - The exact deferred record representation uses `quota-history/NNNNNN.json`, hash-bound batch records,
   `quota-applied/<batch-id>` receipts, and optional manifest/digest membership fields. Retained obligations
   have immutable snapshots and structured disposition paragraphs with authority, rationale and independent
@@ -95,6 +95,11 @@ Also inspect owner-confirmed re-inclusion/withdrawal and scope-change behavior a
 The single-reviewer configuration still requires the attended close. The reviewer may report any issue.
 
 ## Progress
+
+Dated cycle-1/2 narratives and verbatim owner/reviewer quotations below are historical.
+Their earlier AC2 OPEN/no-waiver statements describe those checkpoints. The current
+Q2 disposition is NOT MET, owner-waived for this release, with R5-MAJOR-2 accepted and
+deferred; the living criterion tables and cycle-3 summary reflect that ruling.
 
 - 2026-10-04 00:40Z: owner scope answer recorded in `550fbf8`; answered scope gate archived. Configured
   codex-1 implementation child started (gpt-6-astra/max, 5400-second ceiling). The organizer owned protocol,
@@ -163,7 +168,7 @@ limits are in `source-context/codex-1-implementation-evidence.md`.
 | Criterion | Current producer evidence / remaining gate |
 | --- | --- |
 | AC1 | Normative copies unchanged during fix-up; exact skill/deck equality, full-suite bootstrap drift and unchanged 70,000-byte guard pass; prior full packets remain hash-identical. |
-| AC2 | OPEN: source-derived complete top-level/retry records qualify with realistic countdowns; partial native tails and default-console [Object] reject. Complete native capture and owner disposition remain missing. |
+| AC2 | NOT MET; explicitly owner-waived for this release by round05-answer Q2. Source-derived positives do not supply native evidence; realistic native output may leave auto-exclusion inert. R5-MAJOR-2 is owner-accepted and deferred to [quota-zcode-native-exhaustion-capture](../quota-zcode-native-exhaustion-capture/00-prompt.md). |
 | AC3 | Allowlisted complete framing, mixed/free-prose/quoted/unknown fields, retry consistency, reset boundaries, success precedence and original zadv negatives pass in host full/focused coverage. |
 | AC4 | Only bounded zcode implementation is supported; other adapters remain diagnostic-only. Native capture compatibility remains an explicit AC2 limitation. |
 | AC5 | Whole-batch permutations, survivor floor, duplicate/unresolved and facilitator cases pass in the host full suite. |
@@ -503,7 +508,8 @@ in claude-1's own round-05 artifact and the record below; no older scoped PASS i
 
 ### Open boundaries and stopping judgment
 
-AC2 is OPEN; no owner waiver/capture exists. Round-05 is complete with unresolved findings;
+At the cycle-2 boundary AC2 was OPEN, with no owner waiver/capture. The later Q2 answer
+quoted below now explicitly waives native-positive AC2 for this release. Round-05 had unresolved findings;
 any authorized repairs need fresh full-scope review and both final signoffs, followed by a
 NEW attended owner close. R5-MAJOR-1 now triggers trajectory escalation under the signed
 condition; cycle 3 is not automatic.
@@ -531,7 +537,8 @@ No new review-consensus draft or signoff has been manufactured at this gate.
   missed dispatch. G11/V4 is incomplete, not accepted as an extra knob-off behavior change.
 - R5-MAJOR-2: native AC2 remains absent; realistic default-console [Object] and three real
   V8 stack forms reject. The reviewer reproduced offline shapes, not a native invocation.
-  Capture and any bounded grammar extension require the concrete owner decision in the note.
+  The subsequent Q2 decision waives native-positive evidence for this release and defers
+  capture/grammar work to the linked follow-up. No capture or grammar extension is authorized now.
 - R5-MINOR-1: reconciliation recreates a notice after normal owner archival. One terminal
   evaluation is retained, but one durable notice publication is not yet respected.
 
@@ -547,7 +554,7 @@ PRIMARY execution/source locators and SECONDARY producer evidence.
 | Criteria | Independent round-05 result |
 | --- | --- |
 | AC1 | PASS scoped: live packet/hash and drift; phase 0/5/8 re-render remains SECONDARY. |
-| AC2 | NOT MET: R5-MAJOR-2, native evidence/behavior decision. |
+| AC2 | NOT MET in round-05. Subsequent owner round05-answer Q2 waives native-positive evidence for this release; R5-MAJOR-2 remains owner-accepted and deferred to [quota-zcode-native-exhaustion-capture](../quota-zcode-native-exhaustion-capture/00-prompt.md). |
 | AC3–AC5 | PASS: negatives/support boundary and whole-batch floor/permutations. |
 | AC6 | PASS kickoff filtering; catch-up launch regression remains R5-MAJOR-1. |
 | AC7–AC8 | PASS: bare 503 and protected-role checks. |
@@ -668,3 +675,30 @@ Code boundary: separate codex-1 subprocess edits only Go/tests for G15/G16 under
 internal/{protocol,quota,runner,membership,app} and its own producer evidence. Parent
 owns docs/skill/G17/IMPLEMENTATION and orchestration. Existing CLI/skill worktrees and
 branches are reused; no new worktree/claims or pruning. Commits remain serialized.
+
+
+## G17 / W4–W5 disclosure applied — 2026-10-06
+
+CLI support metadata, docs, skill guidance and release notes explicitly state native-positive
+AC2 NOT MET / owner-waived for this release. zcode auto-exclusion may not fire on real
+native output; unrecognized failures use the owner-confirmed path. Capture is not automatic;
+manual guidance keeps an ordinary failed run's private unscrubbed stderr.log in place and
+forbids copying/committing it. Completeness/cleanup are unverified. The linked follow-up is
+a candidate without an active participants list; its intended future roster is prose only.
+No protocol wording, recognizer grammar, provider configuration or native fixture changed.
+
+
+## Cycle-3 parent completion before frozen verification — 2026-10-06
+
+The implementation subprocess exited 0 with G15/G16 code and evidence, but left W2
+unresolved because `internal/consensus` was outside its delegated files. The parent
+completed that authorized G15/W2 work in the shared consensus API. An exact pending
+policy-off design decline remains BLOCK without granting historical membership or a
+completed vote; existing members can still append. API and CLI regression tests pass.
+The producer report remains unchanged; `source-context/codex-1-fixup-3-parent-evidence.md`
+is the attributed supplement. Full host checks and separate round-06 review are pending.
+
+G17/W4/W5 wording is applied to support/docs/skill/release notes and the inactive linked
+follow-up. Membership dispatch/decline and notice-recovery guidance now matches the code.
+All three COOPERATION copies remain unchanged in cycle 3. No independent acceptance,
+AC2 PASS, final consensus, close, merge or release is inferred.

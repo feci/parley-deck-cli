@@ -73,6 +73,9 @@ func TestQuotaExcludedVetoRemainsBlockedKnownAndAppendGateNarrow(t *testing.T) {
 	if _, err = AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "d", Status: "accept"}); err == nil {
 		t.Fatal("excluded signer appended")
 	}
+	if _, err = AppendSignoff(root, idea.Slug, SignoffOptions{Agent: "d", Status: "block", Notes: "❌ NON-PARTICIPANT", CounterProposal: "Continue without me"}); err == nil {
+		t.Fatal("excluded known signer used catch-up decline exception")
+	}
 	// A rewritten synthesis cannot silently dispose of the frozen veto/findings.
 	writeFile(t, path, "---\nidea: "+idea.Slug+"\ndrafted-by: a\n---\n## Signoffs\n"+signoffBlock("a", "2026-10-04", StatusAccept, "", "")+signoffBlock("b", "2026-10-04", StatusAccept, "", ""))
 	s, err = Status(root, idea.Slug, false)

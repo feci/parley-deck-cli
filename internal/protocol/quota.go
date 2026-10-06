@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"parley-deck-cli/internal/fsutil"
@@ -18,10 +19,13 @@ type QuotaView struct {
 	History *quota.History `json:"history,omitempty"`
 	Manual  *quota.Batch   `json:"-"`
 	Pending string         `json:"pending,omitempty"`
+	// Catchup is an uncommitted policy-off edit, distinct from a committed transition.
+	Catchup []string `json:"-"`
 }
 
 // InspectQuota reads immutable authority and mutable projections without repairing
-// anything. Current always comes from a validated history, including pending state.
+// anything. Policy-off prompt edits may preview Current; an incomplete catch-up
+// never widens Known or commits history.
 func InspectQuota(ideaDir string) (QuotaView, error) {
 	h, err := quota.ReadHistory(ideaDir)
 	if err != nil {
@@ -66,8 +70,17 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 	}
 	allApplied, latestApplied := true, true
 	for i, b := range h.Batches {
-		receipt, e := os.ReadFile(filepath.Join(ideaDir, "quota-applied", b.ID))
-		applied := e == nil && string(receipt) == b.ID+"\n"
+		inbox := filepath.Join(quota.IdeaRoot(ideaDir), DeckDir, "inbox")
+		if _, _, e := quota.InspectNotice(inbox, "parley-to-user_"+b.ID+".md", b.Notice(), b.LegacyManualNotice()); e != nil {
+			return v, e
+		}
+		if b.Owner != nil && b.Owner.Authority == nil {
+			if _, _, e := quota.InspectNotice(inbox, "parley-to-user_"+b.ID+"-manual-authority.md", b.Notice(), ""); e != nil {
+				return v, e
+			}
+		}
+		applied, e := quota.ReadApplied(ideaDir, b.ID)
+		applied = applied && e == nil
 		allApplied = allApplied && applied
 		if i == len(h.Batches)-1 {
 			latestApplied = applied
@@ -94,7 +107,16 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 	if !matches(h.Current) && !h.Policy().Enabled && policyMatches && allApplied {
 		b, e := manualQuotaRevision(ideaDir, h, string(raw), current)
 		if e != nil {
-			return v, e
+			var pending *manualCatchupPending
+			if !errors.As(e, &pending) {
+				return v, e
+			}
+			v.Catchup = pending.ids
+			v.Pending = pending.Error()
+			// Preview the requested quorum without adding any historical signer.
+			// It stays incomplete until the late artifact validates and is imported.
+			h.Current = append([]string(nil), current...)
+			return v, nil
 		}
 		v.Manual = &b
 		h.Current = append([]string(nil), current...)
@@ -130,7 +152,7 @@ func QuotaMembers(ideaDir string, fallback []string) (current, known []string, e
 	if err != nil {
 		return nil, nil, err
 	}
-	if v.Pending != "" {
+	if v.Pending != "" && len(v.Catchup) == 0 {
 		return nil, nil, fmt.Errorf("%s", v.Pending)
 	}
 	if v.History == nil {

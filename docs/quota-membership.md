@@ -74,9 +74,32 @@ reference alone, and `unavailable; user confirmed ...` are rejected; rewrite the
 in the displayed grammar. Markers validate an exclusion; the CLI never subtracts them
 from membership.
 
-A known agent returns through a `participants:` edit. A new participant uses the existing
-§5 catch-up path: read prior rounds, write a valid late `round-01/agent-id.md`, edit
-`participants:`, and join from round 2. No `included:` marker, new return/join record,
+A known agent returns through a `participants:` edit. An agent excluded at kickoff can
+also return through that edit during round 1; later return requires catch-up. A new
+participant uses the existing §5 catch-up path: read prior rounds, write a valid late
+`round-01/agent-id.md`, edit `participants:`, and join from round 2. Its own late artifact
+can be dispatched before or after the edit:
+
+```sh
+parley agents exec --agent agent-id --artifact parley-deck/ideas/IDEA/round-01/agent-id.md --prompt-file catch-up-prompt.txt --yes
+```
+
+An edit made first shows pending catch-up with this command. Existing members can still
+append signoffs, but the joiner gains no historical membership and cannot complete the
+quorum until its valid late artifact is imported. A failed own incomplete artifact can
+be retried in place. This exception never launches a known excluded member.
+
+A pending joiner may instead file the §5 decline using the existing CLI form:
+
+```sh
+parley consensus signoff --agent agent-id --status block --notes '❌ NON-PARTICIPANT' --counter 'Continue without me' IDEA
+```
+
+The exact note is accepted only in design consensus for a pending policy-off joiner.
+It stays a BLOCK and leaves the joiner missing from completed votes; it does not remove
+the joiner, change history or authorize closure. The organizer must resolve the decline
+through the ordinary protocol. The literal `--status '❌ NON-PARTICIPANT'` is not a
+supported status. No `included:` marker, new return/join record,
 committed-answer schema, exact directive or new command is required on this path.
 Prior-reading and joining from round 2 remain protocol duties; this compatibility path
 does not require new frontmatter to attest them.
@@ -91,6 +114,12 @@ the former owner-confirmed display label is preserved with a separate manual-aut
 clarification; its label grants no authority. Legacy ideas without quota history
 keep their pre-existing behavior. Ordinary off, legacy and kickoff-only driving has no
 idea-wide singleton lease.
+
+An applied transition's notice may be archived or deleted without being re-published.
+If publication was interrupted before the applied receipt, a validated archived copy
+also prevents duplication. A deleted notice with no delivery receipt permits one benign
+re-publication during checked recovery; its receipt then prevents another. Contradictory
+extant notices still require investigation.
 
 For policy-on ideas, an edit after an applied revision is blocked, including an edit back
 to an older participant set. Preserve the proposed edit for owner review, restore the
@@ -182,4 +211,16 @@ adapter disables SDK retries (`maxRetries: 0`) and implements its own attempt lo
 top-level records are therefore a relevant source-derived shape. Its default-console
 reproduction with realistic request messages contains `[Object]` and is rejected. Deep
 inspect fixtures and retry aggregates are source-derived tests, not proof of the historical
-incident's exact runtime path or a complete native capture. AC2 remains an owner decision.
+incident's exact runtime path or a complete native capture.
+
+**Owner-accepted known limitation for this release:** native-positive AC2 is NOT MET
+and is owner-waived by round05-answer Q2 (2026-10-06). zcode auto-exclusion may not fire
+on real native output; unrecognized failures fall back to the owner-confirmed path.
+R5-MAJOR-2 is deferred, not fixed. Complete source-derived positives are not native
+verification. The linked follow-up is
+[quota-zcode-native-exhaustion-capture](../parley-deck/ideas/quota-zcode-native-exhaustion-capture/00-prompt.md).
+
+Capture is not automatic in this release. On the next ordinary zcode failure, keep
+that run's private, unscrubbed `parley-deck/runs/<run-id>/agents/<agent-id>/stderr.log`
+in place; never commit or copy it. Its completeness and cleanup are unverified.
+The follow-up will establish a complete scrubbed capture before changing the grammar.

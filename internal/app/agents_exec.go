@@ -12,6 +12,9 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/config"
+	"parley-deck-cli/internal/membership"
+	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
@@ -58,6 +61,7 @@ func runAgentsExec(ctx context.Context, args []string, stdout, stderr io.Writer)
 		return 2
 	}
 	artifactPath := ""
+	catchupTarget := false
 	if *artifact != "" {
 		artifactPath = *artifact
 		if !filepath.IsAbs(artifactPath) {
@@ -69,8 +73,19 @@ func runAgentsExec(ctx context.Context, args []string, stdout, stderr io.Writer)
 			return 2
 		}
 		if _, err := os.Lstat(artifactPath); !os.IsNotExist(err) {
-			fmt.Fprintln(stderr, "agents exec: refusing an existing or inaccessible artifact")
-			return 2
+			slug, targetErr := runner.CanonicalArtifactIdea(root, artifactPath)
+			ideaDir := filepath.Join(root, protocol.DeckDir, "ideas", slug)
+			v, viewErr := protocol.InspectQuota(ideaDir)
+			if targetErr != nil || slug == "" || viewErr != nil || !protocol.ManualCatchupTarget(ideaDir, v, *agentID, artifactPath) {
+				fmt.Fprintln(stderr, "agents exec: refusing an existing or inaccessible artifact")
+				return 2
+			}
+		}
+	}
+	if slug, err := runner.CanonicalArtifactIdea(root, artifactPath); err == nil && slug != "" {
+		dir := filepath.Join(root, protocol.DeckDir, "ideas", slug)
+		if v, err := protocol.InspectQuota(dir); err == nil {
+			catchupTarget = protocol.ManualCatchupTarget(dir, v, *agentID, artifactPath)
 		}
 	}
 	var input io.Reader = os.Stdin
@@ -133,6 +148,17 @@ func runAgentsExec(ctx context.Context, args []string, stdout, stderr io.Writer)
 	if artifactPath != "" && (record.Outcome == nil || record.Outcome.ArtifactSHA256 == nil) {
 		fmt.Fprintln(stderr, "agents exec: expected artifact was not observed; process exit is not artifact acceptance")
 		return 1
+	}
+	if slug, err := runner.CanonicalArtifactIdea(root, artifactPath); err == nil && slug != "" && catchupTarget {
+		raw, readErr := os.ReadFile(artifactPath)
+		if readErr != nil || protocol.ValidateParticipantRoundArtifact(artifactPath, *agentID, slug, 1) != nil || quota.ValidateManualCatchupSnapshot(string(raw), slug, *agentID) != nil {
+			fmt.Fprintln(stderr, "agents exec: incomplete late round-1 catch-up; retry the same own artifact path")
+			return 1
+		}
+		if err := membership.RecordManual(root, filepath.Join(root, protocol.DeckDir, "ideas", slug)); err != nil {
+			fmt.Fprintf(stderr, "agents exec: catch-up import pending: %v\n", err)
+			return 1
+		}
 	}
 	return 0
 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Add recorded per-idea quota exclusion at kickoff and mid-idea, with a fixed floor of
+  two usable non-facilitators, protected roles, immutable history and owner notices.
+- Preserve historical vetoes/findings and existing policy-off membership behavior;
+  keep applied notices archived or deleted.
+- Known limitation: zcode auto-exclusion may not fire on real native output. Native-positive
+  evidence is owner-waived for this release; unrecognized failures use the owner-confirmed
+  path. Capture is not automatic. Keep the failed run's private, unscrubbed per-agent
+  stderr.log in place; never copy or commit it. See
+  [quota-zcode-native-exhaustion-capture](parley-deck/ideas/quota-zcode-native-exhaustion-capture/00-prompt.md).
+
 ## 1.50.0 — 2026-09-25
 
 ### Added

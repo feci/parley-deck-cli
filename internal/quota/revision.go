@@ -66,6 +66,9 @@ func (b Batch) validateRevision(h *History) error {
 	}
 	for _, id := range b.Decision.After {
 		if !contains(h.Known, id) {
+			if b.Owner.Authority == nil && ManualRoundOneReturn(b.Owner.ManualPrompt, id) {
+				continue
+			}
 			validate := ValidateCatchupSnapshot
 			if b.Owner.Authority == nil {
 				validate = ValidateManualCatchupSnapshot
