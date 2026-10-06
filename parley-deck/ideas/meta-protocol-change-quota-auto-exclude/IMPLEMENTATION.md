@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: fix-up-cycle-2
+status: fix-up-cycle-3
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
@@ -15,8 +15,8 @@ Both stages and cycles 1–2 are delivered at CLI `0ee1888` / skill `e2f3649`.
 The owner answered round-05 on 2026-10-06: narrow cycle 3 is authorized for the
 policy-off CLI join/return regression and archived-notice replay; AC2 native-positive
 evidence is waived for this release as an owner-accepted known limitation with a linked
-follow-up. R5-MAJOR-2 is deferred, not fixed. The new Phase-7 G15–G17 plan awaits
-claude-1's separate signoff before product edits. The old stop is resolved by that answer.
+follow-up. R5-MAJOR-2 is deferred, not fixed. The separate Phase-7 signer accepted G15–G17 with W1–W5; implementation may now
+proceed with those conditions. The old trajectory stop is resolved by the owner answer.
 
 Prior HOST and skill checks passed on the cycle-2 product; they are not evidence on an
 unwritten cycle 3. Both standing retry permissions continue unchanged. codex-1 organizes
@@ -627,7 +627,7 @@ error.
 
 ## Cycle-3 plan / checklist (before code)
 
-- [ ] Independent claude-1 signoff on G15–G17.
+- [x] Independent claude-1 signoff on G15–G17, ACCEPT-WITH-RESERVATIONS W1–W5.
 - [ ] G15 actual CLI catch-up and kickoff-excluded-return compatibility; retained gates.
 - [ ] G16 durable notice archival/recovery regression.
 - [ ] G17 skill/support/release limitation and linked native-capture follow-up.
@@ -642,3 +642,29 @@ G15–G17 remains unsigned by claude-1 after 1200- and 2400-second silent proces
 timeouts. No cycle-3 code has begun. The final owner-authorized timeout retry uses a
 3600-second process and request ceiling, unchanged Opus 5.5/max and plan inputs.
 The native-positive AC2 waiver is recorded, not converted into a PASS.
+
+
+## Cycle-3 plan signed — 2026-10-06 15:15Z
+
+The final timeout-authorized claude-1 process exited 0 after 909.8 seconds, no timeout
+or quota/credit/auth error. It appended only its own block; the draft prefix hash is
+unchanged. Review status is reserved, with both signers present, no BLOCK. As in the
+prior signed cycles, the Phase-3/7 reservation rule records these as open implementation
+items; no code acceptance or close is inferred.
+
+- W1: actual baseline D1/D2/D3 outcomes, including other members' signoff appends during
+  edit-first catch-up, actionable pending status, CLI completion, own incomplete-stub retry
+  and no dispatch by an excluded known member. Any difference is an explicit deviation.
+- W2: test baseline §5 NON-PARTICIPANT decline and preserve its outcome, or disclose a deviation.
+- W3: applied-notice deletion as well as archival stays deleted, no re-publication/gate;
+  interrupted publication has a stated recovery behavior.
+- W4: skill and release notes disclose capture is not automatic; keep the affected run's
+  private unscrubbed stderr.log locally, never commit/copy it. Every living AC2 row says
+  NOT MET / owner-waived, not PASS; support wording is not native-verified.
+- W5: native-zcode follow-up uses status candidate, no active participants quorum, intended
+  future roster in prose only.
+
+Code boundary: separate codex-1 subprocess edits only Go/tests for G15/G16 under
+internal/{protocol,quota,runner,membership,app} and its own producer evidence. Parent
+owns docs/skill/G17/IMPLEMENTATION and orchestration. Existing CLI/skill worktrees and
+branches are reused; no new worktree/claims or pruning. Commits remain serialized.
