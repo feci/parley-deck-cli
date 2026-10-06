@@ -925,3 +925,20 @@ This is recorded use of the existing Phase-7 fallback, not a driver repair. The 
 graphify post-commit hook rebuilt the local graph deterministically (code only, no LLM); no manual
 rebuild/provider launch occurred. Go probe evidence copies now use .go.txt filenames so they do not
 become extra go test ./... packages; their bytes/hashes remain unchanged.
+
+## Standing-permission resumption — 2026-10-06T10:20:50.159316+00:00
+
+The owner standing-permission note supersedes the brief only for short stated quota windows.
+Phase-7 cycle-2 signoff relaunch 1 of at most 3 resumes the same unchanged G10–G14 draft,
+with configured claude-1 Opus 5.5/max and the same 1200-second ceiling. The prior five-minute
+reset plus two minutes has elapsed. Prior terminal error, verbatim:
+
+```text
+API Error: Request rejected (429) · [claude/claude-opus-5-5] All claude accounts have exhausted their quota (cached quota state, no upstream attempt; earliest reset reset after 5m) (reset after 5m)
+```
+
+Fresh attempt evidence: .parley-runtime/quota-implementation/fix-consensus-2-relaunch-20261006-1/.
+The existing recorded focused-brief/Phase-7 driver gaps still require the configured-CLI fallback;
+no D6/accounting repair, roster change, provider substitution or product edit is introduced.
+Current packet source and body hashes remain 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e
+(full, no fallback). Raw reviewer artifact/signoff governs over stale driver pointers.

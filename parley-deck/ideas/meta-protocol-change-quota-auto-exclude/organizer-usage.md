@@ -108,3 +108,11 @@ codex-1 (rollout-2026-10-05T21-28-37-01a10d8a-1d2f-7303-bc7b-d04f6f392530.jsonl)
 The organizer row replaces the earlier October 5 dispatch snapshot; do not sum those snapshots.
 The failed signer is a distinct invocation and still consumed tokens. Claude cache conventions apply.
 No monetary estimate or completed signoff is claimed.
+
+## Standing-permission resumption — 2026-10-06
+
+New organizer transcript: rollout-2026-10-06T12-18-44-01a110b9-0ae8-7111-839c-8db293ba4be8.jsonl.
+Phase-7 dispatch snapshot ingested: 19 events, total_tokens 1598253, attribution ambiguous.
+Later snapshots replace this same-transcript row; never sum cumulative snapshots.
+claude-1 signer attempt 1 runs separately with the configured Opus 5.5/max and 1200-second ceiling;
+usage will be ingested at its boundary. No monetary estimate is claimed.
