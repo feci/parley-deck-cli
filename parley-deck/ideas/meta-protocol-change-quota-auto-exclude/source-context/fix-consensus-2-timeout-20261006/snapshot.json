@@ -1,0 +1,18 @@
+{
+  "product_commit": "906857b9af33306158d3b0e91b94e6ef4b6f7458",
+  "skill_commit": "dcb7d593130247709cfad19715aa1f53e5cc8be0",
+  "review_sha256": "499afc780113d788a6c83c721e171cdc30bc8a3b4a957fa0d590e261cbed3453",
+  "consensus_sha256": "82fddfef92c9bc2206a5b832da75654939702d7801bbc983d58cf5f3dca8235c",
+  "review_status_exit": 0,
+  "canonical_signoff_missing": true,
+  "full_protocol_read": true,
+  "context_mode": "full",
+  "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+  "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+  "fallback_reason": null,
+  "last_signer_tool_timestamp": "2026-10-06T10:22:41.283Z",
+  "relaunches_used": 1,
+  "max_qualifying_relaunches": 3,
+  "quota_error_reported": false,
+  "reset_reported": false
+}

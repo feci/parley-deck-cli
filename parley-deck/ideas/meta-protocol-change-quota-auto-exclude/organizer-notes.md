@@ -942,3 +942,36 @@ The existing recorded focused-brief/Phase-7 driver gaps still require the config
 no D6/accounting repair, roster change, provider substitution or product edit is introduced.
 Current packet source and body hashes remain 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e
 (full, no fallback). Raw reviewer artifact/signoff governs over stale driver pointers.
+
+## Phase-7 relaunch 1 timed out — 2026-10-06 10:40Z
+
+The separate configured claude-1 process started at 10:20:50.232957Z and ended at
+10:40:50.943202Z after 1200.7 seconds; child exit 143, wrapper timeout=true. The launcher
+itself exits 0 after recording the child result; that is not a successful signoff.
+Stdout and stderr are both zero bytes: there is NO verbatim provider error or stated reset.
+No quota/auth diagnosis is inferred from silence. The last recorded signer tool was at
+10:22:41.283Z, reading the prior consensus. No canonical signoff or erratum was written.
+
+Current review and consensus hashes are unchanged, and explicit review status is partial,
+missing claude-1. One standing-permission relaunch was used; the three-relaunch budget is
+NOT exhausted. However, there is no qualifying stated quota reset for a further relaunch.
+The owner note requires stopping on an error without a reset <=60 minutes. No second
+launch, probe, timeout extension, substitute model or provider was attempted. A blocking
+fix-consensus-timeout-20261006 owner note requests one same-input signoff with a 2400-second
+ceiling; it does not authorize itself. The earlier quota gate is answered and archived.
+
+Cycle 2 has not started; CLI product 906857b and skill dcb7d59 remain unchanged. The prepared
+fixup-2 prompt is scratch-only and unlaunched. Read-only offline source inspection located
+the zcode SDK error-sink chain; leads are retained, not promoted to native AC2 evidence.
+No full native capture, reviewer quote correction, code acceptance or owner close exists.
+No merge, release, installation, roster mutation or D6 repair occurred.
+
+Raw attempt evidence and checked hashes: source-context/fix-consensus-2-timeout-20261006/.
+All live protocol context was read in full with the unchanged 73613f95... attestation.
+OpenViking recall was checked against current owner directions; the previous stop rule is
+superseded only within the new permission's exact scope. Graphify's 482-node graph query
+used its own vocabulary (quota membership framing recovery retry consensus) and pointed
+to the existing round-04/FINAL evidence, not current implementation proof. Existing skill
+version drift was reported; no graphify upgrade/rebuild was manually requested.
+
+Shared-memory checkpoint: OpenViking write to viking://resources/projects/parley-deck/quota-auto-exclude-signoff-timeout-20261006.md reported queue processing timeout at 60 seconds. Direct readback returned the exact saved note, confirming persistence; scoped find still returned older notes, so search indexing is not yet verified. Local canonical handoff remains authoritative. No repeated write was attempted.

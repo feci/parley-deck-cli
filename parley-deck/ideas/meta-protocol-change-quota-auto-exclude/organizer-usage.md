@@ -116,3 +116,14 @@ Phase-7 dispatch snapshot ingested: 19 events, total_tokens 1598253, attribution
 Later snapshots replace this same-transcript row; never sum cumulative snapshots.
 claude-1 signer attempt 1 runs separately with the configured Opus 5.5/max and 1200-second ceiling;
 usage will be ingested at its boundary. No monetary estimate is claimed.
+
+## Phase-7 silent-timeout boundary — 2026-10-06
+
+claude-1: input_tokens 90, cached_input_tokens 4745234, cache_write_input_tokens 335143, output_tokens 22362, reasoning_output_tokens 0, total_tokens 22452; 45 events; attribution ambiguous; accounting 2026-10-06T10:41:32.291353Z.
+
+codex-1: input_tokens 6396597, cached_input_tokens 6216192, cache_write_input_tokens 0, output_tokens 23468, reasoning_output_tokens 8785, total_tokens 6420065; 50 events; attribution ambiguous; accounting 2026-10-06T10:44:13.18331Z.
+
+The organizer row replaces the earlier October 6 same-transcript snapshot; do not sum them.
+Claude cache reads/writes are reported separately under the parser convention. Its timed-out
+process consumed recorded tokens without producing a signoff; no completed phase is inferred.
+No monetary estimate. Raw transcripts remain outside canonical evidence; the ledger binds their hashes.

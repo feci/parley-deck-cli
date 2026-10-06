@@ -369,3 +369,19 @@ stop and report. This applies to this idea only and excludes nobody."
 The claude-1 Phase-7 signoff on the cycle-2 fix plan in `review/consensus.md` is authorized under this rule.
 Then continue with fix-up cycle 2, re-review, the attended-close request and the release, all as
 `IMPL-ORGANIZER-BRIEF.md` says.
+
+## Phase-7 standing-permission attempt — 2026-10-06
+
+Owner authorization is committed at a635953. The same cycle-2 fix-list signoff was relaunched
+once with configured claude-1 Opus 5.5/max and the unchanged 1200-second ceiling. It timed out
+at 10:40:50.943202Z after 1200.7 seconds (child exit 143). Both stdout and stderr were empty,
+with no reported quota/reset/auth error. No signoff or reviewer-owned erratum was written.
+The review hash remains 499afc780113d788a6c83c721e171cdc30bc8a3b4a957fa0d590e261cbed3453 and
+consensus hash 82fddfef92c9bc2206a5b832da75654939702d7801bbc983d58cf5f3dca8235c.
+
+Review consensus is still partial, missing claude-1. One relaunch was used, not all three;
+without a qualifying stated reset the standing permission does not authorize another attempt.
+The blocking fix-consensus-timeout-20261006 note asks for one further signoff with a longer
+2400-second ceiling. Cycle 2 remains unstarted, with no product edit or code acceptance.
+Raw evidence is source-context/fix-consensus-2-timeout-20261006/. Prior tests remain evidence
+on the unchanged product tree; none was rerun or relabeled as fresh independent acceptance.

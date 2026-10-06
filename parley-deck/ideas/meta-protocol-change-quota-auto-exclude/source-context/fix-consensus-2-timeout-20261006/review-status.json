@@ -1,0 +1,22 @@
+{
+  "idea": "meta-protocol-change-quota-auto-exclude",
+  "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+  "review": true,
+  "triage": "partial",
+  "participants": [
+    "codex-1",
+    "claude-1"
+  ],
+  "signoffs": [
+    {
+      "agent": "codex-1",
+      "date": "2026-10-05",
+      "status": "✅ ACCEPT",
+      "notes": "I accept G10–G14 as the cycle-2 implementer plan. G11 uses option (b) to preserve existing knob-off behavior without a new owner-policy deviation. AC2/native capture stays open for owner judgment after concrete repairs and source evidence. This is not a code verdict or permission to close, merge or release.",
+      "line": 106
+    }
+  ],
+  "missing": [
+    "claude-1"
+  ]
+}

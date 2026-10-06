@@ -1,0 +1,9 @@
+{
+  "owner_note": "parley-deck/inbox/user-to-codex-1_meta-protocol-change-quota-auto-exclude_quota-standing-permission.md",
+  "relaunch": 1,
+  "max_relaunches": 3,
+  "step": "phase-7-cycle-2-fix-consensus",
+  "previous_failure": "{\n  \"started\": \"2026-10-05T19:54:09.863183+00:00\",\n  \"ended\": \"2026-10-05T19:57:17.680899+00:00\",\n  \"seconds\": 187.8,\n  \"exit\": 1,\n  \"timeout\": false\n}\n",
+  "previous_error": "API Error: Request rejected (429) \u00b7 [claude/claude-opus-5-5] All claude accounts have exhausted their quota (cached quota state, no upstream attempt; earliest reset reset after 5m) (reset after 5m)\n",
+  "consensus_sha256": "82fddfef92c9bc2206a5b832da75654939702d7801bbc983d58cf5f3dca8235c"
+}
