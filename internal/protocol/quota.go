@@ -237,6 +237,11 @@ func CreateIdeaWithQuota(root, task string, participants, excluded []string, tra
 	if err := p.Validate(); err != nil {
 		return IdeaStatus{}, nil, err
 	}
+	if p.Enabled && p.Scope == quota.KickoffAndMidIdea {
+		if _, err := quotaScopeRoot(root, ""); err != nil {
+			return IdeaStatus{}, nil, err
+		}
+	}
 	// Prepare in runtime storage, outside the visible idea inventory. Publish the
 	// complete kickoff (evidence, frozen policy and filtered prompt) by one rename.
 	stagingParent := filepath.Join(root, ".parley-runtime")

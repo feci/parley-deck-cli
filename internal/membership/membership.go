@@ -511,6 +511,11 @@ func IntegrityBlock(root, ideaDir, run string, h *quota.History, cause error) er
 	if !scoped {
 		return cause
 	}
+	canonicalRoot, err := protocol.QuotaLeaseRoot(ideaDir)
+	if err != nil {
+		return err
+	}
+	root = canonicalRoot
 	d := quota.Decision{Block: "integrity/recovery gate: " + cause.Error()}
 	if h != nil {
 		d.Before = append([]string(nil), h.Current...)

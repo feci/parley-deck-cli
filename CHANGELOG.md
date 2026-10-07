@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Windows CLI 1.51.0 is known broken for new idea creation: `parley run` fails
+  at kickoff directory sync with "Access is denied", including policy-off launches.
+  The same directory-sync failure prevents driving/signing ideas with enabled
+  mid-idea quota scope and affects manual imports, owner revisions and transitions.
+  Legacy ideas without quota records skip these new paths. Windows CLI assets remain
+  experimental and CLI winget is held. The affected sites and CI evidence are handed
+  to the unmerged `windows-portability` branch/idea; its current design does not
+  promise to restore these operations. The skill installer is a separate artifact.
+- Symlinked deck/idea scopes are explicitly refused where quota leases or scoped
+  integrity escalations are required; enabled mid-idea creation refuses before writes.
+  Use a physical `parley-deck` directory or disable `quota_auto_exclude` for ordinary
+  driving. Legacy, policy-off and kickoff-only ordinary driving keep their prior
+  behavior; manual/owner revisions still require a physical scope. Workspace ancestor
+  aliases, including macOS `/tmp`, remain supported.
 - Add recorded per-idea quota exclusion at kickoff and mid-idea, with a fixed floor of
   two usable non-facilitators, protected roles, immutable history and owner notices.
 - Preserve historical vetoes and findings. Owner edits, archival or deletion of a

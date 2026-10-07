@@ -1,6 +1,6 @@
 # Release notes draft — quota auto-exclusion
 
-Producer draft for independent review. Publication waits for the attended close.
+Producer draft for independent review. Publication follows the pre-confirmed close conditions.
 
 New ideas can continue after a participant exhausts an allowance when the complete failed batch leaves at least two usable non-facilitator participants. The change applies to the current idea's quorum, with one durable transition and an owner notice; machine and deck roster files are unchanged. Existing ideas retain their recorded policy and scope.
 
@@ -44,6 +44,24 @@ writer and projection corruption still gates. Replay never adds a terminal evalu
 There is no quota polling, retry worker, automatic same-idea rejoin or organizer failover.
 
 This idea has one non-facilitator, so the rule cannot reduce its quorum. It retains the separate claude-1 review and owner-confirmed close. Windows remains experimental and CLI winget publication stays held. The legacy run-accounting blocker is a separate owner-requested follow-up (D6).
+
+Windows CLI 1.51.0 is known broken for new idea creation: `parley run` fails
+  at kickoff directory sync with "Access is denied", including policy-off launches.
+  The same directory-sync failure prevents driving/signing ideas with enabled
+  mid-idea quota scope and affects manual imports, owner revisions and transitions.
+  Legacy ideas without quota records skip these new paths. Windows CLI assets remain
+  experimental and CLI winget is held. The affected sites and CI evidence are handed
+  to the unmerged `windows-portability` branch/idea; its current design does not
+  promise to restore these operations. The skill installer is a separate artifact.
+
+Symlinked deck/idea scopes are explicitly refused where quota leases or scoped
+  integrity escalations are required; enabled mid-idea creation refuses before writes.
+  Use a physical `parley-deck` directory or disable `quota_auto_exclude` for ordinary
+  driving. Legacy, policy-off and kickoff-only ordinary driving keep their prior
+  behavior; manual/owner revisions still require a physical scope. Workspace ancestor
+  aliases, including macOS `/tmp`, remain supported.
+
+Kickoff notices also use checked, non-blocking publication and create an absent safe inbox.
 
 Candidate validation on 2026-10-08: Windows compilation succeeds, but its test suite
 fails, including quota kickoff directory-sync access errors and an unchanged Unix-only

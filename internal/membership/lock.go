@@ -65,7 +65,10 @@ func acquireScoped(ctx context.Context, ideaDir, run string) (context.Context, f
 	return context.WithValue(ctx, leaseKey{}, l), release, nil
 }
 func requireLease(ctx context.Context, ideaDir string) error {
-	path, _ := lockPath(ideaDir, "driver")
+	path, err := lockPath(ideaDir, "driver")
+	if err != nil {
+		return err
+	}
 	l, _ := ctx.Value(leaseKey{}).(*lease)
 	if l == nil || l.path != path || !l.active.Load() {
 		return fmt.Errorf("quota mutation requires idea driving lease")
@@ -127,28 +130,13 @@ func CheckLease(ctx context.Context, ideaDir, run string) error {
 // Lock state stays on the deck filesystem, in the already ignored runtime tree.
 // Relative identity is stable when different hosts mount the deck at other paths.
 func lockPath(ideaDir, kind string) (string, error) {
-	dir, err := filepath.EvalSymlinks(ideaDir)
+	root, err := protocol.QuotaLeaseRoot(ideaDir)
 	if err != nil {
 		return "", err
 	}
-	dir, err = filepath.Abs(dir)
-	if err != nil {
-		return "", err
-	}
-	deck := dir
-	for filepath.Base(deck) != protocol.DeckDir {
-		parent := filepath.Dir(deck)
-		if parent == deck {
-			return "", fmt.Errorf("idea is outside a deck")
-		}
-		deck = parent
-	}
-	rel, err := filepath.Rel(deck, dir)
-	if err != nil {
-		return "", err
-	}
+	rel := filepath.Join("ideas", filepath.Base(filepath.Clean(ideaDir)))
 	key := fmt.Sprintf("%x", sha256.Sum256([]byte(filepath.ToSlash(rel))))
-	return filepath.Join(filepath.Dir(deck), ".parley-runtime", "membership", key, kind+".lease"), nil
+	return filepath.Join(root, ".parley-runtime", "membership", key, kind+".lease"), nil
 }
 
 var projectionWait = 2 * time.Second

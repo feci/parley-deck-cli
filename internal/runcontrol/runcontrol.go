@@ -3,8 +3,6 @@ package runcontrol
 import (
 	"context"
 	"fmt"
-	"os"
-	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"time"
 
@@ -114,22 +112,9 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	}
 
 	if kickoff != nil && kickoff.Transition != nil {
-		path := filepath.Join(opts.Root, protocol.DeckDir, "inbox", "parley-to-user_"+kickoff.Transition.ID+".md")
-		f, e := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-		if e != nil {
-			return CreatedRun{}, e
-		}
-		_, e = f.WriteString(kickoff.Notice())
-		if e == nil {
-			e = fsutil.SyncFile(f)
-		}
-		closeErr := f.Close()
-		if e != nil {
-			return CreatedRun{}, e
-		}
-		if closeErr != nil {
-			return CreatedRun{}, closeErr
-		}
+		id := kickoff.Transition.ID
+		inbox := filepath.Join(opts.Root, protocol.DeckDir, "inbox")
+		quota.NoticeDiagnostic(id, quota.PublishNotice(inbox, "parley-to-user_"+id+".md", kickoff.Notice()))
 	}
 	registerSession(opts.Root, idea, runID, opts.Task, opts.Participants, now)
 

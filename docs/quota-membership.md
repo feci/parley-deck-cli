@@ -46,9 +46,10 @@ answer. For example, replace every placeholder below with the reviewed evidence:
 
 Obtain the blob with `git rev-parse COMMIT:PATH`; hash `git show COMMIT:PATH` with SHA-256.
 Use the answer's committed path even after permitted inbox archiving or deletion. The immutable
-revision preserves the quote and object identifiers. A missing live inbox file is allowed; a
-contradictory live or archived copy, changed digest, wrong idea/author, missing object or fabricated
-path is rejected. Keep the committed Git object available for historical verification.
+revision preserves the quote and object identifiers. A missing live inbox file is allowed.
+At binding, a contradictory live or archived copy is rejected; a changed digest, wrong idea/author,
+missing object or fabricated path is rejected at binding and on every later read.
+Keep the committed Git object available for historical verification.
 
 Only previously known identities qualify as re-inclusions. A new identity additionally needs
 `"catchup":{"new-id":"round-01/new-id.md"}` and a valid late round-1 artifact. Its frontmatter
@@ -81,7 +82,8 @@ from membership.
 
 A known agent returns through a `participants:` edit. During round 1, any policy-off
 join or return uses that plain edit, matching the original behavior; keeping or removing
-a stale exclusion marker does not affect it. After round 1, a kickoff-excluded return or new
+a stale exclusion marker does not affect it. Do not roll status back to round-01 to bypass catch-up.
+After round 1, a kickoff-excluded return or new
 participant uses the existing §5 catch-up path: read prior rounds, write a valid late
 `round-01/agent-id.md`, edit `participants:`, and join from round 2. Its own late artifact
 can be dispatched before or after the edit:
@@ -120,6 +122,9 @@ the former owner-confirmed display label is preserved with a separate manual-aut
 clarification; its label grants no authority. Legacy ideas without quota history
 keep their pre-existing behavior. Ordinary off, legacy and kickoff-only driving has no
 idea-wide singleton lease.
+
+Kickoff notices use the same checked, non-blocking publication, creating a missing safe
+inbox. A missing or unwritable inbox does not undo the kickoff, event log or manifest.
 
 Notices are owner-owned and non-authoritative. After a valid applied receipt, notice
 edits, archival, deletion and pathname changes never gate membership, signoff or driving,
@@ -191,6 +196,14 @@ needed, then replaces mutable receipts with checked durable writes. Existing rec
 never proof that projections are sound. Repeating recovery does not duplicate a terminal evaluation.
 Contradictory manifests require restoration from recorded authority; owner notice contents are
 never that authority. Recovery does not invent missing original runs or migrate budgets.
+
+Symlinked deck or idea-scope directories are unsupported where quota leases or scoped
+integrity escalations are required. Enabled mid-idea creation refuses such a deck before
+writing kickoff state. Use a physical `parley-deck` directory in the workspace, or disable
+`quota_auto_exclude` for ordinary driving. Legacy, policy-off and kickoff-only ordinary
+driving are unchanged; manual imports and owner revisions still need a physical scope.
+Workspace-root and higher ancestor aliases (including macOS `/tmp`) resolve normally and
+share the same physical lease. No lease is derived from an unrelated ancestor's name.
 
 Lifetime and projection leases live under the already ignored `.parley-runtime/membership/` on
 the deck filesystem. Ownership uses an exclusively published complete PID/token record, host and
