@@ -14,10 +14,10 @@ implementation-pr: n/a
 Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
 `25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The 2026-10-07 owner answer now
 explicitly authorizes one last narrow cycle 4. Its G18–G20 plan is in review/consensus.md,
-awaiting claude-1 signoff before product changes. The first signoff attempt exited 1
-on 2026-10-07 with a 52h 13m 12s quota reset, outside the standing <=60m allowance;
-`inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-long-quota-20261007.md`
-is the current blocking owner note. No signoff or product edit was made. The full owner answer is quoted there.
+awaiting claude-1 signoff before product changes. The initial signoff failed on a long quota window. The owner long-quota answer
+authorizes one unchanged relaunch after the relay PONG; that separate claude-1 process
+is now running (2026-10-07 19:47Z). The answered quota escalation is archived. No
+cycle-4 product change is authorized before its signoff. The owner answer is quoted below.
 No cycle 5 is authorized: any new CRITICAL/MAJOR in re-review requires a stop with
 stage-1-only split assessment or park options. Native AC2 remains NOT MET and owner-waived
 for this release; R5-MAJOR-2 remains accepted/deferred, never fixed. Both standing retry
@@ -825,3 +825,50 @@ No retry is authorized by the two standing rules for a reset longer than 60 minu
 Current blocking owner note is `cycle4-plan-long-quota-20261007`; cycle 4 code and
 round-07 review have not started. Four pre-change local/shared notice probes reproduce
 R6-MAJOR-1 (status gate, Before error, survivor signoff exit 1), not a test pass.
+
+
+## Cycle-4 long-quota answer / resumed signoff — 2026-10-07
+
+The unchanged plan SHA256 is `68e312a54db21d63655ef41185b8911362a8dab81f816b34f102d0e5876df804`,
+identical to 60d389e. One authorized relaunch uses the exact prior prompt and configured
+Opus 5.5/max argv, process ceiling 1200s and per-process API_TIMEOUT_MS=1200000.
+The recorded driver fallback still applies: the advisory driver state points to a
+canceled stale draft; no blind auto draft or D6 repair is made. Phase-7 live packet
+hashes remain 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e
+(context_mode=full, fallback_reason absent). No reviewer or prior signoff is edited.
+
+### User direction
+
+> ## Owner answer to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-long-quota-20261007.md`
+>
+> Relayed by the owner's Claude Code session, 2026-10-07, at about 20:50 CEST. The question and the answer,
+> verbatim (Slovak), with a translation:
+>
+> > Question: "Claude pool na gatewayi je teraz zablokovaný dlhodobo: „429 All claude accounts blocked by
+> > quota preflight (reset after 52h 13m)“, teda približne do 09.10. 14:00. Podpis plánu cyklu 4 aj review od
+> > claude-1 preto stoja. Ako ďalej?"
+> > Selected: **"Počkať a automaticky pokračovať (Recommended)"**. The option read: "Nastavím odpojený proces,
+> > ktorý 09.10. o 14:05 pingne claude. Ak odpovie, spustí codex a ten pokračuje. Inak to skúsi znova každú
+> > hodinu, najviac 12-krát. Review zostane u claude-1, ktorý pozná celú históriu."
+>
+> Translation: "Wait and continue automatically. I set up a detached process that pings claude on 09.10 at
+> 14:05. If it answers, it launches codex, which continues. Otherwise it retries every hour, at most 12 times.
+> The review stays with claude-1, who knows the whole history."
+>
+> ## What this means
+>
+> - No substitute reviewer is used, and there is no model, provider or quorum change. claude-1 stays the reviewer.
+> - You are relaunched automatically after the relay's detached probe gets `PONG` from
+>   `claude/claude-opus-5-5[1m]`. You then relaunch the unchanged claude-1 signoff of the cycle-4 plan
+>   (`review/consensus.md` at `60d389e`), once, and continue exactly as `…_round06-answer.md` and
+>   `IMPL-ORGANIZER-BRIEF.md` say.
+> - If claude-1 hits another quota block with a reset longer than 60 minutes, stop and write a new blocking
+>   note, as before. The standing short-window and timeout permissions still apply.
+>
+> ## Update, 2026-10-07 about 21:42 CEST
+>
+> The owner then said (verbatim, Slovak): "pokracuj" ("continue"). The relay probed
+> `claude/claude-opus-5-5[1m]` through the same gateway at 21:42:39 CEST and got `PONG`, long before the
+> stated 52-hour reset. The relay stopped the waiting daemon and relaunched you now instead of on 2026-10-09.
+> A one-word probe is small. If the larger signoff request still hits the long quota block, stop and write
+> a blocking note as described above.

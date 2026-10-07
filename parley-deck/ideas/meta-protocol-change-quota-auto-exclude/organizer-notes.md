@@ -1276,3 +1276,20 @@ Their outer exit0 is printing completion, never a pass. Original reviewer artifa
 are untouched. Raw evidence copied with hashes under cycle4-signoff-quota-stop-20261007.
 Memory unavailable from earlier scoped find timeout; local checkpoint remains authority.
 All participant processes exited. End deliberately only after durable blocking note.
+
+
+## Long-quota answer resumption — 2026-10-07 19:47Z
+
+Read controlling brief, all eight owner notes, current implementation/plan, organizer
+tail and computed brief/status. Owner long-quota answer authorizes exactly one unchanged
+relaunch after relay PONG; archived the answered long-quota escalation unchanged.
+Configured claude-1 Opus 5.5/max process launched once with the unchanged prompt/plan,
+1200s process/request ceilings. Run: `.parley-runtime/quota-implementation/fix-consensus-4-long-quota-resume-20261007/`.
+Standing short-quota and silent-timeout permissions still bind. Last-cycle stop still binds.
+No product edit before plan acceptance. No model/provider/quorum/settings change.
+
+OpenViking scoped find succeeds and recalls the prior round-06 owner gate; current
+local owner answers supersede that historical checkpoint. Runtime inventory remains
+CLI 1.50.0 / skill installer and runtimes 2.14.0 / source metadata 2.12.0 stale.
+Dry-run sync only, no unapproved installed or source metadata change. Driver advisory
+state remains a canceled stale draft, so the established focused-CLI fallback is reused.
