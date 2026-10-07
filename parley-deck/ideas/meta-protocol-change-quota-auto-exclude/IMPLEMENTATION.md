@@ -16,9 +16,11 @@ Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
 explicitly authorizes one last narrow cycle 4. Its G18–G20 plan is in review/consensus.md,
 awaiting claude-1 signoff before product changes. The one unchanged signoff relaunch authorized after the relay PONG failed at
 2026-10-07 20:01Z: HTTP 503 Unavailable, reset 39h 58m 28s, exit 1, no timeout.
-No claude-1 signoff or cycle-4 product change occurred. The NEW blocking owner note is
-`inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-provider-stop-20261007.md`.
-The earlier quota escalation is archived and its owner answer is quoted below.
+No claude-1 signoff or cycle-4 product change occurred. The provider-stop note
+remains the durable blocking checkpoint. The relay has now filed provider-stop-answer,
+applying the existing owner wait decision: detached auto-resume from 2026-10-09
+14:10 CEST, then exactly one unchanged plan-signoff relaunch. No new owner decision
+is needed for that future attempt. This session launches nothing further.
 No cycle 5 is authorized: any new CRITICAL/MAJOR in re-review requires a stop with
 stage-1-only split assessment or park options. Native AC2 remains NOT MET and owner-waived
 for this release; R5-MAJOR-2 remains accepted/deferred, never fixed. Both standing retry
@@ -892,3 +894,31 @@ product bytes and prior reviewer/signoff artifacts are unchanged. Evidence and h
 is `codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-provider-stop-20261007.md`. No cycle-4 code/re-review, close, merge, release or install.
 The last-cycle trajectory rule, native AC2 waiver, final signoffs and NEW attended
 close all remain binding. Organizer stops deliberately at this owner gate.
+
+
+## Provider-stop relay answer / scheduled resumption — 2026-10-07
+
+A new relay answer appeared before the organizer exited. It applies the owner
+long-quota wait decision and says detached auto-resume is re-armed from 2026-10-09
+14:10 CEST. This supersedes the provider-stop note's request for another owner
+authorization: the scheduled future attempt is authorized, not an immediate retry.
+The current provider failure remains a durable blocking checkpoint until that relay
+resumption. The exact answer is below; no provider probe or participant launch follows
+it in this session. No success, signoff or availability is inferred from the schedule.
+
+### User direction
+
+> ## Relay answer to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-provider-stop-20261007.md`
+>
+> Written by the owner's Claude Code session, at about 22:10 CEST on 2026-10-07. It applies the owner's
+> standing decision from `…_long-quota-answer.md`: **"Počkať a automaticky pokračovať (Recommended)"**,
+> which means wait and continue automatically. That answer already authorizes the plan signoff after the
+> provider window. The relay's 21:42 early relaunch was an extra attempt based on a small PONG. That
+> attempt failed with the 503 "(reset after 39h 58m 28s)" that you recorded. The relay's lesson is that a
+> one-word PONG does not prove a large request can complete.
+>
+> - The relay re-armed its detached auto-resume. On 2026-10-09 from 14:10 CEST it probes the gateway, and
+>   then relaunches you. You then relaunch the unchanged claude-1 cycle-4 plan signoff **once**.
+> - If that signoff fails again with a reset longer than 60 minutes, stop and write a blocking note, as
+>   before. The standing short-window and timeout permissions still apply.
+> - No substitute reviewer is used, and there is no model or provider change. Cycle 4 remains the last cycle.

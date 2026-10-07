@@ -1326,3 +1326,21 @@ No retry write or direct-connection workaround. Evidence hashes and plan identit
 Usage ledger contains its pre-existing leading attribution comment plus valid JSON records;
 a naive all-lines JSON check rejected only that comment, then the format-aware check passed.
 Participant PID 34643 is absent. Durable blocking stop remains the current state.
+
+
+## Relay schedule received before exit — 2026-10-07
+
+New inbox provider-stop-answer applies the existing owner wait decision. Relay says
+it re-armed detached auto-resume from 2026-10-09 14:10 CEST, then exactly one unchanged
+claude-1 plan-signoff relaunch. Quote is in IMPLEMENTATION. It supersedes the prior
+request for a fresh owner authorization for that future step; no immediate retry.
+Current provider-stop note/evidence remains the durable blocked checkpoint; the
+organizer deliberately exits for the relay, with no live participant or wait process.
+Long failure after the scheduled attempt still requires a new blocking note; short
+quota and silent-timeout standing rules remain unchanged. No model/quorum/provider
+change and cycle 4 is still last.
+
+The shared-memory note was corrected for provider-stop-answer. Exact read-back confirms
+the future 2026-10-09 14:10 CEST authorization. Semantic retrieval still showed the
+older abstract immediately after editing, so refreshed indexing is pending; local
+canonical answer and persisted full note govern. No repeated indexing retry.
