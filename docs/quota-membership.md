@@ -259,3 +259,27 @@ Capture is not automatic in this release. On the next ordinary zcode failure, ke
 that run's private, unscrubbed `parley-deck/runs/<run-id>/agents/<agent-id>/stderr.log`
 in place; never commit or copy it. Its completeness and cleanup are unverified.
 The follow-up will establish a complete scrubbed capture before changing the grammar.
+
+
+## Accepted release limitations
+
+1. **Kickoff blocking escalation (R8-MINOR-1).** If the kickoff quota decision
+   would leave fewer than two usable participants or excludes a protected role,
+   an absent or unwritable `parley-deck/inbox/` prevents the blocking note from
+   being saved. The command still stops without applying the exclusion or
+   creating an idea, but prints only the file error rather than the candidates
+   and arithmetic. Keep a writable inbox directory, including in a fresh clone,
+   until this is fixed in the follow-up.
+2. **Kickoff notice crash window (R8-NIT-1).** A process crash after writing the
+   kickoff run manifest and before publishing its notice can leave the notice
+   permanently absent. The kickoff record, marker, status and organizer brief
+   still show the exclusion. This case was identified by source review; no crash
+   was injected. Mid-idea receipt/replay behavior is unchanged.
+3. **Aliased decks and plain edits (R8-NIT-2).** On a symlinked deck, a plain
+   `participants:` edit or confirmed exclusion counts as a manual revision and
+   requires a physical deck path even when `quota_auto_exclude` is false.
+   Until that path is restored, the pending edit blocks all signers and driving.
+   Disabling the policy again does not resolve this case; the generic diagnostic's
+   suggestion to do so is inapplicable.
+
+Follow-up: [quota-kickoff-reporting-and-alias-guidance](../parley-deck/ideas/quota-kickoff-reporting-and-alias-guidance/00-prompt.md).

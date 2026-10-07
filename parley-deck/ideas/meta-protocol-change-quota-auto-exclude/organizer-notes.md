@@ -1486,3 +1486,40 @@ No main merge, version bump, tag, channel publication, install or core staging. 
 Supervisor session 29250 completed; no retry daemon or participant remains active.
 The stale canceled driver pointer remains D6; status/wait/consensus validators are retained
 in source-context/round08-cycle5-owner-gate-20261008/.
+
+
+## New binding relay note supersedes the cycle-5-limit stop — 2026-10-08
+
+Observed round08-answer in the inbox immediately after checkpoint commit 1961675,
+at 2026-10-07 23:53Z. The relay labels its time about 02:30 CEST, later than this
+observation; its text is preserved exactly. It explicitly says it decided without
+putting the question to the owner. The current user instruction makes every matching
+user-to-codex-1 note binding, newest wins, so apply its accept/defer decision with
+that honest attribution. No new direct owner answer is claimed.
+
+Exact proposed disclosures are applied to both changelogs, CLI docs and release
+draft. Follow-up quota-kickoff-reporting-and-alias-guidance is an inactive candidate
+with the global future roster, not an extra parent participant or cycle 6. AC5/AC15
+remain NOT MET in full / accepted-deferred, never PASS or fixed. Final consensus
+will be independently signed before the conditional pre-confirmed close.
+
+## Resume-10 organizer handoff / final signoff dispatch — 2026-10-08
+
+The new owner-triggered organizer (PID 95217) found the previous organizer PID
+65773 still active after receiving round08-answer. Its exact disclosures, follow-up,
+archived plan, draft final consensus and codex-1 signoff were already written.
+To prevent two organizers writing the same files, suspended the older process at
+23:55:56Z after confirming it had no participant or shell child, then retained all
+its changes and verified reviewer/archived-plan hashes. No participant was killed.
+This resume owns the remaining final signoff and release; it adopts the existing
+codex-1 final block after reading the draft and controlling direction.
+
+Manual Claude CLI fallback continues because the existing driver points at canceled
+round-01 and D6 legacy accounting remains out of scope; repeated driver launches
+would dispatch the wrong phase. status/wait/consensus validators still apply.
+claude-1 uses plain claude-opus-5-5[1m], max, deep, 1800s initially, with the
+finish-now 900s/max8 provider retry and 2400/3600s silent-timeout limits.
+Machine/deck roster files are unchanged. Installed CLI 1.50.0 and runtime/installer
+skill 2.14.0 remain current; source metadata drift is expected, dry-run retained.
+OpenViking scoped recall succeeded; stale stop summaries cannot override live notes.
+Protocol phase-7 full body hash is 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e.

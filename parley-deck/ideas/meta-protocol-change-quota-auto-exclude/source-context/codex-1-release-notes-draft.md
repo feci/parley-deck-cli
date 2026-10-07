@@ -68,3 +68,29 @@ fails, including quota kickoff directory-sync access errors and an unchanged Uni
 `syscall.Mkfifo` test. Windows assets remain experimental; CLI winget is held. Linux and macOS
 candidate CI and the full skill suite pass. The host full Go suite, build, vet and race
 checks also pass; independent final review remains separately recorded before publication.
+
+
+## Accepted round-08 release limitations
+
+1. **Kickoff blocking escalation (R8-MINOR-1).** If the kickoff quota decision
+   would leave fewer than two usable participants or excludes a protected role,
+   an absent or unwritable `parley-deck/inbox/` prevents the blocking note from
+   being saved. The command still stops without applying the exclusion or
+   creating an idea, but prints only the file error rather than the candidates
+   and arithmetic. Keep a writable inbox directory, including in a fresh clone,
+   until this is fixed in the follow-up.
+2. **Kickoff notice crash window (R8-NIT-1).** A process crash after writing the
+   kickoff run manifest and before publishing its notice can leave the notice
+   permanently absent. The kickoff record, marker, status and organizer brief
+   still show the exclusion. This case was identified by source review; no crash
+   was injected. Mid-idea receipt/replay behavior is unchanged.
+3. **Aliased decks and plain edits (R8-NIT-2).** On a symlinked deck, a plain
+   `participants:` edit or confirmed exclusion counts as a manual revision and
+   requires a physical deck path even when `quota_auto_exclude` is false.
+   Until that path is restored, the pending edit blocks all signers and driving.
+   Disabling the policy again does not resolve this case; the generic diagnostic's
+   suggestion to do so is inapplicable.
+
+These are accepted and deferred, not fixed. The AC5 escalation-detail obligation and
+AC15 kickoff crash-window obligation remain unmet with the explicit exceptions in
+the round08-answer relay note. Follow-up: [quota-kickoff-reporting-and-alias-guidance](https://github.com/feci/parley-deck-cli/blob/quota-auto-exclude/parley-deck/ideas/quota-kickoff-reporting-and-alias-guidance/00-prompt.md).

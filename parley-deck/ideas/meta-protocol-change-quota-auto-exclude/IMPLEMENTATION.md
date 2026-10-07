@@ -19,9 +19,10 @@ candidate CI pass; Windows builds but its test suite fails as explicitly disclos
 The independent full-scope round-08 verifies every G21–G25 fix and reservation, but
 reports 0 CRITICAL, 0 MAJOR, 1 MINOR and 2 NIT. Its own full Go/build/vet/race/skill,
 shared/local probes and packet checks pass. The artifact validator reports 1/1 valid.
-Findings remain after the final authorized cycle, so finish-now point 4 requires the
-blocking owner note `../../inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_round08-cycle5-limit.md`.
-No cycle 6, final signoff, completion or release is inferred. Native AC2 remains NOT MET
+The newer binding round08-answer note accepts and defers the three findings with
+exact disclosures and a linked follow-up, including explicit AC5/AC15 exceptions.
+It is a relay decision under standing owner direction, not a new direct owner answer.
+No cycle 6 is opened; both final review-consensus signoffs remain required. Native AC2 remains NOT MET
 and expressly owner-waived; R5-MAJOR-2 remains accepted/deferred. Close is pre-confirmed
 only after no open CRITICAL/MAJOR, both final signoffs and current AC1–AC21 evidence.
 The reviewer is claude-1, plain `claude-opus-5-5[1m]`, max effort, same provider.
@@ -57,7 +58,7 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - [x] G18–G20 signed cycle-4 plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
 - [x] G21–G25 signed cycle-5 plan and reservations, narrow fixes and frozen producer/platform evidence.
 - [x] Separate full-scope claude-1 round-08 re-review of both frozen product commits; findings remain.
-- [ ] Owner disposition of R8-MINOR-1, R8-NIT-1 and R8-NIT-2 under the cycle-5 cap.
+- [x] Binding round08-answer relay note accepts/defer R8-MINOR-1, R8-NIT-1 and R8-NIT-2; exact disclosures and linked inactive follow-up recorded.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, pre-confirmed close conditions verified.
 - [ ] After the pre-confirmed close conditions hold: complete, merge, release channels, independent channel verification.
 
@@ -185,7 +186,7 @@ grading its own implementation. Review SHA256:
 | AC2 | NOT MET / expressly owner-waived by round05-answer Q2. Native zcode may be inert; R5-MAJOR-2 remains accepted/deferred to `quota-zcode-native-exhaustion-capture`. |
 | AC3 | PASS: own strict semantics, watchdog/success precedence, adversarial framing/reset and 503 noise tests plus source reading. |
 | AC4 | PASS: unsupported/adversarial provenance tests; zcode-only supported classification. |
-| AC5 | PASS except R8-MINOR-1: permutations and floor refusal hold; missing/read-only kickoff inbox loses the required escalation, candidates and arithmetic. |
+| AC5 | NOT MET in full / accepted-deferred R8-MINOR-1 under round08-answer: permutations and floor refusal hold; missing/read-only kickoff inbox loses the required escalation, candidates and arithmetic. |
 | AC6 | PASS: real stubbed kickoff excludes the id from prompt, event, manifest and starts; C1, confirmed `--yes` and report-only standalone preflight pass. |
 | AC7 | PASS: preflight/runner bare-503 tests and shared grammar. |
 | AC8 | PASS: designee, pin, drafter and global-default protected-role tests. |
@@ -195,13 +196,13 @@ grading its own implementation. Review SHA256:
 | AC12 | PASS: lifetime/cross-process leases and own ancestor-alias serialization/refusal probes. |
 | AC13 | PASS: partial artifact preservation and survivor terminal evaluation tests. |
 | AC14 | PASS: driver pending reconciliation, later-run discovery and contradictory-history tests. |
-| AC15 | PASS under signed G18 attempt/publication semantics, with R8-NIT-1 caveat: kickoff crash after manifest but before notice has no replay. The caveat is source-derived, not crash-injected. |
+| AC15 | NOT MET in full / accepted-deferred R8-NIT-1 under round08-answer; the signed G18 attempt/publication semantics otherwise hold: kickoff crash after manifest but before notice has no replay. The caveat is source-derived, not crash-injected. |
 | AC16 | PASS: round-1 plain-edit and later catch-up differential on both volumes, plus configuration tests. The baseline binary is reused from round-07; R8-NIT-2 qualifies aliased-deck disclosure. |
 | AC17 | PASS: both roster hashes unchanged; no timer/rejoin; bounded provider-estimate hints. |
 | AC18 | PASS: quoted/tool/content negatives and supervisor-captured terminal-source inspection. |
-| AC19 | Honored: both stages are delivered; implementation remains `fix-up-cycle-5`, incomplete while findings await owner disposition. |
+| AC19 | Honored: both stages are delivered; implementation remains `fix-up-cycle-5`, incomplete while final signoffs remain pending; residual findings are explicitly accepted/deferred by round08-answer. |
 | AC20 | PASS on macOS host: own full Go 616.8s/34 packages, build/vet, race, shared/local probes, 399 Node/54 Python/six manifests, 100 Go files formatted. Windows cross-build passes; actual Windows CI is known failed and disclosed. |
-| AC21 | NOT MET: current review consensus signs the cycle-5 plan only; final signoffs do not exist. Pre-confirmed close remains conditional, and point 4 requires owner disposition of the three residual findings first. |
+| AC21 | NOT MET: current review consensus signs the cycle-5 plan only; final signoffs do not exist. Pre-confirmed close remains conditional, and the newer binding round08-answer disposes of the three residual findings as accepted/deferred. |
 
 Coverage limits remain in the raw review: prior interrupted attempts had shared-volume
 failures later passing; their attribution to filesystem coherence is reasoning, not
@@ -1188,3 +1189,46 @@ Full skill checks pass (399 Node / 54 Python / six manifests). Phase 0/5/8 full
 packets and deck/skill equality are verified. Exact evidence is in
 source-context/codex-1-fixup-5-host-evidence.md. The independent review retry is
 still pending after the initial 502; no final acceptance or close is inferred.
+
+
+## Round-08 answer / final consensus preparation — 2026-10-08
+
+The owner made every matching user-to-codex-1 inbox note binding, newest wins.
+The new note below expressly says the relay decided without asking the owner.
+That attribution is retained: this is not fabricated fresh owner testimony. It
+accepts/defer all three residuals with exact disclosures and linked follow-up,
+including AC5/AC15 exceptions. No sixth code fix-up is opened. The prior blocking
+escalation is archived byte-for-byte under source-context/round08-cycle5-owner-gate-20261008/answered-escalation.md.
+The signed cycle-5 plan remains preserved; both final consensus signoffs are next.
+
+### User direction — round08-answer, verbatim
+
+> ## Answer to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_round08-cycle5-limit.md`
+>
+> Written by the owner's Claude Code session (the relay) at about 02:30 CEST on 2026-10-08. The relay did
+> **not** put this question to the owner. It decides under the owner's standing direction of 2026-10-07,
+> verbatim: "sakra tak to fixni a dokonci a deployni cez vsetky kanaly, taha sa to dlho" ("then fix it,
+> finish it and deploy it through all channels, this is dragging on"). The decision is reported to the owner
+> in the same turn, and the owner may override it.
+>
+> **Decision: accept and defer** the three remaining findings, R8-MINOR-1, R8-NIT-1 and R8-NIT-2, as explicit
+> release limitations. Use exactly the disclosures in
+> `source-context/codex-1-round08-disclosure-proposal.md` and the linked follow-up. The basis:
+>
+> - the independent round-08 review has 0 CRITICAL and 0 MAJOR;
+> - every cycle-5 fix is verified;
+> - each residual fails closed or is a pre-existing narrow window.
+>
+> This includes the AC5 escalation-detail exception and the AC15 kickoff crash-window exception. Neither is
+> reported as a PASS or as fixed. The alias diagnostic caveat stays visible, and Windows CI failing stays
+> disclosed (Windows remains experimental, and CLI winget stays held). There is no sixth code cycle.
+>
+> Then:
+>
+> 1. Get both final review-consensus signoffs. claude-1 owns its own signoff.
+> 2. The close is pre-confirmed per `…_finish-now.md` point 5.
+> 3. Release on all channels per point 6.
+> 4. Finish with the single `codex-1-to-user_meta-protocol-change-quota-auto-exclude_released.md` note,
+>    which carries the two owner-only commands.
+>
+> The retry rules in `…_finish-now.md` point 3 still apply.

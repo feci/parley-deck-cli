@@ -1,98 +1,112 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
 review-cycle: 5
-outstanding_agreed_fixes: 4
+outstanding_agreed_fixes: 0
 blocked: false
 drafted-by: codex-1
 date: 2026-10-08
-reviewed-commit: e04852ef36846b8ec18f581c4e8ae4f28b0c2262
-skill-commit: b9596ddd5c37633026a26031f1bccaee76d2622f
+reviewed-commit: 2705a1e850132f74aed2dbb87149df5491bfe94b
+skill-commit: 99b3f3f9fee161e8e61e585ad6c8e5b1bbbd4d2b
+closing_review_round: round-08
+strict_gate_clean: false
 ---
 
 ## Scope and review basis
 
-Full independent round-07 reports 0 CRITICAL, 0 MAJOR, 2 MINOR and 2 NIT.
-Cycle 4 and G18/G18b/G19/G20 are independently verified there. This is the last
-narrow fix-up cycle authorized by finish-now. Any findings remaining after its
-full re-review require a blocking owner note; there is no cycle 6 authorization.
-Role concentration (§15.5): codex-1 organizes, implements and drafts; claude-1
-independently signs this plan and reviews the result in a separate process.
-No code verdict, final signoff or close is inferred from this plan.
+This is the final review-consensus draft after the full independent round-08 on
+CLI 2705a1e / skill 99b3f3f, all 124 CLI product files and five skill files since
+FINAL. The review reports 0 CRITICAL, 0 MAJOR, 1 MINOR and 2 NIT and verifies every
+G21–G25 fix and signed reservation. Its raw file is unchanged, SHA256
+6ea871262a87731b2c5273b28128b851c7a0ad797abaf26601e4c845d404ce06. Validator: 1/1 valid.
+The signed cycle-5 plan is preserved byte-for-byte at review/round-08/consensus.md
+and source-context/cycle5-plan-20261008/signed-plan.md. Those were plan signoffs;
+the blocks below are the separate final consensus signoffs.
+
+The newer binding round08-answer accepts/defer all three residual findings with
+exact disclosures and a linked follow-up, including AC5/AC15 exceptions. It says
+explicitly that the owner's Claude relay made the decision under standing direction
+without asking the owner again. The current user instruction makes every matching
+inbox note binding, newest wins. That is the authority applied here; no fresh direct
+owner answer is invented. No sixth code cycle or clean-review claim is made.
+
+Role concentration (§15.5): codex-1 organizes, implements and drafts, and supplies
+no independent code verdict. claude-1 alone independently reviewed and owns its
+final block. The idea has no strict_gate: true; strict_gate_clean is deliberately
+false because accepted/deferred findings still exist. Owner pre-confirmed close
+conditions remain separate from this draft and require both final blocks.
 
 ## Agreed fixes
 
-- **G21 — explicit Windows limitation (R7-MINOR-1).** Choose the reviewer's
-  disclosure-only alternative. CHANGELOG and release notes must plainly state
-  that Windows CLI 1.51.0 cannot create new ideas with `parley run`: kickoff
-  directory sync fails with "Access is denied", including policy-off launches.
-  Windows assets remain experimental; CLI winget stays held. Route the runtime
-  fix to the existing `windows-portability` track. Do not expand this cycle into
-  Windows durability work or relabel the failed CI as untested/passing.
-- **G22 — refuse aliased deck paths before lease writes (R7-MINOR-2).** Derive
-  the deck from the lexical `parley-deck/ideas/<slug>` layout before resolving
-  filesystem aliases. Explicitly reject a symlinked deck or idea-scope directory
-  with a clear unsupported-alias diagnostic; never search resolved ancestors
-  for an unrelated `parley-deck`. Resolve ordinary ancestors above the workspace
-  normally (including macOS `/tmp`) and preserve one physical lease identity
-  through supported ancestor aliases. Validate before Acquire can publish an
-  integrity notice and before driver/projection lease creation. Documentation
-  names symlinked decks/idea scopes unsupported. Test local/shared paths, a
-  misleading outer `parley-deck` ancestor, direct deck/ideas/idea aliases,
-  ordinary paths and ancestor aliases. Assert no runtime or inbox writes on
-  refusal, same physical lease/conflict for supported aliases, and unchanged
-  nested-context/off-scope behavior. No new schema or broader symlink support.
-- **G23 — bind-time wording (R7-NIT-1).** Qualify the first contradictory
-  live/archived-owner-answer rejection sentence with "at binding"; preserve the
-  committed-object-only historical validation description. Add one concise
-  organizer guidance sentence: do not roll status back to round-01 to bypass
-  catch-up. This answers round-07 open question 1, without a new runtime gate.
-- **G24 — skip unnecessary manual clarification (R7-NIT-2).** If publication
-  inspection fails and no historical misleading manual notice was observed,
-  end the correction branch with a single non-blocking diagnostic for that
-  failed inspection. Do not inspect/publish the correction or create a
-  `-manual-authority` receipt. Preserve actual historical clarification and
-  genuine correction-receipt integrity checks. Meaningful tests cover unsafe
-  inbox/current manual revisions, genuine historical labels, repeat recovery,
-  and malformed/symlinked correction receipts; membership remains unaffected
-  by publication-only failures. No new retry/queue/delivery mechanism.
+None. Zero agreed fixes remain in this idea. The three round-08 findings below
+are explicitly accepted/deferred under the binding relay direction, not fixed,
+withdrawn or silently waived. The authorized disclosure text has been applied
+exactly to both changelogs, CLI docs and the release draft. No Go, schema,
+recognizer, protocol text, model, provider, roster or runtime behavior changed
+after the frozen round-08 product commits.
 
 ## Deferred follow-ups
 
-- Native AC2 / R5-MAJOR-2: NOT MET, expressly owner-waived for this release;
-  accepted/deferred to `../quota-zcode-native-exhaustion-capture/00-prompt.md`.
-  No capture or grammar relaxation now; no claim native zcode auto-exclusion
-  works. Unrecognized failures retain the owner-confirmed path.
-- Windows runtime fix: `../windows-portability/00-prompt.md`; G21 closes only
-  the disclosure finding, with the broken runtime behavior retained explicitly.
-- D6 legacy driver accounting and unsupported adapter provenance remain separate
-  follow-ups (TBD where not opened); container/PID namespace behavior unverified.
+- **R8-MINOR-1, kickoff escalation:** accepted/deferred by round08-answer. AC5 is
+  NOT MET in full: a missing/read-only inbox loses the escalation and decision
+  details, although the gate fails closed and no idea is created. Follow-up:
+  [quota-kickoff-reporting-and-alias-guidance](../../quota-kickoff-reporting-and-alias-guidance/00-prompt.md).
+- **R8-NIT-1, kickoff notice crash window:** accepted/deferred by the same note.
+  AC15 is NOT MET in full: a crash after manifest and before publication can lose
+  the notice permanently; other exclusion surfaces remain. Source evidence only,
+  no injected crash. The same linked follow-up owns the recovery/semantics work.
+- **R8-NIT-2, aliased-deck guidance:** accepted/deferred, with the exact disclosure
+  that plain participant/confirmed-exclusion edits require a physical scope even
+  when policy is off and can block all signers/driving. The generic disable-policy
+  remedy is inapplicable there. The same linked follow-up owns contextual guidance.
+- **R5-MAJOR-2 / native AC2:** NOT MET, expressly owner-waived by round05-answer Q2,
+  accepted/deferred to [quota-zcode-native-exhaustion-capture](../../quota-zcode-native-exhaustion-capture/00-prompt.md).
+  Real zcode auto-exclusion may be inert. No capture or grammar relaxation ships.
+- **Windows:** known directory-sync failures in creation (including policy-off),
+  scoped driving/signing, manual imports, revisions and transitions. Windows assets
+  remain experimental; CLI winget is held. Concrete site/CI handoff is
+  ../../inbox/codex-1-to-all_windows-portability_quota-durable-sites.md; the
+  windows-portability track is on its unmerged branch, not present in this tree,
+  and promises no fix for these future durable sites.
+- **Other existing limits:** D6 stale driver accounting and unsupported adapter
+  provenance remain separate follow-ups (TBD if not opened); container/PID namespace
+  behavior is unverified. No parent participant is excluded or replaced here.
 
 ## Dismissed findings
 
-None. All four round-07 findings are addressed above, pending independent review.
+None. All R7 findings and the additional signed G25 reservation are independently
+verified resolved in round-08. Earlier fix dispositions remain in the archived
+consensuses and reviews. The AC2 waiver and the three R8 deferrals remain explicit.
 
 ## Coverage & blind spots
 
-Round-07 covered the full implementation since FINAL, all fix-ups and skill diff,
-with independent macOS full suite/build/vet/race/shared/local/skill execution.
-Windows failure evidence is hosted CI, not local Windows execution. Re-review
-must be full scope, with current-tree AC1–AC21 evidence, all dispositions freely
-weighed, and required full Go/build/vet/gofmt/skill/packet checks on frozen source.
-Current review heading is invalid to the literal validator; claude-1 must correct
-its own `## Refutation attempts (AC1–AC21)` to `## Refutation attempts` before
-transition. Original review/hash are preserved in source-context/cycle5-plan-20261008.
-Codex does not edit the reviewer artifact. This formatting repair changes no verdict.
+The reviewer independently read every full CLI/skill diff chunk and the complete
+live protocol. Its full Go suite passes (616.8s, 34 packages), as do build/vet,
+race (411 PASS), shared/local focused tests (244 PASS each), drift/packet checks,
+all 100 changed Go files' formatting and skill tests (399 Node, 54 Python, six
+manifests). Real CLI overlay probes cover kickoff inboxes/floor/aliases and prior
+notice/plain-edit cases. Producer host checks separately pass, as do Linux/macOS
+and skill CI; Windows hosted tests fail and are never relabeled as passing.
+
+Retain the raw review's limits: earlier interrupted attempts had shared-volume
+failures that later passed; filesystem coherence is a reasoned cause, not proof.
+The baseline binary is reused from round-07, Windows runtime is not executed by
+this reviewer, GitHub CI is producer evidence, and R8-NIT-1 is source-only.
+IMPLEMENTATION.md's current Validation evidence table records every AC1–AC21,
+including AC2/AC5/AC15 exceptions and AC21 pending the final blocks and close.
 
 ## Drafter position changes
 
-The Windows limit is known failure of new-idea creation, beyond the prior general
-experimental/unverified disclosure. Aliased deck support is explicitly refused,
-consistent with the baseline evidence-scope limit, instead of accidentally using
-an unrelated ancestor for storage. G18/G18b and smaller G19 remain unchanged.
-There is no scope/FINAL change, waiver beyond the owner's AC2 ruling, or new gate.
-The newest owner note supersedes the earlier cycle-4-only cap and close-request rule.
+The initial cycle-5-limit escalation was appropriate under finish-now point 4.
+The newer binding relay note now disposes of the three findings as accepted/deferred,
+so no additional code repair is proposed. Exact disclosures plus the inactive linked
+follow-up make the release limitations reviewable. The answered escalation is
+archived unchanged in source-context/round08-cycle5-owner-gate-20261008/answered-escalation.md.
+This draft does not rewrite the independent reviewer, infer a clean review or
+replace the required final signature with the earlier signed plan.
 
 ## User direction
+
+### Finish-now, verbatim
 
 > ## Owner direction: finish now (supersedes the wait in `…_long-quota-answer.md` and `…_provider-stop-answer.md`)
 >
@@ -150,133 +164,49 @@ The newest owner note supersedes the earlier cycle-4-only cap and close-request 
 > 7. **Unchanged:** the owner's earlier answers (the zcode stderr rule, the AC2 waiver and the follow-up),
 >    no other reviewer, no quorum change, and English artifacts.
 
+### Newest round08-answer, verbatim
+
+> ## Answer to `codex-1-to-user_meta-protocol-change-quota-auto-exclude_round08-cycle5-limit.md`
+>
+> Written by the owner's Claude Code session (the relay) at about 02:30 CEST on 2026-10-08. The relay did
+> **not** put this question to the owner. It decides under the owner's standing direction of 2026-10-07,
+> verbatim: "sakra tak to fixni a dokonci a deployni cez vsetky kanaly, taha sa to dlho" ("then fix it,
+> finish it and deploy it through all channels, this is dragging on"). The decision is reported to the owner
+> in the same turn, and the owner may override it.
+>
+> **Decision: accept and defer** the three remaining findings, R8-MINOR-1, R8-NIT-1 and R8-NIT-2, as explicit
+> release limitations. Use exactly the disclosures in
+> `source-context/codex-1-round08-disclosure-proposal.md` and the linked follow-up. The basis:
+>
+> - the independent round-08 review has 0 CRITICAL and 0 MAJOR;
+> - every cycle-5 fix is verified;
+> - each residual fails closed or is a pre-existing narrow window.
+>
+> This includes the AC5 escalation-detail exception and the AC15 kickoff crash-window exception. Neither is
+> reported as a PASS or as fixed. The alias diagnostic caveat stays visible, and Windows CI failing stays
+> disclosed (Windows remains experimental, and CLI winget stays held). There is no sixth code cycle.
+>
+> Then:
+>
+> 1. Get both final review-consensus signoffs. claude-1 owns its own signoff.
+> 2. The close is pre-confirmed per `…_finish-now.md` point 5.
+> 3. Release on all channels per point 6.
+> 4. Finish with the single `codex-1-to-user_meta-protocol-change-quota-auto-exclude_released.md` note,
+>    which carries the two owner-only commands.
+>
+> The retry rules in `…_finish-now.md` point 3 still apply.
+
 ## Signoffs
 
 ### Signoff: codex-1 — 2026-10-08
 Status: ✅ ACCEPT
-Notes: I accept this narrow plan and its explicit limits as implementer/organizer,
-not as an independent code verdict. Full phase-7 context was attested with
-context_mode=full, source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e,
-fallback_reason absent. Current local canonical evidence governs; no new memory
-claim is used. All four dispositions remain subject to claude-1's own signoff and
-full re-review. Preserve genuine history/receipt gates and no out-of-root writes.
-
-### Signoff: claude-1 — 2026-10-08
-Status: 🟡 ACCEPT-WITH-RESERVATIONS
-Notes: This signs the cycle-5 plan G21–G24 only. It is not a code verdict, accepts no code and grants no
-close; my full-scope round-08 re-review follows the implementation. codex-1 organizes, implements and
-drafts here (§15.5), so its procedural calls stay provisional and this is not an independent parent verdict.
-
-Context attestation: `context_mode=full`,
-`source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e`,
-`fallback_reason` absent (the key is not in the JSON). I ran `parley protocol packet --dir . --phase 7
---track deliberation --idea meta-protocol-change-quota-auto-exclude --flag protocol_change --json` at
-2026-10-07T22:22Z with my own build of `e04852e` and with the installed parley 1.50.0. Both exit 0 with
-empty stderr and byte-identical 26,812 B JSON. The body (1,501 lines, 125,862 B) reproduces the hash and
-equals deck `COOPERATION.md` (`cmp`) and the skill reference copy (hash). I read the whole body in chunks
-1–300, 301–600, 601–900, 901–1200 and 1201–1501, with over-long lines 59, 452 and 1002 printed in full.
-The shadow packet (`01ba034e…`) was not used.
-
-Coverage this launch:
-- Read in full: this file (`b6b56e56…` before this block); the archived cycle-4 plan
-  `review/round-07/consensus.md` and my raw `review/round-07/claude-1.md`, whose original hashes match
-  `cycle5-plan-20261008/original-hashes.json`; the finish-now (`caafe192…`), round05-answer and
-  round06-answer notes; the release draft and the platform-CI note.
-- Read in part: FINAL (`f90577f1…`, unchanged) §9, §13.6–13.7 and AC1–AC21; the uncommitted
-  IMPLEMENTATION and organizer-notes cycle-5 entries; the source cited below; the `windows-portability`
-  branch.
-- Not reread: the other inbox answers, the rest of IMPLEMENTATION, and tests other than one runcontrol
-  fixture.
-- Executed: two scratch probes injected with `go test -overlay`, so no tree file was written, under my
-  provider-guard PATH. `guard-denied.log` is absent and `git status` is unchanged except for my heading
-  repair. Nothing was committed, and no provider, participant, worktree or OpenViking call was made.
-
-User direction: unquoted, `## User direction` is byte-identical to the finish-now inbox body (checked).
-Operative sentence, verbatim: "sakra tak to fixni a dokonci a deployni cez vsetky kanaly, taha sa to dlho".
-Point 4 binds: "fix them narrowly in cycle 5 without asking. … Escalate only if a CRITICAL needs a change
-of scope or FINAL, or if findings remain after cycle 5." Point 5 binds the close: no open CRITICAL/MAJOR,
-both review-consensus signoffs and current-tree AC1–AC21 evidence, "with AC2 owner-waived as already
-decided". AC2 stays NOT MET / owner-waived, never a PASS.
-
-Heading repair (my own file, done): `review/round-07/claude-1.md` line 154 now reads
-`## Refutation attempts`. `diff` against the preserved original shows only that line. SHA-256 changes
-`3fe2eb29…` → `4705ad7c…` (25,258 → 25,245 B). PRIMARY: `ValidateReviewArtifact` rejects the original
-("missing a non-empty '## Refutation attempts' section") and accepts the repaired file (`<nil>`). No
-verdict, finding or evidence changed.
-
-- **G21 (Windows, disclosure only): concur.** This is my alternative (b). Reservation 1:
-  - (a) Disclose the full reach. The cause is a directory `Sync`, which every new durable path uses:
-    `quota.DurableWrite`/`SyncPath` (`history.go:188–267`), `WriteKickoff` (`record.go:110`), the
-    `ideas/` sync (`protocol/quota.go:300`), `store.AppendDurable`/`Sync` (`events.go:44,117`) and
-    pidlease `publish`/`reap` (`lease.go:108–153`; `publish` links the lease before its failing sync).
-    So on Windows, an idea with the default mid-idea scope also cannot be driven or signed, and any
-    manual import, owner revision or transition fails the same way. Ideas without quota records skip
-    these paths (`history.go:122`, `MidIdea` gates).
-  - (b) Make the routing real (PRIMARY, git). `windows-portability` exists only on its unmerged branch
-    (`3526b82`, 2026-09-28, IMPLEMENTATION `status: in-progress`), and
-    `../windows-portability/00-prompt.md` exists neither on this branch nor on `main`. Its FINAL is
-    frozen at base `868825f`, which has no `internal/quota/record.go` or `internal/pidlease/lease.go`.
-    Its FINAL.md:164–166 keeps Windows `SyncDir` "the fail-closed named-refusal emitter for any site
-    not carrying a proved mechanism, including future sites added without conversion". Hand the site
-    list and the CI evidence (log `b36a9e47…`) to that track explicitly, cite it by branch and slug,
-    and do not imply that it will restore idea creation.
-  - (c) Recommended: carry the same line in the skill CHANGELOG. The skill is the only artifact this
-    release sends to Windows through winget.
-- **G22 (alias refusal): concur** with refusal rather than support. Supporting aliases safely needs a new
-  physical lease home: two workspaces symlinking one deck would otherwise hold separate leases and lose
-  AC12 serialization (reasoning, not executed). That is beyond narrow scope. Reservation 2:
-  - (a) Scope the refusal to the points where a driving, projection, revision or manual-import lease is
-    derived, or a scoped integrity escalation would be written. `app.go:1992` calls `Acquire` after
-    every creation, so a refusal at the top of `Acquire` would newly break legacy, policy-off and
-    kickoff-only runs on symlinked decks. 1.50.0 has no deck-alias refusal on that path (`git grep
-    EvalSymlinks` at `27e42b8`), and the plan's "unchanged … off-scope behavior" requires that.
-  - (b) Reuse the baseline predicate `verificationRefusalScope` (`evidence_refusals.go:22–40`): resolve
-    the root, then require the resolved `root/parley-deck/ideas/<slug>` to equal its join. The two alias
-    rules then agree, macOS `/tmp` works, and the workspace root itself is an ordinary ancestor.
-  - (c) The default scope is `KickoffAndMidIdea` (`quota/quota.go:52`), and `parley run` creates the
-    idea (`app.go:1972`) before `Acquire`. Validate before the kickoff writes when the resolved scope is
-    mid-idea; otherwise disclose that such an idea is created but cannot be driven.
-  - (d) Name the refusal in CHANGELOG and the release notes as well as the docs, with the workaround: a
-    physical deck path, or `quota_auto_exclude = false`. The drafter's "no … new gate" holds only for
-    membership gates. This is a new explicit refusal, replacing an out-of-root write and a local-path
-    failure.
-- **G23: concur**, on one wording condition. Attach "at binding" to the working-copy clause only, because
-  `ValidateAuthority` (`authority.go:91–111`) re-checks commit, blob, digest, idea, attribution and quote
-  on every read. Suggested: "At binding, a contradictory live or archived copy is rejected; a changed
-  digest, wrong idea/author, missing object or fabricated path is rejected at binding and on every later
-  read." The skill already states this correctly (`ROSTER_AND_PROTOCOL.md:285–286`). Place the organizer
-  sentence next to the round-1 rule (skill `ROSTER_AND_PROTOCOL.md:299–300`, docs `:82–87`), not in
-  `COOPERATION.md`, so the packet hash stays `73613f95…`.
-- **G24: concur.** It is my R7-NIT-2 suggestion. With no receipt, the branch re-inspects at every mutation
-  boundary, so an unsafe inbox yields one correction diagnostic per call (two while the ordinary notice is
-  unapplied). That beats silence, because a historical label can hide behind an unsafe path. Tests should
-  assert the per-call counts, no receipt, that `ReadApplied` errors still gate, and that a historical
-  clarification is still published once the path is safe.
-- **Reservation 3: a new observation outside the round-07 findings** (PRIMARY, executed). Kickoff notices
-  bypass G18. `runcontrol.Create` writes them with a plain `O_CREATE|O_EXCL` open (`runcontrol.go:118`)
-  and returns the error. `parley run` then prints `run create failed` and exits 1 (`app.go:1986–1988`),
-  after the kickoff record, `run.created` and the manifest already exist. My overlay probe reuses the
-  `TestQuotaAutomaticKickoffRecordsAndNotice` fixture:
-
-  | `inbox/` | Create error | Notices | Kickoff records, event logs, manifests |
-  | --- | --- | --- | --- |
-  | present | none | 1 | 1, 1, 1 |
-  | missing | `no such file or directory` | 0 | 1, 1, 1 |
-  | read-only | `permission denied` | 0 | 1, 1, 1 |
-
-  `parley init` creates `inbox/` without a `.gitkeep`, so a fresh clone of a deck with an empty inbox has
-  none. Mid-idea `DurableWrite` would create it. The behavior conflicts with round06-answer ("the
-  exclusion notice never blocks") and with the signed AC15 meaning (exactly one notice on a safe
-  destination). Round-03 CRITICAL-1 fixed only this writer's sync call, not its blocking.
-  - Recommended for cycle 5: the same non-blocking checked publication, creating a missing `inbox/`,
-    with tests.
-  - Otherwise I must raise it in round 08 as a MINOR, and under finish-now point 4 that remaining
-    finding would require the blocking owner note.
-- **Other dispositions: concur.**
-  - R5-MAJOR-2 / AC2 stays deferred, NOT MET and owner-waived. It is not a PASS.
-  - I concur with the D6, adapter-provenance and container/PID deferrals, with "Dismissed: none", and
-    with the coverage section.
-  - The drafter position changes are accurate, except for the gate wording noted in G22(d).
-
-None of these reservations is a blocker, and none needs a scope or FINAL change. Each fits this final
-narrow cycle and can be verified in round 08.
+Notes: I accept the final dispositions as organizer/implementer, not as an independent
+code verdict. Zero agreed fixes remain under the binding round08-answer; AC2 is
+NOT MET/owner-waived, AC5 and AC15 are NOT MET in full/accepted-deferred, and all
+three R8 limitations are disclosed exactly with a linked inactive follow-up. No
+sixth code cycle or strict-clean claim. The independent final block remains required.
+Phase-7 attestation: context_mode=full,
+source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e,
+fallback_reason absent. Current full body bytes match the previously read live
+protocol. Both product commits remain the round-08 baseline; only authorized
+disclosure and canonical workflow records have changed since that review.
