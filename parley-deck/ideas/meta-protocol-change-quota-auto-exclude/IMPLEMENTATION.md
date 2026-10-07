@@ -14,10 +14,11 @@ implementation-pr: n/a
 Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
 `25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The 2026-10-07 owner answer now
 explicitly authorizes one last narrow cycle 4. Its G18–G20 plan is in review/consensus.md,
-awaiting claude-1 signoff before product changes. The initial signoff failed on a long quota window. The owner long-quota answer
-authorizes one unchanged relaunch after the relay PONG; that separate claude-1 process
-is now running (2026-10-07 19:47Z). The answered quota escalation is archived. No
-cycle-4 product change is authorized before its signoff. The owner answer is quoted below.
+awaiting claude-1 signoff before product changes. The one unchanged signoff relaunch authorized after the relay PONG failed at
+2026-10-07 20:01Z: HTTP 503 Unavailable, reset 39h 58m 28s, exit 1, no timeout.
+No claude-1 signoff or cycle-4 product change occurred. The NEW blocking owner note is
+`inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-provider-stop-20261007.md`.
+The earlier quota escalation is archived and its owner answer is quoted below.
 No cycle 5 is authorized: any new CRITICAL/MAJOR in re-review requires a stop with
 stage-1-only split assessment or park options. Native AC2 remains NOT MET and owner-waived
 for this release; R5-MAJOR-2 remains accepted/deferred, never fixed. Both standing retry
@@ -872,3 +873,22 @@ hashes remain 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e
 > stated 52-hour reset. The relay stopped the waiting daemon and relaunched you now instead of on 2026-10-09.
 > A one-word probe is small. If the larger signoff request still hits the long quota block, stop and write
 > a blocking note as described above.
+
+
+## Cycle-4 authorized relaunch / provider stop — 2026-10-07 20:01Z
+
+The one authorized unchanged relaunch exited 1 after 857.5s, without timeout. Exact error:
+
+```text
+API Error: 503 [claude/claude-opus-5-5] Unavailable (reset after 39h 58m 28s). This is a server-side issue, usually temporary — try again in a moment. If it persists, check your inference gateway (omniroute.marao.sk).
+```
+
+A 503 is not classified as proven quota exhaustion. Its nearly 40-hour reset does not
+fit the short-quota rule; the explicit provider error also excludes silent-timeout
+permission. No further launch or probe. The plan is unchanged from 60d389e and the
+review-consensus validator is partial, missing claude-1. CLI fac40aa / skill e976f7c
+product bytes and prior reviewer/signoff artifacts are unchanged. Evidence and hashes:
+`source-context/cycle4-signoff-provider-stop-20261007/`. The current blocking owner note
+is `codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-provider-stop-20261007.md`. No cycle-4 code/re-review, close, merge, release or install.
+The last-cycle trajectory rule, native AC2 waiver, final signoffs and NEW attended
+close all remain binding. Organizer stops deliberately at this owner gate.

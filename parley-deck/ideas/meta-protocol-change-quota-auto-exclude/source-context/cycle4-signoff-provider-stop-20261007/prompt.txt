@@ -1,0 +1,17 @@
+You are claude-1, the sole independent non-implementer participant for meta-protocol-change-quota-auto-exclude. Phase 7: evaluate and append your own signoff on the proposed LAST cycle-4 plan G18-G20, not the implementation or close. Exact writable canonical path: parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md. Do not alter its existing draft or codex signoff, any product, older review/signoff, roster, settings, or worktree; no git commit. Scratch files under .parley-runtime/claude1-fix-consensus4 allowed. No provider/other-agent invocations or capture.
+
+Read the current consensus in full, your raw review/round-06/claude-1.md, all user-to-codex-1_meta-protocol-change-quota-auto-exclude_*.md notes in inbox (especially round06-answer and round05-answer), relevant FINAL clauses/ACs, and the focused source locators needed to judge the plan. The owner explicitly authorizes only one last narrow cycle, and any new CRITICAL/MAJOR in its full re-review requires stop with stage-1-only split assessment or park options. AC2 native evidence remains NOT MET / owner-waived for this release, R5-MAJOR-2 deferred; no capture or parser relaxation. Full re-review, both final signoffs and NEW attended owner close still required. The owner favors removing gating over machinery.
+
+G18's proposal explicitly separates notice failures from membership integrity. G19 records that old manual kickoff JSON lacks exclusions; evaluate the prospective small optional field and disclosed legacy limit, and whether an even smaller correct route exists. G20 lists remaining policy-off differences. Your review is unrestricted: all issues can be raised and every disposition is yours to evaluate independently. Codex's acceptance is implementer plan acceptance only; its procedural conclusions are provisional. If reservations or a blocker, give a concrete narrow counter-proposal. Append only your own ACCEPT / ACCEPT-WITH-RESERVATIONS / BLOCK block, with context attestation and actual read coverage. Reference the full verbatim User direction in the draft, do not copy the whole history.
+
+Read the emitted full phase-7 protocol body in bounded chunks and record context_mode/source_sha256/packet_sha256/fallback_reason. Never claim truncated output was read. No optimized/shadow context. Attestation follows.
+
+Initial process and request ceiling 1200s, Opus 5.5/max as configured. On terminal auth/credit/quota failure, preserve verbatim and stop; organizer applies standing retry rules. Do not change settings or retry internally. Final response short: signoff, reservations/blocker, canonical path.
+
+{
+  "context_mode": "full",
+  "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+  "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+  "fallback_reason": null,
+  "body_path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/protocol-packets/full-phase7-deliberation-73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e.md"
+}

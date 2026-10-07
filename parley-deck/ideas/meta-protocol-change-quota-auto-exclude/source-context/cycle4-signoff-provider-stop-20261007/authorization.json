@@ -1,0 +1,10 @@
+{
+  "owner_note": "parley-deck/inbox/user-to-codex-1_meta-protocol-change-quota-auto-exclude_long-quota-answer.md",
+  "relaunch": 1,
+  "plan_sha256": "68e312a54db21d63655ef41185b8911362a8dab81f816b34f102d0e5876df804",
+  "prompt_sha256": "1273f22c2402a25e86f4ddb102172b5445da3002e3883fd33605d53b97d0821f",
+  "unchanged_from": "fix-consensus-4",
+  "timeout_seconds": 1200,
+  "api_timeout_ms": 1200000,
+  "created": "2026-10-07T19:47:16.049412+00:00"
+}

@@ -1293,3 +1293,27 @@ local owner answers supersede that historical checkpoint. Runtime inventory rema
 CLI 1.50.0 / skill installer and runtimes 2.14.0 / source metadata 2.12.0 stale.
 Dry-run sync only, no unapproved installed or source metadata change. Driver advisory
 state remains a canceled stale draft, so the established focused-CLI fallback is reused.
+
+
+## Cycle-4 authorized relaunch / provider stop — 2026-10-07 20:01Z
+
+Separate claude-1 invocation 88ed02df started 19:47:16.122674Z, ended 20:01:33.583757Z,
+exit 1 after 857.5s, no timeout. Verbatim complete stdout (stderr empty):
+
+```text
+API Error: 503 [claude/claude-opus-5-5] Unavailable (reset after 39h 58m 28s). This is a server-side issue, usually temporary — try again in a moment. If it persists, check your inference gateway (omniroute.marao.sk).
+```
+
+One owner-authorized relaunch consumed. No short-quota retry or timeout retry consumed;
+neither is applicable to this explicit 503 with reset39h58m28s. No more launches/probes.
+No signoff; review consensus partial/missing claude-1. Plan identical to 60d389e.
+Evidence stored with SHA256 hashes under cycle4-signoff-provider-stop-20261007.
+Current product unchanged fac40aa/e976f7c; all reviewer and signoff files unchanged.
+New blocking note codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-provider-stop-20261007.md filed.
+No new CRITICAL/MAJOR or fix-up cycle; no cycle 5. All participant processes exited.
+
+Bounded graphify query reached design/prior review nodes rather than current Go paths;
+no new source relationship claimed. Installer/source metadata only dry-run checked.
+Only inactive local implementation/host-check prompts prepared; no implementation child
+launched and no test rerun claimed. Current full FINAL/raw round-06 read, unchanged
+protocol resumed through relevant phase7/8/15.5 sections per lean reorientation.

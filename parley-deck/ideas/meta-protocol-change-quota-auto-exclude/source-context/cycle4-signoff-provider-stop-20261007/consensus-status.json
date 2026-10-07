@@ -1,0 +1,22 @@
+{
+  "idea": "meta-protocol-change-quota-auto-exclude",
+  "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+  "review": true,
+  "triage": "partial",
+  "participants": [
+    "codex-1",
+    "claude-1"
+  ],
+  "signoffs": [
+    {
+      "agent": "codex-1",
+      "date": "2026-10-07",
+      "status": "✅ ACCEPT",
+      "notes": "I accept G18–G20 as the owner's last narrow cycle. This is the implementer's",
+      "line": 146
+    }
+  ],
+  "missing": [
+    "claude-1"
+  ]
+}

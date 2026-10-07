@@ -237,3 +237,22 @@ Claude is the distinct e4a44f7f signoff invocation (exit 1, no signoff), not ano
 reviewer. Codex is the cumulative 09:32:36 organizer transcript and supersedes its
 earlier boundary snapshot, never additive. Client attribution ambiguous; no monetary
 estimate. All launch/retry counters for this step: initial 1, relaunches 0.
+
+
+## Long-quota answer / unchanged Phase-7 relaunch — 2026-10-07
+
+New organizer session `rollout-2026-10-07T21-42-51-01a117e3-db51-7a61-aa9d-dc869d0b0318.jsonl`.
+Cumulative ingest at dispatch: 15 events, total_tokens 1012758, attribution ambiguous.
+Later snapshots replace this same-session count, never add it. Separate claude-1
+invocation `88ed02df-7be2-4812-a25a-b102e40cef8a` remains pending; its usage will be
+ingested at the boundary. No monetary estimate.
+
+
+## Authorized cycle-4 signoff relaunch / provider-stop boundary — 2026-10-07
+
+claude-1: distinct `88ed02df-7be2-4812-a25a-b102e40cef8a.jsonl`, 78 events,
+total_tokens 34409, attribution ambiguous; exit 1/no signoff.
+Organizer `21:42:51` cumulative snapshot: 42 events, total_tokens 4906359,
+attribution ambiguous. This supersedes the earlier same-session snapshot, never additive.
+No monetary estimate. Initial failed attempt plus one owner-authorized relaunch;
+short-quota retries 0, silent-timeout retries 0.
