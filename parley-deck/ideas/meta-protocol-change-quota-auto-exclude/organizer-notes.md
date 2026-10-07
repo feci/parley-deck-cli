@@ -1317,3 +1317,12 @@ no new source relationship claimed. Installer/source metadata only dry-run check
 Only inactive local implementation/host-check prompts prepared; no implementation child
 launched and no test rerun claimed. Current full FINAL/raw round-06 read, unchanged
 protocol resumed through relevant phase7/8/15.5 sections per lean reorientation.
+
+
+Shared-memory checkpoint: write wait timed out after 45s, but exact read-back and
+scoped semantic retrieval both verified
+`viking://resources/projects/parley-deck/quota-auto-exclude-cycle4-provider-stop-20261007.md`.
+No retry write or direct-connection workaround. Evidence hashes and plan identity checked.
+Usage ledger contains its pre-existing leading attribution comment plus valid JSON records;
+a naive all-lines JSON check rejected only that comment, then the format-aware check passed.
+Participant PID 34643 is absent. Durable blocking stop remains the current state.

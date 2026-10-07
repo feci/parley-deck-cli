@@ -256,3 +256,8 @@ Organizer `21:42:51` cumulative snapshot: 42 events, total_tokens 4906359,
 attribution ambiguous. This supersedes the earlier same-session snapshot, never additive.
 No monetary estimate. Initial failed attempt plus one owner-authorized relaunch;
 short-quota retries 0, silent-timeout retries 0.
+
+Final durable-stop organizer snapshot: 51 events, input_tokens 6339476 (cached_input_tokens
+5808512), output_tokens 22712, reasoning_output_tokens 5523, total_tokens 6362188,
+attribution ambiguous. Same 21:42:51 transcript; supersedes earlier boundary counts,
+never additive. Shared-memory exact read-back and retrieval verified; no monetary estimate.
