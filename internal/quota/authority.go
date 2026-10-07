@@ -14,7 +14,7 @@ import (
 )
 
 // Authority binds a verbatim user answer to committed bytes. The working inbox
-// may subsequently be archived or deleted; the Git object remains the evidence.
+// may subsequently be edited, archived or deleted; the Git object remains the evidence.
 // This checks attribution and content, not human identity or truth of testimony.
 type Authority struct {
 	Path   string `json:"path"`
@@ -59,16 +59,6 @@ func authorityBytes(root string, a Authority) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// An existing contradictory copy is never silently bypassed with old Git bytes.
-	for _, path := range []string{a.Path, filepath.ToSlash(filepath.Join("parley-deck/inbox/archived", filepath.Base(a.Path)))} {
-		live, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
-		if err == nil && !bytes.Equal(live, data) {
-			return nil, fmt.Errorf("user-answer working copy changed: %s", path)
-		}
-		if err != nil && !os.IsNotExist(err) {
-			return nil, err
-		}
-	}
 	return data, nil
 }
 
@@ -77,6 +67,17 @@ func BindAuthority(root, idea, path, commit, quote string) (Authority, error) {
 	raw, err := authorityBytes(root, a)
 	if err != nil {
 		return a, err
+	}
+	// At binding only, do not bypass a superseded answer with older Git bytes.
+	// Once bound, owner edits to either inbox copy do not change the evidence.
+	for _, path := range []string{a.Path, filepath.ToSlash(filepath.Join("parley-deck/inbox/archived", filepath.Base(a.Path)))} {
+		live, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(path)))
+		if err == nil && !bytes.Equal(live, raw) {
+			return a, fmt.Errorf("user-answer working copy changed: %s", path)
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return a, err
+		}
 	}
 	blob, err := git(root, "rev-parse", "--verify", commit+":"+path)
 	if err != nil {

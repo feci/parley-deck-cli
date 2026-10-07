@@ -1,73 +1,105 @@
 package membership
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
 )
 
-// An applied receipt proves the publication step completed. The recipient may
-// subsequently archive or delete the notice. Before a receipt exists, a checked
-// archived copy proves delivery; if both copies disappeared, replay publishes
-// once again rather than permanently gating an ordinary inbox deletion.
+// An applied receipt ends ordinary notice publication. It records a completed
+// attempt, not proof of delivery. Notice copies belong to the owner; their bytes
+// and paths never decide membership. Only receipt failures are returned here.
 func publishNotice(root, ideaDir string, b quota.Batch, applied bool) error {
 	inbox := filepath.Join(root, protocol.DeckDir, "inbox")
 	name := "parley-to-user_" + b.ID + ".md"
-	want := b.Notice()
-	legacy := b.LegacyManualNotice()
-	manual := b.Owner != nil && b.Owner.Authority == nil
-	found, historical, err := checkedNotice(inbox, name, want, legacy)
-	if err != nil {
-		return err
+	if !applied {
+		noticeDiagnostic(b.ID, publishMissingNotice(inbox, name, b.Notice()))
 	}
-	if !found && !applied {
-		if err := quota.DurableWrite(filepath.Join(inbox, name), []byte(want), true); err != nil {
-			return err
-		}
-	}
-	if !manual {
+	if b.Owner == nil || b.Owner.Authority != nil {
 		return nil
 	}
 
-	// Old manual revisions had an inaccurate display label, never owner
-	// authority. Preserve those bytes and deliver a separate clarification once.
-	// Its own receipt also survives archival/deletion independently of the old
-	// transition receipt, which predates this clarification.
+	// Historical manual revisions could carry an inaccurate authority label.
+	// The clarification has its own receipt, independent of the old batch's
+	// receipt. Neither display file becomes authority, including after owner edits.
 	correctionID := b.ID + "-manual-authority"
 	corrected, err := quota.ReadApplied(ideaDir, correctionID)
-	if err != nil {
-		return err
-	}
-	correctionFound, _, err := checkedNotice(inbox, "parley-to-user_"+correctionID+".md", want, "")
 	if err != nil {
 		return err
 	}
 	if corrected {
 		return quota.SyncPath(filepath.Join(ideaDir, "quota-applied", correctionID))
 	}
-	if !historical && !correctionFound {
+	_, historical, err := inspectNotice(inbox, name, b.LegacyManualNotice())
+	noticeDiagnostic(b.ID, err)
+	correctionName := "parley-to-user_" + correctionID + ".md"
+	found, _, err := inspectNotice(inbox, correctionName, "")
+	noticeDiagnostic(correctionID, err)
+	if !historical && !found && err == nil {
 		return nil
 	}
-	if !correctionFound {
-		if err := quota.DurableWrite(filepath.Join(inbox, "parley-to-user_"+correctionID+".md"), []byte(want), true); err != nil {
-			return err
-		}
-	}
+	noticeDiagnostic(correctionID, publishMissingNotice(inbox, correctionName, b.Notice()))
 	return quota.DurableWrite(filepath.Join(ideaDir, "quota-applied", correctionID), []byte(correctionID+"\n"), false)
 }
 
-// Validate every existing copy, even with an applied receipt. A corrupt notice
-// cannot serve as publication proof or be silently accepted as a completed step.
-func checkedNotice(inbox, name, want, legacy string) (found, historical bool, err error) {
-	paths, historical, err := quota.InspectNotice(inbox, name, want, legacy)
+func noticeDiagnostic(id string, err error) {
 	if err != nil {
-		return false, false, err
+		fmt.Fprintf(os.Stderr, "quota notice %s: publication diagnostic (non-blocking; delivery unconfirmed): %v\n", id, err)
 	}
-	for _, path := range paths {
-		if err := quota.SyncPath(path); err != nil {
-			return false, false, err
+}
+
+func publishMissingNotice(inbox, name, text string) error {
+	if err := projectionFault("notice"); err != nil {
+		return err
+	}
+	found, _, err := inspectNotice(inbox, name, "")
+	if err != nil || found {
+		return err
+	}
+	return quota.DurableWrite(filepath.Join(inbox, name), []byte(text), true)
+}
+
+// Inspect only for publication choices. Existing regular copies are owner-owned
+// regardless of content. The historical label is solely a clarification hint.
+func inspectNotice(inbox, name, legacy string) (found, historical bool, err error) {
+	// Check the deck and both inbox directories before looking at destinations,
+	// so an archived/ or inbox/ symlink is not followed even when a file is absent.
+	for _, dir := range []string{filepath.Dir(inbox), inbox, filepath.Join(inbox, "archived")} {
+		st, e := os.Lstat(dir)
+		if os.IsNotExist(e) {
+			continue
+		}
+		if e != nil {
+			return found, historical, e
+		}
+		if !st.IsDir() {
+			return found, historical, fmt.Errorf("unsafe quota notice directory: %s", dir)
 		}
 	}
-	return len(paths) > 0, historical, nil
+	for _, dir := range []string{inbox, filepath.Join(inbox, "archived")} {
+		path := filepath.Join(dir, name)
+		st, e := os.Lstat(path)
+		if os.IsNotExist(e) {
+			continue
+		}
+		if e != nil {
+			return found, historical, e
+		}
+		if !st.Mode().IsRegular() {
+			return found, historical, fmt.Errorf("unsafe quota notice destination: %s", path)
+		}
+		found = true
+		if legacy != "" {
+			raw, e := os.ReadFile(path)
+			if e != nil {
+				return found, historical, e
+			}
+			historical = historical || strings.HasPrefix(string(raw), legacy)
+		}
+	}
+	return found, historical, nil
 }

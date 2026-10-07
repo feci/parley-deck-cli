@@ -84,77 +84,6 @@ func TestQuotaCycle3NoticeDeliveryRecovery(t *testing.T) {
 	}
 }
 
-func TestQuotaCycle3CorruptNoticeNeverCompletes(t *testing.T) {
-	for _, mode := range []string{"applied-live", "applied-archive", "missing-receipt", "corrupt-receipt", "mismatched-notice", "symlink-notice", "symlink-receipt"} {
-		t.Run(mode, func(t *testing.T) {
-			root, dir, run := fixture(t, quota.NewPolicy(nil, nil))
-			ctx := leaseFixture(t, dir, run)
-			b, err := Settle(ctx, root, dir, run, "round-01", []string{"a", "b", "c", "d"}, candidates())
-			if err != nil {
-				t.Fatal(err)
-			}
-			notice := filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_"+b.ID+".md")
-			receipt := filepath.Join(dir, "quota-applied", b.ID)
-			switch mode {
-			case "missing-receipt":
-				if err := os.Remove(receipt); err != nil {
-					t.Fatal(err)
-				}
-			case "corrupt-receipt":
-				if err := os.WriteFile(receipt, []byte("wrong\n"), 0600); err != nil {
-					t.Fatal(err)
-				}
-			case "applied-archive":
-				archive := filepath.Join(filepath.Dir(notice), "archived")
-				if err := os.MkdirAll(archive, 0700); err != nil {
-					t.Fatal(err)
-				}
-				archived := filepath.Join(archive, filepath.Base(notice))
-				if err := os.Rename(notice, archived); err != nil {
-					t.Fatal(err)
-				}
-				notice = archived
-			}
-			bad := []byte("corrupt notice")
-			if mode == "mismatched-notice" {
-				bad = []byte(strings.Replace(b.Notice(), b.ID, "batch-other", 1))
-			}
-			if mode == "symlink-receipt" {
-				good := receipt + "-other"
-				if err := os.Rename(receipt, good); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Symlink(good, receipt); err != nil {
-					t.Fatal(err)
-				}
-			} else if mode == "symlink-notice" {
-				good := notice + ".original"
-				if err := os.Rename(notice, good); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.Symlink(good, notice); err != nil {
-					t.Fatal(err)
-				}
-			} else if err := os.WriteFile(notice, bad, 0600); err != nil {
-				t.Fatal(err)
-			}
-			before, _ := os.ReadFile(receipt)
-			for i := 0; i < 2; i++ {
-				if _, _, err := protocol.QuotaMembers(dir, nil); err == nil {
-					t.Fatal("corruption admitted signoff")
-				}
-				if _, err := Before(ctx, root, dir, run); err == nil {
-					t.Fatal("corruption counted as completion")
-				}
-			}
-			after, _ := os.ReadFile(receipt)
-			if string(after) != string(before) {
-				t.Fatal("corruption was repaired without valid publication proof")
-			}
-		})
-	}
-}
-
 func TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions(t *testing.T) {
 	for _, action := range []string{"archive", "delete"} {
 		t.Run(action, func(t *testing.T) {
@@ -220,8 +149,8 @@ func TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions(t *testing
 				if err := os.WriteFile(filepath.Join(archive, correction), []byte("false authority"), 0600); err != nil {
 					t.Fatal(err)
 				}
-				if _, err := Before(context.Background(), root, dir, run); err == nil {
-					t.Fatal("corrupt clarification accepted")
+				if _, err := Before(context.Background(), root, dir, run); err != nil {
+					t.Fatal("owner clarification edit gated replay", err)
 				}
 			}
 		})

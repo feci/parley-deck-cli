@@ -170,9 +170,10 @@ func CatchupPriors(raw string) ([]string, error) {
 	return ids, e
 }
 
-// The existing excluded marker plus the plain round-1 participant edit records
-// a manual return, not evidence that this identity belonged to kickoff quorum.
-func ManualRoundOneReturn(raw, id string) bool {
+// A policy-off round-1 participant edit permits a return or a new identity.
+// Only the revision's prompt snapshot establishes the round; display markers
+// establish neither historical membership nor owner authority.
+func ManualRoundOneReturn(raw string) bool {
 	m, err := snapshotMeta(raw)
-	return err == nil && m["status"] == "round-01" && ConfirmedInPrompt(raw, "excluded", id)
+	return err == nil && m["status"] == "round-01"
 }

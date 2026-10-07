@@ -53,7 +53,7 @@ func manualQuotaRevision(dir string, h *quota.History, raw string, ids []string)
 		if has(h.Current, id) {
 			continue
 		}
-		if !has(h.Known, id) && !quota.ManualRoundOneReturn(raw, id) {
+		if !has(h.Known, id) && !quota.ManualRoundOneReturn(raw) {
 			path := filepath.Join(dir, "round-01", id+".md")
 			if !manualCatchupPathSafe(dir, path) {
 				return quota.Batch{}, fmt.Errorf("ambiguous catch-up path: %s", path)

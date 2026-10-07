@@ -64,3 +64,18 @@ Core 2.15.0 is not staged. Planned release versions are still CLI 1.51.0, skill/
 2.15.0, rechecked at release. Only inventory reads occurred. Owner Q2 requires the
 native-zcode limitation and quota-zcode-native-exhaustion-capture follow-up in final
 release notes. Final review, both signoffs and NEW attended-close answer are pending.
+
+
+## Finish-now authority and preparation — 2026-10-07
+
+The newest owner note pre-confirms the attended close subject to no open final
+CRITICAL/MAJOR, both final review signoffs and current AC1–AC21 evidence (AC2 waived).
+It supersedes older requests for a new close question. Cycle4 plan accepted with
+reservations, both adopted; implementation is running. Current remote main/releases
+remain a8634cc/v1.50.0 and a5664d8/v2.14.0. Planned next versions remain unchanged.
+Core locally published versions are 2.10.0/2.13.0; staged 2.14.0 remains the reviewed
+base. No publication/merge/tag or global core write occurred at this preparation point.
+A clean separate release clone will bind binary VCS metadata to the released commit,
+without the pre-existing untracked run directories marking binaries dirty. This is
+packaging only, not an additional implementation worktree or a change of source authority.
+Candidate branch CI may run during review; main/release actions await the close conditions.

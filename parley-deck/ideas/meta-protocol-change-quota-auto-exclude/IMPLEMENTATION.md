@@ -13,8 +13,8 @@ implementation-pr: n/a
 
 Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
 `25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The newest owner finish-now note
-supersedes the scheduled wait and former last-cycle/close-request rules. Start cycle 4
-immediately: independent G18–G20 plan signoff, implementation, full round-07 review;
+supersedes the scheduled wait and former last-cycle/close-request rules. Cycle-4 plan signoff completed ACCEPT-WITH-RESERVATIONS at 21:33Z; both
+reservations were adopted. Repairs are in progress, followed by full round-07 review;
 if needed, one narrow cycle 5 is authorized without asking. Native AC2 remains NOT MET
 and expressly owner-waived; R5-MAJOR-2 remains accepted/deferred. Close is pre-confirmed
 only after no open CRITICAL/MAJOR, both final signoffs and current AC1–AC21 evidence.
@@ -1010,3 +1010,26 @@ No overlapping edits. The parley-worktrees file-boundary discipline is applied; 
 owner's explicit existing-worktree/no-declaration instruction governs allocation.
 Parent will run full frozen host checks after the child exits, then invoke claude-1
 for a separate full-scope round-07. No independent implementation verdict yet.
+
+
+Cycle-4 G20 skill snapshot: b9596dd. Full suite after payload-manifest regeneration:
+399 Node tests, 54 Python tests, six manifests pass in 84.711s; input hashes unchanged,
+SKILL.md 19907 bytes below the existing 20000-byte cap. Initial stale-manifest failure
+is retained, not claimed as a pass. No skill test assertion changed. CLI code child
+is still running; full host checks and separate full review have not yet run.
+
+
+## Fix-up cycle 4 — producer delivered, host checks pending
+
+Implementation subprocess exited 0 at 2026-10-07 21:55:51Z after 1246.4s, no timeout
+and no terminal provider failure. G18/G18b/G19 and all selected reservations are delivered.
+No schema field was added. Actual baseline/current plain-edit probes agree for round1
+new/returned identities with markers kept/removed on both volumes; later-round joins
+still require catch-up. Notice and bound-answer regression tests pass on both volumes.
+Producer report: source-context/codex-1-fixup-4-evidence.md, with exact commands/hashes.
+The broader sandbox check failed the unchanged native crash test because sysctl boot
+identity is denied, and a shared-TMPDIR driver binary was killed before tests. The latter
+passes locally but its shared cause remains unproven. Parent HOST checks must resolve
+both; no test assertion or integrity gate was weakened. Full test/build/vet/race,
+Windows cross-build and packet/drift checks start against the frozen source next.
+Skill b9596dd is already frozen and fully checked. No independent code verdict yet.

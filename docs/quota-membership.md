@@ -57,6 +57,11 @@ The initial command checks the referenced prior artifacts and captures the catch
 immutable history. The owner directive must authorize the new current set. Neither an elapsed
 reset time nor a binary upgrade is a join or scope-widening instruction.
 
+Once a ruling is bound, its committed commit/blob, digest and quote remain the authority.
+The initial bind rejects a changed live/archived working copy. Later owner annotations or
+edits to those inbox copies do not invalidate recorded membership; missing or altered
+committed evidence still gates reads and recovery.
+
 ## Normal knob-off confirmations and catch-up
 
 For a recorded policy with `enabled: false`, edit the actual `participants:` in
@@ -74,8 +79,9 @@ reference alone, and `unavailable; user confirmed ...` are rejected; rewrite the
 in the displayed grammar. Markers validate an exclusion; the CLI never subtracts them
 from membership.
 
-A known agent returns through a `participants:` edit. An agent excluded at kickoff can
-also return through that edit during round 1; later return requires catch-up. A new
+A known agent returns through a `participants:` edit. During round 1, any policy-off
+join or return uses that plain edit, matching the original behavior; keeping or removing
+a stale exclusion marker does not affect it. After round 1, a kickoff-excluded return or new
 participant uses the existing §5 catch-up path: read prior rounds, write a valid late
 `round-01/agent-id.md`, edit `participants:`, and join from round 2. Its own late artifact
 can be dispatched before or after the edit:
@@ -115,11 +121,26 @@ clarification; its label grants no authority. Legacy ideas without quota history
 keep their pre-existing behavior. Ordinary off, legacy and kickoff-only driving has no
 idea-wide singleton lease.
 
-An applied transition's notice may be archived or deleted without being re-published.
-If publication was interrupted before the applied receipt, a validated archived copy
-also prevents duplication. A deleted notice with no delivery receipt permits one benign
-re-publication during checked recovery; its receipt then prevents another. Contradictory
-extant notices still require investigation.
+Notices are owner-owned and non-authoritative. After a valid applied receipt, notice
+edits, archival, deletion and pathname changes never gate membership, signoff or driving,
+and ordinary publication is not repeated. At most one ordinary notice is published per
+settled transition, with one when the destination is safe; an unsafe destination can
+receive none. Before the receipt, any regular live or archived
+copy is preserved without interpreting its contents. If absent, checked exclusive
+publication is attempted once; unsafe paths and publication failures produce non-blocking
+diagnostics while membership and evaluation receipts still complete. A receipt records
+that the publication step finished, not proof of delivery. Genuine receipt/history,
+writer and projection corruption still gates. Replay never adds a terminal evaluation.
+
+Policy-off changes against CLI 1.50.0 are explicit: `run --yes` filters confirmed
+exclusions, and a bare preflight 503 cannot be excluded with `--yes`. During round 1,
+any policy-off join or return uses a plain participant edit, as before;
+removing a stale exclusion marker does not change that. After round 1, a new joiner
+or kickoff-excluded return must import its late round-1 artifact before signing or
+completing quorum; an exact `NON-PARTICIPANT` decline remains in Missing signoffs.
+Pending catch-up stops ordinary driving until the manual `agents exec` command
+completes it. Membership edits are frozen on final/closed ideas. Legacy ideas without
+quota history retain their prior behavior.
 
 For policy-on ideas, an edit after an applied revision is blocked, including an edit back
 to an older participant set. Preserve the proposed edit for owner review, restore the
@@ -165,10 +186,11 @@ history/backup, then run checked recovery. Do not construct a replacement identi
 rewrite the immutable revision to make recovery pass.
 
 Recovery validates immutable history and the idea-bound run manifests, reconciles the prompt,
-all extant idea manifests, round evaluation and notices, then replaces mutable receipts with checked
-durable writes. Existing receipt bytes are never proof that projections are sound. Repeating recovery
-does not duplicate a notice or terminal evaluation. Contradictory manifests or notices require
-restoration from recorded authority; recovery does not invent missing original runs or migrate budgets.
+all extant idea manifests and round evaluation, attempts non-blocking notice publication where
+needed, then replaces mutable receipts with checked durable writes. Existing receipt bytes are
+never proof that projections are sound. Repeating recovery does not duplicate a terminal evaluation.
+Contradictory manifests require restoration from recorded authority; owner notice contents are
+never that authority. Recovery does not invent missing original runs or migrate budgets.
 
 Lifetime and projection leases live under the already ignored `.parley-runtime/membership/` on
 the deck filesystem. Ownership uses an exclusively published complete PID/token record, host and

@@ -19,7 +19,7 @@ func pendingDeclineFixture(t *testing.T, policyOn bool) (string, protocol.IdeaSt
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, prompt, strings.Replace(string(raw), "[a, b, c, d]", "[a, b, c, d, e]", 1))
+	writeFile(t, prompt, strings.Replace(strings.Replace(string(raw), "status: round-01", "status: round-02", 1), "[a, b, c, d]", "[a, b, c, d, e]", 1))
 	for _, rel := range []string{"consensus.md", "review/consensus.md"} {
 		writeFile(t, filepath.Join(idea.Path, rel), "---\nidea: "+idea.Slug+"\ndrafted-by: a\n---\n## Signoffs\n")
 	}

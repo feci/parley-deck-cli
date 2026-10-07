@@ -4,8 +4,16 @@
 
 - Add recorded per-idea quota exclusion at kickoff and mid-idea, with a fixed floor of
   two usable non-facilitators, protected roles, immutable history and owner notices.
-- Preserve historical vetoes/findings and existing policy-off membership behavior;
-  keep applied notices archived or deleted.
+- Preserve historical vetoes and findings. Owner edits, archival or deletion of a
+  transition notice never gate membership; publication failures are non-blocking diagnostics.
+- Policy-off changes: `run --yes` filters confirmed exclusions; bare preflight 503 stays
+  gated; after round 1, new joiners and kickoff-excluded returns import their late
+  round-1 before signing or completing quorum; an exact `NON-PARTICIPANT` decline remains
+  missing. Pending catch-up stops ordinary driving until manual exec, and final/closed
+  membership is frozen. Round-1 policy-off joins/returns use plain edits as before.
+- Committed owner answers remain authoritative after later live/archived inbox edits;
+  the initial binding still checks the working copy. Unsafe notice destinations may
+  receive no notice; a receipt records a completed publication attempt, not delivery.
 - Known limitation: zcode auto-exclusion may not fire on real native output. Native-positive
   evidence is owner-waived for this release; unrecognized failures use the owner-confirmed
   path. Capture is not automatic. Keep the failed run's private, unscrubbed per-agent

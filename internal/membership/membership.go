@@ -138,9 +138,6 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		if err := evaluateRound(root, ideaDir, b); err != nil {
 			return err
 		}
-		if err := projectionFault("notice"); err != nil {
-			return err
-		}
 		if err := publishNotice(root, ideaDir, b, applied); err != nil {
 			return err
 		}

@@ -80,6 +80,7 @@ func TestQuotaCycle3CLICatchupBothOrdersAndIncompleteRetry(t *testing.T) {
 		t.Run(order, func(t *testing.T) {
 			root, idea, _ := fixupAppFixture(t, quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea})
 			prompt := filepath.Join(idea.Path, "00-prompt.md")
+			cycle3Edit(t, prompt, "status: round-01", "status: round-02")
 			target := filepath.Join(idea.Path, "round-01/delta.md")
 			cycle3Consensus(t, idea)
 			if order != "artifact-first" {
@@ -275,6 +276,7 @@ func TestQuotaCycle3CLICatchupBoundaries(t *testing.T) {
 
 func TestQuotaCycle3MultiplePendingJoinersKeepAtomicHistory(t *testing.T) {
 	root, idea, _ := fixupAppFixture(t, quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea})
+	cycle3Edit(t, filepath.Join(idea.Path, "00-prompt.md"), "status: round-01", "status: round-02")
 	cycle3Consensus(t, idea)
 	cycle3Edit(t, filepath.Join(idea.Path, "00-prompt.md"), "[alpha, beta, gamma]", "[alpha, beta, gamma, delta, echo]")
 	for _, id := range []string{"delta", "echo"} {
@@ -308,6 +310,7 @@ func TestQuotaCycle3MultiplePendingJoinersKeepAtomicHistory(t *testing.T) {
 
 func TestQuotaCycle3CLINonParticipantDecline(t *testing.T) {
 	root, idea, _ := fixupAppFixture(t, quota.Policy{Enabled: false, Scope: quota.KickoffAndMidIdea})
+	cycle3Edit(t, filepath.Join(idea.Path, "00-prompt.md"), "status: round-01", "status: round-02")
 	cycle3Consensus(t, idea)
 	cycle3Edit(t, filepath.Join(idea.Path, "00-prompt.md"), "[alpha, beta, gamma]", "[alpha, beta, gamma, delta]")
 	code, text := cycle3Run(t, "consensus", "signoff", "--dir", root, "--agent", "delta", "--status", "block", "--notes", "❌ NON-PARTICIPANT", "--counter", "Continue without me", idea.Slug)

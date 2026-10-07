@@ -134,7 +134,7 @@ func TestQuotaTransitionReplayHistoryAndIncompletePreservation(t *testing.T) {
 	}
 }
 func TestQuotaProjectionFaultsPendingReadOnlyAndRecovery(t *testing.T) {
-	for _, stage := range []string{"prompt", "manifest", "evaluation", "notice", "applied"} {
+	for _, stage := range []string{"prompt", "manifest", "evaluation", "applied"} {
 		t.Run(stage, func(t *testing.T) {
 			root, dir, run := fixture(t, quota.NewPolicy(nil, nil))
 			ctx := leaseFixture(t, dir, run)

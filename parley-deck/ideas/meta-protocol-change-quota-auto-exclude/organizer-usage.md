@@ -261,3 +261,11 @@ Final durable-stop organizer snapshot: 51 events, input_tokens 6339476 (cached_i
 5808512), output_tokens 22712, reasoning_output_tokens 5523, total_tokens 6362188,
 attribution ambiguous. Same 21:42:51 transcript; supersedes earlier boundary counts,
 never additive. Shared-memory exact read-back and retrieval verified; no monetary estimate.
+
+
+## Finish-now cycle-4 plan / implementation entry — 2026-10-07
+
+- claude-1 phase 7, 268722c6-5a50-414a-828d-39a53f7ec042.jsonl: {"input_tokens": 162, "cached_input_tokens": 11585694, "cache_write_input_tokens": 727676, "output_tokens": 119198, "reasoning_output_tokens": 0, "total_tokens": 119360}; events 81; attribution ambiguous.
+- codex-1 phase 8, rollout-2026-10-07T23-23-06-01a1183f-a5b3-7cb1-a391-eb76811ecd3e.jsonl: {"input_tokens": 4278300, "cached_input_tokens": 3783680, "cache_write_input_tokens": 0, "output_tokens": 21654, "reasoning_output_tokens": 6672, "total_tokens": 4299954}; events 37; attribution ambiguous.
+
+Claude row is final plan-signoff usage. Codex row is a cumulative organizer snapshot; replace rather than add later snapshots. No price estimate. Plain-ID plan signoff: 533.3s, exit0, zero retries.

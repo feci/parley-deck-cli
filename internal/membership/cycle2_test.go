@@ -253,7 +253,7 @@ func TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority(t *testing.T) {
 		t.Fatal("missing manual clarification or invented authority")
 	}
 	os.WriteFile(notice, []byte(legacy+"tampered"), 0600)
-	if _, err := Before(context.Background(), root, dir, run); err == nil {
-		t.Fatal("unrecognized notice accepted")
+	if _, err := Before(context.Background(), root, dir, run); err != nil {
+		t.Fatal("owner notice annotation gated replay", err)
 	}
 }

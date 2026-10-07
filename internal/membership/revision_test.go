@@ -3,6 +3,8 @@ package membership
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,8 +45,15 @@ func TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority(t *testing.T) {
 			case "self-authored":
 				data, _ := os.ReadFile(filepath.Join(root, a.Path))
 				data = bytes.Replace(data, []byte("from: user"), []byte("from: a"), 1)
-				os.WriteFile(filepath.Join(root, a.Path), data, 0600)
-				defer os.WriteFile(filepath.Join(root, a.Path), bytes.Replace(data, []byte("from: a"), []byte("from: user"), 1), 0600)
+				invalid.Path = "parley-deck/inbox/user-to-all_self-authored.md"
+				if err := os.WriteFile(filepath.Join(root, invalid.Path), data, 0600); err != nil {
+					t.Fatal(err)
+				}
+				quotatest.Git(t, root, "add", "--", invalid.Path)
+				quotatest.Git(t, root, "commit", "-qm", "synthetic self-authored negative", "--", invalid.Path)
+				invalid.Commit = quotatest.Git(t, root, "rev-parse", "HEAD")
+				invalid.Blob = quotatest.Git(t, root, "rev-parse", invalid.Commit+":"+invalid.Path)
+				invalid.SHA256 = fmt.Sprintf("%x", sha256.Sum256(data))
 			}
 			if _, e := Revise(ctx, root, dir, run, ids, p, invalid, nil); e == nil {
 				t.Fatal("invalid authority accepted")
@@ -169,6 +178,7 @@ func TestQuotaFixupOffModeCatchupKeepsPreChangePath(t *testing.T) {
 	path := filepath.Join(dir, "00-prompt.md")
 	raw, _ := os.ReadFile(path)
 	raw = bytes.Replace(raw, []byte("participants: [a, b, c, d]"), []byte("participants: [a, b, c, d, e]"), 1)
+	raw = bytes.Replace(raw, []byte("status: round-01"), []byte("status: round-02"), 1)
 	os.WriteFile(path, raw, 0600)
 	validRound(t, dir, filepath.Base(dir), "e")
 	late := filepath.Join(dir, "round-01/e.md")

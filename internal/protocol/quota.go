@@ -70,15 +70,6 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 	}
 	allApplied, latestApplied := true, true
 	for i, b := range h.Batches {
-		inbox := filepath.Join(quota.IdeaRoot(ideaDir), DeckDir, "inbox")
-		if _, _, e := quota.InspectNotice(inbox, "parley-to-user_"+b.ID+".md", b.Notice(), b.LegacyManualNotice()); e != nil {
-			return v, e
-		}
-		if b.Owner != nil && b.Owner.Authority == nil {
-			if _, _, e := quota.InspectNotice(inbox, "parley-to-user_"+b.ID+"-manual-authority.md", b.Notice(), ""); e != nil {
-				return v, e
-			}
-		}
 		applied, e := quota.ReadApplied(ideaDir, b.ID)
 		applied = applied && e == nil
 		allApplied = allApplied && applied

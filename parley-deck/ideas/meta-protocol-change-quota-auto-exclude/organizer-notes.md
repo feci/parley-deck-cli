@@ -1378,3 +1378,16 @@ These are explicitly accepted alternatives, not a proxy edit of the review. No c
 accepted or close inferred. Implementation subprocess owns Go/tests+producer report;
 parent docs/skill/orchestration, disjoint existing-worktree paths. No worktree creation,
 declaration or pruning. Full host checks and independent round-07 follow.
+
+G20 docs changed while the Go subprocess is running on disjoint files. Initial skill suite stopped on expected stale payload-manifest mismatches; regenerated with npm run manifest:addons, retained failed logs, rerunning the full suite on frozen skill hashes. No assertion change or pass claim for the failed attempt.
+
+
+## Cycle-4 implementation handoff — 2026-10-07 21:56Z
+
+Configured codex-1/gpt-6-astra/max subprocess exited0, 1246.4s, no timeout; routine
+CLI reconnect messages did not become a terminal error or consume organizer retries.
+Producer file/test hashes verified before freeze. Shared/local new cycle4 tests pass.
+Sandbox native boot refusal and shared driver signal-killed are retained failures;
+full host suite plus explicit shared runner/driver will resolve them before review.
+Parent G20 and fully passing skill snapshot b9596dd match selected simpler G19 route.
+No code acceptance, close, merge, release or installation is inferred.

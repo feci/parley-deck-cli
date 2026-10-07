@@ -19,7 +19,7 @@ func TestQuotaFixupAuthorityCommittedAttributionAndObjects(t *testing.T) {
 	idea := "authority-fixture"
 	quote := "Owner ruling on obligation-fixture."
 	a := quotatest.Authority(t, root, idea, "good", quote)
-	for _, kind := range []string{"tree-not-commit", "committed-self-author", "committed-wrong-idea", "fabricated-path", "unquoted-content", "changed-archive"} {
+	for _, kind := range []string{"tree-not-commit", "committed-self-author", "committed-wrong-idea", "fabricated-path", "unquoted-content"} {
 		t.Run(kind, func(t *testing.T) {
 			bad := a
 			switch kind {
@@ -44,11 +44,6 @@ func TestQuotaFixupAuthorityCommittedAttributionAndObjects(t *testing.T) {
 				bad.Path = "parley-deck/inbox/../inbox/user-to-all_good.md"
 			case "unquoted-content":
 				bad.Quote = "Unrecorded authorization"
-			case "changed-archive":
-				path := filepath.Join(root, "parley-deck/inbox/archived", filepath.Base(a.Path))
-				os.MkdirAll(filepath.Dir(path), 0700)
-				os.WriteFile(path, []byte("altered"), 0600)
-				defer os.Remove(path)
 			}
 			if e := quota.ValidateAuthority(root, idea, bad); e == nil {
 				t.Fatal("invalid committed evidence accepted", kind)

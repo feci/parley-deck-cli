@@ -20,6 +20,27 @@ The follow-up will establish a complete scrubbed capture before changing the gra
 
 Kickoff and mid-idea application are both required for this release. Mid-idea changes preserve historical signoffs, vetoes, disputes, findings, failed invocations and incomplete files. Required signers and dispatch consumers use current membership. A designated or pinned implementer, or a participant that has started a consensus/FINAL draft, cannot be automatically removed. Pending transitions block further mutation until reconciled, while status/wait/organizer views report them without repairing state.
 
-Two fixes apply even when the policy is off: `parley run --yes` no longer retains or dispatches an excluded identity, and a bare preflight HTTP 503 remains a provider gate that `--yes` cannot exclude. There is no quota polling, retry worker, automatic same-idea rejoin or organizer failover.
+Policy-off changes against CLI 1.50.0 are explicit: `run --yes` filters confirmed
+exclusions, and a bare preflight 503 cannot be excluded with `--yes`. During round 1,
+any policy-off join or return uses a plain participant edit, as before;
+removing a stale exclusion marker does not change that. After round 1, a new joiner
+or kickoff-excluded return must import its late round-1 artifact before signing or
+completing quorum; an exact `NON-PARTICIPANT` decline remains in Missing signoffs.
+Pending catch-up stops ordinary driving until the manual `agents exec` command
+completes it. Membership edits are frozen on final/closed ideas. Legacy ideas without
+quota history retain their prior behavior.
+
+Notices are owner-owned and non-authoritative. After a valid applied receipt, notice
+edits, archival, deletion and pathname changes never gate membership, signoff or driving,
+and ordinary publication is not repeated. At most one ordinary notice is published per
+settled transition, with one when the destination is safe; an unsafe destination can
+receive none. Before the receipt, any regular live or archived
+copy is preserved without interpreting its contents. If absent, checked exclusive
+publication is attempted once; unsafe paths and publication failures produce non-blocking
+diagnostics while membership and evaluation receipts still complete. A receipt records
+that the publication step finished, not proof of delivery. Genuine receipt/history,
+writer and projection corruption still gates. Replay never adds a terminal evaluation.
+
+There is no quota polling, retry worker, automatic same-idea rejoin or organizer failover.
 
 This idea has one non-facilitator, so the rule cannot reduce its quorum. It retains the separate claude-1 review and owner-confirmed close. Windows remains experimental and CLI winget publication stays held. The legacy run-accounting blocker is a separate owner-requested follow-up (D6).
