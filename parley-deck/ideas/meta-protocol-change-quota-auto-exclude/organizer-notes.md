@@ -1344,3 +1344,25 @@ The shared-memory note was corrected for provider-stop-answer. Exact read-back c
 the future 2026-10-09 14:10 CEST authorization. Semantic retrieval still showed the
 older abstract immediately after editing, so refreshed indexing is pending; local
 canonical answer and persisted full note govern. No repeated indexing retry.
+
+
+## Finish-now resumption — 2026-10-07
+
+Read the controlling brief and all nine owner notes; newest finish-now governs.
+Plain route ID `claude-opus-5-5[1m]` replaces the prefixed ID per explicit owner
+direction; same Opus 5.5/max and provider, no agents.toml edit. Capability matrix:
+codex-1 / gpt-6-astra / max, organizer+implementer; claude-1 / Opus 5.5 / max, sole
+independent reviewer. Both CLIs installed. Source protocol full attestation unchanged:
+73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e; no fallback.
+Lean reorientation read IMPLEMENTATION, review consensus, organizer tail, computed
+brief/status. Driver still points at canceled stale cycle-3 draft, so retain the
+recorded focused CLI fallback; use driver validators/wait without blind auto draft.
+Start the unchanged G18–G20 plan signoff immediately with updated procedural authority.
+Provider 429/503: wait 900s, at most 8 relaunches per step, verbatim attempt records.
+Silent timeouts: 2400s then 3600s, at most two. Auth/credit or exhausted attempts stop.
+Cycle 5 authorized if needed; close pre-confirmed subject to stated evidence/signoffs.
+Old blocking provider note archived unchanged as answered. Runtime inventory: CLI 1.50.0,
+installer/runtime skills 2.14.0; source metadata 2.12.0 stale. Dry-run sync only now;
+refresh is authorized release work. Graph query found historical review/design nodes;
+no source relationship inferred. Scoped shared memory recall succeeded; its historical
+owner gates are superseded by current notes. No extra participants or quorum changes.

@@ -12,11 +12,11 @@ skill-commit: e976f7c9515f3250761380c1e09295e0f6c59985
 
 ## Scope and review basis
 
-The owner authorizes one narrow cycle 4 for round-06's R6-MAJOR-1 and R6-MINOR-1/2.
-This is the LAST fix-up cycle. A new CRITICAL or MAJOR in the full re-review means stop,
-with a blocking owner note offering stage-1-only (with a split assessment) or parking
-the change. No cycle 5. A clean-of-CRITICAL/MAJOR re-review proceeds to final review
-signoffs and the NEW attended-close request, not directly to release.
+The newest owner finish-now direction authorizes cycle 4 for round-06's R6-MAJOR-1
+and R6-MINOR-1/2, and if needed one narrow cycle 5 without asking. The G18–G20 plan
+below is unchanged. A scope/FINAL-changing CRITICAL or findings remaining after cycle 5
+requires escalation. Close is pre-confirmed after a final review with no open
+CRITICAL/MAJOR, both signoffs and current AC1–AC21 evidence (AC2 owner-waived).
 
 Role concentration (§15.5): codex-1 organizes, implements and drafts this plan;
 claude-1 independently evaluates it and later reviews the code in a separate process.
@@ -69,7 +69,7 @@ This plan is not a code verdict. Prior reviewer files and archived signoffs are 
   `../quota-zcode-native-exhaustion-capture/00-prompt.md` (inactive candidate). No native
   capture or grammar relaxation now. Manual private stderr preservation remains as stated.
 - D6 legacy driver accounting, unsupported adapter provenance and Windows runtime remain
-  separate. No global core publication or release before the NEW owner close answer.
+  separate. Core publication remains owner-only. Release follows the newest pre-confirmed close conditions.
 
 ## Dismissed findings
 
@@ -83,7 +83,7 @@ not catch the owner-annotation defect. Re-review the full product diff since FIN
 all fixes, weighing every issue freely. Repeat meaningful new regression probes and
 required current-tree full Go/build/vet/gofmt/skill/packet checks. Windows runtime and
 container/PID namespaces remain unverified. This single independent reviewer still
-requires the owner's attended close and both final signoffs.
+requires both final signoffs and the newest pre-confirmed close conditions.
 
 ## Drafter position changes
 
@@ -131,13 +131,71 @@ position changes from `round-03/codex-1.md` are proposed beyond the recorded own
 >   NEW attended-close request.
 > - Both standing retry permissions still apply to failed invocations.
 
+## Newest user direction — finish now
+
+> ## Owner direction: finish now (supersedes the wait in `…_long-quota-answer.md` and `…_provider-stop-answer.md`)
+>
+> Relayed by the owner's Claude Code session on 2026-10-07 at about 23:20 CEST. Verbatim (Slovak):
+>
+> > "sakra tak to fixni a dokonci a deployni cez vsetky kanaly, taha sa to dlho"
+>
+> Translation: "Damn, then fix it, finish it and deploy it through all channels, this is dragging on."
+>
+> ## Relay facts (PRIMARY, 23:18 CEST)
+>
+> - `ANTHROPIC_BASE_URL` points every Claude CLI call at the OmniRoute gateway, so there is no direct route.
+> - Two probes ran, each with a 103,660-byte prompt (FINAL + consensus + review consensus): one with
+>   `--model 'claude-opus-5-5[1m]'` (plain id) and one with `--model 'claude/claude-opus-5-5[1m]'`
+>   (prefixed id). **Both returned `PONG`.** Large requests pass right now. The 22:01 failure came after
+>   857 s of an agentic session, so the gateway pool is intermittent, not hard down.
+> - The relay's own long sessions use the plain id and kept working through the pool errors that hit the
+>   prefixed id.
+>
+> ## What the owner authorizes now
+>
+> 1. **Start immediately.** Do not wait for 2026-10-09. The relay killed the auto-resume daemon.
+> 2. **claude-1 stays the reviewer and the model stays Opus 5.5.** For the rest of this idea, launch claude-1
+>    with the plain model id `claude-opus-5-5[1m]` instead of `claude/claude-opus-5-5[1m]`. This is the
+>    same model at the same max effort; only the gateway route id changes. Record it in
+>    `organizer-notes.md`. Do not edit `agents.toml`.
+> 3. **Provider errors no longer stop you.**
+>    - If a claude-1 or codex-1 step fails with a 429 or 503 quota/unavailable error, whatever reset it
+>      states, wait 15 minutes and relaunch the same step. Do this at most 8 times per step.
+>    - Silent timeouts keep the earlier rule: relaunch with 2400 s, then 3600 s.
+>    - Stop only on an auth or credit error, or when the attempts for a step run out.
+> 4. **Fix-up.** Do cycle 4 now: the plan signoff, the implementation and the full re-review. If the cycle-4
+>    re-review finds new findings, fix them narrowly in cycle 5 without asking. That is the last cycle the
+>    protocol's deliberation cap allows. Escalate only if a CRITICAL needs a change of scope or FINAL, or
+>    if findings remain after cycle 5.
+> 5. **Close is pre-confirmed.** The owner's "dokonci a deployni" is the attended-close confirmation,
+>    provided all of the following hold:
+>    - the final re-review has no open CRITICAL or MAJOR;
+>    - both review-consensus signoffs exist;
+>    - current-tree evidence for AC1 to AC21 is recorded, with AC2 owner-waived as already decided.
+>
+>    Record this verbatim as the close authority. Do not write a separate close-request note.
+> 6. **Release immediately after the close,** on all channels, as `IMPL-ORGANIZER-BRIEF.md` says:
+>    - merge to `main`;
+>    - CLI 1.51.0, skill 2.15.0 and core 2.15.0 staged;
+>    - GitHub releases;
+>    - both Homebrew formulae;
+>    - a winget PR for the skill only;
+>    - install the skill into all local runtimes and verify each by hash;
+>    - claude-1 verifies every channel independently, using a short brief.
+>
+>    The two steps only the owner can run (`! npm publish …` and `! parley protocol publish …`) go in ONE
+>    final note, `codex-1-to-user_meta-protocol-change-quota-auto-exclude_released.md`, with the exact
+>    commands.
+> 7. **Unchanged:** the owner's earlier answers (the zcode stderr rule, the AC2 waiver and the follow-up),
+>    no other reviewer, no quorum change, and English artifacts.
+
 ## Protocol context
 
 Resumption uses the unchanged live phase-7 full packet, source and packet SHA256
 `73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e`; fallback_reason absent.
 Lean reorientation uses IMPLEMENTATION, raw round-06, prior signed plan, organizer tail,
 computed brief/status and relevant Phase 7/8/§15.5 provisions. The separate signer reads
-its rendered full protocol body before attesting. Both standing retry permissions bind.
+its rendered full protocol body before attesting. The newest finish-now retry rules bind.
 
 ## Signoffs
 
@@ -145,6 +203,7 @@ its rendered full protocol body before attesting. Both standing retry permission
 
 ### Signoff: codex-1 — 2026-10-07
 Status: ✅ ACCEPT
-Notes: I accept G18–G20 as the owner's last narrow cycle. This is the implementer's
-plan acceptance, not independent verification. A new CRITICAL/MAJOR stops repairs;
-otherwise final signoffs and the NEW attended owner close still precede release.
+Notes: I accept the unchanged G18–G20 repairs under the newest finish-now direction.
+This is implementer plan acceptance, not independent verification. Cycle 5 is authorized
+if needed; final independent review, both signoffs and the recorded close conditions
+precede release. The newest note supersedes historical schedule and last-cycle rules.

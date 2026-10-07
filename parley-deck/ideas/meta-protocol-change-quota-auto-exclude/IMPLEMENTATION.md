@@ -12,21 +12,18 @@ implementation-pr: n/a
 ## Summary of work
 
 Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
-`25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The 2026-10-07 owner answer now
-explicitly authorizes one last narrow cycle 4. Its G18–G20 plan is in review/consensus.md,
-awaiting claude-1 signoff before product changes. The one unchanged signoff relaunch authorized after the relay PONG failed at
-2026-10-07 20:01Z: HTTP 503 Unavailable, reset 39h 58m 28s, exit 1, no timeout.
-No claude-1 signoff or cycle-4 product change occurred. The provider-stop note
-remains the durable blocking checkpoint. The relay has now filed provider-stop-answer,
-applying the existing owner wait decision: detached auto-resume from 2026-10-09
-14:10 CEST, then exactly one unchanged plan-signoff relaunch. No new owner decision
-is needed for that future attempt. This session launches nothing further.
-No cycle 5 is authorized: any new CRITICAL/MAJOR in re-review requires a stop with
-stage-1-only split assessment or park options. Native AC2 remains NOT MET and owner-waived
-for this release; R5-MAJOR-2 remains accepted/deferred, never fixed. Both standing retry
-permissions, separate claude-1 full review, final signoffs and NEW attended owner close
-remain binding. codex-1 organizes and implements under §15.5. Transport is the existing
-owner-authorized local canonical files, no development PRs. No release before close.
+`25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The newest owner finish-now note
+supersedes the scheduled wait and former last-cycle/close-request rules. Start cycle 4
+immediately: independent G18–G20 plan signoff, implementation, full round-07 review;
+if needed, one narrow cycle 5 is authorized without asking. Native AC2 remains NOT MET
+and expressly owner-waived; R5-MAJOR-2 remains accepted/deferred. Close is pre-confirmed
+only after no open CRITICAL/MAJOR, both final signoffs and current AC1–AC21 evidence.
+The reviewer is claude-1, plain `claude-opus-5-5[1m]`, max effort, same provider.
+429/503 failures wait 15 minutes then retry the same step, at most 8 relaunches per step;
+silent timeout relaunches use 2400 then 3600 seconds. Auth/credit or exhausted attempts
+stop with a blocking owner note. codex-1 organizes and implements under §15.5.
+Transport remains owner-authorized local canonical files and direct main release, no
+development PRs. The only owner-only publication commands belong in the final released note.
 
 ## Implementation plan / checklist
 
@@ -51,9 +48,9 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - [x] Separate full-scope claude-1 round-05 review; raw findings read and preserved without edits.
 - [x] Owner trajectory/AC2 decisions received; Q1 authorizes narrow cycle 3 and Q2 waives native-positive AC2 for this release.
 - [x] G15–G17 signed plan, cycle-3 fixes and separate full-scope round-06 re-review (findings remain).
-- [ ] G18–G20 signed last-cycle plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
-- [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, blocking attended-close note.
-- [ ] Only after owner close confirmation: complete, merge, release channels, independent channel verification.
+- [ ] G18–G20 signed cycle-4 plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
+- [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, pre-confirmed close conditions verified.
+- [ ] After the pre-confirmed close conditions hold: complete, merge, release channels, independent channel verification.
 
 ## Deviations from FINAL.md
 
@@ -922,3 +919,65 @@ it in this session. No success, signoff or availability is inferred from the sch
 > - If that signoff fails again with a reset longer than 60 minutes, stop and write a blocking note, as
 >   before. The standing short-window and timeout permissions still apply.
 > - No substitute reviewer is used, and there is no model or provider change. Cycle 4 remains the last cycle.
+
+
+## Finish-now resumption — 2026-10-07
+
+The following newest owner note governs this resumption. Earlier stopping, schedule and
+close-request statements above are historical and superseded where they conflict.
+
+> ## Owner direction: finish now (supersedes the wait in `…_long-quota-answer.md` and `…_provider-stop-answer.md`)
+>
+> Relayed by the owner's Claude Code session on 2026-10-07 at about 23:20 CEST. Verbatim (Slovak):
+>
+> > "sakra tak to fixni a dokonci a deployni cez vsetky kanaly, taha sa to dlho"
+>
+> Translation: "Damn, then fix it, finish it and deploy it through all channels, this is dragging on."
+>
+> ## Relay facts (PRIMARY, 23:18 CEST)
+>
+> - `ANTHROPIC_BASE_URL` points every Claude CLI call at the OmniRoute gateway, so there is no direct route.
+> - Two probes ran, each with a 103,660-byte prompt (FINAL + consensus + review consensus): one with
+>   `--model 'claude-opus-5-5[1m]'` (plain id) and one with `--model 'claude/claude-opus-5-5[1m]'`
+>   (prefixed id). **Both returned `PONG`.** Large requests pass right now. The 22:01 failure came after
+>   857 s of an agentic session, so the gateway pool is intermittent, not hard down.
+> - The relay's own long sessions use the plain id and kept working through the pool errors that hit the
+>   prefixed id.
+>
+> ## What the owner authorizes now
+>
+> 1. **Start immediately.** Do not wait for 2026-10-09. The relay killed the auto-resume daemon.
+> 2. **claude-1 stays the reviewer and the model stays Opus 5.5.** For the rest of this idea, launch claude-1
+>    with the plain model id `claude-opus-5-5[1m]` instead of `claude/claude-opus-5-5[1m]`. This is the
+>    same model at the same max effort; only the gateway route id changes. Record it in
+>    `organizer-notes.md`. Do not edit `agents.toml`.
+> 3. **Provider errors no longer stop you.**
+>    - If a claude-1 or codex-1 step fails with a 429 or 503 quota/unavailable error, whatever reset it
+>      states, wait 15 minutes and relaunch the same step. Do this at most 8 times per step.
+>    - Silent timeouts keep the earlier rule: relaunch with 2400 s, then 3600 s.
+>    - Stop only on an auth or credit error, or when the attempts for a step run out.
+> 4. **Fix-up.** Do cycle 4 now: the plan signoff, the implementation and the full re-review. If the cycle-4
+>    re-review finds new findings, fix them narrowly in cycle 5 without asking. That is the last cycle the
+>    protocol's deliberation cap allows. Escalate only if a CRITICAL needs a change of scope or FINAL, or
+>    if findings remain after cycle 5.
+> 5. **Close is pre-confirmed.** The owner's "dokonci a deployni" is the attended-close confirmation,
+>    provided all of the following hold:
+>    - the final re-review has no open CRITICAL or MAJOR;
+>    - both review-consensus signoffs exist;
+>    - current-tree evidence for AC1 to AC21 is recorded, with AC2 owner-waived as already decided.
+>
+>    Record this verbatim as the close authority. Do not write a separate close-request note.
+> 6. **Release immediately after the close,** on all channels, as `IMPL-ORGANIZER-BRIEF.md` says:
+>    - merge to `main`;
+>    - CLI 1.51.0, skill 2.15.0 and core 2.15.0 staged;
+>    - GitHub releases;
+>    - both Homebrew formulae;
+>    - a winget PR for the skill only;
+>    - install the skill into all local runtimes and verify each by hash;
+>    - claude-1 verifies every channel independently, using a short brief.
+>
+>    The two steps only the owner can run (`! npm publish …` and `! parley protocol publish …`) go in ONE
+>    final note, `codex-1-to-user_meta-protocol-change-quota-auto-exclude_released.md`, with the exact
+>    commands.
+> 7. **Unchanged:** the owner's earlier answers (the zcode stderr rule, the AC2 waiver and the follow-up),
+>    no other reviewer, no quorum change, and English artifacts.
