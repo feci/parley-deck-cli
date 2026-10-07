@@ -1,21 +1,21 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: fix-up-cycle-4
+status: fix-up-cycle-5
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: fac40aaa1bba5350351bab0310ea8ede30ed3e6e
+head-commit: e04852ef36846b8ec18f581c4e8ae4f28b0c2262
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
-`25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The newest owner finish-now note
-supersedes the scheduled wait and former last-cycle/close-request rules. Cycle-4 plan signoff completed ACCEPT-WITH-RESERVATIONS at 21:33Z; both
-reservations were adopted. Repairs are in progress, followed by full round-07 review;
-if needed, one narrow cycle 5 is authorized without asking. Native AC2 remains NOT MET
+Both stages and cycle 4 are at CLI `e04852e` / skill `b9596dd`. All 13 host checks
+and the separate full-scope round-07 are complete and pass their executed checks.
+The independent review reports 0 CRITICAL, 0 MAJOR, 2 MINOR and 2 NIT. The final
+owner-authorized cycle-5 plan G21–G24 is awaiting claude-1's signoff before code changes.
+Native AC2 remains NOT MET
 and expressly owner-waived; R5-MAJOR-2 remains accepted/deferred. Close is pre-confirmed
 only after no open CRITICAL/MAJOR, both final signoffs and current AC1–AC21 evidence.
 The reviewer is claude-1, plain `claude-opus-5-5[1m]`, max effort, same provider.
@@ -48,7 +48,7 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - [x] Separate full-scope claude-1 round-05 review; raw findings read and preserved without edits.
 - [x] Owner trajectory/AC2 decisions received; Q1 authorizes narrow cycle 3 and Q2 waives native-positive AC2 for this release.
 - [x] G15–G17 signed plan, cycle-3 fixes and separate full-scope round-06 re-review (findings remain).
-- [ ] G18–G20 signed cycle-4 plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
+- [x] G18–G20 signed cycle-4 plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, pre-confirmed close conditions verified.
 - [ ] After the pre-confirmed close conditions hold: complete, merge, release channels, independent channel verification.
 
@@ -1033,3 +1033,64 @@ passes locally but its shared cause remains unproven. Parent HOST checks must re
 both; no test assertion or integrity gate was weakened. Full test/build/vet/race,
 Windows cross-build and packet/drift checks start against the frozen source next.
 Skill b9596dd is already frozen and fully checked. No independent code verdict yet.
+
+Candidate platform CI: Linux and skill pass; Windows Build passes but Test fails (including unchanged syscall.Mkfifo test and other failures), macOS still running. Source: source-context/codex-1-cycle4-platform-ci.md. Windows is not claimed verified; existing experimental/CLI-winget hold remains. Independent review is running.
+
+
+## Fix-up cycle 4 — frozen host verification complete
+
+All 13 host checks pass on e04852e, including full Go (947.455s), build, vet, Windows
+cross-build, race, shared/local regressions and the previously killed shared driver
+check. Native crash/boot evidence now executes on the host. All 97 changed Go files
+are formatted; product and roster hashes are unchanged. Full skill checks pass at
+b9596dd. Exact source: source-context/codex-1-fixup-4-host-evidence.md. Linux/macOS
+candidate CI passes; Windows Build succeeds but Test fails (directory sync and more),
+with experimental Windows/CLI-winget hold unchanged. Round-07 independent review is
+still running. No code acceptance, final signoff or close is inferred from producer checks.
+
+
+## Cycle-4 review outcome and cycle-5 pre-code plan — 2026-10-08
+
+claude-1 round-07 exited 0 after 1007.5s, no provider retry; original SHA256
+3fe2eb2999ff5f8aef040a2fc49fb118a556266476cb72f1ed59b312f815438d.
+Independent verdict: 0 CRITICAL, 0 MAJOR, 2 MINOR, 2 NIT. All cycle-4 fixes verified;
+independent full Go 868.4s/34 packages, build/vet/race/shared/local/skill checks pass.
+The review validator requires the exact Refutation attempts heading. Only claude-1
+will make that format repair; original preserved with hashes before any correction.
+Cycle-4 signed consensus archived byte-for-byte at review/round-07/consensus.md.
+Cycle-5 plan G21–G24 is in review/consensus.md, codex-1 signed; code waits for claude-1.
+Chosen Windows response is disclosure-only. Alias refusal must prevent out-of-root
+writes and preserve supported normal/ancestor-alias paths. Bind-time docs and notice
+clarification diagnostics are narrow repairs. Full re-review round-08 follows.
+
+
+## Cycle-5 signed reservations activated — 2026-10-08
+
+claude-1 independently signed ACCEPT-WITH-RESERVATIONS, exit 0, 1175.8s, no
+provider/timeout retry. Both blocks parse; round-07 is filed-and-valid after its
+reviewer-owned heading-only repair. codex-1 adopts every reservation as the open
+items deferred to implementation under Phase 3/7:
+
+- G21: disclose Windows creation, scoped driving/signing and manual/owner/transition
+  durable-write failures, not only kickoff. Hand exact sites and CI evidence to
+  windows-portability on its unmerged branch, without promising that track repairs
+  future sites; add the same Windows warning in the skill CHANGELOG.
+- G22: scope alias refusal to actual lease derivation or integrity escalation;
+  keep ordinary legacy/off/kickoff-only Acquire behavior. Resolve the workspace root
+  and require its deck/idea path to resolve to that exact join, matching the baseline
+  verification predicate. Validate enabled mid-idea creation before kickoff writes.
+  Disclose the explicit refusal and physical-deck/policy-off workarounds.
+- G23: bind-time qualification applies only to inbox copies. Immutable evidence
+  checks remain binding on every read. Add rollback guidance in docs and the skill
+  reference, keeping COOPERATION unchanged.
+- G24: assert one clarification diagnostic per unsafe-path call (two including an
+  unapplied ordinary notice), no unnecessary receipt, real receipt errors retained,
+  and historical correction recovery once the path becomes safe.
+- G25 (reservation 3): kickoff notices must use the same checked non-blocking
+  publication rule, create an absent safe inbox, preserve owner copies and refuse
+  unsafe destinations as diagnostics. Test missing/read-only/unsafe inbox cases
+  with kickoff, run.created, manifest and surviving membership intact.
+
+None changes FINAL or scope; the independent signer says none blocks. These are
+implementation obligations for this final cycle, not a code verdict. Full round-08
+will weigh every issue freely. No cycle 6 is authorized.

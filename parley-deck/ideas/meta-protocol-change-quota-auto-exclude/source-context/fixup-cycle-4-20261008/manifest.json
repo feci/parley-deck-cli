@@ -1,0 +1,124 @@
+{
+  "copies": [
+    {
+      "path": "source-context/fixup-cycle-4-20261008/host-summary.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/summary.json",
+      "bytes": 4874,
+      "sha256": "6eefd7b5a5d20b8b6b7fa5fb37f029e81d01dddde6cee717bc189d98f79fa6df"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/host-input-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/input-hashes.json",
+      "bytes": 64558,
+      "sha256": "8e8c4c430cadaee3b0982da6b2a57297e708738666501e1c9a6492355ffddfac"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/host-output-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/output-hashes.json",
+      "bytes": 64558,
+      "sha256": "8e8c4c430cadaee3b0982da6b2a57297e708738666501e1c9a6492355ffddfac"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/gofmt.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/gofmt.json",
+      "bytes": 3731,
+      "sha256": "08d9208cca5336d5b18fb8fa2f2b96465e0b08f1147c1c9203e65efa42dc742a"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/skill-result.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/skill/result.json",
+      "bytes": 1434,
+      "sha256": "2452c657710564dfd9788803e2045a71cda3bebb70e7f44a760615aea9e92b23"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/protocol-hashes.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/parent-checks/protocol-hashes.json",
+      "bytes": 579,
+      "sha256": "ea86df7d69be315d082e2d25b31526be49ddc55170753d75f5bbb371bfc9c507"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/packet-attestations.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/parent-checks/packet-attestations.json",
+      "bytes": 1455,
+      "sha256": "16a38ccc40a045ba1e7aa7ea155a2726946f2dff9a181c6b8631698f788c15b0"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/producer-source-files.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/producer/producer-source-files.json",
+      "bytes": 2126,
+      "sha256": "71aa7435a84deebd7ee2cc72f4e56e4a6710b469c8ca404a66da11cfd629bd70"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/producer-final-results.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/producer/final-results.json",
+      "bytes": 1145,
+      "sha256": "94c531fa770355d50e1906fd143f49e5b343a1a0133982fa9acb77c56b2540f1"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/candidate-cli-ci.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/review-cycle-4/candidate-cli-ci.json",
+      "bytes": 8752,
+      "sha256": "07ea91e8a5e5a9b9b0df9dafa29790768ec4ca3dc5438737087bda539a88bd19"
+    },
+    {
+      "path": "source-context/fixup-cycle-4-20261008/windows-ci-job.json",
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/review-cycle-4/windows-ci-job.json",
+      "bytes": 3209,
+      "sha256": "4034dc4c0adb49888625a08a33e11359b2f0b8607e1ad7c4c4c197488b2bc6f2"
+    }
+  ],
+  "private_logs": {
+    ".parley-runtime/quota-implementation/fixup-4/host/shared-runner-driver.log": {
+      "bytes": 2020,
+      "sha256": "3af28e519206995b9d4b1ce38ac63f2d866ed8ad0351cc3cee3ee1a7fa27ed52"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/vet.log": {
+      "bytes": 353,
+      "sha256": "de98cb89cbad116f8710743576145033d108e9973da49e57533795b9577a8783"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/full.log": {
+      "bytes": 2163,
+      "sha256": "d170a139e04f5068cfb9c3e829f235ddbc3af7c1c261a0a9bfea4bc89e09934a"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/local-control.log": {
+      "bytes": 190216,
+      "sha256": "94bdbe03b0af2fe94691b7a6359fb7748313f7fc6c6f73061f2b4db5ab41ebda"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/binary.log": {
+      "bytes": 502,
+      "sha256": "88d303c260f0b4cece61632a0d120cba14ce764ecf49be3487e5cbeeee153ebf"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/windows-build.log": {
+      "bytes": 380,
+      "sha256": "f849e18912f91365686bcc6bbbb21b8f26cff21902bb7d0cdf5a0b6dbbc62806"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/native-lease.log": {
+      "bytes": 2120,
+      "sha256": "4054fd13bbb33edda69e30aabf3cf7fbc167530f56ccbb15a60fed193632587a"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/native-boot.log": {
+      "bytes": 425,
+      "sha256": "3e4f95a022ff61b028eae4f52a3e8f0cbcaaf9a8cab7a98294aff68199771324"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/race.log": {
+      "bytes": 222105,
+      "sha256": "e2b1d6202ed8beaa8bae065de0c3a0361c7bbe32a6eb9e17c9e7c742e16d17d1"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/reviewer-changing-countdowns.log": {
+      "bytes": 3174,
+      "sha256": "bd5a58c7bef98724be999dd2502fdf0ae8fd1ea7613b8010a95ecd41d5f27e2c"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/shared-volume.log": {
+      "bytes": 229529,
+      "sha256": "50788021a39a4d32debfd65ccec394bdeef5971163e6ec606dc364014f6b46bc"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/reviewer-zadv.log": {
+      "bytes": 10850,
+      "sha256": "a8361f72de1bd41bf4c8f48a89366ec398926d4a2da589a6abe4ea71889c31e6"
+    },
+    ".parley-runtime/quota-implementation/fixup-4/host/build.log": {
+      "bytes": 355,
+      "sha256": "8b94d78e907a60f09d8511634d3087e51a1cfe8404b32ecaae8f608063f993bf"
+    }
+  }
+}

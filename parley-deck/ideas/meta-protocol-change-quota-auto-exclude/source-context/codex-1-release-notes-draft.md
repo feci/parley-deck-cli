@@ -44,3 +44,9 @@ writer and projection corruption still gates. Replay never adds a terminal evalu
 There is no quota polling, retry worker, automatic same-idea rejoin or organizer failover.
 
 This idea has one non-facilitator, so the rule cannot reduce its quorum. It retains the separate claude-1 review and owner-confirmed close. Windows remains experimental and CLI winget publication stays held. The legacy run-accounting blocker is a separate owner-requested follow-up (D6).
+
+Candidate validation on 2026-10-08: Windows compilation succeeds, but its test suite
+fails, including quota kickoff directory-sync access errors and an unchanged Unix-only
+`syscall.Mkfifo` test. Windows assets remain experimental; CLI winget is held. Linux and macOS
+candidate CI and the full skill suite pass. The host full Go suite, build, vet and race
+checks also pass; independent final review remains separately recorded before publication.

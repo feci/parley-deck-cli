@@ -1,0 +1,58 @@
+[
+  {
+    "name": "final-cycle4-shared",
+    "command": [
+      "go",
+      "test",
+      "./internal/quota",
+      "./internal/membership",
+      "./internal/consensus",
+      "./internal/app",
+      "-run",
+      "TestQuotaCycle4",
+      "-count=1",
+      "-timeout",
+      "5m",
+      "-v"
+    ],
+    "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/producer/shared-temp",
+    "exit": 0,
+    "seconds": 24.202
+  },
+  {
+    "name": "final-cycle4-local",
+    "command": [
+      "go",
+      "test",
+      "./internal/quota",
+      "./internal/membership",
+      "./internal/consensus",
+      "./internal/app",
+      "-run",
+      "TestQuotaCycle4",
+      "-count=1",
+      "-timeout",
+      "5m",
+      "-v"
+    ],
+    "TMPDIR": "/tmp/quota-fixup4-producer",
+    "exit": 0,
+    "seconds": 15.414
+  },
+  {
+    "name": "affected-runner-driver",
+    "command": [
+      "go",
+      "test",
+      "./internal/runner",
+      "./internal/driver",
+      "-run",
+      "TestQuota",
+      "-count=1",
+      "-timeout",
+      "5m",
+      "-v"
+    ],
+    "exit": 1
+  }
+]

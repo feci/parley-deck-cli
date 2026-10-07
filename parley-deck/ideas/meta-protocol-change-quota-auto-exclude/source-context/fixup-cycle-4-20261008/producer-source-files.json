@@ -1,0 +1,22 @@
+{
+  "internal/app/quota_cycle3_test.go": "cfdfde977c84702041fa04201b51afb7ec35aa90d71ba0516806b68e5ea7e06c",
+  "internal/app/quota_cycle4_test.go": "6998d191cca7e71037bd2f452a2e1b684644a9f3d98e8e479976f521f0b34206",
+  "internal/consensus/catchup_test.go": "5bd79f4037a283268e005d5540804ee3979df5e4960383cf79ecc89c13d4de04",
+  "internal/membership/cycle2_test.go": "49ebb0a83dd58beab11f109b2cd44bd7c432ee631e8cdca85ace2e3bb11aef1d",
+  "internal/membership/cycle3_test.go": "123326e8160b3181e0d54a909378d1d000d403d1917cc624b0266265c76c660a",
+  "internal/membership/cycle4_test.go": "c7b7c57813da619c184245f3686da0139dd690f16ebc6dff8d4d77737764e0b1",
+  "internal/membership/membership.go": "1ee9dc9f75fb2b8bbefec2c1e4ba10c8b8280382fcd98532627aa68ae8ce1c43",
+  "internal/membership/membership_test.go": "6c2fec2ea9eb8af248979c36e9ce3db04e962c62315cbf46734dc601ed63dccf",
+  "internal/membership/notice.go": "a8021a0321a8543c2cf0c32060940ceba189a119d559fe8db0267f3aff6f2c4e",
+  "internal/membership/revision_test.go": "8cada9f2ebce066e502e34ac08b0a4bcee612503e4d26cdfc56b2fa42bd260e4",
+  "internal/protocol/quota.go": "02c9deee5fc96ac0575b056f833eab0f9a80126b93867954474ea2d284724304",
+  "internal/protocol/quota_manual.go": "9f7ec8d595c3652494e47c23b741cd9558f64eab802e3d763cceec182434f9cd",
+  "internal/quota/authority.go": "2e0c2b14933ea988ae8be831e744f0b4ab18cc359f9b8d26f41e74422390bcee",
+  "internal/quota/authority_cycle4_test.go": "d467ccfeb037f416b24f53d264c3dbce9e8534d40ebd9bb39d2ade7c61a865ba",
+  "internal/quota/authority_test.go": "f177dc022e0148ec78db36869c7f909c3311ffbc965ae265c18bf85c79b160be",
+  "internal/quota/notice.go": "e716397fc1988ce4983b53c6e78a381811dee49d08730f4eb35bfb3a6e5dbe67",
+  "internal/quota/receipt.go": "dc941e6730af7cefbc6612f3538c84019ee5fdedef3b3921a8c35a2eca0d66cb",
+  "internal/quota/revision.go": "521335aead6076484f614e050336096a765630081bd75c08ecb2deb69fa8d452",
+  "internal/quota/revision_cycle4_test.go": "419a38c42919fe8716d9970e9c8963cf2d0b5e29f3b1aa243ae00021fd574251",
+  "internal/quota/revision_snapshot.go": "d68574d4deceb11758c305675d137309e8a5f9016d3469e3a4de735bf5a101d5"
+}

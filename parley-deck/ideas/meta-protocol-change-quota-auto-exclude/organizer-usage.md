@@ -269,3 +269,17 @@ never additive. Shared-memory exact read-back and retrieval verified; no monetar
 - codex-1 phase 8, rollout-2026-10-07T23-23-06-01a1183f-a5b3-7cb1-a391-eb76811ecd3e.jsonl: {"input_tokens": 4278300, "cached_input_tokens": 3783680, "cache_write_input_tokens": 0, "output_tokens": 21654, "reasoning_output_tokens": 6672, "total_tokens": 4299954}; events 37; attribution ambiguous.
 
 Claude row is final plan-signoff usage. Codex row is a cumulative organizer snapshot; replace rather than add later snapshots. No price estimate. Plain-ID plan signoff: 533.3s, exit0, zero retries.
+
+Cycle-4 separate codex-1 producer final: {"input_tokens": 8669600, "cached_input_tokens": 7683456, "cache_write_input_tokens": 0, "output_tokens": 45866, "reasoning_output_tokens": 12422, "total_tokens": 8715466}; events 57; attribution ambiguous. Source rollout-2026-10-07T23-35-04-01a1184a-99c0-7652-bf39-452ba4ca18c9.jsonl. Duration 1246.4s, exit0, no terminal provider or timeout relaunch.
+
+
+## Round-07 review / cycle-5 plan boundary — 2026-10-08
+
+claude-1 distinct e036a10c-e22d-4caa-a24a-880de34ce464.jsonl ingested:
+146 events, total_tokens 211847, attribution ambiguous. Exit 0 / 1007.5s,
+no provider or timeout retry. These are client accounting conventions, no cost estimate.
+Cycle-5 signer is a separate invocation; ingest its final usage at its boundary.
+Scoped OpenViking recall succeeded; historical stop records are superseded by the
+current finish-now owner note and are not relied on as present authorization.
+
+Cycle-5 plan signer final usage ingested from distinct e5309857-53ae-4c5d-8a31-1eeba36ca582.jsonl; 1175.8s, exit0, zero retries. No monetary estimate.

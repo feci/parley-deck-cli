@@ -1,0 +1,206 @@
+{
+  "results": [
+    {
+      "name": "native-boot",
+      "command": [
+        "sysctl",
+        "-n",
+        "kern.boottime"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 0.008
+    },
+    {
+      "name": "native-lease",
+      "command": [
+        "go",
+        "test",
+        "./internal/pidlease",
+        "-count=1",
+        "-v"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 4.808
+    },
+    {
+      "name": "full",
+      "command": [
+        "go",
+        "test",
+        "./...",
+        "-count=1",
+        "-timeout",
+        "45m"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 947.455
+    },
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 3.026
+    },
+    {
+      "name": "binary",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/parley",
+        "./cmd/parley"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 1.15
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 1.321
+    },
+    {
+      "name": "windows-build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "env": {
+        "GOOS": "windows",
+        "GOARCH": "amd64"
+      },
+      "exit_code": 0,
+      "seconds": 2.154
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/pidlease",
+        "./internal/membership",
+        "./internal/app",
+        "./internal/consensus",
+        "./internal/quota",
+        "./internal/protocol",
+        "./internal/telemetry",
+        "./internal/runner",
+        "-run",
+        "TestLease|TestQuotaCycle4|TestQuotaFixup|TestQuotaCrossProcessLease|TestQuotaLifetimeLock|TestQuota",
+        "-count=1",
+        "-v"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 33.907
+    },
+    {
+      "name": "shared-volume",
+      "command": [
+        "go",
+        "test",
+        "./internal/app",
+        "./internal/membership",
+        "./internal/consensus",
+        "./internal/pidlease",
+        "./internal/fsutil",
+        "-run",
+        "TestQuotaCycle4|TestQuotaCycle3|TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+        "-count=1",
+        "-v"
+      ],
+      "env": {
+        "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/shared-temp"
+      },
+      "exit_code": 0,
+      "seconds": 27.127
+    },
+    {
+      "name": "local-control",
+      "command": [
+        "go",
+        "test",
+        "./internal/app",
+        "./internal/membership",
+        "./internal/consensus",
+        "./internal/pidlease",
+        "./internal/fsutil",
+        "-run",
+        "TestQuotaCycle4|TestQuotaCycle3|TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+        "-count=1",
+        "-v"
+      ],
+      "env": {
+        "TMPDIR": "/tmp/quota-auto-exclude-fixup4-host-control"
+      },
+      "exit_code": 0,
+      "seconds": 22.722
+    },
+    {
+      "name": "shared-runner-driver",
+      "command": [
+        "go",
+        "test",
+        "./internal/runner",
+        "./internal/driver",
+        "-run",
+        "TestQuota",
+        "-count=1",
+        "-timeout",
+        "5m",
+        "-v"
+      ],
+      "env": {
+        "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/host/shared-temp"
+      },
+      "exit_code": 0,
+      "seconds": 1.481
+    },
+    {
+      "name": "reviewer-zadv",
+      "command": [
+        "go",
+        "run",
+        ".parley-runtime/claude1-r3/zadv/main.go"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 0.348
+    },
+    {
+      "name": "reviewer-changing-countdowns",
+      "command": [
+        "go",
+        "run",
+        ".parley-runtime/quota-implementation/fixup-2/checks/reviewer-zretry/main.go"
+      ],
+      "env": {},
+      "exit_code": 0,
+      "seconds": 3.275
+    }
+  ],
+  "gofmt_count": 97,
+  "gofmt_clean": true,
+  "source_changes_during_checks": [],
+  "roster_unchanged": true,
+  "roster_after": {
+    "/Users/tomasfecko/.parley/agents.toml": "f8cc2ab526290998a7f79d205f70f7a55a401b7aec0f253d6e42ac0fc763f946",
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/parley-deck/agents.toml": "f52a0a778dcaec611da09d3abeacd38e325f2e559fd0ef13400fb7fee8bd6ad3"
+  }
+}
