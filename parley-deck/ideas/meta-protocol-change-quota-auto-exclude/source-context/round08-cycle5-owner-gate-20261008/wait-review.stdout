@@ -1,0 +1,89 @@
+{
+  "notes": [
+    "pre-existing unanswered to-user escalation for this idea (arrived before this wait; reported, not blocking): codex-1-to-user_meta-protocol-change-quota-auto-exclude_round08-cycle5-limit.md"
+  ],
+  "digest": {
+    "idea": "meta-protocol-change-quota-auto-exclude",
+    "round": {
+      "label": "round-03",
+      "review": false,
+      "total": 2,
+      "completed": 2,
+      "rows": [
+        {
+          "agent": "codex-1",
+          "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/round-03/codex-1.md",
+          "filed": true,
+          "bytes": 22646,
+          "owner": "codex-1",
+          "valid": true,
+          "stance_flags": {
+            "block": 8,
+            "counter": 3,
+            "accept": 30,
+            "escalate": 1
+          },
+          "unparsed": false,
+          "fell_back": false
+        },
+        {
+          "agent": "claude-1",
+          "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/round-03/claude-1.md",
+          "filed": true,
+          "bytes": 28680,
+          "owner": "claude-1",
+          "valid": true,
+          "stance_flags": {
+            "block": 18,
+            "counter": 7,
+            "accept": 23,
+            "escalate": 4
+          },
+          "unparsed": false,
+          "fell_back": false
+        }
+      ]
+    },
+    "review": {
+      "label": "round-08",
+      "review": true,
+      "total": 1,
+      "completed": 1,
+      "rows": [
+        {
+          "agent": "claude-1",
+          "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-08/claude-1.md",
+          "filed": true,
+          "bytes": 32007,
+          "owner": "claude-1",
+          "valid": true,
+          "stance_flags": {
+            "block": 19,
+            "counter": 0,
+            "accept": 4,
+            "escalate": 13
+          },
+          "unparsed": false,
+          "fell_back": false
+        }
+      ]
+    },
+    "consensus": {
+      "present": true,
+      "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/consensus.md",
+      "triage": "ready",
+      "signed": [
+        "codex-1",
+        "claude-1"
+      ]
+    },
+    "implementation": {
+      "present": true,
+      "status": "fix-up-cycle-5",
+      "implementer": "codex-1",
+      "head_commit": "2705a1e850132f74aed2dbb87149df5491bfe94b",
+      "ready_for_review": true
+    },
+    "next": "await review artifact"
+  }
+}

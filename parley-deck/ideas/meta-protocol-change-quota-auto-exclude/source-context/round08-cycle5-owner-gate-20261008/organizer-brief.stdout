@@ -1,0 +1,30 @@
+# Organizer brief — meta-protocol-change-quota-auto-exclude
+
+Computed view — never stored in the deck. Recompute with `parley organizer brief`;
+the brief itself writes nothing into `parley-deck/` (the packet renderer caches its
+body under `.parley-runtime/protocol-packets/`, outside the deck).
+`parley status` / this brief are authoritative; `runs/` handoff records are advisory.
+
+## Protocol context
+context_mode: full  (full fallback: facilitator-participates)
+source_sha256: 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e
+packet_sha256: 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e
+facilitator body: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/protocol-packets/full-phase8-deliberation-73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e.md
+transport: github-pr
+
+## Idea state
+status: final  participants: [codex-1, claude-1]
+facilitator: codex-1 (participates: true)
+run phase pointer (advisory): round-01
+
+## PhaseDigest (mechanically derived; raw artifacts are canonical)
+round-03: 2/2 filed-and-valid
+  codex-1: filed=true bytes=22646 owner=codex-1 valid=true(ok) unparsed=false path=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/round-03/codex-1.md
+  claude-1: filed=true bytes=28680 owner=claude-1 valid=true(ok) unparsed=false path=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/round-03/claude-1.md
+round-08: 1/1 filed-and-valid
+  claude-1: filed=true bytes=32007 owner=claude-1 valid=true(ok) unparsed=false path=/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-08/claude-1.md
+consensus: triage=ready missing=[] signed=[codex-1 claude-1] reservations=[] blocks=[]
+implementation: present=true status=fix-up-cycle-5 implementer=codex-1
+
+## Next action (fixed enumeration)
+await review artifact

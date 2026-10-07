@@ -1,0 +1,74 @@
+{
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/reviewer-rest-checks.json": {
+    "bytes": 5310,
+    "sha256": "19b735c97dfee8f2b33a77bed7e4be06d269ef1e29c8b16d268ae4b2f30c7afa"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/review-plan-consensus.stdout": {
+    "bytes": 726,
+    "sha256": "fb24e49fd161e2381c9cf51cc03a11ee1ab7078670b7e25c3021306e6f4c65ae"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/status.stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/wait-review.stderr": {
+    "bytes": 47,
+    "sha256": "32cab440751cff9e252a68dff194b2f6bd696a6bf3b91b1255df7f6ec2604db8"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/organizer-brief.stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/organizer-brief.stdout": {
+    "bytes": 2094,
+    "sha256": "0eb3714f4b74cc46bd688a7ba5247919b9e778fb51dd51ddf8a53b466d20912b"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/validator-results.json": {
+    "bytes": 827,
+    "sha256": "133aa1d911347b236f593bc4e35bc5b659a6899f51cd560b47ff96cc75aae15d"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/review-exit.json": {
+    "bytes": 153,
+    "sha256": "440dc8c234f36f5b45e3585d7538c55b038b139268b3c222740ec0f519b6fa4c"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/status.stdout": {
+    "bytes": 2998,
+    "sha256": "2fc7c590645b76cd747a42de7decddf1be1b769227b8fe48e9fa800bf14c5287"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/wait-review.stdout": {
+    "bytes": 2424,
+    "sha256": "4bbfecef44e2b9d0af47b79fc119a801773d764bf84c6f93530524ff01d1d996"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/review-plan-consensus.stderr": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/retry-state.json": {
+    "bytes": 528,
+    "sha256": "1ef1639af08913d9398596a10652c2bb21b1e53adaeb4f1f91992feae1a1a3a6"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/review-launch.json": {
+    "bytes": 540,
+    "sha256": "2e1960f2707b0483c414831e542db71228bc9e3bdd8f126457a5154ffeae1819"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/usage-boundary.json": {
+    "bytes": 12638,
+    "sha256": "7209c0c3f1d663ab707f265862b797ce3876d5db6699f6c0bdca8142f2869a88"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/round08-cycle5-owner-gate-20261008/reviewer-full-checks.json": {
+    "bytes": 669,
+    "sha256": "4b8b5eb0a3206a2790004e6045e29a19424036f59813a46176d8c5cb318833d5"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-08/claude-1.md": {
+    "bytes": 32007,
+    "sha256": "6ea871262a87731b2c5273b28128b851c7a0ad797abaf26601e4c845d404ce06"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md": {
+    "bytes": 19376,
+    "sha256": "e5b56a7f0a1398c3a3abd660c0922e5427efaa5b4afc7e8d004915093b3e8b8a"
+  },
+  "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/cycle5-plan-20261008/signed-plan.md": {
+    "bytes": 19376,
+    "sha256": "e5b56a7f0a1398c3a3abd660c0922e5427efaa5b4afc7e8d004915093b3e8b8a"
+  }
+}

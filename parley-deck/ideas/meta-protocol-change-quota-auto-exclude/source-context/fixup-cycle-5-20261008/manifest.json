@@ -1,0 +1,10 @@
+{
+  "packet-attestations.json": "4ce06bd8dd53105613acc5c6a84e3581a51893cbbc3c4ce7507cbedad566deda",
+  "skill-result.json": "2bdab9730bfb9b75bccff79e9a3ff19248369e66c736d59e384fb230d4114a5e",
+  "host-output-hashes.json": "c706a03be0fee910536b233b8a4f5189c8b043e3fd1d3fc86394a02723152e27",
+  "host-summary.json": "89687458b47ca6a43ea910fd308b978e2cbb0841a82b3eb9d033e2d6b3d8f04e",
+  "skill-ci.json": "c4e30befeeedc2800680608f8e4731b2b5052bb250b062433f3e41459540f8c2",
+  "gofmt.json": "1e7c3e315ccaa6fd23785cfb5a8d36befb68a79ca2bf451bb2b567b2781e955f",
+  "cli-ci.json": "fdf4012ac59245b80325ce4c4bd211f2d91501904e2b3191648b3295e9e45072",
+  "host-input-hashes.json": "c706a03be0fee910536b233b8a4f5189c8b043e3fd1d3fc86394a02723152e27"
+}

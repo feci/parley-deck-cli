@@ -1,0 +1,51 @@
+[
+  {
+    "name": "wait-review",
+    "argv": [
+      "parley",
+      "wait",
+      "--idea",
+      "meta-protocol-change-quota-auto-exclude",
+      "--for",
+      "review",
+      "--timeout",
+      "1s",
+      "--json"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "review-plan-consensus",
+    "argv": [
+      "parley",
+      "consensus",
+      "status",
+      "--review",
+      "--json",
+      "meta-protocol-change-quota-auto-exclude"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "organizer-brief",
+    "argv": [
+      "parley",
+      "organizer",
+      "brief",
+      "--idea",
+      "meta-protocol-change-quota-auto-exclude"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "status",
+    "argv": [
+      "parley",
+      "status",
+      "--idea",
+      "meta-protocol-change-quota-auto-exclude",
+      "--json"
+    ],
+    "exit": 0
+  }
+]

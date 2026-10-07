@@ -1,0 +1,30 @@
+{
+  "stage": "full",
+  "heads": {
+    "cli": "2705a1e850132f74aed2dbb87149df5491bfe94b",
+    "skill": "99b3f3f9fee161e8e61e585ad6c8e5b1bbbd4d2b"
+  },
+  "results": [
+    {
+      "name": "full",
+      "command": [
+        "go",
+        "test",
+        "./...",
+        "-count=1",
+        "-timeout",
+        "45m"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 616.823
+    }
+  ],
+  "gofmt_files": 100,
+  "gofmt_unformatted": [],
+  "cli_source_changes": [],
+  "skill_source_changes": [],
+  "guard_denied": "",
+  "ended": "2026-10-07T23:37:26.770802+00:00"
+}

@@ -1,0 +1,100 @@
+{
+  "run_id": "20261003T185354.660080000Z",
+  "idea_slug": "meta-protocol-change-quota-auto-exclude",
+  "mode": "consensus-signoff",
+  "current_round": "round-01",
+  "participants": [
+    "codex-1",
+    "claude-1"
+  ],
+  "terminal": false,
+  "liveness": "idle",
+  "last_event_at": "2026-10-06T13:55:46.80392Z",
+  "last_event_age": 122168610010000,
+  "open_questions": 0,
+  "attention": "FAILED",
+  "next_actions": [
+    {
+      "id": "inspect.20261003T185354.660080000Z",
+      "kind": "inspect",
+      "run_id": "20261003T185354.660080000Z",
+      "idea_slug": "meta-protocol-change-quota-auto-exclude",
+      "phase": "inspection",
+      "risk": "low",
+      "summary": "No recoverable action; inspect artifacts and logs"
+    }
+  ],
+  "state": {
+    "agents": [
+      {
+        "id": "claude-1",
+        "state": "failed",
+        "segment": "segment-0002",
+        "started_at": "2026-10-06T13:54:11.292941Z",
+        "duration": 95560000000,
+        "latest_event": "agent.failed",
+        "error": "context canceled",
+        "artifact_path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+        "stdout_path": "parley-deck/runs/20261003T185354.660080000Z/agents/claude-1/stdout.log",
+        "stderr_path": "parley-deck/runs/20261003T185354.660080000Z/agents/claude-1/stderr.log",
+        "failure_class": "unknown",
+        "recovery_hint": "Check the agent's stdout/stderr log files for details."
+      },
+      {
+        "id": "codex-1",
+        "state": "pending",
+        "started_at": "0001-01-01T00:00:00Z",
+        "duration": 0
+      }
+    ],
+    "round_status": "pending",
+    "recent": [
+      {
+        "time": "2026-10-04T00:37:16.774584Z",
+        "type": "run.segment_started",
+        "text": "segment-0001 continue"
+      },
+      {
+        "time": "2026-10-04T00:37:16.82715Z",
+        "type": "agent.started",
+        "agent": "claude-1",
+        "text": "claude-1"
+      },
+      {
+        "time": "2026-10-04T00:37:56.058558Z",
+        "type": "agent.usage",
+        "agent": "claude-1",
+        "text": "claude-1"
+      },
+      {
+        "time": "2026-10-04T00:37:56.059978Z",
+        "type": "agent.failed",
+        "agent": "claude-1",
+        "text": "claude-1 failed: unknown — Check the agent's stdout/stderr log files for details."
+      },
+      {
+        "time": "2026-10-06T13:54:11.238545Z",
+        "type": "run.segment_started",
+        "text": "segment-0002 continue"
+      },
+      {
+        "time": "2026-10-06T13:54:11.292941Z",
+        "type": "agent.started",
+        "agent": "claude-1",
+        "text": "claude-1"
+      },
+      {
+        "time": "2026-10-06T13:55:46.803075Z",
+        "type": "agent.usage",
+        "agent": "claude-1",
+        "text": "claude-1"
+      },
+      {
+        "time": "2026-10-06T13:55:46.80392Z",
+        "type": "agent.failed",
+        "agent": "claude-1",
+        "text": "claude-1 failed: unknown — Check the agent's stdout/stderr log files for details."
+      }
+    ]
+  }
+}

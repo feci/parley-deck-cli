@@ -1,8 +1,10 @@
 # Release preparation — quota auto-exclude
 
-Status: planning only, 2026-10-04. Implementation, independent review, both review-consensus signoffs and
-the owner's attended-close answer remain prerequisites. No version bump, merge, tag, push, channel write,
-installation or core publication has occurred for this idea.
+Status: prepared, not released, 2026-10-08. Cycle-5 implementation and producer checks are complete;
+independent round-08 and both final review-consensus signoffs remain prerequisites. The newest finish-now
+owner note pre-confirms close under its stated conditions; a new close request is not required.
+Candidate branches are pushed for CI. No version bump, main merge, tag, channel publication,
+installation or actual core staging has occurred for this idea.
 
 ## Current inventory
 

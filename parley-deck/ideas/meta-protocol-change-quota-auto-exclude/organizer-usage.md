@@ -283,3 +283,24 @@ Scoped OpenViking recall succeeded; historical stop records are superseded by th
 current finish-now owner note and are not relied on as present authorization.
 
 Cycle-5 plan signer final usage ingested from distinct e5309857-53ae-4c5d-8a31-1eeba36ca582.jsonl; 1175.8s, exit0, zero retries. No monetary estimate.
+
+Round08 initial failed-provider invocation ac86d209-897f-48e8-8417-20a744a70db9.jsonl ingested at exit. 236.9s, exit1, temporary502, no canonical review; first retry waits900s until23:08:17Z under finish-now continuation. Separate cumulative transcript, no costestimate.
+
+Cycle5 full-host boundary: root23:23:06 cumulative transcript ingested again. This replaces its earlier snapshots in aggregate; never add same-transcript snapshots. FullGo805.951s exit0; remaininghostchecks and independentreviewretry pending.
+
+Round08 retry1 final usage ingested from distinct5454437a-6cdf-4bda-a123-21e80dd87656.jsonl;148.5s exit1 temporary502/noartifact. No costestimate; retry2 retains same inputs.
+
+
+## Round-08 final review / cycle-5-limit boundary — 2026-10-08
+
+Separate claude-1 retry 2 transcript 11a74eac-2e46-4c93-b366-13d6f93714bb.jsonl:
+258 events, total_tokens 393552, attribution ambiguous; 1393.6s, exit 0. Two preceding
+failed attempts are separate ledger sources, not reviewer consensus votes.
+Root 23:23:06 cumulative snapshot: 287 events, total_tokens 43096547; replaces earlier
+same-transcript snapshots. Later boundary snapshots supersede this count.
+Deduplicated per-source/client totals and source paths are sealed in
+source-context/round08-cycle5-owner-gate-20261008/usage-boundary.json.
+Claude cache reads/writes remain separate; Codex input includes cached input.
+Attribution is ambiguous and no monetary estimate is asserted.
+
+Durable owner-boundary organizer snapshot: 293 events, {"input_tokens": 43699818, "cached_input_tokens": 40538112, "cache_write_input_tokens": 0, "output_tokens": 177934, "reasoning_output_tokens": 72036, "total_tokens": 43877752}; attribution ambiguous. This supersedes the earlier same-session boundary count, never adds to it.

@@ -1,0 +1,277 @@
+{
+  "method": "latest cumulative snapshot per (source, source_path); clients kept separate",
+  "totals": {
+    "claude-jsonl": {
+      "sources": 26,
+      "events": 3128,
+      "usage": {
+        "input_tokens": 6284,
+        "cached_input_tokens": 686845143,
+        "cache_write_input_tokens": 30568864,
+        "output_tokens": 4358947,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 4365231
+      }
+    },
+    "codex-rollout": {
+      "sources": 15,
+      "events": 1884,
+      "usage": {
+        "input_tokens": 280235115,
+        "cached_input_tokens": 264055552,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1213806,
+        "reasoning_output_tokens": 459487,
+        "total_tokens": 281448921
+      }
+    }
+  },
+  "sources": [
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/0855c062-7367-4c46-9923-8d6d81bcc7f9.jsonl",
+      "ingested_at": "2026-10-03T19:20:50.706603Z",
+      "attribution": "attributed"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/a170614a-d69b-4699-b893-521793613171.jsonl",
+      "ingested_at": "2026-10-03T19:20:50.717148Z",
+      "attribution": "attributed"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/6b0a1152-bb46-4293-8139-eb498a20cc37.jsonl",
+      "ingested_at": "2026-10-03T19:20:50.72723Z",
+      "attribution": "attributed"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/f47ffb03-8513-43fa-a40c-1ac96afac53e.jsonl",
+      "ingested_at": "2026-10-03T19:20:50.741065Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/04/rollout-2026-10-04T00-53-58-01a103f9-65ad-7571-8244-83b744f65e63.jsonl",
+      "ingested_at": "2026-10-04T00:22:54.388125Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/04/rollout-2026-10-04T01-03-00-01a10401-a8bd-7bf3-aebf-c3568a10ab87.jsonl",
+      "ingested_at": "2026-10-03T23:33:52.787871Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/07577451-b965-4690-b6f5-65dc6fd4b91b.jsonl",
+      "ingested_at": "2026-10-03T23:37:25.639425Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/c708ebe4-9ee4-45d1-af33-0b759e46cc79.jsonl",
+      "ingested_at": "2026-10-04T00:21:56.664655Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/04/rollout-2026-10-04T02-40-20-01a1045a-c604-77e3-9100-eb902188d1db.jsonl",
+      "ingested_at": "2026-10-04T02:04:47.060393Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/04/rollout-2026-10-04T02-33-50-01a10454-d471-7521-89b0-aad8df27aea1.jsonl",
+      "ingested_at": "2026-10-04T04:57:13.649263Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/1d890376-6ba7-46e4-96dd-a1c179f93dbc.jsonl",
+      "ingested_at": "2026-10-04T02:43:25.136456Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/5961fa13-b71e-42e7-b7c8-af72764d0ef9.jsonl",
+      "ingested_at": "2026-10-04T03:07:03.066405Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/04/rollout-2026-10-04T05-07-03-01a104e1-19a8-7121-aeb0-89bf627569a6.jsonl",
+      "ingested_at": "2026-10-04T04:33:18.727504Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/41d6e461-eefd-4556-a846-8c616bfc2397.jsonl",
+      "ingested_at": "2026-10-04T04:57:13.626448Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/05/rollout-2026-10-05T21-28-37-01a10d8a-1d2f-7303-bc7b-d04f6f392530.jsonl",
+      "ingested_at": "2026-10-05T19:59:33.279095Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/2a3d2bae-1c17-4c60-afab-6fb90afea1d4.jsonl",
+      "ingested_at": "2026-10-05T19:48:39.685598Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/a23a4ff5-8d32-4f47-a6ab-e019561a0a38.jsonl",
+      "ingested_at": "2026-10-05T19:59:33.268184Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/06/rollout-2026-10-06T12-18-44-01a110b9-0ae8-7111-839c-8db293ba4be8.jsonl",
+      "ingested_at": "2026-10-06T10:44:13.18331Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/0b6a1e82-619f-4f21-912b-ca87f358e336.jsonl",
+      "ingested_at": "2026-10-06T10:41:32.291353Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/06/rollout-2026-10-06T13-26-57-01a110f7-7cfd-73c1-a192-9eafe182a23e.jsonl",
+      "ingested_at": "2026-10-06T12:59:52.648677Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/1a802f73-dca8-4420-8fa7-779eb521c975.jsonl",
+      "ingested_at": "2026-10-06T11:44:38.056593Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/06/rollout-2026-10-06T13-46-05-01a11109-01db-7f60-91fd-a49427e09c8c.jsonl",
+      "ingested_at": "2026-10-06T12:18:24.608792Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/b31f341e-ff76-4e78-b102-9f6dd5794435.jsonl",
+      "ingested_at": "2026-10-06T12:50:33.820343Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/06/rollout-2026-10-06T15-50-29-01a1117a-e4fd-7022-a08f-4383a6fd5361.jsonl",
+      "ingested_at": "2026-10-06T16:39:12.181709Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/8db7e84f-44bc-4369-938b-790be5d5d656.jsonl",
+      "ingested_at": "2026-10-06T14:19:11.292001Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/2a37f224-1dc7-410d-8167-87e6e4ee4e7b.jsonl",
+      "ingested_at": "2026-10-06T15:00:26.83712Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/6129d5a4-9152-40a2-8b72-f2a54842f5cd.jsonl",
+      "ingested_at": "2026-10-06T15:24:34.591211Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/06/rollout-2026-10-06T17-18-00-01a111cb-07a1-7453-a2ab-525c8b9280aa.jsonl",
+      "ingested_at": "2026-10-06T16:01:24.575593Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/19d1b00b-2901-4d5e-a6c3-98b93664cf2b.jsonl",
+      "ingested_at": "2026-10-06T16:36:00.663043Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/07/rollout-2026-10-07T09-32-36-01a11547-4def-7b81-bd0b-61d93e99d52f.jsonl",
+      "ingested_at": "2026-10-07T07:49:31.323096Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/e4a44f7f-61e5-4c6e-a1a4-ed4d4c91d980.jsonl",
+      "ingested_at": "2026-10-07T07:49:31.310248Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/07/rollout-2026-10-07T21-42-51-01a117e3-db51-7a61-aa9d-dc869d0b0318.jsonl",
+      "ingested_at": "2026-10-07T20:06:04.405489Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/88ed02df-7be2-4812-a25a-b102e40cef8a.jsonl",
+      "ingested_at": "2026-10-07T20:02:39.44721Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/268722c6-5a50-414a-828d-39a53f7ec042.jsonl",
+      "ingested_at": "2026-10-07T21:36:54.354647Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/07/rollout-2026-10-07T23-23-06-01a1183f-a5b3-7cb1-a391-eb76811ecd3e.jsonl",
+      "ingested_at": "2026-10-07T23:53:01.396477Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "codex-rollout",
+      "path": "/Users/tomasfecko/.codex/sessions/2026/10/07/rollout-2026-10-07T23-35-04-01a1184a-99c0-7652-bf39-452ba4ca18c9.jsonl",
+      "ingested_at": "2026-10-07T21:59:28.818896Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/e036a10c-e22d-4caa-a24a-880de34ce464.jsonl",
+      "ingested_at": "2026-10-07T22:21:41.834172Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/e5309857-53ae-4c5d-8a31-1eeba36ca582.jsonl",
+      "ingested_at": "2026-10-07T22:41:41.437964Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/ac86d209-897f-48e8-8417-20a744a70db9.jsonl",
+      "ingested_at": "2026-10-07T22:55:41.157457Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/5454437a-6cdf-4bda-a123-21e80dd87656.jsonl",
+      "ingested_at": "2026-10-07T23:11:32.307681Z",
+      "attribution": "ambiguous"
+    },
+    {
+      "source": "claude-jsonl",
+      "path": "/Users/tomasfecko/.claude/projects/-Volumes-My-Shared-Files-AI-WORKSPACE-parley-deck-worktrees-quota-auto-exclude/11a74eac-2e46-4c93-b366-13d6f93714bb.jsonl",
+      "ingested_at": "2026-10-07T23:49:30.811482Z",
+      "attribution": "ambiguous"
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "stage": "rest",
+  "heads": {
+    "cli": "2705a1e850132f74aed2dbb87149df5491bfe94b",
+    "skill": "99b3f3f9fee161e8e61e585ad6c8e5b1bbbd4d2b"
+  },
+  "results": [
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 2.368
+    },
+    {
+      "name": "binary",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r8/retry2/bin/parley",
+        "./cmd/parley"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 1.639
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 5.821
+    },
+    {
+      "name": "windows-cross-build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "GOOS": "windows",
+        "GOARCH": "amd64"
+      },
+      "exit_code": 0,
+      "seconds": 5.522
+    },
+    {
+      "name": "windows-cross-vet",
+      "command": [
+        "go",
+        "vet",
+        "./internal/pidlease",
+        "./internal/membership",
+        "./internal/fsutil"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "GOOS": "windows",
+        "GOARCH": "amd64"
+      },
+      "exit_code": 0,
+      "seconds": 0.505
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/pidlease",
+        "./internal/membership",
+        "./internal/app",
+        "./internal/consensus",
+        "./internal/quota",
+        "./internal/protocol",
+        "./internal/telemetry",
+        "./internal/runner",
+        "./internal/runcontrol",
+        "-run",
+        "TestLease|TestQuotaCycle5|TestQuotaCycle4|TestQuotaFixup|TestQuotaCrossProcessLease|TestQuotaLifetimeLock|TestQuota",
+        "-count=1",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 55.071
+    },
+    {
+      "name": "focused-shared",
+      "command": [
+        "go",
+        "test",
+        "./internal/app",
+        "./internal/membership",
+        "./internal/consensus",
+        "./internal/pidlease",
+        "./internal/fsutil",
+        "./internal/runcontrol",
+        "./internal/protocol",
+        "./internal/quota",
+        "-run",
+        "TestQuotaCycle5|TestQuotaCycle4|TestQuotaCycle3|TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+        "-count=1",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r8/retry2/shared-tmp"
+      },
+      "exit_code": 0,
+      "seconds": 39.13
+    },
+    {
+      "name": "focused-local",
+      "command": [
+        "go",
+        "test",
+        "./internal/app",
+        "./internal/membership",
+        "./internal/consensus",
+        "./internal/pidlease",
+        "./internal/fsutil",
+        "./internal/runcontrol",
+        "./internal/protocol",
+        "./internal/quota",
+        "-run",
+        "TestQuotaCycle5|TestQuotaCycle4|TestQuotaCycle3|TestQuotaCycle2|TestQuotaFixup|TestQuotaLifetimeLockDifferentRunAndOffScope|TestQuotaCrossProcessLease|TestLease|TestSyncFile",
+        "-count=1",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "TMPDIR": "/tmp/claude1-r8-retry2-local-tmp"
+      },
+      "exit_code": 0,
+      "seconds": 32.481
+    },
+    {
+      "name": "shared-runner-driver",
+      "command": [
+        "go",
+        "test",
+        "./internal/runner",
+        "./internal/driver",
+        "-run",
+        "TestQuota",
+        "-count=1",
+        "-timeout",
+        "5m",
+        "-v"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+      "env": {
+        "TMPDIR": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/claude1-r8/retry2/shared-tmp"
+      },
+      "exit_code": 0,
+      "seconds": 2.871
+    },
+    {
+      "name": "skill-npm-test",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude-skill",
+      "env": {},
+      "exit_code": 0,
+      "seconds": 126.746
+    }
+  ],
+  "gofmt_files": 100,
+  "gofmt_unformatted": [],
+  "cli_source_changes": [],
+  "skill_source_changes": [],
+  "guard_denied": "",
+  "ended": "2026-10-07T23:31:44.212262+00:00"
+}

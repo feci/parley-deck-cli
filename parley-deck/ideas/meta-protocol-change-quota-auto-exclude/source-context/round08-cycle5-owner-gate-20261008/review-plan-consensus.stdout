@@ -1,0 +1,26 @@
+{
+  "idea": "meta-protocol-change-quota-auto-exclude",
+  "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+  "review": true,
+  "triage": "reserved",
+  "participants": [
+    "codex-1",
+    "claude-1"
+  ],
+  "signoffs": [
+    {
+      "agent": "codex-1",
+      "date": "2026-10-08",
+      "status": "✅ ACCEPT",
+      "notes": "I accept this narrow plan and its explicit limits as implementer/organizer,",
+      "line": 155
+    },
+    {
+      "agent": "claude-1",
+      "date": "2026-10-08",
+      "status": "🟡 ACCEPT-WITH-RESERVATIONS",
+      "notes": "This signs the cycle-5 plan G21–G24 only. It is not a code verdict, accepts no code and grants no",
+      "line": 164
+    }
+  ]
+}

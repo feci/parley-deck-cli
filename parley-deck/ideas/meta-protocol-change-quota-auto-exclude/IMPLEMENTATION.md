@@ -4,18 +4,24 @@ status: fix-up-cycle-5
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: e04852ef36846b8ec18f581c4e8ae4f28b0c2262
+head-commit: 2705a1e850132f74aed2dbb87149df5491bfe94b
 design-pr: n/a
 implementation-pr: n/a
 ---
 
 ## Summary of work
 
-Both stages and cycle 4 are at CLI `e04852e` / skill `b9596dd`. All 13 host checks
-and the separate full-scope round-07 are complete and pass their executed checks.
-The independent review reports 0 CRITICAL, 0 MAJOR, 2 MINOR and 2 NIT. The final
-owner-authorized cycle-5 plan G21–G24 is awaiting claude-1's signoff before code changes.
-Native AC2 remains NOT MET
+Both stages and the final owner-authorized cycle-5 fixes are frozen at CLI
+`2705a1e850132f74aed2dbb87149df5491bfe94b` / skill
+`99b3f3f9fee161e8e61e585ad6c8e5b1bbbd4d2b`. All G21–G25 fixes and signed
+reservations are implemented. All 13 host checks, the full skill suite and Linux/macOS
+candidate CI pass; Windows builds but its test suite fails as explicitly disclosed.
+The independent full-scope round-08 verifies every G21–G25 fix and reservation, but
+reports 0 CRITICAL, 0 MAJOR, 1 MINOR and 2 NIT. Its own full Go/build/vet/race/skill,
+shared/local probes and packet checks pass. The artifact validator reports 1/1 valid.
+Findings remain after the final authorized cycle, so finish-now point 4 requires the
+blocking owner note `../../inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_round08-cycle5-limit.md`.
+No cycle 6, final signoff, completion or release is inferred. Native AC2 remains NOT MET
 and expressly owner-waived; R5-MAJOR-2 remains accepted/deferred. Close is pre-confirmed
 only after no open CRITICAL/MAJOR, both final signoffs and current AC1–AC21 evidence.
 The reviewer is claude-1, plain `claude-opus-5-5[1m]`, max effort, same provider.
@@ -49,6 +55,9 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - [x] Owner trajectory/AC2 decisions received; Q1 authorizes narrow cycle 3 and Q2 waives native-positive AC2 for this release.
 - [x] G15–G17 signed plan, cycle-3 fixes and separate full-scope round-06 re-review (findings remain).
 - [x] G18–G20 signed cycle-4 plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
+- [x] G21–G25 signed cycle-5 plan and reservations, narrow fixes and frozen producer/platform evidence.
+- [x] Separate full-scope claude-1 round-08 re-review of both frozen product commits; findings remain.
+- [ ] Owner disposition of R8-MINOR-1, R8-NIT-1 and R8-NIT-2 under the cycle-5 cap.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, pre-confirmed close conditions verified.
 - [ ] After the pre-confirmed close conditions hold: complete, merge, release channels, independent channel verification.
 
@@ -161,11 +170,51 @@ implementation validation, not a Phase-8 fix-up cycle or independent acceptance.
 
 ## Validation evidence
 
-Producer results at dispatch; the independent round-05 section below now governs acceptance.
+### Current independent evidence — round-08, 2026-10-08
+
+The raw [claude-1 review](review/round-08/claude-1.md) governs this table. It covers
+CLI `2705a1e850132f74aed2dbb87149df5491bfe94b` and skill
+`99b3f3f9fee161e8e61e585ad6c8e5b1bbbd4d2b`, all 124 CLI product files and all five
+skill files since FINAL. This is a summary of the independent review, not codex-1
+grading its own implementation. Review SHA256:
+`6ea871262a87731b2c5273b28128b851c7a0ad797abaf26601e4c845d404ce06`.
+
+| Criterion | Independent current-tree result / scope |
+| --- | --- |
+| AC1 | PASS: own full phase 0/5/6/8 packets, source/packet `73613f95…`, exact deck/skill equality and embedded drift check. |
+| AC2 | NOT MET / expressly owner-waived by round05-answer Q2. Native zcode may be inert; R5-MAJOR-2 remains accepted/deferred to `quota-zcode-native-exhaustion-capture`. |
+| AC3 | PASS: own strict semantics, watchdog/success precedence, adversarial framing/reset and 503 noise tests plus source reading. |
+| AC4 | PASS: unsupported/adversarial provenance tests; zcode-only supported classification. |
+| AC5 | PASS except R8-MINOR-1: permutations and floor refusal hold; missing/read-only kickoff inbox loses the required escalation, candidates and arithmetic. |
+| AC6 | PASS: real stubbed kickoff excludes the id from prompt, event, manifest and starts; C1, confirmed `--yes` and report-only standalone preflight pass. |
+| AC7 | PASS: preflight/runner bare-503 tests and shared grammar. |
+| AC8 | PASS: designee, pin, drafter and global-default protected-role tests. |
+| AC9 | PASS: retained vetoes, owner rulings, withdrawal and kickoff-never-known tests; authority checked at reads. |
+| AC10 | PASS: prospective review count, diversity and strict gates. |
+| AC11 | PASS: own archive/delete/annotation/FIFO probes and receipt/history tests preserve membership and terminal evaluation. |
+| AC12 | PASS: lifetime/cross-process leases and own ancestor-alias serialization/refusal probes. |
+| AC13 | PASS: partial artifact preservation and survivor terminal evaluation tests. |
+| AC14 | PASS: driver pending reconciliation, later-run discovery and contradictory-history tests. |
+| AC15 | PASS under signed G18 attempt/publication semantics, with R8-NIT-1 caveat: kickoff crash after manifest but before notice has no replay. The caveat is source-derived, not crash-injected. |
+| AC16 | PASS: round-1 plain-edit and later catch-up differential on both volumes, plus configuration tests. The baseline binary is reused from round-07; R8-NIT-2 qualifies aliased-deck disclosure. |
+| AC17 | PASS: both roster hashes unchanged; no timer/rejoin; bounded provider-estimate hints. |
+| AC18 | PASS: quoted/tool/content negatives and supervisor-captured terminal-source inspection. |
+| AC19 | Honored: both stages are delivered; implementation remains `fix-up-cycle-5`, incomplete while findings await owner disposition. |
+| AC20 | PASS on macOS host: own full Go 616.8s/34 packages, build/vet, race, shared/local probes, 399 Node/54 Python/six manifests, 100 Go files formatted. Windows cross-build passes; actual Windows CI is known failed and disclosed. |
+| AC21 | NOT MET: current review consensus signs the cycle-5 plan only; final signoffs do not exist. Pre-confirmed close remains conditional, and point 4 requires owner disposition of the three residual findings first. |
+
+Coverage limits remain in the raw review: prior interrupted attempts had shared-volume
+failures later passing; their attribution to filesystem coherence is reasoning, not
+proof. Hosted CI is producer evidence, Windows runtime is broken, the old baseline
+binary was not re-verified this round, and R8-NIT-1 has source evidence only.
+
+### Historical producer evidence — cycle 2
+
+The following rows preserve the earlier checkpoint, superseded by round-08 above.
 Full command logs are under `.parley-runtime/quota-implementation/`; exact child checks and evidence
 limits are in `source-context/codex-1-implementation-evidence.md`.
 
-| Criterion | Current producer evidence / remaining gate |
+| Criterion | Historical producer evidence / then-remaining gate |
 | --- | --- |
 | AC1 | Normative copies unchanged during fix-up; exact skill/deck equality, full-suite bootstrap drift and unchanged 70,000-byte guard pass; prior full packets remain hash-identical. |
 | AC2 | NOT MET; explicitly owner-waived for this release by round05-answer Q2. Source-derived positives do not supply native evidence; realistic native output may leave auto-exclusion inert. R5-MAJOR-2 is owner-accepted and deferred to [quota-zcode-native-exhaustion-capture](../quota-zcode-native-exhaustion-capture/00-prompt.md). |
@@ -1094,3 +1143,48 @@ items deferred to implementation under Phase 3/7:
 None changes FINAL or scope; the independent signer says none blocks. These are
 implementation obligations for this final cycle, not a code verdict. Full round-08
 will weigh every issue freely. No cycle 6 is authorized.
+
+
+## Fix-up cycle 5
+status: complete
+completed: 2026-10-08
+head-commit: 2705a1e850132f74aed2dbb87149df5491bfe94b
+
+### Fixes applied
+
+- G21: explicit Windows durable-operation failures in both changelogs and release
+  draft, with the concrete branch/site/CI handoff in inbox/codex-1-to-all_windows-portability_quota-durable-sites.md.
+- G22: canonical root + exact physical scope at actual lease derivation and scoped
+  integrity escalation; enabled mid-idea creation validates before writes. Ordinary
+  legacy/off/kickoff driving and ancestor aliases are preserved.
+- G23: binding-time qualification only on inbox bytes; immutable authority checks
+  remain per-read. No status rollback to evade catch-up, in docs and skill reference.
+- G24: stop the unnecessary correction branch on unsafe publication without
+  historical evidence; real receipt errors and later historical correction remain.
+- G25: kickoff and mid-idea notice publication share the same checked helper.
+  Missing safe inboxes are created; unsafe/unwritable destinations are non-blocking
+  diagnostics with kickoff, event, manifest and survivor membership retained.
+
+### Deviations from agreed fixes
+
+All signed reservations were adopted. The helper for non-authoritative notice
+publication moved to quota so both callers share it; no authority gate was added.
+No normative COOPERATION, model, roster, provider, recognizer or schema changed.
+
+### Producer validation at review dispatch
+
+Focused new regressions and cycle3/4/5 + lifetime/lease + kickoff + protocol drift
+checks pass locally. The initial attempt failed an unused import and an invalid
+legacy fixture (deleting kickoff left scoped prompt fields); both are corrected,
+and the failed log is retained. A true legacy creation now verifies the unchanged
+behavior. Shared/local full checks, build/vet/race/cross-build and full Go are running
+on frozen product hashes; their results must be read before closure. Independent
+round-08 remains mandatory and no acceptance is claimed from producer checks.
+
+
+Cycle-5 frozen host verification is complete: all 13 checks pass; full Go took 805.951s.
+All 100 changed Go files are formatted; source and roster hashes are stable.
+Full skill checks pass (399 Node / 54 Python / six manifests). Phase 0/5/8 full
+packets and deck/skill equality are verified. Exact evidence is in
+source-context/codex-1-fixup-5-host-evidence.md. The independent review retry is
+still pending after the initial 502; no final acceptance or close is inferred.

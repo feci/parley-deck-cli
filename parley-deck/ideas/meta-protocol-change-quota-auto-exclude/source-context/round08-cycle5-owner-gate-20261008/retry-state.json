@@ -1,0 +1,17 @@
+{
+  "step": "round08 full review",
+  "last_phase": "review-cycle-5-retry-2",
+  "provider_relaunches_used": 2,
+  "max_provider_relaunches": 8,
+  "timeout_relaunches_used": 0,
+  "prompt_sha256": "d3d81c8902bca6d8a4a991a4186e190ba619ccce5430c250bfc45431cf3e075a",
+  "retry_not_before": "2026-10-07T23:25:46.110515+00:00",
+  "status": "completed",
+  "last_result": {
+    "started": "2026-10-07T23:25:46.206776+00:00",
+    "ended": "2026-10-07T23:48:59.801348+00:00",
+    "seconds": 1393.6,
+    "exit": 0,
+    "timeout": false
+  }
+}

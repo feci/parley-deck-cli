@@ -1423,3 +1423,66 @@ round07 validator now 1/1 valid, exact heading-only delta verified. Signed copy 
 Implementing in this organizer+implementer process; no additional participant/helper.
 Scoped alias refusal replaces blanket off-scope refusal, and Windows warning covers
 all new durable sites with explicit branch handoff. Full review follows frozen checks.
+
+Cycle-5 product frozen at 2705a1e850132f74aed2dbb87149df5491bfe94b. Focused regressions pass; full host verification running. Initial compile/fixture failures retained and corrected, no weakened assertion. Skill full suite running; independent round08 will use both frozen commits.
+
+
+## Round-08 transient provider failure / authorized continuation
+
+Initial full-review invocation exited 1 after 236.9s, no timeout and no artifact.
+Verbatim terminal error:
+
+> API Error: 502 [claude/claude-opus-5-5] Provider returned empty content (reset after 1m 20s). This is a server-side issue, usually temporary — try again in a moment. If it persists, check your inference gateway (omniroute.marao.sk).
+
+The newest owner note says "Provider errors no longer stop you" and "Stop only on
+an auth or credit error, or when the attempts for a step run out." Its listed 429/503
+cases use 900 seconds/max8 relaunches. This temporary empty-content 502 is a provider
+failure, not auth/credit; apply that same conservative bound rather than stop or
+change model/provider. This is the organizer's interpretation of the broad direction,
+not a claim 502 was named explicitly. Retry1 no earlier than 2026-10-07T23:08:17.534311+00:00.
+Same exact prompt, source commits and plain Opus5.5/max. Full host checks continue.
+
+Cycle-5 host script exited 0: 13/13 checks, 100 formatted Go files, source/roster
+hashes stable. Required packets are full and unchanged. Independent review retry 1
+is due at 23:08:17Z, timer active in exec session 73440; the first failed attempt
+is preserved and produced no artifact.
+
+Round-08 retry 1 launched at 2026-10-07T23:08:17.624332+00:00 after the required 900s, identical
+prompt and frozen 2705a1e/99b3f3f source. Plain Opus5.5/max, initial1800s.
+Host checks and Linux/macOS/skill CI now complete and passing; Windows actual
+failure preserved. Retry counters: provider1/8 used, silent-timeout0/2.
+
+Round-08 retry 1 exited 1 after148.5s, no timeout, no artifact or remaining
+process group. Verbatim terminal error:
+
+> API Error: 502 [claude/claude-opus-5-5] Provider returned empty content (reset after 36h 49m 15s). This is a server-side issue, usually temporary — try again in a moment. If it persists, check your inference gateway (omniroute.marao.sk).
+
+Continue the same recorded finish-now interpretation for transient502, regardless
+of the reported reset. Retry2 no earlier than 2026-10-07T23:25:46.110515+00:00.
+Provider relaunches1/8 used; silent-timeout0/2. Same source, prompt and model.
+
+Round-08 review-cycle-5-retry-2 launched at 2026-10-07T23:25:46.168835+00:00; identical prompt/source/plain Opus5.5/max. Ceiling 1800s.
+
+Round-08 participant process exited 0. Organizer must read and validate its own artifact before any transition.
+
+
+## Independent round-08 / cycle-5-limit owner boundary — 2026-10-08
+
+Round-08 retry 2 exited 0 at 23:48:59Z, after 1393.6s; provider relaunches 2/8,
+silent-timeout relaunches 0/2. Plain Opus 5.5/max; prompt/source unchanged. Raw artifact
+read in full, SHA256 6ea871262a87731b2c5273b28128b851c7a0ad797abaf26601e4c845d404ce06.
+Validator exits 0, 1/1 valid. Reviewer independently verifies every G21–G25 fix
+and all reservations, but reports 0 CRITICAL, 0 MAJOR, 1 MINOR and 2 NIT. Required full
+Go (616.8s), build/vet/race/shared/local/skill/format/packet checks pass in its own process.
+Limits in raw review retained, including earlier shared-volume transient failures.
+
+No cycle 6 is opened. Finish-now point 4 explicitly requires escalation for any
+findings remaining after cycle 5. Blocking inbox note round08-cycle5-limit contains
+exact proposed disclosures, accepted/deferred option plus follow-up, or parking.
+This is NOT a new close request and does not revoke the conditional pre-confirmed
+close. Both final consensus signoffs still absent; current file signs only the plan.
+IMPLEMENTATION remains fix-up-cycle-5 and now records current independent AC1–AC21.
+No main merge, version bump, tag, channel publication, install or core staging. Reviewer bytes preserved.
+Supervisor session 29250 completed; no retry daemon or participant remains active.
+The stale canceled driver pointer remains D6; status/wait/consensus validators are retained
+in source-context/round08-cycle5-owner-gate-20261008/.
