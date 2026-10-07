@@ -1226,3 +1226,30 @@ blocking owner note. No gateway retry or direct connection workaround was used.
 The final computed organizer brief still reports a generic await-review action and the
 reserved cycle-3 plan. Those summaries do not disposition the raw round-06 findings or
 the new blocking owner note. Resume must read those canonical files before acting.
+
+
+## Last-cycle owner-answer resumption — 2026-10-07
+
+Read controlling brief, all seven owner notes, raw round-06, current IMPLEMENTATION,
+prior signed plan, FINAL and lean computed brief/status. Owner authorizes last narrow
+cycle 4; quote is in the new Phase-7 plan. Archived prior plan byte-for-byte under
+review/round-06/consensus.md and answered trajectory note under inbox/archived.
+G18 removes notice gating; G19 retains actual kickoff evidence prospectively and
+discloses old-record limits; G20 lists policy-off deviations. No product change yet.
+
+Parley Deck, OpenViking and bounded graphify query applied. Scoped MCPAnywhere find
+timed out after 300s; shared memory unavailable, local canonical sources govern.
+Graph vocabulary [quota, notice, receipt, kickoff, return, membership] reached design/
+review nodes, not current code; direct sources establish the schema/notice behavior.
+No graph rebuild or skill update. Installed CLI 1.50.0, installer/runtime 2.14.0, source
+metadata 2.12.0 stale; dry-run sync only. Release may refresh metadata after approval.
+
+Driver-first status still points at the canceled stale cycle-3 draft; recorded gap
+remains. Reuse the previously recorded focused configured-CLI fallback, with driver
+status/wait/consensus validators. No new blind auto draft, legacy migration or D6 fix.
+Capability matrix: codex-1 / gpt-6-astra / max / deep (organizer+implementer);
+claude-1 / claude/claude-opus-5-5[1m] / max / deep (only independent reviewer).
+Both installed; effective argv checked with agents list. Configured CLI fallback
+uses the same model/effort and scoped add-dir arguments. No extra participants.
+Initial signoff process/request ceiling 1200s; silent timeout relaunches 2400/3600s
+(max two), short quota reset<=60m waits reset+2m (max three), per owner permissions.

@@ -11,22 +11,16 @@ implementation-pr: n/a
 
 ## Summary of work
 
-Both stages and authorized fix-up cycle 3 are delivered at CLI `fac40aa` / skill `e976f7c`.
-The review snapshot is `25ea1da`; source-context records the frozen host checks and raw
-copy hashes. The separate claude-1 round-06 review found a new MAJOR and two MINORs; a blocking owner trajectory decision is required. The owner answered round-05:
-native-positive AC2 is NOT MET and explicitly waived for this release as a known limitation
-with the linked `quota-zcode-native-exhaustion-capture` follow-up. R5-MAJOR-2 is owner-accepted
-and deferred, never fixed. G15–G17/W1–W5 implementation is recorded below; independent
-acceptance is withheld by round-06; no automatic cycle 4 is authorized. The old trajectory stop was resolved by the owner answer.
-
-Current cycle-3 HOST and skill checks pass on the frozen product; the newest Validation
-evidence subsection is the producer record. Historical cycle-2 records below remain
-historical. Both standing retry permissions continue unchanged. codex-1 organizes and
-implements under §15.5, and never supplies the independent code verdict. claude-1
-owns every review/signoff in a separate configured Opus 5.5/max process. Only these two
-participants act in this run. Transport remains owner-authorized local canonical files
-on the existing branches with no development PRs. A NEW attended close still requires
-current-tree evidence, both final signoffs and a new owner answer before merge/release.
+Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
+`25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The 2026-10-07 owner answer now
+explicitly authorizes one last narrow cycle 4. Its G18–G20 plan is in review/consensus.md,
+awaiting claude-1 signoff before product changes. The full owner answer is quoted there.
+No cycle 5 is authorized: any new CRITICAL/MAJOR in re-review requires a stop with
+stage-1-only split assessment or park options. Native AC2 remains NOT MET and owner-waived
+for this release; R5-MAJOR-2 remains accepted/deferred, never fixed. Both standing retry
+permissions, separate claude-1 full review, final signoffs and NEW attended owner close
+remain binding. codex-1 organizes and implements under §15.5. Transport is the existing
+owner-authorized local canonical files, no development PRs. No release before close.
 
 ## Implementation plan / checklist
 
@@ -50,7 +44,8 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
   protocol/packet/drift checks and full skill suite also pass.
 - [x] Separate full-scope claude-1 round-05 review; raw findings read and preserved without edits.
 - [x] Owner trajectory/AC2 decisions received; Q1 authorizes narrow cycle 3 and Q2 waives native-positive AC2 for this release.
-- [ ] G15–G17 signed plan, narrow cycle-3 fixes and separate full-scope re-review.
+- [x] G15–G17 signed plan, cycle-3 fixes and separate full-scope round-06 re-review (findings remain).
+- [ ] G18–G20 signed last-cycle plan, narrow cycle-4 fixes and separate full-scope round-07 re-review.
 - [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, blocking attended-close note.
 - [ ] Only after owner close confirmation: complete, merge, release channels, independent channel verification.
 
@@ -811,3 +806,9 @@ Blocking owner note: `parley-deck/inbox/codex-1-to-user_meta-protocol-change-quo
 No cycle-4 code, new consensus draft, signoff, close, merge or release was made. All
 participant processes and their validation subprocesses have finished. Organization
 ends deliberately at this owner gate under the controlling brief.
+
+## Cycle-4 pre-code plan — 2026-10-07
+
+G18–G20 in review/consensus.md are the complete bounded plan, pending independent signoff.
+No code has changed. Owner round06-answer is quoted verbatim in that canonical plan;
+the answered trajectory escalation is archived. Final/close/release remain pending.
