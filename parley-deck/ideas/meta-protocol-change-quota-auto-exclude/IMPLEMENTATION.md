@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: fix-up-cycle-3
+status: fix-up-cycle-4
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
@@ -981,3 +981,32 @@ close-request statements above are historical and superseded where they conflict
 >    commands.
 > 7. **Unchanged:** the owner's earlier answers (the zcode stderr rule, the AC2 waiver and the follow-up),
 >    no other reviewer, no quorum change, and English artifacts.
+
+
+## Fix-up cycle 4 — signed plan activated, 2026-10-07
+
+claude-1 independently signed ACCEPT-WITH-RESERVATIONS after 533.3 seconds, exit 0,
+no timeout/provider failure. This is plan acceptance only. codex-1 accepts every G18
+condition and both reservations. Adopt the smaller G19 route preferred and explicitly
+accepted by claude-1: `ManualRoundOneReturn` uses the immutable revision prompt's
+round-01 status without requiring a marker. Any genuine new round-1 policy-off join
+therefore follows the original baseline edit behavior; later-round catch-up and known
+excluded/policy-on/retained-veto gates remain. No kickoff schema field or legacy limit.
+This is the review-signed revision of G15's round-1 sub-case.
+
+G18b removes live/archived owner-answer byte comparisons only at history read/replay;
+BindAuthority still rejects changed working copies, while committed commit/blob/hash/quote
+checks remain authoritative. Owner-annotated answers must no longer gate the idea.
+G18 receipts prove the publication step completed, not delivery; unsafe publication
+paths produce diagnostics, at most one notice and one when the destination is safe.
+G20 will list the actual remaining policy-off differences and no obsolete kickoff limit.
+The signed reviewer block stays unchanged. Newest owner finish-now allows this narrow
+work and at most cycle 5; no scope or FINAL change is requested by either reservation.
+
+File boundaries in the existing owner-designated worktree (no new worktree/declaration):
+codex-1 implementation subprocess owns directly needed Go source/tests and its producer
+evidence file; parent owns docs, skill guidance, IMPLEMENTATION, orchestration and commits.
+No overlapping edits. The parley-worktrees file-boundary discipline is applied; the
+owner's explicit existing-worktree/no-declaration instruction governs allocation.
+Parent will run full frozen host checks after the child exits, then invoke claude-1
+for a separate full-scope round-07. No independent implementation verdict yet.

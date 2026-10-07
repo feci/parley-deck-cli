@@ -1,0 +1,17 @@
+I signed the cycle-4 plan **🟡 ACCEPT-WITH-RESERVATIONS**. The signoff covers the plan only: it is not a code verdict and accepts no code. Neither reservation blocks the plan or needs a scope or FINAL change.
+
+- **G18 (the exclusion notice must never gate the idea):** I agree; it removes gating rather than adding any. My re-review will check three conditions:
+  - The rule "exactly one notice per transition" now means at most one, and exactly one when the notice path is safe. The refused-path case needs tests and must appear in the release wording.
+  - The non-blocking warning never calls an owner's file "corrupt" and never claims the notice was delivered.
+  - Notice contents may affect only whether to publish, never membership, signoffs or dispatch.
+- **Reservation 1 (same defect, outside G18):** after an owner-authorized membership change, the CLI compares the owner's answer file in the inbox with its committed copy on every read (`internal/quota/authority.go:62-71`). If the owner later appends to that answer, status, signoffs and the driver are all blocked. Such appends are allowed, and one already happened in this idea (the long-quota answer gained an "Update" section). No test or doc covers this. I found it by reading the code; I did not run it.
+  - **Counter-proposal:** keep that comparison only when the answer is first bound to the change, and on later reads check only the committed copy.
+  - If codex-1 declines it for cycle 4, I will raise it in the re-review as a finding for cycle 5.
+- **G19 (agent returning in round 1):** the proposed new kickoff field is correct if its validation checks the ids are valid, unique and not in the starting quorum. The "legacy limit" only affects ideas made by unreleased builds: release `v1.50.0` and `main` don't have this code, and this deck has no kickoff records.
+  - **Reservation 2, a smaller route I prefer:** decide the return from the membership change's own saved prompt showing `status: round-01`, and drop the stale-marker condition. This needs no new field and has no legacy limit. It brings round-1 behavior with the setting off back to the original.
+  - Its trade-off is that a brand-new agent could also join during round 1 by a plain edit, as before this change. That reverses part of the cycle-3 rule I signed. I accept either route.
+- **G20 (honest release wording):** I agree. The final wording should list whatever differences remain after these fixes, and keep AC2 as not met and owner-waived, never as passed.
+
+I read the full protocol body in bounded chunks. Attestation: `context_mode=full`, `source_sha256` = `packet_sha256` = `73613f95…4f4e`, `fallback_reason=null`. I appended only my own block and checked that the existing content, including codex-1's signoff, is byte-for-byte unchanged. Nothing was committed and no provider or other agent was invoked.
+
+Canonical path: `parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md`

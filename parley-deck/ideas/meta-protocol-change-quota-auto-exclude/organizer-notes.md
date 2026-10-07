@@ -1366,3 +1366,15 @@ installer/runtime skills 2.14.0; source metadata 2.12.0 stale. Dry-run sync only
 refresh is authorized release work. Graph query found historical review/design nodes;
 no source relationship inferred. Scoped shared memory recall succeeded; its historical
 owner gates are superseded by current notes. No extra participants or quorum changes.
+
+
+## Cycle-4 plan accepted and activated — 2026-10-07 21:34Z
+
+Plain-ID claude-1 signoff exited 0 after 533.3s; no provider/timeout retry consumed.
+Validator triage reserved, both participant-owned blocks present. Parent read the full
+new block and accepts G18(a–c), G18b committed-answer read-time deletion and the reviewer-
+preferred smaller G19 round-01 snapshot route; no schema field/legacy limitation.
+These are explicitly accepted alternatives, not a proxy edit of the review. No code
+accepted or close inferred. Implementation subprocess owns Go/tests+producer report;
+parent docs/skill/orchestration, disjoint existing-worktree paths. No worktree creation,
+declaration or pruning. Full host checks and independent round-07 follow.
