@@ -14,7 +14,10 @@ implementation-pr: n/a
 Both stages and cycle 3 are at CLI `fac40aa` / skill `e976f7c` (review snapshot
 `25ea1da`). Round-06 found 1 MAJOR and 2 MINORs. The 2026-10-07 owner answer now
 explicitly authorizes one last narrow cycle 4. Its G18–G20 plan is in review/consensus.md,
-awaiting claude-1 signoff before product changes. The full owner answer is quoted there.
+awaiting claude-1 signoff before product changes. The first signoff attempt exited 1
+on 2026-10-07 with a 52h 13m 12s quota reset, outside the standing <=60m allowance;
+`inbox/codex-1-to-user_meta-protocol-change-quota-auto-exclude_cycle4-plan-long-quota-20261007.md`
+is the current blocking owner note. No signoff or product edit was made. The full owner answer is quoted there.
 No cycle 5 is authorized: any new CRITICAL/MAJOR in re-review requires a stop with
 stage-1-only split assessment or park options. Native AC2 remains NOT MET and owner-waived
 for this release; R5-MAJOR-2 remains accepted/deferred, never fixed. Both standing retry
@@ -812,3 +815,13 @@ ends deliberately at this owner gate under the controlling brief.
 G18–G20 in review/consensus.md are the complete bounded plan, pending independent signoff.
 No code has changed. Owner round06-answer is quoted verbatim in that canonical plan;
 the answered trajectory escalation is archived. Final/close/release remain pending.
+
+## Cycle-4 plan invocation blocked — 2026-10-07
+
+Configured claude-1 exited 1 after 275.7s (no timeout) on a provider quota error with
+reset 52h 13m 12s. Exact error, launch facts and hashes are in
+`source-context/cycle4-signoff-quota-stop-20261007/`. The unsigned plan is unchanged.
+No retry is authorized by the two standing rules for a reset longer than 60 minutes.
+Current blocking owner note is `cycle4-plan-long-quota-20261007`; cycle 4 code and
+round-07 review have not started. Four pre-change local/shared notice probes reproduce
+R6-MAJOR-1 (status gate, Before error, survivor signoff exit 1), not a test pass.

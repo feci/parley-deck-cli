@@ -1253,3 +1253,26 @@ Both installed; effective argv checked with agents list. Configured CLI fallback
 uses the same model/effort and scoped add-dir arguments. No extra participants.
 Initial signoff process/request ceiling 1200s; silent timeout relaunches 2400/3600s
 (max two), short quota reset<=60m waits reset+2m (max three), per owner permissions.
+
+
+## Cycle-4 plan signoff / long-quota stop — 2026-10-07
+
+claude-1 started 07:42:13.164240Z and exited 1 at 07:46:48.872413Z, 275.7s,
+no timeout. Verbatim stdout (stderr empty):
+
+```text
+API Error: Request rejected (429) · [claude/claude-opus-5-5] All claude accounts blocked by quota preflight (reset after 52h 13m 12s)
+```
+
+The 52h13m12s reset exceeds both standing rules' 60-minute quota boundary.
+No relaunch or provider probe. Blocking owner note cycle4-plan-long-quota-20261007
+filed. Plan bytes equal 60d389e; no claude signoff or product change. Phase-7 status
+partial; generic wait consensus-ready is the prior DESIGN consensus, not review
+acceptance. Recorded as diagnostic limitation, not fixed (D6 outside scope).
+
+Read-only prior reviewer notice probes reproduce R6-MAJOR-1 on both volumes,
+live/archived: Before gates, status reports integrity, survivor signoff exit1.
+Their outer exit0 is printing completion, never a pass. Original reviewer artifacts
+are untouched. Raw evidence copied with hashes under cycle4-signoff-quota-stop-20261007.
+Memory unavailable from earlier scoped find timeout; local checkpoint remains authority.
+All participant processes exited. End deliberately only after durable blocking note.

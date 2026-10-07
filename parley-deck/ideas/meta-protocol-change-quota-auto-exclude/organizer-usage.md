@@ -217,3 +217,23 @@ codex-1: input_tokens 34499713, cached_input_tokens 33231616, cache_write_input_
 Claude is the distinct 19d1b00b round-06 transcript; its exact source path is in the ledger. The parent is the cumulative 15:50:29 organizer transcript and replaces every earlier snapshot of that session, never adds to them. A first ingest used a mistyped directory and failed without a row; corrected ingest succeeded. No monetary estimate.
 
 Final durable-stop organizer snapshot: 218 events, total_tokens 35637696, attribution ambiguous. Same 15:50:29 transcript; supersedes the prior boundary snapshot, never additive.
+
+
+## Last-cycle owner answer / Phase-7 dispatch — 2026-10-07
+
+New organizer session `rollout-2026-10-07T09-32-36-01a11547-4def-7b81-bd0b-61d93e99d52f.jsonl`.
+Cumulative ingest: 26 events, total_tokens 2467695, attribution ambiguous. Future snapshots
+supersede this row; never add snapshots of the same session. Separate claude-1 signer
+started at the configured Opus 5.5/max; usage retained at its boundary. No monetary estimate.
+
+
+## Cycle-4 plan quota-stop boundary — 2026-10-07
+
+claude-1: ingest appended: claude-jsonl/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=claude-1 events=63 total_tokens=46839 attribution=ambiguous
+
+codex-1: ingest appended: codex-rollout/v1 idea=meta-protocol-change-quota-auto-exclude phase=7 agent=codex-1 events=39 total_tokens=4668725 attribution=ambiguous
+
+Claude is the distinct e4a44f7f signoff invocation (exit 1, no signoff), not another
+reviewer. Codex is the cumulative 09:32:36 organizer transcript and supersedes its
+earlier boundary snapshot, never additive. Client attribution ambiguous; no monetary
+estimate. All launch/retry counters for this step: initial 1, relaunches 0.

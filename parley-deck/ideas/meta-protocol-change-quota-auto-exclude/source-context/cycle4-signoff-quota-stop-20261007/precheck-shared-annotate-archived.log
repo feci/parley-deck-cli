@@ -1,0 +1,10 @@
+settle: batch=true err=<nil>
+notices after settle: 1
+mode=annotate-archived notices in inbox after owner action: 0; archived: 1
+Before #1 err=quota batch blocked: integrity/recovery gate: corrupt or mismatched quota notice: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/precheck/quota-c4-before-um23s5js/parley-deck/inbox/archived/parley-to-user_batch-4fbfa68152522f2d653d019344a17cbe15741ea282ae441ca3235c8d8673323c.md; inbox notices now: 0
+Before #2 err=quota batch blocked: integrity/recovery gate: corrupt or mismatched quota notice: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/precheck/quota-c4-before-um23s5js/parley-deck/inbox/archived/parley-to-user_batch-4fbfa68152522f2d653d019344a17cbe15741ea282ae441ca3235c8d8673323c.md; inbox notices now: 0
+status text: "Transport: local-dir\nIdeas:\n  2026-10-07T09-46-56-notice-probe  status=round-01  participants=a,b  consensus=error\n    quota transition pending/integrity gate: corrupt or mismatched quota notice: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/precheck/quota-c4-before-um23s5js/parley-deck/inbox/archived/parley-to-user_batch-4fbfa68152522f2d653d019344a17cbe15741ea282ae441ca3235c8d8673323c.md\nRuns:\n  run-1  idea=2026-10-07T09-46-56-notice-probe  state=completed  agents=0/4  questions=0 open\n"
+survivor a consensus signoff exit=1 stderr="consensus signoff failed: corrupt or mismatched quota notice: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude/.parley-runtime/quota-implementation/fixup-4/precheck/quota-c4-before-um23s5js/parley-deck/inbox/archived/parley-to-user_batch-4fbfa68152522f2d653d019344a17cbe15741ea282ae441ca3235c8d8673323c.md"
+status exit=0 integrity-gate=true pending=true corrupt=true
+final inbox notices: 0 archived: 1 applied-receipt=true err=<nil>
+round.completed events: 1

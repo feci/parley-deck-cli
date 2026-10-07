@@ -1,0 +1,10 @@
+settle: batch=true err=<nil>
+notices after settle: 1
+mode=annotate-live notices in inbox after owner action: 1; archived: 0
+Before #1 err=quota batch blocked: integrity/recovery gate: corrupt or mismatched quota notice: /tmp/quota-c4-before-_3pude97/parley-deck/inbox/parley-to-user_batch-075cc71efec38303d2011a8d570f383320ff4c20d68420ece4d5d46f273915c2.md; inbox notices now: 1
+Before #2 err=quota batch blocked: integrity/recovery gate: corrupt or mismatched quota notice: /tmp/quota-c4-before-_3pude97/parley-deck/inbox/parley-to-user_batch-075cc71efec38303d2011a8d570f383320ff4c20d68420ece4d5d46f273915c2.md; inbox notices now: 1
+status text: "Transport: local-dir\nIdeas:\n  2026-10-07T09-46-55-notice-probe  status=round-01  participants=a,b  consensus=error\n    quota transition pending/integrity gate: corrupt or mismatched quota notice: /tmp/quota-c4-before-_3pude97/parley-deck/inbox/parley-to-user_batch-075cc71efec38303d2011a8d570f383320ff4c20d68420ece4d5d46f273915c2.md\nRuns:\n  run-1  idea=2026-10-07T09-46-55-notice-probe  state=completed  agents=0/4  questions=0 open\n"
+survivor a consensus signoff exit=1 stderr="consensus signoff failed: corrupt or mismatched quota notice: /tmp/quota-c4-before-_3pude97/parley-deck/inbox/parley-to-user_batch-075cc71efec38303d2011a8d570f383320ff4c20d68420ece4d5d46f273915c2.md"
+status exit=0 integrity-gate=true pending=true corrupt=true
+final inbox notices: 1 archived: 0 applied-receipt=true err=<nil>
+round.completed events: 1
