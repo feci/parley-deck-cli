@@ -1,0 +1,81 @@
+{
+  "pre_dispatch_control_refusal": {
+    "schema_version": 1,
+    "type": "invocation.terminal",
+    "invocation_id": "f33856d3-7532-4387-912c-7206bf77ff64",
+    "metadata": {
+      "run_id": "participant-dropout-r2-zcode-1",
+      "segment_id": "manual",
+      "idea": "meta-protocol-change-participant-dropout",
+      "phase": "round-02",
+      "agent": "zcode-1",
+      "adapter": "zcode",
+      "launch_mode": "headless",
+      "attempt_ordinal": 1,
+      "retry_of": null,
+      "requested_model": null,
+      "requested_effort": null,
+      "requested_speed": "deep",
+      "context": {
+        "context_mode": "full",
+        "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+        "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+        "fallback_reason": null
+      }
+    },
+    "requested_at": "2026-10-08T21:25:28.024458Z",
+    "started_at": null,
+    "completed_at": "2026-10-08T21:25:28.05874Z",
+    "duration_ms": 34,
+    "pid": null,
+    "outcome": {
+      "quota_evidence": {
+        "invocation_id": "f33856d3-7532-4387-912c-7206bf77ff64",
+        "adapter": "zcode",
+        "eligible": false,
+        "reason": "watchdog or cancellation",
+        "observed_at": "2026-10-08T21:25:28.05872Z"
+      },
+      "status": "failed",
+      "exit_code": null,
+      "failure_class": "budget_refused",
+      "artifact_sha256": null,
+      "usage": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "total_tokens": null,
+        "cost_usd": null,
+        "reported_model": null,
+        "reported_models": [],
+        "source": "unavailable",
+        "cost_basis": "unavailable",
+        "coverage": "unavailable"
+      },
+      "observation": {
+        "first_activity_ms": null,
+        "stdout_bytes": null,
+        "stderr_bytes": null,
+        "parser_input_truncated": false
+      }
+    },
+    "warnings": []
+  },
+  "actual_child_attempt_1": {
+    "agent": "zcode-1",
+    "model": "zai/glm-5.3",
+    "prompt_sha256": "d2d3e4e17484f98183521b4c49017d81cde9d3b621ec1a2d3659930ee4f79890",
+    "started_at": "2026-10-08T21:30:11.881073+00:00",
+    "timeout_seconds": 1800,
+    "launcher": "configured-cli-fallback",
+    "phase": "round02-zcode-1",
+    "prompt_path": ".parley-runtime/participant-dropout-launches/round02-zcode-1.txt",
+    "pid": 15713,
+    "completed_at": "2026-10-08T21:36:02.357028+00:00",
+    "exit_code": 0,
+    "timed_out": false
+  },
+  "artifact": "parley-deck/ideas/meta-protocol-change-participant-dropout/round-02/zcode-1.md",
+  "artifact_bytes": 29243
+}

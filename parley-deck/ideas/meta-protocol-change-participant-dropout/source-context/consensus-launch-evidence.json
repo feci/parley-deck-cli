@@ -1,0 +1,71 @@
+[
+  {
+    "writer": {
+      "host": "Tomass-Virtual-Machine.local",
+      "boot": "{ sec = 1791463769, usec = 230508 } Thu Oct  8 14:49:29 2026",
+      "supervisor_pid": 22900,
+      "process_group": 22994
+    },
+    "schema_version": 1,
+    "type": "invocation.terminal",
+    "invocation_id": "fd626d69-b3e3-4978-ab21-ee5f4bf82a95",
+    "metadata": {
+      "run_id": "20261008T213921.279063000Z",
+      "segment_id": "",
+      "idea": "meta-protocol-change-participant-dropout",
+      "phase": "consensus",
+      "agent": "zcode-1",
+      "adapter": "zcode",
+      "launch_mode": "headless",
+      "attempt_ordinal": 1,
+      "retry_of": null,
+      "requested_model": null,
+      "requested_effort": null,
+      "requested_speed": "deep",
+      "context": {
+        "context_mode": "full",
+        "source_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+        "packet_sha256": "73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e",
+        "fallback_reason": null
+      }
+    },
+    "requested_at": "2026-10-08T21:39:24.504004Z",
+    "started_at": "2026-10-08T21:39:24.574852Z",
+    "completed_at": "2026-10-08T21:40:46.696841Z",
+    "duration_ms": 82192,
+    "pid": 22994,
+    "outcome": {
+      "quota_evidence": {
+        "invocation_id": "fd626d69-b3e3-4978-ab21-ee5f4bf82a95",
+        "adapter": "zcode",
+        "eligible": false,
+        "reason": "no failed invocation",
+        "observed_at": "2026-10-08T21:40:46.692265Z"
+      },
+      "status": "process-exited",
+      "exit_code": 0,
+      "failure_class": null,
+      "artifact_sha256": "0510466ad0a639c163901bd8331cd0b9271a9bf83e47333cdac640ab6fbc2ecf",
+      "usage": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "total_tokens": null,
+        "cost_usd": null,
+        "reported_model": null,
+        "reported_models": [],
+        "source": "unavailable",
+        "cost_basis": "unavailable",
+        "coverage": "unavailable"
+      },
+      "observation": {
+        "first_activity_ms": 82078,
+        "stdout_bytes": 1556,
+        "stderr_bytes": 0,
+        "parser_input_truncated": false
+      }
+    },
+    "warnings": []
+  }
+]
