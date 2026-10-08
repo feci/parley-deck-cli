@@ -313,3 +313,11 @@ Later snapshots replace this source, never add to it. The separate claude-1 fina
 signer has its own source. Prior organizer PID65773 was safely stopped after its
 remaining disclosure/draft work was preserved; no participant was running.
 No monetary estimate.
+
+## Final signoff / attended-close boundary — 2026-10-08
+
+claude-1 separate final signer 2cdfacaa-4398-4f13-8d32-948cca226e70.jsonl: 125 events,
+total_tokens287174, attribution ambiguous. Exit0 after803.3s, provider retries0,
+timeout retries0. ACCEPT block append verified, consensus ready. Ledger keeps
+Claude cache counters separate; no monetary estimate. Organizer snapshots remain
+cumulative per source, never additive.

@@ -81,3 +81,18 @@ A clean separate release clone will bind binary VCS metadata to the released com
 without the pre-existing untracked run directories marking binaries dirty. This is
 packaging only, not an additional implementation worktree or a change of source authority.
 Candidate branch CI may run during review; main/release actions await the close conditions.
+
+## Attended close and release packaging — 2026-10-08
+
+Final separate claude-1 signoff ACCEPT and codex-1 ACCEPT are validated ready.
+Implementation closed under finish-now point5 and binding round08-answer; the
+closed record is frozen. Source runtime remains the round-08 reviewed code.
+CLI1.51.0 and skill2.15.0 metadata are prepared; version/build/vet/drift and full
+skill/pack/portable checks are running. Main merge and publication follow these checks.
+Core2.15.0 is now staged (not published) at ~/.parley/staging/COOPERATION-2.15.0.md,
+SHA2560d81fd807114e4ff67f5fa98bba73622b58c86d66a2bf6b57d1def68cd099c09.
+It reproduces staged2.14 plus exactly current reviewed embedded-protocol hunks;
+2.14 remains unpublished locally. No TTY/core gate is bypassed.
+Delivery evidence: ../../release-delivery/2026-10-08-quota-auto-exclude from the
+CLI worktree (absolute path recorded in final note). Skill-only winget branch
+feci-skill-2.15.0 starts from fresh upstream master8f767551.
