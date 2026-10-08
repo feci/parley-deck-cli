@@ -78,6 +78,9 @@ func TestDropoutExecWatchdogTimeoutAndACPShareTwoSlots(t *testing.T) {
 			if kind == "watchdog" {
 				opts.Timeout = 2 * time.Second
 			}
+			if kind == "acp-started-exit" {
+				opts.Timeout = 5 * time.Second
+			}
 			for _, id := range opts.Idea.Participants {
 				a := agents.Discovery{Spec: agents.Spec{ID: id, HeadlessArgs: []string{"-c", "exec sleep 5"}, PromptMode: agents.PromptStdin}, Found: true, Path: "/bin/sh"}
 				if kind == "watchdog" {
@@ -101,7 +104,11 @@ func TestDropoutExecWatchdogTimeoutAndACPShareTwoSlots(t *testing.T) {
 			want := map[string]string{"timeout": "timeout", "watchdog": "no_first_output", "acp-started-exit": "process_failure"}[kind]
 			for _, r := range records {
 				if r.Outcome.FailureClass == nil || *r.Outcome.FailureClass != want {
-					t.Fatalf("%s: %+v", kind, r.Outcome)
+					got := "<nil>"
+					if r.Outcome.FailureClass != nil {
+						got = *r.Outcome.FailureClass
+					}
+					t.Fatalf("%s: failure class=%q want=%q outcome=%+v", kind, got, want, r.Outcome)
 				}
 			}
 		})
@@ -228,7 +235,99 @@ func TestDropoutCancellationAndIntegrityNeverReduce(t *testing.T) {
 			if err == nil || got.Evidence != nil || got.Valid || calls != 1 {
 				t.Fatalf("%s: %+v %v calls=%d", kind, got, err, calls)
 			}
+			// A fresh parent must not replace valid output just because the old
+			// terminal class was cancellation/refusal; integrity stays blocking.
+			if kind != "missing-protocol" { // This refusal precedes the step ledger.
+				again, replayErr := RunParticipantStep(context.Background(), opts, run)
+				if replayErr == nil || again.Evidence != nil || again.Valid || calls != 1 {
+					t.Fatalf("%s replay: %+v %v calls=%d", kind, again, replayErr, calls)
+				}
+			}
 		})
+	}
+}
+
+func TestDropoutCancelledChildWithValidArtifactNeverReplaced(t *testing.T) {
+	for _, cancelParent := range []bool{false, true} {
+		t.Run(fmt.Sprint(cancelParent), func(t *testing.T) {
+			root := t.TempDir()
+			writeLaunchProtocol(t, root)
+			path := filepath.Join(root, "own.md")
+			agent := telemetryShell("printf valid > '"+strings.ReplaceAll(path, "'", "'\\''")+"'; exec sleep 40", false)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			opts := ParticipantStepOptions{Root: root, Idea: "cancelled-output", Agent: agent, Step: "own", Files: []string{path}, Validate: func() StepValidation {
+				raw, _ := os.ReadFile(path)
+				return StepValidation{Valid: string(raw) == "valid"}
+			}}
+			calls := 0
+			run := func(c context.Context, _ int, _ string) error {
+				calls++
+				stop := cancel
+				if !cancelParent {
+					c, stop = context.WithCancel(c)
+					defer stop()
+				}
+				cmd, clean, err := CommandFor(c, root, agent, "attempt")
+				if clean != nil {
+					defer clean()
+				}
+				if err != nil {
+					return err
+				}
+				if err := cmd.Start(); err != nil {
+					return err
+				}
+				deadline := time.Now().Add(5 * time.Second)
+				for !opts.Validate().Valid && time.Now().Before(deadline) {
+					time.Sleep(10 * time.Millisecond)
+				}
+				stop()
+				return cmd.Wait()
+			}
+			first, err := RunParticipantStep(ctx, opts, run)
+			if err == nil || first.Valid || first.Evidence != nil || !opts.Validate().Valid {
+				t.Fatalf("cancelled=%+v %v", first, err)
+			}
+			for i := 0; i < 2; i++ {
+				again, err := RunParticipantStep(context.Background(), opts, run)
+				if err == nil || again.Valid || again.Evidence != nil || calls != 1 {
+					t.Fatalf("cancelled replay=%+v %v calls=%d", again, err, calls)
+				}
+			}
+		})
+	}
+}
+
+func TestDropoutRepairedRefusalWithoutValidOutputMayDispatch(t *testing.T) {
+	root := t.TempDir()
+	agent := telemetryShell("exit 0", false)
+	valid, calls := false, 0
+	opts := ParticipantStepOptions{Root: root, Idea: "repair", Agent: agent, Step: "own", Validate: func() StepValidation {
+		return StepValidation{Valid: valid, Reason: "missing own artifact"}
+	}}
+	run := func(ctx context.Context, ordinal int, retry string) error {
+		calls++
+		if ordinal != 1 || retry != "" {
+			t.Error("undispatched refusal consumed child attempt", ordinal, retry)
+		}
+		cmd, clean, err := CommandFor(ctx, root, agent, "attempt")
+		if clean != nil {
+			defer clean()
+		}
+		if err != nil {
+			return err
+		}
+		err = cmd.Run()
+		valid = err == nil
+		return err
+	}
+	if got, err := RunParticipantStep(context.Background(), opts, run); err == nil || got.Valid || got.Evidence != nil {
+		t.Fatalf("refusal=%+v %v", got, err)
+	}
+	writeLaunchProtocol(t, root)
+	if got, err := RunParticipantStep(context.Background(), opts, run); err != nil || !got.Valid || got.Evidence != nil || calls != 2 {
+		t.Fatalf("repair=%+v %v calls=%d", got, err, calls)
 	}
 }
 

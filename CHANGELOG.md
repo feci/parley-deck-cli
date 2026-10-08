@@ -11,6 +11,11 @@
 - Existing protected-role, usable-floor and precommit review/diversity gates remain:
   auto_implement 3→2 still blocks with only one independent reviewer.
 - Repair blocked-kickoff diagnostics and kickoff notice crash replay.
+- Goal-check and readiness replay use retained invocation output; a crash before
+  validation cannot consume another attempt over a valid result.
+- Before an idea exists, the two-attempt limit applies within one proposed readiness
+  batch. A separate new proposal probes afresh; resuming an uncreated proposal across
+  commands is not yet a supported lifecycle. Once created, the limit follows the idea.
 - Windows CLI remains experimental; CLI WinGet stays held. Aliased-deck and D6
   accounting limits remain. Legacy quota native-positive waiver is unchanged.
 

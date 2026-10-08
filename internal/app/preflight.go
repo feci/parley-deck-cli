@@ -956,14 +956,13 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 			if dropout && !opts.QuotaRoles.Protected(a.ID) {
 				settled, err := runner.RunParticipantStep(probeCtx, runner.ParticipantStepOptions{
 					Root: opts.Root, Idea: opts.ProbeID, Agent: a, Step: "readiness",
-					Validate: func() runner.StepValidation {
+					ValidateRecord: func(r telemetry.Record) runner.StepValidation {
 						if obs.Integrity != nil {
 							return runner.StepValidation{Integrity: obs.Integrity}
 						}
-						if obs.Ready || obs.StructurallyReady {
-							return runner.StepValidation{Valid: true}
-						}
-						return runner.StepValidation{Reason: readinessReason(obs)}
+						var validation runner.StepValidation
+						obs, validation = retainedReadiness(opts.Root, a, r)
+						return validation
 					},
 				}, func(attemptCtx context.Context, _ int, _ string) error {
 					obs = pingProbe(attemptCtx, opts.Root, a, timeout)

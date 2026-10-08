@@ -24,6 +24,8 @@ const ParticipantRetryDelay = 5 * time.Second
 type StepValidation struct {
 	Valid  bool
 	Reason string
+	// SourceSHA256 binds replay-sensitive private output to its first validation.
+	SourceSHA256 string
 	// Integrity distinguishes shared-file corruption from invalid OWN output.
 	Integrity error
 }
@@ -35,6 +37,10 @@ type ParticipantStepOptions struct {
 	// attempt, before a retry can overwrite a log or incomplete own artifact.
 	Files    []string
 	Validate func() StepValidation
+	// ValidateRecord reconstructs its inputs from this invocation's durable
+	// output, including when terminal telemetry survived but its receipt did not.
+	// Prefer it for process output; Validate is for canonical on-disk artifacts.
+	ValidateRecord func(telemetry.Record) StepValidation
 	// Restore only a structurally invalid OWN suffix after its private copy and
 	// validation receipt are durable. Shared-file integrity failures never call it.
 	AfterFailure func() error
@@ -71,6 +77,7 @@ type participantValidationRecord struct {
 	Valid          bool   `json:"valid"`
 	Reason         string `json:"reason,omitempty"`
 	Integrity      string `json:"integrity,omitempty"`
+	SourceSHA256   string `json:"source_sha256,omitempty"`
 }
 
 // RunParticipantStep bounds one logical step across runs/restarts. Immutable
@@ -78,7 +85,7 @@ type participantValidationRecord struct {
 // receipt supplies the phase-specific structural result. There is no second
 // membership reducer. Callers settle the whole batch through membership.Settle.
 func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run func(context.Context, int, string) error) (out ParticipantStepResult, returnedErr error) {
-	if opts.Idea == "" || opts.Step == "" || opts.Agent.ID == "" || opts.Validate == nil {
+	if opts.Idea == "" || opts.Step == "" || opts.Agent.ID == "" || (opts.Validate == nil && opts.ValidateRecord == nil) {
 		return out, fmt.Errorf("incomplete participant step identity/validator")
 	}
 	if origin, ok := ctx.Value(launchOriginKey{}).(string); ok {
@@ -112,10 +119,12 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 			if i != len(records)-1 {
 				return out, fmt.Errorf("missing prior participant validation receipt")
 			}
-			if err := preserveStepFiles(filepath.Join(opts.Root, ".parley-runtime", "invocations", r.InvocationID, "participant-files"), opts.Files); err != nil {
-				return out, err
+			if opts.ValidateRecord == nil {
+				if err := preserveStepFiles(filepath.Join(opts.Root, ".parley-runtime", "invocations", r.InvocationID, "participant-files"), opts.Files); err != nil {
+					return out, err
+				}
 			}
-			v := opts.Validate()
+			v := validateParticipantStep(opts, r)
 			validation, err = writeParticipantValidation(opts.Root, key, r, v)
 			if err != nil {
 				return out, err
@@ -124,8 +133,17 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 		if validation.Integrity != "" {
 			return out, fmt.Errorf("preserved participant integrity failure: %s", validation.Integrity)
 		}
+		if validation.Valid {
+			v := validateParticipantStep(opts, r)
+			if !v.Valid || v.Integrity != nil || (validation.SourceSHA256 != "" && validation.SourceSHA256 != v.SourceSHA256) {
+				return out, fmt.Errorf("previously valid participant output changed; no new attempt authorized")
+			}
+		}
 		a, err := telemetry.ParticipantAttempt(r, validation.Valid, validation.Reason)
 		if err != nil {
+			if validation.Valid {
+				return out, fmt.Errorf("valid participant output retained after a control-plane refusal; no replacement authorized: %w", err)
+			}
 			// A repaired control-plane refusal can be explicitly dispatched
 			// again. It consumed no CHILD attempt; it never triggers a retry
 			// inside the invocation that observed the refusal.
@@ -135,9 +153,6 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 			return out, err
 		}
 		if a == nil {
-			if v := opts.Validate(); !v.Valid || v.Integrity != nil {
-				return out, fmt.Errorf("previously valid participant output changed; no new attempt authorized")
-			}
 			out.Valid, out.Replayed = true, true
 			return out, nil
 		}
@@ -184,12 +199,12 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 		if observed.Outcome == nil || observed.CompletedAt == nil {
 			return out, errors.Join(runErr, fmt.Errorf("participant invocation has no terminal evidence"))
 		}
-		v := opts.Validate()
-		if binding.integrity != nil {
-			v.Integrity = binding.integrity
-		}
 		if err := preserveStepFiles(filepath.Join(opts.Root, ".parley-runtime", "invocations", observed.InvocationID, "participant-files"), opts.Files); err != nil {
 			return out, err
+		}
+		v := validateParticipantStep(opts, observed)
+		if binding.integrity != nil {
+			v.Integrity = binding.integrity
 		}
 		if _, err := writeParticipantValidation(opts.Root, key, observed, v); err != nil {
 			return out, err
@@ -221,6 +236,43 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 	out.Evidence = &e
 	out.Replayed = len(records) > 0
 	return out, fmt.Errorf("participant step failed twice: %s", opts.Step)
+}
+
+func validateParticipantStep(opts ParticipantStepOptions, r telemetry.Record) StepValidation {
+	if opts.ValidateRecord != nil {
+		return opts.ValidateRecord(r)
+	}
+	return opts.Validate()
+}
+
+// ParticipantOutput reads the private per-attempt copy first. If a process died
+// before preservation, fallback must name that record's original output, never
+// the new driver's run directory. Non-regular evidence fails closed.
+func ParticipantOutput(root string, r telemetry.Record, index int, fallback string) ([]byte, error) {
+	retained := filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, "participant-files", fmt.Sprintf("%02d-%s", index, filepath.Base(fallback)))
+	path := retained
+	if _, err := os.Lstat(path); os.IsNotExist(err) {
+		path = fallback
+	} else if err != nil {
+		return nil, err
+	}
+	st, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !st.Mode().IsRegular() {
+		return nil, fmt.Errorf("participant output is not a regular file: %s", path)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if path != retained {
+		if err := quota.DurableWrite(retained, raw, true); err != nil {
+			return nil, err
+		}
+	}
+	return raw, nil
 }
 
 func participantKey(idea, agent, step string) string {
@@ -344,7 +396,7 @@ func readParticipantValidation(root, key string, r telemetry.Record) (*participa
 }
 
 func writeParticipantValidation(root, key string, r telemetry.Record, v StepValidation) (*participantValidationRecord, error) {
-	record := participantValidationRecord{InvocationID: r.InvocationID, Step: key, TerminalSHA256: participantTerminalHash(r), Valid: v.Valid, Reason: v.Reason}
+	record := participantValidationRecord{InvocationID: r.InvocationID, Step: key, TerminalSHA256: participantTerminalHash(r), Valid: v.Valid, Reason: v.Reason, SourceSHA256: v.SourceSHA256}
 	if v.Integrity != nil {
 		record.Integrity = v.Integrity.Error()
 	}

@@ -14,6 +14,13 @@ idea/agent/logical-step key prevents restart/input/run changes from minting a th
 Valid BLOCK/disagreement wins. Control-plane/operator cancellation and shared-file integrity
 failures do not authorize exclusion. Preserve invalid output privately; tampering stops.
 
+Before an idea exists, readiness uses two attempts within the proposed batch. Replaying
+that same batch with its stable identity cannot add an attempt. A separate new proposal
+probes afresh; there is no persisted proposal/resume/abandon lifecycle across separate
+pre-idea commands. After creation, the limit is per idea across driver restarts. Goal-check
+and readiness validation recover their original invocation logs after a crash; changed
+previously valid evidence blocks instead of launching a replacement.
+
 The usable floor and every precommit gate remain: auto_implement 3→2 blocks with only
 one independent reviewer. A permanently dropped ID cannot return to this idea, including
 via opt-out/downgrade, owner/manual revision or catch-up; the next idea probes afresh.

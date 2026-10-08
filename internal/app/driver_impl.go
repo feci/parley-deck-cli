@@ -835,16 +835,38 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 		settled, e := runner.RunParticipantStep(ctx, runner.ParticipantStepOptions{
 			Root: o.root, Idea: o.ideaSlug, Agent: agent, Step: participantSignoffStep(filepath.Join(o.ideaDir, "review", "consensus.md")) + "/goal-check",
 			Files: []string{filepath.Join(dir, "goal-check.stdout.log"), filepath.Join(dir, "goal-check.stderr.log")},
-			Validate: func() runner.StepValidation {
-				if parseGoalVerdict(res.Answer) != "" {
-					return runner.StepValidation{Valid: true}
+			ValidateRecord: func(r telemetry.Record) runner.StepValidation {
+				original := filepath.Join(o.root, protocol.DeckDir, "runs", r.Metadata.RunID, "agents", checker, "goal-check.stdout.log")
+				raw, err := runner.ParticipantOutput(o.root, r, 0, original)
+				if err != nil && !os.IsNotExist(err) {
+					return runner.StepValidation{Integrity: err}
 				}
-				return runner.StepValidation{Reason: "missing or invalid GOAL-CHECK verdict"}
+				res.Answer = string(raw)
+				if agent.Adapter() == "kimi" {
+					res.Answer = runner.UnwrapKimiStreamJSON(res.Answer)
+				}
+				v := runner.StepValidation{Valid: parseGoalVerdict(res.Answer) != "", SourceSHA256: sha256Hex(string(raw))}
+				if !v.Valid {
+					v.Reason = "missing or invalid GOAL-CHECK verdict"
+				}
+				return v
 			},
 		}, consult)
 		observed = settled.Evidence
 		if e != nil {
 			res.ExitError = e.Error()
+		} else if settled.Valid {
+			// Valid output prevents dropout, but completion still requires a
+			// successful independent process, including after replay.
+			res.AgentExit = -1
+			if outcome := settled.Record.Outcome; outcome != nil {
+				if outcome.ExitCode != nil {
+					res.AgentExit = *outcome.ExitCode
+				}
+				if outcome.Status != "process-exited" {
+					res.ExitError = "goal-check child did not complete successfully"
+				}
+			}
 		}
 	} else {
 		_ = consult(ctx, 1, "")
