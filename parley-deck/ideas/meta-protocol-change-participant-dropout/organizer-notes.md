@@ -23,3 +23,13 @@ Release base check: staged core 2.15.0 SHA256 0d81fd807114e4ff67f5fa98bba73622b5
 ## Round 1 settled / owner-authorized exclusion
 
 Zcode-1 completed its original measured invocation successfully and owns a 29,419-byte valid round artifact. Both Kimi failures settled; the owner brief permits its per-idea exclusion with codex-1 plus zcode-1 remaining. Updated prompt and orchestration manifest, preserved both invocation records, published one blocking:no notice. No global roster edit and no dissent removed. This is the temporary owner permission, not an assertion that the new protocol is in force.
+
+## D6 fallback — cross-review
+
+`parley continue --auto --no-implement` stopped before launching any round-02 writer: `run round-02: cross-review accounting: historical cycle event lacks idea identity`. The generated note used the old driver's `claude` actor label; no Claude process participated. Original note archived unchanged in source-context/driver-gap-d6-original-note.md. This is resolved operationally by the controlling brief's recorded-gap/manual fallback authority, not a fix or owner waiver of D6. No legacy accounting migration or worktree operation. Continue with measured configured CLI authoring; retain status/wait/consensus validators.
+
+## Round-02 measured-launch refusal and configured CLI fallback
+
+The measured round-02 launch f33856d3-7532-4387-912c-7206bf77ff64 terminated before child start (`started_at: null`, `pid: null`, `failure_class: budget_refused`, 34 ms). It is a control-plane refusal, NOT a zcode-1 failed attempt and NOT grounds to exclude it. Read-only diagnostics: `budget cycle inspect` says `cycle policy is not initialized`; `budget migrate inspect --kind cross-review` says `historical run identity is missing or conflicting`; launch/step inspect says initialize or migrate the original policy. The driver's immediately preceding refusal was `historical cycle event lacks idea identity`. Source: `prepareLaunchCycle` and `reserveBudget` send typed manual launches through the same legacy gate.
+
+The controlling brief expressly names this D6 gap, forbids worktree pruning/declarations and authorizes completing the run; the parley-deck skill permits configured CLI fallback when the driver cannot perform a step. Use that recorded fallback with unchanged native zcode arguments/model and a 1800 s process ceiling. Preserve private prompt/logs/terminal evidence, count actual child launches, respect the deliberation cross-review cap and the brief's fix-up cap manually. No policy/accounting migration, fake event, alternate phase label, model change or product edit. This is an orchestration limitation, not an exhausted provider or numeric-budget exception.
