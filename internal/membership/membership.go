@@ -55,7 +55,7 @@ func Before(ctx context.Context, root, ideaDir, runID string) (history *quota.Hi
 		return nil, nil
 	}
 	if !h.MidIdea() && h.Revision == 0 {
-		return h, nil
+		return h, PublishKickoffNotice(root, ideaDir, h.Kickoff)
 	}
 	if h.MidIdea() {
 		if err = requireLease(ctx, ideaDir); err != nil {
@@ -125,6 +125,9 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		if err := runmanifest.Write(root, id, m); err != nil {
 			return err
 		}
+	}
+	if err := PublishKickoffNotice(root, ideaDir, h.Kickoff); err != nil {
+		return err
 	}
 	for _, b := range h.Batches {
 		receipt := filepath.Join(ideaDir, "quota-applied", b.ID)
@@ -386,6 +389,15 @@ func Block(root, ideaDir, runID, phase string, d quota.Decision) error {
 		Decision         quota.Decision
 	}{filepath.Base(ideaDir), runID, phase, d})
 	keyPhase := phase
+	keyRun := runID
+	for _, c := range d.Candidates {
+		if c.Evidence.RuleID == quota.ParticipantFailureRule {
+			// The immutable attempt pair already identifies this settled batch;
+			// a restarted driver must not publish a second decision notice.
+			keyRun = ""
+			break
+		}
+	}
 	if strings.HasPrefix(d.Block, "integrity/recovery gate:") {
 		keyPhase = "quota-integrity"
 	}
@@ -393,7 +405,7 @@ func Block(root, ideaDir, runID, phase string, d quota.Decision) error {
 		Idea, Run, Phase string
 		Before           []string
 		Candidates       []quota.Candidate
-	}{filepath.Base(ideaDir), runID, keyPhase, d.Before, d.Candidates})
+	}{filepath.Base(ideaDir), keyRun, keyPhase, d.Before, d.Candidates})
 	id := fmt.Sprintf("quota-block-%x", sha256.Sum256(key))
 	path := filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_"+id+".md")
 	if old, err := os.ReadFile(path); err == nil {
@@ -413,6 +425,7 @@ func Block(root, ideaDir, runID, phase string, d quota.Decision) error {
 		arithmetic = fmt.Sprintf("unavailable because immutable membership could not be validated; fixed floor %d", quota.Floor)
 	}
 	text := fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nphase: %s\nblocking: yes\ntransition: %s\n---\n\nQuota batch blocked: %s\n\nCandidates: %v\nBefore: %v\nArithmetic: %s. %s\n\nEvidence:\n```json\n%s\n```\n", filepath.Base(ideaDir), phase, id, d.Block, quota.CandidateIDs(d.Candidates), d.Before, arithmetic, outcome, blob)
+	text += "\n" + quota.OwnerOptions + "\n"
 	if err := quota.DurableWrite(path, []byte(text), true); err != nil {
 		return err
 	}

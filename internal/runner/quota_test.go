@@ -17,7 +17,7 @@ import (
 	"parley-deck-cli/internal/store"
 )
 
-func quotaRunnerFixture(t *testing.T) Options {
+func quotaRunnerFixture(t *testing.T, policies ...quota.Policy) Options {
 	t.Helper()
 	root := t.TempDir()
 	t.Setenv("PARLEY_HOME", t.TempDir())
@@ -25,6 +25,9 @@ func quotaRunnerFixture(t *testing.T) Options {
 		t.Fatal(err)
 	}
 	p := quota.NewPolicy(nil, nil)
+	if len(policies) > 0 {
+		p = policies[0]
+	}
 	idea, k, err := protocol.CreateIdeaWithQuota(root, "quota runner", []string{"a", "b", "c"}, nil, "deliberation", "", "quota-test-run", &p, nil)
 	if err != nil {
 		t.Fatal(err)

@@ -44,16 +44,18 @@ const (
 // readinessObservation is the typed probe result carried into the roster table
 // and (through it) into the readiness gates. Ready is true only for ClassReady.
 type readinessObservation struct {
-	QuotaEvidence *quota.Evidence
-	Class         ReadinessClass
-	Ready         bool
-	ExitCode      int    // -1 when the process never ran or was cut off by the probe deadline
-	SawSentinel   bool   // "PONG" present in output but not an exact ready shape
-	ProviderClass string // provider sub-class (auth/rate-limit/...), empty otherwise
-	StdoutTail    string // sanitized, <= readinessTailBytes
-	StderrTail    string // sanitized, <= readinessTailBytes
-	BuffersStdout bool   // agent declared Spec.BuffersStdout
-	Duration      time.Duration
+	QuotaEvidence     *quota.Evidence
+	StructurallyReady bool
+	Integrity         error
+	Class             ReadinessClass
+	Ready             bool
+	ExitCode          int    // -1 when the process never ran or was cut off by the probe deadline
+	SawSentinel       bool   // "PONG" present in output but not an exact ready shape
+	ProviderClass     string // provider sub-class (auth/rate-limit/...), empty otherwise
+	StdoutTail        string // sanitized, <= readinessTailBytes
+	StderrTail        string // sanitized, <= readinessTailBytes
+	BuffersStdout     bool   // agent declared Spec.BuffersStdout
+	Duration          time.Duration
 
 	// Truncation metadata added for bounded capture observation (D7 correction).
 	Truncated        bool   // true when boundedWriter overflowed (stream exceeded cap)

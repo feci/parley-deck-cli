@@ -92,6 +92,9 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		return qerr
 	}
 	defer quotaRelease()
+	if err := recoverParticipantSignoffs(ctx, opts.Root, opts.IdeaSlug, opts.Review, quotaHistory); err != nil {
+		return err
+	}
 	quotaMembers := []quota.Member{}
 	summary, err := consensus.Status(opts.Root, opts.IdeaSlug, opts.Review)
 	if err != nil {
@@ -487,6 +490,35 @@ func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Di
 			}
 		},
 		ArtifactPath: consensusPath, Store: store.New(filepath.Join(rootAbs, protocol.DeckDir, "runs", runID))})
+	h, err := quota.ReadHistory(filepath.Join(rootAbs, protocol.DeckDir, "ideas", idea))
+	if err != nil {
+		return result, err
+	}
+	roles, err := membership.Roles(filepath.Join(rootAbs, protocol.DeckDir, "ideas", idea))
+	if err != nil && h.MidIdea() && h.Policy().Dropout() {
+		return result, err
+	}
+	if h.MidIdea() && h.Policy().Dropout() && !roles.Protected(agent.ID) && (agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless || agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchInteractive) {
+		review := phase == "review-consensus"
+		before, err := consensus.Status(rootAbs, idea, review)
+		if err != nil {
+			return result, err
+		}
+		opts := participantSignoffOptions(rootAbs, idea, agent, consensusPath, beforeRaw, before, review)
+		settled, err := runner.RunParticipantStep(ctx, opts, func(child context.Context, _ int, _ string) error {
+			if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchInteractive {
+				var e error
+				result, e = runInteractiveSignoffAgent(child, rootAbs, runID, agent, prompt, consensusPath, beforeRaw, stdout, stderr)
+				return e
+			}
+			return runHeadlessSignoffAgent(child, rootAbs, agent, prompt, stdout, stderr)
+		})
+		result.QuotaEvidence = settled.Evidence
+		if result.Pending {
+			return result, nil
+		}
+		return result, err
+	}
 	switch agents.LaunchModeOrDefault(agent.LaunchMode) {
 	case agents.LaunchHeadless:
 		err := runHeadlessSignoffAgent(ctx, rootAbs, agent, prompt, stdout, stderr)

@@ -14,10 +14,13 @@ const Floor = 2
 const MinimumReset = time.Hour
 const KickoffOnly = "kickoff-only"
 const KickoffAndMidIdea = "kickoff-and-mid-idea"
+const ParticipantFailure = "participant-failure-v1"
+const ParticipantFailureRule = "participant-failure.v1"
 
 type Policy struct {
 	Enabled bool   `json:"enabled"`
 	Scope   string `json:"scope"`
+	Trigger string `json:"trigger,omitempty"`
 }
 
 // Presence is authority: an omitted false value cannot silently disable a saved policy.
@@ -26,7 +29,7 @@ func (p *Policy) UnmarshalJSON(raw []byte) error {
 	if err := json.Unmarshal(raw, &fields); err != nil {
 		return err
 	}
-	if len(fields) != 2 || fields["enabled"] == nil || fields["scope"] == nil {
+	if !uniqueKeys(raw) || (len(fields) != 2 && len(fields) != 3) || fields["enabled"] == nil || fields["scope"] == nil {
 		return fmt.Errorf("incomplete quota policy")
 	}
 	var enabled *bool
@@ -38,9 +41,18 @@ func (p *Policy) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("invalid quota policy scope")
 	}
 	p.Enabled, p.Scope = *enabled, *scope
+	p.Trigger = ""
+	if len(fields) == 3 {
+		var trigger *string
+		if fields["trigger"] == nil || json.Unmarshal(fields["trigger"], &trigger) != nil || trigger == nil || *trigger != ParticipantFailure {
+			return fmt.Errorf("invalid automatic exclusion trigger")
+		}
+		p.Trigger = *trigger
+	}
 	return p.Validate()
 }
 
+// NewPolicy retains the legacy constructor for saved quota-only callers.
 func NewPolicy(defaultValue, ideaValue *bool) Policy {
 	enabled := true
 	if defaultValue != nil {
@@ -51,9 +63,20 @@ func NewPolicy(defaultValue, ideaValue *bool) Policy {
 	}
 	return Policy{Enabled: enabled, Scope: KickoffAndMidIdea}
 }
+
+// NewParticipantPolicy is used only when creating a new idea, never on resume.
+func NewParticipantPolicy(defaultValue, ideaValue *bool) Policy {
+	p := NewPolicy(defaultValue, ideaValue)
+	p.Trigger = ParticipantFailure
+	return p
+}
+func (p Policy) Dropout() bool { return p.Enabled && p.Trigger == ParticipantFailure }
 func (p Policy) Validate() error {
 	if p.Scope != KickoffOnly && p.Scope != KickoffAndMidIdea {
 		return fmt.Errorf("ambiguous quota policy scope %q", p.Scope)
+	}
+	if p.Trigger != "" && p.Trigger != ParticipantFailure {
+		return fmt.Errorf("unknown automatic exclusion trigger %q", p.Trigger)
 	}
 	return nil
 }
@@ -61,16 +84,17 @@ func (p Policy) Validate() error {
 // Evidence contains only scrubbed, normalized observations, never full logs or environments.
 // Eligible is meaningful only after invocation, artifact and batch-success gates pass.
 type Evidence struct {
-	InvocationID string     `json:"invocation_id"`
-	Adapter      string     `json:"adapter"`
-	RuleID       string     `json:"rule_id,omitempty"`
-	Provenance   string     `json:"provenance,omitempty"`
-	Eligible     bool       `json:"eligible"`
-	Reason       string     `json:"reason"`
-	Excerpt      string     `json:"excerpt,omitempty"`
-	RawReset     string     `json:"raw_reset,omitempty"`
-	ObservedAt   time.Time  `json:"observed_at"`
-	ResetAt      *time.Time `json:"reset_at,omitempty"`
+	InvocationID string      `json:"invocation_id"`
+	Adapter      string      `json:"adapter"`
+	RuleID       string      `json:"rule_id,omitempty"`
+	Provenance   string      `json:"provenance,omitempty"`
+	Eligible     bool        `json:"eligible"`
+	Reason       string      `json:"reason"`
+	Excerpt      string      `json:"excerpt,omitempty"`
+	RawReset     string      `json:"raw_reset,omitempty"`
+	ObservedAt   time.Time   `json:"observed_at"`
+	ResetAt      *time.Time  `json:"reset_at,omitempty"`
+	Failure      *FailedStep `json:"failure,omitempty"`
 }
 
 func (e Evidence) ResetHint() string {
@@ -80,7 +104,7 @@ func (e Evidence) ResetHint() string {
 	return e.ResetAt.UTC().Format(time.RFC3339Nano)
 }
 func (e Evidence) RelaunchHint() string {
-	if e.ResetAt == nil {
+	if e.ResetAt == nil || e.RuleID == ParticipantFailureRule {
 		return ""
 	}
 	return "owner-authorized relaunch after " + e.ResetAt.Add(5*time.Minute).UTC().Format(time.RFC3339Nano) + " (provider estimate)"
@@ -100,6 +124,11 @@ type Roles struct {
 	StartedDrafters   []string
 	// Global defaults intentionally do not protect a participant before a pin.
 }
+
+func (r Roles) Protected(id string) bool {
+	return id != "" && (id == r.Facilitator || id == r.Designee || id == r.PinnedImplementer || contains(r.StartedDrafters, id))
+}
+
 type Candidate struct {
 	Agent    string   `json:"agent"`
 	Evidence Evidence `json:"evidence"`
@@ -126,6 +155,7 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 		return d
 	}
 	byID := map[string][]Member{}
+	usable := map[string]bool{}
 	for _, m := range members {
 		byID[m.ID] = append(byID[m.ID], m)
 	}
@@ -137,13 +167,14 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 			if m.Usable || m.ValidArtifact || m.LaterSuccess {
 				success = true
 			}
-			if m.Evidence != nil && m.Evidence.Eligible && m.Evidence.InvocationID != "" && m.Evidence.Provenance != "" && m.Evidence.RuleID != "" {
+			if m.Evidence != nil && m.Evidence.Eligible && m.Evidence.InvocationID != "" && m.Evidence.Provenance != "" && m.Evidence.RuleID != "" && (!policy.Dropout() || ValidateFailureEvidence(*m.Evidence, "", id) == nil) {
 				candidates = append(candidates, Candidate{Agent: id, Evidence: *m.Evidence})
 			} else if !m.Usable && !m.ValidArtifact && !m.LaterSuccess {
 				unresolved = true
 			}
 		}
 		if success {
+			usable[id] = true
 			if id != roles.Facilitator {
 				d.UsableSurvivors++
 			}
@@ -160,8 +191,24 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 		}
 		return a.Evidence.InvocationID < b.Evidence.InvocationID
 	})
+	if policy.Dropout() {
+		for _, id := range Unique(d.Before) {
+			if roles.Protected(id) && len(byID[id]) > 0 && !usable[id] {
+				d.Block = fmt.Sprintf("protected role %s failed or has unresolved usability; re-designate, record implementer_waived, or set implementer: none with owner confirmation; no exclusions applied", id)
+				return d
+			}
+		}
+	}
 	if len(d.Candidates) == 0 {
 		return d
+	}
+	if policy.Dropout() {
+		for _, id := range []string{roles.Designee, roles.PinnedImplementer} {
+			if id != "" && !usable[id] {
+				d.Block = fmt.Sprintf("protected implementer %s lacks positive usability evidence; no exclusions applied", id)
+				return d
+			}
+		}
 	}
 	protected := map[string]bool{roles.Facilitator: true, roles.Designee: true, roles.PinnedImplementer: true}
 	for _, id := range roles.StartedDrafters {

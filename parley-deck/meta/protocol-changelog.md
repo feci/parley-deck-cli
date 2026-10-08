@@ -1,3 +1,12 @@
+## 2026-10-09 — participant dropout (core 2.16.0 staged; owner publication pending)
+Idea: ideas/meta-protocol-change-participant-dropout/
+Authority: signed FINAL P1–P6. Implementer: codex-1; independent reviewer: zcode-1.
+Broaden the existing exclusion reducer with a saved participant-failure-v1 trigger,
+original plus one bounded retry, permanent per-idea dropout and retained dissent.
+Keep legacy policy bytes/semantics, protected roles, positive usability and precommit
+gates. Apply matching normative hunks to all three copies, preserving header zones.
+Core derives from staged 2.15.0 plus these hunks; no core publication is claimed.
+
 ## 2026-10-04 — quota auto-exclusion with two non-facilitators (UNRELEASED)
 Idea: ideas/meta-protocol-change-quota-auto-exclude/
 Drafted by: claude-1 (FINAL); protocol hunks applied by codex-1 (Phase 5)

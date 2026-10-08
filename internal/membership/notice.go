@@ -52,3 +52,21 @@ func publishMissingNotice(inbox, name, text string) error {
 	}
 	return quota.PublishNotice(inbox, name, text)
 }
+
+// PublishKickoffNotice uses the same completed-attempt receipt as later batches.
+// A crash before the receipt retries publication, preserving any owner-owned copy.
+func PublishKickoffNotice(root, ideaDir string, k *quota.Kickoff) error {
+	if k == nil || k.Transition == nil {
+		return nil
+	}
+	id := k.Transition.ID
+	applied, err := quota.ReadApplied(ideaDir, id)
+	if err != nil {
+		return err
+	}
+	if applied {
+		return nil
+	}
+	quota.NoticeDiagnostic(id, publishMissingNotice(filepath.Join(root, protocol.DeckDir, "inbox"), "parley-to-user_"+id+".md", k.Notice()))
+	return quota.DurableWrite(filepath.Join(ideaDir, "quota-applied", id), []byte(id+"\n"), false)
+}

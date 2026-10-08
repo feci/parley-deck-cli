@@ -85,6 +85,14 @@ func (b Batch) Validate(h *History) error {
 		if e.ResetAt != nil && e.ResetAt.Sub(e.ObservedAt) < MinimumReset {
 			return fmt.Errorf("invalid quota batch reset")
 		}
+		if b.Policy.Dropout() || e.RuleID == ParticipantFailureRule {
+			if !b.Policy.Dropout() {
+				return fmt.Errorf("participant failure evidence contradicts saved trigger")
+			}
+			if err := ValidateFailureEvidence(e, b.Idea, c.Agent); err != nil {
+				return err
+			}
+		}
 		removed[c.Agent] = true
 	}
 	after := []string{}

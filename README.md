@@ -187,3 +187,23 @@ parley help
 
 - [Agent runtime configuration](docs/agent-runtime-configuration.md)
 - [CLI reference](docs/cli-reference.md)
+
+### Participant dropout (1.52.0)
+
+New ideas save `participant-failure-v1` under the existing `[defaults].quota_auto_exclude`
+boolean. A non-protected participant gets the original attempt and one retry after five
+seconds at the same timeout. Two child failures or invalid own outputs can remove it
+permanently from that idea; valid BLOCK/disagreement prevents dropout. Attempts remain
+bound across restarts. Retained vetoes, disputes and findings remain binding.
+
+Use `parley run --quota-auto-exclude=false ...` to opt out for a new idea. Saved legacy
+quota policies retain their trigger; upgrades do not widen them. `parley quota recover`
+repairs interrupted projections/receipts, including kickoff notices, without changing
+history. Permanently dropped IDs cannot return even after opt-out or owner revision;
+the next idea probes them normally.
+
+Reduction still requires two positively usable non-organizers, including any designated
+or pinned implementer, and every existing gate. In particular, auto_implement 3→2
+blocks because only one independent reviewer remains. The owner may authorize another
+eligible reviewer process or an attended evidence-backed continuation; no substitute
+or gate waiver is selected automatically. Windows CLI assets remain experimental.

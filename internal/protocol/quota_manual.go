@@ -16,6 +16,9 @@ import (
 // The prompt records a manual change, never owner-confirmed authority. We read the explicit current set;
 // excluded markers only validate a requested change, never subtract membership.
 func manualQuotaRevision(dir string, h *quota.History, raw string, ids []string) (quota.Batch, error) {
+	if err := h.CheckReturn(ids); err != nil {
+		return quota.Batch{}, err
+	}
 	if len(ids) == 0 || len(quota.Unique(ids)) != len(ids) {
 		return quota.Batch{}, fmt.Errorf("invalid manual membership")
 	}
@@ -129,7 +132,7 @@ func (p *manualCatchupPending) Error() string {
 // cannot use the exception. An incomplete own stub may be retried in place.
 func ManualCatchupTarget(dir string, v QuotaView, id, path string) bool {
 	h := v.History
-	if h == nil || h.Policy().Enabled || !quotaManualID.MatchString(id) || (v.Pending != "" && len(v.Catchup) == 0) {
+	if h == nil || h.Dropped(id) || h.Policy().Enabled || !quotaManualID.MatchString(id) || (v.Pending != "" && len(v.Catchup) == 0) {
 		return false
 	}
 	for _, known := range h.Known {

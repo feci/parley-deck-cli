@@ -8,6 +8,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/hitl"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runmanifest"
@@ -111,11 +112,10 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 		})
 	}
 
-	if kickoff != nil && kickoff.Transition != nil {
-		id := kickoff.Transition.ID
-		inbox := filepath.Join(opts.Root, protocol.DeckDir, "inbox")
-		quota.NoticeDiagnostic(id, quota.PublishNotice(inbox, "parley-to-user_"+id+".md", kickoff.Notice()))
+	if err := membership.PublishKickoffNotice(opts.Root, idea.Path, kickoff); err != nil {
+		return CreatedRun{}, fmt.Errorf("kickoff notice receipt pending: %w", err)
 	}
+
 	registerSession(opts.Root, idea, runID, opts.Task, opts.Participants, now)
 
 	created := CreatedRun{

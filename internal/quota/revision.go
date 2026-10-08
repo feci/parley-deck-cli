@@ -46,6 +46,9 @@ func NewRevision(h *History, run string, ids []string, policy Policy, owner Revi
 	return b
 }
 func (b Batch) validateRevision(h *History) error {
+	if err := h.CheckReturn(b.Decision.After); err != nil {
+		return err
+	}
 	if b.Version != 1 || b.Idea != h.Kickoff.Idea || b.RunID == "" || b.ID != b.digest() || b.PriorRevision != h.Revision || b.RecordedAt.IsZero() || b.Policy.Validate() != nil || !reflect.DeepEqual(b.Decision.Before, h.Current) || b.Decision.Applied || len(b.Decision.Candidates) != 0 || len(b.Decision.After) == 0 || len(Unique(b.Decision.After)) != len(b.Decision.After) {
 		return fmt.Errorf("invalid owner membership revision")
 	}

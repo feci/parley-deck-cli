@@ -23,6 +23,7 @@ import (
 // LaunchInfo describes orchestration, never prompt content or command arguments.
 // An observer receives a detached record; it cannot alter persisted evidence.
 type LaunchInfo struct {
+	participantStep               *participantStepLaunch
 	RunID, SegmentID, Idea, Phase string
 	AttemptOrdinal                int
 	RetryOf                       string
@@ -56,12 +57,16 @@ type launchEvidence struct {
 	trajectory *trajectory.Run
 	// A terminal's file descriptors must reach the child unchanged. Such a
 	// process has lifecycle evidence but no captured output stream evidence.
-	directTerminal bool
+	directTerminal    bool
+	dispatchAttempted bool
 }
 
 // Integrity errors deliberately do not unwrap an ordinary process exit: a
 // validated artifact must not override a lost audit record or provider error.
-type launchIntegrityError struct{ reason string }
+type launchIntegrityError struct {
+	reason       string
+	childFailure bool // structured provider failure retains legacy error semantics
+}
 
 func (e *launchIntegrityError) Error() string { return e.reason }
 
@@ -84,6 +89,17 @@ func launchRequestInfo(ctx context.Context, root, runID string) (string, LaunchI
 
 func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery, intent ...launchIntent) (*launchEvidence, error) {
 	root, info := launchRequestInfo(ctx, root, runID)
+	handoff := len(intent) == 1 && intent[0] == launchHandoff
+	if step, ok := ctx.Value(participantStepKey{}).(*participantStepLaunch); ok && !handoff {
+		info.participantStep = step
+		info.AttemptOrdinal, info.RetryOf = step.ordinal, step.retry
+		if info.Idea == "" {
+			info.Idea = step.idea
+		}
+		if info.Idea != step.idea {
+			return nil, fmt.Errorf("participant step idea binding mismatch")
+		}
+	}
 	target, err := CanonicalArtifactIdea(root, info.ArtifactPath)
 	if err != nil {
 		return nil, err
@@ -115,12 +131,23 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 				if err := membership.CheckLease(ctx, dir, info.RunID); err != nil {
 					return nil, err
 				}
+				// Read-only evidence verification has its own bounded accounting;
+				// canonical participant outputs may never bypass the step ledger.
+				bounded := target != "" || (info.Phase != "evidence-verification" && info.Phase != CapturedVerificationPhase && info.Phase != "consult")
+				if v.History.Policy().Dropout() && bounded && !handoff {
+					roles, err := membership.Roles(dir)
+					if err != nil {
+						return nil, err
+					}
+					if !roles.Protected(agent.ID) && info.participantStep == nil {
+						return nil, fmt.Errorf("participant-failure policy requires a bounded logical step; use the round, review or signoff driver")
+					}
+				}
 			}
 		}
 	}
 
 	ctx = withLaunchActionInput(ctx, info, agent)
-	handoff := len(intent) == 1 && intent[0] == launchHandoff
 	if !handoff {
 		var finishCycle func()
 		ctx, finishCycle = prepareLaunchCycle(ctx, root, info.Idea, info.Phase, info.RunID)
@@ -169,6 +196,9 @@ func recordLaunch(root string, agent agents.Discovery, info LaunchInfo, boundInv
 		RequestedModel: requestedSetting(agent.Model), RequestedEffort: requestedSetting(agent.Reasoning),
 		RequestedSpeed: requestedSetting(agent.Speed),
 	}
+	if info.participantStep != nil {
+		metadata.ParticipantStep = info.participantStep.key
+	}
 	directory := filepath.Join(root, ".parley-runtime", "invocations")
 	var invocation *telemetry.Invocation
 	var err error
@@ -195,6 +225,9 @@ func requestedSetting(value string) *string {
 }
 
 func (l *launchEvidence) notify() {
+	if l.info.participantStep != nil {
+		l.info.participantStep.observe(l.invocation.Snapshot())
+	}
 	if l.info.Observe != nil {
 		l.info.Observe(l.invocation.Snapshot())
 	}
@@ -210,10 +243,20 @@ func (l *launchEvidence) started(pid int) error {
 
 func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 	l.once.Do(func() {
+		defer func() {
+			var integrity *launchIntegrityError
+			if l.info.participantStep != nil && errors.As(l.finishErr, &integrity) && !integrity.childFailure {
+				l.info.participantStep.integrity = l.finishErr
+			}
+		}()
 		usage, observation, providerFailure := l.collector.Result()
 		defer func() {
 			if err := l.settleBudget(usage.CostUSD); err != nil {
-				l.finishErr = errors.Join(l.finishErr, &launchIntegrityError{reason: "cannot settle required launch budget; reservation retained"})
+				integrity := &launchIntegrityError{reason: "cannot settle required launch budget; reservation retained"}
+				l.finishErr = errors.Join(l.finishErr, integrity)
+				if l.info.participantStep != nil {
+					l.info.participantStep.integrity = integrity
+				}
 			}
 		}()
 		if l.directTerminal {
@@ -269,7 +312,7 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 			quotaStart = *start
 		}
 		quotaEvidence := l.collector.QuotaEvidence(telemetry.QuotaInput{InvocationID: l.invocation.ID, StartedAt: quotaStart, ObservedAt: time.Now().UTC(), ExitCode: exitCode, StructuredFailure: providerFailure != "", Watchdog: quotaCancellation(failure)})
-		outcome := telemetry.Outcome{QuotaEvidence: &quotaEvidence, Status: status, ExitCode: exitCode,
+		outcome := telemetry.Outcome{DispatchAttempted: l.dispatchAttempted, QuotaEvidence: &quotaEvidence, Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,
 			ArtifactSHA256: observedArtifactHash(l.info.ArtifactPath)}
 		if err := l.invocation.Finish(outcome); err != nil {
@@ -292,7 +335,7 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 			}
 		}
 		if providerFailure != "" {
-			l.finishErr = &launchIntegrityError{reason: fmt.Sprintf("structured provider failure: %s", providerFailure)}
+			l.finishErr = &launchIntegrityError{reason: fmt.Sprintf("structured provider failure: %s", providerFailure), childFailure: true}
 		} else if ctxErr != nil {
 			l.finishErr = ctxErr
 		}

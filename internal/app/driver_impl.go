@@ -812,17 +812,50 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 				observed = r.Outcome.QuotaEvidence
 			}
 		}})
-	res := runner.RunConsult(ctx, runner.ConsultOptions{
-		Root:  o.root,
-		Agent: agent,
-		// Keep the existing bounded one-shot deadline. A timeout leaves
-		// completion unverified and halts instead of silently passing.
-		Timeout:    2 * time.Minute,
-		Prompt:     runner.BuildGoalCheckPrompt(agent, o.base.Idea),
-		StdoutPath: filepath.Join(dir, "goal-check.stdout.log"),
-		StderrPath: filepath.Join(dir, "goal-check.stderr.log"),
-		Progress:   o.out,
-	})
+	var res runner.ConsultResult
+	consult := func(child context.Context, _ int, _ string) error {
+		res = runner.RunConsult(child, runner.ConsultOptions{
+			Root: o.root, Agent: agent, Timeout: 2 * time.Minute, Prompt: runner.BuildGoalCheckPrompt(agent, o.base.Idea),
+			StdoutPath: filepath.Join(dir, "goal-check.stdout.log"), StderrPath: filepath.Join(dir, "goal-check.stderr.log"), Progress: o.out,
+		})
+		if res.ExitError != "" {
+			return fmt.Errorf("%s", res.ExitError)
+		}
+		return nil
+	}
+	h, err := quota.ReadHistory(o.ideaDir)
+	if err != nil {
+		return false, err.Error()
+	}
+	roles, err := membership.Roles(o.ideaDir)
+	if err != nil && h.MidIdea() && h.Policy().Dropout() {
+		return false, err.Error()
+	}
+	if h.MidIdea() && h.Policy().Dropout() && !roles.Protected(checker) {
+		settled, e := runner.RunParticipantStep(ctx, runner.ParticipantStepOptions{
+			Root: o.root, Idea: o.ideaSlug, Agent: agent, Step: participantSignoffStep(filepath.Join(o.ideaDir, "review", "consensus.md")) + "/goal-check",
+			Files: []string{filepath.Join(dir, "goal-check.stdout.log"), filepath.Join(dir, "goal-check.stderr.log")},
+			Validate: func() runner.StepValidation {
+				if parseGoalVerdict(res.Answer) != "" {
+					return runner.StepValidation{Valid: true}
+				}
+				return runner.StepValidation{Reason: "missing or invalid GOAL-CHECK verdict"}
+			},
+		}, consult)
+		observed = settled.Evidence
+		if e != nil {
+			res.ExitError = e.Error()
+		}
+	} else {
+		_ = consult(ctx, 1, "")
+	}
+	if h.MidIdea() && h.Policy().Dropout() && (res.ExitError != "" || parseGoalVerdict(res.Answer) == "") {
+		_, e := membership.Settle(ctx, o.root, o.ideaDir, o.base.RunID, "goal-check", []string{checker}, []quota.Member{{ID: checker, ValidArtifact: parseGoalVerdict(res.Answer) != "", Evidence: observed}})
+		if e != nil {
+			return false, e.Error()
+		}
+	}
+
 	if res.ExitError != "" || res.AgentExit != 0 {
 		if observed != nil && observed.Eligible {
 			_, err := membership.Settle(ctx, o.root, o.ideaDir, o.base.RunID, "goal-check", []string{checker}, []quota.Member{{ID: checker, Evidence: observed}})

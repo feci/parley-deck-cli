@@ -23,6 +23,7 @@ func quotaBefore(ctx context.Context, opts Options) (context.Context, Options, f
 	}
 	if h != nil {
 		opts.quotaMidIdea = h.MidIdea()
+		opts.participantDropout = h.MidIdea() && h.Policy().Dropout()
 		opts.Idea.Participants = membership.Intersect(opts.Idea.Participants, h.Current)
 		if len(opts.Idea.Participants) == 0 {
 			release()
@@ -54,7 +55,7 @@ func quotaSettle(ctx context.Context, opts Options, results []Result) []Result {
 		}
 	}
 	for _, r := range results {
-		if r.ExitError != "" && (r.AgentID == "runner" || strings.HasPrefix(r.AgentID, "runner/")) {
+		if r.ExitError != "" && (r.AgentID == "runner" || strings.HasPrefix(r.AgentID, "runner/") || opts.participantDropout && r.QuotaEvidence == nil) {
 			roles, _ := membership.Roles(opts.Idea.Path)
 			decision := quota.Evaluate(h.Policy(), h.Current, members, roles)
 			decision.Block = "integrity/recovery gate: " + r.ExitError
