@@ -49,3 +49,9 @@ Design PR #75 merged at 431d6b0748ef7c16722c09899d1cc0e609e5eccb, 2026-10-08T21:
 ## Cycle-1 continuation — 2026-10-09
 
 Signed fix consensus 85ea372 preceded cb78e9f product fixes. Focused regressions pass. On continuation, `parley continue --dir . --json meta-protocol-change-participant-dropout` resolves the most recent consensus-signoff advisory run but returns only "No recoverable action; inspect artifacts and logs". The known phase-pointer gap remains; use measured configured `parley agents exec` for review-02, as for review-01. No fabricated run events, accounting repair or worktree declaration. Active participant identities/models are unchanged: codex-1 implementer/organizer, zcode-1 independent reviewer (native zai/glm-5.3); Kimi remains excluded under the brief. Effective Zcode argv remains `--prompt={prompt} --mode yolo --cwd {root}`, timeout 1800s with brief retry policy if needed.
+
+## Independent review-02 and close-check preparation
+
+Zcode invocation b569b516-c1f3-4bae-a81f-f1e20b50cfb9 completed exit0 after1520.007s, authored its complete full-scope review and independently found zero agreed fixes, AC1–AC13 evidenced. The artifact validator requires the exact `## Refutation attempts` heading and refused Zcode's heading with an explanatory suffix. The reviewer is re-invoked to correct its OWN heading, preserve all findings, validate it, and write a separate fresh goal-done assessment. Codex does not edit the reviewer file.
+
+`consensus reopen --review` only permits triage=blocked and refused the ready cycle-1 plan. The organizer therefore renamed the signed plan byte-identically to review/consensus-cycle-01.md (SHA2564db5a60edc68c89a3194328200e8c973363a7bb53e74d9618a8071c88a7a07b3). Both signoffs are preserved; no false BLOCK was added. New final draft waits for the exact-heading repair and the fresh independent check. This is a CLI transition gap, not authorization to bypass artifact validity or signoffs.

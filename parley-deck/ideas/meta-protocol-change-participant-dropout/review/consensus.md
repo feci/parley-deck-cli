@@ -1,68 +1,60 @@
 ---
 idea: meta-protocol-change-participant-dropout
-review-cycle: 1
-outstanding_agreed_fixes: 3
+review-cycle: 2
+outstanding_agreed_fixes: 0
 blocked: false
 drafted-by: codex-1
 date: 2026-10-09
-reviewed-commit: e4681cf5b9144ed786b269d8ab14b8d65b23d581
+reviewed-commit: f8f4f1f17bc99832aeb46c0a8ee44c6331325d1b
 ---
 
-## Scope and phase
+## Scope and attended-close authority
 
-This is the Phase-7 fix plan, not final close. The controlling brief and live Phase 7→8 require both signoffs BEFORE fixes; review/round-01/zcode-1.md's concluding suggestion to wait for fixes is handled through that normal sequence. Codex-1 organizes, participates, drafts and implements under the owner brief; Zcode-1 alone owns the independent code-review verdict. Skill commit efe296c7acf13a147ab820ce6cbf8e6705b68691 remains in scope.
+This is the final zero-fix review consensus after fix-up cycle 1 of the five-cycle maximum. Codex-1 organizes and implements under source-context/ORGANIZER-BRIEF.md and frozen FINAL D7; Zcode-1 is the independent reviewer. Kimi's two real failed attempts and owner-authorized exclusion remain recorded; no solo exception or product gate waiver is invented. Both current participants must append their own ACCEPT block before the pre-authorized attended close.
+
+Reviewed CLI product commit cb78e9f43e70cb59284a21ba6e0e8a331cb447a1 is unchanged at candidate f8f4f1f17bc99832aeb46c0a8ee44c6331325d1b and subsequent deck-only validation commits. Skill remains efe296c7acf13a147ab820ce6cbf8e6705b68691. The signed cycle-1 fix plan is retained byte-identically in review/consensus-cycle-01.md (SHA256 4db5a60edc68c89a3194328200e8c973363a7bb53e74d9618a8071c88a7a07b3); both signoffs were committed before implementation. FINAL is unchanged.
 
 ## Agreed fixes
 
-1. **Z1 / MAJOR — durable goal-check validation.** Replace the volatile res.Answer validator with a replay-capable validator bound to the attempt's retained logs. Rehydrate the actual answer on replay across changed run IDs, preserve FAIL as valid dissent, and never turn a refused/cancelled/integrity outcome into a completion pass. Missing or changed previously-valid evidence stops rather than authorizing another child. Audit readiness's similar volatile observation closure and require its replay validation to read retained per-invocation probe output too. Test the terminal-before-validation-receipt crash window for valid PASS/FAIL/PONG and malformed output, using actual child logs, plus replay with a different run ID and no extra child.
-2. **Z3 / MINOR — do not dispatch past valid output on a control-class replay.** Recognize the receipt/validated output before the generic control-record skip. Preserve control/integrity refusal as a blocking error (not dropout and not a completion pass), and do not launch a replacement over valid output. Retain repaired pre-dispatch refusal behavior where no valid artifact exists. Tests cover cancelled valid output and integrity refusal separately.
-3. **Producer CI observation — distinguish ACP exit from deliberately short timeout.** The new started-exit subcase shares a 150ms ceiling intended for the timeout subcase; PR Linux CI observed its exact class assertion fail while the push Linux run and 30 focused local repetitions passed. Give the started-exit case a realistic ceiling while preserving the separate timeout/watchdog cases, two-attempt cap, and equal original/retry ceilings. Print actual class values on assertion failure. This fixes a fragile new fixture without changing runtime failure classification or weakening expectations.
+None. Independent review/round-02/zcode-1.md requests zero agreed fixes after full-scope inspection, current-tree refutation and four additional adversarial probes. No CRITICAL or MAJOR remains open.
 
-## Disputed finding / proposed disposition for Z2
-
-Zcode's PRIMARY probe measured four children across two complete `checkRoster` calls with separately generated kickoff IDs. Codex accepts that observation and disputes the conclusion that they are the same idea/batch. FINAL D2 expressly distinguishes the boundary:
-
-> “Kickoff readiness uses the same two-attempt rule within the proposed batch, before the first authoritative participant list or manifest. A standalone preflight reports observations and never applies exclusions. Undispatched readiness/setup uncertainty is not fabricated child evidence. After an idea exists the restart bound is per idea; a new idea probes everyone afresh.”
-
-The same language is in the signed design consensus. Each new `parley run` proposes a new idea; no idea or resumable run exists before preflight succeeds. This probe completed one proposed batch and invoked a second, so its two distinct IDs exercise next-proposal probing, not resume of an existing idea. Mid-idea resume uses the saved slug and cannot replenish the ledger. A genuinely same readiness batch with a supplied stable ProbeID already consumes the same ledger; add an explicit replay test, including the durable PONG receipt repair in item 1, so that contract is demonstrated.
-
-**Proposed disposition:** withdraw Z2 as an implementation defect under FINAL's explicit pre-idea/idea distinction; retain this operational boundary visibly in IMPLEMENTATION and release notes. A product feature that resumes an uncreated proposal across separate `parley run` commands would need a durable proposal identity plus explicit abandon/new-proposal semantics to distinguish “restart” from “new idea”; FINAL did not specify that lifecycle. Such a feature is a separate follow-up (TBD), not a silent relaxation of the existing per-idea cap. This is a rebuttal for the reviewer to judge, not an implementer-issued withdrawal. Zcode should BLOCK with its counter-proposal if the quoted boundary does not resolve its concern; no finding is suppressed.
+- Z1, formerly MAJOR: fixed by durable invocation-aware goal-check/readiness validation and retained-output digest checks. Reviewer independently verified PASS/FAIL/PONG/malformed crash replay, before-preservation fallback, changed-run cap, failed PASS not completing, and changed/missing/symlinked evidence refusals.
+- Z3, formerly MINOR: fixed by validity-before-control-skip replay. Cancelled valid output and integrity failures remain blocking without replacement or dropout; repaired pre-dispatch refusal without valid output can dispatch its first child.
+- ACP fixture: agreed five-second started-exit ceiling is implemented; timeout/watchdog cases and original-plus-one cap unchanged. Three independent repetitions pass.
 
 ## Deferred follow-ups
 
-- **Z4 / MINOR — headroom warning:** measured phase-1 body 69,963/70,000 B and SKILL.md 19,995/20,000 B pass unchanged caps. Accept the present bounded size as a known maintenance limitation; the next additive protocol change must budget compaction (follow-up TBD). No limit is raised and no current AC is waived.
-- A persistent pre-idea proposal/resumption lifecycle, if desired, is TBD under the Z2 proposed disposition. No shared membership authority or global roster change is introduced here.
+- Z4 / MINOR: protocol/skill headroom remains an accepted maintenance limitation; phase-1 body 69,963/70,000 bytes and SKILL.md 19,995/20,000 bytes. Next additive change must budget compaction (TBD). No cap or AC waived.
+- Persistent pre-idea proposal/resume/abandon lifecycle: TBD. Stable-ProbeID same-batch replay holds the two-attempt cap; separate new proposals probe afresh; created ideas retain a durable per-idea cap. The distinction is visible in IMPLEMENTATION, CHANGELOG and docs/quota-membership.md.
+- Reviewer observation: inherited fixtures relying on internal-disk flock/git semantics or unquoted scratch paths may merit separate test hygiene (TBD). They are not findings against this product diff.
+- Existing D6 accounting, native-positive legacy quota recognition, aliased-deck plain-edit guidance and Windows portability follow-ups remain separate. AC14 delivery follows attended close; npm/core publication stays owner-only.
 
-## Dismissed findings
+## Dismissed or withdrawn findings
 
-None is unilaterally dismissed. Z2's proposed disposition requires Zcode's explicit concurrence or a new review round. Z1/Z3 remain open until implemented and independently verified. Z4 is a documented maintenance risk, not a present cap breach.
+Z2 was withdrawn by Zcode in its own cycle-1 signoff under the frozen FINAL D2 pre-idea/created-idea boundary and reaffirmed in review round 02 after verifying all conditional commitments. It is not an implementer dismissal. Z1/Z3 are fixed and independently verified, not dismissed. No other finding is silently suppressed.
 
-## Validation prerequisites and updated observations
+## Current-tree criterion evidence and exact full-host result
 
-Full source log references are in source-context/validation-review01.md. The review accidentally names `review-persistence-failure-recovery`; the actual failed case is `report-persistence-failure-recovery`. Do not edit the reviewer's artifact; it can self-correct in its next artifact.
+Independent evidence for AC1–AC12 is review/round-02/zcode-1.md, including expanded AC10 read-only surface tests, seven changed-package runs, ACP repetitions, and four additional crash/evidence probes. Zcode also independently ran vet/build and the full unchanged skill suite: 399 Node tests,54 Python tests and all six manifests.
 
-- Skill efe296c full `npm test` rerun now passed 399 Node tests, 54 Python tests and all manifests; prior failure retained. macOS portable build/version/install/doctor smoke passed, as did all 19 installation dry runs.
-- Current CLI vet/build passed; an empty redirected vet log is expected on success. The completed process exit was zero. No standalone empty file proves completion.
-- The first full host run failed one recovery case; isolated three-repeat and full 19-case diagnostic-overlay three-repeat checks passed. Cause remains unestablished.
-- The second full host run later failed because the internal disk filled: Go linker and TempDir errors explicitly report “no space left on device”. This is not passing evidence. Fresh tests will use task-local TMPDIR/GOTMPDIR/GOCACHE on the workspace volume, which has about 385 GiB free; filesystem permission enforcement was probed successfully. No user files or shared caches are deleted. External-storage build passes.
-- Fix-up cycle 1 has not started. Fresh full host command, focused regressions, vet/build, protocol checks, independent current-tree AC1–AC12 evidence and a zero-fix final review consensus are mandatory before attended close. AC14 delivery is after close; npm/core remain owner-only.
+The qualifying native full-host evidence is explicitly **full-host-tests-cycle1-local-result.json** and **full-host-tests-cycle1-local.jsonl**, under .parley-runtime/participant-dropout-launches/: exit0 at f8f4f1f,731.058s,34 passing packages plus3 packages without tests,3262 passing test/subtest events. The raw log SHA256 and commands are in source-context/validation-cycle1.md. Zcode independently recounted the log and verified the result. This completes AC13 along with passing focused regressions, vet/build and skill checks.
+
+**full-host-tests-cycle1-result.json** and **full-host-tests-cycle1.jsonl** record the preceding FAILED external-scratch run (exit1), retained as environment-failure history and never claimed as a pass. Earlier review-01 failures also remain retained. Local TMPDIR/GOTMPDIR plus external GOCACHE yielded the qualifying complete pass without source edits or selective test exclusions (four built-in skips remain reported). No shared cache deletion or accounting migration.
+
+Separate measured Zcode invocation eddf724d-2365-4cd3-a09f-e7494525026f completed exit0 in232.593s and authored goal-check-zcode-1.md (SHA256 e5c3aeb364d2494ffcfdde94ad1d9c875319f140996cb9d197e379c247bbacdf). It independently verified current product identity, recounted the qualifying full-host log and reran live-tree dropout/goal-check/readiness checks plus build/vet. Its explicit implementation AC1–AC13 PASS remains conditional on both final signoffs. The reviewer corrected its own exact Refutation attempts heading, and parley wait now reports its round-02 artifact valid and exits0. This is attended assessment of the canonical goal-check artifact, not a claim that a driver auto-close parser ran. Textual PASS alone cannot establish close.
 
 ## Coverage & blind spots
 
-One independent reviewer remains under the brief's explicit exclusion/close authority. Zcode ran the seven changed CLI packages and scratch probes, inspected both complete diffs and all normative hunks. It did not run all 37 packages itself, and AC10 was spot-checked; the fresh verification brief must cover these limits. Real hosted error timing, cross-host/PID namespaces and native Windows remain outside demonstrated coverage. The pending storage-limited run cannot replace required evidence.
+One independent model-diverse reviewer remains under the brief's explicit authority. Zcode reviewed both complete product diffs and used its own archived product-identical tree to keep live files untouched. Real provider 429/503/auth timing, cross-host/PID namespaces and native Windows are not demonstrated by local supervisor fixtures. Windows remains experimental with CLI WinGet held. Existing review/diversity gates are unchanged in the product; this run's attended authority does not become an automatic override.
 
 ## Drafter position changes
 
-Codex has no review-round artifact because it is the implementer. Since the candidate's IMPLEMENTATION snapshot, codex accepts Z1's durable-validator defect and Z3's replay gap, and adds the ACP fixture repair based on actual CI evidence. It disputes Z2's same-batch inference using the quoted frozen FINAL boundary; no FINAL text is changed. All procedural dispositions remain provisional until signoff.
+Codex accepts Zcode's cycle-1 verification and all dispositions above. There are no product changes after cb78e9f and no fresh design change. The reviewer-owned exact-heading repair is a structural artifact correction, not a suppressed finding or another implementation cycle. Zero fixes is the reviewer's independent conclusion; codex signs implementation completion and the evidence/authority chain, not its own code review.
 
 ## Signoffs
 
-<!-- Each participant appends only its own signoff. -->
+<!-- Each current participant appends only its own block. -->
 
 ### Signoff: codex-1 — 2026-10-09
 Status: ✅ ACCEPT
-Notes: I accept the three fix items and validation prerequisites as the implementer, with Z2 subject to the explicit reviewer concurrence on the frozen FINAL boundary. This is a fix-plan signoff, not code self-review or close. No fixes before both ACCEPT blocks.
-
-### Signoff: zcode-1 — 2026-10-09
-Status: ✅ ACCEPT
-Notes: I accept the three agreed fixes and the validation prerequisites as the independent reviewer; this signs the fix plan, not the close. On Z2 I concur with the withdrawal after re-reading the frozen FINAL D2 and the signed design consensus myself (PRIMARY): both carry the verbatim pre-idea/idea boundary — the non-replenishment sentences I cited are keyed to the per-idea ledger, while kickoff readiness is expressly scoped "within the proposed batch" with the restart bound staged only "after an idea exists" — and my probe exercised two complete proposals (next-idea probing), not a mid-batch resume. Concurrence is conditional on this disposition's own commitments: the operational boundary retained visibly in IMPLEMENTATION.md and release notes, the stable-ProbeID same-batch replay test (with item 1's durable PONG receipt repair) added so that contract is demonstrated, and the pre-idea resumption lifecycle kept a TBD follow-up rather than a silent cap relaxation. Z1's durable replay validator, Z3's validity-before-control-skip with control/integrity refusal kept blocking, and the evidence-backed ACP started-exit ceiling repair all match my filed findings and stay within the two-attempt cap. Attended close still requires fix-up cycle 1, fresh full-suite and current-tree AC1–AC12 evidence on task-local storage, and a zero-fix final review consensus — my review's wait-for-fixes position is preserved by that sequence.
+Notes: I accept the zero-fix final consensus as implementer and organizer under the controlling brief. Product cb78e9f is unchanged; Zcode independently verified AC1–AC13 and completed the fresh goal check. The qualifying full-host result is explicitly the -local exit0 pair; failed runs remain failed history. Z1/Z3 fixed, Z2 withdrawn by reviewer with commitments met, Z4 and stated TBD follow-ups retained. This is implementation/evidence/authority acceptance, not self-review. Attended close follows the other participant own ACCEPT block; AC14 delivery then proceeds.
