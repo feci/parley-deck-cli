@@ -4,11 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"parley-deck-cli/internal/quota"
-	"parley-deck-cli/internal/telemetry"
+	"io"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/telemetry"
 )
 
 // ReadinessClass is the typed readiness/liveness observation (D7): what the
@@ -44,16 +50,18 @@ const (
 // readinessObservation is the typed probe result carried into the roster table
 // and (through it) into the readiness gates. Ready is true only for ClassReady.
 type readinessObservation struct {
-	QuotaEvidence *quota.Evidence
-	Class         ReadinessClass
-	Ready         bool
-	ExitCode      int    // -1 when the process never ran or was cut off by the probe deadline
-	SawSentinel   bool   // "PONG" present in output but not an exact ready shape
-	ProviderClass string // provider sub-class (auth/rate-limit/...), empty otherwise
-	StdoutTail    string // sanitized, <= readinessTailBytes
-	StderrTail    string // sanitized, <= readinessTailBytes
-	BuffersStdout bool   // agent declared Spec.BuffersStdout
-	Duration      time.Duration
+	QuotaEvidence     *quota.Evidence
+	StructurallyReady bool
+	Integrity         error
+	Class             ReadinessClass
+	Ready             bool
+	ExitCode          int    // -1 when the process never ran or was cut off by the probe deadline
+	SawSentinel       bool   // "PONG" present in output but not an exact ready shape
+	ProviderClass     string // provider sub-class (auth/rate-limit/...), empty otherwise
+	StdoutTail        string // sanitized, <= readinessTailBytes
+	StderrTail        string // sanitized, <= readinessTailBytes
+	BuffersStdout     bool   // agent declared Spec.BuffersStdout
+	Duration          time.Duration
 
 	// Truncation metadata added for bounded capture observation (D7 correction).
 	Truncated        bool   // true when boundedWriter overflowed (stream exceeded cap)
@@ -61,6 +69,59 @@ type readinessObservation struct {
 }
 
 const readinessTailBytes = 256
+
+// Readiness must be reconstructible after terminal telemetry but before the
+// validation receipt. The private probe logs are per-invocation, not per-run.
+func retainedReadiness(root string, agent agents.Discovery, r telemetry.Record) (readinessObservation, runner.StepValidation) {
+	var streams [2]string
+	truncated := false
+	for i, name := range []string{"probe.stdout.log", "probe.stderr.log"} {
+		path := filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, name)
+		st, err := os.Lstat(path)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return readinessObservation{}, runner.StepValidation{Integrity: err}
+		}
+		if !st.Mode().IsRegular() {
+			return readinessObservation{}, runner.StepValidation{Integrity: fmt.Errorf("probe output is not a regular file")}
+		}
+		f, err := os.Open(path)
+		if err != nil {
+			return readinessObservation{}, runner.StepValidation{Integrity: err}
+		}
+		data, err := io.ReadAll(io.LimitReader(f, 64*1024+1))
+		closeErr := f.Close()
+		if err != nil || closeErr != nil {
+			return readinessObservation{}, runner.StepValidation{Integrity: fmt.Errorf("cannot read retained probe output: %v %v", err, closeErr)}
+		}
+		if len(data) > 64*1024 {
+			truncated = true
+		}
+		streams[i] = string(data)
+	}
+	digest := sha256Hex(streams[0] + "\x00" + streams[1])
+	if agent.Adapter() == "kimi" {
+		streams[0] = runner.UnwrapKimiStreamJSON(streams[0])
+	}
+	code, timeout := -1, false
+	if r.Outcome != nil {
+		if r.Outcome.ExitCode != nil {
+			code = *r.Outcome.ExitCode
+		}
+		if r.Outcome.FailureClass != nil {
+			timeout = *r.Outcome.FailureClass == "timeout"
+		}
+	}
+	reason := ""
+	if truncated {
+		reason = "overflow"
+	}
+	obs := classifyReadiness(streams[0], streams[1], code, timeout, truncated, reason)
+	obs.StructurallyReady = classifyReadiness(streams[0], "", 0, false, truncated, reason).Ready
+	return obs, runner.StepValidation{Valid: obs.Ready || obs.StructurallyReady, Reason: readinessReason(obs), SourceSHA256: digest}
+}
 
 type boundedWriter struct {
 	buf           *bytes.Buffer

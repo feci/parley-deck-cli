@@ -63,6 +63,22 @@ func (k Kickoff) Validate() error {
 		if tr.Decision.UsableSurvivors < Floor || len(tr.Decision.Candidates) == 0 {
 			return fmt.Errorf("invalid quota kickoff floor or evidence")
 		}
+		readinessBatch := ""
+		for _, c := range tr.Decision.Candidates {
+			if k.Policy.Dropout() || c.Evidence.RuleID == ParticipantFailureRule {
+				// A readiness batch is bound before the final idea slug exists.
+				if !k.Policy.Dropout() || contains(k.Participants, c.Agent) || ValidateFailureEvidence(c.Evidence, "", c.Agent) != nil {
+					return fmt.Errorf("invalid kickoff participant failure evidence")
+				}
+				if c.Evidence.Failure.Step != "readiness" || !contains(tr.Decision.Before, c.Agent) {
+					return fmt.Errorf("kickoff failure is not a proposed readiness step")
+				}
+				if readinessBatch != "" && readinessBatch != c.Evidence.Failure.Idea {
+					return fmt.Errorf("mixed kickoff readiness batches")
+				}
+				readinessBatch = c.Evidence.Failure.Idea
+			}
+		}
 	}
 	return nil
 }
@@ -133,7 +149,11 @@ func (k Kickoff) Markers() []string {
 	out := []string{}
 	for _, c := range k.Transition.Decision.Candidates {
 		e := c.Evidence
-		out = append(out, fmt.Sprintf("%s — automatic quota — rule=%s — reset=%s — raw_reset=%q — transition=%s — recorded %s", c.Agent, e.RuleID, e.ResetHint(), e.RawReset, k.Transition.ID, k.Transition.RecordedAt.Format("2006-01-02")))
+		label := "automatic quota"
+		if e.RuleID == ParticipantFailureRule {
+			label = "permanent participant dropout"
+		}
+		out = append(out, fmt.Sprintf("%s — %s — rule=%s — reset=%s — raw_reset=%q — transition=%s — recorded %s", c.Agent, label, e.RuleID, e.ResetHint(), e.RawReset, k.Transition.ID, k.Transition.RecordedAt.Format("2006-01-02")))
 	}
 	return out
 }
@@ -144,6 +164,9 @@ func (k Kickoff) Notice() string {
 	tr := k.Transition
 	body := fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nphase: kickoff\nblocking: no\ntransition: %s\ndate: %s\n---\n\nAutomatic quota exclusion for this idea only.\n\n", k.Idea, tr.ID, tr.RecordedAt.Format("2006-01-02"))
 	for _, c := range tr.Decision.Candidates {
+		if c.Evidence.RuleID == ParticipantFailureRule {
+			body += "Permanent participant dropout for this idea; no same-idea return, even after opt-out or policy revision. The next idea probes afresh. Retained vetoes, disputes and findings remain in force.\n\n"
+		}
 		body += fmt.Sprintf("- %s: %s (%s), reset %s. %s\n", c.Agent, c.Evidence.Excerpt, c.Evidence.RuleID, c.Evidence.ResetHint(), c.Evidence.RelaunchHint())
 	}
 	return body + fmt.Sprintf("\nSurvivors: %v. Remaining gates: reviewer count for the selected track; LE-7/LE-11 two-reviewer close (auto_implement); independent goal-checker eligibility (auto_implement or strict_gate); require_model_diversity (when enabled, and fast track); strict_gate (when enabled); retained vetoes, DISPUTED claims and findings.\n", k.Participants)

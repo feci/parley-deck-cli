@@ -145,12 +145,18 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 			}
 		}})
 	runErr := runHeadlessSignoffAgent(ctx, rootAbs, drafter, prompt, o.out, o.out)
-	if history.MidIdea() && runErr != nil && observed != nil && observed.Eligible {
+	if history.MidIdea() && (history.Policy().Dropout() || runErr != nil && observed != nil && observed.Eligible) {
 		valid := false
 		if kind == "FINAL" {
 			if raw, e := os.ReadFile(target); e == nil {
 				valid = protocol.ValidateFinal(string(raw), o.ideaSlug) == ""
 			}
+		} else {
+			summary, e := consensus.Status(rootAbs, o.ideaSlug, false)
+			valid = e == nil && len(summary.Errors) == 0
+		}
+		if !valid && runErr == nil {
+			runErr = fmt.Errorf("%s draft is missing or structurally invalid", kind)
 		}
 		_, settleErr := membership.Settle(ctx, rootAbs, o.ideaDir, run, kind, []string{drafter.ID}, []quota.Member{{ID: drafter.ID, ValidArtifact: valid, Evidence: observed}})
 		if settleErr != nil {

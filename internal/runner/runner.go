@@ -16,6 +16,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/fsutil"
+	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/procctl"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
@@ -24,12 +25,13 @@ import (
 )
 
 type Options struct {
-	quotaMidIdea bool
-	Root         string
-	RunID        string
-	Idea         protocol.IdeaStatus
-	Task         string
-	Agents       []agents.Discovery
+	quotaMidIdea       bool
+	participantDropout bool
+	Root               string
+	RunID              string
+	Idea               protocol.IdeaStatus
+	Task               string
+	Agents             []agents.Discovery
 	// RosterMapping is the roster-ID -> family map (from `[roster.*] adapter` in the
 	// deck config) used to resolve participants that are roster IDs (e.g. claude-1)
 	// rather than bare family ids. nil/empty falls back to exact spec-ID matching.
@@ -417,28 +419,35 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	}
 
 	if _, err := os.Stat(outputPath); err == nil && !opts.Overwrite {
+		invalidDropoutOutput := false
 		if opts.quotaMidIdea {
 			if err := validateArtifactForPhase(opts, outputPath, agent.ID); err != nil {
-				result.ExitError = "preserved incomplete artifact: " + err.Error()
-				result.CompletedAt = time.Now().UTC()
-				_ = opts.Store.Append(store.Event{Type: "agent.failed", Data: map[string]any{"agent": agent.ID, "artifact": outputPath, "artifact_ok": false, "incomplete": true, "error": result.ExitError}})
-				return result
+				if opts.participantDropout {
+					invalidDropoutOutput = true
+				} else {
+					result.ExitError = "preserved incomplete artifact: " + err.Error()
+					result.CompletedAt = time.Now().UTC()
+					_ = opts.Store.Append(store.Event{Type: "agent.failed", Data: map[string]any{"agent": agent.ID, "artifact": outputPath, "artifact_ok": false, "incomplete": true, "error": result.ExitError}})
+					return result
+				}
+			} else {
+				result.ArtifactOK = true
 			}
-			result.ArtifactOK = true
 		}
-
-		result.Skipped = true
-		result.SkipReason = "artifact already exists"
-		result.CompletedAt = time.Now().UTC()
-		result.Duration = result.CompletedAt.Sub(result.StartedAt)
-		if err := opts.Store.Append(store.Event{
-			Time: result.CompletedAt,
-			Type: "agent.skipped",
-			Data: map[string]any{"agent": agent.ID, "reason": result.SkipReason, "artifact": outputPath, "segment_id": opts.SegmentID},
-		}); err != nil {
-			result.ExitError = "event append failed: " + err.Error()
+		if !invalidDropoutOutput {
+			result.Skipped = true
+			result.SkipReason = "artifact already exists"
+			result.CompletedAt = time.Now().UTC()
+			result.Duration = result.CompletedAt.Sub(result.StartedAt)
+			if err := opts.Store.Append(store.Event{
+				Time: result.CompletedAt,
+				Type: "agent.skipped",
+				Data: map[string]any{"agent": agent.ID, "reason": result.SkipReason, "artifact": outputPath, "segment_id": opts.SegmentID},
+			}); err != nil {
+				result.ExitError = "event append failed: " + err.Error()
+			}
+			return result
 		}
-		return result
 	}
 
 	if err := fsutil.MkdirAllResilient(agentDir, 0o755); err != nil {
@@ -511,6 +520,67 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 	// existed before this runner call (consensus D3; Overwrite runs land here).
 	_, statErr := os.Stat(outputPath)
 	preexisted := statErr == nil
+	if opts.participantDropout {
+		if opts.Phase == "review-consensus" {
+			if err := membership.MarkDraftStarted(opts.Idea.Path, outputPath, agent.ID); err != nil {
+				return failEarly(opts, result, err)
+			}
+		}
+		roles, roleErr := membership.Roles(opts.Idea.Path)
+		if roleErr != nil {
+			return failEarly(opts, result, roleErr)
+		}
+		if !roles.Protected(agent.ID) {
+			step := filepath.ToSlash(filepath.Join(opts.RoundLabel, agent.ID+".md"))
+			if opts.ArtifactName != "" {
+				step = opts.RoundLabel + ":" + filepath.ToSlash(opts.ArtifactName)
+			}
+			res := result
+			check := func() StepValidation {
+				if strings.Contains(res.ExitError, "snapshot artifact move-back:") || strings.Contains(res.ExitError, "event append failed:") {
+					return StepValidation{Integrity: errors.New(res.ExitError)}
+				}
+				err := validateArtifactForPhase(opts, res.OutputPath, agent.ID)
+				if err != nil {
+					return StepValidation{Reason: err.Error()}
+				}
+				return StepValidation{Valid: true}
+			}
+			settled, stepErr := RunParticipantStep(parent, ParticipantStepOptions{Root: opts.Root, Idea: opts.Idea.Slug,
+				Agent: agent, Step: step, Files: []string{outputPath, stdoutPath, stderrPath}, Validate: check},
+				func(ctx context.Context, ordinal int, retry string) error {
+					base := result
+					base.InvocationID = retry
+					attemptPrompt := prompt
+					if ordinal > 1 {
+						attemptPrompt += "\nYour prior invalid own output has been preserved privately. Complete or replace only your own requested artifact; retain every other participant's content.\n"
+					}
+					if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchACP {
+						res = runACPAgent(ctx, opts, agent, base, outputPath, stdoutPath, stderrPath, attemptPrompt, ordinal)
+					} else {
+						res = runExecAttempt(ctx, opts, agent, base, outputPath, stdoutPath, stderrPath, attemptPrompt, ordinal).result
+					}
+					if res.ExitError != "" {
+						return errors.New(res.ExitError)
+					}
+					return nil
+				})
+			res.QuotaEvidence = settled.Evidence
+			res.InvocationID = settled.Record.InvocationID
+			if settled.Valid && stepErr == nil {
+				res.ArtifactOK, res.ExitError = true, ""
+				if err := opts.Store.Append(store.Event{Type: "agent.finished", Data: map[string]any{"agent": agent.ID, "artifact": res.OutputPath, "artifact_ok": true, "participant_step": step, "replayed": settled.Replayed, "segment_id": opts.SegmentID}}); err != nil {
+					res.ExitError = "event append failed: " + err.Error()
+				}
+			} else if stepErr != nil {
+				res.ExitError = stepErr.Error()
+				res.ArtifactOK = false
+			}
+			res.CompletedAt = time.Now().UTC()
+			res.Duration = res.CompletedAt.Sub(res.StartedAt)
+			return res
+		}
+	}
 
 	if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchACP {
 		// ACP attempts share the exec retry contract (review fix 1c): retry
@@ -1146,6 +1216,7 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 	if err := ctx.Err(); err != nil {
 		return procctl.Spawned{}, err
 	}
+	evidence.dispatchAttempted = true
 	if err := cmd.Start(); err != nil {
 		return procctl.Spawned{}, err
 	}

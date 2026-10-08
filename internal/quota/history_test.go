@@ -84,7 +84,7 @@ func TestQuotaNewScopeAndOldScopeImmutable(t *testing.T) {
 	if NewPolicy(nil, nil).Scope != KickoffAndMidIdea {
 		t.Fatal("new delivery not enabled")
 	}
-	for _, p := range []Policy{{true, KickoffOnly}, {false, KickoffAndMidIdea}} {
+	for _, p := range []Policy{{Enabled: true, Scope: KickoffOnly}, {Enabled: false, Scope: KickoffAndMidIdea}} {
 		dir := t.TempDir()
 		k := NewKickoff("idea", "run", p, []string{"a", "b"}, nil, time.Now())
 		if err := WriteKickoff(dir, k); err != nil {

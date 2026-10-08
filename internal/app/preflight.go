@@ -22,7 +22,9 @@ import (
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runner"
+	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
+	"parley-deck-cli/internal/track"
 )
 
 // centralPingSkips reports whether the central [defaults].ping_tier opts out of
@@ -56,6 +58,8 @@ const pongPrompt = "Reply with exactly the single token: PONG"
 type preflightOptions struct {
 	QuotaPolicy *quota.Policy // non-nil only inside new-idea kickoff
 	QuotaRoles  quota.Roles
+	ProbeID     string
+	Track       string
 	Root        string
 	JSON        bool
 	Yes         bool
@@ -279,8 +283,11 @@ func participantDiscoveries(discovered []agents.Discovery, participants []string
 // unattended both stop on a gate (we never auto-answer the new gates); the only
 // difference is unattended must never block on stdin, which this path honors
 // because it never reads stdin.
-func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, policy quota.Policy, stdout, stderr io.Writer) (int, preflightReport, bool) {
+func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, policy quota.Policy, stdout, stderr io.Writer, trackName ...string) (int, preflightReport, bool) {
 	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes, QuotaPolicy: &policy}
+	if len(trackName) > 0 {
+		opts.Track = trackName[0]
+	}
 	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants, rosterMappingFor(opts.Root)), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
@@ -412,14 +419,48 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 		members := []quota.Member{}
 		for _, entry := range report.Roster {
 			proposed = append(proposed, entry.RosterID)
-			members = append(members, quota.Member{ID: entry.RosterID, Usable: entry.Available, Evidence: entry.QuotaEvidence})
+			members = append(members, quota.Member{ID: entry.RosterID, Usable: entry.Available && (!opts.QuotaPolicy.Dropout() || report.Pinged), Evidence: entry.QuotaEvidence})
 		}
 		decision := quota.Evaluate(*opts.QuotaPolicy, proposed, members, opts.QuotaRoles)
+		if decision.Applied && opts.Track == string(track.Fast) {
+			// The initial prompt has only track metadata: fast is the sole additional
+			// kickoff gate. Later declarations use membership.CheckGates before commit.
+			impl := decision.After[0]
+			defs, e := config.LoadDefaults(opts.Root)
+			if e != nil {
+				decision.Block = e.Error()
+			} else {
+				for _, id := range decision.After {
+					if id == defs.DefaultImplementer {
+						impl = id
+					}
+				}
+				models := map[string]string{}
+				for _, a := range discovered {
+					models[a.ID] = a.Model
+				}
+				reviewer := ""
+				for _, id := range decision.After {
+					if id != impl {
+						reviewer = id
+						break
+					}
+				}
+				if models[impl] == "" || models[reviewer] == "" || models[impl] == models[reviewer] {
+					decision.Block = "require_model_diversity: survivors have no known model-diverse independent reviewer"
+				}
+			}
+			if decision.Block != "" {
+				decision.Applied = false
+				decision.After = append([]string(nil), decision.Before...)
+			}
+		}
 		report.QuotaDecision = &decision
 		if decision.Block != "" {
 			report.Gates = append(report.Gates, gate{Kind: "quota-batch-blocked", Detail: decision.Block + fmt.Sprintf("; candidates: %v", quota.CandidateIDs(decision.Candidates)), Confirm: "owner confirmation required"})
 			if err := writeQuotaBlock(opts.Root, decision); err != nil {
-				return report, 1, err
+				raw, _ := json.MarshalIndent(decision, "", "  ")
+				fmt.Fprintf(stderr, "automatic exclusion escalation publication failed: %v\nDecision: %s\n%s\n", err, raw, quota.OwnerOptions)
 			}
 		}
 		if decision.Applied {
@@ -443,6 +484,13 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 		}
 		if entry.Available {
 			available++
+			continue
+		}
+		if opts.QuotaPolicy != nil && opts.QuotaPolicy.Dropout() {
+			if report.QuotaDecision.Block == "" {
+				kind, detail, confirm := readinessGateFor(entry, opts.Root)
+				report.Gates = append(report.Gates, gate{Kind: kind, Detail: detail, Confirm: confirm})
+			}
 			continue
 		}
 		if isDefiniteUnavailable(entry.Class) {
@@ -871,7 +919,11 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 
 	// Global deadline bounds all concurrent probes together.
 	probeCtx := ctx
-	if !opts.NoPing {
+	dropout := opts.QuotaPolicy != nil && opts.QuotaPolicy.Dropout()
+	if opts.ProbeID == "" {
+		opts.ProbeID = "kickoff-" + store.NewRunID(time.Now())
+	}
+	if !opts.NoPing && !dropout {
 		var cancel context.CancelFunc
 		probeCtx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
@@ -900,7 +952,35 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 		wg.Add(1)
 		go func(idx int, a agents.Discovery) {
 			defer wg.Done()
-			obs := pingProbe(probeCtx, opts.Root, a, timeout)
+			var obs readinessObservation
+			if dropout && !opts.QuotaRoles.Protected(a.ID) {
+				settled, err := runner.RunParticipantStep(probeCtx, runner.ParticipantStepOptions{
+					Root: opts.Root, Idea: opts.ProbeID, Agent: a, Step: "readiness",
+					ValidateRecord: func(r telemetry.Record) runner.StepValidation {
+						if obs.Integrity != nil {
+							return runner.StepValidation{Integrity: obs.Integrity}
+						}
+						var validation runner.StepValidation
+						obs, validation = retainedReadiness(opts.Root, a, r)
+						return validation
+					},
+				}, func(attemptCtx context.Context, _ int, _ string) error {
+					obs = pingProbe(attemptCtx, opts.Root, a, timeout)
+					return nil
+				})
+				obs.QuotaEvidence = settled.Evidence
+				if settled.Valid {
+					obs.Ready = true
+					obs.Class = ClassReady
+				}
+				if err != nil && settled.Evidence == nil {
+					obs.Ready = false
+					obs.Class = ClassProcessFailure
+					obs.QuotaEvidence = nil
+				}
+			} else {
+				obs = pingProbe(probeCtx, opts.Root, a, timeout)
+			}
 			entries[idx].Available = obs.Ready
 			entries[idx].Class = string(obs.Class)
 			entries[idx].QuotaEvidence = obs.QuotaEvidence
@@ -913,13 +993,26 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 	return entries
 }
 
+type probeEvidenceWriter struct {
+	w   io.Writer
+	err error
+}
+
+func (w *probeEvidenceWriter) Write(p []byte) (int, error) {
+	n, err := w.w.Write(p)
+	if err != nil {
+		w.err = err
+	}
+	return n, err
+}
+
 // hostedPONG runs the agent's real configured invocation with the PONG prompt,
 // bounded by timeout, and kills the process group on timeout so no children
 // leak. It returns the typed readiness observation: readiness requires an exact
 // PONG assistant response extracted from a recognized envelope. A timeout is an
 // observation (deadline-no-output / deadline-after-output), never a diagnosis
 // of a hang.
-func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) readinessObservation {
+func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeout time.Duration) (obs readinessObservation) {
 	probeCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	var terminal *telemetry.Record
@@ -941,6 +1034,48 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	var stdoutOverflow, stderrOverflow, stdoutTruncated, stderrTruncated bool
 	cmd.Stdout = &boundedWriter{buf: &out, max: maxCaptureBytes, overflow: &stdoutOverflow, truncated: &stdoutTruncated}
 	cmd.Stderr = &boundedWriter{buf: &errOut, max: maxCaptureBytes, overflow: &stderrOverflow, truncated: &stderrTruncated}
+
+	if runner.ParticipantStepActive(ctx) {
+		if terminal == nil || terminal.InvocationID == "" {
+			return readinessObservation{Integrity: fmt.Errorf("probe lacks invocation identity")}
+		}
+		dir := filepath.Join(root, ".parley-runtime", "invocations", terminal.InvocationID)
+		outLog, e := os.OpenFile(filepath.Join(dir, "probe.stdout.log"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		if e != nil {
+			return readinessObservation{Integrity: e}
+		}
+		defer func() {
+			if err := fsutil.SyncFile(outLog); err != nil {
+				obs.Integrity = err
+			}
+			if err := outLog.Close(); err != nil {
+				obs.Integrity = err
+			}
+		}()
+		errLog, e := os.OpenFile(filepath.Join(dir, "probe.stderr.log"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		if e != nil {
+			return readinessObservation{Integrity: e}
+		}
+		defer func() {
+			if err := fsutil.SyncFile(errLog); err != nil {
+				obs.Integrity = err
+			}
+			if err := errLog.Close(); err != nil {
+				obs.Integrity = err
+			}
+		}()
+		outWriter, errWriter := &probeEvidenceWriter{w: outLog}, &probeEvidenceWriter{w: errLog}
+		defer func() {
+			if outWriter.err != nil {
+				obs.Integrity = outWriter.err
+			}
+			if errWriter.err != nil {
+				obs.Integrity = errWriter.err
+			}
+		}()
+		cmd.Stdout = io.MultiWriter(outWriter, cmd.Stdout)
+		cmd.Stderr = io.MultiWriter(errWriter, cmd.Stderr)
+	}
 
 	started := time.Now()
 	if err := cmd.Start(); err != nil {
@@ -974,7 +1109,10 @@ func hostedPONG(ctx context.Context, root string, agent agents.Discovery, timeou
 	if agent.Adapter() == "kimi" {
 		stdoutText = runner.UnwrapKimiStreamJSON(stdoutText)
 	}
-	obs := classifyReadiness(stdoutText, errOut.String(), code, timedOut, truncated, reason)
+	obs = classifyReadiness(stdoutText, errOut.String(), code, timedOut, truncated, reason)
+	if runner.ParticipantStepActive(ctx) {
+		obs.StructurallyReady = classifyReadiness(stdoutText, "", 0, false, truncated, reason).Ready
+	}
 	if terminal != nil && terminal.Outcome != nil {
 		e := terminal.Outcome.QuotaEvidence
 		if e != nil {

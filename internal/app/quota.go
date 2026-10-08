@@ -3,10 +3,7 @@ package app
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
-	"parley-deck-cli/internal/fsutil"
 	"path/filepath"
 	"strings"
 	"time"
@@ -24,22 +21,8 @@ func writeQuotaBlock(root string, d quota.Decision) error {
 	}
 	id := fmt.Sprintf("%x", sha256.Sum256(b))
 	path := filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_quota-kickoff-"+id+".md")
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
-	if errors.Is(err, os.ErrExist) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(f, "---\nfrom: parley\nto: user\nphase: kickoff\nblocking: yes\ndate: %s\n---\n\nQuota batch blocked: %s\n\nCandidates: %v\n\nProposed: %v\n\nUsable non-facilitator survivors: %d; fixed floor: %d. No quota exclusions applied.\n\nEvidence:\n```json\n%s\n```\n", time.Now().UTC().Format("2006-01-02"), d.Block, quota.CandidateIDs(d.Candidates), d.Before, d.UsableSurvivors, quota.Floor, b)
-	if err == nil {
-		err = fsutil.SyncFile(f)
-	}
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	return closeErr
+	text := fmt.Sprintf("---\nfrom: parley\nto: user\nphase: kickoff\nblocking: yes\ndate: %s\n---\n\nAutomatic exclusion batch blocked: %s\n\nCandidates: %v\n\nProposed: %v\n\nUsable non-facilitator survivors: %d; fixed floor: %d. No exclusions applied.\n\n%s\n\nEvidence:\n```json\n%s\n```\n", time.Now().UTC().Format("2006-01-02"), d.Block, quota.CandidateIDs(d.Candidates), d.Before, d.UsableSurvivors, quota.Floor, quota.OwnerOptions, b)
+	return quota.PublishNotice(filepath.Dir(path), filepath.Base(path), text)
 }
 func quotaSurface(ideaDir string) []string {
 	v, err := protocol.InspectQuota(ideaDir)
@@ -51,6 +34,9 @@ func quotaSurface(ideaDir string) []string {
 		return nil
 	}
 	lines := []string{fmt.Sprintf("quota policy: enabled=%t scope=%s revision=%d", h.Policy().Enabled, h.Policy().Scope, h.Revision)}
+	if h.Policy().Trigger != "" {
+		lines = append(lines, "automatic exclusion trigger: "+h.Policy().Trigger)
+	}
 	lines = append(lines, "quota current participants: "+strings.Join(h.Current, ", "), "quota known participants: "+strings.Join(h.Known, ", "))
 	if v.Pending != "" {
 		lines = append(lines, "quota transition pending: "+v.Pending)
@@ -58,6 +44,9 @@ func quotaSurface(ideaDir string) []string {
 	add := func(id string, cs []quota.Candidate) {
 		for _, c := range cs {
 			label := "automatic exclusion"
+			if h.Dropped(c.Agent) {
+				label = "permanent participant dropout"
+			}
 			for _, member := range h.Current {
 				if member == c.Agent {
 					label = "historical automatic exclusion (now re-included)"

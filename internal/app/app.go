@@ -1943,11 +1943,11 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "quota policy config failed: %v\n", configErr)
 		return 1
 	}
-	quotaPolicy := quota.NewPolicy(defs.QuotaAutoExclude, quotaOverride)
+	quotaPolicy := quota.NewParticipantPolicy(defs.QuotaAutoExclude, quotaOverride)
 	var quotaDecision *quota.Decision
 	var preflightExcluded []string
 	if !*noPreflight {
-		code, report, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, quotaPolicy, stdout, stderr)
+		code, report, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, quotaPolicy, stdout, stderr, strings.TrimSpace(*trackFlag))
 		if stop {
 			return code
 		}
@@ -2480,7 +2480,7 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 		if err != nil {
 			return tui.LaunchResult{}, err
 		}
-		policy := quota.NewPolicy(defs.QuotaAutoExclude, nil)
+		policy := quota.NewParticipantPolicy(defs.QuotaAutoExclude, nil)
 		created, err := runcontrol.Create(runcontrol.CreateOptions{
 			QuotaPolicy:  &policy,
 			Root:         root,

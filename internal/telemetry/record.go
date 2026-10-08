@@ -31,6 +31,7 @@ type Context struct {
 }
 
 type Metadata struct {
+	ParticipantStep string  `json:"participant_step,omitempty"`
 	RunID           string  `json:"run_id"`
 	SegmentID       string  `json:"segment_id"`
 	Idea            string  `json:"idea"`
@@ -69,13 +70,14 @@ type Observation struct {
 }
 
 type Outcome struct {
-	QuotaEvidence  *quota.Evidence `json:"quota_evidence,omitempty"`
-	Status         string          `json:"status"`
-	ExitCode       *int            `json:"exit_code"`
-	FailureClass   *string         `json:"failure_class"`
-	ArtifactSHA256 *string         `json:"artifact_sha256"`
-	Usage          Usage           `json:"usage"`
-	Observation    Observation     `json:"observation"`
+	DispatchAttempted bool            `json:"dispatch_attempted,omitempty"`
+	QuotaEvidence     *quota.Evidence `json:"quota_evidence,omitempty"`
+	Status            string          `json:"status"`
+	ExitCode          *int            `json:"exit_code"`
+	FailureClass      *string         `json:"failure_class"`
+	ArtifactSHA256    *string         `json:"artifact_sha256"`
+	Usage             Usage           `json:"usage"`
+	Observation       Observation     `json:"observation"`
 }
 
 // WriterIdentity binds crash recovery to the original host/boot, supervisor and
@@ -258,6 +260,10 @@ func BeginBound(directory, id string, metadata Metadata) (*Invocation, error) {
 }
 
 func cleanMetadata(m Metadata, warnings *[]string) Metadata {
+	if m.ParticipantStep != "" && !hashPattern.MatchString(m.ParticipantStep) {
+		m.ParticipantStep = ""
+		*warnings = append(*warnings, "invalid_participant_step_omitted")
+	}
 	fields := []struct {
 		name   string
 		target *string

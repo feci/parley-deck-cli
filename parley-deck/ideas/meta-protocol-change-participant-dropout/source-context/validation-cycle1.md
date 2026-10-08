@@ -1,0 +1,12 @@
+# Cycle-1 validation — codex-1 observations
+
+Reviewed CLI candidate f8f4f1f17bc99832aeb46c0a8ee44c6331325d1b, product changes cb78e9f43e70cb59284a21ba6e0e8a331cb447a1. Skill remains efe296c7acf13a147ab820ce6cbf8e6705b68691. These observations do not substitute for Zcode's independent review.
+
+- Native full `go test ./... -json -count=1 -timeout 45m` PASS, exit0, 731.058s: 34 passing packages, 3 packages without tests, 3262 pass test/subtest events. No source overlays or selective test exclusions; four built-in skips remain reported. Logs: full-host-tests-cycle1-local.jsonl and full-host-tests-cycle1-local-result.json under .parley-runtime/participant-dropout-launches/. Log SHA256 131f8ef7c53971e1cedcfa0402db7c118cd7244fbd764425e22c26deeb37e503.
+- `go vet ./...` PASS exit0 (7.485s) and build PASS exit0 (4.025s), vet-build-cycle1-result.json. Focused Dropout/GoalCheck suite PASS (runner5.191s/app34.857s), cycle1-regressions-ready.log.
+- Skill full npm test PASS on unchanged efe296c:399 Node+54 Python tests/all6 manifests, skill-tests-rerun.log. Every packed file matches that source; staged tarball SHA25680f3172a29f293f26952475e218876bd67301f9021114f5a7f0d000643607db6. Portable smoke/dry installations remain preparation, not installed release claims.
+- Linux push and PR CI pass so far on f8f4f1f (37858412333/37858416744); other legs were still running at this observation. Windows is inherited experimental support, never a pass claim.
+
+The preceding full run used the shared workspace mount as test scratch after internal disk exhaustion. It reported inherited worktree/lock/path-space failures. The four isolated initial failures reproduced on that mount and passed on fresh local scratch (cycle1-test-storage-local.log). Go testing.TempDir in installed Go1.27.1 explicitly uses GOTMPDIR; setting only TMPDIR was insufficient. The accepted full run sets TMPDIR and GOTMPDIR to /private/var/tmp/pd-dropout-tests-201b7y78 and retains external GOCACHE. The original full-host-tests-cycle1.jsonl remains preserved and is not acceptance evidence. No product test expectations, user files/shared caches, or budget origins were changed. Earlier review-01 failures remain in validation-review01.md.
+
+No product source has changed since cb78e9f. FINAL is frozen, both original fix-plan signoffs preceded code, and zero-fix final consensus/current-tree independent criterion evidence are still required before attended close.

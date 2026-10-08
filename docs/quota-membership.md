@@ -1,6 +1,32 @@
 # Recorded quota membership and recovery
 
-New ideas record the resolved quota policy and initial membership in `quota-kickoff.json`.
+New ideas record the resolved automatic-exclusion policy and initial membership in `quota-kickoff.json`.
+The existing quota_auto_exclude knob now defaults new ideas to
+`{"enabled":true,"scope":"kickoff-and-mid-idea","trigger":"participant-failure-v1"}`.
+Omitted-trigger saved policies keep quota-only behavior and serialized hashes. Use
+`parley run --quota-auto-exclude=false ...` for the new-idea opt-out. Resume and binary
+upgrade never widen the trigger; explicit owner-bound revision is required.
+
+Under participant-failure-v1, a dispatched non-protected step gets its original attempt
+and one retry after five seconds at the same ceiling. Child/provider failures of any code,
+crashes, timeouts and missing/invalid own output qualify after both failures. The durable
+idea/agent/logical-step key prevents restart/input/run changes from minting a third attempt.
+Valid BLOCK/disagreement wins. Control-plane/operator cancellation and shared-file integrity
+failures do not authorize exclusion. Preserve invalid output privately; tampering stops.
+
+Before an idea exists, readiness uses two attempts within the proposed batch. Replaying
+that same batch with its stable identity cannot add an attempt. A separate new proposal
+probes afresh; there is no persisted proposal/resume/abandon lifecycle across separate
+pre-idea commands. After creation, the limit is per idea across driver restarts. Goal-check
+and readiness validation recover their original invocation logs after a crash; changed
+previously valid evidence blocks instead of launching a replacement.
+
+The usable floor and every precommit gate remain: auto_implement 3→2 blocks with only
+one independent reviewer. A permanently dropped ID cannot return to this idea, including
+via opt-out/downgrade, owner/manual revision or catch-up; the next idea probes afresh.
+Retained dissent needs an owner ruling quoted into the next artifact, or abandonment/v2.
+All return/catch-up examples below apply only to IDs without a permanent dropout.
+
 Automatic exclusions append immutable `quota-history/000001.json` revisions; a resume or a newer
 binary never widens their policy. The CLI uses current membership from this history. Historical
 participants, filed signoffs, retained findings and vetoes remain known. Returning a participant
@@ -263,19 +289,12 @@ The follow-up will establish a complete scrubbed capture before changing the gra
 
 ## Accepted release limitations
 
-1. **Kickoff blocking escalation (R8-MINOR-1).** If the kickoff quota decision
-   would leave fewer than two usable participants or excludes a protected role,
-   an absent or unwritable `parley-deck/inbox/` prevents the blocking note from
-   being saved. The command still stops without applying the exclusion or
-   creating an idea, but prints only the file error rather than the candidates
-   and arithmetic. Keep a writable inbox directory, including in a fresh clone,
-   until this is fixed in the follow-up.
-2. **Kickoff notice crash window (R8-NIT-1).** A process crash after writing the
-   kickoff run manifest and before publishing its notice can leave the notice
-   permanently absent. The kickoff record, marker, status and organizer brief
-   still show the exclusion. This case was identified by source review; no crash
-   was injected. Mid-idea receipt/replay behavior is unchanged.
-3. **Aliased decks and plain edits (R8-NIT-2).** On a symlinked deck, a plain
+Kickoff reporting and notice replay are repaired in 1.52.0. A missing safe inbox is
+created; unavailable publication prints the full blocked decision to stderr. Kickoff
+notice publication uses the existing completed-attempt receipt and crash replay,
+preserving owner-edited/archived copies. A receipt is not proof of delivery.
+
+1. **Aliased decks and plain edits (R8-NIT-2).** On a symlinked deck, a plain
    `participants:` edit or confirmed exclusion counts as a manual revision and
    requires a physical deck path even when `quota_auto_exclude` is false.
    Until that path is restored, the pending edit blocks all signers and driving.

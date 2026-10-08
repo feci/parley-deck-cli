@@ -812,17 +812,72 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 				observed = r.Outcome.QuotaEvidence
 			}
 		}})
-	res := runner.RunConsult(ctx, runner.ConsultOptions{
-		Root:  o.root,
-		Agent: agent,
-		// Keep the existing bounded one-shot deadline. A timeout leaves
-		// completion unverified and halts instead of silently passing.
-		Timeout:    2 * time.Minute,
-		Prompt:     runner.BuildGoalCheckPrompt(agent, o.base.Idea),
-		StdoutPath: filepath.Join(dir, "goal-check.stdout.log"),
-		StderrPath: filepath.Join(dir, "goal-check.stderr.log"),
-		Progress:   o.out,
-	})
+	var res runner.ConsultResult
+	consult := func(child context.Context, _ int, _ string) error {
+		res = runner.RunConsult(child, runner.ConsultOptions{
+			Root: o.root, Agent: agent, Timeout: 2 * time.Minute, Prompt: runner.BuildGoalCheckPrompt(agent, o.base.Idea),
+			StdoutPath: filepath.Join(dir, "goal-check.stdout.log"), StderrPath: filepath.Join(dir, "goal-check.stderr.log"), Progress: o.out,
+		})
+		if res.ExitError != "" {
+			return fmt.Errorf("%s", res.ExitError)
+		}
+		return nil
+	}
+	h, err := quota.ReadHistory(o.ideaDir)
+	if err != nil {
+		return false, err.Error()
+	}
+	roles, err := membership.Roles(o.ideaDir)
+	if err != nil && h.MidIdea() && h.Policy().Dropout() {
+		return false, err.Error()
+	}
+	if h.MidIdea() && h.Policy().Dropout() && !roles.Protected(checker) {
+		settled, e := runner.RunParticipantStep(ctx, runner.ParticipantStepOptions{
+			Root: o.root, Idea: o.ideaSlug, Agent: agent, Step: participantSignoffStep(filepath.Join(o.ideaDir, "review", "consensus.md")) + "/goal-check",
+			Files: []string{filepath.Join(dir, "goal-check.stdout.log"), filepath.Join(dir, "goal-check.stderr.log")},
+			ValidateRecord: func(r telemetry.Record) runner.StepValidation {
+				original := filepath.Join(o.root, protocol.DeckDir, "runs", r.Metadata.RunID, "agents", checker, "goal-check.stdout.log")
+				raw, err := runner.ParticipantOutput(o.root, r, 0, original)
+				if err != nil && !os.IsNotExist(err) {
+					return runner.StepValidation{Integrity: err}
+				}
+				res.Answer = string(raw)
+				if agent.Adapter() == "kimi" {
+					res.Answer = runner.UnwrapKimiStreamJSON(res.Answer)
+				}
+				v := runner.StepValidation{Valid: parseGoalVerdict(res.Answer) != "", SourceSHA256: sha256Hex(string(raw))}
+				if !v.Valid {
+					v.Reason = "missing or invalid GOAL-CHECK verdict"
+				}
+				return v
+			},
+		}, consult)
+		observed = settled.Evidence
+		if e != nil {
+			res.ExitError = e.Error()
+		} else if settled.Valid {
+			// Valid output prevents dropout, but completion still requires a
+			// successful independent process, including after replay.
+			res.AgentExit = -1
+			if outcome := settled.Record.Outcome; outcome != nil {
+				if outcome.ExitCode != nil {
+					res.AgentExit = *outcome.ExitCode
+				}
+				if outcome.Status != "process-exited" {
+					res.ExitError = "goal-check child did not complete successfully"
+				}
+			}
+		}
+	} else {
+		_ = consult(ctx, 1, "")
+	}
+	if h.MidIdea() && h.Policy().Dropout() && (res.ExitError != "" || parseGoalVerdict(res.Answer) == "") {
+		_, e := membership.Settle(ctx, o.root, o.ideaDir, o.base.RunID, "goal-check", []string{checker}, []quota.Member{{ID: checker, ValidArtifact: parseGoalVerdict(res.Answer) != "", Evidence: observed}})
+		if e != nil {
+			return false, e.Error()
+		}
+	}
+
 	if res.ExitError != "" || res.AgentExit != 0 {
 		if observed != nil && observed.Eligible {
 			_, err := membership.Settle(ctx, o.root, o.ideaDir, o.base.RunID, "goal-check", []string{checker}, []quota.Member{{ID: checker, Evidence: observed}})

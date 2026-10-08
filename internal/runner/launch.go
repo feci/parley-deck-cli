@@ -105,6 +105,7 @@ func (c *AgentCommand) Start() error {
 	}
 	c.Stdout = io.MultiWriter(c.evidence.collector.Writer("stdout"), out)
 	c.Stderr = io.MultiWriter(c.evidence.collector.Writer("stderr"), errOut)
+	c.evidence.dispatchAttempted = true
 	if err := c.Cmd.Start(); err != nil {
 		c.waited = true
 		if recordErr := c.evidence.finish(err, c.ctx.Err(), nil); recordErr != nil {

@@ -50,15 +50,16 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 			fields[key]++
 		}
 	}
-	for _, key := range []string{"quota_auto_exclude", "quota_auto_exclude_scope", "participants", "quota_revision"} {
+	for _, key := range []string{"quota_auto_exclude", "quota_auto_exclude_scope", "quota_auto_exclude_trigger", "participants", "quota_revision"} {
 		if fields[key] > 1 && (h != nil || fields["quota_auto_exclude"] > 0 || fields["quota_auto_exclude_scope"] > 0) {
 			return v, fmt.Errorf("ambiguous duplicate quota authority field %s", key)
 		}
 	}
 	value, hasPolicy := meta["quota_auto_exclude"]
 	scope, hasScope := meta["quota_auto_exclude_scope"]
+	trigger, hasTrigger := meta["quota_auto_exclude_trigger"]
 	if h == nil {
-		if hasPolicy && value != "false" || hasScope || fields["quota_revision"] > 0 {
+		if hasPolicy && value != "false" || hasScope || hasTrigger || fields["quota_revision"] > 0 {
 			return v, fmt.Errorf("quota policy has no immutable kickoff record")
 		}
 		return v, nil
@@ -90,8 +91,11 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 			beforePolicy = b.Policy
 		}
 	}
-	policyMatches := hasPolicy && hasScope && value == fmt.Sprint(h.Policy().Enabled) && scope == h.Policy().Scope
-	priorPolicy := hasPolicy && hasScope && value == fmt.Sprint(beforePolicy.Enabled) && scope == beforePolicy.Scope
+	matchPolicy := func(p quota.Policy) bool {
+		return hasPolicy && hasScope && value == fmt.Sprint(p.Enabled) && scope == p.Scope && ((p.Trigger == "" && !hasTrigger) || (hasTrigger && trigger == p.Trigger && trigger != ""))
+	}
+	policyMatches := matchPolicy(h.Policy())
+	priorPolicy := matchPolicy(beforePolicy)
 	if meta["idea"] != k.Idea || !policyMatches && (latestApplied || !priorPolicy) {
 		return v, fmt.Errorf("contradictory immutable quota policy; restore the recorded prompt, then use parley quota revise for an owner-authorized change")
 	}
@@ -168,6 +172,20 @@ func ReconcileQuotaPrompt(ideaDir string, h *quota.History) error {
 		return err
 	}
 	lines := strings.Split(string(raw), "\n")
+	// A revision may add or remove the trigger projection; omission must remain
+	// omission for old policies, including historical hash-sensitive snapshots.
+	filtered := lines[:0]
+	frontmatter := true
+	for i, line := range lines {
+		if i > 0 && strings.TrimSpace(line) == "---" {
+			frontmatter = false
+		}
+		if frontmatter && strings.HasPrefix(line, "quota_auto_exclude_trigger:") {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	lines = filtered
 	end := 0
 	for i := 1; i < len(lines); i++ {
 		if strings.TrimSpace(lines[i]) == "---" {
@@ -188,6 +206,9 @@ func ReconcileQuotaPrompt(ideaDir string, h *quota.History) error {
 		return fmt.Errorf("missing prompt frontmatter")
 	}
 	var markers []string
+	if h.Policy().Trigger != "" {
+		markers = append(markers, "quota_auto_exclude_trigger: "+h.Policy().Trigger)
+	}
 	for _, b := range h.Batches {
 		for _, m := range b.Markers() {
 			line := "excluded: " + m
@@ -220,6 +241,9 @@ func writeQuotaPrompt(ideaDir string, k quota.Kickoff) error {
 		return err
 	}
 	fields := fmt.Sprintf("quota_auto_exclude: %t\nquota_auto_exclude_scope: %s\n", k.Policy.Enabled, k.Policy.Scope)
+	if k.Policy.Trigger != "" {
+		fields += "quota_auto_exclude_trigger: " + k.Policy.Trigger + "\n"
+	}
 	for _, m := range k.Markers() {
 		fields += "excluded: " + m + "\n"
 	}

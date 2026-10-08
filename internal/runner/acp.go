@@ -91,6 +91,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	defer opts.tracker.finish(agent.ID)
 
 	env := append(cleanParticipantEnv(agent.Adapter(), acp.MergedEnv(ctx, nil)), procctl.MarkerEnv(opts.RunID, agent.ID, evidence.invocation.ID)...)
+	evidence.dispatchAttempted = true
 	process, err := acp.Spawn(ctx, acp.SpawnOptions{
 		Command:        agent.Path,
 		Args:           append([]string(nil), agent.ACPArgs...),
