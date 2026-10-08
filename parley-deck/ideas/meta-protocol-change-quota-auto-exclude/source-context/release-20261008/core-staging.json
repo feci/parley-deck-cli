@@ -1,0 +1,12 @@
+{
+  "status": "staged, not published",
+  "version": "2.15.0",
+  "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.15.0.md",
+  "sha256": "0d81fd807114e4ff67f5fa98bba73622b58c86d66a2bf6b57d1def68cd099c09",
+  "base": "staged 2.14.0, never locally published",
+  "published_local_versions": [
+    "2.10.0",
+    "2.13.0"
+  ],
+  "owner_command": "! parley protocol publish --version 2.15.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.15.0.md"
+}

@@ -1,0 +1,16 @@
+{
+  "report": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/release-channel-verification-claude-1.md",
+  "sha256": "9eb887a90c9e48b9f2428a8cf1e2f80dff0b6d153ad7dc9d6eebb46a1bd9be98",
+  "disposition": "Agent-controlled delivery complete; no channel blocker",
+  "findings": {
+    "critical": 0,
+    "major": 0,
+    "minor": 0,
+    "nit": 2
+  },
+  "successful_attempt": "channel-verification-resume10-timeout-1",
+  "seconds": 982.7,
+  "exit": 0,
+  "timeout_relaunches": 1,
+  "provider_relaunches": 0
+}

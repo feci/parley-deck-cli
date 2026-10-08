@@ -1,0 +1,27 @@
+{
+  "at": "2026-10-08T00:24:54.307153+00:00",
+  "commit": "320a1d70ee59b9eb47a1c37d2f38360eba313809",
+  "formulas": [
+    {
+      "file": "parley-deck-cli.rb",
+      "sha256": "966b1d4989b57313de19ec77d72443706efe937b88f8306a98617d33fc3eec12"
+    },
+    {
+      "file": "parley-deck-skill.rb",
+      "sha256": "2d0e7b607a6246844a95ab37a05671069ed4ac19f32bf74f9a43778bce5df3de"
+    }
+  ],
+  "validation": {
+    "style": "pass; 2 files no offenses",
+    "audit": "strict online pass",
+    "upgrade": "both installed",
+    "test": "both passed; includes skill actual install and doctor"
+  },
+  "installed_versions": "parley-deck-cli 1.51.0 1.50.0\nparley-deck-skill 2.14.0 2.15.0",
+  "published": true,
+  "url": "https://github.com/feci/homebrew-parley/commit/320a1d70ee59b9eb47a1c37d2f38360eba313809",
+  "active_versions": {
+    "parley": "parley 1.51.0",
+    "skill": "2.15.0"
+  }
+}

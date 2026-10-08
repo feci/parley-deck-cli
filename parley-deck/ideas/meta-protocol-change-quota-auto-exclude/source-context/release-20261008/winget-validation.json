@@ -1,0 +1,27 @@
+{
+  "schema_checks": [
+    {
+      "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/winget/manifests/f/Feci/ParleyDeckSkill/2.15.0/Feci.ParleyDeckSkill.installer.yaml",
+      "sha256": "d156410793a002b54a55f345aac20f2cd49191fe38633e91f687219a0ecb9800",
+      "schema": "1.12.0",
+      "status": "pass"
+    },
+    {
+      "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/winget/manifests/f/Feci/ParleyDeckSkill/2.15.0/Feci.ParleyDeckSkill.locale.en-US.yaml",
+      "sha256": "7abc5c2c25b20a10f93710b174cef364283c61268ca48785ff06f2a593165686",
+      "schema": "1.12.0",
+      "status": "pass"
+    },
+    {
+      "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/winget/manifests/f/Feci/ParleyDeckSkill/2.15.0/Feci.ParleyDeckSkill.yaml",
+      "sha256": "c4d72f866d1340a7f7cb1549486d2649a7c37e9ce1ea469120b5052409fc86ca",
+      "schema": "1.12.0",
+      "status": "pass"
+    }
+  ],
+  "installer_sha256": {
+    "x64": "F02CDF6903F56A68420F0A141F48C6ECCB03A07AAB8379C22CE792435B6F662D",
+    "arm64": "5E158EE8CB8DA4FBA2F4288A477325D0BC211B62AA30F918723FABA60F2235A6"
+  },
+  "windows_validation": "winget validate/install not executed on macOS; upstream validation required"
+}

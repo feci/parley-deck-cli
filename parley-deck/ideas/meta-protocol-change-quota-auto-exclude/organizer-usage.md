@@ -321,3 +321,19 @@ total_tokens287174, attribution ambiguous. Exit0 after803.3s, provider retries0,
 timeout retries0. ACCEPT block append verified, consensus ready. Ledger keeps
 Claude cache counters separate; no monetary estimate. Organizer snapshots remain
 cumulative per source, never additive.
+
+## Release-channel verification first attempt — 2026-10-08
+
+claude-1 cfc38271-820e-4cea-a2b8-e37b522635fc.jsonl ingested: 261 events,
+total_tokens 211694, attribution ambiguous. Exit 143 at 1800.4s timeout; no
+canonical report or delivery verdict. Same-step 2400s retry launched automatically
+under finish-now. The first attempt remains a separate usage source.
+
+## Final release boundary — 2026-10-08
+
+Successful channel verifier 59231a26-910e-454b-8f4b-8100399f2f3e.jsonl: 171 events,
+total_tokens225558, attribution ambiguous. Exit0/982.7s. Initial timeout remains
+a distinct source; one timeout relaunch, zero provider relaunches. Root cumulative
+snapshot updated and deduplicated at 2026-10-08T01:15:33.362077+00:00. Final per-client totals
+and source paths are in source-context/release-20261008/usage.json and the single
+released inbox note. Cached counters are kept separate, no monetary estimate.

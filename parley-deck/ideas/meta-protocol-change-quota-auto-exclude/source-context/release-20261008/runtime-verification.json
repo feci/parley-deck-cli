@@ -1,0 +1,127 @@
+{
+  "verified_at": "2026-10-08T00:21:41.368268+00:00",
+  "expected_sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+  "targets": [
+    {
+      "target": "codex",
+      "path": "/Users/tomasfecko/.codex/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "claude",
+      "path": "/Users/tomasfecko/.claude/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "agy",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "gemini",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "hermes",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "qwen",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "codebuddy",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "goose",
+      "path": "/Users/tomasfecko/.goose/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "kimi",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "droid",
+      "path": "/Users/tomasfecko/.factory/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "vibe",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "cursor",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "opencode",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "aionrs",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    },
+    {
+      "target": "zcode",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-deck/SKILL.md",
+      "status": "valid",
+      "version": "2.15.0",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "matches": true
+    }
+  ],
+  "scope": "all 15 existing managed installations, --include-undetected used to include seven runtimes without presently detected executables"
+}

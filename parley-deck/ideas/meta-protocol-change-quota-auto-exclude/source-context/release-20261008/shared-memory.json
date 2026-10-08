@@ -1,0 +1,8 @@
+{
+  "uri": "viking://resources/projects/parley-deck/quota-auto-exclude-release-20261008.md",
+  "verified_at": "2026-10-08T01:18:13.816970+00:00",
+  "write_result": "queue-processing wait timed out after60s, but subsequent readback and scoped find both verified persistence",
+  "readback": "pass",
+  "retrieval": "pass; first scoped result",
+  "historical_round06": "annotated as superseded; original history preserved"
+}

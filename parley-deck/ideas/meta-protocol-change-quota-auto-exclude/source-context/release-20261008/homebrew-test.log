@@ -1,0 +1,7 @@
+==> Testing feci/parley/parley-deck-cli
+==> /opt/homebrew/Cellar/parley-deck-cli/1.51.0/bin/parley version
+==> /opt/homebrew/Cellar/parley-deck-cli/1.51.0/bin/parley help
+==> Testing feci/parley/parley-deck-skill
+==> /opt/homebrew/Cellar/parley-deck-skill/2.15.0/bin/parley-deck-skill --versio
+==> /opt/homebrew/Cellar/parley-deck-skill/2.15.0/bin/parley-deck-skill install
+==> /opt/homebrew/Cellar/parley-deck-skill/2.15.0/bin/parley-deck-skill doctor -

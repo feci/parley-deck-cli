@@ -1,0 +1,39 @@
+{
+  "step": "Independent release-channel verification",
+  "status": "completed",
+  "provider_relaunches_used": 0,
+  "timeout_relaunches_used": 1,
+  "max_provider_relaunches": 8,
+  "prompt_sha256": "666e2c14530be8cf438926a253cb0acfe29f184af1e6c132dff720f1bbecee82",
+  "heads": {
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude": "343aab21a7d95083767260c01c66d5e69f557cd6",
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude-skill": "352a475c4697d43e7582d00cc789bb6462867ee5"
+  },
+  "attempts": [
+    {
+      "phase": "channel-verification-resume10",
+      "started": "2026-10-08T00:26:28.240234+00:00",
+      "ended": "2026-10-08T00:56:28.671663+00:00",
+      "seconds": 1800.4,
+      "exit": 143,
+      "timeout": true
+    },
+    {
+      "phase": "channel-verification-resume10-timeout-1",
+      "started": "2026-10-08T00:56:28.728285+00:00",
+      "ended": "2026-10-08T01:12:51.424953+00:00",
+      "seconds": 982.7,
+      "exit": 0,
+      "timeout": false
+    }
+  ],
+  "last_phase": "channel-verification-resume10-timeout-1",
+  "last_result": {
+    "started": "2026-10-08T00:56:28.728285+00:00",
+    "ended": "2026-10-08T01:12:51.424953+00:00",
+    "seconds": 982.7,
+    "exit": 0,
+    "timeout": false
+  },
+  "last_terminal_error": ""
+}

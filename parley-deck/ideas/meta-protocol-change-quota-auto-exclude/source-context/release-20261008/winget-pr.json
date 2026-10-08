@@ -1,0 +1,124 @@
+{
+  "url": "https://github.com/microsoft/winget-pkgs/pull/448514",
+  "state": "OPEN",
+  "headRefOid": "cf64f71bb02761b28c722c180e5085b51d64b769",
+  "files": [
+    {
+      "path": "manifests/f/Feci/ParleyDeckSkill/2.15.0/Feci.ParleyDeckSkill.installer.yaml",
+      "additions": 15,
+      "deletions": 0,
+      "changeType": "ADDED"
+    },
+    {
+      "path": "manifests/f/Feci/ParleyDeckSkill/2.15.0/Feci.ParleyDeckSkill.locale.en-US.yaml",
+      "additions": 27,
+      "deletions": 0,
+      "changeType": "ADDED"
+    },
+    {
+      "path": "manifests/f/Feci/ParleyDeckSkill/2.15.0/Feci.ParleyDeckSkill.yaml",
+      "additions": 6,
+      "deletions": 0,
+      "changeType": "ADDED"
+    }
+  ],
+  "labels": [
+    {
+      "id": "LA_kwDOC8Ivn88AAAABhr2sEg",
+      "name": "New-Manifest",
+      "description": "The pull request adds new manifest content to the repository.",
+      "color": "597350"
+    }
+  ],
+  "checks": [
+    {
+      "name": "09. Installer Metadata Validation",
+      "context": null,
+      "status": "QUEUED",
+      "conclusion": "",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "10. Validation Completed",
+      "context": null,
+      "status": "QUEUED",
+      "conclusion": "",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "08. Installation Validation",
+      "context": null,
+      "status": "IN_PROGRESS",
+      "conclusion": "",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "01. Pull Request Validation",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "02. Manifest Validation",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "03. URLs Validation",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "04. URL Domain Validation",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "05. Manifest Policy Validation",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "06. Catalog Content Verification",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "07. Installers Scan",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/microsoft/winget-pkgs"
+    },
+    {
+      "name": "license/cla",
+      "context": null,
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "state": null,
+      "detailsUrl": "https://github.com/apps/microsoft-github-policy-service"
+    }
+  ],
+  "observed_at": "2026-10-08T01:14:34.417041+00:00"
+}

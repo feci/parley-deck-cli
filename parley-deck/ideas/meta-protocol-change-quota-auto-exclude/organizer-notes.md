@@ -1534,3 +1534,92 @@ consensus status=ready, both ACCEPT. Recorded pre-confirmed attended close with
 AC1–AC21 and explicit AC2/AC5/AC15 exceptions; IMPLEMENTATION is complete and frozen.
 Now package/release CLI1.51.0 and skill/core2.15.0. Optional stable main links in
 changelogs will be applied outside the exact disclosure paragraphs during packaging.
+
+## Release channels in progress — 2026-10-08
+
+CLI 1.51.0 (343aab21a7d95083767260c01c66d5e69f557cd6) and skill 2.15.0
+(352a475c4697d43e7582d00cc789bb6462867ee5) main/tag pushes and GitHub releases
+are published. All 11 release assets match GitHub SHA256 digests. Skill portable
+workflow 37706962158 succeeded, and its final Windows EXE bytes supply WinGet.
+Release-commit CLI Linux CI passed, Windows failed as already disclosed, macOS pending.
+
+The initial runtime hash verifier incorrectly assumed --target all includes all 15
+existing managed installations: it selected eight executable-detected runtimes.
+Install and doctor both passed; rerunning with --include-undetected updated all 15
+pre-existing installations, and every 2.15.0 marker and core SKILL.md hash now matches.
+All core/addon doctor checks pass. The previous payload backup remains private.
+
+Homebrew style passed. Modern brew audit rejects paths; the retained first attempt
+records this CLI usage error. After an ff-only local tap update, the name-based
+strict online audit passed. Both installed versions upgraded; functional formula
+tests are in progress. Formula install logic, including manifest shebang restoration,
+is unchanged.
+
+WinGet manifests pass 1.12.0 schemas, final EXE hashes, and CRLF checks. No local
+Windows execution is claimed. An unscoped git diff --cached --check on the fresh
+sparse clone started unnecessary lazy fetches; only that owned shell/process tree
+was stopped. Scoped diffs with rename detection disabled and the commit succeeded.
+No other task's processes or worktrees were changed. Schema validation uses temporary
+uv dependencies; the system Python initially lacked PyYAML, which is not a product defect.
+
+Independent release-channel verification: channel-verification-resume10 launched at 2026-10-08T00:26:28.213152+00:00; plain claude-opus-5-5[1m], max, unchanged inputs, ceiling 1800s.
+
+Homebrew 320a1d70ee59b9eb47a1c37d2f38360eba313809 is pushed to main; strict
+online audit, style, both formula tests and active versions pass. Skill-only WinGet
+PR https://github.com/microsoft/winget-pkgs/pull/448514 is open at cf64f71bb02761b28c722c180e5085b51d64b769.
+The shallow clone's first push tried to pack unrelated missing upstream history;
+only that owned push process tree was stopped. Seeding its new fork branch at the
+known upstream parent through the GitHub refs API enabled a normal fast-forward
+push of exactly the three manifest files. No existing fork branch was overwritten.
+Initial upstream PR/manifest/CLA validation passes; remaining validations pending.
+
+Independent channel verifier launched as a separate claude-1 process with the
+owner-required plain Opus5.5/max. Delivery evidence and brief live in
+release-delivery/2026-10-08-quota-auto-exclude/channel-evidence.json and runtime
+channel-verification-resume10/prompt.txt. Exact same-step retry supervision applies.
+No final delivery verdict is inferred while it runs. npm latest is still 2.13.0;
+2.15.0 tarball and global core remain staged for the two owner-only commands.
+
+Release-commit CLI CI 37706766781 is complete: Linux and macOS pass, Windows fails.
+The aggregate is failure, never all-platform green. Completed Windows job log
+113082869607 retained locally; unsupported syscall.Mkfifo and portability failures
+match the existing disclosures. No code cycle or Windows release expansion opened.
+
+Independent release-channel verification: failed, exit 143, elapsed 1800.4s, timeout=True. No terminal API Error line.
+
+Independent release-channel verification: same-step silent-timeout relaunch authorized at 2400s.
+
+Independent release-channel verification: channel-verification-resume10-timeout-1 launched at 2026-10-08T00:56:28.702309+00:00; plain claude-opus-5-5[1m], max, unchanged inputs, ceiling 2400s.
+
+Independent release-channel verification: participant process exited 0. Organizer must read and validate its own artifact; no approval is inferred.
+
+## Independent channel verification complete — 2026-10-08
+
+Separate claude-1 2400s retry completed in 982.7s, exit0. Entire report read;
+agent-controlled delivery complete, no channel blocker, 0 CRITICAL/MAJOR/MINOR,
+2 pre-existing NITs. Initial 1800s timeout produced no canonical report and is
+retained separately. No provider retries. Report remains reviewer-owned unchanged.
+
+Verifier freshly checked all 11 downloaded asset hashes, clean CLI provenance,
+GitHub/main/tags, both Homebrew audits/tests, all 15 runtime/core and 75 addon trees,
+npm dry-run/tarball source equality and exact staged-core reproduction/base chain.
+Final CLI CI: Linux/macOS success, Windows failure. Skill Windows EXEs are built on
+Linux; native installation validation is the pending WinGet step08, not a claimed
+Windows execution in the portable workflow. PR448514 remains pending upstream.
+
+Two non-blocking pre-existing nits are disclosed for later work: stale local
+feci/release-validation-20260918 tap creates unqualified formula-name ambiguity;
+Homebrew core-skill installs omit LICENSE/README because Homebrew moves them to
+keg root, also true in 2.14.0. Current all15 installations used exact npm payload
+and contain those files. No sixth implementation cycle, unrelated cleanup or
+packaging redesign is opened. Final note uses qualified Homebrew commands.
+
+Reviewer reverted its own unintended partial homebrew/core clone; original four
+taps restored. Existing implementation/signoff/round08 files remain unchanged.
+
+Shared OpenViking release outcome saved at projects/parley-deck/quota-auto-exclude-release-20261008.md.
+The write wait returned a 60s queue timeout, but immediate readback matched and scoped
+find returned the new outcome first; persistence and retrieval are verified. The historical
+round06 checkpoint is marked superseded, preserving its original dated evidence.
+Final released note now exists with both exact owner commands, final channel states,
+all accepted limitations, verifier evidence and deduplicated usage.

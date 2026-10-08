@@ -1,0 +1,14 @@
+[
+  {
+    "file": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/IMPLEMENTATION.md",
+    "sha256": "fc9bbbc665bea489e356c9962d42d98509a3b60a6299adce91d00c18cf2238ed"
+  },
+  {
+    "file": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+    "sha256": "4f9fde2822a8f5cf9caa35b01b206b5a7c33fa25619ae3b4cb9ba5125e0d0629"
+  },
+  {
+    "file": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/round-08/claude-1.md",
+    "sha256": "6ea871262a87731b2c5273b28128b851c7a0ad797abaf26601e4c845d404ce06"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "tarball": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/skill/parley-deck-skill-2.15.0.tgz",
+  "sha256": "64c274a86d0b4f2e136decbb1cc2810a18de89191192c6b9e680c5ec9af89b2a",
+  "shasum": "4c247f42580f44c43865e3ce71f0f1da60b1548f",
+  "integrity": "sha512-ZcHrXsd24Xh8pQrR//fgOtPP9vSameypLGzRKyOSo0rGQJRKXRUKAHieJhu7PTrd72LxFdu4P7TLfx6hXFCepg==",
+  "files": 210,
+  "installed_payload": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/skill/install-source/package",
+  "npm_published": false,
+  "pack_exit": 0,
+  "initial_parser_error": "prepack writes manifest messages before JSON; extracted JSON array without rerunning pack"
+}

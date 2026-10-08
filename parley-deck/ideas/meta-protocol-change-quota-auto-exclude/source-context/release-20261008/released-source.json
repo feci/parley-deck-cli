@@ -1,0 +1,14 @@
+[
+  {
+    "repo": "cli",
+    "commit": "343aab21a7d95083767260c01c66d5e69f557cd6",
+    "tag": "v1.51.0",
+    "main_and_tag_pushed": true
+  },
+  {
+    "repo": "skill",
+    "commit": "352a475c4697d43e7582d00cc789bb6462867ee5",
+    "tag": "v2.15.0",
+    "main_and_tag_pushed": true
+  }
+]
