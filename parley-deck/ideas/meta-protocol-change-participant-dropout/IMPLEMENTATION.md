@@ -1,10 +1,10 @@
 ---
 idea: meta-protocol-change-participant-dropout
-status: in-progress
+status: implemented
 implementer: codex-1
 started: 2026-10-08
 branch: participant-dropout
-head-commit: 431d6b0748ef7c16722c09899d1cc0e609e5eccb
+head-commit: e4681cf5b9144ed786b269d8ab14b8d65b23d581
 design-pr: https://github.com/feci/parley-deck-cli/pull/75
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/76
 ---
@@ -53,11 +53,11 @@ The practical precommit reviewer limit is an accepted design choice, not an unre
 
 ## Validation evidence
 
-No implementation AC is yet claimed met. Design validators: `parley wait --for round` reported 2/2 valid for round 2; `consensus request-signoffs` validated Zcode's own append; `consensus status` ready; `consensus finalize --by codex-1` accepted FINAL. Product tests have not run against a new implementation.
+Historical pre-implementation snapshot (superseded by the implementation checks below): no implementation AC was then claimed met. Design validators: `parley wait --for round` reported 2/2 valid for round 2; `consensus request-signoffs` validated Zcode's own append; `consensus status` ready; `consensus finalize --by codex-1` accepted FINAL. Product tests had not yet run at that snapshot.
 
 ## Outcomes & Retrospective
 
-Pending implementation, independent review, close and release.
+Implementation is present; independent review, completed current-tree checks, attended close and release remain outstanding.
 
 ## Implementation snapshot — 2026-10-09
 
@@ -107,3 +107,14 @@ Private validator logs live in .parley-runtime/participant-dropout-launches/. Ca
 will record completed commands and the reviewed commits, not private raw provider transcripts.
 Independent Zcode review, final host/skill checks, fresh criterion evidence, attended close and
 all delivery steps remain outstanding. The existing D6/Windows/alias limitations are not repaired.
+
+## Review-01 candidate and validation update
+
+CLI e4681cf5b9144ed786b269d8ab14b8d65b23d581; skill efe296c7acf13a147ab820ce6cbf8e6705b68691. Both PRs (#76 / skill #9) are ready for review. Separate measured `parley agents exec` process runs Zcode round 01 with the complete diffs, frozen FINAL, all ACs and open-ended refutation brief. The known driver phase-pointer gap is retained; no D6 migration or model/roster adjustment.
+
+- Full host command completed exit 1: 33 package passes, three packages without tests, one failed app package. Only `TestEvidenceVerifierProductionClosure/report-persistence-failure-recovery` failed; its recovery launch was refused. The same subtest passed three focused repetitions; a diagnostic-only private overlay repeated the entire 19-case test three times and passed (156.779s), without source changes. Cause remains unestablished. Fresh full host rerun is pending, not a pass claim.
+- Full skill `npm test` now passes on efe296c: all 399 Node tests, 54 Python tests and all six manifests. The prior 398/399 run's initial fleet-install failure is retained, with its focused 1/1 pass and full rerun evidence. No dependency version or source change between these attempts.
+- Hosted Linux push CI passed; PR CI failed the new ACP started-exit test's exact failure-class assertion with its 150ms ceiling. Thirty focused repetitions passed locally. The hypothesis of timeout-sensitive test setup and proposed realistic started-exit ceiling are disclosed to review; no fix has been applied ahead of signed review consensus.
+- Current candidate `go vet ./...` and build pass. Packet/drift and focused behavior checks passed. Native Windows remains experimental and is not claimed supported.
+
+Raw implementer observations and exact log names: `source-context/validation-review01.md`. These are not independent review verdicts. Release preparation is `release-plan-codex-1.md`; no channel publication, global install, main merge or core staging has occurred.
