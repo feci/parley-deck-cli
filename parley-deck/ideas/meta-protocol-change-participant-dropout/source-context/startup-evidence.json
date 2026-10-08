@@ -1,0 +1,54 @@
+{
+  "preflight_invocations": [
+    {
+      "invocation_id": "07083306-6fdd-4e28-820b-18a8ad4945cf",
+      "agent": "zcode-1",
+      "started_at": "2026-10-08T21:08:41.028931Z",
+      "completed_at": "2026-10-08T21:08:46.981604Z",
+      "status": "process-exited",
+      "exit_code": 0,
+      "failure_class": null
+    },
+    {
+      "invocation_id": "eaa6118e-2aa7-482e-8450-06ed43d96935",
+      "agent": "codex-1",
+      "started_at": "2026-10-08T21:08:41.030889Z",
+      "completed_at": "2026-10-08T21:08:44.582731Z",
+      "status": "process-exited",
+      "exit_code": 0,
+      "failure_class": null
+    },
+    {
+      "invocation_id": "d32d18d2-8822-4c5b-a5b1-48b3cf8ae48a",
+      "agent": "claude-1",
+      "started_at": "2026-10-08T21:08:41.028122Z",
+      "completed_at": "2026-10-08T21:08:47.641055Z",
+      "status": "process-exited",
+      "exit_code": 0,
+      "failure_class": null
+    },
+    {
+      "invocation_id": "fd3377fe-14e8-4fb1-a117-f40bd94f6ab1",
+      "agent": "kimi-1",
+      "started_at": "2026-10-08T21:08:41.03115Z",
+      "completed_at": "2026-10-08T21:08:43.130601Z",
+      "status": "failed",
+      "exit_code": 1,
+      "failure_class": "process_failure"
+    }
+  ],
+  "installer": {
+    "name": "parley-deck-skill",
+    "version": "2.15.0",
+    "source": "npm:parley-deck-skill@2.15.0",
+    "packageRoot": "/opt/homebrew/Cellar/parley-deck-skill/2.15.0/libexec",
+    "executable": "/opt/homebrew/bin/parley-deck-skill"
+  },
+  "project_metadata_status": "valid",
+  "project_metadata_matches_protocol": true,
+  "compatibility": {
+    "status": "ok",
+    "reasons": []
+  },
+  "note": "Preflight exit 3: kimi-1 process failure and unrelated historical devx-speed facilitator gate. No exclusion or model change; two actual round-01 attempts are recorded separately."
+}

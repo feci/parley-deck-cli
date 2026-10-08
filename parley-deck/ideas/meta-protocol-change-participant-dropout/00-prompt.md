@@ -2,7 +2,8 @@
 idea: meta-protocol-change-participant-dropout
 author: user
 created: 2026-10-08
-participants: [codex-1, kimi-1, zcode-1]
+participants: [codex-1, zcode-1]
+excluded: [kimi-1 — owner-authorized two failures on round-01 (HTTP 400 ambiguous k3); no same-idea return — confirmed 2026-10-08]
 implementer: codex-1
 track: deliberation
 auto_implement: true
