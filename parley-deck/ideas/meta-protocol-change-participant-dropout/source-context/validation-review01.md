@@ -19,3 +19,7 @@ No product or test edits were made during review pending its signed fix consensu
 - Full host run finished exit 1: 33 package passes, three no-test packages, one failed app package; only the already reported recovery subtest failed. Fresh full host rerun uses the unchanged tree in `full-host-tests-review01-rerun.jsonl`. A private Go overlay adds diagnostics only for a three-repeat run of the complete evidence verifier test; it modifies no product/test file on disk. `evidence-diagnostic-repeat.log`.
 
 - Diagnostic-only overlay repetition of all 19 verifier cases completed 3/3, exit 0, 156.779s. No diagnostic failure was captured. This is supplemental investigation, not substitution for the unmodified full-host check.
+
+## Host storage failure during the full rerun
+
+The second unmodified full-host run is not passing evidence: later app tests failed with Go linker “mapping output file failed: no space left on device”, followed by TempDir creation failures. `df -h` reported the internal Data volume at 100%, approximately 140 MiB available, while the workspace volume retained about 385 GiB. The failure is retained verbatim in `full-host-tests-review01-rerun.jsonl`; it is not a product verdict. Future checks use task-local TMPDIR/GOTMPDIR and GOCACHE on the workspace volume (`test-storage.json`), with an explicit permission-denial probe passing. No system preference, user files, shared cache, roster, model or code is changed to address storage.
