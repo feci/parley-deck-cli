@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-participant-dropout
-status: fix-up-cycle-1
+status: complete
 implementer: codex-1
 started: 2026-10-08
 branch: participant-dropout
@@ -24,8 +24,8 @@ Full phase-5 protocol context has source_sha256=packet_sha256=73613f95aabff8ed57
 - [x] Protocol/skill/release metadata (AC12): apply P1–P6 to the three normative copies, short matching skill guidance, protocol changelog and usage. Version CLI 1.52.0 and skill 2.16.0 including required generated metadata. Do not import Windows, alias, D6, model or roster changes.
 - [x] Focused tests (AC1–AC12): paired failures/success, timeout/watchdog, structurally valid BLOCK and malformed own output, control-plane/tamper stops, restart after first/second failure, concurrency and no third launch, floor/protected/gate permutations, permanent return after opt-out/downgrade, legacy round-trip bytes, kickoff replay and surfaces. Preserve existing legacy quota tests/expectations; explicit legacy fixtures may use omitted trigger while new default expectations change.
 - [x] Current-tree checks (AC13): affected-package tests during implementation; full `go test ./... -count=1 -timeout 45m`, `go vet ./...`, `go build ./cmd/parley`, formatting/diff checks; skill full tests and generated-manifest check; protocol drift and phase 0/5/8 full/facilitator packets with unchanged guards. Record exact tree/commands/outcomes and material limits.
-- [ ] Independent review: focused zcode brief with full implementation diff in both worktrees, FINAL, ACs and validator outputs, open inspection/no suppression. Reviewer owns every finding and verdict. Sign review consensus before fixes; maximum five fix-up cycles and stopping judgment. A fresh independent goal-done check cannot establish close by itself.
-- [ ] Attended close: both final review-consensus signoffs, no open CRITICAL/MAJOR, current-tree independent AC evidence and brief's standing authority. No product two-reviewer-gate waiver or automatic close claim.
+- [x] Independent review: focused zcode brief with full implementation diff in both worktrees, FINAL, ACs and validator outputs, open inspection/no suppression. Reviewer owns every finding and verdict. Sign review consensus before fixes; maximum five fix-up cycles and stopping judgment. A fresh independent goal-done check cannot establish close by itself.
+- [x] Attended close: both final review-consensus signoffs, no open CRITICAL/MAJOR, current-tree independent AC evidence and brief's standing authority. No product two-reviewer-gate waiver or automatic close claim.
 - [ ] Delivery (AC14): merge implementations, release GitHub assets, both Homebrew formulae, skill-only WinGet PR, all managed and four generic installations with hashes; stage core from staged 2.15.0 plus exact reviewed hunks; separate zcode channel verification. Finish canonical released note with exact owner npm/core commands (2.15 first if still unpublished), usage and limitations.
 
 ## Deviations from FINAL.md
@@ -153,3 +153,13 @@ None. Source hashes and record-aware validation extend the existing small partic
 ## Cycle-1 completed native validation
 
 At candidate f8f4f1f (product cb78e9f), fresh full host `go test ./... -json -count=1 -timeout 45m` completed exit0 in731.058s:34 packages pass, three packages without tests,3262 passing test/subtest events. Vet/build and focused regressions pass. Full skill tests/manifests remain passing on unchanged efe296c. Exact logs, hashes, environment-sensitive preceding failures and local-scratch refutation are in source-context/validation-cycle1.md. This completes the implementer's required checks; Zcode owns independent criterion evidence and final verdict. No attended close or release yet.
+
+## Attended implementation close — 2026-10-09
+
+Under the controlling brief's standing owner authority and frozen FINAL D7, codex-1 records the attended implementation close. The final review consensus lists zero agreed fixes and BOTH current participants independently appended ACCEPT; `parley consensus status --review` reports ready. No CRITICAL/MAJOR remains. Exactly one implementation fix-up cycle was needed (maximum five). Codex did not review its own code.
+
+Zcode's full-scope round-02 review independently evidences AC1–AC12 and verifies AC13. Its separate fresh goal-check-zcode-1.md confirms current product identity and AC1–AC13 after renewed live-tree dropout/goal-check/readiness tests, build/vet and full-host log recount. The qualifying full-host evidence is explicitly full-host-tests-cycle1-local-result.json/jsonl (exit0 atf8f4f1f,731.058s,34 passing packages/3no-test,3262 passing test/subtest events; four built-in skips). The similarly named non-local result is FAILED environment history, not a pass. Full skill tests/manifests pass on unchanged efe296c.
+
+Product head remains cb78e9f43e70cb59284a21ba6e0e8a331cb447a1. Later commits contain only review, evidence and close artifacts; no source change invalidates the independent checks. Z1/Z3 are fixed and independently verified, Z2 reviewer-withdrawn with its commitments landed, Z4 maintenance headroom and the recorded TBD follow-ups retained. The reviewer repaired its own exact heading; artifact validation exits0. Prior signed fix consensus is preserved byte-identically.
+
+This is an attended close under the brief, not driver auto-close or a product reviewer-count waiver. Native Windows, real hosted error timing and cross-host/PID limits remain disclosed. AC14 is expressly post-close delivery and is tracked by release-plan-codex-1.md and the final released inbox note; this closed implementation artifact does not claim the channels already published. npm/core remain owner-only commands. The user task continues through all authorized release channels and separate Zcode channel verification.
