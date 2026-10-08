@@ -1,10 +1,10 @@
 ---
 idea: meta-protocol-change-participant-dropout
-status: implemented
+status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-08
 branch: participant-dropout
-head-commit: e4681cf5b9144ed786b269d8ab14b8d65b23d581
+head-commit: cb78e9f43e70cb59284a21ba6e0e8a331cb447a1
 design-pr: https://github.com/feci/parley-deck-cli/pull/75
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/76
 ---
@@ -118,3 +118,34 @@ CLI e4681cf5b9144ed786b269d8ab14b8d65b23d581; skill efe296c7acf13a147ab820ce6cbf
 - Current candidate `go vet ./...` and build pass. Packet/drift and focused behavior checks passed. Native Windows remains experimental and is not claimed supported.
 
 Raw implementer observations and exact log names: `source-context/validation-review01.md`. These are not independent review verdicts. Release preparation is `release-plan-codex-1.md`; no channel publication, global install, main merge or core staging has occurred.
+
+## Fix-up cycle 1
+
+status: complete
+completed: 2026-10-09
+head-commit: cb78e9f43e70cb59284a21ba6e0e8a331cb447a1
+
+### Fixes applied
+
+Both ACCEPT blocks were committed at 85ea372 before product fixes. This cycle implements all three agreed items in review/consensus.md; it is not a close claim.
+
+- Z1: process-output validators now receive immutable invocation identity and recover retained output. Goal-check restores PASS/FAIL from its original run's stdout even when terminal telemetry survived but its structural receipt or private copy did not. Readiness similarly reconstructs PONG/classification from private per-invocation logs. Receipts bind raw output hashes; missing or changed previously-valid evidence blocks without a replacement. A nonzero/failed child cannot establish goal completion merely by writing PASS.
+- Z3: replay validates retained output before skipping a control-class terminal. Valid cancelled output and integrity errors remain blocking, with no replacement/dropout. Repaired pre-dispatch refusals without valid output still allow their first real child.
+- ACP fixture: started-exit now has a five-second ceiling; intentional timeout remains 150ms and watchdog two seconds. Both original/retry share the ceiling and existing cap; assertion failures print actual classes.
+
+### Operational boundary and dispositions
+
+Zcode explicitly withdrew Z2 in its own cycle-1 signoff after rereading frozen FINAL D2: before an idea exists the cap is within the proposed readiness batch. A stable ProbeID replay uses the same two attempts. A separate new proposal probes afresh. After creation the identity is per idea and run/input changes never replenish it. Tests cover same-batch PONG and malformed replay; CHANGELOG.md and docs/quota-membership.md visibly retain this boundary. A durable pre-idea proposal/resume/abandon lifecycle is a separate TBD follow-up. FINAL and the cap are unchanged.
+
+Z4 remains an accepted maintenance limitation: phase-1 packet 69,963/70,000 B and skill core 19,995/20,000 B. Next additive change needs budgeted compaction (TBD). No limit or criterion waiver.
+
+### Validation evidence
+
+- `go test ./internal/runner ./internal/app -run 'Dropout|GoalCheck' -count=1 -timeout 10m` passes on cb78e9f's source (runner 5.191s, app 34.857s), recorded in cycle1-regressions-ready.log. Real child regression cases cover PASS/FAIL/malformed crash replay across run IDs, the pre-preservation window, changed/missing valid evidence, unsuccessful PASS output, same-ProbeID readiness, cancelled valid output with/without a receipt, preserved integrity refusals and repaired pre-dispatch refusal.
+- Two intermediate regression runs exposed errors in newly written test fixtures (missing idea driving lease and an assertion about a refusal occurring before the step ledger); fixtures were corrected before the passing run. No product behavior was weakened to satisfy them.
+- Early post-compaction tests still encountered internal disk-full at the host budget-lock cache. The disk subsequently had 6 GiB available without any agent cleanup. Large Go scratch/cache stays on the task-local external paths in test-storage.json. No shared cache deletion or budget migration.
+- Fresh full host test/vet/build and Zcode round-02 are next. Full skill tests on unchanged efe296c remain passing. Earlier failing/invalidated full-host runs remain recorded in source-context/validation-review01.md.
+
+### Deviations from agreed fixes
+
+None. Source hashes and record-aware validation extend the existing small participant-step receipt; no new membership authority, retry cap, policy knob, protocol hunk or release version change.

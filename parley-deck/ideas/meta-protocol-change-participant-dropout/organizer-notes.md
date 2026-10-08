@@ -45,3 +45,7 @@ Configured zcode process PID 15713 completed at 2026-10-08T21:36:02Z, exit 0 aft
 ## Phase 5 plan gate
 
 Design PR #75 merged at 431d6b0748ef7c16722c09899d1cc0e609e5eccb, 2026-10-08T21:44:05Z. Both canonical signoffs were mirrored as a COMMENT native review because the same GitHub identity owns the PR. Owner worktree/branch retained and fast-forwarded to that merge; no pruning/declaration. IMPLEMENTATION.md records the full plan before product edits. Existing main CI observation: Linux/macOS pass, inherited Windows failure remains disclosed; the design diff contains no product change.
+
+## Cycle-1 continuation — 2026-10-09
+
+Signed fix consensus 85ea372 preceded cb78e9f product fixes. Focused regressions pass. On continuation, `parley continue --dir . --json meta-protocol-change-participant-dropout` resolves the most recent consensus-signoff advisory run but returns only "No recoverable action; inspect artifacts and logs". The known phase-pointer gap remains; use measured configured `parley agents exec` for review-02, as for review-01. No fabricated run events, accounting repair or worktree declaration. Active participant identities/models are unchanged: codex-1 implementer/organizer, zcode-1 independent reviewer (native zai/glm-5.3); Kimi remains excluded under the brief. Effective Zcode argv remains `--prompt={prompt} --mode yolo --cwd {root}`, timeout 1800s with brief retry policy if needed.
