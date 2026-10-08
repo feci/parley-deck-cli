@@ -1523,3 +1523,14 @@ Machine/deck roster files are unchanged. Installed CLI 1.50.0 and runtime/instal
 skill 2.14.0 remain current; source metadata drift is expected, dry-run retained.
 OpenViking scoped recall succeeded; stale stop summaries cannot override live notes.
 Protocol phase-7 full body hash is 73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e.
+
+Final review-consensus signoff: final-signoff-resume10 launched at 2026-10-07T23:57:40.210283+00:00; plain claude-opus-5-5[1m], max, unchanged inputs, ceiling 1800s.
+
+Final review-consensus signoff: participant process exited 0. Organizer must read and validate its own artifact; no approval is inferred.
+
+Final independent signer exited0/803.3s, no retries. Full raw block read; ACCEPT,
+all dispositions concurred. Appended bytes only; original review/hash preserved.
+consensus status=ready, both ACCEPT. Recorded pre-confirmed attended close with
+AC1–AC21 and explicit AC2/AC5/AC15 exceptions; IMPLEMENTATION is complete and frozen.
+Now package/release CLI1.51.0 and skill/core2.15.0. Optional stable main links in
+changelogs will be applied outside the exact disclosure paragraphs during packaging.

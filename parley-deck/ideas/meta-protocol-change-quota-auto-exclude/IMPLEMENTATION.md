@@ -1,10 +1,11 @@
 ---
 idea: meta-protocol-change-quota-auto-exclude
-status: fix-up-cycle-5
+status: complete
+completed: 2026-10-08
 implementer: codex-1
 started: 2026-10-04
 branch: quota-auto-exclude
-head-commit: 2705a1e850132f74aed2dbb87149df5491bfe94b
+head-commit: d3a846a933f9a17cffa605ccff6f40db7e02a805
 design-pr: n/a
 implementation-pr: n/a
 ---
@@ -22,7 +23,8 @@ shared/local probes and packet checks pass. The artifact validator reports 1/1 v
 The newer binding round08-answer note accepts and defers the three findings with
 exact disclosures and a linked follow-up, including explicit AC5/AC15 exceptions.
 It is a relay decision under standing owner direction, not a new direct owner answer.
-No cycle 6 is opened; both final review-consensus signoffs remain required. Native AC2 remains NOT MET
+No cycle 6 was opened. Both final review-consensus signoffs are ACCEPT, and the pre-confirmed
+attended close is recorded below. Native AC2 remains NOT MET
 and expressly owner-waived; R5-MAJOR-2 remains accepted/deferred. Close is pre-confirmed
 only after no open CRITICAL/MAJOR, both final signoffs and current AC1–AC21 evidence.
 The reviewer is claude-1, plain `claude-opus-5-5[1m]`, max effort, same provider.
@@ -59,8 +61,8 @@ The pre-code plan was committed as `67b954d`; owner handoff as `c6f8b49`. This i
 - [x] G21–G25 signed cycle-5 plan and reservations, narrow fixes and frozen producer/platform evidence.
 - [x] Separate full-scope claude-1 round-08 re-review of both frozen product commits; findings remain.
 - [x] Binding round08-answer relay note accepts/defer R8-MINOR-1, R8-NIT-1 and R8-NIT-2; exact disclosures and linked inactive follow-up recorded.
-- [ ] Both review-consensus signoffs, independent current-tree AC1–AC21 evidence, pre-confirmed close conditions verified.
-- [ ] After the pre-confirmed close conditions hold: complete, merge, release channels, independent channel verification.
+- [x] Both final review-consensus signoffs ACCEPT; current-tree AC1–AC21 evidence and pre-confirmed close conditions recorded.
+- [x] Implementation close recorded under the pre-confirmed owner authority. Release delivery and independent channel verification are tracked in release-plan-codex-1.md and the final released note; this implementation record is frozen at close.
 
 ## Deviations from FINAL.md
 
@@ -200,9 +202,9 @@ grading its own implementation. Review SHA256:
 | AC16 | PASS: round-1 plain-edit and later catch-up differential on both volumes, plus configuration tests. The baseline binary is reused from round-07; R8-NIT-2 qualifies aliased-deck disclosure. |
 | AC17 | PASS: both roster hashes unchanged; no timer/rejoin; bounded provider-estimate hints. |
 | AC18 | PASS: quoted/tool/content negatives and supervisor-captured terminal-source inspection. |
-| AC19 | Honored: both stages are delivered; implementation remains `fix-up-cycle-5`, incomplete while final signoffs remain pending; residual findings are explicitly accepted/deferred by round08-answer. |
+| AC19 | MET at the attended close: both stages are delivered and independently reviewed; both final signoffs ACCEPT. Residual findings remain explicitly accepted/deferred under round08-answer. |
 | AC20 | PASS on macOS host: own full Go 616.8s/34 packages, build/vet, race, shared/local probes, 399 Node/54 Python/six manifests, 100 Go files formatted. Windows cross-build passes; actual Windows CI is known failed and disclosed. |
-| AC21 | NOT MET: current review consensus signs the cycle-5 plan only; final signoffs do not exist. Pre-confirmed close remains conditional, and the newer binding round08-answer disposes of the three residual findings as accepted/deferred. |
+| AC21 | MET at the attended close: both final blocks ACCEPT, no open CRITICAL/MAJOR, current AC1–AC21 evidence recorded; finish-now point 5 is the pre-confirmed owner authority, supplemented by binding round08-answer for AC5/AC15 exceptions. No unattended auto-close. |
 
 Coverage limits remain in the raw review: prior interrupted attempts had shared-volume
 failures later passing; their attribution to filesystem coherence is reasoning, not
@@ -1232,3 +1234,36 @@ The signed cycle-5 plan remains preserved; both final consensus signoffs are nex
 >    which carries the two owner-only commands.
 >
 > The retry rules in `…_finish-now.md` point 3 still apply.
+
+## Attended implementation close — 2026-10-08
+
+The separate claude-1 final signer exited 0 after 803.3 seconds with no retries.
+Its append-only ACCEPT block concurs with each residual disposition and independently
+checks the exact disclosure delta, current build/vet/drift/packets and full skill suite.
+It explains why its full round-08 Go/race/probe evidence transfers to current
+CLI d3a846a and skill bd01ed0: runtime source and test inputs are unchanged.
+The CLI consensus validator reports ready with exactly codex-1 and claude-1 ACCEPT.
+The original review remains byte-unchanged. Evidence is in source-context/final-close-20261008/.
+
+All three pre-confirmed conditions hold: no open CRITICAL or MAJOR; both final
+signatures; current-tree evidence for all AC1–AC21. AC2 is NOT MET / owner-waived.
+AC5 and AC15 are NOT MET in full / accepted-deferred under binding round08-answer.
+Windows runtime/CI failures, the three residuals and all earlier deferrals stay visible.
+No strict-clean claim, extra reviewer, model change, cycle 6 or automatic close is used.
+
+Close authority, finish-now point 5, verbatim:
+
+> 5. **Close is pre-confirmed.** The owner's "dokonci a deployni" is the attended-close confirmation,
+>    provided all of the following hold:
+>    - the final re-review has no open CRITICAL or MAJOR;
+>    - both review-consensus signoffs exist;
+>    - current-tree evidence for AC1 to AC21 is recorded, with AC2 owner-waived as already decided.
+>
+>    Record this verbatim as the close authority. Do not write a separate close-request note.
+
+The current owner request explicitly makes the newer round08-answer binding and directs
+accept/defer with the proposed disclosures. The relay attribution remains honest.
+Under that authority codex-1 records the attended close and status complete.
+Release packaging, publication, local installs and the separate claude-1 channel
+verification follow the controlling release brief; they do not reopen implementation.
+This closed IMPLEMENTATION.md stays frozen.

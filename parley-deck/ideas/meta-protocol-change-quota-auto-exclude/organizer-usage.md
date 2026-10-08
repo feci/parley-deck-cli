@@ -304,3 +304,12 @@ Claude cache reads/writes remain separate; Codex input includes cached input.
 Attribution is ambiguous and no monetary estimate is asserted.
 
 Durable owner-boundary organizer snapshot: 293 events, {"input_tokens": 43699818, "cached_input_tokens": 40538112, "cache_write_input_tokens": 0, "output_tokens": 177934, "reasoning_output_tokens": 72036, "total_tokens": 43877752}; attribution ambiguous. This supersedes the earlier same-session boundary count, never adds to it.
+
+## Resume-10 final signoff dispatch — 2026-10-08
+
+New organizer transcript rollout-2026-10-08T01-52-16-01a118c8-341f-7932-9b45-1b6fcd9f9dfc.jsonl.
+Cumulative dispatch snapshot: 36 events, total_tokens 5054027, attribution ambiguous.
+Later snapshots replace this source, never add to it. The separate claude-1 final
+signer has its own source. Prior organizer PID65773 was safely stopped after its
+remaining disclosure/draft work was preserved; no participant was running.
+No monetary estimate.

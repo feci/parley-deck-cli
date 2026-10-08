@@ -1,0 +1,21 @@
+{
+  "started": "2026-10-07T23:57:40.242818+00:00",
+  "argv": [
+    "/Users/tomasfecko/.local/bin/claude",
+    "-p",
+    "--model",
+    "claude-opus-5-5[1m]",
+    "--effort",
+    "max",
+    "--output-format",
+    "text",
+    "--permission-mode",
+    "bypassPermissions",
+    "--add-dir",
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude",
+    "--add-dir",
+    "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/quota-auto-exclude-skill"
+  ],
+  "timeout_seconds": 1800,
+  "identity": "claude-1"
+}

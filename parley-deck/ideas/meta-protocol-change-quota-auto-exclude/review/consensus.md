@@ -210,3 +210,97 @@ source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3
 fallback_reason absent. Current full body bytes match the previously read live
 protocol. Both product commits remain the round-08 baseline; only authorized
 disclosure and canonical workflow records have changed since that review.
+
+### Signoff: claude-1 — 2026-10-08
+Status: ✅ ACCEPT
+Notes: This is my independent final signoff. It rests on my full round-08 review and on a fresh check of
+everything changed since then. It grants no close, release or channel verification.
+
+- **Dispositions: I concur with each one, judged on its own.** The relay's three bases hold against my raw
+  review. First, there is no CRITICAL or MAJOR finding. Second, G21–G25 and my signed reservations are
+  verified. Third, every residual fails closed or is a pre-existing narrow window. More precisely:
+  - R8-MINOR-1 is both. It is stage-1 code, and when it fires nothing is applied and no idea is created.
+  - R8-NIT-1 is the pre-existing window. It is source-only and not crash-injected.
+  - R8-NIT-2 is not pre-existing: in 1.50.0 the signoff path had no alias-dependent code. It does fail
+    closed, refusing without writes.
+  - Disclosure plus a follow-up is option (c) of my R8-MINOR-1 fix list, and it is the "disclose" option
+    of each NIT.
+- **Acceptance-criteria labels.** I accept the stricter labels: AC5 and AC15 are NOT MET in full and
+  accepted-deferred, never PASS or fixed. My raw "PASS, except" meant the same thing. AC2 stays NOT MET
+  and owner-waived (round05-answer Q2).
+- **What stays explicit.** The Windows CI failure, the broken Windows durable operations, the experimental
+  Windows assets and the CLI winget hold. There are zero agreed fixes, no cycle 6 and no clean-review
+  claim. `strict_gate_clean: false` is correct, because 00-prompt sets no strict_gate.
+- **Authority, recorded as it stands.** round08-answer is the relay's decision under the standing
+  finish-now direction. The relay made it without asking the owner, and the note says so.
+  - I add no owner testimony, and I cannot verify the relay's same-turn report to the owner.
+  - The three findings close through this normal signoff process (the Phase 6 dispositions rule), not by
+    relay fiat.
+  - Accepting AC5 and AC15 as unmet at close is a risk-tolerance call, and that call rests on the relay
+    decision. If the owner overrides it, this acceptance does not carry over, and the findings stand as
+    filed in review/round-08/claude-1.md (SHA256 still 6ea87126…).
+- **Draft accuracy, ratified under §15.5.**
+  - Agreed fixes, Deferred follow-ups, Dismissed findings and Coverage match my raw review.
+  - Both User direction quotes are verbatim. After stripping the quote markers, cmp exits 0 against
+    finish-now lines 10–64 and round08-answer lines 10–38.
+  - The role-concentration line is present.
+  - Drafter position changes is accurate and complete. codex-1's escalation already recommended
+    accept/defer (answered-escalation.md lines 12–16 and 71–72), so there is no material change.
+- **Delta since round-08, from my own runs.**
+  - CLI: `git diff 2705a1e d3a846a`, outside parley-deck/{ideas,inbox}, touches only CHANGELOG.md
+    (+25 lines) and docs/quota-membership.md (+24 lines). Both are pure additions.
+  - Skill: 99b3f3f..bd01ed0 touches only CHANGELOG.md (+25 lines).
+  - Proposal paragraphs 1–3 (lines 8–25, sha256 8f2536fd…) are byte-identical (cmp exit 0) at four places:
+    CLI CHANGELOG.md:7, docs/quota-membership.md:266, source-context/codex-1-release-notes-draft.md:75
+    and skill CHANGELOG.md:7. The release draft also states that AC5 and AC15 remain unmet.
+  - The wording matches the code. Floor and role blocks share one plain O_EXCL writer
+    (internal/app/preflight.go:419–423 and internal/app/quota.go:27). The kickoff notice is a single
+    attempt after run.created and the manifest (runcontrol.Create).
+  - The candidate quota-kickoff-reporting-and-alias-guidance is backlog only: no run has started and
+    auto_implement is false. It covers all three findings, including crash injection before any fix claim
+    and the preflight-ordering point, and its relative links resolve.
+- **Why the evidence transfers to CLI d3a846a / skill bd01ed0.**
+  - No *.go, go.mod, go.sum or testdata file changed. The only go:embed is defaults/COOPERATION.md, which
+    is unchanged. No tracked Go file or skill file refers to either changelog or to the changed doc, and
+    the skill package's `files` list omits CHANGELOG.md.
+  - These are unchanged: FINAL (f90577f1…), deck and skill COOPERATION (73613f95…), both agents.toml files
+    (f8cc2ab5… and f52a0a77…), and the archived signed plan. review/round-08/consensus.md is still
+    byte-identical to signed-plan.md (e5b56a7f…).
+  - Fresh runs on the current tree:
+    - `go build ./...` and `go vet ./...` exit 0.
+    - TestEmbeddedDefaultMatchesLiveDeck passes.
+    - `parley protocol packet check` is ok (69 blocks).
+    - The phase 0, 5 and 8 packets are full, with source = packet = 73613f95….
+    - Skill `npm test` at bd01ed0 exits 0: 399 Node tests pass and 0 fail, 54 Python tests pass, and all
+      six add-on manifests are ok.
+  - The guard stubs logged no provider call. Git status and the roster hashes are identical before and
+    after.
+  - I did not repeat the round-08 full suite (616.8 s, 34 packages), the race run or the probes. Their
+    results transfer because nothing they read has changed.
+- **Close conditions (finish-now point 5), with this block in place.** There is no open CRITICAL or MAJOR
+  finding, and both final blocks exist. IMPLEMENTATION's Validation evidence records AC1–AC21: AC2 is
+  waived, AC5 and AC15 are accepted-deferred, and AC21 is pending the close.
+
+Phase-7 attestation: context_mode=full,
+source_sha256=packet_sha256=73613f95aabff8ed57372a535913985554014b71911cc8126ec3f7890a9d4f4e,
+fallback_reason absent.
+- I rendered it at 2026-10-08T00:02:53Z with `parley protocol packet --dir . --phase 7 --track
+  deliberation --idea meta-protocol-change-quota-auto-exclude --flag protocol_change --json`.
+- I ran it with three binaries: a current-tree build, my round-08 build of 2705a1e and the installed
+  1.50.0. Each exited 0 with empty stderr, and the three JSON outputs are byte-identical (26,812 B).
+- The shadow packet 01ba034e… (41 included and 28 omitted blocks) was not used.
+- The emitted body, full-phase7-deliberation-73613f95….md, has 1,501 lines and 125,862 B. Its hash
+  reproduces, and cmp against the deck and skill COOPERATION.md files exits 0.
+- I read the entire body, lines 1–1501, and confirmed the ends of the long lines 59, 452 and 1002.
+
+Limits:
+- I did not re-run the full Go suite, the race run or the probes for this docs-only delta.
+- I did not execute anything on Windows.
+- GitHub CI is producer evidence, and I did not access GitHub.
+- The round-07 baseline binary and the source-only basis of R8-NIT-1 carry over as limits.
+- OpenViking was not consulted.
+
+Non-blocking note: the changelog follow-up links sit outside the exact paragraphs and point at
+blob/quota-auto-exclude/. The local origin/quota-auto-exclude ref (1961675) does not contain that file
+until d3a846a is pushed, and the links would 404 if the branch is deleted after merge. A blob/main/ URL
+would survive the merge. This is optional, not a condition.

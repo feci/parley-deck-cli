@@ -1,0 +1,26 @@
+{
+  "idea": "meta-protocol-change-quota-auto-exclude",
+  "path": "parley-deck/ideas/meta-protocol-change-quota-auto-exclude/review/consensus.md",
+  "review": true,
+  "triage": "ready",
+  "participants": [
+    "codex-1",
+    "claude-1"
+  ],
+  "signoffs": [
+    {
+      "agent": "codex-1",
+      "date": "2026-10-08",
+      "status": "✅ ACCEPT",
+      "notes": "I accept the final dispositions as organizer/implementer, not as an independent",
+      "line": 201
+    },
+    {
+      "agent": "claude-1",
+      "date": "2026-10-08",
+      "status": "✅ ACCEPT",
+      "notes": "This is my independent final signoff. It rests on my full round-08 review and on a fresh check of",
+      "line": 214
+    }
+  ]
+}
