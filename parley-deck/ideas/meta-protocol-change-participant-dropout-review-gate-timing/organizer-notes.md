@@ -17,3 +17,7 @@ Design draft PR: https://github.com/feci/parley-deck-cli/pull/77. Seeded local o
 Zcode original measured invocation b0ec15ac-c8c8-4769-b699-60f31e074545 exited 0 after 775.745s and authored its own 20,126-byte round-01 artifact. First output was recorded only at 775.662s, near exit: this is evidence of a silent-but-successful native task, not of a hang. parley wait then validated 2/2 artifacts. Product remains unchanged.
 
 parley continue --auto --no-implement refused round-02 before dispatch with `cross-review accounting: historical cycle event lacks idea identity`. Its generated note (old actor label claude; no Claude process) is preserved byte-identically in source-context/driver-gap-d6-original-note.md. Under the brief's known-D6 instruction and skill's driver-gap fallback, use the unchanged configured native Zcode command for cross-review, record actual PID/exit/time and retain private logs. No fabricated budget/event record, worktree declaration/pruning or accounting repair. The driver remains preferred for status/wait/consensus.
+
+## Round 2 convergence / consensus draft
+
+Zcode native round02 PID75692 exited0 after620.259s, no timeout; its own round02 artifact validated with codex by parley wait. It accepts D1–D5 with typed-rule enumeration, snapshot authority and truthful buffered-adapter correction. Codex accepts the latter material change and discloses it in consensus. Four active roster adapters inspected; no Claude task launch. Exact protocol substitutions are design artifacts only until signed FINAL. Driver consensus draft succeeded.
