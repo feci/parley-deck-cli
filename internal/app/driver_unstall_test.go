@@ -122,7 +122,8 @@ func TestGoalUnstallRetriesAndReplayRemainBounded(t *testing.T) {
 }
 
 func TestGoalUnstallBufferedHardDeadlineAndCancellation(t *testing.T) {
-	o, counter := goalUnstallFixture(t, "exec sleep 30", 100)
+	const ceiling = time.Second
+	o, counter := goalUnstallFixture(t, "exec sleep 30", int(ceiling/time.Millisecond))
 	start := time.Now()
 	if ok, why := o.GoalCheck(context.Background()); ok {
 		t.Fatalf("timed-out check passed: %s", why)
@@ -130,15 +131,55 @@ func TestGoalUnstallBufferedHardDeadlineAndCancellation(t *testing.T) {
 	if time.Since(start) > 15*time.Second {
 		t.Fatal("buffered hard deadline not enforced")
 	}
+	// A launched shell can hit its hard deadline before consuming stdin and
+	// appending the counter. Supervisor records are the start/attempt oracle.
+	readAttempts := func() map[string]int {
+		t.Helper()
+		files, err := filepath.Glob(filepath.Join(o.root, ".parley-runtime", "invocations", "*", "terminal.json"))
+		if err != nil || len(files) != 2 {
+			t.Fatalf("hard timeout terminal records: %d %v", len(files), err)
+		}
+		attempts := make(map[string]int)
+		ordinals := make(map[int]bool)
+		for _, file := range files {
+			raw, err := os.ReadFile(file)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var record telemetry.Record
+			if err := json.Unmarshal(raw, &record); err != nil {
+				t.Fatal(err)
+			}
+			if record.StartedAt == nil || record.PID == nil || *record.PID <= 0 || record.Outcome == nil ||
+				record.Outcome.FailureClass == nil || *record.Outcome.FailureClass != "timeout" ||
+				record.Metadata.ParticipantTimeoutNS != int64(ceiling) {
+				t.Fatalf("missing started timeout evidence: %+v", record)
+			}
+			attempts[record.InvocationID] = record.Metadata.AttemptOrdinal
+			ordinals[record.Metadata.AttemptOrdinal] = true
+		}
+		if len(attempts) != 2 || !ordinals[1] || !ordinals[2] {
+			t.Fatalf("hard timeout attempt identities: %v", attempts)
+		}
+		return attempts
+	}
+	attempts := readAttempts()
 	raw, _ := os.ReadFile(counter)
-	if strings.Count(string(raw), "child\n") != 2 {
-		t.Fatalf("hard timeout attempts: %q", raw)
+	if strings.Count(string(raw), "child\n") > len(attempts) {
+		t.Fatalf("more shell executions than observed starts: %q", raw)
 	}
 	o.base.RunID = "resumed"
-	_, _ = o.GoalCheck(context.Background())
-	raw, _ = os.ReadFile(counter)
-	if strings.Count(string(raw), "child\n") != 2 {
-		t.Fatal("timeout minted third attempt")
+	if ok, why := o.GoalCheck(context.Background()); ok {
+		t.Fatalf("replayed timed-out check passed: %s", why)
+	}
+	for id, ordinal := range readAttempts() {
+		if attempts[id] != ordinal {
+			t.Fatalf("timeout replay changed invocation identity: %s ordinal %d", id, ordinal)
+		}
+	}
+	replayedCounter, _ := os.ReadFile(counter)
+	if !bytes.Equal(raw, replayedCounter) {
+		t.Fatal("timeout replay launched an unrecorded shell")
 	}
 	c, counter2 := goalUnstallFixture(t, "exec sleep 30", 5000)
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)

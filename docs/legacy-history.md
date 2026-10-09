@@ -37,8 +37,9 @@ known non-cycle `action`. Unknown data fields, charged phases, recovered identit
 cursors, hidden files, extra directories, symlinks and hard links refuse. Richer history
 requires the existing attended per-idea `budget migrate` accounting decision.
 
-The append-only decisions live in the existing Git common budget area, scoped by the
-deck's repository prefix; a non-Git deck uses its local runtime origin. First cycle
+The append-only decisions live at
+`<git-common-dir>/parley-launch-budgets/legacy-<scope-hash>/records/<decision-id-hash>.json`,
+scoped by the deck's repository prefix; a non-Git deck uses its local runtime origin. First cycle
 binding retains adopted payloads and their digest in `legacy.json` and policy. `budget
 cycle inspect` discloses them. Every use checks the original decision, every visible
 copy and additional unscoped cycle events. Mutations, deleted copies, unavailable

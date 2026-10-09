@@ -224,5 +224,5 @@ still refuses; charges and caps remain. See [operator workflow](docs/legacy-hist
 Installing the release alone does not activate this declaration.
 
 Goal checks use the lesser of their track's 5/15/30-minute bound and positive checker
-configuration. Their original-plus-one execution attempts share a frozen deadline,
+configuration; a malformed track refuses. Their original-plus-one execution attempts share a frozen deadline,
 including protected checkers; valid FAIL is final and retry cannot grant dropout authority.

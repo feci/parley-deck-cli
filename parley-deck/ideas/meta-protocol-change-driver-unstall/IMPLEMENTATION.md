@@ -1,10 +1,10 @@
 ---
 idea: meta-protocol-change-driver-unstall
 implementer: codex-1
-status: implemented
+status: fix-up-cycle-1
 started: 2026-10-09
 updated: 2026-10-09
-fix-up-cycle: 0
+fix-up-cycle: 1
 ---
 
 ## Implementation plan / checklist
@@ -14,8 +14,8 @@ Before product edits, implement the signed FINAL from design PR80 (merged). code
 - [x] D1: add a strict repository/deck-scoped append-only legacy decision store and read-only preview/attended apply commands. Bind closed structural-only histories by full manifest digest; reuse budget scope/path/JSON/guard/durability primitives. Preserve exact replay and unknown-history disclosure.
 - [x] D1: adopt/freeze declaration payloads and hashes in first cycle policies, revalidate all visible declared copies on every use, reject additional unknown history and preserve charges/caps/coverage and per-idea migrations.
 - [x] D2: strict track/config timeout resolution and uniform existing participant-step execution for goal checks, including protected checkers, without widening membership/close policy. Freeze effective timeout for restart of the same step if necessary; preserve semantic FAIL finality and failed PASS refusal.
-- [ ] Add AC1–AC8 adversarial regression tests; run focused tests, full Go suite/build/vet and relevant race tests.
-- [ ] Synchronize minimal normative timeout/retry wording across CLI live/bootstrap, skill reference/guidance and staged core2.18.0 based on staged2.17.0. Update metadata/changelog/version CLI1.54.0 and skill2.18.0; run skill/drift/packet checks.
+- [x] Add AC1–AC8 adversarial regression tests; initial focused checks, corrected full Go suite/build/vet and relevant race tests passed. Fix-up current-tree checks are recorded below.
+- [x] Synchronize minimal normative timeout/retry wording across CLI live/bootstrap, skill reference/guidance and staged core2.18.0 based on staged2.17.0. Update metadata/changelog/version CLI1.54.0 and skill2.18.0; run skill/drift/packet checks.
 - [ ] Open implementation CLI/skill PRs, obtain Zcode independent review, signed review consensus and at most five fix-up cycles. Both participants ACCEPT, current-tree AC evidence and a fresh Zcode goal PASS are required. Record the mechanical reviewer gate outcome and brief-authorized attended close if needed.
 - [ ] Merge with merge commits; GitHub releases; both Homebrew formulae; skill-only WinGet PR; install all managed plus four generic skill targets and verify every SKILL.md hash. Zcode verifies channels in a separate process.
 - [ ] Prepare exact one-time D6 activation request/command and every still-unpublished npm/core command in version order; record pending status, deferrals, usage and verified shared memory outcome in release handoff.
@@ -34,11 +34,11 @@ None.
 
 ## Progress / current state
 
-D1 and D2 implemented. Focused D1/D2 checks passed, including a real 121-second independent-process fixture crossing the former 120-second ceiling. Full Go and skill suites are running; build/vet passed. Next: finish checks, publish the review commit and obtain independent review. Full protocol context was read and source SHA256 acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137 attested in round artifacts. The final normative patch will be reviewed under that ratified design.
+D1 and D2 implemented. Corrected full Go suite and skill suite passed; build/vet and focused races passed. Zcode independent review01 exited0 with no CRITICAL/MAJOR and independently ran the121-second witness. Both current participants accepted review consensus cycle1. Applying its three bounded fixes (two documentation clarifications and the CI timeout-test oracle); current-tree checks and re-review follow. Full protocol context was read and source SHA256 acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137 attested in round artifacts. The final normative patch will be reviewed under that ratified design.
 
 ## Validation / AC evidence
 
-Pending independent review. Focused D1 passed in 9.095s; D2 app cases passed in42.742s; real long-process witness passed in121.281s. Build and go vet passed. Baseline budget witnesses passed in source-context/baseline-budget-tests.log. Actual D6 reproduced; no real repository legacy authority has been applied.
+Independent review01 is in review/round-01/zcode-1.md. Both participants signed the three-fix plan in review/consensus.md. Focused D1 passed in 9.095s; D2 app cases passed in42.742s; real long-process witness passed in121.281s. Build and go vet passed. Baseline budget witnesses passed in source-context/baseline-budget-tests.log. Actual D6 reproduced; no real repository legacy authority has been applied.
 
 ## Outcomes & surprises
 
@@ -57,3 +57,24 @@ Goal execution uses existing RunParticipantStep for every checker. `participant_
 AC9 spans delivery after code review. The authorized release sequence necessarily publishes channels after reviewed source merges. Functional pre-merge goal verification must cover AC1–AC8 and AC9's build/drift portion; AC9's live channel/install evidence remains a separately binding post-publication verification before the final released handoff. No channel is described as delivered before verification, and pending attended activation/npm/core acts are disclosed. Reviewers may challenge this sequencing; it changes no product scope or final delivery criterion.
 
 Review candidate published with full suites still running. Initial skill runs exposed missing local dev dependency commonmark and an unregenerated manifest; npm ci installed the existing locked dependencies, the manifest was regenerated, and a clean skill-suite run is now in progress. No test was suppressed. The Go version file was brought into lockstep with internal/app/version.go before review. Full test results remain a merge gate.
+
+
+## Fix-up cycle 1
+
+status: complete
+completed: 2026-10-09
+basis: review/consensus.md (both current ACCEPT blocks)
+
+### Fixes applied
+
+- R1-F3: docs/legacy-history.md names the exact append-only record path under the Git common budget area.
+- R1-F4: README explicitly states that a malformed track refuses.
+- CI-TIMEOUT: the buffered hard-deadline test now counts distinct started timeout invocations using terminal telemetry, verifies attempt ordinals1/2 and the same frozen ceiling, and verifies exact identity retention/no shell output change on replay. The fixture uses a one-second hard ceiling, giving process setup headroom while both attempts still expire well before sleep30 and the15-second overall bound. Shell-counter writes are only supporting evidence; a killed child need not reach its script append. Production logic is unchanged.
+
+### Deviations from agreed fixes
+
+None. The one-second fixture ceiling is an implementation detail of the accepted robust timeout test, not a change to the product's derived-ceiling policy.
+
+### Current-tree verification and remaining gates
+
+Five repeated focused timeout checks passed (source-context/fixup01-timeout.log). The final replay-counter assertion is included in the ensuing current-tree full Go run. Fixed-tree full-suite and CI verification and Zcode re-review remain gates. No fresh goal check, final zero-fix consensus, implementation close or delivered-channel claim yet. AC9 live channel verification remains PENDING after source close and is binding before the released handoff, as both current signers agreed. Mechanical reviewer exception returned false; only the brief's expressly pre-authorized attended close can apply after all four conditions.
