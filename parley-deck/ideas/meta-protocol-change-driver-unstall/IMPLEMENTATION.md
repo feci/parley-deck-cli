@@ -1,11 +1,33 @@
 ---
 idea: meta-protocol-change-driver-unstall
 implementer: codex-1
-status: fix-up-cycle-1
+status: complete
 started: 2026-10-09
 updated: 2026-10-09
 fix-up-cycle: 1
+head-commit: 134ac40cd178ebe0318a838d9357c4e6f561f925
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/81
+completed: 2026-10-09
 ---
+
+## Source completion — 2026-10-09 12:18 UTC
+
+D1 and D2 are complete at reviewed CLI product commit `134ac40cd178ebe0318a838d9357c4e6f561f925` and skill `e46e551871005ecac4225f7cb55a652754fbbb9b`. One fix-up cycle was used out of five. The final review consensus has zero agreed fixes and both current participants' own ACCEPTs. The records below retain the earlier chronology; this section is the final source status. After merge this IMPLEMENTATION.md is frozen. Later delivery evidence belongs in a separate release audit and inbox handoff.
+
+All four conditions for the controlling brief's expressly pre-authorized source close are met:
+
+1. Final independent Zcode review (review/round-03/zcode-1.md), subsequent fresh goal evidence, and final own signoff record no open CRITICAL or MAJOR. The three cycle-1 fixes and G1-R3/E1 dispositions are verified.
+2. Both `codex-1` and `zcode-1` independently authored fresh ACCEPT blocks in `review/consensus.md`, with zero agreed fixes. Zcode invocation `450d5abb-79ea-442d-8ae0-d50640b430b1` actually exited 0 after 114.702 s; `source-context/final-signoff-measured.json` retains its receipt. No peer signature was copied or proxy-written.
+3. Separate fresh Zcode invocation `65a11709-e4a3-4261-a176-8bcce8834d98` exited 0 after 590.730 s with `GOAL-CHECK: PASS` in `source-context/goal-check-zcode-1.md`, including an independent real 121.16 s child and actual May bytes in a two-worktree fixture.
+4. Independent current-tree AC1–AC8 and AC9 checks/drift evidence is in that goal artifact and the reviews. The full local suite passed at 134ac40 (34 packages), macOS ×2 and Linux ×2 CI passed, and the skill suite passed (399 Node tests, 54 Python tests, six manifests). `source-context/source-close-tree-evidence.json` verifies all later changes are this idea's audit records; product, docs, protocol and skill bytes are unchanged.
+
+The mechanical single-reviewer exception returned `allowed:false`; this close uses only the brief's explicit authority and claims no automatic exception or fabricated attendance. Kimi's two real readiness HTTP403 failures and manual exclusion remain recorded.
+
+**AC9 live GitHub/Homebrew/runtime/skill-WinGet channel and installation verification is PENDING at source close.** This is a binding delivery condition: after source merges/publication/installations, a separate fresh Zcode channel-verification process must PASS before the released handoff is written. D6 real-repository activation and npm/global-core publication remain owner acts. No real legacy declaration was applied and no channel is claimed delivered here.
+
+Native Windows CI remains unresolved/experimental. Both final 134ac40 Windows jobs failed (356 push / 355 PR direct failing names; zero added names versus the 356-name main baseline; both 45-minute timeouts). Matching names prove neither equal causes nor per-test execution. All raw hashes and statuses are retained; native coverage of runner fixtures/reworked oracle is unestablished. CLI WinGet stays held and broad Windows repair is deferred under FINAL ALT10.
+
+Signed cycle 1 is preserved byte-identically at `review/consensus-cycle-01.md`, SHA256 `64410c6eda9e2959276c854d998e9d5642d8e3a14e4420b1dece0cab2be2b78e`. Archive/new-draft commit `d04ccaf` transparently records the CLI ready-state reopen gap and reviewers' concurrence. The final consensus contains one prose locator typo (`source-context/phase 7-packet.json`); the actual unchanged attestation is `source-context/phase7-packet.json`. This locator clarification changes no authority, signed condition or peer block; the signed consensus bytes remain intact.
 
 ## Implementation plan / checklist
 
@@ -16,7 +38,7 @@ Before product edits, implement the signed FINAL from design PR80 (merged). code
 - [x] D2: strict track/config timeout resolution and uniform existing participant-step execution for goal checks, including protected checkers, without widening membership/close policy. Freeze effective timeout for restart of the same step if necessary; preserve semantic FAIL finality and failed PASS refusal.
 - [x] Add AC1–AC8 adversarial regression tests; initial focused checks, corrected full Go suite/build/vet and relevant race tests passed. Fix-up current-tree checks are recorded below.
 - [x] Synchronize minimal normative timeout/retry wording across CLI live/bootstrap, skill reference/guidance and staged core2.18.0 based on staged2.17.0. Update metadata/changelog/version CLI1.54.0 and skill2.18.0; run skill/drift/packet checks.
-- [ ] Open implementation CLI/skill PRs, obtain Zcode independent review, signed review consensus and at most five fix-up cycles. Both participants ACCEPT, current-tree AC evidence and a fresh Zcode goal PASS are required. Record the mechanical reviewer gate outcome and brief-authorized attended close if needed.
+- [x] Open implementation CLI/skill PRs, obtain Zcode independent review, signed review consensus and at most five fix-up cycles. Both participants ACCEPT, current-tree AC evidence and a fresh Zcode goal PASS are required. Record the mechanical reviewer gate outcome and brief-authorized attended close if needed.
 - [ ] Merge with merge commits; GitHub releases; both Homebrew formulae; skill-only WinGet PR; install all managed plus four generic skill targets and verify every SKILL.md hash. Zcode verifies channels in a separate process.
 - [ ] Prepare exact one-time D6 activation request/command and every still-unpublished npm/core command in version order; record pending status, deferrals, usage and verified shared memory outcome in release handoff.
 
@@ -63,7 +85,7 @@ Review candidate published with full suites still running. Initial skill runs ex
 
 status: complete
 completed: 2026-10-09
-basis: review/consensus.md (both current ACCEPT blocks)
+basis: review/consensus-cycle-01.md (the preserved cycle-1 ACCEPT blocks)
 
 ### Fixes applied
 
