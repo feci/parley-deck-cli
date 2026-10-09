@@ -1,0 +1,50 @@
+{
+  "digest": {
+    "idea": "meta-protocol-change-driver-unstall",
+    "round": {
+      "label": "round-01",
+      "review": false,
+      "total": 2,
+      "completed": 2,
+      "rows": [
+        {
+          "agent": "codex-1",
+          "path": "parley-deck/ideas/meta-protocol-change-driver-unstall/round-01/codex-1.md",
+          "filed": true,
+          "bytes": 9162,
+          "owner": "codex-1",
+          "valid": true,
+          "stance_flags": {
+            "block": 2,
+            "counter": 0,
+            "accept": 5,
+            "escalate": 0
+          },
+          "unparsed": false,
+          "fell_back": false
+        },
+        {
+          "agent": "zcode-1",
+          "path": "parley-deck/ideas/meta-protocol-change-driver-unstall/round-01/zcode-1.md",
+          "filed": true,
+          "bytes": 19413,
+          "owner": "zcode-1",
+          "valid": true,
+          "stance_flags": {
+            "block": 5,
+            "counter": 0,
+            "accept": 2,
+            "escalate": 4
+          },
+          "unparsed": false,
+          "fell_back": false
+        }
+      ]
+    },
+    "implementation": {
+      "present": false,
+      "ready_for_review": false
+    },
+    "next": "await consensus signoff"
+  }
+}
