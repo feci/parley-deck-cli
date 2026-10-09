@@ -1,12 +1,15 @@
 ---
 idea: meta-protocol-change-driver-unstall
-drafted-by: codex-1
-date: 2026-10-09
+status: final
+author: codex-1
+implementer: codex-1
+consensus-date: 2026-10-09
+participants: [codex-1, zcode-1]
 ---
 
-## Agreed decisions
+## Final plan / specification
 
-Adopt D1 and D2 from both round-02 artifacts. codex-1 is organizer, participant, consensus/FINAL drafter and designated implementer; zcode-1 supplies independent review and fresh goal checking. Procedural convergence remains provisional until both current participants sign. Kimi's owner-authorized exclusion has no invented automatic-dropout history; the brief's attended-close fallback remains conditional.
+Implement exactly D1 and D2 below, accepted by both current participants. The controlling brief authorizes implementation and release; it does not authorize an agent to impersonate an attended operator. Kimi was excluded under that brief after two actual HTTP403 readiness failures; no cause-derived automatic reviewer exception is fabricated. codex-1 organizes, drafts and implements; zcode-1 independently reviews and goal-checks in separate processes.
 
 ### D1 — Durable declaration of narrowly bounded unknown history
 
@@ -26,7 +29,20 @@ Use existing `RunParticipantStep` execution for goal checks, including protected
 
 Synchronize only the necessary timeout/retry normative wording in live protocol, bootstrap copy, skill references and staged core. Target CLI 1.54.0 and skill/core 2.18.0, staging core from 2.17.0. Run the full authorized release including independent channel verification.
 
-### Required regression witnesses
+
+## Purpose / user-visible outcome
+
+After one explicit attended declaration of eligible legacy history, successive new ideas can pass the first cycle-accounting gate without repeating an unstored per-idea declaration. Historical uncertainty remains visible and future mutation/unknown history still refuses. Independent goal checks receive a hard ceiling appropriate to their track and configured agent, with bounded retry and unchanged completion requirements. Until the owner attends activation, this repository's D6 gate remains blocked; release of the product fix is not local activation.
+
+## Context & orientation
+
+Base CLI 1.53.0 at 128e30b, skill 2.17.0 at 8ce4dec. Main locations: internal/budget/cycle_binding.go and cycle_history.go (cycle bootstrap), binding.go (shared repository/deck-prefix origin), run_identity_inventory.go and protocol_migration.go (manifest/eligibility and current request-scoped declarations); internal/app/driver_impl.go (GoalCheck), internal/runner/dropout.go and consult.go (durable attempts and supervised execution). The May source is parley-deck/runs/20260510T194003Z/events.jsonl, originally committed at 3ec10ac, with one identity-absent run.created event. Its bytes must remain intact.
+
+The gate was reproduced by this idea's continue command and measured round02 launch before dispatch. Both source-backed cross-reviews identify the literal 120-second goal timeout. The historical >120-second execution observation motivates replacing the bound; no precise 518-second assertion is required. Zcode's round01 inference that the absence of cycle events proves zero work was challenged as WRONG/PRIMARY and withdrawn by its round02 SELF-CORRECTION. The existing unknown-history test and source explain why incomplete bytes cannot prove zero. No unresolved DISPUTED claim supports this plan.
+
+Nominally independent proposals form one family: explicit declaration plus existing supervision/track policy. The two-model convergence is a shared prior, not independent evidence, and now shares the same source context. Acceptance depends on observable adversarial witnesses rather than unanimity as proof.
+
+## Observable acceptance criteria
 
 - AC1: without authority the actual May-shaped fixture refuses; after one attended declaration at least two different new ideas bind without repeated per-idea declarations, retaining the exact history bytes.
 - AC2: declared history remains unknown, with decision/digest and frozen adoption provenance visible; identical replay succeeds and conflicting ID reuse refuses.
@@ -38,27 +54,20 @@ Synchronize only the necessary timeout/retry normative wording in live protocol,
 - AC8: unchanged independent current-tree AC evidence and LE-5/LE-7/LE-11 gates remain required, with current participants' ACCEPTs and a fresh independent goal PASS under the brief's authorized attended close if the mechanical exception remains unavailable.
 - AC9: CLI/skill checks and protocol drift/packet tests pass; releases/install hashes and fresh independent channel evidence are recorded. D6 remains locally activation-pending until the owner attends the one-time apply; handoff contains the exact inspected request/command and all still-unpublished npm/core commands in version order.
 
-## Agreed trade-offs
 
-The durable decision is machine-local shared-repository authority, not a tracked historical rewrite. Its exact digest and disclosure provide reviewability, at the cost of one attended activation. Unknown history remains unknown; this is an explicit scope decision, not proof of complete accounting. A conservative structural-only region is intentional; richer history is outside this new surface. Goal checks can take longer, bounded by existing track/configuration ceilings and a single retry.
+## Idempotence & recovery
 
-## Open items deferred to implementation
+Read-only inspection never creates authority. Apply binds an exact preview, explicit decision ID/reason, stopped writers and owner attendance; the same request replays idempotently, conflicting reuse refuses. Preserve complete historical bytes and checked-durable provenance. A partial/corrupt declaration or policy publication must refuse until the exact original decision can be replayed or recovered; do not silently initialize over it. Frozen adoption and every visible run copy are revalidated on use. New undeclared history and missing roots cannot borrow an earlier exception. Existing per-idea migrations retain their semantics and no worktree declaration is performed in this idea.
 
-No open design choice or reservation. Choose exact CLI flags/record layout using existing budget storage conventions and record them in IMPLEMENTATION. Prepare the owner's one-time activation and npm/core publication artifacts; do not claim those attended acts happened. Scope deferrals are listed below and must be carried into FINAL and the release handoff.
+Goal attempts retain existing durable logical step identity across restarts and run changes; do not create a third child from an interrupted/failed second attempt. Use the same resolved ceiling for the step's two attempts. Control-plane/tamper/cancellation and unresolved writer state retain their original fail-closed behavior. A valid semantic FAIL is a completed check that does not establish the goal, not a request for another answer. Current-tree independent AC evidence remains separate from a successful textual PASS.
 
-## Comparison & blind spots
+## Known risks / de-risking
 
-Both independently authored proposals belong to the same family: explicit declaration of unknown history plus reuse of the existing timeout/supervisor machinery. Agreement by these two models is a shared prior, not independent evidence. Both have now read the same source and predecessor notes; no unavailable Kimi evidence is counted. No empirical proof of historical zero usage exists. Deployment on every possible filesystem and old binary interaction has not been exhaustively observed.
+The accounting exception could silently erase history if broadened or trusted without current copy checks. The closed admission predicate, frozen digest/payload and AC1–AC4 target that risk. Runtime append durability, path aliases, conflicting copies and concurrent writers need negative tests. Retry logic could amplify attempts or conflate protected roles with dropout authority; AC5–AC8 target those risks. Filesystem coverage is bounded by the existing visible-root inventory and preserves unavailable-root refusals.
 
-The design would be wrong if it silently counts unknown history as zero, admits charged/recovered/altered or undeclared history, resets a cycle cap, hides an unavailable root, retries a semantic FAIL, admits a failed PASS, amplifies attempts across restart, or turns retry eligibility into dropout/close authority. AC1–AC8 are concrete refutation witnesses for those risks. Phase 6 must try them, not merely inspect green happy paths.
+One-time activation, npm publication and core publication retain their shipped owner-only attendance boundaries. Prepare exact commands and truthful pending status after independent review. The controlling brief separately pre-authorizes the attended one-reviewer close only when the final independent review has no open CRITICAL/MAJOR, both current participants ACCEPT, a fresh independent goal check passes and current-tree AC evidence is recorded. Maximum five fix-up cycles.
 
-The D6 gate was reproduced in this idea (`source-context/continue-round02.log` and measured budget refusal). The actual literal goal ceiling is source-backed in both rounds; historical checks exceeding 120 seconds motivate derivation. The exact historical 518-second figure is not relied upon. The zero-charge inference in zcode-1 round-01 was withdrawn in its round-02 SELF-CORRECTION after codex-1's V-ZERO WRONG/PRIMARY challenge. The existing test explicitly says "no evidence row and no count — in particular no floor of zero" and asserts UnknownHistory; absence of recorded events does not entail complete history. No conflicting verdict or dependent DISPUTED claim remains at consensus opening.
-
-## Drafter position changes
-
-The prior D1 sentence in `round-02/codex-1.md` was: "The narrow record may admit only structurally valid identity-absent run histories with no driver cursor and no known execution/charge records." This draft makes that admission closed and tighter: exactly one regular events.jsonl, only run.created/run.phase events, no other entries. This implements zcode-1 round-02's required enumeration and makes hidden execution metadata ineligible. No other material position changed since my round-02. D2, two-fix scope and attended activation are unchanged.
-
-## Alternatives disposition
+## Alternatives disposition and deferred scope
 
 - ALT-1: adopt existing per-idea migration's strict manifest/identity/unknown-history primitives; reject repeated request-scoped declarations as the lasting solution. Keep that command for richer/charged history.
 - ALT-2: reject an idea-only skip of unscoped events; no identity exists to justify ignoring them. An exact attended structural declaration supplies explicit authority instead.
@@ -71,14 +80,12 @@ The prior D1 sentence in `round-02/codex-1.md` was: "The narrow record may admit
 - ALT-9: defer ready/partial consensus reopen: archived bytes alone do not authorize dissolving a signed decision or hiding a BLOCK. Follow-up needs a checked completed-fix-cycle archive tied to the implementation and new review. Manual renames bypass that missing lifecycle verb.
 - ALT-10: defer fixed-slug/existing-kickoff startup, missing-current-round launches, seeded snapshot bootstrap, placeholder-before-exit validation, generic focused briefs, wider status/wait reporting, unrelated Windows behavior and quota reporting. Each belongs in a separate scoped driver-gap follow-up; no implementation promise is added here.
 
-## Signoffs
 
-<!-- Each participant appends only its own signoff. -->
+## References
 
-### Signoff: codex-1 — 2026-10-09
-Status: ✅ ACCEPT
-Notes: Drafter: yes. I accept D1/D2, the closed structural predicate and AC1–AC9, the recorded correction and deferrals. No material disagreement remains. Attended activation and existing close safeguards remain binding.
-
-### Signoff: zcode-1 — 2026-10-09
-Status: ✅ ACCEPT
-Notes: I accept D1/D2 as drafted. The consensus folds in every enumeration I pinned in round-02 verbatim or tighter: the closed structural admission predicate (exactly one regular events.jsonl, run.created/run.phase vocabulary only, no other entries), the replay/conflict refusal list, and the D2 absent-track→standard / malformed-track→fail-closed rule that avoids the permissive unknown-track helper branch. The drafter's D1 narrowing is the closed enumeration my round-02 required, not a new position. My V-ZERO self-correction stands: declared history is unknown-history, never a zero count. Two-participant convergence is correlated agreement, disclosed as such; AC1–AC9 are the falsifier set, and I will hold Phase 6 review to them as refutation witnesses, not happy paths. Attended one-time activation, npm/core publication and the conditional attended close remain owner acts outside this signoff.
+- Consensus: ./consensus.md (both current ACCEPT blocks).
+- Rounds: ./round-01/, ./round-02/.
+- Controlling source: ./source-context/ORGANIZER-BRIEF.md.
+- Actual D6 refusal: ./source-context/continue-round02.log and ./source-context/round02-measured-budget-refusal.json.
+- Process evidence: ./source-context/round02-native-result.json; independent artifacts retain protocol attestations.
+- Design PR: https://github.com/feci/parley-deck-cli/pull/80.
