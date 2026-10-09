@@ -83,3 +83,7 @@ None from the revised, doubly signed plan. The initial proposed relaxation was w
 Focused app/membership TestReviewGate run v3 passes (16.733s, log SHA2568548172a7dc135e57fef6063131f49535fbc33c5b1cbb62ac0671c71cb048c41). Failed v1/v2 are retained: the new fixture initially overwrote immutable prompt metadata and then lacked attributable consensus drafter metadata; both setup defects were corrected. Full final-source Go/build/vet and a separate full-scope Zcode review follow this commit. Skill product74cc831 and its full399 Node/54 Python/six-manifest pass are unchanged. Cycles used:1 of5.
 
 Cycle1 product commit: b89e2abaa056813a4b238c2fa4278195b0f7096b. Full-source validation log: full-host-tests-cycle1.jsonl with checked-durable receipts beside the log and in the native task temp validation-receipts directory.
+
+## Final fix-up validation
+
+At product b89e2abaa056813a4b238c2fa4278195b0f7096b, the complete `go test ./... -json -count=1 -timeout 45m` exited0 in1388.005s: 34 passing packages, 3330 passing test/subtest events, 4 built-in skips and zero failures. Full log SHA25604d2f0529c7e38046ac64c7be04603fbdd05dd0cc461b796d5d8c65f27724db5. Both native and shared-volume receipts read back byte-identically; no recovery was needed. Build/vet also exit0. Exact results are in source-context/fixup1-validation.json. Skill74cc831 is unchanged and retains its complete passing suite. These pass records supersede the earlier product validation for close; every failed log remains retained.
