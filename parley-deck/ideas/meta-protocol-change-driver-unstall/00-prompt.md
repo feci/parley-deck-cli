@@ -2,7 +2,8 @@
 idea: meta-protocol-change-driver-unstall
 author: user
 created: 2026-10-09
-participants: [codex-1, kimi-1, zcode-1]
+participants: [codex-1, zcode-1]
+excluded: [kimi-1 — owner-authorized dropout after two measured readiness failures HTTP403 connection allowlist; no same-idea return — confirmed 2026-10-09]
 implementer: codex-1
 track: deliberation
 auto_implement: true
