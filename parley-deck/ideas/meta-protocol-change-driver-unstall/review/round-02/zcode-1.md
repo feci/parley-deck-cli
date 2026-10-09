@@ -1,0 +1,73 @@
+---
+agent: zcode-1
+idea: meta-protocol-change-driver-unstall
+review-round: 2
+date: 2026-10-09
+reviewed-commit: 134ac40cd178ebe0318a838d9357c4e6f561f925
+responding-to: [zcode-1/review/round-01, review/consensus.md (cycle 1, both ACCEPTs)]
+---
+
+## Summary
+
+Fix-up cycle 1 re-review at 134ac40. All three agreed fixes from the signed cycle-1 consensus are implemented exactly as specified, with no new CRITICAL or MAJOR finding. The fix-up delta is precisely `README.md` (R1-F4), `docs/legacy-history.md` (R1-F3) and `internal/app/driver_unstall_test.go` (CI-TIMEOUT telemetry oracle) plus protocol records: production Go code, protocol bytes and skill bytes are unchanged from the round-1-reviewed commit c659bc8 (PRIMARY: `git diff c659bc8..134ac40 --name-only -- '*.go'` lists only the test file; non-deck changes are the two docs; skill worktree clean at e46e551 with `skills/parley-deck/references/COOPERATION.md` hashing to the deck's `0357d504…53f0c`). The telemetry oracle is strictly stronger than the shell-counter equality it replaces: it counts attempts from durable supervisor `terminal.json` records requiring started processes, explicit `timeout` class, the frozen ceiling and distinct ordinals, then proves identity retention and a byte-unchanged counter on replay. The full current-tree Go suite finished green at 134ac40 while I watched (`go-full-fixup01.log`, run started 2 s after the commit), and three fresh focused repetitions of the reworked test passed in my own process. The retained macOS CI failure log stays honestly on record; PR81 CI at 134ac40 is partially green (both ubuntu jobs and one macOS job SUCCESS; one macOS and two windows jobs still in progress at review time) — close must wait for all of them (finding G1). I concur with the proposed completed-cycle consensus archive transition under the conditions in the Lifecycle concurrence section. No finding is suppressed; nothing from round 1 or the consensus narrows what I report here.
+
+Protocol attestation: `parley protocol packet --phase 6 --track deliberation --transport github-pr --idea meta-protocol-change-driver-unstall --flag auto_implement --flag protocol_change` → `context_mode: full`, `source_sha256 = packet_sha256 = 0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c` (PRIMARY, executed 2026-10-09 ~13:18Z), matching the verbatim full live protocol supplied at my launch; the deck file at HEAD hashes to the same value (`shasum -a 256 parley-deck/COOPERATION.md`). Transport `github-pr`, track `deliberation`.
+
+Review basis: CLI commit 134ac40 vs merged design base a9e383d (full implementation), with the fix-up-specific delta examined as c659bc8..134ac40; skill worktree e46e551 vs base 8ce4dec (unchanged since round 1); staged cores `~/.parley/staging/COOPERATION-2.18.0.md` vs `2.17.0.md` re-diffed today — still exactly the two normative hunks (Phase 8 ceiling paragraph, §9.0 goal-pointer line). My probes ran only under `.parley-runtime/driver-unstall/reviewer-probes/` (`r2-focused-timeout.log`, `r2-focused-siblings.log`); no declaration applied to any real repository, no terminal allocated, no owner attendance impersonated, no worktree declared or pruned.
+
+## Refutation attempts
+
+Provenance per §15: `PRIMARY` = check I executed (command/output quoted or logged under reviewer-probes) or source I read with a locator. I issue no verdict on claims I own from round 1; where round-1 refutations over AC1–AC7 remain relevant, the supporting fact is new byte-identity evidence at the production files, stated as such.
+
+### R1-F3 — exact store path in docs/legacy-history.md
+
+- PRIMARY: diff c659bc8..134ac40 adds exactly `<git-common-dir>/parley-launch-budgets/legacy-<scope-hash>/records/<decision-id-hash>.json` in place of "the existing Git common budget area" (docs/legacy-history.md:40-41). This matches the layout I observed PRIMARY in round-1 fixture probes (P4b) and IMPLEMENTATION.md's own wording. Attempted to break it against the code: `legacy_declaration.go` scopes under the deck-prefixed budget area and writes `records/<decision-id-hash>.json` — no divergence found. Could not break.
+
+### R1-F4 — malformed-track refusal in README
+
+- PRIMARY: diff adds "; a malformed track refuses." to the goal-check summary (README.md:227). Cross-checked against the normative behavior verified round 1 (`goalCheckTimeout` erroring on out-of-vocabulary tracks rather than inheriting the permissive fallback, goal_timeout.go:13-14) and re-witnessed today: `TestGoalTimeoutTrackAndConfiguredBounds` passed at HEAD in my sibling run (15.988 s, includes `TestGoalUnstallRetriesAndReplayRemainBounded`). Could not break.
+
+### CI-TIMEOUT — telemetry oracle in TestGoalUnstallBufferedHardDeadlineAndCancellation
+
+Attempted to break the reworked test (driver_unstall_test.go:123-198) from every angle the consensus spec names:
+
+1. Original invariants retained — PRIMARY (full current file read): failed close asserted before and after replay; ≤15 s overall bound kept; cancellation fixture (150 ms ctx, ≤1 counter append) unchanged; replay must still fail.
+2. Vacuous pass — impossible: the oracle globs `<root>/.parley-runtime/invocations/*/terminal.json` and requires exactly 2 records, each with `StartedAt != nil`, `PID > 0`, `Outcome.FailureClass == "timeout"`, `Metadata.ParticipantTimeoutNS == int64(time.Second)`, and the pair of distinct `InvocationID`s carrying ordinals {1,2} (driver_unstall_test.go:139-168). A run with 0, 1 or 3 starts fails; a never-started record fails the `StartedAt` check — consistent with the telemetry layer treating `StartedAt == nil` as unobserved (telemetry.go:266-268) and `Started()` stamping a real `time.Now().UTC()` (record.go:310-321). I considered whether "positive StartedAt" needs an explicit `IsZero()` check in addition to non-nil: it does not — the field is only ever written by `Started()` with `now`, so nil-presence is the sound oracle here; noted for completeness, not a defect.
+3. Correct failure class — PRIMARY: hard-deadline kills classify as `"timeout"` at both `terminalFailureClass` (runner.go:888-893, `context.DeadlineExceeded` → `"timeout"`) and the supervised terminal path (telemetry.go:278-280). The oracle demands the right class, not just any failure.
+4. Third attempt / identity churn on replay — a minted third record trips `len(files) != 2` on the second `readAttempts()`; a changed ordinal trips the invocation-ID→ordinal map comparison; counter drift trips the byte-exact `bytes.Equal` check (driver_unstall_test.go:181-188). The pre-replay counter check (`> len(attempts)`) bounds shell executions by observed starts while tolerating a child killed before its append — exactly the retained-as-supporting-evidence contract.
+5. Same-ID replacement relaunch (beyond the agreed oracle's scope) — the app-level test proves ID/ordinal retention, not PID immutability across replay; the no-new-child invariant itself is covered by `TestGoalUnstallRetriesAndReplayRemainBounded` (terminal-count == attempts assertion, green at HEAD today and in the full suite) and the runner-level frozen-ceiling/replay tests. Informational; see Open questions 3.
+6. Timing regime — 1 s fixture ceiling: two attempts plus cancellation observed at ~7.7 s per full test in my process (3 runs), well under the 15 s bound and the 30 s sleep. The retired 100 ms regime was the flake's root cause (shell killed before consuming stdin/appending), evidenced by the retained failed CI log — PRIMARY: `ci-macos-pr-failed.log` lines ~199-205, `driver_unstall_test.go:135: hard timeout attempts: "child\n"` with `internal/app` FAIL 754.731 s; re-read today, not ignored. One macOS job of the same workflow has since passed at 134ac40 (gh PR check rollup, 13:26Z snapshot).
+7. Repetition — PRIMARY: 3 fresh focused runs at HEAD in my process, all `ok` (7.807/7.760/7.702 s; reviewer-probes/r2-focused-timeout.log), on top of the implementer's five (source-context/fixup01-timeout.log, `ok … 38.045s` consistent with five runs).
+
+Result: could not break; the oracle strengthens AC6/AC7 verification rather than weakening them.
+
+### Scope, drift and current-tree execution evidence
+
+- PRIMARY: `git diff c659bc8..134ac40 --name-only -- '*.go'` → `internal/app/driver_unstall_test.go` only; non-deck changes → README.md, docs/legacy-history.md plus that test. Skill tree clean at e46e551; skill protocol copy hashes `0357d504…53f0c` (equal to deck and packet). Round-1 PRIMARY refutations over the unchanged production bytes therefore carry forward by byte-identity — new evidence, not a re-verdict.
+- PRIMARY: full current-tree suite `go test ./... -count=1 -timeout 45m` (PID 68141) started 13:11:45, i.e. 2 s AFTER commit 134ac40 (13:11:43) and after the test file's final mtime (13:11:08) — a valid 134ac40 run. It finished green during this review: all 37 log lines `ok`/no-test-files, zero FAIL — `internal/app 762.022s` (carries the new oracle), `internal/trajectory 766.386s`, `internal/runner 162.862s`, `internal/budget 102.868s` (go-full-fixup01.log, read in full). This closes the local full-suite gate at the current tree that round-1 F1 required at c659bc8.
+- PR81 (head 134ac40) CI at 13:26Z: ubuntu ×2 SUCCESS, macOS 1× SUCCESS 1× IN_PROGRESS, windows ×2 IN_PROGRESS (gh statusCheckRollup). Not yet closeable — see G1.
+- The 121 s beyond-former-ceiling witness: production bytes it exercises are unchanged, so the round-1 witnesses (mine 121.12 s, implementer 121.281 s) remain valid by byte-identity; whether the fresh goal check re-runs it in its own process is that check's current-tree evidence decision (LE-7), not this review's.
+
+## Findings
+
+### [MINOR] G1 — PR81 CI incomplete at 134ac40 at review time; all checks green is a close gate
+Both ubuntu jobs and one macOS job have passed; one macOS and two windows jobs were still IN_PROGRESS (13:26Z). The macOS workflow is the exact environment that demonstrated the CI-TIMEOUT defect, so its green completion is the direct evidence the oracle fix holds where it failed — the one completed macOS pass is necessary but not sufficient; every check on 134ac40 must be green before `status: complete` or merge, and any failure reopens the cycle rather than being waived. Local gates are otherwise satisfied (full suite green at 134ac40; focused repetitions saturated: five implementer + three mine across two processes).
+
+No CRITICAL or MAJOR findings. No NITs: the two candidates I weighed (explicit `IsZero()` on StartedAt; asserting PID stability across replay) are both covered by writer guarantees and sibling tests respectively — recorded as considered in Refutation attempts 2 and 5 rather than filed, because neither identifies an objective defect in the agreed oracle.
+
+## Lifecycle concurrence (organizer question: completed-cycle consensus transition)
+
+**Concur** with the proposed manual facilitation fallback — preserve the signed cycle-1 `review/consensus.md` byte-for-byte as `review/consensus-cycle-01.md` (hash and fix commit 134ac40 retained), then open a new `review/consensus.md` for the new review with both participants' own new signoffs — under these binding conditions:
+
+1. **Timing**: only after this cycle's fixes are independently verified complete — this review plus green full suite (now on record) and green PR CI (G1 outstanding). The transition archives a COMPLETED cycle; that is exactly the "checked completed-fix-cycle archive tied to the implementation and new review" shape FINAL ALT-9 says the missing product verb needs.
+2. **Preservation**: one transparent commit (`git mv`, byte-for-byte, no content edit), recording the retained SHA-256, the fix commit, and the ALT-9 ready/partial reopen gap as the cause. Append-only audit survives a move; it would not survive an edit.
+3. **Continuity**: the new `review/consensus.md` must explicitly carry forward every cycle-1 condition still open — F2/AC9 (live channel evidence PENDING until a fresh post-publication zcode-1 channel process PASSES, before any released handoff; no release exists yet), the attended-close four conditions (mechanical `SingleReviewerAfterDropout` returned `allowed:false`, PRIMARY: reviewer-gate-result.json re-read), the deferred follow-ups, and the zero-agreed-fixes requirement. No condition silently drops by file replacement.
+4. **Own signatures only**: both current participants append their own fresh signoffs after the new review; nothing is copied, backdated or proxy-written. Host identities all map to `feci`, so canonical own-process authorship remains the identity mechanism, as throughout this deck; no self-approval is claimed on any native mirror.
+5. **No dissolution**: this route is valid only because no ❌ BLOCK or retained dissent exists (cycle-1 carried two ACCEPTs; my round 1 filed no CRITICAL/MAJOR). It cannot dissolve a veto or rewrite a prior signature — if any existed, the transition would be invalid and the owner would decide.
+6. **No product semantics**: this is facilitation around the deferred ALT-9 verb, adds no reopen semantics to the product, and should not become a silent precedent — each future use must cite the specific completed cycle and gap, as this one does.
+
+## Open questions
+
+1. For codex-1 at close, in order: G1 (all PR81 checks green at 134ac40) → fresh zcode-1 goal check in a separate process over AC1–AC8 plus AC9's checks/drift portion at the final tree → the concurred cycle-2 consensus transition with a zero-agreed-fixes record → both own ACCEPTs → the brief's four attended-close conditions. AC9 live channel evidence stays explicitly PENDING in the source-close record; the separate fresh channel process must PASS before the released handoff is written. Nothing is released yet, so there is no channel artifact for me to verify in this round.
+2. Additional executions needed beyond the current state: only the completion of PR81 CI. The local full suite is green at 134ac40; focused repetitions are saturated across two processes; re-running the 121 s witness or the skill suite for this review would re-exercise byte-identical inputs (skill PR11 is already fully green at e46e551 — all four checks SUCCESS). The goal check may still choose to re-run the long witness as its own current-tree AC5 evidence.
+3. (Informational, deferred-worthy) If a future hardening pass wants the app-level oracle to also assert PID immutability across replay (catching a hypothetical same-invocation-ID replacement launch that never appends to the counter), it is a one-line addition to the second `readAttempts()` comparison; today that invariant is carried by the durable-ledger tests in `internal/runner` and the terminal-count assertion in `TestGoalUnstallRetriesAndReplayRemainBounded`.

@@ -110,6 +110,10 @@ func LegacyCycleFloor(ideaDir string, kind Kind) (int, error) {
 }
 
 func refuseUnmigratedCycles(roots []string, idea, relative string, kind Kind, carried int, currentRun string) error {
+	return refuseUnmigratedCyclesDeclared(roots, idea, relative, kind, carried, currentRun, nil)
+}
+
+func refuseUnmigratedCyclesDeclared(roots []string, idea, relative string, kind Kind, carried int, currentRun string, declared map[string]bool) error {
 	for _, root := range roots {
 		floor, err := LegacyCycleFloor(filepath.Join(root, filepath.FromSlash(relative)), kind)
 		if err != nil {
@@ -125,6 +129,12 @@ func refuseUnmigratedCycles(roots []string, idea, relative string, kind Kind, ca
 		}
 		for _, entry := range entries {
 			dir := filepath.Join(runs, entry.Name())
+			if declared[unscopedRunPrefix+entry.Name()] {
+				if sameCycleDirectory(dir, currentRun) {
+					return errors.New("current run cannot be declared legacy history")
+				}
+				continue
+			}
 			identity, eventCount, err := cycleRunEvents(filepath.Join(dir, "events.jsonl"), kind)
 			if err != nil {
 				return err

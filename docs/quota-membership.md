@@ -46,8 +46,12 @@ the history's saved snapshot and bind their launches to it.
 Only the reviewer number changes. Deliberation still requires every current participant's signoff.
 Reservations, retained BLOCK/disputes/findings, strict fresh full-scope zero-findings review
 (including NITs), protected roles, floor and independent current-tree AC evidence remain binding.
-The same reviewer may run the goal check in a fresh process; its 120s ceiling and fail-closed
-outcomes remain. No exception can supply a missing independent reviewer.
+The same reviewer may run the goal check in a fresh process. Its hard ceiling is the minimum
+of track 5/15/30 minutes and a positive configured checker timeout. Absent track means
+standard; malformed track refuses. Goal execution uses the existing original-plus-one
+retry and freezes that ceiling in invocation metadata across restarts. Protected checkers
+receive the same bounded execution, never new dropout authority. Valid FAIL is final;
+a failed PASS cannot close. Existing fail-closed outcomes remain. No exception can supply a missing independent reviewer.
 
 ## Watchdog bounds
 
@@ -55,7 +59,7 @@ Eligible streaming participant-failure steps now default to first output120s, st
 activity and heartbeat 60s. Headless signoffs use the shared supervisor. Heartbeats do not count
 as activity. Classified no_first_output/stalled/timeout outcomes enter the existing two-attempt
 ledger after child cleanup, using the same hard ceiling and 5s retry delay. Explicit overrides,
-disabled guards and shorter operation ceilings remain; readiness is 90s and goal check 120s.
+disabled guards and shorter operation ceilings remain; readiness is 90s and goal checks use the track/configuration bound above.
 
 Final-text-only transports, including Zcode and default Claude text output, declare buffering:
 soft guards are disabled and the hard deadline remains. Custom streaming launch args may set

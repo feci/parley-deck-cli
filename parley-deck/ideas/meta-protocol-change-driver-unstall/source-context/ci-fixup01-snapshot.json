@@ -1,0 +1,38 @@
+[
+  {
+    "bucket": "pass",
+    "link": "https://github.com/feci/parley-deck-cli/actions/runs/37922238602/job/113792672538",
+    "name": "go build & test (macos-latest)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/feci/parley-deck-cli/actions/runs/37922234070/job/113792656134",
+    "name": "go build & test (macos-latest)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/feci/parley-deck-cli/actions/runs/37922238602/job/113792672574",
+    "name": "go build & test (ubuntu-latest)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pending",
+    "link": "https://github.com/feci/parley-deck-cli/actions/runs/37922238602/job/113792672173",
+    "name": "go build & test (windows-latest)",
+    "state": "IN_PROGRESS"
+  },
+  {
+    "bucket": "pass",
+    "link": "https://github.com/feci/parley-deck-cli/actions/runs/37922234070/job/113792656462",
+    "name": "go build & test (ubuntu-latest)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pending",
+    "link": "https://github.com/feci/parley-deck-cli/actions/runs/37922234070/job/113792656427",
+    "name": "go build & test (windows-latest)",
+    "state": "IN_PROGRESS"
+  }
+]

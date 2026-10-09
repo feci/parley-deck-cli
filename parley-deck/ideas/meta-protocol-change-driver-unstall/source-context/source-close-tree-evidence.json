@@ -1,0 +1,29 @@
+{
+  "reviewed_cli_commit": "134ac40cd178ebe0318a838d9357c4e6f561f925",
+  "evidence_head": "d04ccafd2ff90c1e579c4ec5d8dfa76a920e81d0",
+  "changed_paths_since_reviewed_product": [
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/IMPLEMENTATION.md",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/review/consensus-cycle-01.md",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/review/consensus.md",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/review/round-02/zcode-1.md",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/review/round-03/zcode-1.md",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/ci-fixup01-snapshot.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/go-full-fixup01.log",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/goal-check-zcode-1.md",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/goal01-measured.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/phase7-packet.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/review-reopen-result.log",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/review02-measured.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/review03-measured.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/windows-ci-comparison-initial.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/windows-ci-comparison.json",
+    "parley-deck/ideas/meta-protocol-change-driver-unstall/source-context/windows-final-comparison.json",
+    "parley-deck/inbox/codex-1-to-zcode-1_meta-protocol-change-driver-unstall_ci-scope.md"
+  ],
+  "product_docs_protocol_unchanged": true,
+  "skill_commit": "e46e551871005ecac4225f7cb55a652754fbbb9b",
+  "skill_clean": true,
+  "final_consensus_sha256": "a05a81a20aa189fb226f23c4361b2cac0c758f9d0aad4936aba46c71e0929c10",
+  "final_signoff_invocation": "450d5abb-79ea-442d-8ae0-d50640b430b1",
+  "scope": "Before source-close record. Only idea/inbox evidence paths differ; subsequent close edits are evidence only."
+}

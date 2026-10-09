@@ -1,0 +1,257 @@
+﻿2026-10-09T10:42:53.1395150Z Current runner version: '2.337.0'
+2026-10-09T10:42:53.1413330Z ##[group]Runner Image Provisioner
+2026-10-09T10:42:53.1414020Z Hosted Compute Agent
+2026-10-09T10:42:53.1414400Z Version: 20260828.587
+2026-10-09T10:42:53.1414850Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-10-09T10:42:53.1415360Z Build Date: 2026-08-28T16:44:25Z
+2026-10-09T10:42:53.1415820Z Worker ID: {b777c6ca-bbed-4fa3-be08-433f47cd8429}
+2026-10-09T10:42:53.1416750Z Azure Region: westus
+2026-10-09T10:42:53.1417140Z ##[endgroup]
+2026-10-09T10:42:53.1418480Z ##[group]Operating System
+2026-10-09T10:42:53.1418900Z macOS
+2026-10-09T10:42:53.1419450Z 26.6.2
+2026-10-09T10:42:53.1419820Z 25G83
+2026-10-09T10:42:53.1420340Z ##[endgroup]
+2026-10-09T10:42:53.1420910Z ##[group]Runner Image
+2026-10-09T10:42:53.1421460Z Image: macos-26-arm64
+2026-10-09T10:42:53.1422010Z Version: 20260907.0351.1
+2026-10-09T10:42:53.1423110Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20260907.0351/images/macos/macos-26-arm64-Readme.md
+2026-10-09T10:42:53.1424400Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20260907.0351
+2026-10-09T10:42:53.1425150Z ##[endgroup]
+2026-10-09T10:42:53.1426220Z ##[group]GITHUB_TOKEN Permissions
+2026-10-09T10:42:53.1428360Z Contents: read
+2026-10-09T10:42:53.1428970Z Metadata: read
+2026-10-09T10:42:53.1429450Z Packages: read
+2026-10-09T10:42:53.1429900Z ##[endgroup]
+2026-10-09T10:42:53.1431900Z Secret source: Actions
+2026-10-09T10:42:53.1432650Z Cache mode: write
+2026-10-09T10:42:53.1433320Z Prepare workflow directory
+2026-10-09T10:42:53.1931530Z Prepare all required actions
+2026-10-09T10:42:53.2008010Z Getting action download info
+2026-10-09T10:42:53.3848440Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-09T10:42:53.7307230Z Download action repository 'actions/setup-go@v5' (SHA:40f1582b2485089dde7abd97c1529aa768e1baff)
+2026-10-09T10:42:54.8092470Z Complete job name: go build & test (macos-latest)
+2026-10-09T10:42:54.8672050Z ##[group]Run git config --global user.email "parley-ci@example.invalid"
+2026-10-09T10:42:54.8674140Z git config --global user.email "parley-ci@example.invalid"
+2026-10-09T10:42:54.8675920Z git config --global user.name "parley-ci"
+2026-10-09T10:42:54.8746880Z shell: /bin/bash -e {0}
+2026-10-09T10:42:54.8747620Z ##[endgroup]
+2026-10-09T10:42:55.0754100Z ##[group]Run actions/checkout@v4
+2026-10-09T10:42:55.0754630Z with:
+2026-10-09T10:42:55.0754960Z   repository: feci/parley-deck-cli
+2026-10-09T10:42:55.0758090Z   token: ***
+2026-10-09T10:42:55.0758410Z   ssh-strict: true
+2026-10-09T10:42:55.0758740Z   ssh-user: git
+2026-10-09T10:42:55.0759140Z   persist-credentials: true
+2026-10-09T10:42:55.0759490Z   clean: true
+2026-10-09T10:42:55.0759820Z   sparse-checkout-cone-mode: true
+2026-10-09T10:42:55.0760180Z   fetch-depth: 1
+2026-10-09T10:42:55.0760490Z   fetch-tags: false
+2026-10-09T10:42:55.0760820Z   show-progress: true
+2026-10-09T10:42:55.0761160Z   lfs: false
+2026-10-09T10:42:55.0761540Z   submodules: false
+2026-10-09T10:42:55.0761870Z   set-safe-directory: true
+2026-10-09T10:42:55.0762230Z   allow-unsafe-pr-checkout: false
+2026-10-09T10:42:55.0762640Z ##[endgroup]
+2026-10-09T10:42:55.5777510Z Syncing repository: feci/parley-deck-cli
+2026-10-09T10:42:55.5779380Z ##[group]Getting Git version info
+2026-10-09T10:42:55.5780350Z Working directory is '/Users/runner/work/parley-deck-cli/parley-deck-cli'
+2026-10-09T10:42:55.5787240Z [command]/opt/homebrew/bin/git version
+2026-10-09T10:42:55.5959780Z git version 2.55.0
+2026-10-09T10:42:55.5991570Z ##[endgroup]
+2026-10-09T10:42:55.6005750Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/b3c5e65b-cfa4-4bd9-a8cb-c157b19caf4a/.gitconfig'
+2026-10-09T10:42:55.6020400Z Temporarily overriding HOME='/Users/runner/work/_temp/b3c5e65b-cfa4-4bd9-a8cb-c157b19caf4a' before making global git config changes
+2026-10-09T10:42:55.6023190Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-09T10:42:55.6027710Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/parley-deck-cli/parley-deck-cli
+2026-10-09T10:42:55.6150940Z Deleting the contents of '/Users/runner/work/parley-deck-cli/parley-deck-cli'
+2026-10-09T10:42:55.6155370Z ##[group]Initializing the repository
+2026-10-09T10:42:55.6159920Z [command]/opt/homebrew/bin/git init /Users/runner/work/parley-deck-cli/parley-deck-cli
+2026-10-09T10:42:55.6445310Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-09T10:42:55.6447820Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-09T10:42:55.6450370Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-09T10:42:55.6452200Z hint: call:
+2026-10-09T10:42:55.6453470Z hint:
+2026-10-09T10:42:55.6455440Z hint: 	git config --global init.defaultBranch <name>
+2026-10-09T10:42:55.6456940Z hint:
+2026-10-09T10:42:55.6458170Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-09T10:42:55.6460180Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-09T10:42:55.6461930Z hint:
+2026-10-09T10:42:55.6463100Z hint: 	git branch -m <name>
+2026-10-09T10:42:55.6464390Z hint:
+2026-10-09T10:42:55.6465730Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-09T10:42:55.6467880Z Initialized empty Git repository in /Users/runner/work/parley-deck-cli/parley-deck-cli/.git/
+2026-10-09T10:42:55.6471770Z [command]/opt/homebrew/bin/git remote add origin https://github.com/feci/parley-deck-cli
+2026-10-09T10:42:55.6583290Z ##[endgroup]
+2026-10-09T10:42:55.6593300Z ##[group]Disabling automatic garbage collection
+2026-10-09T10:42:55.6596100Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-10-09T10:42:55.6686980Z ##[endgroup]
+2026-10-09T10:42:55.6693290Z ##[group]Setting up auth
+2026-10-09T10:42:55.6708350Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-09T10:42:55.6795160Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-09T10:42:55.8119450Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-09T10:42:55.8215950Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-09T10:42:55.9368520Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-09T10:42:55.9497700Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-09T10:42:56.1316000Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-09T10:42:56.1459320Z ##[endgroup]
+2026-10-09T10:42:56.1463610Z ##[group]Fetching the repository
+2026-10-09T10:42:56.1467130Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +96dd39626c9f3fccf871e2dbb8f617239550f26f:refs/remotes/pull/81/merge
+2026-10-09T10:42:57.9808680Z From https://github.com/feci/parley-deck-cli
+2026-10-09T10:42:57.9831010Z  * [new ref]         96dd39626c9f3fccf871e2dbb8f617239550f26f -> pull/81/merge
+2026-10-09T10:42:57.9842280Z ##[endgroup]
+2026-10-09T10:42:57.9843420Z ##[group]Determining the checkout info
+2026-10-09T10:42:57.9844860Z ##[endgroup]
+2026-10-09T10:42:57.9845870Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-10-09T10:42:57.9960320Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-09T10:42:58.0039360Z ##[group]Checking out the ref
+2026-10-09T10:42:58.0053290Z [command]/opt/homebrew/bin/git checkout --progress --force refs/remotes/pull/81/merge
+2026-10-09T10:42:58.8275900Z HEAD is now at 96dd396 Merge c659bc84b44203681cbdc4e5f68d135078253113 into a9e383d2a0cb25551b22a0b3dbf22698b60f8d8c
+2026-10-09T10:42:58.8484440Z ##[endgroup]
+2026-10-09T10:42:58.8542460Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-10-09T10:42:58.8646230Z 96dd39626c9f3fccf871e2dbb8f617239550f26f
+2026-10-09T10:42:58.8970470Z ##[group]Run actions/setup-go@v5
+2026-10-09T10:42:58.8970740Z with:
+2026-10-09T10:42:58.8970970Z   go-version-file: go.mod
+2026-10-09T10:42:58.8971280Z   check-latest: false
+2026-10-09T10:42:58.8973450Z   token: ***
+2026-10-09T10:42:58.8973610Z   cache: true
+2026-10-09T10:42:58.8973790Z ##[endgroup]
+2026-10-09T10:42:59.2133370Z Setup go version spec 1.26
+2026-10-09T10:42:59.2229740Z (node:1198) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-09T10:42:59.2243740Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-09T10:42:59.2301250Z Found in cache @ /Users/runner/hostedtoolcache/go/1.26.8/arm64
+2026-10-09T10:42:59.2321800Z Added go to the path
+2026-10-09T10:42:59.2345480Z Successfully set up Go version 1.26
+2026-10-09T10:42:59.3899580Z [command]/Users/runner/hostedtoolcache/go/1.26.8/arm64/bin/go env GOMODCACHE
+2026-10-09T10:42:59.3979900Z [command]/Users/runner/hostedtoolcache/go/1.26.8/arm64/bin/go env GOCACHE
+2026-10-09T10:42:59.4070180Z /Users/runner/go/pkg/mod
+2026-10-09T10:42:59.4113470Z /Users/runner/Library/Caches/go-build
+2026-10-09T10:42:59.5621520Z Cache hit for: setup-go-macOS-arm64-go-1.26.8-78a0b55c96310666c2548b8ad946df18a043d4c966a594a10ba57b6120d39b54
+2026-10-09T10:42:59.5662390Z (node:1198) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-09T10:43:00.3135590Z Received 59434099 of 59434099 (100.0%), 82.4 MBs/sec
+2026-10-09T10:43:00.3164840Z Cache Size: ~57 MB (59434099 B)
+2026-10-09T10:43:00.3260380Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/8cf43d4a-d46a-440d-b4fb-4c20c6a1bc30/cache.tzst -P -C /Users/runner/work/parley-deck-cli/parley-deck-cli --delay-directory-restore --use-compress-program unzstd
+2026-10-09T10:43:01.9548770Z Cache restored successfully
+2026-10-09T10:43:01.9607890Z Cache restored from key: setup-go-macOS-arm64-go-1.26.8-78a0b55c96310666c2548b8ad946df18a043d4c966a594a10ba57b6120d39b54
+2026-10-09T10:43:01.9668450Z go version go1.26.8 darwin/arm64
+2026-10-09T10:43:01.9668970Z 
+2026-10-09T10:43:01.9670040Z ##[group]go env
+2026-10-09T10:43:03.3106750Z AR='ar'
+2026-10-09T10:43:03.3107790Z CC='clang'
+2026-10-09T10:43:03.3108370Z CGO_CFLAGS='-O2 -g'
+2026-10-09T10:43:03.3108850Z CGO_CPPFLAGS=''
+2026-10-09T10:43:03.3109570Z CGO_CXXFLAGS='-O2 -g'
+2026-10-09T10:43:03.3110300Z CGO_ENABLED='1'
+2026-10-09T10:43:03.3111590Z CGO_FFLAGS='-O2 -g'
+2026-10-09T10:43:03.3112520Z CGO_LDFLAGS='-O2 -g'
+2026-10-09T10:43:03.3113200Z CXX='clang++'
+2026-10-09T10:43:03.3113740Z GCCGO='gccgo'
+2026-10-09T10:43:03.3114340Z GO111MODULE=''
+2026-10-09T10:43:03.3114580Z GOARCH='arm64'
+2026-10-09T10:43:03.3115020Z GOARM64='v8.0'
+2026-10-09T10:43:03.3115560Z GOAUTH='netrc'
+2026-10-09T10:43:03.3116150Z GOBIN=''
+2026-10-09T10:43:03.3116990Z GOCACHE='/Users/runner/Library/Caches/go-build'
+2026-10-09T10:43:03.3117780Z GOCACHEPROG=''
+2026-10-09T10:43:03.3118430Z GODEBUG=''
+2026-10-09T10:43:03.3118930Z GOENV='/Users/runner/Library/Application Support/go/env'
+2026-10-09T10:43:03.3119570Z GOEXE=''
+2026-10-09T10:43:03.3120600Z GOEXPERIMENT=''
+2026-10-09T10:43:03.3122620Z GOFIPS140='off'
+2026-10-09T10:43:03.3123230Z GOFLAGS=''
+2026-10-09T10:43:03.3125830Z GOGCCFLAGS='-fPIC -arch arm64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -ffile-prefix-map=/var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/go-build992127769=/tmp/go-build -gno-record-gcc-switches -fno-common'
+2026-10-09T10:43:03.3128090Z GOHOSTARCH='arm64'
+2026-10-09T10:43:03.3128770Z GOHOSTOS='darwin'
+2026-10-09T10:43:03.3142170Z GOINSECURE=''
+2026-10-09T10:43:03.3143290Z GOMOD='/Users/runner/work/parley-deck-cli/parley-deck-cli/go.mod'
+2026-10-09T10:43:03.3144110Z GOMODCACHE='/Users/runner/go/pkg/mod'
+2026-10-09T10:43:03.3144880Z GONOPROXY=''
+2026-10-09T10:43:03.3145700Z GONOSUMDB=''
+2026-10-09T10:43:03.3146410Z GOOS='darwin'
+2026-10-09T10:43:03.3148400Z GOPATH='/Users/runner/go'
+2026-10-09T10:43:03.3149320Z GOPRIVATE=''
+2026-10-09T10:43:03.3150640Z GOPROXY='https://proxy.golang.org,direct'
+2026-10-09T10:43:03.3151250Z GOROOT='/Users/runner/hostedtoolcache/go/1.26.8/arm64'
+2026-10-09T10:43:03.3152370Z GOSUMDB='sum.golang.org'
+2026-10-09T10:43:03.3153060Z GOTELEMETRY='local'
+2026-10-09T10:43:03.3153920Z GOTELEMETRYDIR='/Users/runner/Library/Application Support/go/telemetry'
+2026-10-09T10:43:03.3155400Z GOTMPDIR=''
+2026-10-09T10:43:03.3155920Z GOTOOLCHAIN='auto'
+2026-10-09T10:43:03.3157150Z GOTOOLDIR='/Users/runner/hostedtoolcache/go/1.26.8/arm64/pkg/tool/darwin_arm64'
+2026-10-09T10:43:03.3158110Z GOVCS=''
+2026-10-09T10:43:03.3158670Z GOVERSION='go1.26.8'
+2026-10-09T10:43:03.3160170Z GOWORK=''
+2026-10-09T10:43:03.3160900Z PKG_CONFIG='pkg-config'
+2026-10-09T10:43:03.3161540Z 
+2026-10-09T10:43:03.3163020Z ##[endgroup]
+2026-10-09T10:43:03.3777610Z ##[group]Run go build ./...
+2026-10-09T10:43:03.3777990Z go build ./...
+2026-10-09T10:43:03.3853650Z shell: /bin/bash -e {0}
+2026-10-09T10:43:03.3854140Z ##[endgroup]
+2026-10-09T10:43:10.1952580Z ##[group]Run go test ./... -count=1 -timeout 45m
+2026-10-09T10:43:10.1953250Z go test ./... -count=1 -timeout 45m
+2026-10-09T10:43:10.2038590Z shell: /bin/bash -e {0}
+2026-10-09T10:43:10.2038910Z ##[endgroup]
+2026-10-09T10:43:11.9577190Z ?   	parley-deck-cli/cmd/parley	[no test files]
+2026-10-09T10:43:14.6227600Z ok  	parley-deck-cli/internal/acp	2.670s
+2026-10-09T10:43:14.6326970Z ok  	parley-deck-cli/internal/agents	0.023s
+2026-10-09T10:55:51.9307130Z fixture: serial=(client:fail,server:fail) barrier=(pass,pass) — serial execution cannot certify a barrier criterion
+2026-10-09T10:55:51.9312320Z --- FAIL: TestGoalUnstallBufferedHardDeadlineAndCancellation (5.38s)
+2026-10-09T10:55:51.9319160Z     driver_unstall_test.go:135: hard timeout attempts: "child\n"
+2026-10-09T10:55:51.9322360Z quota notice batch-96fd874813684eafdab466f0a4bd21e54ad98b10a7780ab06ea06c16346221b1: publication diagnostic (non-blocking; delivery unconfirmed): unsafe quota notice destination: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/TestQuotaCycle4CLINoticeRecoveryAndDispatchunsafe-filebefore-r995892146/001/parley-deck/inbox/parley-to-user_batch-96fd874813684eafdab466f0a4bd21e54ad98b10a7780ab06ea06c16346221b1.md
+2026-10-09T10:55:51.9325740Z quota notice batch-9b6963697c3e53e52d40b8868828d2161232a60e9e802aa2aab1bdf7f1692ff4: publication diagnostic (non-blocking; delivery unconfirmed): unsafe quota notice directory: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/TestQuotaCycle4CLINoticeRecoveryAndDispatchunsafe-inboxbefore-1319265771/001/parley-deck/inbox
+2026-10-09T10:55:51.9332490Z quota notice batch-48e13f91572ba49a627fda81958f12f86cbb554f728561d270ef51b828f9aea2: publication diagnostic (non-blocking; delivery unconfirmed): unsafe quota notice directory: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/TestQuotaCycle4CLINoticeRecoveryAndDispatchunsafe-archivebefor1432582340/001/parley-deck/inbox/archived
+2026-10-09T10:55:51.9333790Z FAIL
+2026-10-09T10:55:51.9340440Z FAIL	parley-deck-cli/internal/app	754.731s
+2026-10-09T10:55:51.9343630Z ok  	parley-deck-cli/internal/budget	66.999s
+2026-10-09T10:55:51.9344770Z ok  	parley-deck-cli/internal/config	0.092s
+2026-10-09T10:55:51.9351040Z ok  	parley-deck-cli/internal/consensus	7.036s
+2026-10-09T10:55:51.9351780Z ok  	parley-deck-cli/internal/driver	16.316s
+2026-10-09T10:55:51.9352290Z ok  	parley-deck-cli/internal/evidence	6.492s
+2026-10-09T10:55:51.9354100Z ok  	parley-deck-cli/internal/fsutil	0.026s
+2026-10-09T10:55:51.9355390Z ok  	parley-deck-cli/internal/hitl	0.015s
+2026-10-09T10:55:51.9356200Z ok  	parley-deck-cli/internal/loop	0.030s
+2026-10-09T10:55:51.9366850Z ok  	parley-deck-cli/internal/membership	15.141s
+2026-10-09T10:55:51.9367500Z ok  	parley-deck-cli/internal/pidlease	0.177s
+2026-10-09T10:55:51.9367980Z ok  	parley-deck-cli/internal/pipeline	0.040s
+2026-10-09T10:55:51.9368300Z ok  	parley-deck-cli/internal/procctl	0.165s
+2026-10-09T10:55:51.9368690Z ok  	parley-deck-cli/internal/protocol	0.063s
+2026-10-09T10:55:51.9369140Z ok  	parley-deck-cli/internal/protocolcore	1.884s
+2026-10-09T10:55:51.9369610Z ok  	parley-deck-cli/internal/protocolpacket	2.684s
+2026-10-09T10:55:51.9370020Z ok  	parley-deck-cli/internal/quota	2.113s
+2026-10-09T10:55:51.9370550Z ?   	parley-deck-cli/internal/quotatest	[no test files]
+2026-10-09T10:55:51.9370990Z ok  	parley-deck-cli/internal/repomap	0.014s
+2026-10-09T10:55:51.9372520Z ok  	parley-deck-cli/internal/retro	0.022s
+2026-10-09T10:55:51.9372980Z ok  	parley-deck-cli/internal/runaction	0.009s
+2026-10-09T10:55:51.9373370Z ok  	parley-deck-cli/internal/runcontrol	0.390s
+2026-10-09T10:55:51.9373880Z ok  	parley-deck-cli/internal/runmanifest	0.010s
+2026-10-09T10:55:51.9374440Z ok  	parley-deck-cli/internal/runner	173.581s
+2026-10-09T10:55:51.9374850Z ok  	parley-deck-cli/internal/runplan	0.051s
+2026-10-09T10:55:51.9375360Z ok  	parley-deck-cli/internal/runstate	0.053s
+2026-10-09T10:55:51.9375810Z ok  	parley-deck-cli/internal/sessionstore	0.013s
+2026-10-09T10:55:51.9376310Z ok  	parley-deck-cli/internal/steer	0.012s
+2026-10-09T10:55:51.9378540Z ok  	parley-deck-cli/internal/store	0.011s
+2026-10-09T10:55:51.9380380Z ok  	parley-deck-cli/internal/telemetry	2.233s
+2026-10-09T10:55:51.9381580Z ok  	parley-deck-cli/internal/track	0.009s
+2026-10-09T10:59:57.9020170Z ok  	parley-deck-cli/internal/trajectory	927.349s
+2026-10-09T10:59:57.9027250Z ok  	parley-deck-cli/internal/tui	0.133s
+2026-10-09T10:59:57.9028540Z ?   	parley-deck-cli/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/fixup-cycle-3-20261006	[no test files]
+2026-10-09T10:59:57.9029610Z FAIL
+2026-10-09T10:59:58.0405960Z ##[error]Process completed with exit code 1.
+2026-10-09T10:59:58.0662800Z Post job cleanup.
+2026-10-09T10:59:58.6334020Z [command]/opt/homebrew/bin/git version
+2026-10-09T10:59:58.6468170Z git version 2.55.0
+2026-10-09T10:59:58.7038200Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/04aa6071-636c-4b7e-aa1b-51bc53e25b6e/.gitconfig'
+2026-10-09T10:59:58.7292190Z Temporarily overriding HOME='/Users/runner/work/_temp/04aa6071-636c-4b7e-aa1b-51bc53e25b6e' before making global git config changes
+2026-10-09T10:59:58.7376290Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-09T10:59:58.7377350Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/parley-deck-cli/parley-deck-cli
+2026-10-09T10:59:58.7404090Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-09T10:59:58.7405960Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-09T10:59:58.9140070Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-09T10:59:58.9209420Z http.https://github.com/.extraheader
+2026-10-09T10:59:58.9226730Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-09T10:59:58.9374700Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-09T10:59:59.0533900Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-09T10:59:59.0609740Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-09T10:59:59.1813020Z Cleaning up orphan processes
+2026-10-09T11:00:01.2838730Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-go@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

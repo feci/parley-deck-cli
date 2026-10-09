@@ -819,6 +819,10 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	if err != nil {
 		return false, "goal-check checker unavailable"
 	}
+	hardTimeout, err := goalCheckTimeout(o.ideaDir, agent.TimeoutMS)
+	if err != nil {
+		return false, "goal-check unavailable: " + err.Error()
+	}
 	fmt.Fprintf(o.out, "driver: goal-done check via %s ...\n", checker)
 	dir := filepath.Join(o.root, protocol.DeckDir, "runs", o.base.RunID, "agents", checker)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -835,7 +839,7 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	var res runner.ConsultResult
 	consult := func(child context.Context, _ int, _ string) error {
 		res = runner.RunConsult(child, runner.ConsultOptions{
-			Root: o.root, Agent: agent, Timeout: 2 * time.Minute, Prompt: runner.BuildGoalCheckPrompt(agent, o.base.Idea),
+			Root: o.root, Agent: agent, Timeout: runner.ParticipantStepTimeout(child), Prompt: runner.BuildGoalCheckPrompt(agent, o.base.Idea),
 			StdoutPath: filepath.Join(dir, "goal-check.stdout.log"), StderrPath: filepath.Join(dir, "goal-check.stderr.log"), Progress: o.out,
 		})
 		if res.ExitError != "" {
@@ -847,13 +851,13 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	if err != nil {
 		return false, err.Error()
 	}
-	roles, err := membership.Roles(o.ideaDir)
+	_, err = membership.Roles(o.ideaDir)
 	if err != nil && h.MidIdea() && h.Policy().Dropout() {
 		return false, err.Error()
 	}
-	if h.MidIdea() && h.Policy().Dropout() && !roles.Protected(checker) {
+	{
 		settled, e := runner.RunParticipantStep(ctx, runner.ParticipantStepOptions{
-			Root: o.root, Idea: o.ideaSlug, Agent: agent, Step: participantSignoffStep(filepath.Join(o.ideaDir, "review", "consensus.md")) + "/goal-check",
+			Root: o.root, Idea: o.ideaSlug, Agent: agent, HardTimeout: hardTimeout, Step: participantSignoffStep(filepath.Join(o.ideaDir, "review", "consensus.md")) + "/goal-check",
 			Files: []string{filepath.Join(dir, "goal-check.stdout.log"), filepath.Join(dir, "goal-check.stderr.log")},
 			ValidateRecord: func(r telemetry.Record) runner.StepValidation {
 				original := filepath.Join(o.root, protocol.DeckDir, "runs", r.Metadata.RunID, "agents", checker, "goal-check.stdout.log")
@@ -888,8 +892,6 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 				}
 			}
 		}
-	} else {
-		_ = consult(ctx, 1, "")
 	}
 	if h.MidIdea() && h.Policy().Dropout() && (res.ExitError != "" || parseGoalVerdict(res.Answer) == "") {
 		_, e := membership.Settle(ctx, o.root, o.ideaDir, o.base.RunID, "goal-check", []string{checker}, []quota.Member{{ID: checker, ValidArtifact: parseGoalVerdict(res.Answer) != "", Evidence: observed}})

@@ -32,7 +32,10 @@ type StepValidation struct {
 
 type ParticipantStepOptions struct {
 	Root, Idea, Step string
-	Agent            agents.Discovery
+	// HardTimeout is frozen in the first invocation metadata for this logical
+	// step. A resumed retry uses that original ceiling, never a new config value.
+	HardTimeout time.Duration
+	Agent       agents.Discovery
 	// Files are preserved privately before dispatch and after each failed
 	// attempt, before a retry can overwrite a log or incomplete own artifact.
 	Files    []string
@@ -61,13 +64,22 @@ func ParticipantStepActive(ctx context.Context) bool {
 	return ok
 }
 
+// ParticipantStepTimeout returns the resolved, restart-stable hard ceiling.
+func ParticipantStepTimeout(ctx context.Context) time.Duration {
+	if s, ok := ctx.Value(participantStepKey{}).(*participantStepLaunch); ok {
+		return s.hardTimeout
+	}
+	return 0
+}
+
 type participantStepLaunch struct {
-	idea      string
-	key       string
-	ordinal   int
-	retry     string
-	observe   func(telemetry.Record)
-	integrity error
+	hardTimeout time.Duration
+	idea        string
+	key         string
+	ordinal     int
+	retry       string
+	observe     func(telemetry.Record)
+	integrity   error
 }
 
 type participantValidationRecord struct {
@@ -104,6 +116,20 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 	records, err := participantRecords(opts.Root, key, opts.Idea, opts.Agent.ID)
 	if err != nil {
 		return out, err
+	}
+	hardTimeout := opts.HardTimeout
+	if hardTimeout < 0 {
+		return out, fmt.Errorf("invalid participant hard ceiling")
+	}
+	if len(records) > 0 {
+		// A historical step without a recorded ceiling may replay its completed
+		// output, but cannot authorize a new child with an invented original bound.
+		hardTimeout = time.Duration(records[0].Metadata.ParticipantTimeoutNS)
+		for _, r := range records {
+			if r.Metadata.ParticipantTimeoutNS < 0 || r.Metadata.ParticipantTimeoutNS != int64(hardTimeout) {
+				return out, fmt.Errorf("participant hard ceiling changed across attempts")
+			}
+		}
 	}
 	var attempts []quota.FailedAttempt
 	for i, r := range records {
@@ -168,6 +194,9 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 	if opts.RecoverOnly && len(attempts) < 2 {
 		return out, nil
 	}
+	if len(attempts) < 2 && opts.HardTimeout > 0 && hardTimeout <= 0 {
+		return out, fmt.Errorf("historical participant attempt has no frozen hard ceiling; no new child authorized")
+	}
 	for len(attempts) < 2 {
 		if err := ctx.Err(); err != nil {
 			return out, err
@@ -188,7 +217,7 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 			retry = attempts[len(attempts)-1].InvocationID
 		}
 		var observed telemetry.Record
-		binding := &participantStepLaunch{idea: opts.Idea, key: key, ordinal: len(attempts) + 1, retry: retry,
+		binding := &participantStepLaunch{hardTimeout: hardTimeout, idea: opts.Idea, key: key, ordinal: len(attempts) + 1, retry: retry,
 			observe: func(r telemetry.Record) { observed = r }}
 		childCtx := context.WithValue(ctx, participantStepKey{}, binding)
 		runErr := run(childCtx, binding.ordinal, retry)

@@ -1,0 +1,70 @@
+{
+  "writer": {
+    "host": "Tomass-Virtual-Machine.local",
+    "boot": "{ sec = 1791463769, usec = 230508 } Thu Oct  8 14:49:29 2026",
+    "supervisor_pid": 66930,
+    "process_group": 66961
+  },
+  "schema_version": 1,
+  "type": "invocation.terminal",
+  "invocation_id": "7dfe58c9-aa4b-41d0-9cf7-62a14a2e402c",
+  "metadata": {
+    "run_id": "20261009T110739.823174000Z",
+    "segment_id": "",
+    "idea": "meta-protocol-change-driver-unstall",
+    "phase": "review-consensus",
+    "agent": "zcode-1",
+    "adapter": "zcode",
+    "launch_mode": "headless",
+    "attempt_ordinal": 1,
+    "retry_of": null,
+    "requested_model": null,
+    "requested_effort": null,
+    "requested_speed": "deep",
+    "context": {
+      "context_mode": "full",
+      "source_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+      "packet_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+      "fallback_reason": null
+    }
+  },
+  "requested_at": "2026-10-09T11:07:41.180332Z",
+  "started_at": "2026-10-09T11:07:41.219936Z",
+  "completed_at": "2026-10-09T11:09:33.996875Z",
+  "duration_ms": 112815,
+  "pid": 66961,
+  "outcome": {
+    "dispatch_attempted": true,
+    "quota_evidence": {
+      "invocation_id": "7dfe58c9-aa4b-41d0-9cf7-62a14a2e402c",
+      "adapter": "zcode",
+      "eligible": false,
+      "reason": "no failed invocation",
+      "observed_at": "2026-10-09T11:09:33.996247Z"
+    },
+    "status": "process-exited",
+    "exit_code": 0,
+    "failure_class": null,
+    "artifact_sha256": "64410c6eda9e2959276c854d998e9d5642d8e3a14e4420b1dece0cab2be2b78e",
+    "usage": {
+      "input_tokens": null,
+      "output_tokens": null,
+      "cache_read_tokens": null,
+      "cache_write_tokens": null,
+      "total_tokens": null,
+      "cost_usd": null,
+      "reported_model": null,
+      "reported_models": [],
+      "source": "unavailable",
+      "cost_basis": "unavailable",
+      "coverage": "unavailable"
+    },
+    "observation": {
+      "first_activity_ms": 112726,
+      "stdout_bytes": 913,
+      "stderr_bytes": 0,
+      "parser_input_truncated": false
+    }
+  },
+  "warnings": []
+}

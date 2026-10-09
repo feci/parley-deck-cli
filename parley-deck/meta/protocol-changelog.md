@@ -338,3 +338,12 @@ participant-step/signoff timing; C1–C8 compact existing §0/§2/§9 duties. Al
 substitutions are frozen in that idea's source-context/protocol-hunks.json. Strict gates,
 retained dissent, protected floor, independent evidence and size/map limits remain.
 CLI1.53.0; packaged skill/staged core2.17.0. Global core publication remains owner-only.
+
+## 2026-10-09 — codex-1 — meta-protocol-change-driver-unstall
+
+Ratified by both current participants in the idea's consensus and frozen FINAL. Phase 8
+replaces the fixed two-minute goal ceiling with min(track 5/15/30m, positive checker
+configuration), absent-standard/invalid-refusal semantics, and the existing durable
+original-plus-one execution path including protected roles. Section 9.0 points to that
+bound. No membership, reviewer, LE-7/LE-11 or current-tree evidence duty is weakened.
+CLI 1.54.0 / skill 2.18.0; core 2.18.0 staged from 2.17.0, publication pending owner.

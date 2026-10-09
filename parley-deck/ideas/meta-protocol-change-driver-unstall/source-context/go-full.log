@@ -1,0 +1,45 @@
+?   	parley-deck-cli/cmd/parley	[no test files]
+ok  	parley-deck-cli/internal/acp	2.867s
+ok  	parley-deck-cli/internal/agents	0.247s
+--- FAIL: TestVersionFileMatchesBinaryVersion (0.00s)
+    app_test.go:211: VERSION="1.53.0" internal version="1.54.0"
+fixture: serial=(client:fail,server:fail) barrier=(pass,pass) — serial execution cannot certify a barrier criterion
+quota notice batch-fd61b49e1244641ef071fbc7b71e6559a88031775ef8b4a407dee3f9457bcee7: publication diagnostic (non-blocking; delivery unconfirmed): unsafe quota notice destination: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaCycle4CLINoticeRecoveryAndDispatchunsafe-filebefore-r1983697781/001/parley-deck/inbox/parley-to-user_batch-fd61b49e1244641ef071fbc7b71e6559a88031775ef8b4a407dee3f9457bcee7.md
+quota notice batch-970fca7934484d6bb0bf6de5ecc4d2ccb3f283b8f130a3322db4a3515f78d457: publication diagnostic (non-blocking; delivery unconfirmed): unsafe quota notice directory: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaCycle4CLINoticeRecoveryAndDispatchunsafe-inboxbefore-1676188917/001/parley-deck/inbox
+quota notice batch-4c61ebeece218caa2c61a5a15d950a104ed93f884008d4283e634ee8294dcfc3: publication diagnostic (non-blocking; delivery unconfirmed): unsafe quota notice directory: /var/folders/yt/p2sr23f12_qcfx_w2z5c1p4r0000gn/T/TestQuotaCycle4CLINoticeRecoveryAndDispatchunsafe-archivebefor1288709026/001/parley-deck/inbox/archived
+FAIL
+FAIL	parley-deck-cli/internal/app	641.768s
+ok  	parley-deck-cli/internal/budget	99.794s
+ok  	parley-deck-cli/internal/config	1.282s
+ok  	parley-deck-cli/internal/consensus	21.654s
+ok  	parley-deck-cli/internal/driver	31.703s
+ok  	parley-deck-cli/internal/evidence	10.886s
+ok  	parley-deck-cli/internal/fsutil	0.423s
+ok  	parley-deck-cli/internal/hitl	0.300s
+ok  	parley-deck-cli/internal/loop	0.595s
+ok  	parley-deck-cli/internal/membership	48.558s
+ok  	parley-deck-cli/internal/pidlease	0.984s
+ok  	parley-deck-cli/internal/pipeline	0.908s
+ok  	parley-deck-cli/internal/procctl	0.489s
+ok  	parley-deck-cli/internal/protocol	0.870s
+ok  	parley-deck-cli/internal/protocolcore	1.094s
+ok  	parley-deck-cli/internal/protocolpacket	2.398s
+ok  	parley-deck-cli/internal/quota	5.736s
+?   	parley-deck-cli/internal/quotatest	[no test files]
+ok  	parley-deck-cli/internal/repomap	0.380s
+ok  	parley-deck-cli/internal/retro	0.742s
+ok  	parley-deck-cli/internal/runaction	0.256s
+ok  	parley-deck-cli/internal/runcontrol	4.630s
+ok  	parley-deck-cli/internal/runmanifest	0.250s
+ok  	parley-deck-cli/internal/runner	145.381s
+ok  	parley-deck-cli/internal/runplan	1.003s
+ok  	parley-deck-cli/internal/runstate	0.962s
+ok  	parley-deck-cli/internal/sessionstore	0.289s
+ok  	parley-deck-cli/internal/steer	0.280s
+ok  	parley-deck-cli/internal/store	0.246s
+ok  	parley-deck-cli/internal/telemetry	3.407s
+ok  	parley-deck-cli/internal/track	0.193s
+ok  	parley-deck-cli/internal/trajectory	626.804s
+ok  	parley-deck-cli/internal/tui	1.868s
+?   	parley-deck-cli/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/fixup-cycle-3-20261006	[no test files]
+FAIL

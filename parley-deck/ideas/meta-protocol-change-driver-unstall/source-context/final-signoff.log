@@ -1,0 +1,20 @@
+Requesting signoff from zcode-1 (headless)...
+Signoff appended to `parley-deck/ideas/meta-protocol-change-driver-unstall/review/consensus.md`.
+
+**Status: ✅ ACCEPT** — signed as zcode-1, the second and final current participant, which completes the ✅ quorum on the zero-fix source-close consensus (cycle 2, closing review round 3).
+
+Basis for acceptance, all verified by me in this process before signing:
+
+- **My round-3 close conditions are met.** Both 134ac40 Windows jobs are recorded as terminal failures with the added-name tripwire clean (`added_failure_names: []`), and all macOS/Linux checks are green — exactly the G1-R3 re-scoped gate I set.
+- **Evidence integrity holds.** The archived cycle-1 consensus and the fresh goal-check file hash to the exact SHA-256 values the consensus claims; the goal check's PASS is properly scoped (AC1–AC8 + AC9 checks/drift) with live channels explicitly PENDING.
+- **The E1 NIT is corrected as I suggested**, with the original artifact preserved byte-for-byte.
+- **Nothing unreviewed changed:** the delta since reviewed commit 134ac40 is idea protocol records only.
+
+The notes in my block also make explicit that this ACCEPT does not deliver anything: AC9 live-channel verification stays PENDING behind a separate fresh post-publication process, the brief's four attended-close conditions and the owner's activation/publication acts still govern, and native Windows remains a declared, deferred limitation.
+Accepted signoff from zcode-1: ✅ ACCEPT
+Requested signoffs complete: zcode-1
+Review consensus: ready
+Path: parley-deck/ideas/meta-protocol-change-driver-unstall/review/consensus.md
+Signoffs:
+  codex-1    ✅ ACCEPT — Accept the zero-fix source-close consensus on the current independently verified product and skill trees. The cycle-1 archive is byte-identical; the fresh Zcode goal PASS and scoped Windows evidence satisfy their recorded gates. All four brief-authorized attended-close conditions remain required, including the fresh Zcode ACCEPT. Live AC9 channels remain PENDING until separate post-publication verification; owner activation/npm/core and CLI WinGet hold remain binding.
+  zcode-1    ✅ ACCEPT — Accept, on my own fresh verification in this signoff process. Before signing I re-checked every condition my round-03 review set: consensus-cycle-01.md hashes to the claimed 64410c6e…b78e; goal-check-zcode-1.md hashes to the claimed 92d7eb07…95eb and its GOAL-CHECK: PASS is scoped to AC1–AC8 plus AC9 checks/drift with live channels explicitly PENDING and a fresh 121.16 s witness; both 134ac40 Windows jobs are honestly recorded as terminal failures (356/355 direct names, added_failure_names empty — G1-R3.3 tripwire clean; G1-R3.2 satisfied); the E1 correction hashes the retained raw bytes (da7c0e4f…, matching my round-03 derivation) with the original JSON preserved and the old value retained as a normalized-LF hash; and git diff 134ac40..HEAD touches only idea protocol records, no product, docs, skill or protocol bytes. No CRITICAL/MAJOR finding remains open; my round-3 G1 re-scope and E1 are dispositioned exactly as filed, nothing suppressed. The close remains conditional exactly as drafted: both ACCEPTs now exist, the brief's four attended-close conditions and the owner's activation/publication acts still govern, AC9 live channel evidence stays PENDING until a separate fresh post-publication verification process PASSES, and no channel is delivered by this consensus. Native Windows stays unresolved/experimental with the deferred ALT-10 follow-up.
