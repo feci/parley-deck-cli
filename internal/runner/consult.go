@@ -123,7 +123,7 @@ func RunConsult(ctx context.Context, opts ConsultOptions) ConsultResult {
 		}
 	}
 	act := &activityTracker{}
-	cfg := supervisionForAgent(opts.Agent, hardTimeout)
+	cfg := supervisionForStep(cctx, opts.Agent, hardTimeout)
 	hooks := supervisionHooks{
 		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {
 			progress("%s thinking (elapsed: %ds, bytes: %d+%d)", opts.Agent.ID, int(elapsed.Seconds()), snap.StdoutBytes, snap.StderrBytes)

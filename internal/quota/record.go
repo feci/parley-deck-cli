@@ -169,5 +169,5 @@ func (k Kickoff) Notice() string {
 		}
 		body += fmt.Sprintf("- %s: %s (%s), reset %s. %s\n", c.Agent, c.Evidence.Excerpt, c.Evidence.RuleID, c.Evidence.ResetHint(), c.Evidence.RelaunchHint())
 	}
-	return body + fmt.Sprintf("\nSurvivors: %v. Remaining gates: reviewer count for the selected track; LE-7/LE-11 two-reviewer close (auto_implement); independent goal-checker eligibility (auto_implement or strict_gate); require_model_diversity (when enabled, and fast track); strict_gate (when enabled); retained vetoes, DISPUTED claims and findings.\n", k.Participants)
+	return body + fmt.Sprintf("\nSurvivors: %v. Remaining gates: reviewer count for the selected track (LE-7/LE-11), with the validated causal single-reviewer exception only; known distinct snapshot models for that exception; independent goal-checker eligibility (auto_implement or strict_gate); require_model_diversity (when enabled, and fast track); strict_gate (when enabled); clean current signoffs and retained vetoes, DISPUTED claims and findings.\n", k.Participants)
 }

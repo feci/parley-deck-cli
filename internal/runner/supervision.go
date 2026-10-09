@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"errors"
 	"sync/atomic"
 	"time"
@@ -31,8 +32,18 @@ type SupervisionConfig struct {
 const (
 	defaultFirstEventTimeoutMS = 120_000
 	defaultStallTimeoutMS      = 1_800_000
+	participantStallTimeoutMS  = 300_000
 	defaultHeartbeatMS         = 60_000
 )
+
+// Tighten only eligible participant-failure steps. Explicit overrides (including
+// disables), declared buffering and the existing hard-ceiling clamp still win.
+func supervisionForStep(ctx context.Context, agent agents.Discovery, hardTimeout time.Duration) SupervisionConfig {
+	if ParticipantStepActive(ctx) && agent.StallTimeoutMS == 0 {
+		agent.StallTimeoutMS = participantStallTimeoutMS
+	}
+	return supervisionForAgent(agent, hardTimeout)
+}
 
 // supervisionForAgent derives the effective windows from the agent spec
 // (consensus D2): 0 means "use the default"; a negative spec value disables

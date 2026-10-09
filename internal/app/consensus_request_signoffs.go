@@ -21,6 +21,7 @@ import (
 	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/runner"
 	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
@@ -126,6 +127,16 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 	selected, err := requestSignoffAgents(targets, discovered, rosterMappingFor(opts.Root))
 	if err != nil {
 		return err
+	}
+	if quotaHistory.MidIdea() && !opts.DryRun {
+		manifest, err := runmanifest.Load(rootAbs, quotaRun)
+		if err != nil {
+			return err
+		}
+		if len(manifest.RosterSnapshot) == 0 {
+			fmt.Fprintln(stderr, "warning: this signoff run has no roster snapshot; model identity is not frozen and cannot qualify the single-reviewer exception")
+		}
+		selected = applyRosterSnapshot(selected, manifest.RosterSnapshot, stderr)
 	}
 	selected, err = applyLaunchModeOverrides(selected, opts.ModeOverrides)
 	if err != nil {
@@ -550,7 +561,11 @@ func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.D
 	cmd.Dir = rootAbs
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	if err := cmd.Run(); err != nil {
+	run := cmd.Run
+	if runner.ParticipantStepActive(agentCtx) {
+		run = func() error { return cmd.RunSupervised(agent, requestSignoffTimeout(agent)) }
+	}
+	if err := run(); err != nil {
 		if agentCtx.Err() != nil {
 			return agentCtx.Err()
 		}

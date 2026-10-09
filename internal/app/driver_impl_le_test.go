@@ -133,6 +133,7 @@ func TestGoalCheckFailedOrUnverifiableExecutionCannotPass(t *testing.T) {
 				t.Fatal(err)
 			}
 			declareAppTestSource(t, root)
+			writePrompt(t, filepath.Join(root, "parley-deck", "ideas", "demo"), "participants: [author, reviewer]\n")
 			agent := agents.Discovery{Spec: agents.Spec{ID: "reviewer", Commands: []string{"sh"},
 				HeadlessArgs: []string{"-c", tc.script}, PromptMode: agents.PromptStdin}, Found: true, Path: "/bin/sh"}
 			o := newOpsFor(root, filepath.Join(root, "parley-deck", "ideas", "demo"), []agents.Discovery{agent}, "author", []string{"reviewer"})

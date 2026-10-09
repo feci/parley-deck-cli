@@ -246,6 +246,7 @@ func defaultBuiltinSpecs() []Spec {
 			TimeoutMS:             DefaultTimeoutMS,
 			ExternalBackend:       ExternalHosted,
 			Telemetry:             "stream-json or final text depending on flags",
+			BuffersStdout:         true, // default --output-format text emits the final answer; streaming overrides may set false
 			// Full autonomous writes, confined to the workspace via --add-dir {root}.
 			AutonomousWrite: AutonomousWrite{Mode: "bypassPermissions", Args: []string{"--permission-mode", "bypassPermissions"}, Scope: ""},
 		}),
@@ -429,6 +430,7 @@ func defaultBuiltinSpecs() []Spec {
 			TimeoutMS:       DefaultTimeoutMS,
 			ExternalBackend: ExternalHosted,
 			Telemetry:       "final text on stdout; --json adds sessionId/traceId/turnId/usage but no model id",
+			BuffersStdout:   true, // --prompt emits final text; silence before exit is expected
 			Notes:           "ZCode (Z.AI). Headless is `zcode --prompt=<text> --mode yolo --cwd <root>` - the EQUALS form is required: the separate-token form is rejected when the prompt starts with a dash (\"Option '--prompt' argument is ambiguous\", exit 1, measured 2026-08-19); the prompt is a flag value, not stdin. There is NO model flag - --model is absent from --help and exits 1 - so the model comes from ~/.zcode/cli/config.json (model.main) and cannot be pinned per invocation. `zcode app-server` (ZCode Protocol: session/setModel, session/setThoughtLevel) is the successor route for binding model and effort.",
 			// Scope EMPTY: --cwd is a working directory, not an enforced sandbox.
 			AutonomousWrite: AutonomousWrite{Mode: "yolo", Args: []string{"--mode", "yolo"}, Scope: ""},

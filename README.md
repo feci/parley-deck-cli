@@ -188,7 +188,7 @@ parley help
 - [Agent runtime configuration](docs/agent-runtime-configuration.md)
 - [CLI reference](docs/cli-reference.md)
 
-### Participant dropout (1.52.0)
+### Participant dropout and review gates (1.53.0)
 
 New ideas save `participant-failure-v1` under the existing `[defaults].quota_auto_exclude`
 boolean. A non-protected participant gets the original attempt and one retry after five
@@ -203,7 +203,14 @@ history. Permanently dropped IDs cannot return even after opt-out or owner revis
 the next idea probes them normally.
 
 Reduction still requires two positively usable non-organizers, including any designated
-or pinned implementer, and every existing gate. In particular, auto_implement 3→2
-blocks because only one independent reviewer remains. The owner may authorize another
-eligible reviewer process or an attended evidence-backed continuation; no substitute
-or gate waiver is selected automatically. Windows CLI assets remain experimental.
+or pinned implementer. A recorded automatic loss from at least two independent reviewers
+to one may now satisfy the numeric review/auto-close gate. The remaining reviewer must
+have a known distinct model in the saved roster snapshot. Manual exclusion markers do
+not establish this exception. Current signers, retained dissent, strict review and
+independent acceptance evidence remain required; the same reviewer may goal-check in a
+fresh process. See [evidence and timing rules](docs/quota-membership.md).
+
+Eligible streaming steps, including headless signoffs, default to first output 120s and
+stall 300s, with one retry after 5s. Buffered Zcode and default Claude text output use their
+hard ceiling; silence alone cannot diagnose a hang. Explicit configuration remains
+honored. Windows CLI assets remain experimental.

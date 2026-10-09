@@ -1,0 +1,72 @@
+{
+  "cli_product_commit": "a26f5881835560dfabfe483a6d537aff39c45c35",
+  "skill_product_commit": "74cc831b18ce33e48e705fc8992c89be85cadf6f",
+  "full_go": {
+    "name": "full-host-tests-v2",
+    "head": "a26f5881835560dfabfe483a6d537aff39c45c35",
+    "cmd": [
+      "go",
+      "test",
+      "./...",
+      "-json",
+      "-count=1",
+      "-timeout",
+      "45m"
+    ],
+    "started_at": "2026-10-09T07:51:44.609061+00:00",
+    "exit_code": 0,
+    "elapsed_s": 847.2702060830052,
+    "log_sha256": "04e3fa050564d222f09fc7d0b08bc665a0c26e6e180c28dec1cd28e262c28d23"
+  },
+  "receipt_recovery": "Exact actual tool stdout; original shared-volume directory entry cannot be reopened. See full-host-tests-v2-receipt-recovery.md. JSONL hash verified.",
+  "passing_packages": 34,
+  "passing_tests_subtests": 3311,
+  "skipped_tests_subtests": 4,
+  "no_test_packages": 3,
+  "failed_events": 0,
+  "build": {
+    "name": "build-v2",
+    "head": "a26f5881835560dfabfe483a6d537aff39c45c35",
+    "cmd": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "started_at": "2026-10-09T08:05:51.892707+00:00",
+    "exit_code": 0,
+    "elapsed_s": 1.956327040999895,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "vet": {
+    "name": "vet-v2",
+    "head": "a26f5881835560dfabfe483a6d537aff39c45c35",
+    "cmd": [
+      "go",
+      "vet",
+      "./..."
+    ],
+    "started_at": "2026-10-09T08:05:53.850202+00:00",
+    "exit_code": 0,
+    "elapsed_s": 1.4505628329934552,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "skill": {
+    "cmd": [
+      "npm",
+      "test"
+    ],
+    "exit_code": 0,
+    "elapsed_s": 156.36191887500172,
+    "head": "74cc831b18ce33e48e705fc8992c89be85cadf6f",
+    "log_sha256": "3509b5ce4c7db449fb6f72ab9055215ce6ad7d0c29bbe367ff83a0aa0cc35a4b"
+  },
+  "skill_node_tests": 399,
+  "skill_python_tests": 54,
+  "skill_manifests": 6,
+  "failed_history": [
+    "full-host-tests-v1",
+    "skill-tests-v1",
+    "skill-tests-v2"
+  ],
+  "independent_verdict": "pending separate Zcode review"
+}

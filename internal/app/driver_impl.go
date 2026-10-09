@@ -624,6 +624,9 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 	if len(o.reviewers) == 0 {
 		return fmt.Errorf("no non-implementer reviewers available")
 	}
+	if _, err := o.singleReviewerAfterDropout(); err != nil {
+		return err
+	}
 	// LE-3 model-diversity: a checker that shares the implementer's model is more
 	// likely to rubber-stamp. Default = warn (+event); require_model_diversity escalates.
 	if err := o.checkModelDiversity(); err != nil {
@@ -686,6 +689,9 @@ func (o driverImplOps) DraftReviewConsensus(ctx context.Context, round int) erro
 	if qerr != nil {
 		return qerr
 	}
+	if _, err := o.singleReviewerAfterDropout(); err != nil {
+		return err
+	}
 
 	fmt.Fprintf(o.out, "driver: drafting review consensus via %s ...\n", o.drafter)
 	strict := driver.ReadStrictGate(o.ideaDir)
@@ -731,6 +737,10 @@ func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
 			return driver.ReviewStatus{}, err
 		}
 	}
+	singleReviewer, err := o.singleReviewerAfterDropout()
+	if err != nil {
+		return driver.ReviewStatus{}, err
+	}
 	summary, err := consensus.Status(o.root, o.ideaSlug, true)
 	if err != nil {
 		return driver.ReviewStatus{}, err
@@ -756,8 +766,15 @@ func (o driverImplOps) ReviewStatus() (driver.ReviewStatus, error) {
 	return driver.ReviewStatus{
 		Summary: summary, OutstandingAgreedFixes: fixes, Blocked: blocked,
 		StrictGateClean: strictClean, ClosingReviewRound: closingRound,
-		ReviewerCount: len(o.reviewers), // LE-11
+		ReviewerCount: len(o.reviewers), SingleReviewerAfterDropout: singleReviewer,
 	}, nil
+}
+
+func (o driverImplOps) singleReviewerAfterDropout() (bool, error) {
+	if len(o.reviewers) != 1 {
+		return false, nil
+	}
+	return membership.SingleReviewerAfterDropout(o.root, o.ideaDir, o.base.RunID, o.implementer, o.base.Idea.Participants, nil)
 }
 
 // discoveryFor returns the discovered agent for an id, matching the id directly OR
@@ -787,9 +804,12 @@ func (o driverImplOps) GoalCheck(ctx context.Context) (bool, string) {
 	if o.roleErr != "" {
 		return false, "goal-check unavailable: " + o.roleErr
 	}
+	if _, err := o.singleReviewerAfterDropout(); err != nil {
+		return false, err.Error()
+	}
 	checker := o.drafter
 	// CF6: GoalCheck must use a non-implementer checker. The upstream guards
-	// (ReviewerCount < 2 under auto; OpenReviewRound under strict) already prevent
+	// (the derived reviewer gate under auto; OpenReviewRound under strict) prevent
 	// the drafter==implementer fallback from reaching here, but enforce the contract
 	// locally too — never run the implementer as its own goal checker.
 	if checker == "" || checker == o.implementer {
@@ -939,6 +959,9 @@ func (o driverImplOps) RequestReviewSignoffs(ctx context.Context, missing []stri
 	if qerr != nil {
 		return qerr
 	}
+	if _, err := o.singleReviewerAfterDropout(); err != nil {
+		return err
+	}
 
 	return requestConsensusSignoffs(ctx, requestSignoffsOptions{
 		Root:            o.root,
@@ -1020,6 +1043,9 @@ func (o driverImplOps) Complete(ctx context.Context) error {
 	o, qerr = o.quotaCurrent()
 	if qerr != nil {
 		return qerr
+	}
+	if _, err := o.singleReviewerAfterDropout(); err != nil {
+		return err
 	}
 
 	return evidence.WithReportWriter(ctx, o.ideaDir, func(_ *evidence.ReportWriter) error { return o.completeWithWriter(ctx) })

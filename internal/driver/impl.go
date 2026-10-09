@@ -59,8 +59,11 @@ type ReviewStatus struct {
 	StrictGateClean    bool
 	ClosingReviewRound int
 	// ReviewerCount is the number of independent (non-implementer) reviewers (LE-11):
-	// the auto-driver refuses to auto-complete a code-writing idea with fewer than 2.
+	// The cause-derived dropout exception changes only this numeric minimum.
 	ReviewerCount int
+	// Derived by the adapter from immutable membership evidence and snapshot
+	// diversity, never read from participant-authored frontmatter.
+	SingleReviewerAfterDropout bool
 }
 
 const (
@@ -285,8 +288,12 @@ func (d *Driver) advanceReview(ctx context.Context, c Cursor) (Action, Cursor, e
 			if rs.Summary.Triage == consensus.TriageReserved {
 				return ActionEscalated, c, fmt.Errorf("review consensus is ACCEPT-WITH-RESERVATIONS; under auto_implement, reservations need human review before completion (LE-11)")
 			}
-			if rs.ReviewerCount < d.cfg.MinReviewers {
-				return ActionEscalated, c, fmt.Errorf("only %d independent reviewer(s); track %q auto-complete requires at least %d (LE-11) — add a reviewer or sign off manually", rs.ReviewerCount, d.cfg.Track, d.cfg.MinReviewers)
+			minimum := d.cfg.MinReviewers
+			if rs.SingleReviewerAfterDropout && rs.ReviewerCount == 1 {
+				minimum = 1
+			}
+			if rs.ReviewerCount < minimum {
+				return ActionEscalated, c, fmt.Errorf("only %d independent reviewer(s); track %q auto-complete requires at least %d (LE-11) — add a reviewer or sign off manually", rs.ReviewerCount, d.cfg.Track, minimum)
 			}
 		}
 		// LE-7 (goal-done gate): before completing an auto-driven / strict idea, a fresh

@@ -688,7 +688,7 @@ func runExecAttempt(parent context.Context, opts Options, agent agents.Discovery
 		})
 	}
 	act := &activityTracker{}
-	cfg := supervisionForAgent(agent, hardTimeout)
+	cfg := supervisionForStep(ctx, agent, hardTimeout)
 	hooks := supervisionHooks{
 		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {
 			_ = opts.Store.Append(store.Event{

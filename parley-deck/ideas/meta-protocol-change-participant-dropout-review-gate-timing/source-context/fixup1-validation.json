@@ -1,0 +1,65 @@
+{
+  "results": [
+    {
+      "name": "full-host-tests-cycle1",
+      "head": "b89e2abaa056813a4b238c2fa4278195b0f7096b",
+      "cmd": [
+        "go",
+        "test",
+        "./...",
+        "-json",
+        "-count=1",
+        "-timeout",
+        "45m"
+      ],
+      "started_at": "2026-10-09T08:37:49.113358+00:00",
+      "exit_code": 0,
+      "elapsed_s": 1388.0054125419992,
+      "log_sha256": "04d2f0529c7e38046ac64c7be04603fbdd05dd0cc461b796d5d8c65f27724db5"
+    },
+    {
+      "name": "build-cycle1",
+      "head": "b89e2abaa056813a4b238c2fa4278195b0f7096b",
+      "cmd": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "started_at": "2026-10-09T09:00:57.148643+00:00",
+      "exit_code": 0,
+      "elapsed_s": 4.215860374999465,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "vet-cycle1",
+      "head": "b89e2abaa056813a4b238c2fa4278195b0f7096b",
+      "cmd": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-10-09T09:01:01.371107+00:00",
+      "exit_code": 0,
+      "elapsed_s": 3.693201540998416,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "counts": {
+    "packages_pass": 34,
+    "test_subtests_pass": 3330,
+    "test_subtests_skip": 4,
+    "failure_events": 0
+  },
+  "both_native_and_shared_receipts_read_back_identical": true,
+  "skill_unchanged": "74cc831b18ce33e48e705fc8992c89be85cadf6f",
+  "skill_result": {
+    "cmd": [
+      "npm",
+      "test"
+    ],
+    "exit_code": 0,
+    "elapsed_s": 156.36191887500172,
+    "head": "74cc831b18ce33e48e705fc8992c89be85cadf6f",
+    "log_sha256": "3509b5ce4c7db449fb6f72ab9055215ce6ad7d0c29bbe367ff83a0aa0cc35a4b"
+  }
+}
