@@ -21,3 +21,5 @@ parley continue --auto --no-implement refused round-02 before dispatch with `cro
 ## Round 2 convergence / consensus draft
 
 Zcode native round02 PID75692 exited0 after620.259s, no timeout; its own round02 artifact validated with codex by parley wait. It accepts D1–D5 with typed-rule enumeration, snapshot authority and truthful buffered-adapter correction. Codex accepts the latter material change and discloses it in consensus. Four active roster adapters inspected; no Claude task launch. Exact protocol substitutions are design artifacts only until signed FINAL. Driver consensus draft succeeded.
+
+CLI consensus request-signoffs succeeded: Zcode invocation d2e52352-61e1-4e2b-b367-254a0d19af3c exited0 in270.130s and appended its own ACCEPT after independently checking all14 protocol-hunk substitutions/hash and packet preview. Driver consensus status=ready; finalize succeeded. Native GitHub mirrors use COMMENT because the mapped login is the PR author; files stay canonical.
