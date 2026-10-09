@@ -4,9 +4,10 @@ status: ready-for-review
 implementer: codex-1
 started: 2026-10-09
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing#review-gate-timing
-head-commit: ac0d374ded57f37b68fc2c31bd89ea2f552885bb
+head-commit: a26f588
 design-pr: https://github.com/feci/parley-deck-cli/pull/77
-implementation-pr: pending
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/78
+skill-pr: https://github.com/feci/parley-deck-skill/pull/10
 ---
 
 ## Summary of work
@@ -44,3 +45,5 @@ Skill implementation is commit 74cc831 in the sibling worktree, based on dbdb919
 Validation evidence is retained privately under `.parley-runtime/review-gate-timing/`. Focused new tests passed in membership, driver, app, runner and agents; build/vet and actual packet/drift checks passed. Initial full-suite run v1 exposed two regression integration details: the goal execution fixture needed an idea prompt now that cause validation inspects membership, and the notice must retain its LE-7/LE-11 names. Both were corrected and the exact two tests pass (validation-fix-v1-result.json, exit 0). Initial skill suite failed against stale payload hashes; the manifest was regenerated and the complete suite rerun. Failed results remain preserved as failed results, never counted as passes. Final committed-source full validation is pending and must pass before close; its results will be appended here.
 
 No independent code review or completion verdict is claimed by codex-1. Zcode's separate full-scope review will assess both product diffs and every AC, with unrestricted finding scope. Fix-up cycles used: 0 of 5.
+
+The complete skill v2 run passed 385 Node tests but failed loading the missing commonmark dev dependency; this is not a passing suite. npm ci and the complete v3 suite are running. The final current-source Go suite is full-host-tests-v2 at a26f588, with build/vet afterward. Initial Go v1 remains failed history.
