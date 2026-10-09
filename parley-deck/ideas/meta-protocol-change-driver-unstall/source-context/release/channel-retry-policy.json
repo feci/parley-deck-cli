@@ -1,0 +1,51 @@
+{
+  "attempt01": "13bedb27-c0b4-4d9b-9676-43dfe2f765f2",
+  "failure": "timeout",
+  "completed_at": "2026-10-09T13:06:58.789574Z",
+  "next_retry_not_before": "2026-10-09T13:21:58.789574+00:00",
+  "next_timeout_seconds": 2400,
+  "relaunches_used": 1,
+  "max_relaunches": 8,
+  "scope": "Manual release channel check under the controlling brief, not a product driver goal retry or membership event",
+  "observation": "Process spent a bounded 58x10-second poll followed by sleep540 and another poll on the new main Windows CI. The latter extended past its hard 1800s ceiling. No canonical channel artifact or verdict was produced; no result is accepted.",
+  "retained_temporary_downloads": [
+    {
+      "original": "cli-src.tar.gz",
+      "retained": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/channel-probes/attempt01/cli-src.tar.gz",
+      "sha256": "fd07f50cebccd1c29bbb23f49d0e7cb3808461591de9f7d82f099e76030ea2a2"
+    },
+    {
+      "original": "skill-src.tar.gz",
+      "retained": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/channel-probes/attempt01/skill-src.tar.gz",
+      "sha256": "b089855c1aee3f7b48f3f17838be72d0edc03abb4b13c2c8bce4b7f6904e2fed"
+    }
+  ],
+  "post_timeout_cleanup": {
+    "at": "2026-10-09T13:09:46.915702+00:00",
+    "root_processes_exited": true,
+    "orphaned_read_only_tool_processes_observed": true,
+    "actions": [
+      {
+        "pid": 47106,
+        "already_exited": true
+      },
+      {
+        "pid": 47102,
+        "comm": "/bin/zsh",
+        "signal": "SIGTERM",
+        "task_ownership": "Previously observed descendant of channel checker 42162; read-only CI polling shell / its sleep"
+      }
+    ],
+    "note": "The wrapper terminated the Zcode root, but its separately grouped task tool shell/sleep survived. The organizer terminated only these positively identified task processes. This is a manual channel-process cleanup observation, not proof of product RunParticipantStep behavior.",
+    "known_processes_absent_verified_at": "2026-10-09T13:09:47.100239+00:00"
+  },
+  "retry01_requested_at": "2026-10-09T13:22:39.234185+00:00",
+  "wait_seconds_before_retry_request": 940.444611,
+  "retry01_actual_invocation": "8b01e946-b799-4d0b-b576-5874d73f731c",
+  "retry01_started_at": "2026-10-09T13:22:41.150979Z",
+  "retry01_completed_at": "2026-10-09T13:34:24.080463Z",
+  "retry01_duration_ms": 702956,
+  "retry01_exit_code": 0,
+  "retry01_artifact_sha256": "077a972b4dc25197333414be68f75615477bd7d5b5c91b688250d94d3bae171d",
+  "final_result": "CHANNEL-VERIFICATION: PASS"
+}

@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-09T12:28:20.630049+00:00",
+  "formulae": [
+    {
+      "formula": "parley-deck-cli",
+      "version": "1.54.0",
+      "url": "https://github.com/feci/parley-deck-cli/archive/refs/tags/v1.54.0.tar.gz",
+      "source_sha256": "fd07f50cebccd1c29bbb23f49d0e7cb3808461591de9f7d82f099e76030ea2a2",
+      "source_bytes": 10678213
+    },
+    {
+      "formula": "parley-deck-skill",
+      "version": "2.18.0",
+      "url": "https://github.com/feci/parley-deck-skill/archive/refs/tags/v2.18.0.tar.gz",
+      "source_sha256": "b089855c1aee3f7b48f3f17838be72d0edc03abb4b13c2c8bce4b7f6904e2fed",
+      "source_bytes": 502097
+    }
+  ]
+}

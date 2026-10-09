@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-09T12:39:38.451201+00:00",
+  "source_merge": "bed5ffd1049dc0f207eb39beaa3dd3ba879181c3",
+  "files": [
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-driver-unstall/FINAL.md",
+      "sha256": "e29953c134dbe0f2e987436fd6f470376597262327d61ef473d867cdb27a2f0d",
+      "unchanged_from_source_merge": true
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-driver-unstall/IMPLEMENTATION.md",
+      "sha256": "28a6d27213002d91723362319bd7423ef17862a5a45fbbda2ddd56dca321be26",
+      "unchanged_from_source_merge": true
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-driver-unstall/review/consensus.md",
+      "sha256": "a05a81a20aa189fb226f23c4361b2cac0c758f9d0aad4936aba46c71e0929c10",
+      "unchanged_from_source_merge": true
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-driver-unstall/review/consensus-cycle-01.md",
+      "sha256": "64410c6eda9e2959276c854d998e9d5642d8e3a14e4420b1dece0cab2be2b78e",
+      "unchanged_from_source_merge": true
+    }
+  ]
+}

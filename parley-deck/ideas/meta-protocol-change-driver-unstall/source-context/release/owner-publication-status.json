@@ -1,0 +1,80 @@
+{
+  "at": "2026-10-09T13:37:18.917665+00:00",
+  "npm_registry": "https://registry.npmjs.org/parley-deck-skill",
+  "npm_latest": "2.13.0",
+  "installed_cores": [
+    "2.10.0",
+    "2.13.0"
+  ],
+  "sources_hash_verified": true,
+  "versions": [
+    {
+      "version": "2.15.0",
+      "npm_unpublished": true,
+      "core_unpublished": true,
+      "archive": {
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/skill/parley-deck-skill-2.15.0.tgz",
+        "sha256": "64c274a86d0b4f2e136decbb1cc2810a18de89191192c6b9e680c5ec9af89b2a"
+      },
+      "core": {
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.15.0.md",
+        "sha256": "0d81fd807114e4ff67f5fa98bba73622b58c86d66a2bf6b57d1def68cd099c09"
+      },
+      "commands": [
+        "npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/skill/parley-deck-skill-2.15.0.tgz' --access public",
+        "parley protocol publish --version 2.15.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.15.0.md"
+      ]
+    },
+    {
+      "version": "2.16.0",
+      "npm_unpublished": true,
+      "core_unpublished": true,
+      "archive": {
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-participant-dropout/skill/parley-deck-skill-2.16.0.tgz",
+        "sha256": "80f3172a29f293f26952475e218876bd67301f9021114f5a7f0d000643607db6"
+      },
+      "core": {
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.16.0.md",
+        "sha256": "8c6b95b611901d3d1460ccb8554e26adac67f58d82ea028713791116a3e65a63"
+      },
+      "commands": [
+        "npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-participant-dropout/skill/parley-deck-skill-2.16.0.tgz' --access public",
+        "parley protocol publish --version 2.16.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.16.0.md"
+      ]
+    },
+    {
+      "version": "2.17.0",
+      "npm_unpublished": true,
+      "core_unpublished": true,
+      "archive": {
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/skill/parley-deck-skill-2.17.0.tgz",
+        "sha256": "40b6eb424cfc003864f06fa17065ea1ac997637e47d76f0f86aef0fbcfbae3ca"
+      },
+      "core": {
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.17.0.md",
+        "sha256": "6073c311b592653528bc675056b04b8454b491ab2702b37c298402ba2cb87957"
+      },
+      "commands": [
+        "npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/skill/parley-deck-skill-2.17.0.tgz' --access public",
+        "parley protocol publish --version 2.17.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.17.0.md"
+      ]
+    },
+    {
+      "version": "2.18.0",
+      "npm_unpublished": true,
+      "core_unpublished": true,
+      "archive": {
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/skill/parley-deck-skill-2.18.0.tgz",
+        "sha256": "2d1e79016764d2e9e2ea5a4b5665c25da36ad7138ad15fecf0a93864f478eaf0"
+      },
+      "core": {
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.18.0.md",
+        "sha256": "9ead4475df6d6fa500317e7d347a0b6422bf3c202aca49f1d4b57a5fe14dc512"
+      },
+      "commands": [
+        "npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/skill/parley-deck-skill-2.18.0.tgz' --access public",
+        "parley protocol publish --version 2.18.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.18.0.md"
+      ]
+    }
+  ]
+}

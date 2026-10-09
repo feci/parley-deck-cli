@@ -1,0 +1,695 @@
+{
+  "at": "2026-10-09T12:28:47.671326+00:00",
+  "version": "2.18.0",
+  "managed_targets": 15,
+  "generic_targets": 4,
+  "skill_files": 114,
+  "checks": [
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.codex/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.codex/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.codex/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.codex/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.codex/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.codex/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.claude/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.claude/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.claude/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.claude/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.claude/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.claude/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.gemini/config/plugins/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.gemini/extensions/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.hermes/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.qwen/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.goose/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.goose/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.goose/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.goose/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.goose/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.goose/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.factory/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.factory/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.factory/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.factory/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.factory/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.factory/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.vibe/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.cursor/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.opencode/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.zcode/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    },
+    {
+      "skill": "parley-deck",
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-deck/SKILL.md",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "matches": true
+    },
+    {
+      "skill": "parley-bidding",
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "matches": true
+    },
+    {
+      "skill": "parley-design",
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "matches": true
+    },
+    {
+      "skill": "parley-design-check",
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "matches": true
+    },
+    {
+      "skill": "parley-tracker",
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "matches": true
+    },
+    {
+      "skill": "parley-worktrees",
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "matches": true
+    }
+  ],
+  "backup": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/runtime-skills-before-2.18.0.tar.gz",
+  "backup_sha256": "2ea793672cdce36b33cd8652d6f27bc721349119ef413477fc9a4be66c275527"
+}
