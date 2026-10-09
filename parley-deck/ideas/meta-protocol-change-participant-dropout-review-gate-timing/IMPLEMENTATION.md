@@ -63,3 +63,21 @@ These are implementer-run checks. Independent review, both ACCEPT blocks and the
 ## Fix-up cycle1 plan
 
 The revised review/consensus.md has both ACCEPTs. Preserve the original-manifest integrity gate confirmed against baseline by Zcode; distinguish it from absent snapshots, warn when a standalone signoff's valid manifest lacks a snapshot, and cover absent/missing/corrupt/foreign variants. Add legacy short/contradictory reset, adapter and provenance negatives at the shared predicate. Insert the Markdown blank line. Re-run covering checks and full current-source validation, then independent full-scope review. No policy/historical recovery relaxation.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-10-09
+
+### Fixes applied
+
+The signed revised cycle-1 plan is implemented. The snapshot-inheritance comment now explicitly distinguishes an absent snapshot in a valid manifest from a missing/corrupt/foreign manifest. Standalone signoff emits a warning when the inherited snapshot is empty; it creates no model identity and cannot qualify the exception. End-to-end tests cover absent snapshot through successful signoffs and empty inheritance, plus missing/corrupt/foreign manifests failing for their expected integrity reasons before a child starts. A membership test removes the snapshot after a valid causal dropout and confirms refusal. The existing same-tick rebind test passes.
+
+The legacy evidence seam now tests all three allowed rules at their valid boundary plus wrong adapter, wrong provenance, short reset or contradictory no-reset evidence. The documentation heading has its missing blank line.
+
+### Deviations from agreed fixes
+
+None from the revised, doubly signed plan. The initial proposed relaxation was withdrawn by its author before Codex signed, with the baseline proof and prior draft preserved. No policy/history recovery behavior changed.
+
+### Validation and next gate
+
+Focused app/membership TestReviewGate run v3 passes (16.733s, log SHA2568548172a7dc135e57fef6063131f49535fbc33c5b1cbb62ac0671c71cb048c41). Failed v1/v2 are retained: the new fixture initially overwrote immutable prompt metadata and then lacked attributable consensus drafter metadata; both setup defects were corrected. Full final-source Go/build/vet and a separate full-scope Zcode review follow this commit. Skill product74cc831 and its full399 Node/54 Python/six-manifest pass are unchanged. Cycles used:1 of5.

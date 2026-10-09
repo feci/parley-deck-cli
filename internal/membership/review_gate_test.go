@@ -172,3 +172,57 @@ func TestReviewGateKickoffAndLegacyRules(t *testing.T) {
 		})
 	}
 }
+
+func TestReviewGateAbsentSnapshotCannotQualify(t *testing.T) {
+	root, dir, run := reviewGateFixture(t)
+	ctx := leaseFixture(t, dir, run)
+	if _, err := Settle(ctx, root, dir, run, "round-01", []string{"a", "b", "c", "d"}, dropoutMembers(t, filepath.Base(dir))); err != nil {
+		t.Fatal(err)
+	}
+	m, err := runmanifest.Load(root, run)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.RosterSnapshot = nil
+	if err := runmanifest.Write(root, run, m); err != nil {
+		t.Fatal(err)
+	}
+	if ok, err := SingleReviewerAfterDropout(root, dir, run, "a", []string{"a", "b"}, nil); ok || err == nil {
+		t.Fatalf("absent snapshot qualified despite valid cause: %v %v", ok, err)
+	}
+}
+
+func TestReviewGateLegacyEvidenceNegatives(t *testing.T) {
+	for _, rule := range []string{legacyResetRule, legacyAccountRule, legacyAllowanceRule} {
+		for _, mutation := range []string{"valid-boundary", "wrong-adapter", "wrong-provenance", "reset-contradiction"} {
+			t.Run(rule+"/"+mutation, func(t *testing.T) {
+				root, dir, run := reviewGateFixture(t)
+				ms := dropoutMembers(t, filepath.Base(dir))
+				for n := range ms {
+					if e := ms[n].Evidence; e != nil {
+						e.RuleID, e.Provenance, e.Adapter, e.Failure = rule, legacyProvenance, "zcode", nil
+						if rule == legacyResetRule {
+							reset := e.ObservedAt.Add(time.Hour)
+							e.ResetAt, e.RawReset = &reset, "3600"
+						}
+					}
+				}
+				d := quota.Evaluate(quota.NewPolicy(nil, nil), []string{"a", "b", "c", "d"}, ms, quota.Roles{})
+				e := &d.Candidates[0].Evidence
+				switch mutation {
+				case "wrong-adapter":
+					e.Adapter = "another-adapter"
+				case "wrong-provenance":
+					e.Provenance = "unrecognized"
+				case "reset-contradiction":
+					reset := e.ObservedAt.Add(time.Hour - time.Second)
+					e.ResetAt, e.RawReset = &reset, "3599"
+				}
+				ok, err := SingleReviewerAfterDropout(root, dir, run, "a", d.After, &d)
+				if ok != (mutation == "valid-boundary") || err != nil {
+					t.Fatalf("%s: %v %v", mutation, ok, err)
+				}
+			})
+		}
+	}
+}

@@ -91,6 +91,7 @@ together — never work around the runner with hand-rolled calls.
 See also: `docs/agent-runtime-configuration.md` (spec/TOML knobs, including the
 supervision windows `first_event_timeout_ms`, `stall_timeout_ms`,
 `heartbeat_ms` and the `buffers_stdout` flag).
+
 ## Participant-step timing and buffered output (1.53.0)
 
 Eligible participant-failure steps default to 120s before first output, 300s stall after

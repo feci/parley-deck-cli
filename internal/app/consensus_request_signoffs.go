@@ -133,6 +133,9 @@ func requestConsensusSignoffs(ctx context.Context, opts requestSignoffsOptions, 
 		if err != nil {
 			return err
 		}
+		if len(manifest.RosterSnapshot) == 0 {
+			fmt.Fprintln(stderr, "warning: this signoff run has no roster snapshot; model identity is not frozen and cannot qualify the single-reviewer exception")
+		}
 		selected = applyRosterSnapshot(selected, manifest.RosterSnapshot, stderr)
 	}
 	selected, err = applyLaunchModeOverrides(selected, opts.ModeOverrides)

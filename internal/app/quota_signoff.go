@@ -51,8 +51,10 @@ func quotaSignoffStart(ctx context.Context, root, slug string, dry bool) (contex
 		m := runmanifest.New(runmanifest.Options{Root: root, RunID: run, IdeaSlug: slug, Mode: "consensus-signoff", Participants: h.Current, QuotaKickoff: h.Kickoff})
 		// A standalone signoff is a new orchestration run, not a new model
 		// selection. Preserve the membership history's frozen launch identity so
-		// precommit and close use the same model basis. Missing old snapshots stay
-		// missing and cannot earn the single-reviewer exception.
+		// precommit and close use the same model basis. An absent snapshot in a
+		// valid manifest stays absent and cannot earn the single-reviewer exception.
+		// A missing/corrupt/foreign manifest still blocks, as membership.Before's
+		// existing validateManifests integrity gate also requires that original run.
 		priorRun := h.Kickoff.RunID
 		if n := len(h.Batches); n > 0 {
 			priorRun = h.Batches[n-1].RunID
