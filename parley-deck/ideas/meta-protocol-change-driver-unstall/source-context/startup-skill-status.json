@@ -1,0 +1,1554 @@
+{
+  "ok": true,
+  "command": "status",
+  "installer": {
+    "name": "parley-deck-skill",
+    "version": "2.17.0",
+    "source": "npm:parley-deck-skill@2.17.0",
+    "packageRoot": "/opt/homebrew/Cellar/parley-deck-skill/2.17.0/libexec",
+    "executable": "/opt/homebrew/bin/parley-deck-skill"
+  },
+  "runtimeInstalls": [
+    {
+      "target": "codex",
+      "dest": "/Users/tomasfecko/.codex/skills/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "codex",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:40.484Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "codex",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:40.484Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "codex",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:40.757Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "codex",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:40.810Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "codex",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:42.171Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "codex",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:42.251Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "codex",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:42.288Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "claude",
+      "dest": "/Users/tomasfecko/.claude/skills/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "claude",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:42.344Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "claude",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:42.344Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "claude",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:42.531Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "claude",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:42.585Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "claude",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:43.270Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "claude",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:43.332Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "claude",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:43.348Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "agy",
+      "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "agy",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:43.400Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "agy",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:43.400Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "agy",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:43.735Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "agy",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:43.803Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "agy",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:44.408Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "agy",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:44.449Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "agy",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:44.457Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "gemini",
+      "dest": "/Users/tomasfecko/.gemini/extensions/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "gemini",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:44.531Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "gemini",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:44.531Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "gemini",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:44.670Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "gemini",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:44.688Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "gemini",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:45.233Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "gemini",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:45.288Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "gemini",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:45.299Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "hermes",
+      "dest": "/Users/tomasfecko/.hermes/skills/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "hermes",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:45.335Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "hermes",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:45.335Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "hermes",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:45.444Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "hermes",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:45.474Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "hermes",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:46.156Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "hermes",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:46.200Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "hermes",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:46.211Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "kimi",
+      "dest": "/Users/tomasfecko/.kimi-code/skills/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "kimi",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:50.252Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "kimi",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:50.252Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "kimi",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:50.530Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "kimi",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:50.563Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "kimi",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:51.235Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "kimi",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:51.319Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "kimi",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:51.330Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "opencode",
+      "dest": "/Users/tomasfecko/.opencode/skills/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "opencode",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:54.834Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "opencode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:54.834Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "opencode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:55.080Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "opencode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:55.118Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "opencode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:55.969Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "opencode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:56.031Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "opencode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:56.056Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    },
+    {
+      "target": "zcode",
+      "dest": "/Users/tomasfecko/.zcode/skills/parley-deck",
+      "detected": true,
+      "status": "valid",
+      "marker": {
+        "name": "parley-deck-skill",
+        "markerSchema": 2,
+        "skill": "parley-deck",
+        "addon": false,
+        "version": "2.17.0",
+        "source": "npm:parley-deck-skill@2.17.0",
+        "target": "zcode",
+        "scope": "user",
+        "installedAt": "2026-10-09T09:22:57.143Z",
+        "addons": [
+          "parley-bidding",
+          "parley-design",
+          "parley-design-check",
+          "parley-tracker",
+          "parley-worktrees"
+        ]
+      },
+      "missing": [],
+      "skills": [
+        {
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-deck",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-deck",
+            "addon": false,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "zcode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:57.143Z",
+            "addons": [
+              "parley-bidding",
+              "parley-design",
+              "parley-design-check",
+              "parley-tracker",
+              "parley-worktrees"
+            ]
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-bidding",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-bidding",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "zcode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:57.355Z",
+            "manifest": {
+              "aggregate": "sha256:7854adf150712e0e3b9cca5618a23855024651670fdacc8392e1860568b95a6d",
+              "sha256": "sha256:0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": {
+            "ok": true,
+            "requirement": ">=3.10",
+            "detail": "python3 3.14"
+          }
+        },
+        {
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-design",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "zcode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:57.393Z",
+            "manifest": {
+              "aggregate": "sha256:fca17c7042f21309ac44042825d52082d066bf3a73c1005ff8dc86ffaae185a1",
+              "sha256": "sha256:f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-design-check",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-design-check",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "zcode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:58.210Z",
+            "manifest": {
+              "aggregate": "sha256:2c65c1489da03ab3b4b9294762f9347a816f15d17d0f537476d7c16a05ae87d7",
+              "sha256": "sha256:f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-tracker",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-tracker",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "zcode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:58.295Z",
+            "manifest": {
+              "aggregate": "sha256:07d9826373e4be3d2f393a8a56da616945fbc2e4e0838938827ceba7e85dfdd5",
+              "sha256": "sha256:a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        },
+        {
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-worktrees",
+          "selected": true,
+          "status": "valid",
+          "managed": true,
+          "marker": {
+            "name": "parley-deck-skill",
+            "markerSchema": 2,
+            "skill": "parley-worktrees",
+            "addon": true,
+            "version": "2.17.0",
+            "source": "npm:parley-deck-skill@2.17.0",
+            "target": "zcode",
+            "scope": "user",
+            "installedAt": "2026-10-09T09:22:58.311Z",
+            "manifest": {
+              "aggregate": "sha256:ca446d5945183a1b76692d7445b84445aa21660053496ea554456c7a029a19db",
+              "sha256": "sha256:0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+            }
+          },
+          "missing": [],
+          "problems": [],
+          "runtime": null
+        }
+      ],
+      "version": "2.17.0",
+      "versionMatchesInstaller": true
+    }
+  ],
+  "project": {
+    "root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/driver-unstall",
+    "deckRoot": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/driver-unstall/parley-deck",
+    "exists": true,
+    "protocolPath": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/driver-unstall/parley-deck/COOPERATION.md",
+    "protocolSha256": "acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137",
+    "metadataPath": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/driver-unstall/parley-deck/meta/version.json",
+    "metadata": {
+      "protocolRole": "source",
+      "schemaVersion": 1,
+      "deckVersion": "2.17.0",
+      "protocolSchema": 1,
+      "projectMetadataSchema": 1,
+      "source": "npm:parley-deck-skill@2.17.0",
+      "protocolSha256": "acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137",
+      "skillSha256": "0b9769e8a58fd83cdd9d1d92be5f0d755f3fe7cbba30be20126d5eea9cd6af0c",
+      "packagedProtocolSha256": "acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137",
+      "compatibilityManifestSha256": "51e3299f4eed9580fb9cef26de5490210718c488cf5e1272235d0e5736681fb8",
+      "updatedAt": "2026-10-09T07:43:21.900794+00:00",
+      "updatedBy": "codex-1 review-gate-timing reviewed hunks"
+    },
+    "metadataStatus": "valid",
+    "metadataMatchesProtocol": true,
+    "packaged": {
+      "protocolPath": "/opt/homebrew/Cellar/parley-deck-skill/2.17.0/libexec/skills/parley-deck/references/COOPERATION.md",
+      "protocolSha256": "acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137",
+      "compatibilityManifestPath": "/opt/homebrew/Cellar/parley-deck-skill/2.17.0/libexec/skills/parley-deck/references/compatibility.json",
+      "compatibilityManifestSha256": "51e3299f4eed9580fb9cef26de5490210718c488cf5e1272235d0e5736681fb8",
+      "compatibilityManifest": {
+        "schemaVersion": 1,
+        "skillPackage": "parley-deck-skill",
+        "skillVersion": "2.17.0",
+        "protocolSchema": 1,
+        "projectMetadataSchema": 1,
+        "compatibilityPolicy": "Report actual component versions and warn on drift; do not force global lockstep between installer, runtime skills, CLI, and project decks.",
+        "projectMetadataFile": "parley-deck/meta/version.json",
+        "minimumInstallerForProjectMetadata": "1.1.0",
+        "runtimeMarkerFile": ".parley-deck-skill-install.json",
+        "recommendedCli": ">=1.53.0"
+      }
+    },
+    "protocolMatchesPackaged": true,
+    "protocolRole": "source"
+  },
+  "parleyCli": {
+    "available": true,
+    "version": "parley 1.53.0"
+  },
+  "compatibility": {
+    "status": "ok",
+    "reasons": []
+  },
+  "actions": []
+}
