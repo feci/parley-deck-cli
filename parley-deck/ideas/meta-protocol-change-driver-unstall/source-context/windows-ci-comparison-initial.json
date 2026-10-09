@@ -1,0 +1,32 @@
+{
+  "baseline": {
+    "commit": "128e30b479065a98437844886d295ae83e9b0e52",
+    "run": 37910668038,
+    "job": 113754765366,
+    "failure_names": 357,
+    "log_sha256": "ed35474a032f92c48e47ef2e148ade4c9bb4bae177c2575f7f5e973b0012efb4"
+  },
+  "candidate": {
+    "commit": "c659bc84b44203681cbdc4e5f68d135078253113",
+    "run": 37919263383,
+    "job": 113782962458,
+    "failure_names": 353,
+    "log_sha256": "fdefb4d2b9e2539a38d1854644fbd6fac0fee3640d1190c8d7797ae33b412f01"
+  },
+  "shared_failure_names": 353,
+  "added_failure_names": [],
+  "baseline_only_failure_names": [
+    "TestBudgetReservationProcess",
+    "TestSeparateProcessesCannotExceedActionOrCostCap",
+    "TestSeparateProcessesCannotExceedActionOrCostCap/false",
+    "TestSeparateProcessesCannotExceedActionOrCostCap/true"
+  ],
+  "candidate_new_feature_excerpts": [
+    "2026-10-09T11:29:16.4316624Z     dropout_test.go:330: repair={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} lease held: repair/test-1/own pid=2344 host=\"runnervmfi6oq\" boot=\"\" at C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestDropoutRepairedRefusalWithoutValidOutputMayDispatch12782554\\001\\.parley-runtime\\participant-steps\\9677c71b01fee7fa8d39d910564eb8493a94467ac00aeafc101e44b839811e52\\step.lease; only a proven dead local owner may be reclaimed calls=0",
+    "2026-10-09T11:29:16.4319226Z panic: test timed out after 45m0s",
+    "2026-10-09T11:29:16.4319490Z \trunning tests:",
+    "2026-10-09T11:29:16.4319790Z \t\tTestDropoutConcurrentAndPrivatePartial (44m38s)",
+    "2026-10-09T11:29:16.4320026Z "
+  ],
+  "scope": "Failure-name comparison does not establish all failure causes as baseline; new fixture failures and pending fix-up runs remain independently scoped."
+}
