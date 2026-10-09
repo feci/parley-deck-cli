@@ -1,0 +1,37 @@
+{
+  "protocol_hunks_sha256": "54d0dd07d747cf54ce9d0e234b9d65c34a8282b525bd8667090aaf19cbffcc39",
+  "copies": [
+    {
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/parley-deck/COOPERATION.md",
+      "before_bytes": 125879,
+      "after_bytes": 125132,
+      "sha256": "acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137",
+      "exact_14_hunks": true
+    },
+    {
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/internal/protocol/defaults/COOPERATION.md",
+      "before_bytes": 125633,
+      "after_bytes": 124886,
+      "sha256": "d8cc6dbd1b41dae67854b241d8b78757c2f113743c23645c5685b7eac48923ea",
+      "exact_14_hunks": true
+    },
+    {
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing-skill/skills/parley-deck/references/COOPERATION.md",
+      "before_bytes": 125879,
+      "after_bytes": 125132,
+      "sha256": "acbd4dbc0c0702bc191176bb80bcee32c5093c8b4ebbee42e036df6a9b7d1137",
+      "exact_14_hunks": true
+    }
+  ],
+  "core_preview": {
+    "base_sha256": "8c6b95b611901d3d1460ccb8554e26adac67f58d82ea028713791116a3e65a63",
+    "result_sha256": "6073c311b592653528bc675056b04b8454b491ab2702b37c298402ba2cb87957",
+    "bytes": 124976
+  },
+  "skill_bytes": 18990,
+  "skill_sha256": "0b9769e8a58fd83cdd9d1d92be5f0d755f3fe7cbba30be20126d5eea9cd6af0c",
+  "phase1_guard_bytes": 68846,
+  "phase1_guard_cap": 70000,
+  "skill_cap": 20000,
+  "applicability_map_unchanged": true
+}

@@ -158,7 +158,7 @@ func runACPAgent(parent context.Context, opts Options, agent agents.Discovery, r
 	// agent.started event itself never satisfies the first-output guard.
 	act := &activityTracker{}
 	handler.activity = act
-	cfg := supervisionForAgent(agent, timeoutForAgent(opts.Timeout, agent))
+	cfg := supervisionForStep(ctx, agent, timeoutForAgent(opts.Timeout, agent))
 	hardTimeout := timeoutForAgent(opts.Timeout, agent)
 	hooks := supervisionHooks{
 		onHeartbeat: func(snap activitySnapshot, elapsed time.Duration) {

@@ -1696,3 +1696,20 @@ prepared ticket spent/unusable. Higher cross-review caller charging is outside
 this fixup/verification precheck. No refund, missing historical terminal,
 completed patch, recovered consumed/incomplete ticket, descendant inactivity or
 workflow-effect recovery is inferred.
+
+## Participant-step timing and buffered output (1.53.0)
+
+Eligible participant-failure steps default to 120s before first output, 300s stall after
+activity and 60s heartbeat. Explicit window overrides/disables and hard-ceiling clamping
+remain. Headless signoffs now use the same supervisor and terminal watchdog classes;
+classification occurs after process cleanup and consumes the existing two-attempt budget.
+Manual agents exec and interactive paths retain their hard-only bounds.
+
+Active adapter output-contract audit: Codex emits progress/tool output or JSON events;
+Kimi defaults to stream-json; both retain soft guards. Zcode emits final text, corroborated
+by a healthy 775.745s invocation with first activity at 775.662s. Default Claude
+--output-format text also emits its final answer. Both now declare buffers_stdout=true;
+no Claude task process was used for this audit. Existing agy buffering remains. A custom
+streaming argument set can explicitly override buffers_stdout=false. Buffered silent
+success must survive soft windows, but a buffered hang still hits the hard deadline.
+These are transport contracts and local lifecycle evidence, not native latency guarantees.

@@ -15,6 +15,7 @@ import (
 
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/procctl"
+	"parley-deck-cli/internal/store"
 	"parley-deck-cli/internal/telemetry"
 )
 
@@ -151,6 +152,57 @@ func (c *AgentCommand) Run() error {
 		return err
 	}
 	return c.Wait()
+}
+
+// RunSupervised uses the runner's existing watchdog for a headless participant
+// signoff. Unlike Wait, it finalizes telemetry AFTER classification and cleanup,
+// so a killed child records no_first_output/stalled rather than a generic exit.
+func (c *AgentCommand) RunSupervised(agent agents.Discovery, hardTimeout time.Duration) error {
+	act := &activityTracker{}
+	out, errOut := c.Stdout, c.Stderr
+	if out == nil {
+		out = io.Discard
+	}
+	if errOut == nil {
+		errOut = io.Discard
+	}
+	c.Stdout = &countingWriter{w: out, t: act, stream: "stdout"}
+	c.Stderr = &countingWriter{w: errOut, t: act, stream: "stderr"}
+	if err := c.Start(); err != nil {
+		return err
+	}
+	sp := procctl.Capture(c.Cmd, c.marker)
+	var cleanupErr error
+	stopped := false
+	kill := func() {
+		stopped = true
+		cleanupErr = errors.Join(cleanupErr, c.evidence.stopCapturedVerification(c.ctx), procctl.KillGroup(sp))
+	}
+	persist := func(kind string, snap activitySnapshot, elapsed time.Duration) {
+		info := c.evidence.info
+		if info.Store != (store.Store{}) {
+			_ = info.Store.Append(store.Event{Time: time.Now().UTC(), Type: "agent." + kind, Data: map[string]any{
+				"agent": agent.ID, "phase": info.Phase, "invocation_id": c.evidence.invocation.ID,
+				"elapsed_ms": elapsed.Milliseconds(), "timeout_ms": hardTimeout.Milliseconds(),
+				"stdout_bytes": snap.StdoutBytes, "stderr_bytes": snap.StderrBytes, "last_activity_ms_ago": activityAgeMS(snap),
+			}})
+		}
+	}
+	waitErr := make(chan error, 1)
+	go func() { waitErr <- c.Cmd.Wait() }()
+	err := waitSupervised(c.ctx.Done(), c.ctx.Err, waitErr, kill, act, supervisionForStep(c.ctx, agent, hardTimeout), supervisionHooks{
+		onHeartbeat: func(s activitySnapshot, d time.Duration) { persist("heartbeat", s, d) },
+		onWatchdog:  persist,
+	})
+	c.waited = true
+	if !stopped && (err != nil || c.ctx.Err() != nil) {
+		cleanupErr = c.evidence.stopCapturedVerification(c.ctx)
+	}
+	err = errors.Join(err, cleanupErr)
+	if finalErr := c.evidence.finish(err, c.ctx.Err(), commandExitCode(c.Cmd)); finalErr != nil {
+		return finalErr
+	}
+	return err
 }
 
 func (c *AgentCommand) Output() ([]byte, error) {

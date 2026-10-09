@@ -311,7 +311,7 @@ func Settle(ctx context.Context, root, ideaDir, runID, round string, expected []
 		return nil, nil
 	}
 	attempted = &d
-	if err := CheckGates(root, ideaDir, runID, d.After); err != nil {
+	if err := checkGates(root, ideaDir, runID, d.After, &d); err != nil {
 		d.Applied = false
 		d.Block = err.Error()
 		return nil, Block(root, ideaDir, runID, round, d)

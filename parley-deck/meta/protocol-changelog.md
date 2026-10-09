@@ -329,3 +329,12 @@ one-off authorization**. This is NOT a general exception to §7 — §6 rule 3's
 exception is scoped to editing another agent's file — and it sets **no precedent**: the next
 protocol change needs its own meta idea unless the user again directs otherwise. Full participant
 ratification was still required and obtained.
+
+## 2026-10-09 — participant-dropout-review-gate-timing
+
+Ratified by meta-protocol-change-participant-dropout-review-gate-timing/FINAL.md and both
+current participant ACCEPTs. P1–P6 add the causal one-reviewer exception and bounded
+participant-step/signoff timing; C1–C8 compact existing §0/§2/§9 duties. All14 exact
+substitutions are frozen in that idea's source-context/protocol-hunks.json. Strict gates,
+retained dissent, protected floor, independent evidence and size/map limits remain.
+CLI1.53.0; packaged skill/staged core2.17.0. Global core publication remains owner-only.

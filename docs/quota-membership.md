@@ -21,11 +21,47 @@ pre-idea commands. After creation, the limit is per idea across driver restarts.
 and readiness validation recover their original invocation logs after a crash; changed
 previously valid evidence blocks instead of launching a replacement.
 
-The usable floor and every precommit gate remain: auto_implement 3→2 blocks with only
-one independent reviewer. A permanently dropped ID cannot return to this idea, including
+The usable floor and all non-count precommit gates remain. A permanently dropped ID cannot return to this idea, including
 via opt-out/downgrade, owner/manual revision or catch-up; the next idea probes afresh.
 Retained dissent needs an owner ruling quoted into the next artifact, or abandonment/v2.
 All return/catch-up examples below apply only to IDs without a permanent dropout.
+
+## One reviewer after a proved automatic loss (1.53.0)
+
+One independent reviewer satisfies the numeric gate only when the latest membership-changing
+automatic transition reduced at least two reviewers to one. Before/After must retain the current
+implementer and reviewer, After must match current membership, and every removed ID must match
+valid typed participant-failure or recognized legacy quota evidence. The same predicate checks
+the settled prospective decision before commit and committed history at later gates. Policy-only
+revisions preserve cause; later manual membership changes invalidate it. A confirmed marker,
+arbitrary rule, unrelated loss, missing/corrupt/pending history or two-person-by-design idea
+does not qualify. Proactive manual exclusions still need attended continuation.
+
+The run's saved roster snapshot must name distinct known implementer/reviewer models even if
+require_model_diversity=false. Empty, unknown and cli-default are unknown; comparison trims and
+ignores case. A native CLI that cannot report/bind a model uses configured snapshot authority,
+not an observed model claim. A missing snapshot cannot qualify. Standalone signoff runs inherit
+the history's saved snapshot and bind their launches to it.
+
+Only the reviewer number changes. Deliberation still requires every current participant's signoff.
+Reservations, retained BLOCK/disputes/findings, strict fresh full-scope zero-findings review
+(including NITs), protected roles, floor and independent current-tree AC evidence remain binding.
+The same reviewer may run the goal check in a fresh process; its 120s ceiling and fail-closed
+outcomes remain. No exception can supply a missing independent reviewer.
+
+## Watchdog bounds
+
+Eligible streaming participant-failure steps now default to first output120s, stall 300s after
+activity and heartbeat 60s. Headless signoffs use the shared supervisor. Heartbeats do not count
+as activity. Classified no_first_output/stalled/timeout outcomes enter the existing two-attempt
+ledger after child cleanup, using the same hard ceiling and 5s retry delay. Explicit overrides,
+disabled guards and shorter operation ceilings remain; readiness is 90s and goal check 120s.
+
+Final-text-only transports, including Zcode and default Claude text output, declare buffering:
+soft guards are disabled and the hard deadline remains. Custom streaming launch args may set
+buffers_stdout=false explicitly. Manual agents exec and interactive launches remain hard-only.
+These limits cannot distinguish a healthy buffered computation from a silent hang before its
+hard deadline; there is no universal early-drop guarantee.
 
 Automatic exclusions append immutable `quota-history/000001.json` revisions; a resume or a newer
 binary never widens their policy. The CLI uses current membership from this history. Historical

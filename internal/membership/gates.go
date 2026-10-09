@@ -8,6 +8,7 @@ import (
 
 	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/runmanifest"
 	"parley-deck-cli/internal/track"
 )
@@ -15,6 +16,10 @@ import (
 // CheckGates evaluates prospective membership with the same role chain and
 // per-track counts. It only vetoes a reduction; it never certifies a close.
 func CheckGates(root, ideaDir, runID string, ids []string) error {
+	return checkGates(root, ideaDir, runID, ids, nil)
+}
+
+func checkGates(root, ideaDir, runID string, ids []string, prospective *quota.Decision) error {
 	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "00-prompt.md"))
 	if err != nil {
 		return err
@@ -81,6 +86,15 @@ func CheckGates(root, ideaDir, runID string, ids []string) error {
 	}
 	if auto && minimum < 2 {
 		minimum = 2
+	}
+	if len(reviewers) == 1 {
+		single, err := SingleReviewerAfterDropout(root, ideaDir, runID, impl, ids, prospective)
+		if err != nil {
+			return err
+		}
+		if single {
+			minimum = 1
+		}
 	}
 	if code && len(reviewers) < minimum {
 		return fmt.Errorf("review/LE-7/LE-11 gate: %d independent reviewers remain; require %d", len(reviewers), minimum)
