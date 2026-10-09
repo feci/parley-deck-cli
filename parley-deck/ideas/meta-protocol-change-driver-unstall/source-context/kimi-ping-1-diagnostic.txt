@@ -1,0 +1,2 @@
+error: failed to run prompt: provider.auth_error: 403 [kimi-coding] 1 connection(s) exist but are excluded by this API key's connection allowlist / quota scope — add them to the key in the dashboard, or use a key without that scope
+See log: /Users/tomasfecko/.kimi-code/logs/kimi-code.log
