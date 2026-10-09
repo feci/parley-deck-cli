@@ -9,3 +9,11 @@ Standalone preflight --no-ping exit 3: all requested CLIs installed; unrelated e
 Driver gap: parley run --help/source has no fixed slug or existing-prompt entry point; it always calls CreateIdeaFull. parley continue on the exact named idea returned `has no runs yet`. Seed orchestration-only run.json/empty events to expose this idea to continue/status/wait, as in prior art. Use measured parley agents exec for independent round-01, then attempt continue. D6 fallback only if encountered, never accounting repair/worktree pruning/declaration.
 
 codex-1 wrote its round-01 artifact before invoking/reading Zcode. Effective models/effort/speed and retry policy are in kickoff. Attended-close authority remains the brief, not a claim of passing the 1.52.0 one-reviewer gate. English except the explicitly required verbatim owner source quotes.
+
+Design draft PR: https://github.com/feci/parley-deck-cli/pull/77. Seeded local orchestration run 20261009T064927.453310000Z (no roster snapshot to avoid altering effective argv; no forged execution events). All model/effort/speed defaults are retained. Native Zcode config main model checked as zai/glm-5.3; --mode yolo is explicitly present in the resolved CLI argv. Both owner worktrees remain on review-gate-timing.
+
+## Round 1 complete / D6 fallback
+
+Zcode original measured invocation b0ec15ac-c8c8-4769-b699-60f31e074545 exited 0 after 775.745s and authored its own 20,126-byte round-01 artifact. First output was recorded only at 775.662s, near exit: this is evidence of a silent-but-successful native task, not of a hang. parley wait then validated 2/2 artifacts. Product remains unchanged.
+
+parley continue --auto --no-implement refused round-02 before dispatch with `cross-review accounting: historical cycle event lacks idea identity`. Its generated note (old actor label claude; no Claude process) is preserved byte-identically in source-context/driver-gap-d6-original-note.md. Under the brief's known-D6 instruction and skill's driver-gap fallback, use the unchanged configured native Zcode command for cross-review, record actual PID/exit/time and retain private logs. No fabricated budget/event record, worktree declaration/pruning or accounting repair. The driver remains preferred for status/wait/consensus.
