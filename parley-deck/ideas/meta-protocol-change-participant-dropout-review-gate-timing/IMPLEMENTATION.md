@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-participant-dropout-review-gate-timing
-status: fix-up-cycle-1
+status: complete
 implementer: codex-1
 started: 2026-10-09
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing#review-gate-timing
@@ -21,7 +21,7 @@ Plan recorded before product edits. Implement frozen FINAL D1–D5 in the owner-
 - [x] Adversarial membership/driver/app/runner/adapter tests: positive and negative cause/model cases; prospective commit and kickoff; revisions/pending history; count-only auto exception; strict/reserved/goal/dissent/floor; batch rebind; real watchdog, buffered success/hard timeout, two-attempt/replay behavior.
 - [x] Apply the14 frozen protocol substitutions identically to the three copies. Compact skill instructions while retaining all duties/required headings; update guidance/notices/version/changelog/compatibility metadata for CLI1.53.0 and skill2.17.0. Preserve caps/map. Record exact compaction/evidence.
 - [x] Run focused tests, full Go suite with45m package timeout, build/vet, packet/drift guards and npm test. Use task-local native test temp with shared-volume cache; retain all failed and passing evidence.
-- [ ] Publish both implementation PRs; separate Zcode full-scope review and own review consensus/signoff. Apply agreed fixes with max5 cycles. Never author a self-review. Fresh independent goal process, both ACCEPTs and current-tree evidence precede the authorized attended close.
+- [x] Publish both implementation PRs; separate Zcode full-scope review and own review consensus/signoff. Apply agreed fixes with max5 cycles. Never author a self-review. Fresh independent goal process, both ACCEPTs and current-tree evidence precede the authorized attended close.
 - [ ] After close: clean-source builds and channel delivery; all19 runtime targets/114 SKILL.md hashes; exact staged-core reconstruction; separate Zcode channel verification; owner-only unpublished commands in2.15→2.16→2.17 order; released note and verified shared memory.
 
 ## Deviations from FINAL.md
@@ -91,3 +91,13 @@ At product b89e2abaa056813a4b238c2fa4278195b0f7096b, the complete `go test ./...
 ## Independent final review / close preparation
 
 Zcode round02 is a separate full-scope process PID40945, exit0 after1772.599s. It rechecked all original+cycle1 diffs, independently recounted the full final log and dual receipts, and found no CRITICAL/MAJOR/MINOR. Two non-blocking NITs: optional duplicate-snapshot fixture deferred for final signoff assessment; receipt-record timing overlap is satisfied by committed ce7ec30. parley wait validates the exact review artifact. Signed cycle1 is archived byte-identically; final zero-fix consensus drafted through the driver after recording its existing-file/reopen limitation. Fresh goal and both final ACCEPTs remain required. No product changes after b89e2ab.
+
+## Owner-attended close — 2026-10-09
+
+The controlling brief's pre-authorized conditions are now met. Final independent full-scope round02 has no open CRITICAL/MAJOR (or MINOR); final review consensus has zero agreed fixes and both own ACCEPT blocks. A fresh Zcode process PID8391 exited0 after518.314s and authored goal-check-zcode-1.md with GOAL-CHECK: PASS and current-tree independent AC1–AC13 evidence, then appended its own ACCEPT. Its checked tree8a93976 is product-identical to b89e2ab; skill74cc831 unchanged. This is attended close under the quoted owner authority, not a claim that this manually reduced idea qualifies for product automatic close or that the product120s goal parser ran.
+
+The goal process independently reran focused checks, actual protocol/protocolpacket packages, the68846B packet guard, build/vet, rehashed/recounted final full Go evidence and reconstructed all14 hunks. It confirmed the committed cycle1 evidence resolves the timing-overlap NIT and concurred with optional duplicate-snapshot fixture deferral. It also corrected a non-blocking evidence-description issue: an earlier TestProtocolDrift alternation name matched no test; the full suite and its own actual protocol packages cover the real drift tests, so no AC was waived or inferred from a vacuous selector.
+
+The healthy goal duration518.314s exceeds the product120s ceiling and is retained as evidence for a separate timeout-tuning idea; this release does not raise that ceiling. One signed fix-up cycle of the maximum5 was used. Role concentration remains codex-1 organizer/implementer, Zcode independent reviewer/goal checker. No Codex self-review, no Claude task process, no fabricated history/accounting, no model/credential changes.
+
+AC14 remains post-close delivery tracked by the separate released inbox note and channel-verification artifact. This closed IMPLEMENTATION, FINAL, reviews, goal artifact and signoffs now remain frozen.

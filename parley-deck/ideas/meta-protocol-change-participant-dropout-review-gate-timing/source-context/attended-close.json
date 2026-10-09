@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-09T09:20:16.570071+00:00",
+  "authority": "source-context/ORGANIZER-BRIEF.md, owner-preauthorized attended close",
+  "cli_product": "b89e2abaa056813a4b238c2fa4278195b0f7096b",
+  "skill_product": "74cc831b18ce33e48e705fc8992c89be85cadf6f",
+  "review_no_open_critical_major": true,
+  "zero_agreed_fixes": true,
+  "participants_accept": [
+    "codex-1",
+    "zcode-1"
+  ],
+  "goal_execution": {
+    "phase": "goal",
+    "started_at": "2026-10-09T09:10:07.727144+00:00",
+    "completed_at": "2026-10-09T09:18:46.048050+00:00",
+    "pid": 8391,
+    "exit_code": 0,
+    "timed_out": false,
+    "elapsed_s": 518.3140259999927,
+    "timeout_s": 1800
+  },
+  "goal_sha256": "87a9bae3cf415a6d34a6013857b8f0360f3f0b108adf486e3a79cafa2eea0e03",
+  "review_sha256": "49a19f08eac212ceb4f171a3ecadbf563ab9c493aeac57f64a78dfdc3386b0ca",
+  "review_consensus_sha256": "047e03177edf8aa6ce6fc5914ac3faa01d3b236c36659d9cce998436194fb560",
+  "current_tree_evidence": "source-context/fixup1-validation.json and goal-check-zcode-1.md",
+  "fixup_cycles": 1,
+  "ac14": "post-close delivery pending"
+}
