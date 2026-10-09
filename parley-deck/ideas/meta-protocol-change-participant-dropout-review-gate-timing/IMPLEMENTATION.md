@@ -4,7 +4,7 @@ status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-09
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing#review-gate-timing
-head-commit: a26f588
+head-commit: b89e2abaa056813a4b238c2fa4278195b0f7096b
 design-pr: https://github.com/feci/parley-deck-cli/pull/77
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/78
 skill-pr: https://github.com/feci/parley-deck-skill/pull/10
@@ -81,3 +81,5 @@ None from the revised, doubly signed plan. The initial proposed relaxation was w
 ### Validation and next gate
 
 Focused app/membership TestReviewGate run v3 passes (16.733s, log SHA2568548172a7dc135e57fef6063131f49535fbc33c5b1cbb62ac0671c71cb048c41). Failed v1/v2 are retained: the new fixture initially overwrote immutable prompt metadata and then lacked attributable consensus drafter metadata; both setup defects were corrected. Full final-source Go/build/vet and a separate full-scope Zcode review follow this commit. Skill product74cc831 and its full399 Node/54 Python/six-manifest pass are unchanged. Cycles used:1 of5.
+
+Cycle1 product commit: b89e2abaa056813a4b238c2fa4278195b0f7096b. Full-source validation log: full-host-tests-cycle1.jsonl with checked-durable receipts beside the log and in the native task temp validation-receipts directory.
