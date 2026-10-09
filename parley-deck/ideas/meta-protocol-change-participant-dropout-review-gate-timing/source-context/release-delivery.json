@@ -1,0 +1,1595 @@
+{
+  "idea": "meta-protocol-change-participant-dropout-review-gate-timing",
+  "at": "2026-10-09T09:48:02.474292+00:00",
+  "delivery_verdict": "PASS for authorized AC14 channels; owner npm/global-core publication and upstream WinGet merge excluded by controlling brief",
+  "evidence_root": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing",
+  "repositories": {
+    "cli": {
+      "mergeCommit": {
+        "oid": "128e30b479065a98437844886d295ae83e9b0e52"
+      },
+      "mergedAt": "2026-10-09T09:20:44Z",
+      "state": "MERGED",
+      "url": "https://github.com/feci/parley-deck-cli/pull/78"
+    },
+    "skill": {
+      "mergeCommit": {
+        "oid": "8ce4dec0fde0f563f5110e99d8b7e4550d939770"
+      },
+      "mergedAt": "2026-10-09T09:20:47Z",
+      "state": "MERGED",
+      "url": "https://github.com/feci/parley-deck-skill/pull/10"
+    }
+  },
+  "reviewed_product": {
+    "cli": "b89e2abaa056813a4b238c2fa4278195b0f7096b",
+    "skill": "74cc831b18ce33e48e705fc8992c89be85cadf6f"
+  },
+  "cli_clean_build": {
+    "commit": "128e30b479065a98437844886d295ae83e9b0e52",
+    "clean_source": true,
+    "native_version": "parley 1.53.0",
+    "all_six_vcs_clean": true
+  },
+  "hosted_assets": [
+    {
+      "channel": "cli",
+      "name": "parley-v1.53.0-darwin-arm64",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/parley-v1.53.0-darwin-arm64",
+      "sha256": "9488d1f80ddd6c8e4291f8f43a190eae89d4e23365b104e2d793e006577a45d9",
+      "bytes": 10271650,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "cli",
+      "name": "parley-v1.53.0-darwin-x64",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/parley-v1.53.0-darwin-x64",
+      "sha256": "44c4c370b5bc658df7ba3540e81e82b73ed99f788a897bad813832acf6e4f98c",
+      "bytes": 11400272,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "cli",
+      "name": "parley-v1.53.0-linux-arm64",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/parley-v1.53.0-linux-arm64",
+      "sha256": "0c4bf0307624c0a5f63c804071d01dbdbc5fc81da828e5346122fa3930fd3154",
+      "bytes": 10158240,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "cli",
+      "name": "parley-v1.53.0-linux-x64",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/parley-v1.53.0-linux-x64",
+      "sha256": "1f4c2f1618ef7c0b3b5cda920157a1fe790d5d33d5278b815ee6e3de564afe20",
+      "bytes": 11255968,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "cli",
+      "name": "parley-v1.53.0-windows-arm64.exe",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/parley-v1.53.0-windows-arm64.exe",
+      "sha256": "d0abaff4d1523194e2268c2bb8e75e6958fbe7b90c03567030259d881be59d52",
+      "bytes": 10168832,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "cli",
+      "name": "parley-v1.53.0-windows-x64.exe",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/parley-v1.53.0-windows-x64.exe",
+      "sha256": "98ef070872ac23579aa630ee4e4c7614afc908ae1c464a610d5c786cf671858a",
+      "bytes": 11481600,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "cli",
+      "name": "sha256.json",
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.53.0/sha256.json",
+      "sha256": "3f25094b59af4d2402f9f179999bc915ade534333823c0ac2c8afd57dd2feb0b",
+      "bytes": 611,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "skill",
+      "name": "parley-deck-skill-2.17.0.tgz",
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.17.0/parley-deck-skill-2.17.0.tgz",
+      "sha256": "40b6eb424cfc003864f06fa17065ea1ac997637e47d76f0f86aef0fbcfbae3ca",
+      "bytes": 398976,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "skill",
+      "name": "parley-deck-skill-v2.17.0-macos-arm64",
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.17.0/parley-deck-skill-v2.17.0-macos-arm64",
+      "sha256": "6d8f9ec6db1749644d6ad14694f85ebc53f8600c23ce4fccebc3af322d4b6963",
+      "bytes": 65512880,
+      "github_digest_matches": true,
+      "prepared_asset_matches": true
+    },
+    {
+      "channel": "skill",
+      "name": "parley-deck-skill-v2.17.0-windows-arm64.exe",
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.17.0/parley-deck-skill-v2.17.0-windows-arm64.exe",
+      "sha256": "e2c20dc72da4637ddd7f3219cf33b0213314666b945dc3d6e1428387c464991f",
+      "bytes": 85825523,
+      "github_digest_matches": true,
+      "prepared_asset_matches": null
+    },
+    {
+      "channel": "skill",
+      "name": "parley-deck-skill-v2.17.0-windows-x64.exe",
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.17.0/parley-deck-skill-v2.17.0-windows-x64.exe",
+      "sha256": "0bd51b98ab36a520d5dbbd2bf60645f83796a7447b451d6972201ce3d4700821",
+      "bytes": 91412467,
+      "github_digest_matches": true,
+      "prepared_asset_matches": null
+    }
+  ],
+  "checksum_manifest_matches_six_binaries": true,
+  "homebrew": {
+    "cli": {
+      "exit": 0,
+      "stdout": "parley 1.53.0",
+      "stderr": ""
+    },
+    "skill": {
+      "exit": 0,
+      "stdout": "2.17.0",
+      "stderr": ""
+    },
+    "installed": {
+      "exit": 0,
+      "stdout": "parley-deck-cli 1.51.0 1.52.0 1.53.0 1.50.0\nparley-deck-skill 2.14.0 2.17.0 2.16.0 2.15.0",
+      "stderr": ""
+    },
+    "tap_commit": {
+      "exit": 0,
+      "stdout": "6964b1188eb0ed81d07f251a4ca8b3852f43dad6",
+      "stderr": ""
+    },
+    "at": "2026-10-09T09:30:11.126003+00:00",
+    "upgrade_qualified_exit": 0,
+    "initial_unqualified_upgrade_failure": "Two taps provide parley-deck-cli. Resolved by selecting feci/parley explicitly; no tap/trust changes.",
+    "brew_test_exit": 0,
+    "brew_test_log_sha256": "c1ec900e60b12c62e5590c4ce7442bfac34aefe9066bf83acf34b7236117a255",
+    "audit_exit": 0,
+    "style_exit": 0
+  },
+  "homebrew_source_archives": [
+    {
+      "repo": "parley-deck-cli",
+      "version": "1.53.0",
+      "url": "https://github.com/feci/parley-deck-cli/archive/refs/tags/v1.53.0.tar.gz",
+      "sha256": "d47740d8ac528f7fe98ee98d6a0042ba6cf4fcb0c3c93766cc32fd91fcf74a3f",
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/archives/parley-deck-cli-v1.53.0.tar.gz"
+    },
+    {
+      "repo": "parley-deck-skill",
+      "version": "2.17.0",
+      "url": "https://github.com/feci/parley-deck-skill/archive/refs/tags/v2.17.0.tar.gz",
+      "sha256": "00d25978319e31a91f249547e4cfd67102e59bc5b6a1ee94056222ce6bed41e2",
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/archives/parley-deck-skill-v2.17.0.tar.gz"
+    }
+  ],
+  "runtime": {
+    "managed_targets": 15,
+    "generic_targets": 4,
+    "skill_files": 114,
+    "all_hashes_reverified": true,
+    "backup_sha256": "21815cad4b90752428472ad01791b048e6e00e4b2bce214a5d80ca3028fa04a3",
+    "payload_skills": [
+      {
+        "skill": "parley-bidding",
+        "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540"
+      },
+      {
+        "skill": "parley-deck",
+        "sha256": "0b9769e8a58fd83cdd9d1d92be5f0d755f3fe7cbba30be20126d5eea9cd6af0c"
+      },
+      {
+        "skill": "parley-design",
+        "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd"
+      },
+      {
+        "skill": "parley-design-check",
+        "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a"
+      },
+      {
+        "skill": "parley-tracker",
+        "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198"
+      },
+      {
+        "skill": "parley-worktrees",
+        "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9"
+      }
+    ]
+  },
+  "core": {
+    "at": "2026-10-09T09:22:07.587406+00:00",
+    "base": "/Users/tomasfecko/.parley/staging/COOPERATION-2.16.0.md",
+    "base_sha256": "8c6b95b611901d3d1460ccb8554e26adac67f58d82ea028713791116a3e65a63",
+    "hunks": 14,
+    "hunks_sha256": "54d0dd07d747cf54ce9d0e234b9d65c34a8282b525bd8667090aaf19cbffcc39",
+    "staged": "/Users/tomasfecko/.parley/staging/COOPERATION-2.17.0.md",
+    "sha256": "6073c311b592653528bc675056b04b8454b491ab2702b37c298402ba2cb87957",
+    "bytes": 124976,
+    "published": false,
+    "generic_zones_preserved_by_exact_hunks": true
+  },
+  "core_reconstruction": {
+    "hunks": 14,
+    "exact_reconstruction": true,
+    "sha256": "6073c311b592653528bc675056b04b8454b491ab2702b37c298402ba2cb87957"
+  },
+  "winget": {
+    "at": "2026-10-09T09:32:26.449467+00:00",
+    "url": "https://github.com/microsoft/winget-pkgs/pull/449419",
+    "number": 449419,
+    "state": "open",
+    "branch": "feci-parleydeckskill-2.17.0",
+    "head": "2afe423e66299c133ae5c6b9ae9097c8dbb696a1",
+    "base": "97eeb2147be9adde9e73dc99bfe8d93639cbf3c3",
+    "exact_three_file_diff_verified": true
+  },
+  "winget_schema": {
+    "schema_checks": [
+      {
+        "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/winget/manifests/f/Feci/ParleyDeckSkill/2.17.0/Feci.ParleyDeckSkill.installer.yaml",
+        "schema": "https://aka.ms/winget-manifest.installer.1.12.0.schema.json",
+        "status": "pass",
+        "sha256": "48b5851aebf2683a5dc892bc583a551360d4d4a47c350066085b71b5675d3903"
+      },
+      {
+        "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/winget/manifests/f/Feci/ParleyDeckSkill/2.17.0/Feci.ParleyDeckSkill.locale.en-US.yaml",
+        "schema": "https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json",
+        "status": "pass",
+        "sha256": "bce3ff6262472583401716eb5c8621a7595d9e20491787002807fd32f5bea256"
+      },
+      {
+        "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/winget/manifests/f/Feci/ParleyDeckSkill/2.17.0/Feci.ParleyDeckSkill.yaml",
+        "schema": "https://aka.ms/winget-manifest.version.1.12.0.schema.json",
+        "status": "pass",
+        "sha256": "25cf397936e193fe5bd6bbb5b156eda880f4e077a1fb8304575382a3f6d06d54"
+      }
+    ],
+    "installer_hashes_match_live_hosted_assets": true,
+    "windows_validation": "Native winget validate/install unavailable on this Mac; upstream validation required"
+  },
+  "channel_status": {
+    "at": "2026-10-09T09:46:43.981503+00:00",
+    "cli_ci": {
+      "conclusion": "",
+      "headSha": "128e30b479065a98437844886d295ae83e9b0e52",
+      "jobs": [
+        {
+          "completedAt": "2026-10-09T09:24:34Z",
+          "conclusion": "success",
+          "databaseId": 113754764921,
+          "name": "go build & test (ubuntu-latest)",
+          "startedAt": "2026-10-09T09:20:48Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-10-09T09:20:50Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-10-09T09:20:49Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:50Z",
+              "conclusion": "success",
+              "name": "Configure fixture git identity",
+              "number": 2,
+              "startedAt": "2026-10-09T09:20:50Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:50Z",
+              "conclusion": "skipped",
+              "name": "Enable long paths (Windows)",
+              "number": 3,
+              "startedAt": "2026-10-09T09:20:50Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:52Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 4,
+              "startedAt": "2026-10-09T09:20:50Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:54Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-go@v5",
+              "number": 5,
+              "startedAt": "2026-10-09T09:20:52Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:03Z",
+              "conclusion": "success",
+              "name": "Build",
+              "number": 6,
+              "startedAt": "2026-10-09T09:20:54Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:24:32Z",
+              "conclusion": "success",
+              "name": "Test",
+              "number": 7,
+              "startedAt": "2026-10-09T09:21:03Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:24:32Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-go@v5",
+              "number": 13,
+              "startedAt": "2026-10-09T09:24:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:24:32Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 14,
+              "startedAt": "2026-10-09T09:24:32Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:24:32Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 15,
+              "startedAt": "2026-10-09T09:24:32Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/feci/parley-deck-cli/actions/runs/37910668038/job/113754764921"
+        },
+        {
+          "completedAt": "2026-10-09T09:37:34Z",
+          "conclusion": "success",
+          "databaseId": 113754765316,
+          "name": "go build & test (macos-latest)",
+          "startedAt": "2026-10-09T09:20:55Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-10-09T09:20:57Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-10-09T09:20:55Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:57Z",
+              "conclusion": "success",
+              "name": "Configure fixture git identity",
+              "number": 2,
+              "startedAt": "2026-10-09T09:20:57Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:57Z",
+              "conclusion": "skipped",
+              "name": "Enable long paths (Windows)",
+              "number": 3,
+              "startedAt": "2026-10-09T09:20:57Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:01Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 4,
+              "startedAt": "2026-10-09T09:20:57Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:10Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-go@v5",
+              "number": 5,
+              "startedAt": "2026-10-09T09:21:01Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:17Z",
+              "conclusion": "success",
+              "name": "Build",
+              "number": 6,
+              "startedAt": "2026-10-09T09:21:10Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:37:29Z",
+              "conclusion": "success",
+              "name": "Test",
+              "number": 7,
+              "startedAt": "2026-10-09T09:21:17Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:37:29Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-go@v5",
+              "number": 13,
+              "startedAt": "2026-10-09T09:37:29Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:37:30Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 14,
+              "startedAt": "2026-10-09T09:37:29Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:37:31Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 15,
+              "startedAt": "2026-10-09T09:37:30Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/feci/parley-deck-cli/actions/runs/37910668038/job/113754765316"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "databaseId": 113754765366,
+          "name": "go build & test (windows-latest)",
+          "startedAt": "2026-10-09T09:20:50Z",
+          "status": "in_progress",
+          "steps": [
+            {
+              "completedAt": "2026-10-09T09:20:53Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-10-09T09:20:51Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:55Z",
+              "conclusion": "success",
+              "name": "Configure fixture git identity",
+              "number": 2,
+              "startedAt": "2026-10-09T09:20:53Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:20:55Z",
+              "conclusion": "success",
+              "name": "Enable long paths (Windows)",
+              "number": 3,
+              "startedAt": "2026-10-09T09:20:55Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:07Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 4,
+              "startedAt": "2026-10-09T09:20:55Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:12Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-go@v5",
+              "number": 5,
+              "startedAt": "2026-10-09T09:21:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:21:47Z",
+              "conclusion": "success",
+              "name": "Build",
+              "number": 6,
+              "startedAt": "2026-10-09T09:21:12Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Test",
+              "number": 7,
+              "startedAt": "2026-10-09T09:21:47Z",
+              "status": "in_progress"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/setup-go@v5",
+              "number": 13,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            },
+            {
+              "completedAt": "0001-01-01T00:00:00Z",
+              "conclusion": "",
+              "name": "Post Run actions/checkout@v4",
+              "number": 14,
+              "startedAt": "0001-01-01T00:00:00Z",
+              "status": "pending"
+            }
+          ],
+          "url": "https://github.com/feci/parley-deck-cli/actions/runs/37910668038/job/113754765366"
+        }
+      ],
+      "status": "in_progress",
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/37910668038"
+    },
+    "skill_ci": {
+      "conclusion": "success",
+      "headSha": "8ce4dec0fde0f563f5110e99d8b7e4550d939770",
+      "jobs": [
+        {
+          "completedAt": "2026-10-09T09:26:32Z",
+          "conclusion": "success",
+          "databaseId": 113755282019,
+          "name": "macos-tests",
+          "startedAt": "2026-10-09T09:25:06Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-10-09T09:25:09Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-10-09T09:25:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:25:11Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "startedAt": "2026-10-09T09:25:09Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:25:13Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "startedAt": "2026-10-09T09:25:11Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:25:38Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "startedAt": "2026-10-09T09:25:13Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:25:41Z",
+              "conclusion": "success",
+              "name": "Run npm ci",
+              "number": 5,
+              "startedAt": "2026-10-09T09:25:38Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:24Z",
+              "conclusion": "success",
+              "name": "Run npm test",
+              "number": 6,
+              "startedAt": "2026-10-09T09:25:41Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:25Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 10,
+              "startedAt": "2026-10-09T09:26:24Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:27Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 11,
+              "startedAt": "2026-10-09T09:26:25Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:28Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 12,
+              "startedAt": "2026-10-09T09:26:27Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:29Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 13,
+              "startedAt": "2026-10-09T09:26:28Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/feci/parley-deck-skill/actions/runs/37910828042/job/113755282019"
+        },
+        {
+          "completedAt": "2026-10-09T09:27:09Z",
+          "conclusion": "success",
+          "databaseId": 113756783084,
+          "name": "windows",
+          "startedAt": "2026-10-09T09:26:34Z",
+          "status": "completed",
+          "steps": [
+            {
+              "completedAt": "2026-10-09T09:26:37Z",
+              "conclusion": "success",
+              "name": "Set up job",
+              "number": 1,
+              "startedAt": "2026-10-09T09:26:36Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:38Z",
+              "conclusion": "success",
+              "name": "Run actions/checkout@v4",
+              "number": 2,
+              "startedAt": "2026-10-09T09:26:37Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:40Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-node@v4",
+              "number": 3,
+              "startedAt": "2026-10-09T09:26:38Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:40Z",
+              "conclusion": "success",
+              "name": "Run actions/setup-python@v5",
+              "number": 4,
+              "startedAt": "2026-10-09T09:26:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:42Z",
+              "conclusion": "success",
+              "name": "Run npm ci",
+              "number": 5,
+              "startedAt": "2026-10-09T09:26:40Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:26:59Z",
+              "conclusion": "success",
+              "name": "Run npm test",
+              "number": 6,
+              "startedAt": "2026-10-09T09:26:42Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:27:02Z",
+              "conclusion": "success",
+              "name": "Run npm run build:portable:windows",
+              "number": 7,
+              "startedAt": "2026-10-09T09:26:59Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:27:06Z",
+              "conclusion": "success",
+              "name": "Upload release assets",
+              "number": 8,
+              "startedAt": "2026-10-09T09:27:02Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:27:07Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-python@v5",
+              "number": 14,
+              "startedAt": "2026-10-09T09:27:06Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:27:07Z",
+              "conclusion": "success",
+              "name": "Post Run actions/setup-node@v4",
+              "number": 15,
+              "startedAt": "2026-10-09T09:27:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:27:07Z",
+              "conclusion": "success",
+              "name": "Post Run actions/checkout@v4",
+              "number": 16,
+              "startedAt": "2026-10-09T09:27:07Z",
+              "status": "completed"
+            },
+            {
+              "completedAt": "2026-10-09T09:27:07Z",
+              "conclusion": "success",
+              "name": "Complete job",
+              "number": 17,
+              "startedAt": "2026-10-09T09:27:07Z",
+              "status": "completed"
+            }
+          ],
+          "url": "https://github.com/feci/parley-deck-skill/actions/runs/37910828042/job/113756783084"
+        }
+      ],
+      "status": "completed",
+      "url": "https://github.com/feci/parley-deck-skill/actions/runs/37910828042"
+    },
+    "winget": {
+      "headRefOid": "2afe423e66299c133ae5c6b9ae9097c8dbb696a1",
+      "mergeStateStatus": "BLOCKED",
+      "state": "OPEN",
+      "statusCheckRollup": [
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208731/job/113759796173",
+          "name": "pre_activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Domain Validation Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208749/job/113759796303",
+          "name": "pre_activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Manifest Validation Diagnosis"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208686/job/113759795480",
+          "name": "pre_activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Missing Dependency Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208654/job/113759796043",
+          "name": "pre_activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Transient Security Explanation"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208803/job/113759855173",
+          "name": "pre_activation",
+          "startedAt": "2026-10-09T09:35:16Z",
+          "status": "COMPLETED",
+          "workflowName": "Wingetbot PR Triage"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208731/job/113759797340",
+          "name": "activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Domain Validation Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208749/job/113759797227",
+          "name": "activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Manifest Validation Diagnosis"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208686/job/113759796492",
+          "name": "activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Missing Dependency Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208654/job/113759796271",
+          "name": "activation",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Transient Security Explanation"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208803/job/113759798045",
+          "name": "activation",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Wingetbot PR Triage"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208731/job/113759798128",
+          "name": "agent",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Domain Validation Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208749/job/113759797272",
+          "name": "agent",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Manifest Validation Diagnosis"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208686/job/113759797403",
+          "name": "agent",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Missing Dependency Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208654/job/113759797557",
+          "name": "agent",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Transient Security Explanation"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208803/job/113759850858",
+          "name": "agent",
+          "startedAt": "2026-10-09T09:35:16Z",
+          "status": "COMPLETED",
+          "workflowName": "Wingetbot PR Triage"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208731/job/113759798561",
+          "name": "detection",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Domain Validation Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208749/job/113759797472",
+          "name": "detection",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Manifest Validation Diagnosis"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208686/job/113759797784",
+          "name": "detection",
+          "startedAt": "2026-10-09T09:35:06Z",
+          "status": "COMPLETED",
+          "workflowName": "Missing Dependency Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208654/job/113759797866",
+          "name": "detection",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Transient Security Explanation"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208803/job/113759798897",
+          "name": "detection",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Wingetbot PR Triage"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208731/job/113759799152",
+          "name": "post_domain_validation_comment",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Domain Validation Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208749/job/113759798610",
+          "name": "post_pr_comment",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Manifest Validation Diagnosis"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208686/job/113759799008",
+          "name": "safe_outputs",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Missing Dependency Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208654/job/113759798017",
+          "name": "post_transient_security_comment",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Transient Security Explanation"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208803/job/113759799618",
+          "name": "safe_outputs",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Wingetbot PR Triage"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208731/job/113759799148",
+          "name": "conclusion",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Domain Validation Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208749/job/113759798600",
+          "name": "conclusion",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Manifest Validation Diagnosis"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208686/job/113759799397",
+          "name": "conclusion",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Missing Dependency Assist"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:06Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208654/job/113759798626",
+          "name": "conclusion",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Transient Security Explanation"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:07Z",
+          "conclusion": "SKIPPED",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs/actions/runs/37912208803/job/113759800748",
+          "name": "conclusion",
+          "startedAt": "2026-10-09T09:35:07Z",
+          "status": "COMPLETED",
+          "workflowName": "Wingetbot PR Triage"
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "09. Installer Metadata Validation",
+          "startedAt": "2026-10-09T09:32:42Z",
+          "status": "QUEUED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "10. Validation Completed",
+          "startedAt": "2026-10-09T09:32:42Z",
+          "status": "QUEUED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "08. Installation Validation",
+          "startedAt": "2026-10-09T09:40:12Z",
+          "status": "IN_PROGRESS",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:32:57Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "01. Pull Request Validation",
+          "startedAt": "2026-10-09T09:32:46Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:33:18Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "02. Manifest Validation",
+          "startedAt": "2026-10-09T09:33:06Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:33:59Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "03. URLs Validation",
+          "startedAt": "2026-10-09T09:33:22Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:34:26Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "04. URL Domain Validation",
+          "startedAt": "2026-10-09T09:34:00Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:34:45Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "05. Manifest Policy Validation",
+          "startedAt": "2026-10-09T09:34:28Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:18Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "06. Catalog Content Verification",
+          "startedAt": "2026-10-09T09:34:45Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:40:02Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/microsoft/winget-pkgs",
+          "name": "07. Installers Scan",
+          "startedAt": "2026-10-09T09:35:22Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        },
+        {
+          "__typename": "CheckRun",
+          "completedAt": "2026-10-09T09:35:24Z",
+          "conclusion": "SUCCESS",
+          "detailsUrl": "https://github.com/apps/microsoft-github-policy-service",
+          "name": "license/cla",
+          "startedAt": "2026-10-09T09:35:24Z",
+          "status": "COMPLETED",
+          "workflowName": ""
+        }
+      ],
+      "url": "https://github.com/microsoft/winget-pkgs/pull/449419"
+    }
+  },
+  "owner_actions": {
+    "at": "2026-10-09T09:48:02.329050+00:00",
+    "npm_latest": "2.13.0",
+    "global_cores_installed": [
+      "2.10.0",
+      "2.13.0"
+    ],
+    "artifacts_in_publication_order": [
+      {
+        "version": "2.15.0",
+        "channel": "npm",
+        "published": false,
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/skill/parley-deck-skill-2.15.0.tgz",
+        "sha256": "64c274a86d0b4f2e136decbb1cc2810a18de89191192c6b9e680c5ec9af89b2a",
+        "owner_command": "! npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-08-quota-auto-exclude/skill/parley-deck-skill-2.15.0.tgz' --access public"
+      },
+      {
+        "version": "2.15.0",
+        "channel": "core",
+        "published": false,
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.15.0.md",
+        "sha256": "0d81fd807114e4ff67f5fa98bba73622b58c86d66a2bf6b57d1def68cd099c09",
+        "owner_command": "! parley protocol publish --version 2.15.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.15.0.md"
+      },
+      {
+        "version": "2.16.0",
+        "channel": "npm",
+        "published": false,
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-participant-dropout/skill/parley-deck-skill-2.16.0.tgz",
+        "sha256": "80f3172a29f293f26952475e218876bd67301f9021114f5a7f0d000643607db6",
+        "owner_command": "! npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-participant-dropout/skill/parley-deck-skill-2.16.0.tgz' --access public"
+      },
+      {
+        "version": "2.16.0",
+        "channel": "core",
+        "published": false,
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.16.0.md",
+        "sha256": "8c6b95b611901d3d1460ccb8554e26adac67f58d82ea028713791116a3e65a63",
+        "owner_command": "! parley protocol publish --version 2.16.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.16.0.md"
+      },
+      {
+        "version": "2.17.0",
+        "channel": "npm",
+        "published": false,
+        "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/skill/parley-deck-skill-2.17.0.tgz",
+        "sha256": "40b6eb424cfc003864f06fa17065ea1ac997637e47d76f0f86aef0fbcfbae3ca",
+        "owner_command": "! npm publish '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing/skill/parley-deck-skill-2.17.0.tgz' --access public"
+      },
+      {
+        "version": "2.17.0",
+        "channel": "core",
+        "published": false,
+        "path": "/Users/tomasfecko/.parley/staging/COOPERATION-2.17.0.md",
+        "sha256": "6073c311b592653528bc675056b04b8454b491ab2702b37c298402ba2cb87957",
+        "owner_command": "! parley protocol publish --version 2.17.0 --from /Users/tomasfecko/.parley/staging/COOPERATION-2.17.0.md"
+      }
+    ],
+    "commands_executed": false
+  },
+  "independent_channel_verifier": {
+    "agent": "zcode-1",
+    "model": "zai/glm-5.3",
+    "process": {
+      "phase": "channels",
+      "started_at": "2026-10-09T09:33:28.032346+00:00",
+      "completed_at": "2026-10-09T09:44:26.723505+00:00",
+      "pid": 24149,
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_s": 658.6822639169986,
+      "timeout_s": 1800
+    },
+    "report": "source-context/channel-verification-zcode-1.md",
+    "report_sha256": "add849aefc6352e095b9488698c8f72458714cf020147ae1fd6fafa78d730269",
+    "prompt_sha256": "34dee4d5ac3558f9722ba036694d6289109e93bf8a1f472431b6f4fde00a3446"
+  },
+  "frozen_closed_artifacts_unchanged": {
+    "FINAL.md": "c44aac05ade1bf8ad4dee7f8ac1ad39cbe96a8b243b7d3bdc4d4651ee1b579fd",
+    "IMPLEMENTATION.md": "5af3e100a25c647bc99978c35c68ef637186a8644cb606a53f9e15bc44336b36",
+    "goal-check-zcode-1.md": "87a9bae3cf415a6d34a6013857b8f0360f3f0b108adf486e3a79cafa2eea0e03",
+    "consensus.md": "e85d4e0f464720fe6cf6a24fb2cc464ca33c10c9bca3728de79b42f1773cc520",
+    "review/consensus.md": "047e03177edf8aa6ce6fc5914ac3faa01d3b236c36659d9cce998436194fb560",
+    "review/consensus-cycle-01.md": "1a95c07a58a595fa6331c6e7c822af39f093aa162f025e5e89e7ab27ee4f04b3",
+    "review/consensus-cycle-01-proposed.md": "5e9baccc8fca2b2566f224d58f3d10d2dbf174045baf8ec80e7656d3f46bc6b3",
+    "review/round-01/zcode-1.md": "beb3ad15ed8531f887a4bf2ccd4b439dc56235a238c6b8455d194190c968db3d",
+    "review/round-02/zcode-1.md": "49a19f08eac212ceb4f171a3ecadbf563ab9c493aeac57f64a78dfdc3386b0ca"
+  },
+  "brief_sha256": "50cb660916b882965ff289dc2fc7d5ff9c8f234cac61d2e95e1e5c8849c8722a",
+  "validation": {
+    "full_go_command": "go test ./... -json -count=1 -timeout 45m",
+    "full_go_exit": 0,
+    "full_go_seconds": 1388.005,
+    "passing_packages": 34,
+    "passing_test_events": 3330,
+    "built_in_skips": 4,
+    "failures": 0,
+    "go_log_sha256": "04d2f0529c7e38046ac64c7be04603fbdd05dd0cc461b796d5d8c65f27724db5",
+    "skill_node_tests": 399,
+    "skill_python_tests": 54,
+    "skill_manifests": 6,
+    "skill_exit": 0,
+    "skill_log_sha256": "3509b5ce4c7db449fb6f72ab9055215ce6ad7d0c29bbe367ff83a0aa0cc35a4b"
+  },
+  "usage": {
+    "at": "2026-10-09T09:46:44.064689+00:00",
+    "idea": "meta-protocol-change-participant-dropout-review-gate-timing",
+    "scope": "Only terminal records explicitly carrying this idea; readiness probes without idea identity excluded. Configured native processes are reported separately.",
+    "measured_agents": {
+      "kimi-1": {
+        "child_starts": 2,
+        "successes": 0,
+        "failed_children": 2,
+        "control_plane_refusals": 0,
+        "child_seconds": 3.075
+      },
+      "zcode-1": {
+        "child_starts": 2,
+        "successes": 2,
+        "failed_children": 0,
+        "control_plane_refusals": 0,
+        "child_seconds": 1045.875
+      }
+    },
+    "invocations": [
+      {
+        "id": "d8a37618-2af7-4072-be4c-d339e662ec85",
+        "agent": "kimi-1",
+        "phase": "preflight",
+        "started": true,
+        "started_at": "2026-10-09T06:45:51.846135Z",
+        "completed_at": "2026-10-09T06:45:53.393432Z",
+        "seconds": 1.583,
+        "exit": 1,
+        "failure": "process_failure",
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null,
+          "cache_read_tokens": null,
+          "cache_write_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "reported_model": null,
+          "reported_models": [],
+          "source": "unavailable",
+          "cost_basis": "unavailable",
+          "coverage": "unavailable"
+        },
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/invocations/d8a37618-2af7-4072-be4c-d339e662ec85/terminal.json"
+      },
+      {
+        "id": "7939933e-5ba9-4e0a-8f85-e25c53542035",
+        "agent": "kimi-1",
+        "phase": "preflight",
+        "started": true,
+        "started_at": "2026-10-09T06:47:02.321007Z",
+        "completed_at": "2026-10-09T06:47:03.781862Z",
+        "seconds": 1.492,
+        "exit": 1,
+        "failure": "process_failure",
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null,
+          "cache_read_tokens": null,
+          "cache_write_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "reported_model": null,
+          "reported_models": [],
+          "source": "unavailable",
+          "cost_basis": "unavailable",
+          "coverage": "unavailable"
+        },
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/invocations/7939933e-5ba9-4e0a-8f85-e25c53542035/terminal.json"
+      },
+      {
+        "id": "b0ec15ac-c8c8-4769-b699-60f31e074545",
+        "agent": "zcode-1",
+        "phase": "round-01",
+        "started": true,
+        "started_at": "2026-10-09T06:49:28.473814Z",
+        "completed_at": "2026-10-09T07:02:24.191543Z",
+        "seconds": 775.745,
+        "exit": 0,
+        "failure": null,
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null,
+          "cache_read_tokens": null,
+          "cache_write_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "reported_model": null,
+          "reported_models": [],
+          "source": "unavailable",
+          "cost_basis": "unavailable",
+          "coverage": "unavailable"
+        },
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/invocations/b0ec15ac-c8c8-4769-b699-60f31e074545/terminal.json"
+      },
+      {
+        "id": "d2e52352-61e1-4e2b-b367-254a0d19af3c",
+        "agent": "zcode-1",
+        "phase": "consensus",
+        "started": true,
+        "started_at": "2026-10-09T07:22:47.164985Z",
+        "completed_at": "2026-10-09T07:27:17.262489Z",
+        "seconds": 270.13,
+        "exit": 0,
+        "failure": null,
+        "usage": {
+          "input_tokens": null,
+          "output_tokens": null,
+          "cache_read_tokens": null,
+          "cache_write_tokens": null,
+          "total_tokens": null,
+          "cost_usd": null,
+          "reported_model": null,
+          "reported_models": [],
+          "source": "unavailable",
+          "cost_basis": "unavailable",
+          "coverage": "unavailable"
+        },
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/invocations/d2e52352-61e1-4e2b-b367-254a0d19af3c/terminal.json"
+      }
+    ],
+    "pending": [],
+    "native_processes": [
+      {
+        "phase": "channels",
+        "started_at": "2026-10-09T09:33:28.032346+00:00",
+        "completed_at": "2026-10-09T09:44:26.723505+00:00",
+        "pid": 24149,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 658.6822639169986,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/channels.native-result.json"
+      },
+      {
+        "phase": "goal",
+        "started_at": "2026-10-09T09:10:07.727144+00:00",
+        "completed_at": "2026-10-09T09:18:46.048050+00:00",
+        "pid": 8391,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 518.3140259999927,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/goal.native-result.json"
+      },
+      {
+        "phase": "review01",
+        "started_at": "2026-10-09T07:53:35.335521+00:00",
+        "completed_at": "2026-10-09T08:12:49.722242+00:00",
+        "pid": 95819,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 1154.3701957089943,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/review01.native-result.json"
+      },
+      {
+        "phase": "review02",
+        "started_at": "2026-10-09T08:37:50.483922+00:00",
+        "completed_at": "2026-10-09T09:07:23.107370+00:00",
+        "pid": 40945,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 1772.5988024169928,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/review02.native-result.json"
+      },
+      {
+        "phase": "reviewconsensus01",
+        "started_at": "2026-10-09T08:14:56.740750+00:00",
+        "completed_at": "2026-10-09T08:20:12.655873+00:00",
+        "pid": 14339,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 315.9113981249975,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/reviewconsensus01.native-result.json"
+      },
+      {
+        "phase": "reviewconsensus01b",
+        "started_at": "2026-10-09T08:21:37.108813+00:00",
+        "completed_at": "2026-10-09T08:22:17.467647+00:00",
+        "pid": 20815,
+        "exit_code": 143,
+        "timed_out": false,
+        "elapsed_s": 40.358204584001214,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/reviewconsensus01b.native-result.json"
+      },
+      {
+        "phase": "reviewconsensus01c",
+        "started_at": "2026-10-09T08:22:17.626722+00:00",
+        "completed_at": "2026-10-09T08:32:08.017396+00:00",
+        "pid": 22073,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 590.3835536249971,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/reviewconsensus01c.native-result.json"
+      },
+      {
+        "phase": "round02",
+        "started_at": "2026-10-09T07:05:29.500848+00:00",
+        "completed_at": "2026-10-09T07:15:49.764126+00:00",
+        "pid": 75692,
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_s": 620.2586019159935,
+        "timeout_s": 1800,
+        "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing/.parley-runtime/review-gate-timing/round02.native-result.json"
+      }
+    ],
+    "codex_client_sessions": [
+      {
+        "session_id": "01a11f65-b2d6-73d0-b316-d9f190327573",
+        "path": "/Users/tomasfecko/.codex/sessions/2026/10/09/rollout-2026-10-09T08-42-01-01a11f65-b2d6-73d0-b316-d9f190327573.jsonl",
+        "started_at": "2026-10-09T06:42:01.065Z",
+        "latest_cumulative_snapshot": {
+          "timestamp": "2026-10-09T09:46:13.338Z",
+          "usage": {
+            "input_tokens": 51848445,
+            "cached_input_tokens": 49713664,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 203638,
+            "reasoning_output_tokens": 60870,
+            "total_tokens": 52052083
+          }
+        }
+      }
+    ],
+    "interpretation": "Client token snapshots are cumulative session telemetry, not a marginal task bill. Cache-read counts are subsets of input; reasoning counts are subsets of output. Never add snapshots. Native participant token and cost fields remain unavailable; they are not zero. No reliable total monetary cost is claimed."
+  },
+  "shared_memory": {
+    "uri": "viking://resources/projects/parley-deck/review-gate-timing-release-20261009.md",
+    "write_requested_wait": true,
+    "write_result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "DEADLINE_EXCEEDED: Queue processing timed out after 60.0s"
+        }
+      ],
+      "isError": true
+    },
+    "readback_byte_identical": true,
+    "semantic_retrieval_found": false,
+    "semantic_search_attempt": "completed",
+    "interpretation": "The write's wait-for-index operation timed out after60s. Direct readback matched the exact submitted content. Scoped semantic retrieval did not yet return this URI; indexing is unconfirmed."
+  },
+  "evidence_files": [
+    {
+      "path": "released-source.json",
+      "sha256": "ee4eb23d068dba81264fa6b371bc7dfbf59fe46bf010bbdb1db5904f15366659"
+    },
+    {
+      "path": "hosted-asset-verification.json",
+      "sha256": "903036779fc0828cec59679ecb399c68dd5e99aa6d1d2708097ae9e3429e5e1f"
+    },
+    {
+      "path": "cli-build-verification.json",
+      "sha256": "bbe3f59381909e17b3c9dde3816aafb27aacee5d5893c73a690e1ed071bf115d"
+    },
+    {
+      "path": "skill/payload-verification.json",
+      "sha256": "837f21d0dbcdb74ce636dfeaef2ec9e2d3321d504ccafaa1730a3be02f0ef20a"
+    },
+    {
+      "path": "homebrew-source-archives.json",
+      "sha256": "52d177c50e024398a03733730ced4a1e036004eb8d97502864d7a439629176d5"
+    },
+    {
+      "path": "homebrew-installed-verification.json",
+      "sha256": "8bd497b6b530845a5baa9a9d2f2035178f732183a2e6c24f455cd077c77c882d"
+    },
+    {
+      "path": "runtime-verification.json",
+      "sha256": "891f41e8b41055c17fc32fe22e9bfee7bb14e7b34e6ff052a760739ff5b01465"
+    },
+    {
+      "path": "core-staging.json",
+      "sha256": "165142d694212491c1c7546a23bd4958b6e944f3f5a819b7e4b83d9ec863ddee"
+    },
+    {
+      "path": "core-reconstruction-recheck.json",
+      "sha256": "87c688b1857e074488e65f002ddc40593cb1bc9ffcfedd74ec314722d2e008aa"
+    },
+    {
+      "path": "winget-submission.json",
+      "sha256": "9eccc41e663ba621d21517316f05f80124697081e65dde0cf3b3721f067f866a"
+    },
+    {
+      "path": "winget-validation.json",
+      "sha256": "76a15500995082b4ab774a811ac9ddac3dad328ed857a29e134d2bc7d3fe0696"
+    },
+    {
+      "path": "channel-status-latest.json",
+      "sha256": "e8f691e36d66f0e54b5f203441b7055831b9abd8efc127a6cdc3cf65b0d1d3cf"
+    },
+    {
+      "path": "owner-actions.json",
+      "sha256": "15ea6f52780bd0b9bd9111b10a254b1e23b2c83a68b51ac77ff26a038774691e"
+    },
+    {
+      "path": "usage-final.json",
+      "sha256": "e022cdcf5f56ec4846704020dd6fd8265b4a27a7fa70d0a36aabfb5ac50f3432"
+    },
+    {
+      "path": "closed-artifacts-integrity.json",
+      "sha256": "850b7c0a8e250b575b13eec0307782fb39d479575c41707fb5516ec950fa3a84"
+    },
+    {
+      "path": "superseded-ci-cancellations.json",
+      "sha256": "8424e590097b41c7130fe54ef209cb9db04a49f8fe42a59380b9797372343d48"
+    },
+    {
+      "path": "shared-memory-verification.json",
+      "sha256": "5f6b35f81b4d0e25fdeb6c62f0212a5d2b123f4e754612745fea02503af05c67"
+    }
+  ],
+  "limits": [
+    "Product goal bound remains120s; fresh attended goal took518.314s.",
+    "Windows CLI experimental; CLI WinGet held.",
+    "Native WinGet validate/install unavailable on Mac; upstream checks separate.",
+    "Private failed runs and cancelled superseded CI remain nonpasses.",
+    "Both owner worktrees remain allocated on review-gate-timing."
+  ]
+}
