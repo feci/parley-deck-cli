@@ -1,0 +1,158 @@
+[
+  {
+    "file": "merge-commits.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/merge-commits.json",
+    "sha256": "abd4312a5e8990c2e5ef2455a2720845df9effd785c040fa6c6b29f18090d4e8",
+    "bytes": 135
+  },
+  {
+    "file": "merge-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/merge-verification.json",
+    "sha256": "5b63741f59caecc6c7f8fcf11050bbdb400e9ea00e778703f697867f9edadeb1",
+    "bytes": 930
+  },
+  {
+    "file": "cli-build-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/cli-build-verification.json",
+    "sha256": "5b3b50ceab4886fb04ffe5eab0118ea7b23eb0a136a687e79608f4ead446f6f2",
+    "bytes": 17122
+  },
+  {
+    "file": "hosted-assets-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/hosted-assets-verification.json",
+    "sha256": "c20dbde12dcc7f00938899cb2ab266f46f9ca5159ce1e78d3456411770943438",
+    "bytes": 4305
+  },
+  {
+    "file": "homebrew-source-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/homebrew-source-verification.json",
+    "sha256": "88f6ab6daebb884b0d5659213db9847f245bba9f5355781cb7b33bc668bf9f0f",
+    "bytes": 643
+  },
+  {
+    "file": "homebrew-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/homebrew-verification.json",
+    "sha256": "c5a83c4b4bab7c06c7ac8d2af7b1024a0d143bbd7404bb9345716a20fac84c32",
+    "bytes": 40634
+  },
+  {
+    "file": "runtime-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/runtime-verification.json",
+    "sha256": "e23fe0ae430cdbe43d6f42a2efa896742fba521cff7ceb9342fd1777c05b5c89",
+    "bytes": 26712
+  },
+  {
+    "file": "winget-validation.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/winget-validation.json",
+    "sha256": "5ec7e9883b5f84d038e0187f5e4260f48ed560cef896a2278efdd42b6aa97def",
+    "bytes": 1364
+  },
+  {
+    "file": "winget-submission.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/winget-submission.json",
+    "sha256": "8c8f92fd7ca64f710419b8266954d4faeebdba400c359e9837f057bd68e6c4b1",
+    "bytes": 5160
+  },
+  {
+    "file": "winget-live-status.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/winget-live-status.json",
+    "sha256": "ae2539917c9253a2e059a2f79fd4a59d759cb04150e565f14fbd87e80e07283c",
+    "bytes": 12060
+  },
+  {
+    "file": "owner-publication-status.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/owner-publication-status.json",
+    "sha256": "614a1ce9d72230df670ee01e55c26555d3cf8d83b95f951d48301f24ea0ef36d",
+    "bytes": 3709
+  },
+  {
+    "file": "owner-source-inventory.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/owner-source-inventory.json",
+    "sha256": "e952ea810524ca368518ee63f6efba4fac9e11dad9f2385ad3ecb7dc3adbacf2",
+    "bytes": 2486
+  },
+  {
+    "file": "owner-legacy-action.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/owner-legacy-action.json",
+    "sha256": "4220601bb59d7fa59cbe80bda9df3de32b8551f6b2848c2b3021b948b9e7bfbf",
+    "bytes": 1370
+  },
+  {
+    "file": "legacy-activation-preview-current.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/legacy-activation-preview-current.json",
+    "sha256": "d9c4f3c92b7d97162e75f7dc08615c58e9494bc3777dcc4993b1e5a655702ef1",
+    "bytes": 2348
+  },
+  {
+    "file": "audit-only-ci-cancellations.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/audit-only-ci-cancellations.json",
+    "sha256": "3a4f36b8816992dadc8ab1f3ca32c0af1e19f716575ceeb083b7df5781d6e542",
+    "bytes": 91995
+  },
+  {
+    "file": "frozen-artifacts-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/frozen-artifacts-verification.json",
+    "sha256": "1b8125a29f33e67097ea16d279fc280739c1dd07d87c01cdf2566c17f279f9d5",
+    "bytes": 1042
+  },
+  {
+    "file": "shared-memory-outage.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/shared-memory-outage.json",
+    "sha256": "f0d6f0f0ad111546e6e652bb812dba70e1998411c0894287afe9888e98654d6b",
+    "bytes": 601
+  },
+  {
+    "file": "usage-final.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/usage-final.json",
+    "sha256": "54b8f99314013dd18b6cb17f3fc298be2de15cb205a131c8ee58f9c4b628f124",
+    "bytes": 15457
+  },
+  {
+    "file": "main-ci-current.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/main-ci-current.json",
+    "sha256": "b0ba27ad67feac79c85e405b24bdc0fa1849379defda3854f6f343d9c70f5102",
+    "bytes": 8781
+  },
+  {
+    "file": "verification-requirements.txt",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/verification-requirements.txt",
+    "sha256": "b98388bc6d9cdca90e009e0e653ddf5391860bf79f5b1e6329c09ab259c4e7fc",
+    "bytes": 121
+  },
+  {
+    "file": "channel-attempt01-measured.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/channel-attempt01-measured.json",
+    "sha256": "3c1cbb36b9cac55f17779b9a88521c2986bfb73bcc6dce5c49e347e5bb247fd1",
+    "bytes": 1672
+  },
+  {
+    "file": "channel-retry-policy.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/channel-retry-policy.json",
+    "sha256": "8e5eb4c4ea5ff8beb92bc8947557d1327dac84900be0d9ffc775df03753a1f69",
+    "bytes": 2619
+  },
+  {
+    "file": "main-windows-comparison.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/main-windows-comparison.json",
+    "sha256": "626a53c417b0d74f986454e1f41bce1e97ba43b674c638fb673f9c7fd61c0bd7",
+    "bytes": 59639
+  },
+  {
+    "file": "skill-payload-verification.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/skill/payload-verification.json",
+    "sha256": "7327218f2596a44766cc27e765b255515fafd26e04adbcb00cbb0a00b6ee70c4",
+    "bytes": 1325
+  },
+  {
+    "file": "skill-windows-assets.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/skill/windows-assets.json",
+    "sha256": "c2a602826b590a1f2641c9058f1264142028bb19478fd62da5cad26787fb8c9e",
+    "bytes": 551
+  },
+  {
+    "file": "skill-portable-workflow.json",
+    "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/skill/portable-workflow.json",
+    "sha256": "d1072c4192c75d2db55f6bc0d35c5f96a297c0eff8a5c1fc270249ad1de49230",
+    "bytes": 4365
+  }
+]

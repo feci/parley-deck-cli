@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-09T12:39:00.827735+00:00",
+  "gateway": "configured mcpanywhere hosted Streamable HTTP connection",
+  "connector": "openviking-marao (895db7f4)",
+  "operation": "search_tools read/write discovery",
+  "error": "HTTP 400: Bad Request: No valid session ID provided",
+  "write_attempted": false,
+  "persisted": false,
+  "intended_uri": "viking://resources/projects/parley-deck/driver-unstall-2026-10-09.md",
+  "handling": "Continue with local canonical sources; save concise verified release outcome locally. No gateway, credential or direct-connection changes; no repeated retries."
+}

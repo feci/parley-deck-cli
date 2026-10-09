@@ -1,0 +1,14 @@
+{
+  "x64": {
+    "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.18.0/parley-deck-skill-v2.18.0-windows-x64.exe",
+    "sha256": "04f82eb64eb9a78c1984871802621c94500b5d31216438731471189101aef3a7",
+    "bytes": 91412964,
+    "pe_machine": "0x8664"
+  },
+  "arm64": {
+    "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.18.0/parley-deck-skill-v2.18.0-windows-arm64.exe",
+    "sha256": "fe2659c4e7d41432502c9739532b3d383d5c82724d7c6db9724b7e867b84a489",
+    "bytes": 85826020,
+    "pe_machine": "0xaa64"
+  }
+}

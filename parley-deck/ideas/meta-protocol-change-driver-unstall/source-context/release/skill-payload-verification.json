@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-09T10:46:56.701027+00:00",
+  "version": "2.18.0",
+  "review_candidate": "e46e551871005ecac4225f7cb55a652754fbbb9b",
+  "npm_tarball_sha256": "2d1e79016764d2e9e2ea5a4b5665c25da36ad7138ad15fecf0a93864f478eaf0",
+  "skills": [
+    {
+      "skill": "parley-bidding",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "bytes": 12125
+    },
+    {
+      "skill": "parley-deck",
+      "sha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
+      "bytes": 19235
+    },
+    {
+      "skill": "parley-design",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "bytes": 6519
+    },
+    {
+      "skill": "parley-design-check",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "bytes": 27111
+    },
+    {
+      "skill": "parley-tracker",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "bytes": 21585
+    },
+    {
+      "skill": "parley-worktrees",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "bytes": 25837
+    }
+  ],
+  "files": 210,
+  "portable": {
+    "name": "parley-deck-skill-v2.18.0-macos-arm64",
+    "sha256": "00198ddc51ff7e99e5e9abc714bbe42150358839bef00e460d7a08969724122d"
+  }
+}

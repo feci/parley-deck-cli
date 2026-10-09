@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-09T12:36:12.500643+00:00",
+  "url": "https://github.com/microsoft/winget-pkgs/pull/449541",
+  "number": 449541,
+  "state": "open",
+  "branch": "feci-parleydeckskill-2.18.0",
+  "head": "eb039f36c131cd8e5b1c40f6c78d760683126bac",
+  "base": "8ae0461cbbcfaf32b5457e61133d3dde5b2bb688",
+  "files": [
+    {
+      "sha": "a59942ceec3712b236257733a0b1f10393ff2a37",
+      "filename": "manifests/f/Feci/ParleyDeckSkill/2.18.0/Feci.ParleyDeckSkill.installer.yaml",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "changes": 15,
+      "blob_url": "https://github.com/microsoft/winget-pkgs/blob/eb039f36c131cd8e5b1c40f6c78d760683126bac/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.installer.yaml",
+      "raw_url": "https://github.com/microsoft/winget-pkgs/raw/eb039f36c131cd8e5b1c40f6c78d760683126bac/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.installer.yaml",
+      "contents_url": "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.installer.yaml?ref=eb039f36c131cd8e5b1c40f6c78d760683126bac",
+      "patch": "@@ -0,0 +1,15 @@\n+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json\r\n+PackageIdentifier: Feci.ParleyDeckSkill\r\n+PackageVersion: 2.18.0\r\n+InstallerType: portable\r\n+Commands:\r\n+- parley-deck-skill\r\n+Installers:\r\n+- Architecture: x64\r\n+  InstallerUrl: https://github.com/feci/parley-deck-skill/releases/download/v2.18.0/parley-deck-skill-v2.18.0-windows-x64.exe\r\n+  InstallerSha256: 04F82EB64EB9A78C1984871802621C94500B5D31216438731471189101AEF3A7\r\n+- Architecture: arm64\r\n+  InstallerUrl: https://github.com/feci/parley-deck-skill/releases/download/v2.18.0/parley-deck-skill-v2.18.0-windows-arm64.exe\r\n+  InstallerSha256: FE2659C4E7D41432502C9739532B3D383D5C82724D7C6DB9724B7E867B84A489\r\n+ManifestType: installer\r\n+ManifestVersion: 1.12.0\r"
+    },
+    {
+      "sha": "a849a45c81f7933078cf651365af4ab01511da9c",
+      "filename": "manifests/f/Feci/ParleyDeckSkill/2.18.0/Feci.ParleyDeckSkill.locale.en-US.yaml",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "changes": 27,
+      "blob_url": "https://github.com/microsoft/winget-pkgs/blob/eb039f36c131cd8e5b1c40f6c78d760683126bac/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.locale.en-US.yaml",
+      "raw_url": "https://github.com/microsoft/winget-pkgs/raw/eb039f36c131cd8e5b1c40f6c78d760683126bac/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.locale.en-US.yaml",
+      "contents_url": "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.locale.en-US.yaml?ref=eb039f36c131cd8e5b1c40f6c78d760683126bac",
+      "patch": "@@ -0,0 +1,27 @@\n+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json\r\n+PackageIdentifier: Feci.ParleyDeckSkill\r\n+PackageVersion: 2.18.0\r\n+PackageLocale: en-US\r\n+Publisher: Feci\r\n+PublisherUrl: https://github.com/feci\r\n+PackageName: Parley Deck Skill\r\n+PackageUrl: https://github.com/feci/parley-deck-skill\r\n+License: Apache-2.0\r\n+LicenseUrl: https://github.com/feci/parley-deck-skill/blob/main/LICENSE\r\n+ShortDescription: Installer for the Parley Deck multi-agent cooperation skill.\r\n+Description: \"Installs the vendor-neutral Parley Deck AI cooperation skill and add-ons into supported agent runtimes or a custom directory. Includes track-derived goal-check ceilings, bounded retry and durable legacy unknown-history guidance paired with Parley Deck CLI 1.54.0.\"\r\n+ReleaseNotesUrl: https://github.com/feci/parley-deck-skill/releases/tag/v2.18.0\r\n+Tags:\r\n+- ai\r\n+- agents\r\n+- agy\r\n+- antigravity\r\n+- cli\r\n+- codex\r\n+- claude\r\n+- kimi\r\n+- multi-agent\r\n+- skill\r\n+- zcode\r\n+ManifestType: defaultLocale\r\n+ManifestVersion: 1.12.0\r"
+    },
+    {
+      "sha": "900e182cf465cbf37e96fb26f2909bfd382d0e02",
+      "filename": "manifests/f/Feci/ParleyDeckSkill/2.18.0/Feci.ParleyDeckSkill.yaml",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "changes": 6,
+      "blob_url": "https://github.com/microsoft/winget-pkgs/blob/eb039f36c131cd8e5b1c40f6c78d760683126bac/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.yaml",
+      "raw_url": "https://github.com/microsoft/winget-pkgs/raw/eb039f36c131cd8e5b1c40f6c78d760683126bac/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.yaml",
+      "contents_url": "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests%2Ff%2FFeci%2FParleyDeckSkill%2F2.18.0%2FFeci.ParleyDeckSkill.yaml?ref=eb039f36c131cd8e5b1c40f6c78d760683126bac",
+      "patch": "@@ -0,0 +1,6 @@\n+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.12.0.schema.json\r\n+PackageIdentifier: Feci.ParleyDeckSkill\r\n+PackageVersion: 2.18.0\r\n+DefaultLocale: en-US\r\n+ManifestType: version\r\n+ManifestVersion: 1.12.0\r"
+    }
+  ],
+  "exact_three_file_diff_verified": true
+}

@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-09T12:26:23.357283+00:00",
+  "pull_requests": [
+    {
+      "headRefOid": "6fc6da25198878b7eeab1b792c0ac87b2cc19ac2",
+      "mergeCommit": {
+        "oid": "bed5ffd1049dc0f207eb39beaa3dd3ba879181c3"
+      },
+      "mergedAt": "2026-10-09T12:26:04Z",
+      "state": "MERGED",
+      "url": "https://github.com/feci/parley-deck-cli/pull/81",
+      "parents": [
+        "a9e383d2a0cb25551b22a0b3dbf22698b60f8d8c",
+        "6fc6da25198878b7eeab1b792c0ac87b2cc19ac2"
+      ]
+    },
+    {
+      "headRefOid": "e46e551871005ecac4225f7cb55a652754fbbb9b",
+      "mergeCommit": {
+        "oid": "054954458dbfe2d764bf6234a6d6bbeee12e2494"
+      },
+      "mergedAt": "2026-10-09T12:26:11Z",
+      "state": "MERGED",
+      "url": "https://github.com/feci/parley-deck-skill/pull/11",
+      "parents": [
+        "8ce4dec0fde0f563f5110e99d8b7e4550d939770",
+        "e46e551871005ecac4225f7cb55a652754fbbb9b"
+      ]
+    }
+  ]
+}

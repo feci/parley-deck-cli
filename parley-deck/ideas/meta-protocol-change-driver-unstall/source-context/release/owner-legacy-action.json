@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-09T12:33:18.186534+00:00",
+  "applied": false,
+  "history": "unknown-history",
+  "matching_visible_roots": 24,
+  "manifest_sha256": "7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6",
+  "preview_sha256": "d7d6d89007e9ecfe3d03f235c37d1aa861b40b3c90c107a1fdf3181adb4c5b1b",
+  "run_bytes_sha256": "ee4f52b717159e54aa8f144161d14467160cfc6846aed97abbdd6768683c6906",
+  "decision_id": "driver-unstall-20260510-smoke-v1",
+  "command": "parley budget legacy apply --dir '/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/driver-unstall' --run parley-deck/runs/20260510T194003Z --expected-preview-sha256 d7d6d89007e9ecfe3d03f235c37d1aa861b40b3c90c107a1fdf3181adb4c5b1b --decision-id driver-unstall-20260510-smoke-v1 --reason 'Record the 2026-05-10 smoke run as unknown history under the reviewed driver-unstall D6 repair; preserve original bytes, charges and cycle caps.' --writers-stopped --acknowledge-unknown-history --yes",
+  "reason": "Record the 2026-05-10 smoke run as unknown history under the reviewed driver-unstall D6 repair; preserve original bytes, charges and cycle caps.",
+  "owner_condition": "Stop all repository/deck Parley writers, review a fresh inspect, and run in an attended terminal. Re-inspect if the preview changes; never assert historical zero.",
+  "last_verified_at": "2026-10-09T13:37:18.974917+00:00"
+}

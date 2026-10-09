@@ -1,0 +1,1316 @@
+{
+  "at": "2026-10-09T12:29:45.325744+00:00",
+  "commit": "bd2a3640a9d217d4c3f48d7121c6669690ed61f0",
+  "steps": [
+    {
+      "name": "brew-upgrade",
+      "command": [
+        "brew",
+        "upgrade",
+        "feci/parley/parley-deck-cli",
+        "feci/parley/parley-deck-skill"
+      ],
+      "exit": 0,
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/logs/brew-upgrade.log"
+    },
+    {
+      "name": "brew-tests",
+      "command": [
+        "brew",
+        "test",
+        "feci/parley/parley-deck-cli",
+        "feci/parley/parley-deck-skill"
+      ],
+      "exit": 0,
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/logs/brew-tests.log"
+    },
+    {
+      "name": "brew-style",
+      "command": [
+        "brew",
+        "style",
+        "feci/parley/parley-deck-cli",
+        "feci/parley/parley-deck-skill"
+      ],
+      "exit": 0,
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/logs/brew-style.log"
+    }
+  ],
+  "versions": {
+    "cli": "parley 1.54.0",
+    "skill": "2.18.0"
+  },
+  "formulae": [
+    {
+      "name": "parley-deck-cli",
+      "full_name": "feci/parley/parley-deck-cli",
+      "tap": "feci/parley",
+      "oldnames": [],
+      "aliases": [],
+      "versioned_formulae": [],
+      "desc": "CLI for Parley Deck multi-agent workflows",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/feci/parley-deck-cli",
+      "versions": {
+        "stable": "1.54.0",
+        "head": "HEAD",
+        "bottle": false
+      },
+      "urls": {
+        "stable": {
+          "url": "https://github.com/feci/parley-deck-cli/archive/refs/tags/v1.54.0.tar.gz",
+          "tag": null,
+          "revision": null,
+          "using": null,
+          "checksum": "fd07f50cebccd1c29bbb23f49d0e7cb3808461591de9f7d82f099e76030ea2a2"
+        },
+        "head": {
+          "url": "https://github.com/feci/parley-deck-cli.git",
+          "branch": "main",
+          "using": null
+        }
+      },
+      "patches": [],
+      "revision": 0,
+      "version_scheme": 0,
+      "compatibility_version": null,
+      "autobump": true,
+      "no_autobump_message": null,
+      "skip_livecheck": false,
+      "bottle": {},
+      "pour_bottle_only_if": null,
+      "keg_only": false,
+      "keg_only_reason": null,
+      "options": [],
+      "build_dependencies": [
+        "go"
+      ],
+      "dependencies": [],
+      "test_dependencies": [],
+      "recommended_dependencies": [],
+      "optional_dependencies": [],
+      "uses_from_macos": [],
+      "uses_from_macos_bounds": [],
+      "requirements": [],
+      "conflicts_with": [],
+      "conflicts_with_reasons": [],
+      "link_overwrite": [],
+      "caveats": null,
+      "installed": [
+        {
+          "version": "1.50.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1790325659,
+          "runtime_dependencies": [],
+          "installed_on_request": true
+        },
+        {
+          "version": "1.51.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791419025,
+          "runtime_dependencies": [],
+          "installed_on_request": true
+        },
+        {
+          "version": "1.52.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791503734,
+          "runtime_dependencies": [],
+          "installed_on_request": true
+        },
+        {
+          "version": "1.53.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791538148,
+          "runtime_dependencies": [],
+          "installed_on_request": true
+        },
+        {
+          "version": "1.54.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791548976,
+          "runtime_dependencies": [],
+          "installed_on_request": true
+        }
+      ],
+      "linked_keg": "1.54.0",
+      "pinned": false,
+      "outdated": false,
+      "deprecated": false,
+      "deprecation_date": null,
+      "deprecation_reason": null,
+      "deprecation_replacement_formula": null,
+      "deprecation_replacement_cask": null,
+      "deprecate_args": null,
+      "disabled": false,
+      "disable_date": null,
+      "disable_reason": null,
+      "disable_replacement_formula": null,
+      "disable_replacement_cask": null,
+      "disable_args": null,
+      "post_install_steps": [],
+      "post_install_defined": false,
+      "service": null,
+      "tap_git_head": "bd2a3640a9d217d4c3f48d7121c6669690ed61f0",
+      "ruby_source_path": "Formula/parley-deck-cli.rb",
+      "ruby_source_checksum": {
+        "sha256": "5174d8edb59a798ceed5e4ac90e7da79575d35b519b1408e14ac9f44715fe618"
+      }
+    },
+    {
+      "name": "parley-deck-skill",
+      "full_name": "feci/parley/parley-deck-skill",
+      "tap": "feci/parley",
+      "oldnames": [],
+      "aliases": [],
+      "versioned_formulae": [],
+      "desc": "Installer for the Parley Deck multi-agent cooperation skill",
+      "license": "Apache-2.0",
+      "homepage": "https://github.com/feci/parley-deck-skill",
+      "versions": {
+        "stable": "2.18.0",
+        "head": "HEAD",
+        "bottle": false
+      },
+      "urls": {
+        "stable": {
+          "url": "https://github.com/feci/parley-deck-skill/archive/refs/tags/v2.18.0.tar.gz",
+          "tag": null,
+          "revision": null,
+          "using": null,
+          "checksum": "b089855c1aee3f7b48f3f17838be72d0edc03abb4b13c2c8bce4b7f6904e2fed"
+        },
+        "head": {
+          "url": "https://github.com/feci/parley-deck-skill.git",
+          "branch": "main",
+          "using": null
+        }
+      },
+      "patches": [],
+      "revision": 0,
+      "version_scheme": 0,
+      "compatibility_version": null,
+      "autobump": true,
+      "no_autobump_message": null,
+      "skip_livecheck": false,
+      "bottle": {},
+      "pour_bottle_only_if": null,
+      "keg_only": false,
+      "keg_only_reason": null,
+      "options": [],
+      "build_dependencies": [],
+      "dependencies": [
+        "node"
+      ],
+      "test_dependencies": [],
+      "recommended_dependencies": [],
+      "optional_dependencies": [],
+      "uses_from_macos": [],
+      "uses_from_macos_bounds": [],
+      "requirements": [],
+      "conflicts_with": [],
+      "conflicts_with_reasons": [],
+      "link_overwrite": [],
+      "caveats": null,
+      "installed": [
+        {
+          "version": "2.14.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1790325660,
+          "runtime_dependencies": [
+            {
+              "full_name": "abseil",
+              "version": "20260817.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "20260817.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "fmt",
+              "version": "12.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "12.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ada-url",
+              "version": "4.0.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "4.0.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "brotli",
+              "version": "1.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "c-ares",
+              "version": "1.34.8",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.34.8",
+              "declared_directly": false
+            },
+            {
+              "full_name": "hdrhistogram_c",
+              "version": "0.11.10",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.11.10",
+              "declared_directly": false
+            },
+            {
+              "full_name": "icu4c@78",
+              "version": "78.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "78.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libffi",
+              "version": "3.8.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.8.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libnghttp2",
+              "version": "1.70.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "1.70.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libuv",
+              "version": "1.52.1",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.52.1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "llhttp",
+              "version": "9.4.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.4.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdutf",
+              "version": "9.2.1",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.2.1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "merve",
+              "version": "1.2.2",
+              "revision": 3,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.2_3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "nbytes",
+              "version": "0.1.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.1.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ca-certificates",
+              "version": "2026-08-13",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "2026-08-13",
+              "declared_directly": false
+            },
+            {
+              "full_name": "openssl@3",
+              "version": "3.6.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.6.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdjson",
+              "version": "4.6.11",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "4.6.11",
+              "declared_directly": false
+            },
+            {
+              "full_name": "readline",
+              "version": "8.3.6",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "8.3.6",
+              "declared_directly": false
+            },
+            {
+              "full_name": "sqlite",
+              "version": "3.53.4",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "3.53.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "uvwasi",
+              "version": "0.0.23",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "0.0.23",
+              "declared_directly": false
+            },
+            {
+              "full_name": "lz4",
+              "version": "1.10.0",
+              "revision": 0,
+              "bottle_rebuild": 3,
+              "pkg_version": "1.10.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "xz",
+              "version": "5.8.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.8.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "zstd",
+              "version": "1.5.7",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.5.7_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "highway",
+              "version": "1.4.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.4.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "node",
+              "version": "26.9.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "26.9.0",
+              "declared_directly": true
+            }
+          ],
+          "installed_on_request": true
+        },
+        {
+          "version": "2.15.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791419026,
+          "runtime_dependencies": [
+            {
+              "full_name": "abseil",
+              "version": "20260817.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "20260817.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "fmt",
+              "version": "12.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "12.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "icu4c@78",
+              "version": "78.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "78.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdutf",
+              "version": "9.2.1",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.2.1_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ada-url",
+              "version": "4.0.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "4.0.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "brotli",
+              "version": "1.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "c-ares",
+              "version": "1.34.8",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.34.8",
+              "declared_directly": false
+            },
+            {
+              "full_name": "hdrhistogram_c",
+              "version": "0.12.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.12.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libffi",
+              "version": "3.8.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.8.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libnghttp2",
+              "version": "1.70.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "1.70.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libuv",
+              "version": "1.53.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.53.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "llhttp",
+              "version": "9.4.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.4.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "merve",
+              "version": "1.2.2",
+              "revision": 3,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.2_3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "nbytes",
+              "version": "0.1.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.1.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ca-certificates",
+              "version": "2026-09-25",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "2026-09-25",
+              "declared_directly": false
+            },
+            {
+              "full_name": "openssl@3",
+              "version": "3.6.5",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.6.5",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdjson",
+              "version": "5.0.2",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.0.2",
+              "declared_directly": false
+            },
+            {
+              "full_name": "readline",
+              "version": "8.3.6",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "8.3.6",
+              "declared_directly": false
+            },
+            {
+              "full_name": "sqlite",
+              "version": "3.53.4",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "3.53.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "uvwasi",
+              "version": "0.0.23",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "0.0.23",
+              "declared_directly": false
+            },
+            {
+              "full_name": "lz4",
+              "version": "1.10.0",
+              "revision": 0,
+              "bottle_rebuild": 3,
+              "pkg_version": "1.10.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "xz",
+              "version": "5.8.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.8.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "zstd",
+              "version": "1.5.7",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.5.7_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "highway",
+              "version": "1.4.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.4.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "node",
+              "version": "26.10.0",
+              "revision": 2,
+              "bottle_rebuild": 0,
+              "pkg_version": "26.10.0_2",
+              "declared_directly": true
+            }
+          ],
+          "installed_on_request": true
+        },
+        {
+          "version": "2.16.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791503736,
+          "runtime_dependencies": [
+            {
+              "full_name": "abseil",
+              "version": "20260817.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "20260817.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "fmt",
+              "version": "12.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "12.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "icu4c@78",
+              "version": "78.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "78.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdutf",
+              "version": "9.2.1",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.2.1_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ada-url",
+              "version": "4.0.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "4.0.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "brotli",
+              "version": "1.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "c-ares",
+              "version": "1.34.8",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.34.8",
+              "declared_directly": false
+            },
+            {
+              "full_name": "hdrhistogram_c",
+              "version": "0.12.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.12.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libffi",
+              "version": "3.8.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.8.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libnghttp2",
+              "version": "1.70.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "1.70.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libuv",
+              "version": "1.53.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.53.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "llhttp",
+              "version": "9.4.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.4.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "merve",
+              "version": "1.2.2",
+              "revision": 3,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.2_3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "nbytes",
+              "version": "0.1.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.1.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ca-certificates",
+              "version": "2026-09-25",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "2026-09-25",
+              "declared_directly": false
+            },
+            {
+              "full_name": "openssl@3",
+              "version": "3.6.5",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.6.5",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdjson",
+              "version": "5.0.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.0.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "readline",
+              "version": "8.3.6",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "8.3.6",
+              "declared_directly": false
+            },
+            {
+              "full_name": "sqlite",
+              "version": "3.53.4",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "3.53.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "uvwasi",
+              "version": "0.0.23",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "0.0.23",
+              "declared_directly": false
+            },
+            {
+              "full_name": "lz4",
+              "version": "1.10.0",
+              "revision": 0,
+              "bottle_rebuild": 3,
+              "pkg_version": "1.10.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "xz",
+              "version": "5.8.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.8.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "zstd",
+              "version": "1.5.7",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.5.7_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "highway",
+              "version": "1.4.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.4.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "node",
+              "version": "26.11.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "26.11.0",
+              "declared_directly": true
+            }
+          ],
+          "installed_on_request": true
+        },
+        {
+          "version": "2.17.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791538151,
+          "runtime_dependencies": [
+            {
+              "full_name": "abseil",
+              "version": "20260817.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "20260817.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "fmt",
+              "version": "12.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "12.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "icu4c@78",
+              "version": "78.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "78.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdutf",
+              "version": "9.2.1",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.2.1_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ada-url",
+              "version": "4.0.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "4.0.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "brotli",
+              "version": "1.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "c-ares",
+              "version": "1.34.8",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.34.8",
+              "declared_directly": false
+            },
+            {
+              "full_name": "hdrhistogram_c",
+              "version": "0.12.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.12.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libffi",
+              "version": "3.8.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.8.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libnghttp2",
+              "version": "1.70.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "1.70.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libuv",
+              "version": "1.53.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.53.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "llhttp",
+              "version": "9.4.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.4.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "merve",
+              "version": "1.2.2",
+              "revision": 3,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.2_3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "nbytes",
+              "version": "0.1.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.1.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ca-certificates",
+              "version": "2026-09-25",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "2026-09-25",
+              "declared_directly": false
+            },
+            {
+              "full_name": "openssl@3",
+              "version": "3.6.5",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.6.5",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdjson",
+              "version": "5.0.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.0.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "readline",
+              "version": "8.3.6",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "8.3.6",
+              "declared_directly": false
+            },
+            {
+              "full_name": "sqlite",
+              "version": "3.53.4",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "3.53.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "uvwasi",
+              "version": "0.0.23",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "0.0.23",
+              "declared_directly": false
+            },
+            {
+              "full_name": "lz4",
+              "version": "1.10.0",
+              "revision": 0,
+              "bottle_rebuild": 3,
+              "pkg_version": "1.10.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "xz",
+              "version": "5.8.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.8.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "zstd",
+              "version": "1.5.7",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.5.7_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "highway",
+              "version": "1.4.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.4.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "node",
+              "version": "26.11.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "26.11.0",
+              "declared_directly": true
+            }
+          ],
+          "installed_on_request": true
+        },
+        {
+          "version": "2.18.0",
+          "used_options": [],
+          "built_as_bottle": false,
+          "poured_from_bottle": false,
+          "time": 1791548977,
+          "runtime_dependencies": [
+            {
+              "full_name": "abseil",
+              "version": "20260817.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "20260817.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "fmt",
+              "version": "12.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "12.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "icu4c@78",
+              "version": "78.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "78.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdutf",
+              "version": "9.2.1",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.2.1_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ada-url",
+              "version": "4.0.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "4.0.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "brotli",
+              "version": "1.2.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "c-ares",
+              "version": "1.34.8",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.34.8",
+              "declared_directly": false
+            },
+            {
+              "full_name": "hdrhistogram_c",
+              "version": "0.12.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.12.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libffi",
+              "version": "3.8.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.8.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libnghttp2",
+              "version": "1.70.0",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "1.70.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "libuv",
+              "version": "1.53.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.53.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "llhttp",
+              "version": "9.4.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "9.4.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "merve",
+              "version": "1.2.2",
+              "revision": 3,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.2.2_3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "nbytes",
+              "version": "0.1.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "0.1.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "ca-certificates",
+              "version": "2026-09-25",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "2026-09-25",
+              "declared_directly": false
+            },
+            {
+              "full_name": "openssl@3",
+              "version": "3.6.5",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "3.6.5",
+              "declared_directly": false
+            },
+            {
+              "full_name": "simdjson",
+              "version": "5.0.3",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.0.3",
+              "declared_directly": false
+            },
+            {
+              "full_name": "readline",
+              "version": "8.3.6",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "8.3.6",
+              "declared_directly": false
+            },
+            {
+              "full_name": "sqlite",
+              "version": "3.53.4",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "3.53.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "uvwasi",
+              "version": "0.0.23",
+              "revision": 0,
+              "bottle_rebuild": 1,
+              "pkg_version": "0.0.23",
+              "declared_directly": false
+            },
+            {
+              "full_name": "lz4",
+              "version": "1.10.0",
+              "revision": 0,
+              "bottle_rebuild": 3,
+              "pkg_version": "1.10.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "xz",
+              "version": "5.8.4",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "5.8.4",
+              "declared_directly": false
+            },
+            {
+              "full_name": "zstd",
+              "version": "1.5.7",
+              "revision": 1,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.5.7_1",
+              "declared_directly": false
+            },
+            {
+              "full_name": "highway",
+              "version": "1.4.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "1.4.0",
+              "declared_directly": false
+            },
+            {
+              "full_name": "node",
+              "version": "26.11.0",
+              "revision": 0,
+              "bottle_rebuild": 0,
+              "pkg_version": "26.11.0",
+              "declared_directly": true
+            }
+          ],
+          "installed_on_request": true
+        }
+      ],
+      "linked_keg": "2.18.0",
+      "pinned": false,
+      "outdated": false,
+      "deprecated": false,
+      "deprecation_date": null,
+      "deprecation_reason": null,
+      "deprecation_replacement_formula": null,
+      "deprecation_replacement_cask": null,
+      "deprecate_args": null,
+      "disabled": false,
+      "disable_date": null,
+      "disable_reason": null,
+      "disable_replacement_formula": null,
+      "disable_replacement_cask": null,
+      "disable_args": null,
+      "post_install_steps": [
+        {
+          "command": {
+            "base": "homebrew_prefix",
+            "path": "opt/node/bin/node"
+          },
+          "type": "run",
+          "args": [
+            "-e",
+            "const fs = require(\"node:fs\");\nconst path = require(\"node:path\");\nconst prefixes = [\"/opt/homebrew\", \"/usr/local\", process.argv[2]];\nfunction restore(dir) {\n  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {\n    const file = path.join(dir, entry.name);\n    if (entry.isDirectory()) { restore(file); continue; }\n    if (!entry.isFile()) continue;\n    const body = fs.readFileSync(file, \"utf8\");\n    const match = body.match(/^#![ \\t]*(\\S+)[ \\t]*\\n/);\n    if (!match || !prefixes.some(prefix => match[1].startsWith(prefix + \"/\"))) continue;\n    const interpreter = path.basename(match[1]);\n    fs.writeFileSync(file, \"#!/usr/bin/env \" + interpreter + \"\\n\" + body.slice(match[0].length));\n  }\n}\nrestore(process.argv[1]);\n",
+            "{{libexec}}/skills",
+            "{{HOMEBREW_PREFIX}}"
+          ]
+        }
+      ],
+      "post_install_defined": false,
+      "service": null,
+      "tap_git_head": "bd2a3640a9d217d4c3f48d7121c6669690ed61f0",
+      "ruby_source_path": "Formula/parley-deck-skill.rb",
+      "ruby_source_checksum": {
+        "sha256": "f6d55e1c84e4bbf590ab2a84efda452eacea17f9efc53ebeb0ad8e13fc219d2e"
+      }
+    }
+  ]
+}
