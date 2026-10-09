@@ -214,3 +214,15 @@ Eligible streaming steps, including headless signoffs, default to first output 1
 stall 300s, with one retry after 5s. Buffered Zcode and default Claude text output use their
 hard ceiling; silence alone cannot diagnose a hang. Explicit configuration remains
 honored. Windows CLI assets remain experimental.
+
+### Legacy accounting and goal checks (1.54.0)
+
+`parley budget legacy inspect|apply` records a one-time attended declaration for exact,
+structural-only legacy run bytes. Subsequent ideas retain unknown-history provenance
+without repeating a per-idea declaration. Changed, missing, richer or undeclared history
+still refuses; charges and caps remain. See [operator workflow](docs/legacy-history.md).
+Installing the release alone does not activate this declaration.
+
+Goal checks use the lesser of their track's 5/15/30-minute bound and positive checker
+configuration. Their original-plus-one execution attempts share a frozen deadline,
+including protected checkers; valid FAIL is final and retry cannot grant dropout authority.

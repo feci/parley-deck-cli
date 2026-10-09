@@ -31,11 +31,12 @@ type CycleExtensionRequest struct {
 }
 
 type CycleStatus struct {
-	Policy       CyclePolicy `json:"policy"`
-	PolicySHA256 string      `json:"policy_sha256"`
-	Spent        int         `json:"spent"`
-	StartedAt    time.Time   `json:"started_at"`
-	LedgerDir    string      `json:"ledger_dir"`
+	LegacyHistory *LegacyAdoption `json:"legacy_history,omitempty"`
+	Policy        CyclePolicy     `json:"policy"`
+	PolicySHA256  string          `json:"policy_sha256"`
+	Spent         int             `json:"spent"`
+	StartedAt     time.Time       `json:"started_at"`
+	LedgerDir     string          `json:"ledger_dir"`
 }
 
 func (p CyclePolicy) InitialMaximum() int {
@@ -55,7 +56,7 @@ func cloneCyclePolicy(p CyclePolicy) CyclePolicy {
 }
 
 func sameCycleAuthority(a, b CyclePolicy) bool {
-	return a.Scope == b.Scope && a.Idea == b.Idea && a.IdeaPath == b.IdeaPath && a.Kind == b.Kind && a.Carried == b.Carried && a.InitialMaximum() == b.InitialMaximum() && a.MigrationSHA256 == b.MigrationSHA256 && a.TrajectorySHA256 == b.TrajectorySHA256
+	return a.Scope == b.Scope && a.Idea == b.Idea && a.IdeaPath == b.IdeaPath && a.Kind == b.Kind && a.Carried == b.Carried && a.InitialMaximum() == b.InitialMaximum() && a.MigrationSHA256 == b.MigrationSHA256 && a.TrajectorySHA256 == b.TrajectorySHA256 && a.LegacyHistorySHA256 == b.LegacyHistorySHA256
 }
 
 func originalCyclePolicy(p CyclePolicy) CyclePolicy {
@@ -139,10 +140,14 @@ func (b *CycleBinding) current() (*CycleBinding, error) {
 	if !sameCycleAuthority(b.Policy, p) {
 		return nil, errors.New("frozen cycle authority changed")
 	}
-	return &CycleBinding{Policy: p, Store: b.Store}, nil
+	return &CycleBinding{root: b.root, Policy: p, Store: b.Store}, nil
 }
 
 func (b *CycleBinding) Inspect(ctx context.Context) (CycleStatus, error) {
+	legacy, err := validateCycleLegacy(ctx, b.root, filepath.Dir(b.Store.Dir), b.Policy.LegacyHistorySHA256)
+	if err != nil {
+		return CycleStatus{}, err
+	}
 	state, err := b.Store.Inspect(ctx)
 	if err != nil {
 		return CycleStatus{}, err
@@ -156,7 +161,7 @@ func (b *CycleBinding) Inspect(ctx context.Context) (CycleStatus, error) {
 			return CycleStatus{}, errors.New("cycle grant differs from retained charge history")
 		}
 	}
-	return CycleStatus{Policy: cloneCyclePolicy(b.Policy), PolicySHA256: CyclePolicyDigest(b.Policy), Spent: spent, StartedAt: state.StartedAt, LedgerDir: b.Store.Dir}, nil
+	return CycleStatus{LegacyHistory: legacy, Policy: cloneCyclePolicy(b.Policy), PolicySHA256: CyclePolicyDigest(b.Policy), Spent: spent, StartedAt: state.StartedAt, LedgerDir: b.Store.Dir}, nil
 }
 
 // InspectCycleBudget does not initialize policy, a ledger or its locks.

@@ -18,20 +18,22 @@ import (
 // (the fast track has no cross-review rounds). Policy is runtime state, never
 // a grant taken from participant-authored headings or extension frontmatter.
 type CyclePolicy struct {
-	Version          int              `json:"version"`
-	Scope            string           `json:"scope"`
-	Idea             string           `json:"idea"`
-	IdeaPath         string           `json:"idea_path"`
-	Kind             Kind             `json:"kind"`
-	Maximum          int              `json:"maximum"`
-	Carried          int              `json:"carried"`
-	OriginalMaximum  *int             `json:"original_maximum,omitempty"`
-	Extensions       []CycleExtension `json:"extensions,omitempty"`
-	MigrationSHA256  string           `json:"migration_sha256,omitempty"`
-	TrajectorySHA256 string           `json:"trajectory_sha256,omitempty"`
+	Version             int              `json:"version"`
+	Scope               string           `json:"scope"`
+	Idea                string           `json:"idea"`
+	IdeaPath            string           `json:"idea_path"`
+	Kind                Kind             `json:"kind"`
+	Maximum             int              `json:"maximum"`
+	Carried             int              `json:"carried"`
+	OriginalMaximum     *int             `json:"original_maximum,omitempty"`
+	Extensions          []CycleExtension `json:"extensions,omitempty"`
+	MigrationSHA256     string           `json:"migration_sha256,omitempty"`
+	TrajectorySHA256    string           `json:"trajectory_sha256,omitempty"`
+	LegacyHistorySHA256 string           `json:"legacy_history_sha256,omitempty"`
 }
 
 type CycleBinding struct {
+	root   string
 	Policy CyclePolicy
 	Store  Store
 }
@@ -88,6 +90,9 @@ func readCyclePolicy(path string) (CyclePolicy, error) {
 	if err := validateCycleExtensions(p, fields); err != nil {
 		return p, err
 	}
+	if _, err := readCycleLegacy(filepath.Dir(path), p.LegacyHistorySHA256); err != nil {
+		return p, err
+	}
 	return p, checkProtocolMigrationPolicy(filepath.Dir(path), p.MigrationSHA256, originalCyclePolicy(p))
 }
 
@@ -113,7 +118,10 @@ func LoadCycleBinding(ctx context.Context, root, idea string, kind Kind) (*Cycle
 	if p.Scope != scope || p.Idea != idea || p.Kind != kind {
 		return nil, errors.New("cycle budget scope mismatch")
 	}
-	return &CycleBinding{Policy: p, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}, nil
+	if _, err := validateCycleLegacy(ctx, root, dir, p.LegacyHistorySHA256); err != nil {
+		return nil, err
+	}
+	return &CycleBinding{root: root, Policy: p, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}, nil
 }
 
 // EnsureCycleBinding accepts only the known current driver cursor/marker floor.
@@ -158,7 +166,11 @@ func EnsureCycleBinding(ctx context.Context, root, idea string, kind Kind, maxim
 	if err != nil {
 		return nil, err
 	}
-	if err := refuseUnmigratedCycles(roots, idea, relative, kind, carried, currentRun); err != nil {
+	adoption, err := cycleLegacyHistory(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	if err := refuseUnmigratedCyclesDeclared(roots, idea, relative, kind, carried, currentRun, legacyPaths(adoption)); err != nil {
 		return nil, err
 	}
 	release, err := AcquireResourceGuard(ctx, dir)
@@ -171,8 +183,8 @@ func EnsureCycleBinding(ctx context.Context, root, idea string, kind Kind, maxim
 		if p.Scope != scope || p.Idea != idea || p.IdeaPath != relative || p.Kind != kind || p.Maximum != maximum || p.Carried != carried {
 			return nil, errors.New("conflicting first cycle policy")
 		}
-		b := &CycleBinding{Policy: p, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}
-		if _, err := b.Store.Inspect(ctx); err != nil {
+		b := &CycleBinding{root: root, Policy: p, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}
+		if _, err := b.Inspect(ctx); err != nil {
 			return nil, err
 		}
 		return b, nil
@@ -184,10 +196,18 @@ func EnsureCycleBinding(ctx context.Context, root, idea string, kind Kind, maxim
 			return nil, errors.New("cycle migration requires exact replay, not configuration")
 		}
 	}
-	if err := refuseUnmigratedCycles(roots, idea, relative, kind, carried, currentRun); err != nil {
+	adoption, err = cycleLegacyHistory(ctx, root)
+	if err != nil {
 		return nil, err
 	}
-	b := &CycleBinding{Policy: CyclePolicy{Version: 1, Scope: scope, Idea: idea, IdeaPath: relative, Kind: kind, Maximum: maximum, Carried: carried}, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}
+	if err := refuseUnmigratedCyclesDeclared(roots, idea, relative, kind, carried, currentRun, legacyPaths(adoption)); err != nil {
+		return nil, err
+	}
+	legacyDigest, err := writeCycleLegacy(dir, adoption)
+	if err != nil {
+		return nil, err
+	}
+	b := &CycleBinding{root: root, Policy: CyclePolicy{LegacyHistorySHA256: legacyDigest, Version: 1, Scope: scope, Idea: idea, IdeaPath: relative, Kind: kind, Maximum: maximum, Carried: carried}, Store: Store{Dir: filepath.Join(dir, "ledger"), Scope: scope}}
 	if _, err := os.Lstat(filepath.Join(b.Store.Dir, "ledger.json")); err == nil || !os.IsNotExist(err) {
 		return nil, errors.New("cycle ledger without policy requires recovery")
 	}

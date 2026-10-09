@@ -2,6 +2,10 @@ package runner
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"parley-deck-cli/internal/telemetry"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -108,5 +112,62 @@ func TestReviewGateSupervisedCommandTerminalAndReplay(t *testing.T) {
 				t.Fatal("watchdog replay minted another attempt")
 			}
 		})
+	}
+}
+
+// An interrupted first attempt may be recovered, but configuration/run changes
+// cannot lengthen its one remaining attempt or allocate a third child.
+func TestParticipantGoalCeilingFrozenAcrossInterruptedRetry(t *testing.T) {
+	noParticipantWait(t)
+	root := t.TempDir()
+	writeLaunchProtocol(t, root)
+	agent := telemetryShell("cat >/dev/null; exit 7", false)
+	path := filepath.Join(root, "goal.stdout")
+	opts := ParticipantStepOptions{Root: root, Idea: "goal", Agent: agent, Step: "review/round-01/goal-check", HardTimeout: 240 * time.Second, Files: []string{path}}
+	opts.ValidateRecord = func(r telemetry.Record) StepValidation {
+		raw, err := ParticipantOutput(root, r, 0, path)
+		if err != nil {
+			return StepValidation{Integrity: err}
+		}
+		return StepValidation{Valid: string(raw) == "PASS", Reason: "no valid goal verdict", SourceSHA256: fmt.Sprintf("%x", sha256.Sum256(raw))}
+	}
+	calls := 0
+	ctx, cancel := context.WithCancel(context.Background())
+	run := func(child context.Context, _ int, _ string) error {
+		calls++
+		if got := ParticipantStepTimeout(child); got != 240*time.Second {
+			t.Fatalf("ceiling changed: %s", got)
+		}
+		a := agent
+		if calls == 2 {
+			a.HeadlessArgs = []string{"-c", "cat >/dev/null; printf PASS"}
+		}
+		r := RunConsult(child, ConsultOptions{Root: root, Agent: a, Timeout: ParticipantStepTimeout(child), Prompt: "goal fixture", StdoutPath: path, StderrPath: filepath.Join(root, "goal.stderr")})
+		if calls == 1 {
+			cancel()
+		}
+		if r.ExitError != "" {
+			return fmt.Errorf("%s", r.ExitError)
+		}
+		return nil
+	}
+	first := WithLaunchInfo(ctx, LaunchInfo{RunID: "first", Idea: "goal", Phase: "goal-check"})
+	if _, err := RunParticipantStep(first, opts, run); err == nil || calls != 1 {
+		t.Fatalf("interruption: calls %d err %v", calls, err)
+	}
+	opts.HardTimeout = 30 * time.Minute
+	resumed := WithLaunchInfo(context.Background(), LaunchInfo{RunID: "resumed", Idea: "goal", Phase: "goal-check"})
+	result, err := RunParticipantStep(resumed, opts, run)
+	if err != nil || !result.Valid || calls != 2 {
+		t.Fatalf("retry: %+v %v calls %d", result, err, calls)
+	}
+	result, err = RunParticipantStep(resumed, opts, run)
+	if err != nil || !result.Replayed || calls != 2 {
+		t.Fatalf("replay: %+v %v calls %d", result, err, calls)
+	}
+	for _, r := range terminalRecords(t, root) {
+		if r.Metadata.ParticipantTimeoutNS != int64(240*time.Second) {
+			t.Fatal("request did not freeze original ceiling")
+		}
 	}
 }

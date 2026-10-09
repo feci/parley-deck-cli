@@ -198,6 +198,7 @@ func recordLaunch(root string, agent agents.Discovery, info LaunchInfo, boundInv
 	}
 	if info.participantStep != nil {
 		metadata.ParticipantStep = info.participantStep.key
+		metadata.ParticipantTimeoutNS = int64(info.participantStep.hardTimeout)
 	}
 	directory := filepath.Join(root, ".parley-runtime", "invocations")
 	var invocation *telemetry.Invocation

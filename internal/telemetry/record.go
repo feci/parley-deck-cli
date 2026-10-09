@@ -31,20 +31,21 @@ type Context struct {
 }
 
 type Metadata struct {
-	ParticipantStep string  `json:"participant_step,omitempty"`
-	RunID           string  `json:"run_id"`
-	SegmentID       string  `json:"segment_id"`
-	Idea            string  `json:"idea"`
-	Phase           string  `json:"phase"`
-	Agent           string  `json:"agent"`
-	Adapter         string  `json:"adapter"`
-	LaunchMode      string  `json:"launch_mode"`
-	AttemptOrdinal  int     `json:"attempt_ordinal"`
-	RetryOf         *string `json:"retry_of"`
-	RequestedModel  *string `json:"requested_model"`
-	RequestedEffort *string `json:"requested_effort"`
-	RequestedSpeed  *string `json:"requested_speed"`
-	Context         Context `json:"context"`
+	ParticipantTimeoutNS int64   `json:"participant_timeout_ns,omitempty"`
+	ParticipantStep      string  `json:"participant_step,omitempty"`
+	RunID                string  `json:"run_id"`
+	SegmentID            string  `json:"segment_id"`
+	Idea                 string  `json:"idea"`
+	Phase                string  `json:"phase"`
+	Agent                string  `json:"agent"`
+	Adapter              string  `json:"adapter"`
+	LaunchMode           string  `json:"launch_mode"`
+	AttemptOrdinal       int     `json:"attempt_ordinal"`
+	RetryOf              *string `json:"retry_of"`
+	RequestedModel       *string `json:"requested_model"`
+	RequestedEffort      *string `json:"requested_effort"`
+	RequestedSpeed       *string `json:"requested_speed"`
+	Context              Context `json:"context"`
 }
 
 type Usage struct {

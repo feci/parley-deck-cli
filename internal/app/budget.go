@@ -17,6 +17,10 @@ func runBudget(ctx context.Context, args []string, stdout, stderr io.Writer) int
 }
 
 func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr io.Writer, supported, attended bool) int {
+	if len(args) > 1 && args[0] == "legacy" && args[1] == "apply" && !supported {
+		fmt.Fprintln(stderr, "budget legacy: attended operator control is unavailable on this platform; no declaration was recorded")
+		return 2
+	}
 	if len(args) > 1 && args[0] == "origin" && args[1] == "apply" && !supported {
 		fmt.Fprintln(stderr, "budget origin: attended operator control is unavailable on this platform; no origin was migrated")
 		return 2
@@ -44,6 +48,9 @@ func runBudgetPlatformControl(ctx context.Context, args []string, stdout, stderr
 // platform probe; no flag or participant-authored field supplies attendance.
 // As with protocol publication, terminal presence is not human authentication.
 func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writer, attended bool) int {
+	if len(args) > 0 && args[0] == "legacy" {
+		return runBudgetLegacy(ctx, args[1:], stdout, stderr, attended)
+	}
 	if len(args) > 0 && args[0] == "action" {
 		return runBudgetAction(ctx, args[1:], stdout, stderr)
 	}
@@ -69,6 +76,7 @@ func runBudgetControl(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	if len(args) == 0 || (args[0] != "inspect" && args[0] != "reconcile") {
 		fmt.Fprintln(stderr, "read-only action receipts: parley budget action inspect|replay --ledger DIR --scope ID [options]")
+		fmt.Fprintln(stderr, "durable unknown-history declaration: parley budget legacy inspect|apply --dir DIR --run parley-deck/runs/NAME [options]")
 		fmt.Fprintln(stderr, "legacy launch accounting: parley budget migrate inspect|apply --kind launch --dir DIR [--idea ID] [options]")
 		fmt.Fprintln(stderr, "runtime policy controls: parley budget launch|step inspect|extend --dir DIR [--idea ID] [options]")
 		fmt.Fprintln(stderr, "read-only worktree registrations: parley budget worktree inspect --dir DIR")

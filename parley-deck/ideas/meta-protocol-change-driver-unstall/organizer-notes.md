@@ -25,3 +25,7 @@ Measured cross-review invocation c1481ad4-a6ba-4dc2-ae53-b177e2f8b9aa failed bef
 ## Cross-review complete and consensus opened
 
 Zcode native round02 exited0 in280.608s. Raw own artifact read after exit; both round02 artifacts validate. Zcode withdrew the zero-charge inference and accepted D1/D2 plus deferral of the two extras. Driver consensus draft succeeded. No automatic history or product admission was created. codex-1 volunteers as FINAL drafter before signoff; the structural predicate is tightened to exactly events.jsonl and enumerated events for review by both signers.
+
+## Implementation review dispatch
+
+Design PR80 merged at a9e383d2a0cb25551b22a0b3dbf22698b60f8d8c. The read-only driver planner selects the auxiliary consensus-signoff run and offers no recoverable implementation/review action; saved JSON is in source-context/review-driver-plan.json. No direct review verb exists. Use measured agents exec with phase review and a focused brief; this is the recorded driver-gap fallback and does not fabricate a driver cursor. Candidate source and skill commits are fixed before peer launch.

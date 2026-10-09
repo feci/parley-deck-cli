@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.54.0 — 2026-10-09
+
+- Add an attended, durable legacy-history declaration shared by a repository's worktrees.
+  Exact structural-only run manifests remain unknown history, with frozen provenance;
+  mutated, missing, richer or undeclared history still refuses. Existing charges/caps stay.
+- Derive goal-check deadlines from track and checker configuration, and reuse bounded
+  execution retries for protected checkers too. A valid FAIL does not retry; process
+  failures cannot establish completion or supply new membership authority.
+- One-time legacy activation remains an owner action. CLI Windows stays experimental;
+  CLI WinGet remains held. Skill/core companion version is 2.18.0.
+
 ## 1.53.0 — 2026-10-09
 
 - Permit one independent model-diverse reviewer only after validated automatic history
