@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-participant-dropout-review-gate-timing
-status: ready-for-review
+status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-09
 branch: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/review-gate-timing#review-gate-timing
@@ -59,3 +59,7 @@ CLI product a26f5881835560dfabfe483a6d537aff39c45c35, skill 74cc831b18ce33e48e70
 - Packaging preflight: npm pack dry-run, native portable build/version and all-target install dry-run pass. All210 packed files match skill source bytes. Private release preparation: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-review-gate-timing; no publication/runtime installation yet.
 
 These are implementer-run checks. Independent review, both ACCEPT blocks and the separate fresh goal process remain outstanding; no self-review or self-certified exemption.
+
+## Fix-up cycle1 plan
+
+The revised review/consensus.md has both ACCEPTs. Preserve the original-manifest integrity gate confirmed against baseline by Zcode; distinguish it from absent snapshots, warn when a standalone signoff's valid manifest lacks a snapshot, and cover absent/missing/corrupt/foreign variants. Add legacy short/contradictory reset, adapter and provenance negatives at the shared predicate. Insert the Markdown blank line. Re-run covering checks and full current-source validation, then independent full-scope review. No policy/historical recovery relaxation.

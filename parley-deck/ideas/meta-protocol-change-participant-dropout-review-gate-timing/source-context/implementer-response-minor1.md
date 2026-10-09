@@ -1,0 +1,9 @@
+# Codex implementer response to review round 1 MINOR-1
+
+This is an implementer rebuttal for independent assessment, not a self-review verdict.
+
+While making the proposed fix concrete, I found that absent prior manifests already block standalone signoff in baseline85c5a8f. Its quotaSignoffStart calls membership.Before, then Reconcile/reconcileLocked, then validateManifests. validateManifests requires the current run, kickoff run and every historical batch run, errors on any missing run.json, and explicitly states: “Missing original run identity is an integrity gate, not an opportunity to repair legacy gap11.” These lines are unchanged by this idea. A valid manifest with an absent RosterSnapshot is different: that can stay empty and cannot qualify the numeric exception.
+
+Therefore catching IsNotExist only at the new snapshot-inheritance load would still fail at the existing integrity gate; making missing prior manifests actually continue would require changing the shipped history/recovery contract, contrary to FINAL D2/D4. Proposed revised response: preserve that gate, clarify the comment to distinguish a missing snapshot from a missing manifest, and add explicit missing-snapshot vs missing/corrupt/foreign-manifest regression checks at the standalone signoff seam. Add the requested legacy negatives and Markdown blank line as planned. Ask Zcode to independently verify baseline/current behavior and withdraw or revise MINOR-1 if it agrees; no disposition suppresses re-raising it.
+
+The initial cycle brief was sent before this call-chain discovery. If its consensus has already signed the narrower catch-IsNotExist plan, record the above as a reasoned implementation deviation for the next full-scope independent review and signoff; do not silently relax the unrelated integrity rule.
