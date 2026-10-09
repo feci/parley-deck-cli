@@ -1,0 +1,37 @@
+?   	parley-deck-cli/cmd/parley	[no test files]
+ok  	parley-deck-cli/internal/acp	2.840s
+ok  	parley-deck-cli/internal/agents	0.212s
+ok  	parley-deck-cli/internal/app	686.116s
+ok  	parley-deck-cli/internal/budget	100.759s
+ok  	parley-deck-cli/internal/config	1.007s
+ok  	parley-deck-cli/internal/consensus	23.423s
+ok  	parley-deck-cli/internal/driver	32.016s
+ok  	parley-deck-cli/internal/evidence	11.597s
+ok  	parley-deck-cli/internal/fsutil	0.381s
+ok  	parley-deck-cli/internal/hitl	0.256s
+ok  	parley-deck-cli/internal/loop	0.383s
+ok  	parley-deck-cli/internal/membership	43.328s
+ok  	parley-deck-cli/internal/pidlease	1.155s
+ok  	parley-deck-cli/internal/pipeline	0.808s
+ok  	parley-deck-cli/internal/procctl	0.490s
+ok  	parley-deck-cli/internal/protocol	0.852s
+ok  	parley-deck-cli/internal/protocolcore	1.118s
+ok  	parley-deck-cli/internal/protocolpacket	2.232s
+ok  	parley-deck-cli/internal/quota	5.906s
+?   	parley-deck-cli/internal/quotatest	[no test files]
+ok  	parley-deck-cli/internal/repomap	0.350s
+ok  	parley-deck-cli/internal/retro	0.478s
+ok  	parley-deck-cli/internal/runaction	0.207s
+ok  	parley-deck-cli/internal/runcontrol	4.206s
+ok  	parley-deck-cli/internal/runmanifest	0.243s
+ok  	parley-deck-cli/internal/runner	149.393s
+ok  	parley-deck-cli/internal/runplan	0.880s
+ok  	parley-deck-cli/internal/runstate	0.932s
+ok  	parley-deck-cli/internal/sessionstore	0.258s
+ok  	parley-deck-cli/internal/steer	0.273s
+ok  	parley-deck-cli/internal/store	0.230s
+ok  	parley-deck-cli/internal/telemetry	3.715s
+ok  	parley-deck-cli/internal/track	0.594s
+ok  	parley-deck-cli/internal/trajectory	685.676s
+ok  	parley-deck-cli/internal/tui	1.584s
+?   	parley-deck-cli/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/fixup-cycle-3-20261006	[no test files]

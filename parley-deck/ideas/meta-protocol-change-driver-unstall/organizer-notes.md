@@ -29,3 +29,7 @@ Zcode native round02 exited0 in280.608s. Raw own artifact read after exit; both 
 ## Implementation review dispatch
 
 Design PR80 merged at a9e383d2a0cb25551b22a0b3dbf22698b60f8d8c. The read-only driver planner selects the auxiliary consensus-signoff run and offers no recoverable implementation/review action; saved JSON is in source-context/review-driver-plan.json. No direct review verb exists. Use measured agents exec with phase review and a focused brief; this is the recorded driver-gap fallback and does not fabricate a driver cursor. Candidate source and skill commits are fixed before peer launch.
+
+## Independent review01 and validation update
+
+Zcode measured invocation48172673-d81d-49b4-922a-a53ef599245f exited0 after1371.540s, 10:42:45Z–11:05:36Z; own artifact was accepted only after actual exit, SHA2561e20b1a15fea94869aa041dbd3f58bf9548b3b8d8ead6edb6ebbc420911d5eeb. No CRITICAL/MAJOR; two MINOR conditions, two NITs. Full corrected local Go suite passed after the review's last status read. The review is retained unchanged; Phase7 records the newer evidence. macOS PR CI independently exposed the100ms shell-counter assertion; retain its failed log, propose a telemetry-based oracle and obtain agreement before the fix. Actual single-reviewer probe returned false without error; the brief's attended-close conditions remain binding.
