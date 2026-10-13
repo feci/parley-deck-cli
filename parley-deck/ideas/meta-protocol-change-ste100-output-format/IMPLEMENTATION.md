@@ -4,7 +4,7 @@ status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-13
 branch: ste100
-head-commit: 4aab9f339e81646b5f2bc2325562cfc1f89e3fcf
+head-commit: 99d04b3ecd0740fb834e70ec109c9384c7b7cd4d
 design-pr: https://github.com/feci/parley-deck-cli/pull/83
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/84
 ---
@@ -21,8 +21,8 @@ Source acceptance precedes merge. A separate channel check follows release and i
 - [x] Add the skill reference, short pointer, template correction, and one on-demand map entry.
 - [x] Add one shared instruction to all thirteen builders. Test real paths and preserve input bytes and syntax.
 - [x] Update CLI 1.55.0 and skill 2.19.0 release data and source metadata.
-- [ ] Run required CLI and skill checks. Record hashes, package contents, and packet sizes.
-- [ ] Publish draft implementation PRs. Freeze both source commits for Zcode's independent review.
+- [x] Run required CLI and skill checks. Record hashes, package contents, and packet sizes.
+- [x] Publish draft implementation PRs. Freeze both source commits for Zcode's independent review.
 - [ ] Obtain both review-consensus ACCEPTs and a fresh Zcode source goal PASS with current-tree AC evidence.
 - [ ] Merge and publish authorized channels. Install every managed and generic target, then verify hashes.
 - [ ] Obtain a separate Zcode channel check. Write the final owner handoff and verify shared memory.
@@ -99,8 +99,8 @@ Fix-up cycle 1 now changes the launch transport and packet tests. The signed pro
 - [x] Use it from `buildAgentInvocation` at both headless launch boundaries in runner.go and launch.go.
 - [x] Add real child tests for exact full bytes, SHA256, private mode, short prompts, stdin, and file-write refusal.
 - [x] Update the 70-block fixture and test Appendix B classification and the retained section 6 pointer.
-- [ ] Record full test and CI outcomes. Re-run the required suite, build, and vet.
-- [ ] Build the candidate CLI. Use it for Zcode's next full source review.
+- [x] Record full test and CI outcomes. Re-run the required suite, build, and vet.
+- [x] Build the candidate CLI. Use it for Zcode's next full source review.
 
 The review consensus authorizes this necessary transport deviation. It adds one helper, launch wiring, and focused tests to the original file list.
 No H1/H2 byte, metadata parser, authority rule, packet limit, or roster setting will change.
@@ -108,7 +108,7 @@ No H1/H2 byte, metadata parser, authority rule, packet limit, or roster setting 
 ## Fix-up cycle 1
 status: complete
 completed: 2026-10-13
-head-commit: recorded by the following source commit
+head-commit: 99d04b3ecd0740fb834e70ec109c9384c7b7cd4d
 
 ### Fixes applied
 
@@ -144,3 +144,24 @@ The consult stdout stays unchanged. No acceptance claim uses its mistaken attrib
 Focused transport, prompt, map, existing quota-signoff, and interactive-bound tests exited 0.
 The required full CLI suite, build, and vet now run against the fixed source.
 The skill source remains at `92e3dc78da2f1c55d35c905cabe57fc69ede0670`; no skill product bytes changed in this cycle.
+
+## Review round 2 and completed check receipt
+
+Zcode process `a2332e7d-807e-47bc-b664-abfd970c901c` exited 0 after 818.215 seconds.
+Its complete review accepted the implementation. It resolved the CRITICAL, MAJOR, and MINOR findings from round 1.
+It found one NIT: stale `head-commit` metadata. This receipt sets both values to the reviewed fix commit, `99d04b3`.
+No product byte changed after that commit. Zcode explicitly agreed to preserve the accepted fix consensus as `review/consensus-cycle-1.md`.
+
+The full local CLI test, build, and vet process exited 0. Each chained command therefore exited 0.
+The test log records completed package results. Build and vet succeeded without output.
+The receipt records command names, exit states, log hashes, and exec session 98777.
+See `source-context/fixup1-validation-status.json` and its three retained logs.
+Both Linux jobs and both macOS jobs passed at the reviewed source commit.
+Both Windows jobs remain active at this receipt. Their final states will be captured before source close.
+CLI Windows support remains experimental. CLI WinGet remains held.
+
+The reviewer read an earlier partial test log during its process. Its local-suite pending statement is historical.
+The completed receipt resolves that timing gap. The fresh source goal process must inspect it independently.
+`parley consensus reopen --review` refused with `cannot reopen consensus with triage=ready`.
+The recorded fallback archives the exact signed bytes before a fresh consensus, as Zcode agreed.
+No existing peer artifact or signoff changed.

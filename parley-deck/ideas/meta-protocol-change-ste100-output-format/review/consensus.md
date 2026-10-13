@@ -1,71 +1,80 @@
 ---
 idea: meta-protocol-change-ste100-output-format
-review-cycle: 1
+review-cycle: 2
 drafted-by: codex-1
 date: 2026-10-13
-reviewed-commit: 4aab9f339e81646b5f2bc2325562cfc1f89e3fcf
+reviewed-commit: 99d04b3ecd0740fb834e70ec109c9384c7b7cd4d
 reviewed-skill-commit: 92e3dc78da2f1c55d35c905cabe57fc69ede0670
-outstanding_agreed_fixes: 3
+outstanding_agreed_fixes: 0
+closing_review_round: 2
 blocked: false
 ---
 
 ## Agreed fixes
 
-1. From zcode-1/review/round-01 [CRITICAL], repair oversized headless argument delivery.
-   Preserve the exact prepared prompt, including the full protocol, attestation, and task, in the private invocation directory.
-   Use a unique file created with mode 0600. Write and sync its complete bytes before child launch.
-   For a prompt argument at or above 120 KiB, substitute a short file instruction with its absolute path and SHA256.
-   The instruction requires the agent to verify the hash and read the complete file before the task.
-   A missing, unreadable, or changed file requires a blocker. File delivery does not prove that the model read it.
-   Keep the original stdin bytes. Do not switch provider modes, add native flags, trim the protocol, or enable optimized packets.
-   Apply the same helper at both measured and supervised headless launch paths.
-   Preserve embedded and standalone placeholders. Refuse if an expanded argument remains over the bound after substitution.
-   Retain the private file for audit. Do not expose its raw text in public telemetry.
-   Test real child execution above Linux's limit, exact bytes and hashes, file permissions, short prompts, stdin, and failed publication.
-   Use the candidate CLI for the next real Zcode review, so that review exercises the file delivery path.
-2. From zcode-1/review/round-01 [MAJOR], update the live map test's expected count from 69 to 70.
-   Keep the structural map and never-cut checks. Add a focused assertion for Appendix B's on-demand status and the retained section 6 pointer.
-   Preserve the original 70,000-byte guard and the 20,000-byte skill guard.
-3. From zcode-1/review/round-01 [MINOR], record the failed local suite and both failed Linux jobs in IMPLEMENTATION.md.
-   Record command exit states explicitly. Empty successful build output is not the evidence by itself.
-   Add the complete packet request parameters to source-sizes.json.
-   Re-run the required CLI suite and relevant checks after the fixes.
+None. Zcode's full round-2 review resolved all three cycle-1 findings.
+The receipt corrects its one new NIT: IMPLEMENTATION now names the reviewed fix commit in both required fields.
+The final signoff checks that correction and the completed test receipt.
+No product byte changed after the reviewed CLI or skill commits.
 
-The transport repair is an unavoidable implementation deviation from FINAL's initial file list.
-It addresses a regression caused by the approved protocol growth. It does not change the signed H1/H2 bytes or writing policy.
-New or changed runner files and their focused tests must appear in the next IMPLEMENTATION record.
-The existing stdin fake fixture may receive a short file argument, but stdin remains byte-exact.
-Do not make a fixture-only fix that hides the production argument limit.
+## Resolved findings
+
+- Round-1 CRITICAL: private-file prompt delivery repairs the argument-limit regression at both headless boundaries.
+- Round-1 MAJOR: the live map test expects 70 blocks and tests the on-demand appendix and retained pointer.
+- Round-1 MINOR: canonical records disclose prior failures, explicit exit states, and complete packet arguments.
+- Round-2 NIT: both IMPLEMENTATION head fields now name `99d04b3ecd0740fb834e70ec109c9384c7b7cd4d`.
+
+The independent dispositions are in `round-02/zcode-1.md`.
+The completed local test, build, and vet receipt is `../source-context/fixup1-validation-status.json`.
+The old accepted three-fix consensus remains byte-identical in `consensus-cycle-1.md`.
+Its archive receipt records the hash and the real CLI reopen refusal. Existing signoffs remain exact.
 
 ## Deferred follow-ups
 
-Broad native Windows baseline repair remains deferred, with follow-up slug TBD. CLI WinGet remains held.
-Full ASD vocabulary verification, a prose linter, and historical re-authoring remain outside this idea.
+- Native Windows baseline repair: follow-up slug TBD. CLI Windows remains experimental; CLI WinGet stays held.
+- Full ASD vocabulary verification, a prose linter, and historical re-authoring: outside this idea; follow-up slug TBD.
+- Driver fixed-slug startup, D6 activation, and ready-consensus reopening: recorded orchestration gaps; follow-up slug TBD.
 
 ## Dismissed findings
 
-None. The implementer accepts all three findings.
+None. No correctness finding was dismissed as style advice.
 
 ## Coverage & blind spots
 
-Zcode independently checked the full CLI and skill diffs and AC1–AC8.
-It confirmed AC1–AC6 and AC8, and broke AC7 through local tests and Linux CI.
-Codex's own checks found the same failures. Codex is not a code reviewer.
+Zcode reviewed the complete original diff and cycle-1 repair. Codex supplied implementation evidence and casts no code-review vote.
+Zcode executed focused tests, build, and vet. It read the completed Linux CI jobs and the earlier partial local-suite log.
+The local full suite later exited 0. Both Linux and both macOS jobs passed at the reviewed commit.
+Windows jobs remain pending at draft time. Their final outcomes must be recorded before source close.
+The fresh goal process must verify the completed same-tree evidence and all AC1–AC8 independently.
+The packet fixture is 68,874 bytes. The actual meta-idea packet is 71,934 bytes, above the limit before this change.
+No model-reading guarantee follows from file publication. Exact transport and the reviewer's actual read are separate evidence.
+The working summary does not certify full ASD conformance.
 
-Concur with the exclusion of probePrompt: it asks for a liveness sentinel, not new protocol prose.
-The thirteen-path writing-policy boundary stays as FINAL states.
-The next full source review must inspect the added delivery helper as well as the complete original diff.
-No model read claim follows merely from a successful file write or child start.
+## Close authority and remaining work
+
+The mechanical single-reviewer exception is false. Only the controlling brief's explicit four-part authorization can close source work.
+The final review has no open CRITICAL or MAJOR. Both current participants must author ACCEPTs on this fresh consensus.
+A separate fresh Zcode goal process must PASS. Independent current-tree evidence must cover AC1–AC8.
+Delivery DC1–DC6 follows source close and merge. A separate fresh channel process must verify delivery before the release handoff.
+No signoff here claims that channels, installs, or owner publications are complete.
+
+## Drafter position changes
+
+Codex is organizer, participant, drafter, and implementer. This concentration creates no extra vote.
+The prior fix consensus stated: "No source close is authorized by this fix consensus."
+The new position permits source close only after the brief's four conditions hold. Zcode's round-2 review supports this change.
+The transport repair and writing policy retain their agreed scope. No design alternative or signed H1/H2 byte changed.
+Agreement between related models is a shared prior. Independent executed evidence must support each acceptance criterion.
+A changed product tree, an unmet criterion, or an adverse goal result would invalidate this proposed close.
 
 ## Signoffs
 
-<!-- codex-1 appends its signoff below -->
-<!-- zcode-1 appends its signoff below -->
+<!-- Each current participant appends its own signoff. -->
 
 ### Signoff: codex-1 — 2026-10-13
 Status: ✅ ACCEPT
-Notes: I accept all three fixes and the bounded private-file delivery mechanism. H1 and H2 stay exact. No source close is authorized by this fix consensus.
+Notes: I accept the zero-fix source consensus and the byte-preserving archive. The audit NIT is corrected. Source close still requires a fresh independent goal PASS and current-tree AC evidence.
 
 ### Signoff: zcode-1 — 2026-10-13
 Status: ✅ ACCEPT
-Notes: I compared this consensus with my round-01 review. The three fixes match my CRITICAL, MAJOR, and MINOR findings. The private-file delivery stays below the kernel argument limit and keeps stdin bytes exact. My next review must verify the delivery helper in the real tree. This signoff authorizes fix-up cycle 1 only. It does not close the idea.
+Notes: My round-2 review supplies the evidence base. I re-checked its claims: the archive hash, the round-2 artifact hash, all three log hashes, and the NIT correction. Each matches. Zero agreed fixes is accurate. This signoff does not close the idea. Source close needs the brief's four conditions, plus the final Windows CI outcomes.

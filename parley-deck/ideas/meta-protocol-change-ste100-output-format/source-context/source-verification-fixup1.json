@@ -1,0 +1,26 @@
+{
+  "source_head": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+  "skill_head": "92e3dc78da2f1c55d35c905cabe57fc69ede0670",
+  "protocol_copies": [
+    {
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/parley-deck/COOPERATION.md",
+      "exact_two_hunks": true,
+      "sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec"
+    },
+    {
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/internal/protocol/defaults/COOPERATION.md",
+      "exact_two_hunks": true,
+      "sha256": "ea8f26f11acfe8834061fe286a0812bcf7555ebb14337b501d90006ab893bd05"
+    },
+    {
+      "path": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100-skill/skills/parley-deck/references/COOPERATION.md",
+      "exact_two_hunks": true,
+      "sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec"
+    }
+  ],
+  "identical_skill_rule_body": true,
+  "metadata_hashes_match": true,
+  "shared_instruction_sites": 13,
+  "staged_core_sha256": "16323e04ffb076db3b2019169010033c6668199ebab0ca6896e79924e74bfe3b",
+  "payload_sha256": "d304f0a6b944c272ab9b52debf3f52cc570f5977aa930f0ddb215f0a2cbf494b"
+}

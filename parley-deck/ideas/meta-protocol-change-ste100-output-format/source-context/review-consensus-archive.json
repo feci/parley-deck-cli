@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-13T13:54:24.578682+00:00",
+  "source": "review/consensus.md",
+  "archive": "review/consensus-cycle-1.md",
+  "sha256": "775aee1683ad57f4b2fc3f7c01e68986dd1bbbfeb2a8a4b6e7c5432be3a9403c",
+  "byte_identical": true,
+  "authority": "zcode-1/review/round-02: Archive of the accepted consensus",
+  "driver_result": "cannot reopen consensus with triage=ready"
+}
