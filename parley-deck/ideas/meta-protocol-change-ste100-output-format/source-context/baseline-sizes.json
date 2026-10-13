@@ -1,0 +1,38 @@
+[
+  {
+    "request": {
+      "phase": 1,
+      "track": "deliberation",
+      "transport": "github-pr",
+      "optimize": false,
+      "audience": "facilitator"
+    },
+    "context_mode": "packet",
+    "source_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+    "packet_sha256": "fc7c4019d9253d9460f0307f8e7237562b454a6b44d5c0fb3271faa7c37fd688",
+    "bytes": 68904,
+    "name": "guarded-facilitator"
+  },
+  {
+    "request": {
+      "phase": 1,
+      "track": "deliberation",
+      "transport": "github-pr",
+      "idea_slug": "meta-protocol-change-ste100-output-format",
+      "flags": [
+        "protocol_change"
+      ],
+      "optimize": false,
+      "audience": "facilitator"
+    },
+    "context_mode": "packet",
+    "source_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+    "packet_sha256": "f786bf9794c125f3407a1444b086a341d6db279064f1bfa7b5648fd06928b2bd",
+    "bytes": 71888,
+    "name": "meta-facilitator"
+  },
+  {
+    "name": "skill-core",
+    "bytes": 19235
+  }
+]

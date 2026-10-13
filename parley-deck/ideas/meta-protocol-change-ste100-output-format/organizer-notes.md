@@ -25,3 +25,32 @@ Zcode returned PONG and exited 0. The original roster is preserved in the kickof
 The named continue command reports that the idea has no runs.
 Use measured agents exec for round 1 under the recorded driver-gap fallback.
 No synthetic execution or automatic exclusion history is created.
+
+## Design transport
+
+Design PR: https://github.com/feci/parley-deck-cli/pull/83.
+The owner-provided ste100 branch holds the design artifacts.
+The exact Kimi diagnostic is HTTP403 connection allowlist / quota scope.
+Both actual process receipts and the safe error excerpt are in source-context.
+No automatic dropout record or single-reviewer entitlement is claimed.
+Zcode round 1 uses measured agents exec with an 1800-second ceiling.
+
+## Round 1 complete
+
+Zcode authored its own artifact. Its measured process exited 0 after 575.791 seconds.
+The artifact was read only after process exit. Its receipt is in source-context.
+The named-run gap requires an orchestration-only manifest: 20261013T123026.785485000Z.
+It contains no invented execution events, automatic history, or quota authority.
+Try the driver again for cross-review.
+
+## Round 2 driver refusal
+
+The driver refused before any cross-review child. The D6 declaration remains pending.
+Its exact error and original generated note are in source-context.
+The owner brief already authorizes the manual fallback. Archival resolves this run blocker, not the product condition.
+The generated actor label says Claude; no Claude task ran.
+
+Measured agents exec also refused round 2 with budget_refused and no PID or start time.
+The configured native fallback uses the same Zcode command, model configuration, full protocol attestation, and 1800-second ceiling.
+It records actual PID, times, exit, and artifact hash in two checked receipts.
+The refusal consumed no provider attempt. No budget state is reset.

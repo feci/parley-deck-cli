@@ -9,7 +9,7 @@ track: deliberation
 auto_implement: true
 require_model_diversity: true
 checks: go test ./... -count=1 -timeout 45m
-status: round-01
+status: round-02
 ---
 
 ## Problem / idea
