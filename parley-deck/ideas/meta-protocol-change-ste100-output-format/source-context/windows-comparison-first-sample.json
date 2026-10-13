@@ -1,0 +1,45 @@
+{
+  "at": "2026-10-13T14:21:50.016259+00:00",
+  "candidate": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+  "baseline_product": "134ac40cd178ebe0318a838d9357c4e6f561f925",
+  "base_product_equal_to_design_baseline": true,
+  "baseline_log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/logs/windows-fixup-pr.log",
+  "baseline_sha256": "ce898a3c02d75bf00e8a2ff7d61748aedce15754b7fa52df7a4b3450e9fb5f43",
+  "baseline_direct_failing_names": 356,
+  "extraction_pattern": "--- FAIL: ([^\\s]+)",
+  "jobs": [
+    {
+      "run": "38406035407",
+      "job": "115325766440",
+      "conclusion": "failure",
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/38406035407/job/115325766440",
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/logs/windows-99d04b3-115325766440.log",
+      "sha256": "7251b0af013a82e61ec15938d9faa382ab5ab719b69fb860d7224804227d031e",
+      "direct_failing_names": 357,
+      "added_names": [
+        "TestSeparateProcessesCannotExceedActionOrCostCap/false"
+      ],
+      "removed_names": [],
+      "timeout": true,
+      "evidence_build_failure": true,
+      "new_policy_or_transport_failures": []
+    },
+    {
+      "run": "38406028243",
+      "job": "115325741335",
+      "conclusion": "failure",
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/38406028243/job/115325741335",
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/logs/windows-99d04b3-115325741335.log",
+      "sha256": "dfdd243f8a346c0e9d36c66098f00a264b9be2b214be4bff801abf6d95aa60b7",
+      "direct_failing_names": 357,
+      "added_names": [
+        "TestSeparateProcessesCannotExceedActionOrCostCap/false"
+      ],
+      "removed_names": [],
+      "timeout": true,
+      "evidence_build_failure": true,
+      "new_policy_or_transport_failures": []
+    }
+  ],
+  "limits": "Failure-name comparison does not establish equal causes or prove tests ran before timeout. Native Windows remains unresolved and experimental. CLI WinGet stays held."
+}

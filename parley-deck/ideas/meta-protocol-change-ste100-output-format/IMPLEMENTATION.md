@@ -1,6 +1,8 @@
 ---
 idea: meta-protocol-change-ste100-output-format
-status: fix-up-cycle-1
+status: complete
+completed: 2026-10-13
+completion-scope: source AC1-AC8
 implementer: codex-1
 started: 2026-10-13
 branch: ste100
@@ -23,7 +25,7 @@ Source acceptance precedes merge. A separate channel check follows release and i
 - [x] Update CLI 1.55.0 and skill 2.19.0 release data and source metadata.
 - [x] Run required CLI and skill checks. Record hashes, package contents, and packet sizes.
 - [x] Publish draft implementation PRs. Freeze both source commits for Zcode's independent review.
-- [ ] Obtain both review-consensus ACCEPTs and a fresh Zcode source goal PASS with current-tree AC evidence.
+- [x] Obtain both review-consensus ACCEPTs and a fresh Zcode source goal PASS with current-tree AC evidence.
 - [ ] Merge and publish authorized channels. Install every managed and generic target, then verify hashes.
 - [ ] Obtain a separate Zcode channel check. Write the final owner handoff and verify shared memory.
 
@@ -165,3 +167,32 @@ The completed receipt resolves that timing gap. The fresh source goal process mu
 `parley consensus reopen --review` refused with `cannot reopen consensus with triage=ready`.
 The recorded fallback archives the exact signed bytes before a fresh consensus, as Zcode agreed.
 No existing peer artifact or signoff changed.
+
+## Source completion and delivery handoff
+
+Source AC1–AC8 is complete under the controlling brief's explicit close authority.
+Zcode's final full review has no open CRITICAL or MAJOR. Both current participants authored the zero-fix consensus ACCEPTs.
+A fresh Zcode process returned GOAL-CHECK: PASS. Its receipt records exit 0 after 648.149 seconds.
+Its current-tree evidence reconstructs the exact protocol and staged core bytes, tests real builders, and challenges the transport repair.
+See source-context/source-close-receipt.json for hashes and all four close conditions.
+
+Both Linux and both macOS product-commit jobs passed. Both Windows jobs failed, with final outcomes in source-context/windows-final-comparison.json.
+The two pre-change baseline runs contain every current failing name. One old run shows the budget test's false variant; the other shows true.
+Both current jobs show both variants. The unchanged budget package reports the same Windows file-sharing error in each case.
+A separate Zcode process checked these terminal records and the relevant source. Its own supplemental artifact accepts the scoped evidence.
+No new policy or transport test appears in the failing-name set. This does not prove equal causes or complete Windows coverage.
+The supplemental MINOR records missing Windows execution evidence for runner policy and transport tests after the pre-existing hang.
+Its NIT records a different lock-file path within the same error class. Its other NIT corrects the goal report SHA.
+Codex accepts these disclosures. Zcode states that they do not defeat AC7 or the zero-fix consensus.
+They retain the already deferred Windows scope and require no new product fix. No claim relies on all Windows tests having run.
+CLI Windows remains experimental. CLI WinGet remains held.
+
+The source goal report's tree-identity bullet has a full-SHA typo. Its frontmatter has the correct actual SHA.
+Zcode's supplemental artifact records the correction. Both original participant-owned reports remain unchanged.
+No close claim relies on the malformed body SHA.
+
+The status above closes source work only. The two open delivery checklist items continue outside this frozen artifact.
+Delivery DC1–DC6 requires merges, releases, both formulae, skill WinGet submission, runtime installs, independent channel verification, and final handoff.
+The release inbox note will record those outcomes, deferred items, usage, and ordered owner commands.
+No release, install, npm publication, global-core publication, or D6 declaration is claimed by this source close.
+Do not edit this closed IMPLEMENTATION artifact after delivery. Record later outcomes in the release handoff and source-context evidence.

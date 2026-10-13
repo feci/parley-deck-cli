@@ -1,0 +1,64 @@
+{
+  "at": "2026-10-13T14:24:16.702332+00:00",
+  "candidate": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+  "baseline_product": "134ac40cd178ebe0318a838d9357c4e6f561f925",
+  "base_product_equal_to_design_baseline": true,
+  "baseline_log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-09-driver-unstall/logs/windows-fixup-pr.log",
+  "baseline_sha256": "ce898a3c02d75bf00e8a2ff7d61748aedce15754b7fa52df7a4b3450e9fb5f43",
+  "baseline_direct_failing_names": 356,
+  "extraction_pattern": "--- FAIL: ([^\\s]+)",
+  "jobs": [
+    {
+      "run": "38406035407",
+      "job": "115325766440",
+      "conclusion": "failure",
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/38406035407/job/115325766440",
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/logs/windows-99d04b3-115325766440.log",
+      "sha256": "7251b0af013a82e61ec15938d9faa382ab5ab719b69fb860d7224804227d031e",
+      "direct_failing_names": 357,
+      "added_names": [
+        "TestSeparateProcessesCannotExceedActionOrCostCap/false"
+      ],
+      "removed_names": [],
+      "timeout": true,
+      "evidence_build_failure": true,
+      "new_policy_or_transport_failures": [],
+      "added_vs_latest_main": [
+        "TestSeparateProcessesCannotExceedActionOrCostCap/true"
+      ],
+      "added_vs_two_pre_change_runs": []
+    },
+    {
+      "run": "38406028243",
+      "job": "115325741335",
+      "conclusion": "failure",
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/38406028243/job/115325741335",
+      "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/logs/windows-99d04b3-115325741335.log",
+      "sha256": "dfdd243f8a346c0e9d36c66098f00a264b9be2b214be4bff801abf6d95aa60b7",
+      "direct_failing_names": 357,
+      "added_names": [
+        "TestSeparateProcessesCannotExceedActionOrCostCap/false"
+      ],
+      "removed_names": [],
+      "timeout": true,
+      "evidence_build_failure": true,
+      "new_policy_or_transport_failures": [],
+      "added_vs_latest_main": [
+        "TestSeparateProcessesCannotExceedActionOrCostCap/true"
+      ],
+      "added_vs_two_pre_change_runs": []
+    }
+  ],
+  "limits": "Failure-name comparison does not establish equal causes or prove tests ran before timeout. Native Windows remains unresolved and experimental. CLI WinGet stays held.",
+  "additional_pre_change_baseline": {
+    "commit": "24fe38fd150af84147408968387816a9c0145562",
+    "run": "37938864253",
+    "job": "113847774598",
+    "log": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/logs/windows-main-24fe38f.log",
+    "sha256": "74e64781718ad83c87375a071c2d022605bd811d0d0fffe865eb408d5c66a715",
+    "direct_failing_names": 356,
+    "product_equal_to_design_baseline": true
+  },
+  "both_baseline_union_names": 357,
+  "budget_variant_disposition": "Both current jobs report /false and /true. The older pre-change run reports /true; the latest pre-change main run reports /false. Each reports the existing Windows file-sharing error at review_test.go:438. The whole budget package is byte-identical across these commits. Independent verification pending."
+}

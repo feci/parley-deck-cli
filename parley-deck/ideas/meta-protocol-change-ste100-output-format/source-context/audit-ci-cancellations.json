@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-13T14:29:21.206593+00:00",
+  "runs": [
+    {
+      "run": "38409356907",
+      "head": "bcf1140ff64175dc21e89386a0c0bc8491c0ea72",
+      "action_exit": 0,
+      "message": "\u2713 Request to cancel workflow 38409356907 submitted.\n",
+      "reason": "Audit-only commit; all product bytes equal reviewed99d04b3. Both required product Windows jobs are terminal with raw retained logs. Avoid duplicate pending Windows runs. Cancellation is not a pass.",
+      "completed_jobs": [
+        {
+          "name": "go build & test (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "go build & test (macos-latest)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "run": "38409349656",
+      "head": "bcf1140ff64175dc21e89386a0c0bc8491c0ea72",
+      "action_exit": 0,
+      "message": "\u2713 Request to cancel workflow 38409349656 submitted.\n",
+      "reason": "Audit-only commit; all product bytes equal reviewed99d04b3. Both required product Windows jobs are terminal with raw retained logs. Avoid duplicate pending Windows runs. Cancellation is not a pass.",
+      "completed_jobs": [
+        {
+          "name": "go build & test (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "name": "go build & test (macos-latest)",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
