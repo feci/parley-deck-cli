@@ -54,3 +54,9 @@ Measured agents exec also refused round 2 with budget_refused and no PID or star
 The configured native fallback uses the same Zcode command, model configuration, full protocol attestation, and 1800-second ceiling.
 It records actual PID, times, exit, and artifact hash in two checked receipts.
 The refusal consumed no provider attempt. No budget state is reset.
+
+## Source review launch
+
+`parley continue --json` selected the latest signoff run and returned "No recoverable action; inspect artifacts and logs".
+No review-launch action was available. Use measured `parley agents exec` for the focused independent source review.
+The prior cross-review budget refusal remains recorded. No D6 declaration is authorized for this agent.

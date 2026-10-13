@@ -6,7 +6,7 @@ started: 2026-10-13
 branch: ste100
 head-commit: d51e1c7
 design-pr: https://github.com/feci/parley-deck-cli/pull/83
-implementation-pr: pending
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/84
 ---
 
 ## Summary of work
@@ -33,6 +33,8 @@ Add the generated `skills/parley-deck/parley-addon.json` to the skill file list.
 The real installer rejects changed core payload bytes until this manifest is regenerated.
 `npm run manifest:addons` updated only that manifest. The installer test then passed.
 This is required package integrity metadata; no additional behavior or policy changed.
+Also update the existing doctor test in `test/installer.test.js` to expect the new reference.
+The full suite exposed that fixed file list. This adds no installer behavior.
 
 ## Notes for reviewers
 
@@ -45,13 +47,17 @@ Native Windows validation remains outside the available environment. CLI WinGet 
 ## Progress
 
 - 2026-10-13 12:55Z: Design PR 83 merged with both ACCEPT signoffs. No product edit preceded this plan.
-- Source implementation is next. Review and delivery remain open.
+- 2026-10-13 13:02Z: Source implementation is committed. CLI PR 84 and skill PR 12 are open.
+- Full validation remains active. Zcode will review the frozen source in a separate process. Delivery remains open.
 
 ## Decision Log
 
 The owner-provided `ste100` branches remain in use. Do not allocate, declare, or prune worktrees.
 
 ## Surprises & Discoveries
+
+The first full skill run lacked the locked `commonmark` dependency and exposed a stale doctor expected-file list.
+`npm ci` restored the declared dependencies. The test now includes STE100.md. The full skill preflight was restarted.
 
 The D6 legacy accounting gate refused round 2 before launch.
 The recorded native fallback produced Zcode's real independent artifact. No legacy declaration was applied.
