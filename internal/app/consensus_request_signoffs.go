@@ -868,7 +868,7 @@ Return a short confirmation after appending.
 		strings.Join(rounds, ", "),
 		agentID,
 		time.Now().Format("2006-01-02"),
-		consensus.StatusAccept)
+		consensus.StatusAccept) + protocol.OutputTextInstruction
 }
 
 func printPartialProgress(stdout io.Writer, successes []string) {

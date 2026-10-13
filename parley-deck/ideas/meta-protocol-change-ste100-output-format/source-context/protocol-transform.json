@@ -1,0 +1,41 @@
+{
+  "payload_sha256": "d304f0a6b944c272ab9b52debf3f52cc570f5977aa930f0ddb215f0a2cbf494b",
+  "files": [
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/parley-deck/COOPERATION.md",
+      "destination": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/parley-deck/COOPERATION.md",
+      "base_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+      "result_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "base_bytes": 125551,
+      "result_bytes": 130042,
+      "hunks": "H1,H2 only"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/internal/protocol/defaults/COOPERATION.md",
+      "destination": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/internal/protocol/defaults/COOPERATION.md",
+      "base_sha256": "93bfa57936964e409faf76bed320d1f947563edad1568dbe83a49057a09432d7",
+      "result_sha256": "ea8f26f11acfe8834061fe286a0812bcf7555ebb14337b501d90006ab893bd05",
+      "base_bytes": 125305,
+      "result_bytes": 129796,
+      "hunks": "H1,H2 only"
+    },
+    {
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100-skill/skills/parley-deck/references/COOPERATION.md",
+      "destination": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100-skill/skills/parley-deck/references/COOPERATION.md",
+      "base_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+      "result_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "base_bytes": 125551,
+      "result_bytes": 130042,
+      "hunks": "H1,H2 only"
+    },
+    {
+      "source": "/Users/tomasfecko/.parley/staging/COOPERATION-2.18.0.md",
+      "destination": "/Users/tomasfecko/.parley/staging/COOPERATION-2.19.0.md",
+      "base_sha256": "9ead4475df6d6fa500317e7d347a0b6422bf3c202aca49f1d4b57a5fe14dc512",
+      "result_sha256": "16323e04ffb076db3b2019169010033c6668199ebab0ca6896e79924e74bfe3b",
+      "base_bytes": 125395,
+      "result_bytes": 129886,
+      "hunks": "H1,H2 only"
+    }
+  ]
+}

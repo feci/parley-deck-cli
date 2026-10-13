@@ -1008,7 +1008,7 @@ date: %s
 		runtimeValue(agent.SandboxMode),
 		runtimeValue(agent.ApprovalPolicy),
 		timeoutMSForAgent(agent),
-		string(promptData), agent.ID, idea.Slug, time.Now().Format("2006-01-02")), nil
+		string(promptData), agent.ID, idea.Slug, time.Now().Format("2006-01-02")) + protocol.OutputTextInstruction, nil
 }
 
 func roundNumber(opts Options) int {
@@ -1148,7 +1148,7 @@ responding-to: [prior round artifacts]
 
 Prior rounds (read these):
 %s
-`, agent.ID, round, outputPath, strings.Join(others, ", "), questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), headings.String(), prior)
+`, agent.ID, round, outputPath, strings.Join(others, ", "), questionsDir, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), headings.String(), prior) + protocol.OutputTextInstruction
 }
 
 // execAgentProcess builds the agent command, wires its stdout/stderr to the

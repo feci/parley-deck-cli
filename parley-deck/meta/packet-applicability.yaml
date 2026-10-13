@@ -127,6 +127,9 @@ blocks:
     include: when
     transports: [gitlab-mr]
     trigger: "the deck header names Transport: gitlab-mr"
+  - locator: "## Appendix B — ASD-STE100 output text"
+    include: on-demand
+    trigger: "before you write or review new English protocol prose"
   - locator: "## Appendix A — Adopting this protocol in a new project"
     include: on-demand
     trigger: "bootstrapping the protocol into a new project"

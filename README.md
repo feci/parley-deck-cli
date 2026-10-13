@@ -226,3 +226,14 @@ Installing the release alone does not activate this declaration.
 Goal checks use the lesser of their track's 5/15/30-minute bound and positive checker
 configuration; a malformed track refuses. Their original-plus-one execution attempts share a frozen deadline,
 including protected checkers; valid FAIL is final and retry cannot grant dropout authority.
+
+### Default output text (1.55.0)
+
+New decks use ASD-STE100 Issue 9 for new English protocol prose.
+Read the working summary in [Appendix B](parley-deck/COOPERATION.md#appendix-b--asd-ste100-output-text).
+Preserve exact quotations, code, syntax, and evidence. Pure style feedback remains advisory.
+
+An idea can use `ste_output: false` with an English reason at kickoff.
+Later changes need owner direction or participant consensus.
+Existing decks adopt the rule through their normal authority update. A newer CLI cannot override an older live authority.
+Existing artifacts remain unchanged. This summary does not certify full ASD conformance.

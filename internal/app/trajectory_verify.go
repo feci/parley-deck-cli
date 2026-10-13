@@ -291,7 +291,7 @@ func trajectoryVerifierPrompt(agentID, idea, command string) string {
 	return fmt.Sprintf(`You are %s, the selected independent execution verifier for idea %s.
 Invoke the exact helper command below once from this invocation. It runs the original material checks against the archived before/after sources in AB/BA order and retains actual observations. Do not edit code, scope, requests, journals, receipts or signatures. Do not substitute a written PASS or manually populated evidence. Preserve inherited PARLEY_RUN_ID, PARLEY_AGENT_ID and PARLEY_PROC_MARKER. If the helper fails, report the actual failure and stop; do not retry. After it returns, report its outcome briefly and stop. This records an observation; it does not grant trajectory continuation or completion. Process attribution is not human authentication.
 Verifier command: %s
-`, agentID, idea, command)
+`, agentID, idea, command) + protocol.OutputTextInstruction
 }
 
 func runTrajectoryVerifyHelper(ctx context.Context, args []string, out, errout io.Writer) int {

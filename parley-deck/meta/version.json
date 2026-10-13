@@ -1,14 +1,14 @@
 {
   "protocolRole": "source",
   "schemaVersion": 1,
-  "deckVersion": "2.18.0",
+  "deckVersion": "2.19.0",
   "protocolSchema": 1,
   "projectMetadataSchema": 1,
-  "source": "npm:parley-deck-skill@2.18.0",
-  "protocolSha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
-  "skillSha256": "ece72723af997e294c4c73753be8069859e181f9966aa7572723f38840128c37",
-  "packagedProtocolSha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
-  "compatibilityManifestSha256": "8131234ef2cf489410151c1ba29c680f0e7aeeb580c20397d38d6c363d72b615",
-  "updatedAt": "2026-10-09T10:36:08.305535+00:00",
-  "updatedBy": "codex-1 driver-unstall ratified protocol hunks"
+  "source": "npm:parley-deck-skill@2.19.0",
+  "protocolSha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+  "skillSha256": "64d5236baa0aece207becaa9def8e6fba24776f148dd2289281efa0855341df1",
+  "packagedProtocolSha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+  "compatibilityManifestSha256": "34779a4b65e057f0ec69226f31dfdf7c73300aa006907fcc9f631616b531cc76",
+  "updatedAt": "2026-10-13T12:54:46.180451+00:00",
+  "updatedBy": "codex-1 STE100 ratified protocol hunks"
 }
