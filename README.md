@@ -237,3 +237,7 @@ An idea can use `ste_output: false` with an English reason at kickoff.
 Later changes need owner direction or participant consensus.
 Existing decks adopt the rule through their normal authority update. A newer CLI cannot override an older live authority.
 Existing artifacts remain unchanged. This summary does not certify full ASD conformance.
+
+Headless prompt arguments at or above 120 KiB use a private file in the invocation directory.
+The agent must read the entire file and verify its SHA256 before the task.
+This avoids the Linux argument limit and preserves the full prompt. File delivery does not prove that a model read it.

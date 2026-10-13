@@ -7,6 +7,7 @@
 - Adopt ASD-STE100 Issue 9 for new English protocol prose through a short binding pointer and an on-demand summary.
 - Preserve exact evidence and syntax. Define per-idea exceptions and adoption under the live authority. Style feedback remains advisory.
 - Add one shared instruction to thirteen model-facing prompt paths. Preserve both size limits and existing protocol history.
+- Deliver oversized headless prompt arguments through a private file with the exact text and a SHA256 read instruction. Preserve full context and stdin bytes.
 - Companion skill and staged core version is 2.19.0. Core publication remains attended. CLI WinGet stays held.
 
 ## 1.54.0 — 2026-10-09

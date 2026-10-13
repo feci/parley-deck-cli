@@ -1,10 +1,10 @@
 ---
 idea: meta-protocol-change-ste100-output-format
-status: in-progress
+status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-13
 branch: ste100
-head-commit: d51e1c7
+head-commit: 4aab9f339e81646b5f2bc2325562cfc1f89e3fcf
 design-pr: https://github.com/feci/parley-deck-cli/pull/83
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/84
 ---
@@ -65,7 +65,17 @@ The design signoff command worked without fallback.
 
 ## Validation evidence
 
-Focused prompt, syntax, drift, and size checks pass. The full CLI and skill checks are in progress.
+Focused prompt, syntax, drift, and size checks pass. The first full CLI suite exited 1.
+`TestLiveMapIsCompleteHonorsNeverCutAndRendersEveryPhase` expected 69 blocks; the new appendix makes 70.
+Linux jobs in runs 38401898310 and 38401910409 also failed the Zcode signoff fixture with `argument list too long`.
+The full protocol plus launch task crossed the per-argument kernel bound. This is a real transport regression.
+CI links: https://github.com/feci/parley-deck-cli/actions/runs/38401898310 and https://github.com/feci/parley-deck-cli/actions/runs/38401910409.
+
+`go build ./...` and `go vet ./...` each exited 0. Their logs are empty because those commands succeeded without output.
+Zcode independently ran both and confirmed their success. The suite failure still blocks source acceptance.
+The skill suite passed 402 Node tests, 54 Python tests, and six payload manifests.
+Package dry-run, native portable build, all-target dry-run, and a fresh six-skill fixture doctor passed.
+Doctor against existing 2.18.0 runtimes reports the missing new reference. Delivery will update and recheck them.
 All three protocol copies and staged core equal their bases plus only H1 and H2.
 The skill core is 19,482 bytes. The original packet fixture is 68,874 bytes.
 The actual unflagged packet is 68,935 bytes. The meta-idea packet is 71,934 bytes.
@@ -75,3 +85,62 @@ See `source-context/protocol-transform.json` and `source-context/source-sizes.js
 ## Outcomes & Retrospective
 
 Pending source and delivery verification.
+
+## Review cycle 1
+
+Zcode process `8d194a1c-c163-4c81-a0e1-6e5b64196061` exited 0 after 1094.446 seconds.
+Its review requested changes: one CRITICAL, one MAJOR, and one MINOR.
+Codex accepted all findings in review consensus. Both participants authored ACCEPT signoffs for the fix plan.
+Fix-up cycle 1 now changes the launch transport and packet tests. The signed protocol hunks remain exact.
+
+## Fix-up cycle 1 plan
+
+- [x] Add bounded private-file delivery in new `internal/runner/prompt_argument.go`.
+- [x] Use it from `buildAgentInvocation` at both headless launch boundaries in runner.go and launch.go.
+- [x] Add real child tests for exact full bytes, SHA256, private mode, short prompts, stdin, and file-write refusal.
+- [x] Update the 70-block fixture and test Appendix B classification and the retained section 6 pointer.
+- [ ] Record full test and CI outcomes. Re-run the required suite, build, and vet.
+- [ ] Build the candidate CLI. Use it for Zcode's next full source review.
+
+The review consensus authorizes this necessary transport deviation. It adds one helper, launch wiring, and focused tests to the original file list.
+No H1/H2 byte, metadata parser, authority rule, packet limit, or roster setting will change.
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-10-13
+head-commit: recorded by the following source commit
+
+### Fixes applied
+
+- Repair the CRITICAL argument-limit regression with `prompt_argument.go` and both launch call sites.
+- Preserve the complete prepared prompt in a unique mode-0600 file under its private invocation directory.
+- Bound each headless argument below 120 KiB on every host. The same constant retains the existing interactive refusal threshold.
+- Keep stdin exact. Require full-file read and SHA256 verification in the short argument instruction.
+- Refuse file-publication failures and any remaining oversized argument. Preserve short prompt behavior and embedded templates.
+- Add `prompt_argument_test.go` with real child execution, all built-in templates, stdin, exact content, private modes, and refusal cases.
+- Update `internal/protocolpacket/packet_test.go` to 70 blocks. Test the on-demand appendix and retained binding pointer.
+- Record failures, exit states, CI links, and exact packet request arguments in the canonical record.
+
+### Deviations from agreed fixes
+
+None. The source test run is active; no complete or release claim follows from the cycle's applied fixes.
+
+### Transport trade-off and consult disposition
+
+The threshold applies on all hosts. Large macOS argument launches also use the file, although macOS could accept some inline prompts.
+This keeps the model instruction and test path consistent across hosts.
+File delivery does not prove the model read the file. The participant must obey the read-and-hash instruction.
+
+A separate fresh Zcode consult supports the same repair. It exited 0 after 543.917 seconds.
+Its native stdout and receipt are retained in source-context. It supplies advice, not a review vote.
+Adopt its shared threshold and all-adapter tests. Retain unique file creation instead of replacement of a fixed file.
+Do not add its optional sidecar: the argument includes the digest, and the private file preserves the exact prepared prompt.
+The consult's first bullet confuses the payload hash with the defaults-file hash.
+The correct defaults hash remains `ea8f26f11acfe8834061fe286a0812bcf7555ebb14337b501d90006ab893bd05`.
+The consult stdout stays unchanged. No acceptance claim uses its mistaken attribution.
+
+### Current validation
+
+Focused transport, prompt, map, existing quota-signoff, and interactive-bound tests exited 0.
+The required full CLI suite, build, and vet now run against the fixed source.
+The skill source remains at `92e3dc78da2f1c55d35c905cabe57fc69ede0670`; no skill product bytes changed in this cycle.

@@ -1177,7 +1177,7 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 			runErr = err
 		}
 	}()
-	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
+	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt, evidence.invocation.Dir)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -1289,33 +1289,14 @@ func cleanParticipantEnv(family string, env []string) []string {
 // buildAgentInvocation resolves the agent's command path, args (with {root}/
 // {prompt} substitution), and isolated-home env, without binding a context. Used
 // by both CommandFor (ctx-bound, for one-shot helpers) and execAgentProcess.
-func buildAgentInvocation(root string, agent agents.Discovery, prompt string) (path string, args, env []string, cleanup func(), err error) {
+func buildAgentInvocation(root string, agent agents.Discovery, prompt, invocationDir string) (path string, args, env []string, cleanup func(), err error) {
 	// {model}/{effort} resolve from the spec's effective configuration BEFORE {root}/{prompt},
 	// because an unbindable model drops its introducing flag and must not leave a dangling
 	// value-taking flag for the later pass to fill. See agents.ResolveLaunchArgs.
 	resolved, _ := agent.Spec.ResolveLaunchArgs()
-	args = make([]string, 0, len(resolved))
-	for _, arg := range resolved {
-		switch arg {
-		case "{root}":
-			args = append(args, root)
-		case "{prompt}":
-			args = append(args, prompt)
-		default:
-			// EMBEDDED placeholders, for CLIs whose option parser rejects a separate value
-			// token. zcode is the case that forced this: `zcode --prompt "-leading dash"`
-			// fails with "Option '--prompt' argument is ambiguous", while
-			// `--prompt=-leading dash` is accepted (measured 2026-08-19, review round 1,
-			// codex-1 MAJOR). Substitution stays inside ONE argv element and never invokes a
-			// shell, so a prompt containing flags, quotes or newlines cannot split argv.
-			if strings.Contains(arg, "{prompt}") || strings.Contains(arg, "{root}") {
-				a := strings.ReplaceAll(arg, "{root}", root)
-				a = strings.ReplaceAll(a, "{prompt}", prompt)
-				args = append(args, a)
-				continue
-			}
-			args = append(args, arg)
-		}
+	args, err = headlessPromptArgs(resolved, root, prompt, invocationDir)
+	if err != nil {
+		return "", nil, nil, nil, err
 	}
 	cleanup = func() {}
 	if agent.IsolateHome {

@@ -49,7 +49,7 @@ func trackedCommandFor(ctx context.Context, root string, agent agents.Discovery,
 }
 
 func commandForLaunch(ctx context.Context, root string, agent agents.Discovery, prompt string, evidence *launchEvidence) (*AgentCommand, func(), error) {
-	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt)
+	path, args, env, cleanup, err := buildAgentInvocation(root, agent, prompt, evidence.invocation.Dir)
 	if err != nil {
 		if cleanup != nil {
 			cleanup()
@@ -363,7 +363,7 @@ func RunInteractive(parent context.Context, root string, agent agents.Discovery,
 			args[i] = strings.ReplaceAll(args[i], "{prompt}", prepared)
 			// Conservative per-element bound, below Linux's common 128 KiB
 			// limit; total argv/env can still cause a recorded failed start.
-			if len(args[i]) > 120<<10 {
+			if len(args[i]) > inlinePromptArgumentLimit {
 				return &protocolContextError{reason: "interactive-prompt-argument-too-large-use-file"}
 			}
 		}
