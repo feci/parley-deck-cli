@@ -1,0 +1,24 @@
+{
+  "kind": "configured-native-fallback",
+  "agent": "zcode-1",
+  "configured_model": "zai/glm-5.3",
+  "observed_model": null,
+  "phase": "2",
+  "idea": "meta-protocol-change-ste100-output-format",
+  "name": "round02-zcode-native",
+  "timeout_seconds": 1800,
+  "context": {
+    "context_mode": "full",
+    "source_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+    "packet_sha256": "0357d504982f92b713f2f86604129f46e1ef3276664e4da91d39ecf420253f0c",
+    "fallback_reason": null
+  },
+  "started_at": "2026-10-13T12:33:28.348257+00:00",
+  "prompt_sha256": "6fecb00051fd8b899d4e57694d422e4ae588ad10fd86809cfcaa5f4c8675366b",
+  "private_logs": "/Users/tomasfecko/.cache/parley-ste100/round02-zcode-native",
+  "pid": 94951,
+  "exit_code": 0,
+  "completed_at": "2026-10-13T12:42:08.760900+00:00",
+  "duration_seconds": 520.406,
+  "artifact_sha256": "ce2956853ef7e4935889af840ce662d4157859fbd4e37edb9b4c07dface12419"
+}
