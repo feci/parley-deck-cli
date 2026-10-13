@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-13T15:04:38.476665+00:00",
+  "source_criteria": "AC1-AC8 independently accepted before merge",
+  "delivery_criteria": {
+    "DC1": "Both implementation merge commits and GitHub releases verified",
+    "DC2": "Both formulae published; upgrades, tests, strict audit, and 202 skill-file byte comparisons passed",
+    "DC3": "Skill-only PR451758 open; exact three files and hosted Windows hashes verified; CLI WinGet held",
+    "DC4": "Real installer and doctor passed; all114 hashes match across15 managed plus4 generic targets",
+    "DC5": "Fresh separate Zcode CHANNEL-CHECK: PASS; exit0; no delivery mismatch",
+    "DC6": "Canonical owner handoff written with ordered pending commands, deferred items, usage; shared-memory exact readback and scoped filename retrieval verified"
+  },
+  "channel_invocation": "54e2db04-8c86-4cc8-ad05-ff2f901b8ea5",
+  "channel_sha256": "c3e1ba900b1c2f9f0b55614a2007ab2871f3b7a62d1593c6f30a37bcf95b78cd",
+  "handoff_sha256": "0c9599e2c63e34ba149d13d0287cfcac5599fec4efc59d5815857f09ba3c8410",
+  "frozen_source_artifacts_match": true,
+  "openviking": {
+    "at": "2026-10-13T15:02:51.024046+00:00",
+    "uri": "viking://resources/projects/parley-deck/ste100-output-format-release-20261013.md",
+    "write_wait_result": "DEADLINE_EXCEEDED: Queue processing timed out after 60.0s",
+    "readback_exact": true,
+    "content_sha256": "3435ef870c28e6d68933301cc6c1536c128dd84f5212e00d5a7db218c8e5707a",
+    "scoped_filename_retrieval_found": true,
+    "semantic_find_returned_note": false,
+    "status": "File persistence and exact readback verified; scoped glob retrieved the file. Semantic indexing remains pending at this check. No duplicate write was made."
+  },
+  "pending_owner_acts": [
+    "D6 attended declaration",
+    "npm/core2.15.0",
+    "npm/core2.16.0",
+    "npm/core2.17.0",
+    "npm/core2.18.0",
+    "npm/core2.19.0"
+  ],
+  "external_pending": [
+    "WinGet upstream installation/metadata checks and merge",
+    "OpenViking semantic indexing"
+  ],
+  "release_audit_pr": "https://github.com/feci/parley-deck-cli/pull/85"
+}

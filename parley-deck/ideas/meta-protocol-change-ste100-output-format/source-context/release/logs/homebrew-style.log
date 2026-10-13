@@ -1,0 +1,26 @@
+Fetching gem metadata from https://rubygems.org/.........
+Fetching bindata 3.0.1
+Fetching sorbet-static 0.6.13524 (universal-darwin)
+Fetching sorbet-runtime 0.6.13524
+Fetching sorbet 0.6.13524
+Fetching sorbet-static-and-runtime 0.6.13524
+Fetching spoom 1.8.10
+Installing sorbet 0.6.13524
+Installing bindata 3.0.1
+Installing sorbet-runtime 0.6.13524
+Installing sorbet-static-and-runtime 0.6.13524
+Installing spoom 1.8.10
+Installing sorbet-static 0.6.13524 (universal-darwin)
+Bundle complete! 38 Gemfile dependencies, 41 gems now installed.
+Bundled gems are installed into `../../../../../../../opt/homebrew/Library/Homebrew/vendor/bundle`
+Removing bindata (3.0.0)
+Removing sorbet (0.6.13508)
+Removing sorbet-static-0.6.13508-universal (darwin)
+Removing sorbet-static-and-runtime (0.6.13508)
+Removing spoom (1.8.9)
+3 installed gems you directly depend on are looking for funding.
+  Run `bundle fund` for details
+Inspecting 2 files
+..
+
+2 files inspected, no offenses detected

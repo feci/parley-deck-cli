@@ -1,0 +1,1017 @@
+go build & test (windows-latest)	Set up job	﻿2026-10-13T13:34:16.9167644Z Current runner version: '2.337.0'
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9357022Z ##[group]Runner Image Provisioner
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9358447Z Hosted Compute Agent
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9359480Z Version: 20260901.588
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9360664Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9362118Z Build Date: 2026-09-01T19:56:44Z
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9363319Z Worker ID: {217cef18-5398-43d7-b08c-67ff45f6c3f2}
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9364536Z Azure Region: eastus
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9365519Z ##[endgroup]
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9367772Z ##[group]Operating System
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9368842Z Microsoft Windows Server 2025
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9369929Z 10.0.26100
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9370728Z Datacenter
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9371614Z ##[endgroup]
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9372583Z ##[group]Runner Image
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9373675Z Image: windows-2025-vs2026
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9374751Z Version: 20260925.250.1
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9377161Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9380819Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260925.250
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9382609Z ##[endgroup]
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9384628Z ##[group]GITHUB_TOKEN Permissions
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9387186Z Contents: read
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9388319Z Metadata: read
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9389278Z Packages: read
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9390209Z ##[endgroup]
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9393347Z Secret source: Actions
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9394929Z Cache mode: write
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9396469Z Prepare workflow directory
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9796667Z Prepare all required actions
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:16.9868589Z Getting action download info
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:17.1336892Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:17.2736355Z Download action repository 'actions/setup-go@v5' (SHA:40f1582b2485089dde7abd97c1529aa768e1baff)
+go build & test (windows-latest)	Set up job	2026-10-13T13:34:17.6528790Z Complete job name: go build & test (windows-latest)
+go build & test (windows-latest)	Configure fixture git identity	﻿2026-10-13T13:34:17.8008694Z ##[group]Run git config --global user.email "parley-ci@example.invalid"
+go build & test (windows-latest)	Configure fixture git identity	2026-10-13T13:34:17.8010255Z ^[[36;1mgit config --global user.email "parley-ci@example.invalid"^[[0m
+go build & test (windows-latest)	Configure fixture git identity	2026-10-13T13:34:17.8011047Z ^[[36;1mgit config --global user.name "parley-ci"^[[0m
+go build & test (windows-latest)	Configure fixture git identity	2026-10-13T13:34:17.8650451Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+go build & test (windows-latest)	Configure fixture git identity	2026-10-13T13:34:17.8651664Z ##[endgroup]
+go build & test (windows-latest)	Enable long paths (Windows)	﻿2026-10-13T13:34:18.9329648Z ##[group]Run git config --global core.longpaths true
+go build & test (windows-latest)	Enable long paths (Windows)	2026-10-13T13:34:18.9330658Z ^[[36;1mgit config --global core.longpaths true^[[0m
+go build & test (windows-latest)	Enable long paths (Windows)	2026-10-13T13:34:18.9407283Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+go build & test (windows-latest)	Enable long paths (Windows)	2026-10-13T13:34:18.9408059Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	﻿2026-10-13T13:34:19.5390546Z ##[group]Run actions/checkout@v4
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5391804Z with:
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5392700Z   repository: feci/parley-deck-cli
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5401922Z   token: ***
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5402808Z   ssh-strict: true
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5403718Z   ssh-user: git
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5404625Z   persist-credentials: true
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5405612Z   clean: true
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5406513Z   sparse-checkout-cone-mode: true
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5407582Z   fetch-depth: 1
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5408447Z   fetch-tags: false
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5409345Z   show-progress: true
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5410241Z   lfs: false
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5411063Z   submodules: false
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5412110Z   set-safe-directory: true
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5413161Z   allow-unsafe-pr-checkout: false
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.5414220Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.7371700Z Syncing repository: feci/parley-deck-cli
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.7376433Z ##[group]Getting Git version info
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.7378590Z Working directory is 'D:\a\parley-deck-cli\parley-deck-cli'
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.8690767Z [command]"C:\Program Files\Git\bin\git.exe" version
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.8978298Z git version 2.55.0.windows.5
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9028092Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9045614Z Copying 'C:\Users\runneradmin\.gitconfig' to 'D:\a\_temp\c7d48dab-cfa1-48b7-a988-e55830be28fb\.gitconfig'
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9066166Z Temporarily overriding HOME='D:\a\_temp\c7d48dab-cfa1-48b7-a988-e55830be28fb' before making global git config changes
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9068862Z Adding repository directory to the temporary git global config as a safe directory
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9077563Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\parley-deck-cli\parley-deck-cli
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9384199Z Deleting the contents of 'D:\a\parley-deck-cli\parley-deck-cli'
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9390328Z ##[group]Initializing the repository
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:19.9398745Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\parley-deck-cli\parley-deck-cli
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.0366299Z Initialized empty Git repository in D:/a/parley-deck-cli/parley-deck-cli/.git/
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.0427694Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/feci/parley-deck-cli
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.1201681Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.1202567Z ##[group]Disabling automatic garbage collection
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.1211460Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.1558147Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.1559018Z ##[group]Setting up auth
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.1577658Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:20.2013911Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:21.8562170Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:21.8865500Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:22.4229853Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:22.4524662Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:22.9978758Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:23.0286849Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:23.0287413Z ##[group]Fetching the repository
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:23.0304999Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +99d04b3ecd0740fb834e70ec109c9384c7b7cd4d:refs/remotes/origin/ste100
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.3949472Z From https://github.com/feci/parley-deck-cli
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.3950684Z  * [new ref]         99d04b3ecd0740fb834e70ec109c9384c7b7cd4d -> origin/ste100
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.3995337Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.3995894Z ##[group]Determining the checkout info
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.3997816Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.4018625Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.4680854Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.4994326Z ##[group]Checking out the ref
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:25.5008388Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B ste100 refs/remotes/origin/ste100
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.5745871Z Updating files:  86% (2899/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.5860768Z Updating files:  87% (2928/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.5955223Z Updating files:  88% (2962/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6055553Z Updating files:  89% (2995/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6155001Z Updating files:  90% (3029/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6249624Z Updating files:  91% (3063/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6344470Z Updating files:  92% (3096/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6443097Z Updating files:  93% (3130/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6546292Z Updating files:  94% (3164/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6637502Z Updating files:  95% (3197/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6723873Z Updating files:  96% (3231/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6806762Z Updating files:  97% (3265/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6891466Z Updating files:  98% (3298/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6997755Z Updating files:  99% (3332/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6998248Z Updating files: 100% (3365/3365)
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.6998657Z Updating files: 100% (3365/3365), done.
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.7109683Z Switched to a new branch 'ste100'
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.7188625Z branch 'ste100' set up to track 'origin/ste100'.
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.7216321Z ##[endgroup]
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.7538463Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+go build & test (windows-latest)	Run actions/checkout@v4	2026-10-13T13:34:26.7807694Z 99d04b3ecd0740fb834e70ec109c9384c7b7cd4d
+go build & test (windows-latest)	Run actions/setup-go@v5	﻿2026-10-13T13:34:26.8222369Z ##[group]Run actions/setup-go@v5
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:26.8222699Z with:
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:26.8222980Z   go-version-file: go.mod
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:26.8223201Z   check-latest: false
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:26.8225598Z   token: ***
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:26.8225782Z   cache: true
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:26.8226202Z ##[endgroup]
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:27.0033717Z Setup go version spec 1.26
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:27.8904405Z Found in cache @ C:\hostedtoolcache\windows\go\1.26.8\x64
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:27.8907882Z (node:2016) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:27.8908892Z (Use `node --trace-deprecation ...` to show where the warning was created)
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:27.8917370Z Added go to the path
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:27.8923291Z Successfully set up Go version 1.26
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.3749333Z [command]C:\hostedtoolcache\windows\go\1.26.8\x64\bin\go.exe env GOMODCACHE
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.3796084Z [command]C:\hostedtoolcache\windows\go\1.26.8\x64\bin\go.exe env GOCACHE
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.4039533Z C:\Users\runneradmin\go\pkg\mod
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.4114733Z C:\Users\runneradmin\AppData\Local\go-build
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.6434884Z Cache is not found
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.6462258Z go version go1.26.8 windows/amd64
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.6462536Z 
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:31.6462842Z ##[group]go env
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9623816Z set AR=ar
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9624219Z set CC=gcc
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9624542Z set CGO_CFLAGS=-O2 -g
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9624892Z set CGO_CPPFLAGS=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9625213Z set CGO_CXXFLAGS=-O2 -g
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9625540Z set CGO_ENABLED=1
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9625870Z set CGO_FFLAGS=-O2 -g
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9626211Z set CGO_LDFLAGS=-O2 -g
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9626521Z set CXX=g++
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9626801Z set GCCGO=gccgo
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9627112Z set GO111MODULE=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9627421Z set GOAMD64=v1
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9627726Z set GOARCH=amd64
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9628092Z set GOAUTH=netrc
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9628411Z set GOBIN=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9628804Z set GOCACHE=C:\Users\runneradmin\AppData\Local\go-build
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9629438Z set GOCACHEPROG=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9629768Z set GODEBUG=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9630442Z set GOENV=C:\Users\runneradmin\AppData\Roaming\go\env
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9630927Z set GOEXE=.exe
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9631230Z set GOEXPERIMENT=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9631834Z set GOFIPS140=off
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9632129Z set GOFLAGS=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9633560Z set GOGCCFLAGS=-m64 -mthreads -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=C:\Users\RUNNER~1\AppData\Local\Temp\go-build443475343=/tmp/go-build -gno-record-gcc-switches
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9634857Z set GOHOSTARCH=amd64
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9635184Z set GOHOSTOS=windows
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9635502Z set GOINSECURE=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9635915Z set GOMOD=D:\a\parley-deck-cli\parley-deck-cli\go.mod
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9636497Z set GOMODCACHE=C:\Users\runneradmin\go\pkg\mod
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9637370Z set GONOPROXY=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9637669Z set GONOSUMDB=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9637946Z set GOOS=windows
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9638277Z set GOPATH=C:\Users\runneradmin\go
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9638782Z set GOPRIVATE=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9639200Z set GOPROXY=https://proxy.golang.org,direct
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9639729Z set GOROOT=C:\hostedtoolcache\windows\go\1.26.8\x64
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9640209Z set GOSUMDB=sum.golang.org
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9640545Z set GOTELEMETRY=local
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9641043Z set GOTELEMETRYDIR=C:\Users\runneradmin\AppData\Roaming\go\telemetry
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9641624Z set GOTMPDIR=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9641901Z set GOTOOLCHAIN=auto
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9642457Z set GOTOOLDIR=C:\hostedtoolcache\windows\go\1.26.8\x64\pkg\tool\windows_amd64
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9643080Z set GOVCS=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9643339Z set GOVERSION=go1.26.8
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9643630Z set GOWORK=
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9643912Z set PKG_CONFIG=pkg-config
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9644137Z 
+go build & test (windows-latest)	Run actions/setup-go@v5	2026-10-13T13:34:34.9644581Z ##[endgroup]
+go build & test (windows-latest)	Build	﻿2026-10-13T13:34:34.9925470Z ##[group]Run go build ./...
+go build & test (windows-latest)	Build	2026-10-13T13:34:34.9925822Z ^[[36;1mgo build ./...^[[0m
+go build & test (windows-latest)	Build	2026-10-13T13:34:35.0002810Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+go build & test (windows-latest)	Build	2026-10-13T13:34:35.0003175Z ##[endgroup]
+go build & test (windows-latest)	Build	2026-10-13T13:34:37.2663741Z go: downloading github.com/yuin/goldmark v1.8.6
+go build & test (windows-latest)	Build	2026-10-13T13:34:37.6051847Z go: downloading golang.org/x/sys v0.36.0
+go build & test (windows-latest)	Build	2026-10-13T13:34:37.9753334Z go: downloading github.com/pelletier/go-toml/v2 v2.3.1
+go build & test (windows-latest)	Build	2026-10-13T13:34:38.3535673Z go: downloading gopkg.in/yaml.v3 v3.0.1
+go build & test (windows-latest)	Build	2026-10-13T13:34:39.6723722Z go: downloading github.com/charmbracelet/bubbletea v1.3.10
+go build & test (windows-latest)	Build	2026-10-13T13:34:39.6986065Z go: downloading github.com/charmbracelet/lipgloss v1.1.0
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.2149195Z go: downloading github.com/charmbracelet/x/ansi v0.10.1
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.2205114Z go: downloading github.com/charmbracelet/x/term v0.2.1
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.2300800Z go: downloading github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.3096617Z go: downloading github.com/mattn/go-localereader v0.0.1
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.3103935Z go: downloading github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.3691554Z go: downloading github.com/muesli/cancelreader v0.2.2
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.4077656Z go: downloading github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.4180344Z go: downloading github.com/muesli/termenv v0.16.0
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.4571465Z go: downloading github.com/rivo/uniseg v0.4.7
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.7755928Z go: downloading golang.org/x/text v0.3.8
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.8102798Z go: downloading github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.8251496Z go: downloading github.com/mattn/go-runewidth v0.0.16
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.8853996Z go: downloading github.com/lucasb-eyer/go-colorful v1.2.0
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.9467932Z go: downloading github.com/aymanbagabas/go-osc52/v2 v2.0.1
+go build & test (windows-latest)	Build	2026-10-13T13:34:41.9533741Z go: downloading github.com/mattn/go-isatty v0.0.20
+go build & test (windows-latest)	Build	2026-10-13T13:34:42.0862020Z go: downloading github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e
+go build & test (windows-latest)	Test	﻿2026-10-13T13:35:08.0132911Z ##[group]Run go test ./... -count=1 -timeout 45m
+go build & test (windows-latest)	Test	2026-10-13T13:35:08.0133359Z ^[[36;1mgo test ./... -count=1 -timeout 45m^[[0m
+go build & test (windows-latest)	Test	2026-10-13T13:35:08.0205922Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+go build & test (windows-latest)	Test	2026-10-13T13:35:08.0206285Z ##[endgroup]
+go build & test (windows-latest)	Test	2026-10-13T13:35:15.5578475Z ?   	parley-deck-cli/cmd/parley	[no test files]
+go build & test (windows-latest)	Test	2026-10-13T13:35:19.4000819Z # parley-deck-cli/internal/evidence [parley-deck-cli/internal/evidence.test]
+go build & test (windows-latest)	Test	2026-10-13T13:35:19.4095870Z ##[error]internal\evidence\tree_report_test.go:97:20: undefined: syscall.Mkfifo
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1650244Z --- FAIL: TestSpawnStopDrainsStderrBeforeReaping (10.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1656897Z     spawn_test.go:146: child READY handshake did not complete within 10s: child stalled before READY (pipe capacity below in-flight bytes) or died without announcing
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1659858Z --- FAIL: TestSpawnWaitDrainsStderrBeforeReaping (10.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1662797Z     spawn_test.go:166: child READY handshake did not complete within 10s: child stalled before READY (pipe capacity below in-flight bytes) or died without announcing
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1665673Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1667133Z FAIL	parley-deck-cli/internal/acp	21.595s
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1669281Z --- FAIL: TestZcodeResolvesModelAndEffortFromItsOwnConfig (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1674919Z     configmodel_test.go:37: got model="" effort="" ok=false; want zai/glm-5.3 / max / true
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1676615Z --- FAIL: TestKimiThinkingEffort (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1677761Z     configmodel_test.go:76: got effort="" ok=false; want max/true
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1678750Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1679395Z FAIL	parley-deck-cli/internal/agents	0.068s
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1680277Z --- FAIL: TestAgentsExecRecordsManualLaunch (0.96s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1710700Z     agents_exec_test.go:46: code=1 stderr=agents exec: invocation failed; inspect private local evidence
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1736059Z          stdout={"schema_version":1,"type":"invocation.terminal","invocation_id":"80f893f8-0b95-49dd-8a85-87417d6599ec","metadata":{"run_id":"2f3ca791-7663-4f74-8bd0-6e41067c6136","segment_id":"manual","idea":"","phase":"manual","agent":"fixture","adapter":"fixture","launch_mode":"headless","attempt_ordinal":1,"retry_of":null,"requested_model":null,"requested_effort":null,"requested_speed":"balanced","context":{"context_mode":"full","source_sha256":"55a8c001ffbd8a23374243aadae89206271f229f3bfc9f4831b83abee1215ecb","packet_sha256":"55a8c001ffbd8a23374243aadae89206271f229f3bfc9f4831b83abee1215ecb","fallback_reason":null}},"requested_at":"2026-10-13T13:35:22.6405661Z","started_at":null,"completed_at":"2026-10-13T13:35:22.7197721Z","duration_ms":79,"pid":null,"outcome":{"dispatch_attempted":true,"quota_evidence":{"invocation_id":"80f893f8-0b95-49dd-8a85-87417d6599ec","adapter":"fixture","eligible":false,"reason":"watchdog or cancellation","observed_at":"2026-10-13T13:35:22.7197721Z"},"status":"failed","exit_code":null,"failure_class":"start_failure","artifact_sha256":null,"usage":{"input_tokens":null,"output_tokens":null,"cache_read_tokens":null,"cache_write_tokens":null,"total_tokens":null,"cost_usd":null,"reported_model":null,"reported_models":[],"source":"unavailable","cost_basis":"unavailable","coverage":"unavailable"},"observation":{"first_activity_ms":null,"stdout_bytes":null,"stderr_bytes":null,"parser_input_truncated":false}},"warnings":[]}
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1745930Z --- FAIL: TestVersionAllJSONIncludesSkillStatus (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1747873Z     app_test.go:123: payload=map[ok:false parley:map[line:parley 1.55.0 name:parley version:1.55.0] parley_deck_skill_error:exec: "parley-deck-skill": executable file not found in %PATH%]
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1749343Z --- FAIL: TestVersionAllUsesDirFlagForProjectStatus (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1750341Z panic: interface conversion: interface {} is nil, not map[string]interface {} [recovered, repanicked]
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1751035Z 
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1751184Z goroutine 66 [running]:
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1751652Z testing.tRunner.func1.2({0x7ff6aaf49800, 0x337f809964e0})
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1754573Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:1974 +0x239
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1773235Z testing.tRunner.func1()
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1773938Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:1977 +0x349
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1774920Z panic({0x7ff6aaf49800?, 0x337f809964e0?})
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1775633Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/runtime/panic.go:860 +0x13a
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1776852Z parley-deck-cli/internal/app.TestVersionAllUsesDirFlagForProjectStatus(0x337f805eb800)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1777959Z 	D:/a/parley-deck-cli/parley-deck-cli/internal/app/app_test.go:155 +0x5ac
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1778874Z testing.tRunner(0x337f805eb800, 0x7ff6ab07a338)
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1780591Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2036 +0xc3
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1781298Z created by testing.(*T).Run in goroutine 1
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1782018Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2101 +0x4a9
+go build & test (windows-latest)	Test	2026-10-13T13:35:37.1782733Z FAIL	parley-deck-cli/internal/app	4.659s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5384949Z --- FAIL: TestConcurrentReservationsCannotOverspend (0.52s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5388157Z     ledger_test.go:57: reserve: open C:\Users\runneradmin\AppData\Local\parley\budget-locks\eb001604b63e42b7f38cc78df07b31bf3dd31cdb7464661ebd426386406baeed.lock: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5391580Z     ledger_test.go:57: reserve: open C:\Users\runneradmin\AppData\Local\parley\budget-locks\eb001604b63e42b7f38cc78df07b31bf3dd31cdb7464661ebd426386406baeed.lock: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5394392Z     ledger_test.go:57: reserve: open C:\Users\runneradmin\AppData\Local\parley\budget-locks\eb001604b63e42b7f38cc78df07b31bf3dd31cdb7464661ebd426386406baeed.lock: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5395633Z --- FAIL: TestDeclaredUnavailableWorktreeAdmitsUnknownHistoryOnly (0.64s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5397135Z     protocol_migration_declared_test.go:62: declared inspect refused a real missing registration: historical worktree is unavailable: C:/Users/runneradmin/AppData/Local/Temp/TestDeclaredUnavailableWorktreeAdmitsUnknownHistoryOnly2719177840/001/linked
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5398465Z --- FAIL: TestDeclaredUnavailableRefusesAvailableUnregisteredAndRelativePaths (0.46s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5400115Z     protocol_migration_declared_test.go:99: a present registration was declared unknown: declared-unavailable worktree is not a retained registration: C:\Users\runneradmin\AppData\Local\Temp\TestDeclaredUnavailableRefusesAvailableUnregisteredAndRelativePa800592648\001\linked
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5401520Z --- FAIL: TestDeclaredMigrationReplayIsCanonicalAndConflictsOnChange (0.50s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5403108Z     protocol_migration_declared_test.go:142: declared inspect: historical worktree is unavailable: C:/Users/runneradmin/AppData/Local/Temp/TestDeclaredMigrationReplayIsCanonicalAndConflictsOnChange918959148/001/linked
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5404324Z --- FAIL: TestDeclaredMigrationRecoveryPreviewAndReplayStayRequestScoped (0.39s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5405707Z     protocol_migration_declared_test.go:197: declared inspect: historical worktree is unavailable: C:/Users/runneradmin/AppData/Local/Temp/TestDeclaredMigrationRecoveryPreviewAndReplayStayRequestScoped3091562795/001/linked
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5406835Z --- FAIL: TestBothDeclarationsComposeIntoOneCombinedBasis (0.39s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5408601Z     protocol_migration_unscoped_test.go:338: composed declarations refused: historical worktree is unavailable: C:/Users/runneradmin/AppData/Local/Temp/TestBothDeclarationsComposeIntoOneCombinedBasis3504101937/001/linked
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5409741Z --- FAIL: TestSeparateProcessesCannotExceedActionOrCostCap (0.44s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5410379Z     --- FAIL: TestSeparateProcessesCannotExceedActionOrCostCap/false (0.26s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5412476Z         review_test.go:405: reservation fixture process failed (not a cap refusal): exit status 1; output=--- FAIL: TestBudgetReservationProcess (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5414529Z                 review_test.go:438: open C:\Users\runneradmin\AppData\Local\Temp\TestSeparateProcessesCannotExceedActionOrCostCapfalse866202516\001\lock-origin: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5415575Z             FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5416192Z         review_test.go:409: 1 process/acquisition failures prevent evaluating the admission count
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5416885Z     --- FAIL: TestSeparateProcessesCannotExceedActionOrCostCap/true (0.18s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5418083Z         review_test.go:405: reservation fixture process failed (not a cap refusal): exit status 1; output=--- FAIL: TestBudgetReservationProcess (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5420120Z                 review_test.go:438: open C:\Users\runneradmin\AppData\Local\Temp\TestSeparateProcessesCannotExceedActionOrCostCaptrue3579814661\001\lock-origin: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5421140Z             FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5421713Z         review_test.go:409: 1 process/acquisition failures prevent evaluating the admission count
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5422333Z --- FAIL: TestWorktreeInventoryRetainsRemovedLinkedWorktree (0.30s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5427409Z     worktree_inventory_test.go:101: registration "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\TestWorktreeInventoryRetainsRemovedLinkedWorktree1870514147\\001\\linked" was dropped from the inventory: [{RegisteredPath:C:/Users/runneradmin/AppData/Local/Temp/TestWorktreeInventoryRetainsRemovedLinkedWorktree1870514147/001/main ResolvedPath:C:\Users\runneradmin\AppData\Local\Temp\TestWorktreeInventoryRetainsRemovedLinkedWorktree1870514147\001\main Head:d6e6d2352b0d8ccc0229e35359cd0dfeebc76d3b Branch:refs/heads/master Detached:false Bare:false Locked:false LockReason: Prunable:false PrunableReason: Availability:available HistoryCoverage:local} {RegisteredPath:C:/Users/runneradmin/AppData/Local/Temp/TestWorktreeInventoryRetainsRemovedLinkedWorktree1870514147/001/linked ResolvedPath: Head:d6e6d2352b0d8ccc0229e35359cd0dfeebc76d3b Branch:refs/heads/linked Detached:false Bare:false Locked:false LockReason: Prunable:true PrunableReason:gitdir file points to non-existent location Availability:missing HistoryCoverage:unknown}]
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5432274Z --- FAIL: TestWorktreeInventoryDigestTracksRegistrationAndAvailability (0.59s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5439659Z     worktree_inventory_test.go:225: registration "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\TestWorktreeInventoryDigestTracksRegistrationAndAvailability2466645694\\001\\linked" was dropped from the inventory: [{RegisteredPath:C:/Users/runneradmin/AppData/Local/Temp/TestWorktreeInventoryDigestTracksRegistrationAndAvailability2466645694/001/main ResolvedPath:C:\Users\runneradmin\AppData\Local\Temp\TestWorktreeInventoryDigestTracksRegistrationAndAvailability2466645694\001\main Head:7abdf2df04b2871102f602d1ddf1a0ba76a35b8c Branch:refs/heads/master Detached:false Bare:false Locked:false LockReason: Prunable:false PrunableReason: Availability:available HistoryCoverage:local} {RegisteredPath:C:/Users/runneradmin/AppData/Local/Temp/TestWorktreeInventoryDigestTracksRegistrationAndAvailability2466645694/001/linked ResolvedPath: Head:7abdf2df04b2871102f602d1ddf1a0ba76a35b8c Branch:refs/heads/linked Detached:false Bare:false Locked:false LockReason: Prunable:true PrunableReason:gitdir file points to non-existent location Availability:missing HistoryCoverage:unknown} {RegisteredPath:C:/Users/runneradmin/AppData/Local/Temp/TestWorktreeInventoryDigestTracksRegistrationAndAvailability2466645694/001/third ResolvedPath:C:\Users\runneradmin\AppData\Local\Temp\TestWorktreeInventoryDigestTracksRegistrationAndAvailability2466645694\001\third Head:7abdf2df04b2871102f602d1ddf1a0ba76a35b8c Branch:refs/heads/third Detached:false Bare:false Locked:false LockReason: Prunable:false PrunableReason: Availability:available HistoryCoverage:local}]
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5446298Z --- FAIL: TestWorktreeRegistrationAcceptsStandardAttributes (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5447196Z     worktree_inventory_test.go:355: standard Git registration output refused: worktree registration path is empty or not absolute: "/repo"
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5448175Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5448496Z FAIL	parley-deck-cli/internal/budget	230.657s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5448935Z --- FAIL: TestLoadAgentSpecsLayersAndTracksSources (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5450345Z     runtime_test.go:77: extra command="C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestLoadAgentSpecsLayersAndTracksSources3504494717\\001/bin/extra", want "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\TestLoadAgentSpecsLayersAndTracksSources3504494717\\001\\bin\\extra"
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5451600Z --- FAIL: TestExpandPlaceholders (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5452421Z     runtime_test.go:219: got "tmp\\repo/x:tmp\\repo\\parley-deck/y:tmp\\agent/z:{prompt}", want "tmp\\repo\\x:tmp\\repo\\parley-deck\\y:tmp\\agent\\z:{prompt}"
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5453076Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5453339Z FAIL	parley-deck-cli/internal/config	0.956s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5453806Z --- FAIL: TestQuotaCycle3PendingDeclineDoesNotGrantMembership (0.15s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5455224Z     catchup_test.go:30: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineDoesNotGrantMembership630552464\001\.parley-runtime\quota-kickoff-4289763799\parley-deck\ideas\2026-10-13T13-35-22-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5456365Z --- FAIL: TestQuotaCycle3PendingDeclineBoundaries (1.40s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5456903Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/accept (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5458554Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesaccept2833244735\001\.parley-runtime\quota-kickoff-1227146628\parley-deck\ideas\2026-10-13T13-35-23-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5499926Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/reserve (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5501560Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesreserve4248000315\001\.parley-runtime\quota-kickoff-3029737178\parley-deck\ideas\2026-10-13T13-35-23-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5502834Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/ordinary-block (0.09s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5504850Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesordinary-block3890032573\001\.parley-runtime\quota-kickoff-1823759183\parley-deck\ideas\2026-10-13T13-35-23-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5506204Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/quoted-note (0.70s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5507759Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesquoted-note3006051703\001\.parley-runtime\quota-kickoff-3019434700\parley-deck\ideas\2026-10-13T13-35-23-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5509038Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/mentioned-note (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5510619Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesmentioned-note3645230639\001\.parley-runtime\quota-kickoff-3051941741\parley-deck\ideas\2026-10-13T13-35-23-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5511860Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/missing-counter (0.09s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5513404Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesmissing-counter3987657496\001\.parley-runtime\quota-kickoff-812400090\parley-deck\ideas\2026-10-13T13-35-24-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5514667Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/literal-status (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5516451Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesliteral-status3659147530\001\.parley-runtime\quota-kickoff-1106395713\parley-deck\ideas\2026-10-13T13-35-24-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5517737Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/outsider (0.09s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5519242Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesoutsider3262170963\001\.parley-runtime\quota-kickoff-2157990610\parley-deck\ideas\2026-10-13T13-35-24-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5520433Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/review (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5522007Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariesreview322165761\001\.parley-runtime\quota-kickoff-404495500\parley-deck\ideas\2026-10-13T13-35-24-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5523193Z     --- FAIL: TestQuotaCycle3PendingDeclineBoundaries/policy-on (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5525104Z         catchup_test.go:80: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3PendingDeclineBoundariespolicy-on3734833527\001\.parley-runtime\quota-kickoff-684043724\parley-deck\ideas\2026-10-13T13-35-24-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5526268Z --- FAIL: TestProtocolPhaseThreeTemplateConsensusReady (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5526867Z     consensus_gate_regression_test.go:61: Phase-3 template block is empty
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5527408Z --- FAIL: TestDropoutHistoricalBlockAndFindingsStayBinding (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5528866Z     dropout_test.go:14: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutHistoricalBlockAndFindingsStayBinding782902686\001\.parley-runtime\quota-kickoff-2013974514\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5530120Z --- FAIL: TestQuotaExcludedVetoRemainsBlockedKnownAndAppendGateNarrow (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5531574Z     quota_test.go:55: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaExcludedVetoRemainsBlockedKnownAndAppendGateNarrow427314088\001\.parley-runtime\quota-kickoff-2007800685\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5532849Z --- FAIL: TestQuotaPendingBlocksSignoffAndCloseWithoutRewritingArtifacts (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5534342Z     quota_test.go:88: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaPendingBlocksSignoffAndCloseWithoutRewritingArtifacts3993447926\001\.parley-runtime\quota-kickoff-1595977630\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5535528Z --- FAIL: TestQuotaKickoffExcludedIdentityNeverKnown (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5536832Z     quota_test.go:129: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaKickoffExcludedIdentityNeverKnown4231766757\001\.parley-runtime\quota-kickoff-3073184049\parley-deck\ideas\2026-10-13T13-35-26-kickoff-known: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5537941Z --- FAIL: TestQuotaRetainedVetoOnlyOwnerRulingCanDispose (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5539234Z     quota_test.go:139: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaRetainedVetoOnlyOwnerRulingCanDispose3029284476\001\.parley-runtime\quota-kickoff-2978935412\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5540341Z --- FAIL: TestQuotaFixupReincludeWithdrawThenAppendSignoff (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5541693Z     quota_test.go:172: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupReincludeWithdrawThenAppendSignoff3612212795\001\.parley-runtime\quota-kickoff-2719145113\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5542912Z --- FAIL: TestQuotaFixupOffModeReturnCannotAuthorizeWithdrawal (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5544632Z     quota_test.go:228: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupOffModeReturnCannotAuthorizeWithdrawal1538166891\001\.parley-runtime\quota-kickoff-83788099\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5546603Z --- FAIL: TestQuotaFixupWithdrawalMatchesBlankLineSignoffAndNotNewVeto (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5548128Z     quota_test.go:272: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupWithdrawalMatchesBlankLineSignoffAndNotNewVeto315284861\001\.parley-runtime\quota-kickoff-4223632074\parley-deck\ideas\2026-10-13T13-35-26-quota-consensus: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5549206Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5549474Z FAIL	parley-deck-cli/internal/consensus	4.209s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5550007Z --- FAIL: TestUnreadableMarkerEscalatesInsteadOfLoweringTheCount (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5551391Z     impl_test.go:807: an unreadable round must escalate, got count=2 and no error
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5551895Z --- FAIL: TestRebuildDetailSurfacesReadErrors (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5552468Z     --- FAIL: TestRebuildDetailSurfacesReadErrors/unreadable_00-prompt.md (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5553171Z         phase_event_test.go:156: want an error for an unreadable 00-prompt.md
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5553830Z     --- FAIL: TestRebuildDetailSurfacesReadErrors/unreadable_IMPLEMENTATION.md (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5554582Z         phase_event_test.go:170: want an error for an unreadable IMPLEMENTATION.md
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5555215Z     --- FAIL: TestRebuildDetailSurfacesReadErrors/unreadable_FINAL.md (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5556005Z         phase_event_test.go:186: want an error when FINAL.md stats as existing but cannot be read
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5556663Z --- FAIL: TestQuotaDriverReconcilesPendingBeforeRebindingEveryConsumer (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5558130Z     quota_test.go:62: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaDriverReconcilesPendingBeforeRebindingEveryConsumer643627838\001\.parley-runtime\quota-kickoff-1025277947\parley-deck\ideas\2026-10-13T13-36-24-quota-driver: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5559324Z --- FAIL: TestReviewRoundHasFindingsFailsClosed (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5559959Z     strict_gate_test.go:179: an unreadable round dir must fail closed (veto), not auto-pass
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5560643Z --- FAIL: TestTrajectoryDriverReservationPersistsBeforeAdapterAndBlocksResume (2.51s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5561336Z     trajectory_test.go:43: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5561755Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5562021Z FAIL	parley-deck-cli/internal/driver	62.375s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5562417Z FAIL	parley-deck-cli/internal/evidence [build failed]
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5562816Z ok  	parley-deck-cli/internal/fsutil	0.101s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5563166Z ok  	parley-deck-cli/internal/hitl	0.060s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5563496Z ok  	parley-deck-cli/internal/loop	0.131s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5564377Z --- FAIL: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten (0.20s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5565121Z     --- FAIL: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/applied (0.11s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5566825Z         cycle2_test.go:26: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewrittenapplie3157582613\001\.parley-runtime\quota-kickoff-1590810005\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5568197Z     --- FAIL: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/missing (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5569906Z         cycle2_test.go:26: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewrittenmissin1993197155\001\.parley-runtime\quota-kickoff-110559056\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5571270Z     --- FAIL: TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewritten/corrupt (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5572962Z         cycle2_test.go:26: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2AppliedEditAndUnknownPendingNeverRewrittencorrup612812082\001\.parley-runtime\quota-kickoff-466801799\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5574446Z --- FAIL: TestQuotaCycle2MissingManifestBeforeManualCommitAndCheckedRecovery (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5575958Z     cycle2_test.go:63: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2MissingManifestBeforeManualCommitAndCheckedRecove787547179\001\.parley-runtime\quota-kickoff-2274524598\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5577220Z --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay (0.30s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5577911Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/dead (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5579637Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplaydead2059118355\001\.parley-runtime\quota-kickoff-537969582\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5580997Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-host (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5582730Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplayforeign-h1332060216\001\.parley-runtime\quota-kickoff-4161910499\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5584449Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/foreign-boot (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5586162Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplayforeign-b3733288774\001\.parley-runtime\quota-kickoff-803159568\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5587551Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-host (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5589250Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplayunknown-h2769059846\001\.parley-runtime\quota-kickoff-4153237420\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5590622Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/unknown-boot (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5592304Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplayunknown-b3433157552\001\.parley-runtime\quota-kickoff-2418479675\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5593671Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/legacy (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5595333Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplaylegacy3395153462\001\.parley-runtime\quota-kickoff-1708102465\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5596695Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-writer (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5598422Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplaylive-writ3271030420\001\.parley-runtime\quota-kickoff-3731931970\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5599828Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-supervisor (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5601533Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplaylive-supe2065795784\001\.parley-runtime\quota-kickoff-1323882271\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5602903Z     --- FAIL: TestQuotaCycle2CrashSettlementProofDurabilityAndReplay/live-group (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5604971Z         cycle2_test.go:115: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2CrashSettlementProofDurabilityAndReplaylive-grou2532590263\001\.parley-runtime\quota-kickoff-1593942584\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5606340Z --- FAIL: TestQuotaCycle2NativeCrashWriter (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5606925Z     cycle2_test.go:210: exit status 1 --- FAIL: TestQuotaCycle2NativeCrashWriter (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5607680Z             cycle2_test.go:196: exec: "/bin/sh": executable file not found in %PATH%
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5608117Z         FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5608534Z --- FAIL: TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5610004Z     cycle2_test.go:226: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle2LegacyManualNoticePreservedWithoutAuthority2247597033\001\.parley-runtime\quota-kickoff-399354164\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5611296Z --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery (0.37s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5611863Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/applied-archive (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5613416Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoveryapplied-archive2722190741\001\.parley-runtime\quota-kickoff-1889189579\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5614658Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/applied-delete (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5616199Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoveryapplied-delete1027726507\001\.parley-runtime\quota-kickoff-966253475\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5617469Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/before-receipt-archive (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5619119Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoverybefore-receipt-archive1511040608\001\.parley-runtime\quota-kickoff-108507141\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5620493Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/before-receipt-delete (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5622621Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoverybefore-receipt-delete265612874\001\.parley-runtime\quota-kickoff-2673519270\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5623908Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/before-notice (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5625442Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoverybefore-notice386167542\001\.parley-runtime\quota-kickoff-488554413\parley-deck\ideas\2026-10-13T13-35-29-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5626742Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/corrupt-receipt-archive (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5628391Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoverycorrupt-receipt-archive1430281695\001\.parley-runtime\quota-kickoff-3082814985\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5629709Z     --- FAIL: TestQuotaCycle3NoticeDeliveryRecovery/corrupt-receipt-delete (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5631339Z         cycle3_test.go:19: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3NoticeDeliveryRecoverycorrupt-receipt-delete2971390442\001\.parley-runtime\quota-kickoff-1566893379\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5632639Z --- FAIL: TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions (0.23s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5633440Z     --- FAIL: TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions/archive (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5635285Z         cycle3_test.go:90: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions3940937066\001\.parley-runtime\quota-kickoff-2888233907\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5636699Z     --- FAIL: TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions/delete (0.13s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5638461Z         cycle3_test.go:90: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle3HistoricalManualClarificationSurvivesInboxActions2657463826\001\.parley-runtime\quota-kickoff-3623515858\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5639639Z --- FAIL: TestQuotaCycle4OwnerNoticeCopies (0.68s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5640275Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/applied/live/annotation (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5641850Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesappliedliveannotation2897931631\001\.parley-runtime\quota-kickoff-2157824810\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5643483Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/applied/live/replacement (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5645072Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesappliedlivereplacement1724748469\001\.parley-runtime\quota-kickoff-4059542684\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5646382Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/applied/archived/annotation (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5647989Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesappliedarchivedannotation2105949537\001\.parley-runtime\quota-kickoff-966607303\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5649291Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/applied/archived/replacement (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5650906Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesappliedarchivedreplacement2521235550\001\.parley-runtime\quota-kickoff-2448582577\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5652216Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/applied/both/annotation (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5653784Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesappliedbothannotation2516043271\001\.parley-runtime\quota-kickoff-2263618970\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5655040Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/applied/both/replacement (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5656608Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesappliedbothreplacement3270351609\001\.parley-runtime\quota-kickoff-1973963040\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5657893Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/before-receipt/live/annotation (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5659519Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesbefore-receiptliveannotation517257156\001\.parley-runtime\quota-kickoff-1534765399\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5660872Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/before-receipt/live/replacement (0.12s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5662832Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesbefore-receiptlivereplacement3438731119\001\.parley-runtime\quota-kickoff-2530922114\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5664222Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/before-receipt/archived/annotation (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5665922Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesbefore-receiptarchivedannotat2366488579\001\.parley-runtime\quota-kickoff-416073947\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5668081Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/before-receipt/archived/replacement (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5669831Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesbefore-receiptarchivedreplace1027993604\001\.parley-runtime\quota-kickoff-2357052976\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5671180Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/before-receipt/both/annotation (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5672954Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesbefore-receiptbothannotation1873639317\001\.parley-runtime\quota-kickoff-62685839\parley-deck\ideas\2026-10-13T13-35-30-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5674288Z     --- FAIL: TestQuotaCycle4OwnerNoticeCopies/before-receipt/both/replacement (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5675951Z         cycle4_test.go:56: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4OwnerNoticeCopiesbefore-receiptbothreplacement368681326\001\.parley-runtime\quota-kickoff-2412208044\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5677183Z --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic (0.34s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5677785Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/symlink (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5679364Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticsymlink1098097873\001\.parley-runtime\quota-kickoff-1736932737\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5680647Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/directory (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5682243Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticdirectory3643503125\001\.parley-runtime\quota-kickoff-4067654139\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5683979Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/archived-symlink (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5685643Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticarchived-symlink1610313900\001\.parley-runtime\quota-kickoff-4258567808\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5686950Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/inbox-symlink (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5688561Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticinbox-symlink3788294329\001\.parley-runtime\quota-kickoff-762331406\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5689899Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/archive-dir-symlink (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5691629Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticarchive-dir-symlink1360157663\001\.parley-runtime\quota-kickoff-4078486255\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5692971Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/inbox-file (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5694571Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticinbox-file3911072853\001\.parley-runtime\quota-kickoff-4160500436\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5695900Z     --- FAIL: TestQuotaCycle4UnsafePublicationIsDiagnostic/write-failure (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5697526Z         cycle4_test.go:133: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4UnsafePublicationIsDiagnosticwrite-failure1010539700\001\.parley-runtime\quota-kickoff-1930189591\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5698829Z --- FAIL: TestQuotaCycle4ReceiptAndHistoryStillGate (0.28s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5699440Z     --- FAIL: TestQuotaCycle4ReceiptAndHistoryStillGate/symlink-receipt (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5701049Z         cycle4_test.go:224: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ReceiptAndHistoryStillGatesymlink-receipt3865601691\001\.parley-runtime\quota-kickoff-425463227\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5702389Z     --- FAIL: TestQuotaCycle4ReceiptAndHistoryStillGate/directory-receipt (0.13s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5704508Z         cycle4_test.go:224: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ReceiptAndHistoryStillGatedirectory-receipt403679171\001\.parley-runtime\quota-kickoff-758035162\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5705805Z     --- FAIL: TestQuotaCycle4ReceiptAndHistoryStillGate/changed-receipt (0.09s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5707403Z         cycle4_test.go:224: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ReceiptAndHistoryStillGatechanged-receipt322516420\001\.parley-runtime\quota-kickoff-4274010457\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5708668Z     --- FAIL: TestQuotaCycle4ReceiptAndHistoryStillGate/history (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5710185Z         cycle4_test.go:224: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ReceiptAndHistoryStillGatehistory2616365992\001\.parley-runtime\quota-kickoff-864660455\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5711422Z --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt (0.22s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5712128Z     --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt/before-live (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5713831Z         cycle4_test.go:270: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ManualClarificationOwnerCopiesAndReceiptbefore-l1038345485\001\.parley-runtime\quota-kickoff-2367431956\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5715207Z     --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt/before-archive (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5716892Z         cycle4_test.go:270: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ManualClarificationOwnerCopiesAndReceiptbefore-a541860955\001\.parley-runtime\quota-kickoff-52315996\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5718288Z     --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt/after-live (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5719994Z         cycle4_test.go:270: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ManualClarificationOwnerCopiesAndReceiptafter-li2143215138\001\.parley-runtime\quota-kickoff-1889168995\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5721390Z     --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt/after-archive (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5723400Z         cycle4_test.go:270: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ManualClarificationOwnerCopiesAndReceiptafter-ar888405253\001\.parley-runtime\quota-kickoff-2191081761\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5724805Z     --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt/unsafe-notice (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5726519Z         cycle4_test.go:270: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ManualClarificationOwnerCopiesAndReceiptunsafe-n613079159\001\.parley-runtime\quota-kickoff-3213216903\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5728028Z     --- FAIL: TestQuotaCycle4ManualClarificationOwnerCopiesAndReceipt/unsafe-receipt (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5729725Z         cycle4_test.go:270: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle4ManualClarificationOwnerCopiesAndReceiptunsafe-r1580930759\001\.parley-runtime\quota-kickoff-3793967307\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5730961Z --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites (0.20s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5731623Z     --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites/deck/broken=false (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5733306Z         cycle5_test.go:53: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedScopeRefusesWithoutWritesdeckbroken=fals2930149569\001\.parley-runtime\quota-kickoff-829871510\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5734728Z     --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites/deck/broken=true (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5736380Z         cycle5_test.go:53: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedScopeRefusesWithoutWritesdeckbroken=true3802724433\001\.parley-runtime\quota-kickoff-2413831065\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5737727Z     --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites/ideas/broken=false (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5739381Z         cycle5_test.go:53: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedScopeRefusesWithoutWritesideasbroken=fal3444702812\001\.parley-runtime\quota-kickoff-1735810609\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5740707Z     --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites/ideas/broken=true (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5742285Z         cycle5_test.go:53: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedScopeRefusesWithoutWritesideasbroken=tru2749493789\001\.parley-runtime\quota-kickoff-683929485\parley-deck\ideas\2026-10-13T13-35-31-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5743961Z     --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites/idea/broken=false (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5745656Z         cycle5_test.go:53: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedScopeRefusesWithoutWritesideabroken=fals1938023006\001\.parley-runtime\quota-kickoff-432524133\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5747000Z     --- FAIL: TestQuotaCycle5AliasedScopeRefusesWithoutWrites/idea/broken=true (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5748695Z         cycle5_test.go:53: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedScopeRefusesWithoutWritesideabroken=true3462064227\001\.parley-runtime\quota-kickoff-1532340914\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5749874Z --- FAIL: TestQuotaCycle5AncestorAliasSharesLease (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5751127Z     cycle5_test.go:113: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AncestorAliasSharesLease3354751417\001\.parley-runtime\quota-kickoff-3982606450\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5752230Z --- FAIL: TestQuotaCycle5AliasedOffScopeDrivingUnchanged (0.11s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5752826Z     --- FAIL: TestQuotaCycle5AliasedOffScopeDrivingUnchanged/off (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5754356Z         cycle5_test.go:173: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedOffScopeDrivingUnchangedoff3737135880\001\.parley-runtime\quota-kickoff-3640383293\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5755638Z     --- FAIL: TestQuotaCycle5AliasedOffScopeDrivingUnchanged/kickoff-only (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5757252Z         cycle5_test.go:173: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5AliasedOffScopeDrivingUnchangedkickoff-only2682795764\001\.parley-runtime\quota-kickoff-3941369592\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5758581Z --- FAIL: TestQuotaCycle5ManualClarificationUnsafePath (0.11s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5759151Z     --- FAIL: TestQuotaCycle5ManualClarificationUnsafePath/false (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5760684Z         cycle5_test.go:203: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5ManualClarificationUnsafePathfalse3946368157\001\.parley-runtime\quota-kickoff-1112943015\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5761939Z     --- FAIL: TestQuotaCycle5ManualClarificationUnsafePath/true (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5763840Z         cycle5_test.go:203: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5ManualClarificationUnsafePathtrue3110993364\001\.parley-runtime\quota-kickoff-631882098\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5765148Z --- FAIL: TestDropoutCrashDerivedProofNeverInventsTerminal (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5766370Z     dropout_test.go:45: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCrashDerivedProofNeverInventsTerminal1055362296\001\.parley-runtime\invocations\orphan\crash-settlement.json: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5767423Z --- FAIL: TestDropoutBlockingDecisionDeduplicatesAcrossRuns (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5768766Z     dropout_test.go:64: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutBlockingDecisionDeduplicatesAcrossRuns688624252\001\.parley-runtime\quota-kickoff-80391262\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5769957Z --- FAIL: TestDropoutEveryReturnPathAfterDowngrade (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5771226Z     dropout_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutEveryReturnPathAfterDowngrade2527255938\001\.parley-runtime\quota-kickoff-2093036847\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5772291Z --- FAIL: TestDropoutKickoffNoticeReceiptReplay (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5773520Z     dropout_test.go:151: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutKickoffNoticeReceiptReplay2320815145\001\.parley-runtime\quota-kickoff-1669776388\parley-deck\ideas\2026-10-13T13-35-32-kickoff-replay: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5774637Z --- FAIL: TestQuotaFixupProjectionWaitAndProcessExclusivity (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5775980Z     fixup_test.go:30: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupProjectionWaitAndProcessExclusivity1187505009\001\.parley-runtime\quota-kickoff-3726785621\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5777188Z --- FAIL: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5777892Z     --- FAIL: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/#00 (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5780286Z         fixup_test.go:69: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections#002392311006\001\.parley-runtime\quota-kickoff-3876564795\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5782163Z     --- FAIL: TestQuotaFixupCorruptReceiptRecoveryChecksAllProjections/wrong-transition_ (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5783931Z         fixup_test.go:69: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupCorruptReceiptRecoveryChecksAllProjectionswrong-t3612424399\001\.parley-runtime\quota-kickoff-1819737078\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5785199Z --- FAIL: TestQuotaFixupReleasedContextCannotBeReused (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5786512Z     fixup_test.go:124: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupReleasedContextCannotBeReused1575512281\001\.parley-runtime\quota-kickoff-3823021486\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5787702Z --- FAIL: TestQuotaTransitionReplayHistoryAndIncompletePreservation (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5789347Z     membership_test.go:76: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaTransitionReplayHistoryAndIncompletePreservation2015979951\001\.parley-runtime\quota-kickoff-3787187554\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5790570Z --- FAIL: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery (0.17s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5791270Z     --- FAIL: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/prompt (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5792922Z         membership_test.go:139: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaProjectionFaultsPendingReadOnlyAndRecoveryprompt1052604709\001\.parley-runtime\quota-kickoff-1361589361\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5794862Z     --- FAIL: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/manifest (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5796502Z         membership_test.go:139: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaProjectionFaultsPendingReadOnlyAndRecoverymanifest3948350986\001\.parley-runtime\quota-kickoff-3908052325\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5797876Z     --- FAIL: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/evaluation (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5799581Z         membership_test.go:139: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaProjectionFaultsPendingReadOnlyAndRecoveryevaluation2643971630\001\.parley-runtime\quota-kickoff-1996993766\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5801355Z     --- FAIL: TestQuotaProjectionFaultsPendingReadOnlyAndRecovery/applied (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5803046Z         membership_test.go:139: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaProjectionFaultsPendingReadOnlyAndRecoveryapplied1717592001\001\.parley-runtime\quota-kickoff-2642890209\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5804322Z --- FAIL: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch (0.26s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5805006Z     --- FAIL: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/stub (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5806628Z         membership_test.go:190: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatchstub4291894325\001\.parley-runtime\quota-kickoff-3249038253\parley-deck\ideas\2026-10-13T13-35-32-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5807935Z     --- FAIL: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/designee (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5809622Z         membership_test.go:190: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatchdesignee1910778110\001\.parley-runtime\quota-kickoff-1446106643\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5810968Z     --- FAIL: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/pin (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5812584Z         membership_test.go:190: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatchpin4132207824\001\.parley-runtime\quota-kickoff-2885827110\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5813915Z     --- FAIL: TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatch/drafter (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5815573Z         membership_test.go:190: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaStubSurvivorAndProtectedRolesBlockWholeBatchdrafter3375507735\001\.parley-runtime\quota-kickoff-1420598893\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5816782Z --- FAIL: TestQuotaLifetimeLockDifferentRunAndOffScope (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5818121Z     membership_test.go:223: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaLifetimeLockDifferentRunAndOffScope1082379338\001\.parley-runtime\quota-kickoff-3933240853\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5819342Z --- FAIL: TestQuotaCrossProcessLease (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5820507Z     membership_test.go:257: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCrossProcessLease3224236076\001\.parley-runtime\quota-kickoff-3341997585\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5821962Z --- FAIL: TestQuotaLaterRunReadsHistoryAndContradictionsBlock (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5823371Z     membership_test.go:266: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaLaterRunReadsHistoryAndContradictionsBlock3341955989\001\.parley-runtime\quota-kickoff-2894207463\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5824521Z --- FAIL: TestQuotaUnsettledWriterFromPriorRunBlocksRecovery (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5826316Z     membership_test.go:297: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaUnsettledWriterFromPriorRunBlocksRecovery3374492981\001\.parley-runtime\quota-kickoff-3608083841\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5827572Z --- FAIL: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers (2.74s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5828380Z     --- FAIL: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/auto-two-reviewers (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5830121Z         membership_test.go:320: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembersauto-1898826804\001\.parley-runtime\quota-kickoff-2228118161\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5831571Z     --- FAIL: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/model-diversity (0.59s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5833324Z         membership_test.go:320: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembersmodel1489388668\001\.parley-runtime\quota-kickoff-2232700830\parley-deck\ideas\2026-10-13T13-35-33-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5834762Z     --- FAIL: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/fast-diversity (1.91s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5836539Z         membership_test.go:320: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembersfast-1311864193\001\.parley-runtime\quota-kickoff-1546818285\parley-deck\ideas\2026-10-13T13-35-34-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5838000Z     --- FAIL: TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembers/strict-retains-minor (0.21s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5839778Z         membership_test.go:320: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaReviewDiversityAndStrictGatesOnProspectiveMembersstric3153312295\001\.parley-runtime\quota-kickoff-1777313587\parley-deck\ideas\2026-10-13T13-35-35-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5841039Z --- FAIL: TestReviewGateProspectiveCommitAndPolicyRevision (0.97s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5842394Z     review_gate_test.go:39: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveCommitAndPolicyRevision166973874\001\.parley-runtime\quota-kickoff-225553327\parley-deck\ideas\2026-10-13T13-35-36-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5843555Z --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence (0.30s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5844095Z     --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence/#00 (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5845564Z         review_gate_test.go:73: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidence#00149595047\001\.parley-runtime\quota-kickoff-1186960469\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5847132Z     --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence/unknown (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5848670Z         review_gate_test.go:73: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidenceunknown347748353\001\.parley-runtime\quota-kickoff-747004712\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5850085Z     --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence/cli-default (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5851734Z         review_gate_test.go:73: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidencecli-default3572626312\001\.parley-runtime\quota-kickoff-1807916843\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5853005Z     --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence/_model-A_ (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5854565Z         review_gate_test.go:73: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidence_model-A_3249777789\001\.parley-runtime\quota-kickoff-2839506063\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5855874Z     --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence/mOdEl-a (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5857407Z         review_gate_test.go:73: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidencemOdEl-a254721247\001\.parley-runtime\quota-kickoff-2261966552\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5858660Z     --- FAIL: TestReviewGateSnapshotModelsAndNoEvidence/_model-B_ (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5860188Z         review_gate_test.go:73: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidence_model-B_3488352146\001\.parley-runtime\quota-kickoff-912709202\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5862128Z     review_gate_test.go:82: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateSnapshotModelsAndNoEvidence1274292018\001\.parley-runtime\quota-kickoff-409298693\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5863203Z --- FAIL: TestReviewGateProspectiveAdversarialEvidence (0.91s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5863776Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/arbitrary-rule (0.11s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5865432Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencearbitrary-rule373236672\001\.parley-runtime\quota-kickoff-1036309811\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5867129Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/wrong-agent (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5868771Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencewrong-agent1807922743\001\.parley-runtime\quota-kickoff-2726879873\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5870126Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/missing-attempt (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5871793Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencemissing-attempt190399160\001\.parley-runtime\quota-kickoff-2345629892\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5873182Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/duplicate-candidate (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5874890Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidenceduplicate-candidate3904758438\001\.parley-runtime\quota-kickoff-2176663042\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5876227Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/added-id (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5877816Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidenceadded-id1342336503\001\.parley-runtime\quota-kickoff-1379335411\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5879107Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/wrong-before (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5880735Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencewrong-before3247422864\001\.parley-runtime\quota-kickoff-3033726271\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5882180Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/not-applied (0.13s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5883807Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencenot-applied1691338861\001\.parley-runtime\quota-kickoff-1539886171\parley-deck\ideas\2026-10-13T13-35-37-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5885100Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/protected (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5887104Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidenceprotected4201584148\001\.parley-runtime\quota-kickoff-1545010024\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5888473Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/unknown-snapshot (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5890150Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidenceunknown-snapshot1117038748\001\.parley-runtime\quota-kickoff-3199511648\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5891455Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/pending (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5893035Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencepending2494748216\001\.parley-runtime\quota-kickoff-3927567705\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5894291Z     --- FAIL: TestReviewGateProspectiveAdversarialEvidence/corrupt (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5895866Z         review_gate_test.go:100: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateProspectiveAdversarialEvidencecorrupt4220120582\001\.parley-runtime\quota-kickoff-1283235212\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5897051Z --- FAIL: TestReviewGateKickoffAndLegacyRules (0.20s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5897555Z     --- FAIL: TestReviewGateKickoffAndLegacyRules/dropout (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5899031Z         review_gate_test.go:140: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateKickoffAndLegacyRulesdropout4102271948\001\.parley-runtime\quota-kickoff-3300657424\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5900297Z     --- FAIL: TestReviewGateKickoffAndLegacyRules/quota.named-reset-ge-60m.v1 (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5901997Z         review_gate_test.go:140: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateKickoffAndLegacyRulesquota.named-reset-ge-60m.v1725332930\001\.parley-runtime\quota-kickoff-2669029460\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5903430Z     --- FAIL: TestReviewGateKickoffAndLegacyRules/quota.account-exhausted-no-reset.v1 (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5905161Z         review_gate_test.go:140: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateKickoffAndLegacyRulesquota.account-exhausted-no-r1624400186\001\.parley-runtime\quota-kickoff-3418443130\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5906563Z     --- FAIL: TestReviewGateKickoffAndLegacyRules/quota.allowance-ge-24h-no-reset.v1 (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5908638Z         review_gate_test.go:140: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateKickoffAndLegacyRulesquota.allowance-ge-24h-no-re1166870371\001\.parley-runtime\quota-kickoff-1070656013\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5909921Z     --- FAIL: TestReviewGateKickoffAndLegacyRules/test (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5911401Z         review_gate_test.go:140: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateKickoffAndLegacyRulestest844003570\001\.parley-runtime\quota-kickoff-2665351298\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5913079Z --- FAIL: TestReviewGateAbsentSnapshotCannotQualify (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5914405Z     review_gate_test.go:177: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateAbsentSnapshotCannotQualify1308308697\001\.parley-runtime\quota-kickoff-1452771277\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5915522Z --- FAIL: TestReviewGateLegacyEvidenceNegatives (5.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5916221Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.named-reset-ge-60m.v1/valid-boundary (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5918107Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.named-reset-ge-60m.v1534699191\001\.parley-runtime\quota-kickoff-1910580061\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5919591Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.named-reset-ge-60m.v1/wrong-adapter (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5921356Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.named-reset-ge-60m.v3496333851\001\.parley-runtime\quota-kickoff-1611540624\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5922807Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.named-reset-ge-60m.v1/wrong-provenance (0.28s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5924578Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.named-reset-ge-60m.v230008688\001\.parley-runtime\quota-kickoff-2942558839\parley-deck\ideas\2026-10-13T13-35-38-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5926060Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.named-reset-ge-60m.v1/reset-contradiction (0.16s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5928278Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.named-reset-ge-60m.v3213537099\001\.parley-runtime\quota-kickoff-917807612\parley-deck\ideas\2026-10-13T13-35-39-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5929809Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.account-exhausted-no-reset.v1/valid-boundary (0.68s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5931630Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.account-exhausted-no1632164105\001\.parley-runtime\quota-kickoff-4289054356\parley-deck\ideas\2026-10-13T13-35-39-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5933143Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.account-exhausted-no-reset.v1/wrong-adapter (0.58s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5934940Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.account-exhausted-no844612052\001\.parley-runtime\quota-kickoff-327449482\parley-deck\ideas\2026-10-13T13-35-40-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5936466Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.account-exhausted-no-reset.v1/wrong-provenance (0.45s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5939794Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.account-exhausted-no2120159331\001\.parley-runtime\quota-kickoff-3517837414\parley-deck\ideas\2026-10-13T13-35-40-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5941963Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.account-exhausted-no-reset.v1/reset-contradiction (0.78s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5944485Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.account-exhausted-no3082459001\001\.parley-runtime\quota-kickoff-961914589\parley-deck\ideas\2026-10-13T13-35-41-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5947237Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.allowance-ge-24h-no-reset.v1/valid-boundary (1.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5949485Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.allowance-ge-24h-no-2814934497\001\.parley-runtime\quota-kickoff-293941615\parley-deck\ideas\2026-10-13T13-35-41-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5951348Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.allowance-ge-24h-no-reset.v1/wrong-adapter (0.49s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5953595Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.allowance-ge-24h-no-4164496801\001\.parley-runtime\quota-kickoff-2395631877\parley-deck\ideas\2026-10-13T13-35-42-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5955591Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.allowance-ge-24h-no-reset.v1/wrong-provenance (0.46s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5957677Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.allowance-ge-24h-no-2534439799\001\.parley-runtime\quota-kickoff-933308214\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5959370Z     --- FAIL: TestReviewGateLegacyEvidenceNegatives/quota.allowance-ge-24h-no-reset.v1/reset-contradiction (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5961180Z         review_gate_test.go:199: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestReviewGateLegacyEvidenceNegativesquota.allowance-ge-24h-no-3052511655\001\.parley-runtime\quota-kickoff-2985726170\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5962489Z --- FAIL: TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority (0.17s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5963972Z     revision_test.go:20: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupOwnerRevisionReturnPolicyCatchupAndAuthority3179621783\001\.parley-runtime\quota-kickoff-2030289200\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5965193Z --- FAIL: TestQuotaFixupScopeWideningIsExplicit (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5966440Z     revision_test.go:111: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupScopeWideningIsExplicit359704450\001\.parley-runtime\quota-kickoff-3205596030\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5967522Z --- FAIL: TestQuotaFixupKnobOffRecordedManualChanges (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5968808Z     revision_test.go:137: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupKnobOffRecordedManualChanges3005536993\001\.parley-runtime\quota-kickoff-517343071\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5969940Z --- FAIL: TestQuotaFixupOffModeCatchupKeepsPreChangePath (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5971291Z     revision_test.go:177: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupOffModeCatchupKeepsPreChangePath2441934748\001\.parley-runtime\quota-kickoff-509220381\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5972367Z --- FAIL: TestQuotaFixupClosedRevisionFrozen (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5973582Z     revision_test.go:198: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFixupClosedRevisionFrozen1429342938\001\.parley-runtime\quota-kickoff-3180620667\parley-deck\ideas\2026-10-13T13-35-43-membership-fixtu: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5974474Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5974693Z FAIL	parley-deck-cli/internal/membership	14.825s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5975055Z --- FAIL: TestLeaseProcess (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5975444Z     lease_test.go:47: child: 6 <nil> sync C 
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5975867Z --- FAIL: TestLeaseProcessSyntheticIdentity (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5976295Z     lease_test.go:47: child: 6 <nil> sync C 
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5976729Z --- FAIL: TestLeaseSamePIDPartialForeignAndReleaseIdentity (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5977998Z     lease_test.go:75: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestLeaseSamePIDPartialForeignAndReleaseIdentity3294289183\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5978783Z --- FAIL: TestLeaseStaleReaperGenerationClaim (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5979773Z     lease_test.go:130: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestLeaseStaleReaperGenerationClaim3176427294\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5980398Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5980669Z FAIL	parley-deck-cli/internal/pidlease	0.176s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5981113Z --- FAIL: TestAdvanceDAGRespectsTopologicalOrder (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5982572Z     dag_advance_test.go:43: advance 0: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestAdvanceDAGRespectsTopologicalOrder3091546449\001\pipelines\dag-order\gates\start->spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5983872Z --- FAIL: TestComputeDAGStepParallelWaves (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5985208Z     dag_step_test.go:40: ComputeDAGStep: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestComputeDAGStepParallelWaves228935677\001\pipelines\diamond\gates\ready->spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5986350Z --- FAIL: TestComputeDAGStepSupervisedAwaitsGate (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5987736Z     dag_step_test.go:76: ComputeDAGStep: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestComputeDAGStepSupervisedAwaitsGate3404948164\001\pipelines\diamond\gates\ready->spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5988907Z --- FAIL: TestAdvanceSupervisedOpensGate (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5990306Z     executor_test.go:44: Advance: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestAdvanceSupervisedOpensGate2237535628\001\pipelines\demo-pipeline\gates\business-spec->technical-spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5991526Z --- FAIL: TestAdvanceSeedsNextAfterGateApproved (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5992985Z     executor_test.go:63: advance 1: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestAdvanceSeedsNextAfterGateApproved3746290241\001\pipelines\demo-pipeline\gates\business-spec->technical-spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5994230Z --- FAIL: TestAdvanceAutoLeftAutoApprovesLowRisk (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5995720Z     executor_test.go:96: Advance: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestAdvanceAutoLeftAutoApprovesLowRisk4200886066\001\pipelines\demo-pipeline\gates\business-spec->technical-spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5996936Z --- FAIL: TestAdvanceCompletesAtLastBlock (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5998581Z     executor_test.go:112: advance: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestAdvanceCompletesAtLastBlock3254954183\001\pipelines\demo-pipeline\gates\business-spec->technical-spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.5999949Z --- FAIL: TestAdvanceStopsOnRejectedGate (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6001347Z     executor_test.go:130: advance 1: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestAdvanceStopsOnRejectedGate407698685\001\pipelines\demo-pipeline\gates\business-spec->technical-spec.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6002546Z --- FAIL: TestGateRoundTripAndResolve (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6003738Z     gate_test.go:36: SaveGate: write gate: open C:\Users\RUNNER~1\AppData\Local\Temp\TestGateRoundTripAndResolve1758643729\001\pipelines\demo\gates\a->b.gate.json.tmp: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6004707Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6004976Z FAIL	parley-deck-cli/internal/pipeline	0.208s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6005488Z ?   	parley-deck-cli/internal/procctl	[no test files]
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6005903Z --- FAIL: TestEmbeddedDefaultMatchesLiveDeck (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6006688Z     drift_test.go:100: embedded default: anchor "## 2. Active agents (roster)" appears 0 times, want exactly 1 (drift guard fails closed)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6007283Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6007577Z FAIL	parley-deck-cli/internal/protocol	1.526s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6007935Z ok  	parley-deck-cli/internal/protocolcore	3.332s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6008333Z ok  	parley-deck-cli/internal/protocolpacket	5.594s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6008768Z --- FAIL: TestQuotaBatchCommitFaultsAndTruncation (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6009285Z     --- FAIL: TestQuotaBatchCommitFaultsAndTruncation/create (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6010358Z         history_test.go:20: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaBatchCommitFaultsAndTruncationcreate1172784299\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6011147Z     --- FAIL: TestQuotaBatchCommitFaultsAndTruncation/write (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6012087Z         history_test.go:20: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaBatchCommitFaultsAndTruncationwrite885145678\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6012944Z     --- FAIL: TestQuotaBatchCommitFaultsAndTruncation/sync (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6013924Z         history_test.go:20: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaBatchCommitFaultsAndTruncationsync3814242269\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6014751Z     --- FAIL: TestQuotaBatchCommitFaultsAndTruncation/publish (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6015763Z         history_test.go:20: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaBatchCommitFaultsAndTruncationpublish2352933943\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6016647Z     --- FAIL: TestQuotaBatchCommitFaultsAndTruncation/directory-sync (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6017955Z         history_test.go:20: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaBatchCommitFaultsAndTruncationdirectory-sync3125487111\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6018875Z --- FAIL: TestQuotaPolicyJSONRequiresPresenceAndHistoryRejectsDuplicateKeys (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6020098Z     history_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaPolicyJSONRequiresPresenceAndHistoryRejectsDuplicateKey314169917\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6020940Z --- FAIL: TestQuotaNewScopeAndOldScopeImmutable (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6021786Z     history_test.go:91: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaNewScopeAndOldScopeImmutable2013533476\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6022492Z --- FAIL: TestQuotaFrozenKickoffAndTruncation (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6023275Z     quota_test.go:90: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaFrozenKickoffAndTruncation1902986955\001: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6023891Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6024150Z FAIL	parley-deck-cli/internal/quota	10.630s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6024543Z ?   	parley-deck-cli/internal/quotatest	[no test files]
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6024930Z ok  	parley-deck-cli/internal/repomap	0.058s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6025289Z ok  	parley-deck-cli/internal/retro	0.126s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6025672Z ok  	parley-deck-cli/internal/runaction	0.027s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6026047Z --- FAIL: TestQuotaCycle5CreationScope (1.44s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6026485Z     --- FAIL: TestQuotaCycle5CreationScope/deck/off (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6027932Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopedeckoff48436175\001\.parley-runtime\quota-kickoff-1594116683\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6029056Z     --- FAIL: TestQuotaCycle5CreationScope/deck/kickoff (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6030499Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopedeckkickoff3970821196\001\.parley-runtime\quota-kickoff-675846247\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6031739Z     --- FAIL: TestQuotaCycle5CreationScope/ideas/off (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6033156Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopeideasoff3803793763\001\.parley-runtime\quota-kickoff-414685330\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6034283Z     --- FAIL: TestQuotaCycle5CreationScope/ideas/kickoff (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6035717Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopeideaskickoff572672993\001\.parley-runtime\quota-kickoff-2000729842\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6036938Z     --- FAIL: TestQuotaCycle5CreationScope/ancestor/mid (0.07s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6038675Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopeancestormid4072119849\003\workspace-alias\.parley-runtime\quota-kickoff-2893563159\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6040104Z     --- FAIL: TestQuotaCycle5CreationScope/ancestor/off (0.09s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6041649Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopeancestoroff3879818005\003\workspace-alias\.parley-runtime\quota-kickoff-4255941164\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6042896Z     --- FAIL: TestQuotaCycle5CreationScope/ancestor/kickoff (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6044477Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopeancestorkickoff2996002645\003\workspace-alias\.parley-runtime\quota-kickoff-3594922754\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6045692Z     --- FAIL: TestQuotaCycle5CreationScope/none/mid (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6047091Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopenonemid590730801\001\.parley-runtime\quota-kickoff-447589107\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6048206Z     --- FAIL: TestQuotaCycle5CreationScope/none/off (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6049594Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopenoneoff648623367\001\.parley-runtime\quota-kickoff-779902351\parley-deck\ideas\2026-10-13T13-35-53-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6050709Z     --- FAIL: TestQuotaCycle5CreationScope/none/kickoff (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6052142Z         quota_cycle5_test.go:74: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5CreationScopenonekickoff1088766741\001\.parley-runtime\quota-kickoff-3692706771\parley-deck\ideas\2026-10-13T13-35-54-scope-fixture: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6053245Z --- FAIL: TestQuotaCycle5KickoffNoticeNonBlocking (0.23s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6053810Z     --- FAIL: TestQuotaCycle5KickoffNoticeNonBlocking/present (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6055519Z         quota_cycle5_test.go:139: publication blocked run creation sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5KickoffNoticeNonBlockingpresent3966956213\001\.parley-runtime\quota-kickoff-4088438218\parley-deck\ideas\2026-10-13T13-35-54-kickoff-notice-f: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6056864Z     --- FAIL: TestQuotaCycle5KickoffNoticeNonBlocking/missing (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6058833Z         quota_cycle5_test.go:139: publication blocked run creation sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5KickoffNoticeNonBlockingmissing1999117378\001\.parley-runtime\quota-kickoff-2921228567\parley-deck\ideas\2026-10-13T13-35-54-kickoff-notice-f: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6060367Z     --- FAIL: TestQuotaCycle5KickoffNoticeNonBlocking/inbox-symlink (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6062173Z         quota_cycle5_test.go:139: publication blocked run creation sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5KickoffNoticeNonBlockinginbox-symlink679294850\001\.parley-runtime\quota-kickoff-1725356920\parley-deck\ideas\2026-10-13T13-35-54-kickoff-notice-f: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6063685Z     --- FAIL: TestQuotaCycle5KickoffNoticeNonBlocking/inbox-file (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6065799Z         quota_cycle5_test.go:139: publication blocked run creation sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5KickoffNoticeNonBlockinginbox-file4096126219\001\.parley-runtime\quota-kickoff-2700185560\parley-deck\ideas\2026-10-13T13-35-54-kickoff-notice-f: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6067624Z     --- FAIL: TestQuotaCycle5KickoffNoticeNonBlocking/archive-symlink (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6069582Z         quota_cycle5_test.go:139: publication blocked run creation sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaCycle5KickoffNoticeNonBlockingarchive-symlink2275494846\001\.parley-runtime\quota-kickoff-746126768\parley-deck\ideas\2026-10-13T13-35-54-kickoff-notice-f: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6070922Z --- FAIL: TestQuotaC1KickoffReplayAndFrozenScope (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6072169Z     quota_test.go:27: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaC1KickoffReplayAndFrozenScope526515969\001\.parley-runtime\quota-kickoff-2431585747\parley-deck\ideas\2026-10-13T13-35-54-quota-kickoff: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6073244Z --- FAIL: TestQuotaAutomaticKickoffRecordsAndNotice (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6074523Z     quota_test.go:95: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestQuotaAutomaticKickoffRecordsAndNotice2224637130\001\.parley-runtime\quota-kickoff-4162969532\parley-deck\ideas\2026-10-13T13-35-54-automatic-fixtur: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6075513Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6075791Z FAIL	parley-deck-cli/internal/runcontrol	1.982s
+go build & test (windows-latest)	Test	2026-10-13T13:39:12.6076213Z ok  	parley-deck-cli/internal/runmanifest	0.043s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8371240Z --- FAIL: TestDropoutRoundUsesRealChildrenAndSettlesOnce (0.06s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8372878Z     --- FAIL: TestDropoutRoundUsesRealChildrenAndSettlesOnce/false (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8375204Z         dropout_test.go:35: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutRoundUsesRealChildrenAndSettlesOncefalse1107272061\001\.parley-runtime\quota-kickoff-4236539652\parley-deck\ideas\2026-10-13T13-36-18-quota-runner: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8376523Z     --- FAIL: TestDropoutRoundUsesRealChildrenAndSettlesOnce/true (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8378097Z         dropout_test.go:35: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutRoundUsesRealChildrenAndSettlesOncetrue4132869215\001\.parley-runtime\quota-kickoff-2244705002\parley-deck\ideas\2026-10-13T13-36-18-quota-runner: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8379416Z --- FAIL: TestDropoutExecWatchdogTimeoutAndACPShareTwoSlots (0.11s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8380081Z     --- FAIL: TestDropoutExecWatchdogTimeoutAndACPShareTwoSlots/timeout (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8381945Z         dropout_test.go:75: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutExecWatchdogTimeoutAndACPShareTwoSlotstimeout4094697984\001\.parley-runtime\quota-kickoff-191598885\parley-deck\ideas\2026-10-13T13-36-18-quota-runner: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8383247Z     --- FAIL: TestDropoutExecWatchdogTimeoutAndACPShareTwoSlots/watchdog (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8384882Z         dropout_test.go:75: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutExecWatchdogTimeoutAndACPShareTwoSlotswatchdog2387206664\001\.parley-runtime\quota-kickoff-1706036687\parley-deck\ideas\2026-10-13T13-36-18-quota-runner: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8386342Z     --- FAIL: TestDropoutExecWatchdogTimeoutAndACPShareTwoSlots/acp-started-exit (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8388180Z         dropout_test.go:75: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutExecWatchdogTimeoutAndACPShareTwoSlotsacp-started-ex2254935058\001\.parley-runtime\quota-kickoff-2509159185\parley-deck\ideas\2026-10-13T13-36-18-quota-runner: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8392533Z --- FAIL: TestDropoutDurableStepBound (0.08s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8393397Z     --- FAIL: TestDropoutDurableStepBound/0 (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8401803Z         dropout_test.go:147: calls=0 result={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} err=sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutDurableStepBound04119517958\001\.parley-runtime\participant-steps\f2822a11e26fdf124ba1d673ad3e52138f18a0459dc695ed3b4f5b9bcac89aa4: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8406405Z     --- FAIL: TestDropoutDurableStepBound/1 (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8410580Z         dropout_test.go:147: calls=0 result={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} err=sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutDurableStepBound12788317133\001\.parley-runtime\participant-steps\f2822a11e26fdf124ba1d673ad3e52138f18a0459dc695ed3b4f5b9bcac89aa4: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8413858Z     --- FAIL: TestDropoutDurableStepBound/2 (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8418005Z         dropout_test.go:147: calls=0 result={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} err=sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutDurableStepBound2524878248\001\.parley-runtime\participant-steps\f2822a11e26fdf124ba1d673ad3e52138f18a0459dc695ed3b4f5b9bcac89aa4: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8421040Z --- FAIL: TestDropoutRestartBetweenFailures (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8424494Z     dropout_test.go:185: {Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutRestartBetweenFailures2429199868\001\.parley-runtime\participant-steps\23ab10a44628ad09c9e1012f94b8f8f0fff60b2b913f7233da2131dfb1a1ed22: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8427586Z --- FAIL: TestDropoutCancellationAndIntegrityNeverReduce (0.10s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8428232Z     --- FAIL: TestDropoutCancellationAndIntegrityNeverReduce/cancelled (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8433032Z         dropout_test.go:236: cancelled: {Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCancellationAndIntegrityNeverReducecancelled4107006467\001\.parley-runtime\participant-steps\e943f6eae7350364c32a2167201dc40886a6ebf86666a79dfda47999268090fa: Access is denied. calls=0
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8436445Z     --- FAIL: TestDropoutCancellationAndIntegrityNeverReduce/missing-protocol (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8440954Z         dropout_test.go:236: missing-protocol: {Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCancellationAndIntegrityNeverReducemissing-protocol2665059808\001\.parley-runtime\participant-steps\e943f6eae7350364c32a2167201dc40886a6ebf86666a79dfda47999268090fa: Access is denied. calls=0
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8444466Z     --- FAIL: TestDropoutCancellationAndIntegrityNeverReduce/shared-file (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8451864Z         dropout_test.go:236: shared-file: {Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCancellationAndIntegrityNeverReduceshared-file840370830\001\.parley-runtime\participant-steps\e943f6eae7350364c32a2167201dc40886a6ebf86666a79dfda47999268090fa: Access is denied. calls=0
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8455004Z     --- FAIL: TestDropoutCancellationAndIntegrityNeverReduce/usage-event (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8459432Z         dropout_test.go:236: usage-event: {Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCancellationAndIntegrityNeverReduceusage-event1309214368\001\.parley-runtime\participant-steps\e943f6eae7350364c32a2167201dc40886a6ebf86666a79dfda47999268090fa: Access is denied. calls=0
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8462748Z --- FAIL: TestDropoutCancelledChildWithValidArtifactNeverReplaced (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8463467Z     --- FAIL: TestDropoutCancelledChildWithValidArtifactNeverReplaced/false (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8467882Z         dropout_test.go:290: cancelled={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCancelledChildWithValidArtifactNeverReplacedfalse3925736157\001\.parley-runtime\participant-steps\a2395a39714aa0d9b75809658d9f08d8378733b61fe4c87cbbda420fbafa2ad5: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8471575Z     --- FAIL: TestDropoutCancelledChildWithValidArtifactNeverReplaced/true (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8475974Z         dropout_test.go:290: cancelled={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutCancelledChildWithValidArtifactNeverReplacedtrue840786476\001\.parley-runtime\participant-steps\a2395a39714aa0d9b75809658d9f08d8378733b61fe4c87cbbda420fbafa2ad5: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8479404Z --- FAIL: TestDropoutRepairedRefusalWithoutValidOutputMayDispatch (0.05s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8483492Z     dropout_test.go:330: repair={Valid:false Replayed:false Record:{Writer:<nil> SchemaVersion:0 Type: InvocationID: Metadata:{ParticipantTimeoutNS:0 ParticipantStep: RunID: SegmentID: Idea: Phase: Agent: Adapter: LaunchMode: AttemptOrdinal:0 RetryOf:<nil> RequestedModel:<nil> RequestedEffort:<nil> RequestedSpeed:<nil> Context:{Mode: SourceSHA256:<nil> PacketSHA256:<nil> FallbackReason:<nil>}} RequestedAt:0001-01-01 00:00:00 +0000 UTC StartedAt:<nil> CompletedAt:<nil> DurationMS:<nil> PID:<nil> Outcome:<nil> Warnings:[]} Evidence:<nil>} lease held: repair/test-1/own pid=4272 host="runnervmfi6oq" boot="" at C:\Users\RUNNER~1\AppData\Local\Temp\TestDropoutRepairedRefusalWithoutValidOutputMayDispatch958910317\001\.parley-runtime\participant-steps\9677c71b01fee7fa8d39d910564eb8493a94467ac00aeafc101e44b839811e52\step.lease; only a proven dead local owner may be reclaimed calls=0
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8486978Z panic: test timed out after 45m0s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8487290Z 	running tests:
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8487643Z 		TestDropoutConcurrentAndPrivatePartial (44m40s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8487902Z 
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8488039Z goroutine 582 [running]:
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8488329Z testing.(*M).startAlarm.func1()
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8489121Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2802 +0x354
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8489589Z created by time.goFunc
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8490187Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/time/sleep.go:215 +0x2d
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8490527Z 
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8490678Z goroutine 1 [chan receive, 44 minutes]:
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8491141Z testing.(*T).Run(0x1e4d7b7eee00, {0x7ff6304bf94f?, 0x7ff63016e66e?}, 0x7ff6304ff1d0)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8491754Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2109 +0x4c7
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8492226Z testing.runTests.func1(0x1e4d7b7eee00)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8492681Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2585 +0x3e
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8493144Z testing.tRunner(0x1e4d7b7eee00, 0x1e4d7ba3fc58)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8493621Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2036 +0xc3
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8494421Z testing.runTests({0x7ff6304ab011, 0xf}, {0x7ff6304b90ea, 0x1f}, 0x1e4d7b7f6180, {0x7ff6307d7d60, 0xb5, 0xb5}, {0xc2abad72aff42c00, 0x274a4df6f91, ...})
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8495282Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2583 +0x4f0
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8495945Z testing.(*M).Run(0x1e4d7ba5c320)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8496401Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2443 +0x6ac
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8496841Z main.main()
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8497098Z 	_testmain.go:406 +0x9b
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8497276Z 
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8497550Z goroutine 635 [chan receive, 44 minutes]:
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8498104Z parley-deck-cli/internal/runner.TestDropoutConcurrentAndPrivatePartial(0x1e4d7b7eec00)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8498791Z 	D:/a/parley-deck-cli/parley-deck-cli/internal/runner/dropout_test.go:361 +0x688
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8499292Z testing.tRunner(0x1e4d7b7eec00, 0x7ff6304ff1d0)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8499823Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2036 +0xc3
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8500294Z created by testing.(*T).Run in goroutine 1
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8500770Z 	C:/hostedtoolcache/windows/go/1.26.8/x64/src/testing/testing.go:2101 +0x4a9
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8501246Z FAIL	parley-deck-cli/internal/runner	2700.045s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8501858Z ok  	parley-deck-cli/internal/runplan	0.461s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8502344Z ok  	parley-deck-cli/internal/runstate	0.416s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8502726Z ok  	parley-deck-cli/internal/sessionstore	0.041s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8503106Z ok  	parley-deck-cli/internal/steer	0.039s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8503461Z ok  	parley-deck-cli/internal/store	0.032s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8503994Z --- FAIL: TestBeginBoundAllocatesPinnedInvocationWithOrdinaryLifecycle (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8504677Z     bound_invocation_test.go:45: bound record readable by others: <nil> 666
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8505265Z --- FAIL: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8506008Z     --- FAIL: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-symbol (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8508182Z         quota_framing_test.go:49: {test-invocation zcode quota.named-reset-ge-60m.v1 zcode.stderr.owner-deviation.2026-10-04 true explicit provider exhaustion Weekly/Monthly Limit Exhausted 2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57 2026-10-02 21:06:07.003 +0000 UTC 2026-10-04 22:14:57.003 +0000 UTC <nil>}
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8510076Z     --- FAIL: TestQuotaFixupSDKAllowlistAndAllReviewerWrongPositives/missing-close (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8512043Z         quota_framing_test.go:49: {test-invocation zcode quota.named-reset-ge-60m.v1 zcode.stderr.owner-deviation.2026-10-04 true explicit provider exhaustion Weekly/Monthly Limit Exhausted 2026-10-04T22:14:57.003Z; 176930; 49h 8m 50s; 2026-10-05 06:14:57 2026-10-02 21:06:07.003 +0000 UTC 2026-10-04 22:14:57.003 +0000 UTC <nil>}
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8513542Z --- FAIL: TestLifecycleAndUnknowns (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8513984Z     record_test.go:58: record readable by others: 666
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8514323Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8514599Z FAIL	parley-deck-cli/internal/telemetry	3.162s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8514972Z ok  	parley-deck-cli/internal/track	0.028s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8515454Z --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead (8.81s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8516205Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/stable (1.12s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8516974Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8517688Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/timestamp (1.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8518468Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8519412Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/material (1.12s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8520196Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8520918Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/replacement (1.16s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8521703Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8522417Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/mode (1.11s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8523178Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8523859Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/size (1.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8524991Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8525750Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/second-transition (1.16s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8526560Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8527300Z     --- FAIL: TestSnapshotTimestampTransitionRequiresOneFullStableRead/recheck-failure (1.05s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8528128Z         archive_stability_test.go:17: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8528702Z --- FAIL: TestSnapshotStableRereadPinsFirstFileIdentity (1.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8530027Z     archive_stability_test.go:107: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8531609Z --- FAIL: TestReservationRecoveryActualCrashPreservesChargeAndUnresolvedExecution (5.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8533495Z     --- FAIL: TestReservationRecoveryActualCrashPreservesChargeAndUnresolvedExecution/before-charge (2.51s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8535381Z         reservation_recovery_test.go:84: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8537090Z     --- FAIL: TestReservationRecoveryActualCrashPreservesChargeAndUnresolvedExecution/after-charge (2.53s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8538982Z         reservation_recovery_test.go:84: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8540320Z --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence (21.59s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8542009Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/missing-intent (2.41s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8543759Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8545348Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/partial-intent (2.67s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8547102Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8548692Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/changed-root (2.18s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8550769Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8552363Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/changed-before (2.07s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8554081Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8555703Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/changed-limits (2.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8557468Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8559049Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/changed-action (2.05s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8560954Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8562703Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/missing-archive (2.07s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8564468Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8566115Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/extra-charge (2.07s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8567906Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8569903Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/changed-trajectory (2.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8571682Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8573279Z     --- FAIL: TestReservationRecoveryRefusesMissingChangedAndPartialEvidence/symlink-intent (2.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8575096Z         reservation_recovery_test.go:159: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8576649Z --- FAIL: TestReservationRecoveryPublicationFailureAndLostOutputReplay (4.15s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8578194Z     --- FAIL: TestReservationRecoveryPublicationFailureAndLostOutputReplay/false (2.08s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8579832Z         reservation_recovery_test.go:233: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8581317Z     --- FAIL: TestReservationRecoveryPublicationFailureAndLostOutputReplay/true (2.07s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8582965Z         reservation_recovery_test.go:233: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8584339Z --- FAIL: TestReservationRecoveryRetainsRequiredIntentAndPolicyAfterExtension (2.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8585850Z     reservation_recovery_test.go:268: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8587384Z --- FAIL: TestReservationRecoveryContentCheckDoesNotBlockLiveFinish (1.97s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8588894Z     reservation_recovery_validation_test.go:46: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8590666Z --- FAIL: TestReservationRecoveryConcurrentApplyReplaysAfterContentCheck (2.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8592209Z     reservation_recovery_validation_test.go:126: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8593598Z --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent (16.88s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8595376Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/policy/repeat=false (1.94s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8597280Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8599027Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/policy/repeat=true (2.12s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8600871Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8602535Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/ledger/repeat=false (2.17s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8604403Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8606447Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/ledger/repeat=true (2.12s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8608319Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8609969Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/intent/repeat=true (2.17s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8611882Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8640009Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/state-removed/repeat=false (2.10s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8642016Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8643824Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/intent-removed/repeat=false (2.14s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8646141Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8647955Z     --- FAIL: TestReservationRecoveryRechecksAuthorityAfterUnguardedContent/binding-removed/repeat=false (2.12s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8649887Z         reservation_recovery_validation_test.go:197: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8651046Z --- FAIL: TestSnapshotReadRefusesReplacedRoot (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8652333Z     snapshot_read_test.go:96: replacement root was not refused before writing: <nil>, bytes=523
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8653402Z --- FAIL: TestSnapshotReadRefusesReplacedFile (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8654672Z     snapshot_read_test.go:113: replacement inode was not refused before writing: <nil>, bytes=523
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8655833Z --- FAIL: TestSnapshotReadRefreshesRootAcrossWrites (0.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8659303Z     snapshot_read_test.go:217: captured member differs: header=&{Typeflag:48 Name:files/source Linkname: Size:12 Mode:438 Uid:0 Gid:0 Uname: Gname: ModTime:1970-01-01 00:00:00 +0000 UTC AccessTime:0001-01-01 00:00:00 +0000 UTC ChangeTime:0001-01-01 00:00:00 +0000 UTC Devmajor:0 Devminor:0 Xattrs:map[] PAXRecords:map[] Format:USTAR} data="write 000: \n" want="write 000: \n" mode=-rw-------
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8662561Z --- FAIL: TestSnapshotReadRetainsExactBytesAcrossDelayedMetadata (1.20s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8666985Z     snapshot_read_test.go:241: captured member differs: header=&{Typeflag:48 Name:files/source Linkname: Size:39 Mode:438 Uid:0 Gid:0 Uname: Gname: ModTime:1970-01-01 00:00:00 +0000 UTC AccessTime:0001-01-01 00:00:00 +0000 UTC ChangeTime:0001-01-01 00:00:00 +0000 UTC Devmajor:0 Devminor:0 Xattrs:map[] PAXRecords:map[] Format:USTAR} data="stable source with no subsequent write\n" want="stable source with no subsequent write\n" mode=-rw-------
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8671245Z --- FAIL: TestSnapshotRevalidationRejectsDifferentMaterial (0.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8672481Z     --- FAIL: TestSnapshotRevalidationRejectsDifferentMaterial/root (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8676575Z         snapshot_read_test.go:261: rename C:\Users\RUNNER~1\AppData\Local\Temp\TestSnapshotRevalidationRejectsDifferentMaterialroot299234776\001\root C:\Users\RUNNER~1\AppData\Local\Temp\TestSnapshotRevalidationRejectsDifferentMaterialroot299234776\001\old-root: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8679856Z     --- FAIL: TestSnapshotRevalidationRejectsDifferentMaterial/inode (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8681374Z         snapshot_read_test.go:294: different material or canceled verification was accepted
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8682742Z --- FAIL: TestSnapshotRevalidationRetainsIdenticalMaterialAfterTimestampChange (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8686798Z     snapshot_read_test.go:325: captured member differs: header=&{Typeflag:48 Name:files/source Linkname: Size:8 Mode:438 Uid:0 Gid:0 Uname: Gname: ModTime:1970-01-01 00:00:00 +0000 UTC AccessTime:0001-01-01 00:00:00 +0000 UTC ChangeTime:0001-01-01 00:00:00 +0000 UTC Devmajor:0 Devminor:0 Xattrs:map[] PAXRecords:map[] Format:USTAR} data="original" want="original" mode=-rw-------
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8689694Z --- FAIL: TestSnapshotRevalidationRefusesChangeDuringRead (0.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8690897Z     --- FAIL: TestSnapshotRevalidationRefusesChangeDuringRead/root (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8694985Z         snapshot_read_test.go:432: rename C:\Users\RUNNER~1\AppData\Local\Temp\TestSnapshotRevalidationRefusesChangeDuringReadroot4224004180\001\root C:\Users\RUNNER~1\AppData\Local\Temp\TestSnapshotRevalidationRefusesChangeDuringReadroot4224004180\001\old-root: The process cannot access the file because it is being used by another process.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8698148Z --- FAIL: TestSnapshotRoundTripRetainsDirtySourceAndDoesNotWriteGit (0.81s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8699432Z     snapshot_test.go:77: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8700357Z --- FAIL: TestSnapshotRelativeLinksRoundTrip (0.80s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8701379Z     snapshot_test.go:164: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8702407Z --- FAIL: TestSnapshotRefusesUnretainedOrEscapingLinks (3.43s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8703472Z     --- FAIL: TestSnapshotRefusesUnretainedOrEscapingLinks/control-component (0.24s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8705083Z         snapshot_test.go:206: mkdir C:\Users\RUNNER~1\AppData\Local\Temp\TestSnapshotRefusesUnretainedOrEscapingLinkscontrol-component2135548767\001\ignored\bad	: The filename, directory name, or volume label syntax is incorrect.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8706647Z --- FAIL: TestSnapshotRejectsMalformedArchivesBeforeRestoration (0.78s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8707365Z     snapshot_test.go:270: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8707898Z --- FAIL: TestSnapshotRejectsLossDriftAndUnsafeStorage (0.81s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8708585Z     snapshot_test.go:388: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8709451Z --- FAIL: TestSnapshotConcurrentCapturePublishesOneExactArchive (0.81s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8710429Z     snapshot_test.go:493: concurrent publication differs: {ref:{Version:0 SHA256: Bytes:0} err:0x478b10a2590} {ref:{Version:0 SHA256: Bytes:0} err:0x478b140a000}
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8711283Z --- FAIL: TestSnapshotRejectsSourceChangedDuringArchiveWrite (0.87s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8711941Z     snapshot_test.go:543: fixture did not change a live archive write: context canceled
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8712590Z --- FAIL: TestSourceInventoryHiddenGoInputRefusesObservationAndArchive (4.55s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8713337Z     --- FAIL: TestSourceInventoryHiddenGoInputRefusesObservationAndArchive/local (2.28s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8714764Z         source_inventory_test.go:74: capture certified hidden Go input: {Version:0 SHA256: Bytes:0} snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8715685Z     --- FAIL: TestSourceInventoryHiddenGoInputRefusesObservationAndArchive/global (2.27s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8716802Z         source_inventory_test.go:74: capture certified hidden Go input: {Version:0 SHA256: Bytes:0} snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8717577Z --- FAIL: TestSourceInventoryRetainsExplicitScopeOnRestore (0.77s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8718211Z     source_inventory_test.go:108: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8718901Z --- FAIL: TestPersistentTrajectoryCapturesDirtyFailedAttemptAndRefusesResume (2.10s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8719566Z     state_test.go:62: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8720321Z --- FAIL: TestPersistentTrajectoryOrphanChargeIsNotEmptyHistory (2.05s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8720914Z     state_test.go:111: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8721482Z --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge (12.46s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8722252Z     --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge/missing-state (2.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8723001Z         state_test.go:133: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8723687Z     --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge/empty-attempts (2.07s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8724412Z         state_test.go:133: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8725111Z     --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge/changed-time (2.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8726403Z         state_test.go:133: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8727108Z     --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge/changed-entry (2.08s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8727871Z         state_test.go:133: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8728568Z     --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge/duplicate-json (2.13s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8729296Z         state_test.go:133: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8730002Z     --- FAIL: TestPersistentTrajectoryMissingPolicyStateAndExactCharge/removed-reference (2.12s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8730747Z         state_test.go:133: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8731589Z --- FAIL: TestPersistentTrajectoryPinsActorAndDoesNotTreatExitZeroAsVerification (2.10s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8732284Z     state_test.go:199: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8732787Z --- FAIL: TestPersistentTrajectorySourceUnavailableIsRetained (2.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8733400Z     state_test.go:220: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8733973Z --- FAIL: TestPersistentTrajectoryActivationReplayAndNoObserverRefusal (2.06s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8734603Z     state_test.go:243: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8735173Z --- FAIL: TestPersistentTrajectoryWorktreeAndSeparateProcessContinuity (2.08s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8735969Z     state_test.go:289: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8736562Z --- FAIL: TestPersistentTrajectoryIncompleteActivationRequiresExactReplay (2.02s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8737445Z     state_test.go:316: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8737994Z --- FAIL: TestPersistentTrajectoryLiveHandleRejectsErasedAuthority (4.17s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8738762Z     --- FAIL: TestPersistentTrajectoryLiveHandleRejectsErasedAuthority/before-launch (2.03s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8739487Z         state_test.go:348: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8740153Z     --- FAIL: TestPersistentTrajectoryLiveHandleRejectsErasedAuthority/after-launch (2.14s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8741012Z         state_test.go:348: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8741605Z --- FAIL: TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging (8.60s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8742434Z     --- FAIL: TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging/missing (2.17s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8743359Z         state_test.go:379: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8744063Z     --- FAIL: TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging/corrupt (2.15s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8744792Z         state_test.go:379: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8745470Z     --- FAIL: TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging/rebound (2.15s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8746532Z         state_test.go:379: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8747248Z     --- FAIL: TestPersistentTrajectoryRequiresRetainedBaselineBeforeCharging/legacy-v1 (2.14s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8748122Z         state_test.go:379: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8748801Z --- FAIL: TestPersistentTrajectoryArchiveFailureRetainsActualTerminal (2.16s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8749441Z     state_test.go:442: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8750081Z --- FAIL: TestPersistentTrajectoryLostPostArchiveRefusesInspectionAndClosure (2.04s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8750755Z     state_test.go:477: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8751303Z --- FAIL: TestUnchangedSnapshotMemberRequiresCompleteArchive (0.79s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8751923Z     unchanged_test.go:415: snapshot store must be a private real directory
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8752459Z --- FAIL: TestDurableCapturedVerificationArtifactRefusals (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8753421Z     verification_test.go:368: sync C:\Users\RUNNER~1\AppData\Local\Temp\TestDurableCapturedVerificationArtifactRefusals3165293355\001\.: Access is denied.
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8754365Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8754658Z FAIL	parley-deck-cli/internal/trajectory	124.434s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8755142Z --- FAIL: TestPrepEditorTempPermsContentAndReadback (0.00s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8755622Z     editor_test.go:75: temp perms = 666, want 600
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8756008Z --- FAIL: TestSnapshotKeepLastOnError (0.01s)
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8756548Z     protosnap_test.go:129: want a reconcile error for the unreadable review dir
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8756968Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8757222Z FAIL	parley-deck-cli/internal/tui	0.384s
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8757925Z ?   	parley-deck-cli/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/fixup-cycle-3-20261006	[no test files]
+go build & test (windows-latest)	Test	2026-10-13T14:20:58.8758583Z FAIL
+go build & test (windows-latest)	Test	2026-10-13T14:20:59.1809818Z ##[error]Process completed with exit code 1.
+go build & test (windows-latest)	Post Run actions/checkout@v4	﻿2026-10-13T14:20:59.2088222Z Post job cleanup.
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4071126Z [command]"C:\Program Files\Git\bin\git.exe" version
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4349655Z git version 2.55.0.windows.5
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4408240Z Copying 'C:\Users\runneradmin\.gitconfig' to 'D:\a\_temp\56e3bddd-bf1a-4168-8944-e541bd0d1509\.gitconfig'
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4431281Z Temporarily overriding HOME='D:\a\_temp\56e3bddd-bf1a-4168-8944-e541bd0d1509' before making global git config changes
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4432926Z Adding repository directory to the temporary git global config as a safe directory
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4445920Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\parley-deck-cli\parley-deck-cli
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.4776664Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:20:59.5076823Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:21:00.0642488Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:21:00.0909208Z http.https://github.com/.extraheader
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:21:00.0951244Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:21:00.1257638Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:21:00.8396281Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+go build & test (windows-latest)	Post Run actions/checkout@v4	2026-10-13T14:21:00.8691505Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+go build & test (windows-latest)	Complete job	﻿2026-10-13T14:21:01.4175013Z Cleaning up orphan processes
+go build & test (windows-latest)	Complete job	2026-10-13T14:21:01.4516475Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-go@v5. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

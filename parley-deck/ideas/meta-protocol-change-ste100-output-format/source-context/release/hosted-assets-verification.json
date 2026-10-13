@@ -1,0 +1,107 @@
+{
+  "at": "2026-10-13T14:43:01.976627+00:00",
+  "assets": [
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "parley-v1.55.0-darwin-arm64",
+      "sha256": "56f8b6277879defae544ee1272fc6e1fbda8ba2fc410f69463a142f5356af966",
+      "bytes": 10338626,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/parley-v1.55.0-darwin-arm64",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "parley-v1.55.0-darwin-x64",
+      "sha256": "926397cca0d69a29652d95b286cbf2c07775018ffa139b5635764edd7a1515cf",
+      "bytes": 11474912,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/parley-v1.55.0-darwin-x64",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "parley-v1.55.0-linux-arm64",
+      "sha256": "d933fa8a804823f255e4cdfb4e85c67a415f5ca9010a880b1c640d1ee93e403d",
+      "bytes": 10223776,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/parley-v1.55.0-linux-arm64",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "parley-v1.55.0-linux-x64",
+      "sha256": "b06af66baffe23e8aad37cea060ed6f5a5c876ed9dd102dd65620ea00ab47b2a",
+      "bytes": 11329696,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/parley-v1.55.0-linux-x64",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "parley-v1.55.0-windows-arm64.exe",
+      "sha256": "ea4e9bb110a4f0985f37c300c1b1b55a064efc07319d6a39f10f254a95dfaf9c",
+      "bytes": 10232832,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/parley-v1.55.0-windows-arm64.exe",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "parley-v1.55.0-windows-x64.exe",
+      "sha256": "ea46784d0af9c5adaf2753659d000e7a62e867082385e67d8896006e61301483",
+      "bytes": 11558912,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/parley-v1.55.0-windows-x64.exe",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-cli",
+      "tag": "v1.55.0",
+      "name": "sha256.json",
+      "sha256": "b1ffab59a7f01bb319372512f989887a5eedc810eb49ed523ce178fd54d5e3ed",
+      "bytes": 611,
+      "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.55.0/sha256.json",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-skill",
+      "tag": "v2.19.0",
+      "name": "parley-deck-skill-2.19.0.tgz",
+      "sha256": "f07102c862908b3f6da6fb65f6a01f948fd3b83ba6fafa3d014c51145dce21e4",
+      "bytes": 403411,
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.19.0/parley-deck-skill-2.19.0.tgz",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-skill",
+      "tag": "v2.19.0",
+      "name": "parley-deck-skill-v2.19.0-macos-arm64",
+      "sha256": "25cc55e8322e8d54e45fd6939021617e70fcbcd9ee66c3c8259d755a52434b59",
+      "bytes": 65517824,
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.19.0/parley-deck-skill-v2.19.0-macos-arm64",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-skill",
+      "tag": "v2.19.0",
+      "name": "parley-deck-skill-v2.19.0-windows-arm64.exe",
+      "sha256": "74088d91b2758ba0fbbdae885b73461b9f28293f4f655d4c224c3bde3b9c2bb1",
+      "bytes": 85830452,
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.19.0/parley-deck-skill-v2.19.0-windows-arm64.exe",
+      "github_digest_matches": true
+    },
+    {
+      "repo": "parley-deck-skill",
+      "tag": "v2.19.0",
+      "name": "parley-deck-skill-v2.19.0-windows-x64.exe",
+      "sha256": "2bb927dfee907777e1bf8e8af369f62b9176f9ff403fc5e896730a8b136cfadf",
+      "bytes": 91417396,
+      "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.19.0/parley-deck-skill-v2.19.0-windows-x64.exe",
+      "github_digest_matches": true
+    }
+  ],
+  "cli_expected_matches": true,
+  "skill_tarball_matches": true,
+  "windows_pe_architectures_match": true
+}

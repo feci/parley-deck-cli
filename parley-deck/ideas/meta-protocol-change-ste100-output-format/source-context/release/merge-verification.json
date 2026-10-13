@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-13T14:37:20.501210+00:00",
+  "repositories": [
+    {
+      "repo": "parley-deck-cli",
+      "reviewed_product": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+      "pr_head": "4a9ec8d0be53b58fc02cc966df9cf3d926b1a04a",
+      "merge_commit": "88dc6c5da139d2deb039bda4b605acfbe42663b4",
+      "url": "https://github.com/feci/parley-deck-cli/pull/84",
+      "tree_identical_to_pr_head": true,
+      "mergedAt": "2026-10-13T14:37:06Z"
+    },
+    {
+      "repo": "parley-deck-skill",
+      "reviewed_product": "92e3dc78da2f1c55d35c905cabe57fc69ede0670",
+      "pr_head": "92e3dc78da2f1c55d35c905cabe57fc69ede0670",
+      "merge_commit": "f557c5e679b0c1a03f57a885f41ae54f68348b2a",
+      "url": "https://github.com/feci/parley-deck-skill/pull/12",
+      "tree_identical_to_pr_head": true,
+      "mergedAt": "2026-10-13T14:37:16Z"
+    }
+  ]
+}

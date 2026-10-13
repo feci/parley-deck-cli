@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-13T14:59:05.681234+00:00",
+  "command": "parley budget legacy inspect --dir /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100 --run parley-deck/runs/20260510T194003Z",
+  "exit": 0,
+  "preview_sha256": "d78dfd90744fc3eb43e86726ba4df99e0bf5b5f08a0109bc0d84b9a29da868f1",
+  "manifest_sha256": "7283348e38b86004c304e55befa95949d276d247cfd0166c4b98ed759333c6b6",
+  "roots": 25,
+  "decisions": [],
+  "git_common_dir": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/parley-deck-cli/.git",
+  "legacy_authority_directories": [],
+  "agent_applied_declaration": false
+}
