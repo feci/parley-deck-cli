@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "command": "install",
+  "dryRun": false,
+  "actions": [
+    {
+      "ok": true,
+      "target": "generic",
+      "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+=== RUN   TestLiveMapIsCompleteHonorsNeverCutAndRendersEveryPhase
+--- PASS: TestLiveMapIsCompleteHonorsNeverCutAndRendersEveryPhase (0.69s)
+=== RUN   TestLiveSTEAppendixIsOnDemandAndItsPointerIsRetained
+--- PASS: TestLiveSTEAppendixIsOnDemandAndItsPointerIsRetained (0.03s)
+PASS
+ok  	parley-deck-cli/internal/protocolpacket	0.874s
+=== RUN   TestInteractiveArgumentDeliveryAndBound
+--- PASS: TestInteractiveArgumentDeliveryAndBound (0.15s)
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/round-one
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/round-two
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/implementation
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/fix-up
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/review
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/review-consensus
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/consult
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/goal-check
+=== RUN   TestOutputTextPolicyAcrossRunnerPrompts/steer
+--- PASS: TestOutputTextPolicyAcrossRunnerPrompts (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/round-one (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/round-two (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/implementation (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/fix-up (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/review (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/review-consensus (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/consult (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/goal-check (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossRunnerPrompts/steer (0.00s)
+=== RUN   TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes
+=== RUN   TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/measured{prompt}
+=== RUN   TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/measured--prompt={prompt}
+=== RUN   TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/supervised{prompt}
+=== RUN   TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/supervised--prompt={prompt}
+--- PASS: TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes (0.27s)
+    --- PASS: TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/measured{prompt} (0.04s)
+    --- PASS: TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/measured--prompt={prompt} (0.05s)
+    --- PASS: TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/supervised{prompt} (0.09s)
+    --- PASS: TestLargeHeadlessPromptReachesRealChildWithExactAttestedBytes/supervised--prompt={prompt} (0.08s)
+=== RUN   TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery
+=== RUN   TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery/missing-directory
+=== RUN   TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery/large-literal
+=== RUN   TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery/large-prefix
+--- PASS: TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery (0.01s)
+    --- PASS: TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery/missing-directory (0.00s)
+    --- PASS: TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery/large-literal (0.00s)
+    --- PASS: TestHeadlessArgumentBoundsPreserveShortInputsAndRefuseUnsafeDelivery/large-prefix (0.01s)
+=== RUN   TestLargeStdinRemainsExactWithInheritedPromptArgument
+--- PASS: TestLargeStdinRemainsExactWithInheritedPromptArgument (0.04s)
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/codex
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/claude
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/agy
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/gemini
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/hermes
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/kimi
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/opencode
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/zcode
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/qwen
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/codebuddy
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/goose
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/auggie
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/droid
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/copilot
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/qoder
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/vibe
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/cursor
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/kiro
+=== RUN   TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/snow
+--- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate (0.05s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/codex (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/claude (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/agy (0.01s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/gemini (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/hermes (0.01s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/kimi (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/opencode (0.01s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/zcode (0.01s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/qwen (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/codebuddy (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/goose (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/auggie (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/droid (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/copilot (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/qoder (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/vibe (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/cursor (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/kiro (0.00s)
+    --- PASS: TestLargePromptDeliveryCoversEveryBuiltinArgumentTemplate/snow (0.00s)
+PASS
+ok  	parley-deck-cli/internal/runner	0.763s
+=== RUN   TestOutputTextPolicyAcrossDriverPrompts
+=== RUN   TestOutputTextPolicyAcrossDriverPrompts/consensus
+=== RUN   TestOutputTextPolicyAcrossDriverPrompts/final
+=== RUN   TestOutputTextPolicyAcrossDriverPrompts/design-signoff
+=== RUN   TestOutputTextPolicyAcrossDriverPrompts/review-signoff
+=== RUN   TestOutputTextPolicyAcrossDriverPrompts/trajectory
+--- PASS: TestOutputTextPolicyAcrossDriverPrompts (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossDriverPrompts/consensus (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossDriverPrompts/final (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossDriverPrompts/design-signoff (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossDriverPrompts/review-signoff (0.00s)
+    --- PASS: TestOutputTextPolicyAcrossDriverPrompts/trajectory (0.00s)
+=== RUN   TestQuotaSignoffProcessSettlesBatchAndKeepsCurrentRequiredSet
+--- PASS: TestQuotaSignoffProcessSettlesBatchAndKeepsCurrentRequiredSet (1.72s)
+PASS
+ok  	parley-deck-cli/internal/app	2.000s

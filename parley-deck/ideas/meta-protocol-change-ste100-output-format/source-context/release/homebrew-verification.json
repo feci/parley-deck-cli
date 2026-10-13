@@ -1,0 +1,877 @@
+{
+  "at": "2026-10-13T14:42:17.376132+00:00",
+  "tap_commit": "8ef3b97bcf97b9d710fa5a26305f010bb9c33e2c",
+  "steps": [
+    {
+      "name": "brew-upgrade-parley-deck-cli",
+      "command": [
+        "brew",
+        "upgrade",
+        "feci/parley/parley-deck-cli"
+      ],
+      "exit": 0,
+      "log": "brew-upgrade-parley-deck-cli.log"
+    },
+    {
+      "name": "brew-test-parley-deck-cli",
+      "command": [
+        "brew",
+        "test",
+        "feci/parley/parley-deck-cli"
+      ],
+      "exit": 0,
+      "log": "brew-test-parley-deck-cli.log"
+    },
+    {
+      "name": "brew-upgrade-parley-deck-skill",
+      "command": [
+        "brew",
+        "upgrade",
+        "feci/parley/parley-deck-skill"
+      ],
+      "exit": 0,
+      "log": "brew-upgrade-parley-deck-skill.log"
+    },
+    {
+      "name": "brew-test-parley-deck-skill",
+      "command": [
+        "brew",
+        "test",
+        "feci/parley/parley-deck-skill"
+      ],
+      "exit": 0,
+      "log": "brew-test-parley-deck-skill.log"
+    },
+    {
+      "name": "brew-audit",
+      "command": [
+        "brew",
+        "audit",
+        "--strict",
+        "feci/parley/parley-deck-cli",
+        "feci/parley/parley-deck-skill"
+      ],
+      "exit": 0,
+      "log": "brew-audit.log"
+    }
+  ],
+  "versions": {
+    "cli": "1.55.0",
+    "skill": "2.19.0"
+  },
+  "brew_tests": "both passed",
+  "strict_audit": "passed",
+  "skill_source_bytes_match": true,
+  "payload_files": 202,
+  "python": "3.14 task-local PATH",
+  "checks": [
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/agents/openai.yaml",
+      "sha256": "b5ef181cc92a068a69dc81c9ad3dfa8db7c479d451bd3f7e7c45bf367853c79b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/core-purity-allowlist.txt",
+      "sha256": "3cd55d43f0c1d55c44dca2a878225196605907bd4217acbe2da642f628ced730"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/discovery-sources/oeffentlichevergabe.json",
+      "sha256": "df8cf00a4ab9ed950b046ba5241625ca745a6b1c39eb88087e19fec97375a71e"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/discovery-sources/service-bund.json",
+      "sha256": "1d667b902684f3cc283a149b69f9b576b0e2d57e2daae9e4573c6bf6233cbeba"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/discovery-sources/ted.json",
+      "sha256": "f2c3f12ac35bab26aa90d4e3e2808d1ef53cff53fd02215d9ff6215f23327ba8"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/jurisdiction-profiles/de.json",
+      "sha256": "43a3e817bc81ddebcd1e11a23b6e9768a171b4a8253b7328725ce8263d091992"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/platform-adapters/cosinex-vmp.dtvp.json",
+      "sha256": "50a9367184d2e81345ce033a5ca6fb20afdfcab17583f8374c9f2764441c4b82"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/platform-adapters/cosinex-vmp.nrw.json",
+      "sha256": "a84ea79d6db6d5bdb59d600545d62a3b96cdbf323d531d3acfd3e52d920759a9"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/platform-adapters/manual.json",
+      "sha256": "be398c74ed45007eb3293a7233e4a66c78217ea89e4b34e41be3f0560f6b8c23"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/platform-adapters/subreport-elvis.json",
+      "sha256": "53313290da7febbaec77262e36e16ec1503d183e59eff92ced8953d042e74b33"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/schemas/bid-state.schema.json",
+      "sha256": "377c8739a63d8e8acf8fcb2d8a142d389def659c34d868ef13d5b211dffb3875"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/schemas/jurisdiction-profile.schema.json",
+      "sha256": "e36ca72ddd677b5004b0530389603c67c42b08dc193b7f0560e4a07d47f515a2"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/schemas/platform-adapter.schema.json",
+      "sha256": "708c61b32a154a36cb7b5e493e6c4088cd8a746f2b62d7d976a284104bb24bb4"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/schemas/procedure-profile.schema.json",
+      "sha256": "b8bb10cd60afa540908ba2ae82dede7c3bb498f3eb7ef658d1a7feb13671ec35"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/templates/bid-book.md",
+      "sha256": "1b9a0784cad0cd8d19db92d80c19f7a73690123c46e6fff128bb594993843b35"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/templates/pricing-worksheet.csv",
+      "sha256": "83addb677c23a786c11ca79028c1523b0a10ee5192ab413771aecacc1a7f4d77"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/templates/qualification-brief.md",
+      "sha256": "8ff8b86c25a57dd6bdd6469529f164cf14e41fe7985b1f023df5d805c28f2229"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/assets/templates/requirements-register.csv",
+      "sha256": "9e6e56389a4443f39035a8adc9619f59d9e8cbc68e8387707eefd1dddbe65a88"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/parley-addon.json",
+      "sha256": "0f44c823097408009ed4371e9d930798af2df9b808681722c7a30ff0ba1ca7c8"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/discovery.md",
+      "sha256": "7745c1f6ade61ba163275c20fa228b5f166285afad8669bf2f3217934dd90b42"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/evidence-and-state.md",
+      "sha256": "e3886d1d6d554eaac49968becebf08c693dbf706e86fbb9a62be67eef77aa7c9"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/hitl-and-recovery.md",
+      "sha256": "31bc9263f173b1944a6bcc15f14207de7c0f41f12ae364bf900ef5e2110bffb3"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/jurisdiction-de.md",
+      "sha256": "a0b6d14aeacb8c9936e694bde31d77e854dc007ad4ffd94ea16c6aa8223cfd9d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/parley-integration.md",
+      "sha256": "6e2e167119137f9fc299cc2fc75ee9b5bd3f5def105f97510ad4c51d2c0a1c9f"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/platform-adapter-contract.md",
+      "sha256": "9fd0d4a22f1274b6001d3f45c0cbc418dc33687a5887ee966827de1c9af1c65d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/platform-cosinex-vmp.md",
+      "sha256": "e8c6256e1ead6be70a585fa9d569519de6cac282ac1d0c41df15679857c21cf9"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/platform-subreport-elvis.md",
+      "sha256": "1a85a5284105f3f4ab90cfdd8b1ca184203819fe30a8a0b79ac3fa4ca0b5d313"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/qualification-and-commercial.md",
+      "sha256": "2eeb020b5988d29ac00a2c5f11031aff4fa5759d2401891769c34e836b448eca"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/software-bid-model.md",
+      "sha256": "07329126810ec003ca9bbab05941d48cdeeb155bba835d5bb24a5bf18dc5b2a2"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/references/workflow-and-release.md",
+      "sha256": "571cd106c91f5c23a759fe4b9def49f0a5d4e986e42d9a981c6aeae7f0087f41"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/adapter_validate.py",
+      "sha256": "3ef460cefecec16d2cdb6545d92c27bc137d1a76b44a642470ce5c4d2c174946"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/bid_state.py",
+      "sha256": "6a49ed4fc78792b5fa055488858afdd7c5ffc7a94a830e7e381a2bb8846535b1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/common.py",
+      "sha256": "cbdc07320f3d3af43936502fb69c9759367eb45b17ea829ab1bfdc24772a6e8f"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/completeness_lint.py",
+      "sha256": "1ac066a5a0180f0e4e3d471abe1d1451aa67984e1b2b6008b0abb59a64c6f909"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/init_bid_workspace.py",
+      "sha256": "bdf086d030a1152843a74fdf3a38c7ed081ace32d60af423f1eec4e904df6ba4"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/manifest.py",
+      "sha256": "0d7c091deffc8c1d3aae3b7b0eec01ffc6075df17d804aff81fe1b86e459ef8c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/release_lint.py",
+      "sha256": "7d5f60901affc137e0bf0ae7d60555172c089fda9ca6556b9f21026243c7e441"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/fixtures/discovery-origin-cases.json",
+      "sha256": "797251f587cf0d7b8cf44212712ef05466c31d07cc39ff048a76b4c42ec65703"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/fixtures/engagement-profiles.json",
+      "sha256": "3622a17961e4ca45154bd56e00a54360ad4d7f477d4393c4de54ee4addb47f08"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/fixtures/invalid-weakened-adapter.json",
+      "sha256": "01f04f8f44ea715a163852cf182e2a5a76703b599d4a9e3659ec09492064aecb"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_adapter_validate.py",
+      "sha256": "5c9eb83915729b3b00299fa7aac5595738af6b896fb3c1c8b9cf4fd6bf3d433a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_bid_state.py",
+      "sha256": "96cc94105550a419aa3e669e4666e3e3ad997f1017d429a4d0aab35ff2829b51"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_end_to_end.py",
+      "sha256": "bbe041696811ab296912f2291f0774932b8f485dace00476b85794cc11db3db4"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_init_workspace.py",
+      "sha256": "ad155318c4427fd84694c8d8e3dbbeb458a74cf43bcb1278a896b5890d5ec8c3"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_linters.py",
+      "sha256": "a8d59295eb633b0784d822f087d9490bf74f5a7d98d247515886ae134d40167b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_manifest.py",
+      "sha256": "907e1ce8681adcb3d950be359b605cac2a63050cff83f53dcc5d6ff423b0846b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-bidding/scripts/tests/test_skill_structure.py",
+      "sha256": "b00284e3fbb22771191d7b3ab569843f983353ade6ec1dfa642eea9a2c96d960"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/SKILL.md",
+      "sha256": "64d5236baa0aece207becaa9def8e6fba24776f148dd2289281efa0855341df1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/agents/manifest.yaml",
+      "sha256": "542b709e6d4f3aca26f4c77139734a269a0dbe6844cb4437a7aa00f04d7acdb7"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/agents/openai.yaml",
+      "sha256": "238587fd55a9fcba856ca7183dcdd998bebcea1e1e6794e61c8325a04ff50d9c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/parley-addon.json",
+      "sha256": "4a5a26d86026487a4562bf48ef83851237d3e1b691e305730f4220d0e627c9c7"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/ARTIFACT_TEMPLATES.md",
+      "sha256": "0f3cfe1b475c4958a56d5fbe0dfa1f077e5f5e6c41acb777922b6e172b698a1d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/COOPERATION.md",
+      "sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/HEADLESS_LAUNCH.md",
+      "sha256": "cf73755465a2a96303019b49b66ea4aca8caf788da9243343f0ab127c7bab443"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/ROSTER_AND_PROTOCOL.md",
+      "sha256": "579f4a4375f50e3c15b5815dbc71d0579647e66f9831cf7f69be8960890d4750"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/STE100.md",
+      "sha256": "f9eab1935e9681bf13360140cd3673f59598b66e64d94cb13b0ac6e35449ab63"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/WORKED_EXAMPLES.md",
+      "sha256": "946bb5c0f76199651526e6a52eea158162e37051f58e553287864663b4f3c3cc"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-deck/references/compatibility.json",
+      "sha256": "34779a4b65e057f0ec69226f31dfdf7c73300aa006907fcc9f631616b531cc76"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design/parley-addon.json",
+      "sha256": "f02581615d48708fde3611949ba636846d09e101569f2666ff87a0dd565b31fc"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design/references/PDS.md",
+      "sha256": "20745260c7c1afb05e6b20c90ee41f598ae029fd032db861d21acfc3fda4383c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design/references/RULES.md",
+      "sha256": "b49ff596451f68746460316abe00da390d4ef7ab680c941f82eaf286b2718574"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design/references/WEB-ANNEX.md",
+      "sha256": "e09db667517dddfbe747509507c22f4b4117cba2358cf185c523829966cb01ce"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/bin/check.js",
+      "sha256": "6b3b3826c5be187933ba4456c3b1783f1e6a3595f8fc6824c4ec44768bf4304d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/artifacts.js",
+      "sha256": "7e511ea2ac793324c89538c8cdf3fa4e6ba2107ee81830f1a923fc0d0523718d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/css.js",
+      "sha256": "63980655527b0ba84d012b8b7b9151e93973944a9411dd9b9996c8ab38a2a022"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/arbitrary-utility-value.js",
+      "sha256": "c880a2ae96cbf7bb81544cca0ba7520b4875ea6bab47c8af5e64f026a8428ec8"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/contrast-floor.js",
+      "sha256": "97356923e14ffb2d73953e88c12e73800f43f39964991178002bae21176ef04d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/decoration-anchor.js",
+      "sha256": "6f27131b3f1c99d1ea467309eb5857f90b364aeaec5948ff89b486be40dcac49"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/edge-stripe.js",
+      "sha256": "9398ebd6031e565b0578fe4c4575b3e45a64c56ba7cbde9168dd614ad44f037c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/effect-budget.js",
+      "sha256": "0a8673e9c7ad6465c2dd7f34e121cf3193aec77350a5c50623b6da7dea947e4a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/fabricated-evidence.js",
+      "sha256": "20ce29974d5cbf876e4fd04e5e76f2f8c59d923294ed651136eb2274bbf0f008"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/face-allowlist.js",
+      "sha256": "343903caf288d6ccdd02d8dc3e9912ec25000cccc03745ae4d468793e43523ee"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/focus-indication.js",
+      "sha256": "73323bf9994b13f1ba9668f2995b4331e67ea2ab3b9be554fe6edf1ee3fa7b76"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/gradient-text.js",
+      "sha256": "98987d82001364cb1afa8d597c6b495eb1da65e91537e37570d92f163630d87c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/icon-provenance.js",
+      "sha256": "ac8d5347be53762258db6bf5b689275bd4d2f5d47b7ed0aa1d7600df08bc10a3"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/interaction-states.js",
+      "sha256": "f86a6470802ce333bbb80ce05b708f9a97d33ab1735cc13c4df513b6ef7d4518"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/literal-outside-tokens.js",
+      "sha256": "8d7a9e3fd3ef7678e21a5c40b0011489688397db7bfd90557d8c562b3a168a43"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/motion-defaults.js",
+      "sha256": "e6758a619277564c45a887245507297f43388c8f4bdd906a53a484b36d0e0c17"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/motion-reduced-path.js",
+      "sha256": "037b44fc68edf2f05c2a681d58c8433d8d8edf05498be35b348480b2e06d7f15"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/overused-face.js",
+      "sha256": "349db9ebdd54d843665f093f85033a4822a6b8cbd512476688dd64add8ccce6e"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/signature-shape.js",
+      "sha256": "478d3079f8c3dbe1c3e07cda706bf3e4d8be494eca3cefb353f1e87cd68ab271"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/token-declared-unused.js",
+      "sha256": "65db2d03bc569eaa4d4c2fd2cbb4bbb39dd23754cbbcc757a2036ae687aae183"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/detectors/token-used-undeclared.js",
+      "sha256": "095f65afa5839f20ebdc34a196f4e413689f632f4246b2c5c4823839836404f1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/engine.js",
+      "sha256": "ac92fb5f3b95a188b3f1fee0a2838ea863b5ab587ca2086a2b561f4331a2b2a3"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/lib/registry.js",
+      "sha256": "f32a428ef8b7a344138a47a2b4e6dd81a761bb2965dfe2faa999e6c6f83811a1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/parley-addon.json",
+      "sha256": "f36545123fadffc3a15590922db39783c2ffb2a5d1b75c859b1596e972b9fa65"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/checker.test.js",
+      "sha256": "7b3cd01865466f91730111a6a7059aec656cf06e8f9ec1c978fc34b54758366a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/detectors.test.js",
+      "sha256": "3631318e3ed63b2b1fc4142c24737a77d51752fe686ad320e7a8ad18bf3d0101"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/arbitrary-utility-value/fail/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/arbitrary-utility-value/fail/page.html",
+      "sha256": "78d95cfbbaedd38f705820e38df5adeff173b9f663bebfe2d92fed7e2a0a424d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/arbitrary-utility-value/pass/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/arbitrary-utility-value/pass/page.html",
+      "sha256": "d21e0cfb030a7364f406397c1cf8849f4d05960157bb2eda87cc1e6938d5edbd"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/artifacts/broken.md",
+      "sha256": "ba322aaa8bd5454175f3e69d9a2aa167cc865c6560caec653a02612ff0e771bc"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/artifacts/contract.md",
+      "sha256": "48486de1726631b5ca9dc9400b1a7114b1b292f87ed004f09144e765838af674"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/alias-direction/tokens.json",
+      "sha256": "c1e1333a269b58cc4e16740638b2ab76480f9fc34a9aa25013d628d85a24d39c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/alias-same-tier/tokens.json",
+      "sha256": "85cfc37f5de6abb35cc066642082c898d825a0871f5c4eecd5228b81fe936b9a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/collapsed-run/DESIGN-BRIEF.md",
+      "sha256": "c6913ddfd8c522bd5503a39b4a4300c80d08c7380dbc334182fc6ed29464fd28"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/collapsed-run/FINAL.md",
+      "sha256": "db5381dc4ee57c7424719b11b4660de7dbbeb8be401a7791bb50ad5ebf66d91f"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/collapsed-run/consensus.md",
+      "sha256": "3a72ff59c1cd27726cbad6ed2394d82e5e42f93e37b9daa1c7292209780cfb82"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/collapsed-run/round-01/claude-1.md",
+      "sha256": "ec9919f5baa05006e0555a099119a23414a1ced5dff99f1ea0fb22027ecea212"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/collapsed-run/round-01/codex-1.md",
+      "sha256": "47edb6b7c3e7dec52e133347f6acf997918c19de10c2a59ec005e0413d49bc0b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/collapsed-run/round-02/claude-1.md",
+      "sha256": "8236b6e73a435dfd620cfafa4681b8af3a62c94a069524113d84ed3ec61256da"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/DESIGN-BRIEF.md",
+      "sha256": "72b413dbeb47a2f4a588b5c944d64ca904cca6c408d44439b13b34cd36f03753"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/FINAL.md",
+      "sha256": "068c2a6ed20f69212f5e6c04fb888296720d12833a493afe194ba11e787573ac"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/WAIVERS.md",
+      "sha256": "a3b74dd90ce8f2cb6dba9f50d9d40c6758dd0211ea20992e1ee1e743f25b343f"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/consensus.md",
+      "sha256": "20f0f7900c85a87350562f78eb0c9a0587c880842d3c1ba18785690789bc40a6"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/page.html",
+      "sha256": "5a5bc9a974337684c9795ca8dfd471cd206525b208c8f3a59f55674996a0b33c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/panel.css",
+      "sha256": "1bd9c986fef7c44e69ab9b206baff317bcd18de1ee717dd94f994293ca88ad41"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/round-01/claude-1.md",
+      "sha256": "3a2f44fb006ea446ba5e6e15a4ba77d22a2ec58cc052a42f41b7274861f0ff02"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/round-01/claude-1.tokens.json",
+      "sha256": "80f03f57a0428c231bb4d1691cb69034f36dfb98c00fd9bcc73aa18f4e30564b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/round-01/codex-1.md",
+      "sha256": "2e34f1fcadf4e4bd051d8553e5263d63e2a0783819e9f1fd47885b89a1e32c66"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/round-01/codex-1.tokens.json",
+      "sha256": "a921e105e311a1cb3c6ee527fc0508f136e394d0b9ef08d001b17f8955488c47"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/sound-run/round-02/hermes-1.md",
+      "sha256": "116b27a8d4fc69c1d62e4e1552c962b77815a3b7ff5363c2511e1c78a2ed573d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/conformance/token-drift/tokens.json",
+      "sha256": "40ec3ee5b6b2c364651e98ec822e0d4d12bbd036041d69132e322c16a509ca01"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/contrast-floor/fail/tokens.json",
+      "sha256": "401dfad3c273c6a6434f1fe6cbbbf753e5ec349505e12327f77a369c46a429fe"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/contrast-floor/pass/tokens.json",
+      "sha256": "84bd75b3d2ceb9de05f8a2cc57f09531c524d8fcbdbe08bdce3f52f1eeb006f4"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/decoration-anchor/fail/direction.md",
+      "sha256": "a02dc23c0ef050b5a908a0956f8dbf7b1c50f21842825238b436a74f9d3da736"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/decoration-anchor/pass/direction.md",
+      "sha256": "7d0deae37e76d5bd03ece6a277ec2ad83e5e99cb5034d514c41ad8ca503c2296"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/edge-stripe/fail/card.css",
+      "sha256": "3a9a5e195e9d3b8fdd11c33d5f54eef0e19391b1411b2ba1086c35c8096e53c1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/edge-stripe/pass/card.css",
+      "sha256": "7e1fe88c818d52228ef895f856c263edfcfd659d68a03ef9d9ff06beb4b07052"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/effect-budget/fail/surface.css",
+      "sha256": "2c589b99ec42f80621b931a4abf3a21a9f43b3e27e8ab59fdfec958242fab5c8"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/effect-budget/pass/surface.css",
+      "sha256": "aadeaa1c299a27c69799aeb4c285a19ccd514a050fbad5b8d56d3ac63a81aa57"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/fabricated-evidence/fail/direction.md",
+      "sha256": "2ccaca7c927cfb482a418c1b259942023a63565db8f88918db9eef20e058cacb"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/fabricated-evidence/pass/direction.md",
+      "sha256": "694936d2018cfa6221103d7ae477286795f5a453a2bcd9dc1d83dedf974e1818"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/face-allowlist/fail/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/face-allowlist/fail/type.css",
+      "sha256": "c97c423393181fdc5f10c7d90aa0121217f8f0807516238bd77c050ad8a82e4d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/face-allowlist/pass/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/face-allowlist/pass/type.css",
+      "sha256": "5f4e6510d1c6114bc66d2438d7f98aae516a3d72e0722112021dc68b39eec55b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/focus-indication/fail/focus.css",
+      "sha256": "9d15335ab3b84829fb3f81323449bc3646d955632b20c80bdcee2a76b2f50b2a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/focus-indication/pass/focus.css",
+      "sha256": "6499ed1c073d83b71746ed8a146c48977e65eccbdebf8c5e60cdd4e05ec06375"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/focus-indication/pass/split-focus.css",
+      "sha256": "9ea9f60cfde586b6e2c2f8e128de3110b72d2e6d616b90d77cbd9d1395b29ebc"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/gradient-text/fail/headline.css",
+      "sha256": "104c508ea4f73f75256f39a178a2498e90a57cc2c753d7fe19e3b94cbaf14297"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/gradient-text/pass/headline.css",
+      "sha256": "ed27f2ca17ada2713d4a21fbc556582dcca743041a291ce0d0c86e3de2e4d792"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/icon-provenance/fail/feature-list.jsx",
+      "sha256": "863fe203b96dd7cf9e846b9d9ff7eeaa35043a1be75690afa5146fb593945403"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/icon-provenance/one-package/toolbar.jsx",
+      "sha256": "15d80054466c2cf0836f756443f83f7040f830e2be1ae91e6bb6ee7364606d4c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/icon-provenance/pass/feature-list.html",
+      "sha256": "ab22013d076ef9883443cb925b565b538b4c23c9f491e4d4862be35d9586b4d5"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/interaction-states/fail/controls.css",
+      "sha256": "f9661eb002b4793daec30cb287b5322134b51d4aced39243154d477f30ea02d9"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/interaction-states/pass/controls.css",
+      "sha256": "dac9f9955546e2a5c9428498939cfc890d9aa750d4c434a1f7d16fcba12e64cf"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/escaped-brace.css",
+      "sha256": "82350df4a73bce82eaea9c462214f5eac60a6ac444daa86280a8a2ea0513f1ea"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/panel.css",
+      "sha256": "9f5f7b48440ae8df8e6cd3543d7198b82511db475009ceb27224e947d2f404c8"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/quoted-brace.css",
+      "sha256": "27d22108df5b28575617de1371782506bf5f8ec754d4a906f62db4f261aa831e"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/unterminated-string.css",
+      "sha256": "a5a9daadae4e401584be3bc83a00d25836c227c6223e87b99a2bde62ba42a319"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/url-brace.css",
+      "sha256": "586333bb2d948fe45fb730e2c61d05326d809d35a4dc65ef0e7b75639fe889fc"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/fail/url-comment.css",
+      "sha256": "105eefc43cfa7fc0041e163344cacf07bde69f54b22e634b426df6e8a03a1dbb"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/escaped-brace.css",
+      "sha256": "adec986fb3b01a4fef54d2ae1ad3e8ceeee8d9058b5154181ed21462eb63b1a3"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/panel.css",
+      "sha256": "7e80cef0b9a25ada66d1b686e89effc864468d0fe87cdd9e778a65d47d150e93"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/terminated-string.css",
+      "sha256": "d1f22ddc5c0e5ec11cb209a0ddbb214c6a452367c3faef3b66c457ec29acf8f9"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/tokens.json",
+      "sha256": "0c3f5e5f0a9c1bf2490793a544719bb342af704cb10c7c039a23875b8b89c211"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/url-brace.css",
+      "sha256": "3a0e5a8303f050ec346f9a8cfd36926d8344383fe23b012b29c27a90fc900415"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/literal-outside-tokens/pass/url-comment.css",
+      "sha256": "5ab4735dce94c91ddae64118d30f09f34b1f361d535c0caded38cba8ed66ee5e"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/motion-defaults/fail/motion.css",
+      "sha256": "35d71300308ff2a85136d442215f83595689dcb215883debdaadea5881581f36"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/motion-defaults/pass/motion.css",
+      "sha256": "05bd79806d565ca2afa8caa2f51ecc1320951975b6ee6318a9701c5849c7a2c4"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/motion-reduced-path/fail/decorative-reduced.css",
+      "sha256": "efc1b3590d705e51c2a1c7a3e8d19d851003cd873a010bd8e8284ce474287860"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/motion-reduced-path/fail/motion.css",
+      "sha256": "d0628f890489edac474e283329c508d1643cc36cba37425e324e246202fa80db"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/motion-reduced-path/pass/motion.css",
+      "sha256": "1306dd7f52876c10a0c94589989e7c97ed8f3e18b786fa1166c3ce66c27f500e"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/overused-face/fail/type.css",
+      "sha256": "e425f2da6ab2e25757961594c77aaf0a6e67ed7c435bfeb05f3477be4c972b95"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/overused-face/pass/type.css",
+      "sha256": "3bb4a070178b4276366c9c533a7d80b8acd7a4eb581c2bd07708a2b63eb36f56"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/registry/duplicate-ids.md",
+      "sha256": "ae113e93d3f51d8815571b1a894968fb8c17632a02379a73b648aa926300a77d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/registry/heading-without-record.md",
+      "sha256": "ea8272af2ad80d8406ec26c20d4ce723da68bbcbeba5ab45c0ad3063538559ad"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/registry/mini-registry.md",
+      "sha256": "49d052650e02d8feb6d06374c2300bbfc88e6cc523b0fab1fe64c44ecd1eb381"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/registry/nested-map-in-record.md",
+      "sha256": "ed753076b5b25010fe850de55412fd5f140979ad9bf8df230b89bf1a0dfd75b1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/signature-shape/fail/direction.md",
+      "sha256": "8204672820b9844b6cb68e143af76facdc3efdda06d687417ab183059d3c2eaa"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/signature-shape/pass/direction.md",
+      "sha256": "21eacb189f79a6bf22195f599e06cdfb40caec9e6d63fd2a6b09ebfb27c5b8c7"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-declared-unused/fail/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-declared-unused/fail/panel.css",
+      "sha256": "865e2140714561c4d8c6aeb88e491dce4723d25080a547a2f2555d5a1437e838"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-declared-unused/fail/tokens.json",
+      "sha256": "e1fba48227119d86e3625d89e53a51db7430a8da858f8400aed795b8bda79fd4"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-declared-unused/pass/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-declared-unused/pass/panel.css",
+      "sha256": "82b09b3e542b165a929732fde8fe589fd3399053de16c895c094092fc7c57eb2"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-declared-unused/pass/tokens.json",
+      "sha256": "032427a0d286aebaa8b9636d23b8df7ea6e1e707503740215fa9858a36e0a92a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-used-undeclared/fail/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-used-undeclared/fail/panel.css",
+      "sha256": "2b3c2566b66931e4b7f440954660815b7e93477f62c77c23c8f741836aca2a08"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-used-undeclared/fail/tokens.json",
+      "sha256": "748b850c6dffd0112474f0ff9ba3a942b4068a27f22ec462d715ab0e07ceae6f"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-used-undeclared/pass/contract.md",
+      "sha256": "a4885890a2a0a4c6e2bff6a705ddf6438394a84708197075dc7b736b3c2e2714"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-used-undeclared/pass/panel.css",
+      "sha256": "adcec77f7e683bc07d7d8c2281db2522097bbe06e2ad3677b5d8d12af6d53ef6"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/token-used-undeclared/pass/tokens.json",
+      "sha256": "1d7b0ad552e7f59526f8a744714d55f91eac9896b3f0d9b2cdf994887b530843"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/contract.md",
+      "sha256": "bcc9948ee4d0f362121f925fe79520fb575ca1f517aea5456978e9a3d4577bcc"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/panel.css",
+      "sha256": "8b995a3db62dddd3f0fb5838c3f33431850c49c9688a9028eef74b3ab7061115"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/tokens.json",
+      "sha256": "401dfad3c273c6a6434f1fe6cbbbf753e5ec349505e12327f77a369c46a429fe"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-expired.md",
+      "sha256": "ee5eb453fc0b3a80c9acded144a8d85b2cf781e036794755ef915a31cd972831"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-ghost-signers.md",
+      "sha256": "ca02d153f03139c5ee9d50429ef15103424bd6c172c9ad548462cdc483857139"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-no-grantor.md",
+      "sha256": "444cb7e293aefffbd157cdb18f34ea75f804159877a62b1b995a9b853344bc35"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-self-signed.md",
+      "sha256": "1b7d261959dd92af1e8ceadebe3bb9f16ef63b6719bfab9f1311074cbf1e1604"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-valid.md",
+      "sha256": "91fa08798e93df669a4e6e49e6397f46e2d03f654d068a42cb77d7af551f8005"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-widening.md",
+      "sha256": "5c61da9812b17833c03754ab935fedcb1814218856a136a4e517e6f11378bcd7"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/fixtures/waivers/waiver-wildcard.md",
+      "sha256": "c3febd8e3c16923c129b61d59d124377df4084db8bf3fe7b16115fe18ec1dbc1"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-design-check/test/registry.test.js",
+      "sha256": "86fc038e73120adf5465e7384f72c1de50fae275561139ef2f2af73adab7b0a0"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/bin/claim.js",
+      "sha256": "00e28ebeddc66126ed631b0a1355c32bb20b582f82482df06e3634d8d0b3fc2d"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/bin/claim.test.js",
+      "sha256": "1c2aa42f14c5f1d260e3a931fd24f6fafe7294aba991bb14d2afef2c10e61b7c"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/bin/validate.js",
+      "sha256": "95f17b1502832dd66b4b21aa7cc639c7f8cd774187ef7c5c43d101e22fd2ebf8"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/bin/validate.test.js",
+      "sha256": "2625daa8d44283baf28933263175d1d29c7b8ae3c6a6b32c0b1bc8672ac55061"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/parley-addon.json",
+      "sha256": "a3a7fe945c0ac874e0c11b8ac583b317e319f5a2d94953cb28ae06b4a166cf2b"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/templates/epic.md",
+      "sha256": "18cc52f782d66107fb81bfab081923f9162dd186d622b9c872d669cc086a6a4f"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/templates/story.md",
+      "sha256": "73429dbbfe82c9d7468ee3175d0ac4d497529fee3996dc645482cae6a5e2a3ca"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-tracker/templates/subtask.md",
+      "sha256": "2ad8c96ef777d753ed554c2444c0f68437656928811411e436aad8276ba11a1a"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9"
+    },
+    {
+      "path": "/opt/homebrew/opt/parley-deck-skill/libexec/skills/parley-worktrees/parley-addon.json",
+      "sha256": "0b3917021dce9780628d82efe978fc75f490a137c848eb0ebfa3ca688aa38c53"
+    }
+  ]
+}

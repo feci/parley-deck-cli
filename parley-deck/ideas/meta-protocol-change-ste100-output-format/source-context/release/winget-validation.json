@@ -1,0 +1,24 @@
+{
+  "schema_checks": [
+    {
+      "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/winget/manifests/f/Feci/ParleyDeckSkill/2.19.0/Feci.ParleyDeckSkill.installer.yaml",
+      "schema": "https://aka.ms/winget-manifest.installer.1.12.0.schema.json",
+      "status": "pass",
+      "sha256": "a2665087667dd18710f2f0f0acfc774788e406eb09741940a2b5f82cfc7c0c3a"
+    },
+    {
+      "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/winget/manifests/f/Feci/ParleyDeckSkill/2.19.0/Feci.ParleyDeckSkill.locale.en-US.yaml",
+      "schema": "https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json",
+      "status": "pass",
+      "sha256": "804f80e3278b3133d611396bc8ff573a682f00f552c3af02d1cdf3836ced0b47"
+    },
+    {
+      "file": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/release-delivery/2026-10-13-ste100/winget/manifests/f/Feci/ParleyDeckSkill/2.19.0/Feci.ParleyDeckSkill.yaml",
+      "schema": "https://aka.ms/winget-manifest.version.1.12.0.schema.json",
+      "status": "pass",
+      "sha256": "92c4697347f539d60d443b81dc0c71c6e3bac60a45b724415b8d99c31afa44c7"
+    }
+  ],
+  "installer_hashes_match_live_hosted_assets": true,
+  "windows_validation": "Native winget validate/install unavailable on this Mac; upstream validation required"
+}

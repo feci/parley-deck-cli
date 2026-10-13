@@ -1,0 +1,667 @@
+{
+  "ok": true,
+  "command": "install",
+  "dryRun": false,
+  "actions": [
+    {
+      "ok": true,
+      "target": "codex",
+      "dest": "/Users/tomasfecko/.codex/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.codex/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "claude",
+      "dest": "/Users/tomasfecko/.claude/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.claude/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "agy",
+      "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.gemini/config/plugins/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "gemini",
+      "dest": "/Users/tomasfecko/.gemini/extensions/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.gemini/extensions/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "hermes",
+      "dest": "/Users/tomasfecko/.hermes/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.hermes/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "qwen",
+      "dest": "/Users/tomasfecko/.qwen/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.qwen/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.qwen/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.qwen/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.qwen/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.qwen/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.qwen/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "codebuddy",
+      "dest": "/Users/tomasfecko/.codebuddy/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.codebuddy/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.codebuddy/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.codebuddy/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.codebuddy/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.codebuddy/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.codebuddy/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "goose",
+      "dest": "/Users/tomasfecko/.goose/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.goose/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.goose/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.goose/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.goose/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.goose/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.goose/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "kimi",
+      "dest": "/Users/tomasfecko/.kimi-code/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.kimi-code/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "droid",
+      "dest": "/Users/tomasfecko/.factory/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.factory/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.factory/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.factory/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.factory/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.factory/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.factory/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "vibe",
+      "dest": "/Users/tomasfecko/.vibe/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.vibe/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.vibe/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.vibe/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.vibe/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.vibe/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.vibe/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "cursor",
+      "dest": "/Users/tomasfecko/.cursor/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.cursor/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.cursor/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.cursor/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.cursor/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.cursor/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.cursor/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "opencode",
+      "dest": "/Users/tomasfecko/.opencode/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.opencode/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "aionrs",
+      "dest": "/Users/tomasfecko/.aionrs/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.aionrs/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.aionrs/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.aionrs/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.aionrs/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.aionrs/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.aionrs/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    },
+    {
+      "ok": true,
+      "target": "zcode",
+      "dest": "/Users/tomasfecko/.zcode/skills/parley-deck",
+      "action": "replaced",
+      "skills": [
+        {
+          "ok": true,
+          "skill": "parley-deck",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-deck",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-bidding",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-bidding",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-design",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-design-check",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-design-check",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-tracker",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-tracker",
+          "action": "replaced"
+        },
+        {
+          "ok": true,
+          "skill": "parley-worktrees",
+          "dest": "/Users/tomasfecko/.zcode/skills/parley-worktrees",
+          "action": "replaced"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "at": "2026-10-13T14:40:39.788460+00:00",
+  "base": "bd2a3640a9d217d4c3f48d7121c6669690ed61f0",
+  "commit": "8ef3b97bcf97b9d710fa5a26305f010bb9c33e2c",
+  "formulae": [
+    {
+      "formula": "parley-deck-cli.rb",
+      "url": "https://github.com/feci/parley-deck-cli/archive/refs/tags/v1.55.0.tar.gz",
+      "sha256": "2c611512ca87a471a815ac5c3dd345eca3ac334b5742c27263e2c8d1e22dff9b"
+    },
+    {
+      "formula": "parley-deck-skill.rb",
+      "url": "https://github.com/feci/parley-deck-skill/archive/refs/tags/v2.19.0.tar.gz",
+      "sha256": "60de2608664d4fb17e6e1dfd6f09638d746cdbb162ffc2eee66915f2016c2349"
+    }
+  ],
+  "style": "pass",
+  "changes": "two URL and two hash lines only"
+}
