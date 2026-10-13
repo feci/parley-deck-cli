@@ -276,7 +276,7 @@ disagreements visible instead of smoothing them into trade-offs. Additionally ad
 VERBATIM — quoting each contradictory verdict with its author, tag and evidence and the
 resolution — ONLY when contradictory verdicts exist; absent any conflict that section
 does not exist. Be concrete and concise. English only. Write the file now and
-report only the path.`, ideaDir, path, sections.String(), strings.Join(conditions, " and/or "))
+report only the path.`, ideaDir, path, sections.String(), strings.Join(conditions, " and/or ")) + protocol.OutputTextInstruction
 }
 
 // buildFinalDraftPrompt tells the drafter exactly what the gate will require.
@@ -312,7 +312,7 @@ The other sections may be "N/A" when the idea is trivial or design-only, but the
 present — a heading that is absent cannot be answered N/A deliberately.
 
 No placeholders, no unexpanded <...> tokens. Be concrete. English only. Write the file now and
-report only the path.`, ideaDir, path, slug, sections.String())
+report only the path.`, ideaDir, path, slug, sections.String()) + protocol.OutputTextInstruction
 }
 
 func (o driverConsensusOps) WithParticipants(ids []string) driver.ConsensusOps {

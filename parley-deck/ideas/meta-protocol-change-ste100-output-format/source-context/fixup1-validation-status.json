@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-13T13:54:24.555454+00:00",
+  "source_head": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+  "focused_transport_and_policy_tests": {
+    "exit": 0,
+    "log": "fixup1-focused.log"
+  },
+  "linux_ci": {
+    "status": "success",
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-13T13:38:20Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406035407/job/115325765937",
+        "name": "go build & test (ubuntu-latest)",
+        "startedAt": "2026-10-13T13:34:19Z",
+        "status": "COMPLETED",
+        "workflowName": "Tests"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-13T13:38:38Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406028243/job/115325741169",
+        "name": "go build & test (ubuntu-latest)",
+        "startedAt": "2026-10-13T13:34:16Z",
+        "status": "COMPLETED",
+        "workflowName": "Tests"
+      }
+    ]
+  },
+  "local_full_cli_suite": {
+    "exit": 0,
+    "command": "go test ./... -count=1 -timeout 45m",
+    "log": "go-test-fixup1-full.log",
+    "exec_session": 98777
+  },
+  "review02": {
+    "exit": 0,
+    "invocation": "a2332e7d-807e-47bc-b664-abfd970c901c",
+    "seconds": 818.215,
+    "artifact_sha256": "c4ade109f852860b543ce78781c16f53899bc80ea8458b5ebafde3a0049ce522",
+    "open_critical": 0,
+    "open_major": 0,
+    "open_minor": 0,
+    "nit": "stale frontmatter head; corrected in receipt commit"
+  },
+  "skill_head": "92e3dc78da2f1c55d35c905cabe57fc69ede0670",
+  "skill_source_changed_in_fixup": false,
+  "local_build": {
+    "exit": 0,
+    "command": "go build ./...",
+    "log": "go-build-fixup1.log",
+    "successful_silent_output": true
+  },
+  "local_vet": {
+    "exit": 0,
+    "command": "go vet ./...",
+    "log": "go-vet-fixup1.log",
+    "successful_silent_output": true
+  },
+  "ci_snapshot": "fixup1-ci-status.json",
+  "log_hashes": {
+    "go-test-fixup1-full.log": "4fd83eb99af8b15a6d29805193a4568dc2eb9742fddb45049eaa928e7d2ea972",
+    "go-build-fixup1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "go-vet-fixup1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

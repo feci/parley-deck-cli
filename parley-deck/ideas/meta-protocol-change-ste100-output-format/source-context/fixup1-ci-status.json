@@ -1,0 +1,65 @@
+{
+  "headRefOid": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-13T13:38:20Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406035407/job/115325765937",
+      "name": "go build & test (ubuntu-latest)",
+      "startedAt": "2026-10-13T13:34:19Z",
+      "status": "COMPLETED",
+      "workflowName": "Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-13T13:38:38Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406028243/job/115325741169",
+      "name": "go build & test (ubuntu-latest)",
+      "startedAt": "2026-10-13T13:34:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406035407/job/115325766440",
+      "name": "go build & test (windows-latest)",
+      "startedAt": "2026-10-13T13:34:19Z",
+      "status": "IN_PROGRESS",
+      "workflowName": "Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406028243/job/115325741335",
+      "name": "go build & test (windows-latest)",
+      "startedAt": "2026-10-13T13:34:16Z",
+      "status": "IN_PROGRESS",
+      "workflowName": "Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-13T13:46:01Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406035407/job/115325766306",
+      "name": "go build & test (macos-latest)",
+      "startedAt": "2026-10-13T13:34:23Z",
+      "status": "COMPLETED",
+      "workflowName": "Tests"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-13T13:51:44Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/feci/parley-deck-cli/actions/runs/38406028243/job/115325741556",
+      "name": "go build & test (macos-latest)",
+      "startedAt": "2026-10-13T13:34:22Z",
+      "status": "COMPLETED",
+      "workflowName": "Tests"
+    }
+  ]
+}

@@ -104,8 +104,30 @@ func TestLiveMapIsCompleteHonorsNeverCutAndRendersEveryPhase(t *testing.T) {
 		t.Fatalf("live map check failed: unclassified=%v stale=%v never-cut=%v fallbacks=%v secret=%q",
 			rep.Unclassified, rep.Stale, rep.NeverCut, rep.Fallbacks, rep.Secret)
 	}
-	if rep.Blocks != 69 {
-		t.Fatalf("live protocol parsed into %d blocks; the map was written for 69 — reconcile both", rep.Blocks)
+	if rep.Blocks != 70 {
+		t.Fatalf("live protocol parsed into %d blocks; the map was written for 70 — reconcile both", rep.Blocks)
+	}
+}
+
+func TestLiveSTEAppendixIsOnDemandAndItsPointerIsRetained(t *testing.T) {
+	src := liveSource(t)
+	for _, audience := range []string{"participant", "facilitator"} {
+		c := Build(src, liveMap(t), Request{Phase: 1, Track: "deliberation", Audience: audience, Optimize: true})
+		if c.ContextMode != ModePacket {
+			t.Fatalf("%s: %s (%s)", audience, c.ContextMode, c.FallbackReason)
+		}
+		found := false
+		for _, row := range c.Index {
+			if row.Locator == "## Appendix B — ASD-STE100 output text" {
+				found = true
+				if row.Included || row.Classification != "on-demand" || row.Trigger == "" {
+					t.Fatalf("%s: appendix must have an on-demand read trigger: %+v", audience, row)
+				}
+			}
+		}
+		if !found || !strings.Contains(c.Body, "English only; ASD-STE100 by default.") || !strings.Contains(c.Body, "Read Appendix B before you write or review English prose.") {
+			t.Fatalf("%s: missing appendix or binding pointer", audience)
+		}
 	}
 }
 

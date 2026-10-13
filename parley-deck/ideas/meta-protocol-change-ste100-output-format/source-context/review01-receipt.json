@@ -1,0 +1,70 @@
+{
+  "writer": {
+    "host": "Tomass-Virtual-Machine.local",
+    "boot": "{ sec = 1791463769, usec = 230508 } Thu Oct  8 14:49:29 2026",
+    "supervisor_pid": 83830,
+    "process_group": 84200
+  },
+  "schema_version": 1,
+  "type": "invocation.terminal",
+  "invocation_id": "8d194a1c-c163-4c81-a0e1-6e5b64196061",
+  "metadata": {
+    "run_id": "fbbe55e5-3004-478a-a9cb-f4e76655df50",
+    "segment_id": "manual",
+    "idea": "meta-protocol-change-ste100-output-format",
+    "phase": "review-round-01",
+    "agent": "zcode-1",
+    "adapter": "zcode",
+    "launch_mode": "headless",
+    "attempt_ordinal": 1,
+    "retry_of": null,
+    "requested_model": null,
+    "requested_effort": null,
+    "requested_speed": "deep",
+    "context": {
+      "context_mode": "full",
+      "source_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "packet_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "fallback_reason": null
+    }
+  },
+  "requested_at": "2026-10-13T13:03:40.258975Z",
+  "started_at": "2026-10-13T13:03:40.300978Z",
+  "completed_at": "2026-10-13T13:21:54.719947Z",
+  "duration_ms": 1094446,
+  "pid": 84200,
+  "outcome": {
+    "dispatch_attempted": true,
+    "quota_evidence": {
+      "invocation_id": "8d194a1c-c163-4c81-a0e1-6e5b64196061",
+      "adapter": "zcode",
+      "eligible": false,
+      "reason": "no failed invocation",
+      "observed_at": "2026-10-13T13:21:54.718308Z"
+    },
+    "status": "process-exited",
+    "exit_code": 0,
+    "failure_class": null,
+    "artifact_sha256": "792be81e42a399d69eb2615580d4d4827a8ccba3c0e295987dfd00bc915268d4",
+    "usage": {
+      "input_tokens": null,
+      "output_tokens": null,
+      "cache_read_tokens": null,
+      "cache_write_tokens": null,
+      "total_tokens": null,
+      "cost_usd": null,
+      "reported_model": null,
+      "reported_models": [],
+      "source": "unavailable",
+      "cost_basis": "unavailable",
+      "coverage": "unavailable"
+    },
+    "observation": {
+      "first_activity_ms": 928,
+      "stdout_bytes": 156,
+      "stderr_bytes": 627,
+      "parser_input_truncated": false
+    }
+  },
+  "warnings": []
+}

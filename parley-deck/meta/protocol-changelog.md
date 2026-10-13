@@ -347,3 +347,11 @@ configuration), absent-standard/invalid-refusal semantics, and the existing dura
 original-plus-one execution path including protected roles. Section 9.0 points to that
 bound. No membership, reviewer, LE-7/LE-11 or current-tree evidence duty is weakened.
 CLI 1.54.0 / skill 2.18.0; core 2.18.0 staged from 2.17.0, publication pending owner.
+
+## 2026-10-13 — ASD-STE100 output text (2.19.0)
+
+Ratified by `ideas/meta-protocol-change-ste100-output-format/FINAL.md` and both current participant ACCEPTs.
+Replace section 6 rule 6 and append Appendix B with the exact reviewed hunks.
+Add one on-demand map entry. Keep the existing packet and skill limits.
+Preserve older live authority, exact evidence, existing artifacts, and correctness gates.
+Use one shared instruction in thirteen prompt builders. Stage core 2.19.0 from staged 2.18.0 plus only these hunks.

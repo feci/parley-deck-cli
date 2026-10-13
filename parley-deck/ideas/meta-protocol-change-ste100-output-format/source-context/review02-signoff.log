@@ -1,0 +1,24 @@
+Requesting signoff from zcode-1 (headless)...
+ZCode Built-in skipped (not-due)
+ZCode Built-in skipped (not-due)
+ZCode Built-in skipped (not-due)
+Signoff appended. ✅
+
+**Confirmation:** As participant `zcode-1`, I appended exactly one signoff block — `Status: ✅ ACCEPT` — under `## Signoffs` in `parley-deck/ideas/meta-protocol-change-ste100-output-format/review/consensus.md`. No other line or file was changed.
+
+**Basis for the decision** (verified independently before signing):
+
+- **Prompt integrity** — the launch file's SHA256 matched `e057c9ed…` before any task action.
+- **NIT resolved** — both `IMPLEMENTATION.md` head fields now name `99d04b3ecd0740…`, closing my round-2 finding.
+- **Receipts genuine** — I re-hashed the archived cycle-1 consensus (`775aee16…`), my round-2 artifact (`c4ade109…`), and the test/build/vet logs; all match the recorded values, and the build/vet logs are empty files consistent with silent success. The local full suite receipt records exit 0 for test, build, and vet.
+- **Archive intact** — `consensus-cycle-1.md` holds both original ACCEPT signoffs byte-exact, and the reopen refusal that justified the archive path is recorded.
+- **Close authority honored** — the consensus does not claim closure: it requires the brief's four conditions (no open CRITICAL/MAJOR, both ACCEPTs, a fresh zcode-1 goal PASS, current-tree AC evidence). I confirmed the brief's hash and its close-authority text. Windows CI legs are still pending live — the consensus correctly requires their final outcomes before source close, which my Notes restate.
+
+The review consensus now carries both participants' ACCEPTs with zero agreed fixes; source close proceeds only after the fresh goal check and remaining evidence land.
+Accepted signoff from zcode-1: ✅ ACCEPT
+Requested signoffs complete: zcode-1
+Review consensus: ready
+Path: parley-deck/ideas/meta-protocol-change-ste100-output-format/review/consensus.md
+Signoffs:
+  codex-1    ✅ ACCEPT — I accept the zero-fix source consensus and the byte-preserving archive. The audit NIT is corrected. Source close still requires a fresh independent goal PASS and current-tree AC evidence.
+  zcode-1    ✅ ACCEPT — My round-2 review supplies the evidence base. I re-checked its claims: the archive hash, the round-2 artifact hash, all three log hashes, and the NIT correction. Each matches. Zero agreed fixes is accurate. This signoff does not close the idea. Source close needs the brief's four conditions, plus the final Windows CI outcomes.

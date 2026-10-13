@@ -1,0 +1,60 @@
+{
+  "skill_core_bytes": 19482,
+  "packet_variants": [
+    {
+      "variant": "unflagged",
+      "bytes": 68935,
+      "context_mode": "packet",
+      "source_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "packet_sha256": "a380478f62aedecd2b8e7b74868cdb3acca578c36267b282862e1bf8920b1e45",
+      "appendix_classification": "on-demand",
+      "appendix_included": false,
+      "argv": [
+        "parley",
+        "protocol",
+        "packet",
+        "--dir",
+        ".",
+        "--phase",
+        "1",
+        "--track",
+        "deliberation",
+        "--audience",
+        "facilitator",
+        "--json"
+      ]
+    },
+    {
+      "variant": "meta-idea",
+      "bytes": 71934,
+      "context_mode": "packet",
+      "source_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "packet_sha256": "b224f24610106f17ebcb20c93558d40620f01d3ee4c56d16e84e8a754fd1388f",
+      "appendix_classification": "on-demand",
+      "appendix_included": false,
+      "argv": [
+        "parley",
+        "protocol",
+        "packet",
+        "--dir",
+        ".",
+        "--phase",
+        "1",
+        "--track",
+        "deliberation",
+        "--audience",
+        "facilitator",
+        "--json",
+        "--idea",
+        "meta-protocol-change-ste100-output-format",
+        "--flag",
+        "auto_implement",
+        "--flag",
+        "protocol_change"
+      ]
+    }
+  ],
+  "guard_fixture_bytes": 68874,
+  "guard_fixture_limit": 70000,
+  "skill_limit": 20000
+}

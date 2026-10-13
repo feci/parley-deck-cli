@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-13T14:36:21.508302+00:00",
+  "reviewed_product": "99d04b3ecd0740fb834e70ec109c9384c7b7cd4d",
+  "audited_head": "bcf1140ff64175dc21e89386a0c0bc8491c0ea72",
+  "skill_product": "92e3dc78da2f1c55d35c905cabe57fc69ede0670",
+  "review02_sha256": "c4ade109f852860b543ce78781c16f53899bc80ea8458b5ebafde3a0049ce522",
+  "consensus_sha256": "f5b9e83e3de1251addb1251b6453bf41d0d4f69ddcef5229c9881af44f008c1c",
+  "goal_invocation": "55dbd0fd-6648-48bc-b991-696f49b13655",
+  "goal_artifact_sha256": "9703d719a444ac891bb8e983dd1af61010e1c073883d6bec08805a5df5acadac",
+  "goal_exit": 0,
+  "goal_seconds": 648.149,
+  "all_four_conditions": true,
+  "windows_final_recorded": true,
+  "windows_added_names_vs_both_pre_change_runs": [],
+  "windows_independent_artifact_sha256": "cb6f22029fb2b096dda6b4528cc4f42310708c53b12efe33e43ad9adb15ceb34",
+  "basis": "Owner-preauthorized source close; mechanical single-reviewer exception is false. Independent Zcode review, both own ACCEPTs, fresh Zcode goal PASS, and independent current-tree AC1-AC8 evidence.",
+  "scope": "Source AC1-AC8 complete. Delivery DC1-DC6 remains open outside the frozen IMPLEMENTATION artifact."
+}

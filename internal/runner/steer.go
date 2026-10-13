@@ -321,7 +321,7 @@ Idea prompt for context:
 
 Your recent transcript (tail):
 %s
-`, agent.ID, replyPath, steerID, text, ideaPrompt, transcriptTail)
+`, agent.ID, replyPath, steerID, text, ideaPrompt, transcriptTail) + protocol.OutputTextInstruction
 }
 
 // tailFileBytes returns up to maxBytes from the end of a file (whole file if

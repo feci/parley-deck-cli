@@ -68,7 +68,7 @@ Rules:
 
 Question:
 %s
-`, agent.ID, question)
+`, agent.ID, question) + protocol.OutputTextInstruction
 }
 
 // BuildGoalCheckPrompt frames the LE-7 goal-done gate: a fresh agent checks the FINAL.md
@@ -89,7 +89,7 @@ Output: a short rationale, then a FINAL line that is EXACTLY one of:
   GOAL-CHECK: FAIL — <the criteria that are not met>
 Print to stdout only; do not modify any file. Answer PASS only if every observable
 criterion is met; if any is unmet or unverifiable, answer FAIL and name it.
-`, agent.ID, idea.Slug, final, impl)
+`, agent.ID, idea.Slug, final, impl) + protocol.OutputTextInstruction
 }
 
 // RunConsult invokes the agent once (no retry) with supervision and captures

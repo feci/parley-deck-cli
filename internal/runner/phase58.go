@@ -246,7 +246,7 @@ Rules:
 - Do not edit other agents' review or signoff files.
 - Run the project's build/tests if available.
 - Return a short confirmation with the fixes applied and checks run.
-`, agent.ID, idea.Slug, rc, impl)
+`, agent.ID, idea.Slug, rc, impl) + protocol.OutputTextInstruction
 }
 
 // BuildImplementationPrompt is the Phase 5 implementer prompt.
@@ -279,7 +279,7 @@ head-commit: <sha-or-short-sha>
 ## Implementation plan / checklist
 ## Deviations from FINAL.md
 ## Notes for reviewers
-`, agent.ID, idea.Slug, finalPath, outputPath, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), time.Now().Format("2006-01-02"))
+`, agent.ID, idea.Slug, finalPath, outputPath, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), time.Now().Format("2006-01-02")) + protocol.OutputTextInstruction
 }
 
 // BuildReviewPrompt is the Phase 6 reviewer prompt for review round N.
@@ -324,7 +324,7 @@ date: %s
 
 Context (FINAL.md, IMPLEMENTATION.md, prior review rounds):
 %s
-`, agent.ID, idea.Slug, round, outputPath, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), context)
+`, agent.ID, idea.Slug, round, outputPath, agent.ID, idea.Slug, round, time.Now().Format("2006-01-02"), context) + protocol.OutputTextInstruction
 }
 
 // gatherReviewContext concatenates FINAL.md, IMPLEMENTATION.md, and any prior
@@ -439,7 +439,7 @@ blocked: false
 
 Review context (IMPLEMENTATION.md + review rounds):
 %s
-`, agent.ID, idea.Slug, outputPath, strictRule, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), strictFields, context)
+`, agent.ID, idea.Slug, outputPath, strictRule, idea.Slug, agent.ID, time.Now().Format("2006-01-02"), strictFields, context) + protocol.OutputTextInstruction
 }
 
 // ValidateReviewConsensusArtifact requires the machine-readable contract field.
