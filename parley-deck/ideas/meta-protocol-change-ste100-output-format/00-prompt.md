@@ -2,7 +2,8 @@
 idea: meta-protocol-change-ste100-output-format
 author: user
 created: 2026-10-13
-participants: [codex-1, kimi-1, zcode-1]
+participants: [codex-1, zcode-1]
+excluded: [kimi-1 — owner-authorized dropout after two measured readiness failures; no same-idea return — confirmed 2026-10-13]
 implementer: codex-1
 track: deliberation
 auto_implement: true
@@ -81,3 +82,12 @@ There are no open CLI PRs. Historical unrelated ideas do not change this explici
 No full dictionary, certification claim, historical rewrite, broad driver repair, new roster member, or CLI WinGet publication.
 No npm or core publication through an emulated attended terminal.
 The final note must list the still-pending owner commands in the required version order.
+
+## Phase 0 readiness result
+
+Kimi had two failed measured readiness processes. Both exited 1.
+The brief pre-authorizes its exclusion for this idea. No global roster changed.
+Zcode returned PONG and exited 0. Codex is this active process.
+The original proposed three-member prompt remains in commit `116e64c`.
+This manual owner-authorized exclusion supplies no automatic reviewer-exception evidence.
+The brief's conditional close authority remains available.
