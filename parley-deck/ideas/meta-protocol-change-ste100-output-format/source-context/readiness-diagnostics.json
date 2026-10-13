@@ -1,0 +1,23 @@
+[
+  {
+    "receipt": "readiness-kimi-1-attempt1.json",
+    "invocation": "c7ea3516-e819-4faf-9304-6bf91aa43f97",
+    "exit_code": 1,
+    "stderr": "error: failed to run prompt: provider.auth_error: 403 [kimi-coding] 1 connection(s) exist but are excluded by this API key's connection allowlist / quota scope \u2014 add them to the key in the dashboard, or use a key without that scope\nSee log: /Users/tomasfecko/.kimi-code/logs/kimi-code.log\n",
+    "stdout": "{\"role\":\"meta\",\"type\":\"system.version\",\"version\":\"0.42.0\"}\n"
+  },
+  {
+    "receipt": "readiness-zcode-1.json",
+    "invocation": "9b731b3e-5e77-4b20-acc6-c85880509aac",
+    "exit_code": 0,
+    "stderr": "ZCode Built-in missing\n",
+    "stdout": "PONG\n"
+  },
+  {
+    "receipt": "readiness-kimi-1-attempt2.json",
+    "invocation": "488cf53a-9eb8-4692-bf89-c1121d20000f",
+    "exit_code": 1,
+    "stderr": "error: failed to run prompt: provider.auth_error: 403 [kimi-coding] 1 connection(s) exist but are excluded by this API key's connection allowlist / quota scope \u2014 add them to the key in the dashboard, or use a key without that scope\nSee log: /Users/tomasfecko/.kimi-code/logs/kimi-code.log\n",
+    "stdout": "{\"role\":\"meta\",\"type\":\"system.version\",\"version\":\"0.42.0\"}\n"
+  }
+]
