@@ -1,0 +1,8 @@
+{
+  "number": 85,
+  "url": "https://github.com/feci/parley-deck-cli/pull/85",
+  "head": "118d0c5e646eb8b49af1b77a984baa38116bb7ee",
+  "base_product_merge": "88dc6c5da139d2deb039bda4b605acfbe42663b4",
+  "only_release_audit_paths": true,
+  "paths": 64
+}

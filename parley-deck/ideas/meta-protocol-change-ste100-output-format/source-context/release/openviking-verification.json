@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-13T15:02:51.024046+00:00",
+  "uri": "viking://resources/projects/parley-deck/ste100-output-format-release-20261013.md",
+  "write_wait_result": "DEADLINE_EXCEEDED: Queue processing timed out after 60.0s",
+  "readback_exact": true,
+  "content_sha256": "3435ef870c28e6d68933301cc6c1536c128dd84f5212e00d5a7db218c8e5707a",
+  "scoped_filename_retrieval_found": true,
+  "semantic_find_returned_note": false,
+  "status": "File persistence and exact readback verified; scoped glob retrieved the file. Semantic indexing remains pending at this check. No duplicate write was made."
+}

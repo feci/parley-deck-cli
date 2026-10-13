@@ -1,5 +1,5 @@
 {
-  "at": "2026-10-13T14:43:40.326962+00:00",
+  "at": "2026-10-13T14:58:04.905414+00:00",
   "idea": "meta-protocol-change-ste100-output-format",
   "scope": "Measured terminal records that explicitly name this idea. Configured native fallback processes are separate. CLI syntax/alias refusals without an invocation are orchestration gaps, not child starts.",
   "measured_agents": {
@@ -11,11 +11,11 @@
       "child_seconds": 4.406
     },
     "zcode-1": {
-      "child_starts": 10,
-      "successes": 10,
+      "child_starts": 11,
+      "successes": 11,
       "failed_children": 0,
       "control_plane_refusals": 1,
-      "child_seconds": 4675.901
+      "child_seconds": 5420.128
     }
   },
   "invocations": [
@@ -343,6 +343,31 @@
         "coverage": "unavailable"
       },
       "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/.parley-runtime/invocations/38c2fe70-18c1-4a3a-97da-ad6ec684232d/terminal.json"
+    },
+    {
+      "id": "54e2db04-8c86-4cc8-ad05-ff2f901b8ea5",
+      "agent": "zcode-1",
+      "phase": "review",
+      "started": true,
+      "started_at": "2026-10-13T14:44:39.478105Z",
+      "completed_at": "2026-10-13T14:57:03.654298Z",
+      "seconds": 744.227,
+      "exit": 0,
+      "failure": null,
+      "usage": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "cache_read_tokens": null,
+        "cache_write_tokens": null,
+        "total_tokens": null,
+        "cost_usd": null,
+        "reported_model": null,
+        "reported_models": [],
+        "source": "unavailable",
+        "cost_basis": "unavailable",
+        "coverage": "unavailable"
+      },
+      "source": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100/.parley-runtime/invocations/54e2db04-8c86-4cc8-ad05-ff2f901b8ea5/terminal.json"
     }
   ],
   "pending": [],
@@ -380,14 +405,14 @@
       "cwd": "/Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/ste100",
       "source": "exec",
       "latest_cumulative_snapshot": {
-        "timestamp": "2026-10-13T14:43:39.870Z",
+        "timestamp": "2026-10-13T14:58:03.856Z",
         "usage": {
-          "input_tokens": 36038634,
-          "cached_input_tokens": 32960512,
+          "input_tokens": 39952862,
+          "cached_input_tokens": 36774912,
           "cache_write_input_tokens": 0,
-          "output_tokens": 184830,
-          "reasoning_output_tokens": 61855,
-          "total_tokens": 36223464
+          "output_tokens": 196354,
+          "reasoning_output_tokens": 68561,
+          "total_tokens": 40149216
         }
       }
     }
