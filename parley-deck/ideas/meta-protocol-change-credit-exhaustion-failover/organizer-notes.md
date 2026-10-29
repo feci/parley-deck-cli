@@ -1,0 +1,49 @@
+# Organizer record
+
+The controlling brief was read first and copied without changes. Its source path is in the brief.
+The CLI starts at 525febb. The skill starts at f557c5e. Both owner-allocated worktrees were clean.
+The live protocol is source-role 2.19.0. The Homebrew installer is 2.19.0. Runtime copies report drift or malformed payloads.
+The release will replace and verify those copies under the existing installation authority.
+
+## Driver gaps
+
+1. `parley run --idea <slug>` refuses the fixed slug. See source-context/driver-start.log. Use measured participant launches for this named idea.
+2. Standalone preflight checks an unrelated historical facilitator declaration. See source-context/preflight-presence.json. The selected three-agent probes passed separately.
+3. Manual measured dispatch resolves adapter models instead of roster models. The first Kimi probe used kimi-code/k3 and failed authentication.
+   The machine roster specifies omniroute/k3.1-pro. A task-local agents override restores that exact choice. Its fresh probe passed.
+   Codex also passed with the roster model gpt-6-astra. This is launch configuration, not a credential or gateway change.
+
+Use continue, wait, status, and consensus commands at each applicable phase. Record further gaps before fallback.
+The old D6 refusal has not yet been tested at a cycle action. Do not declare it fixed from the brief alone.
+
+## Process plan
+
+1. Obtain independent round files, cross-review, and all design signoffs. Verify complete canonical artifacts before FINAL.
+2. Implement the accepted plan in both worktrees. Verify focused behavior, full tests, protocol copies, and size limits.
+3. Obtain independent reviews and a fresh goal check. Resolve agreed fixes within five cycles.
+4. Merge and release the authorized channels. Verify installations and obtain a separate channel report.
+5. Record remaining owner commands, deferred work, and measured usage in the released inbox note.
+
+## Resume and owner ruling
+
+The succession ruling arrived after `round-01/codex-1.md` and before the other round-1 files.
+The relay stopped the first organizer process at about 19:35 CET on 2026-10-29.
+The inbox note says "before round 1". This describes the intended phase, not the actual artifact order.
+Codex-1 addresses the ruling in its round-02 file. Its round-01 file stays unchanged.
+The updated brief replaces the prior source-context copy. The prompt now contains the ruling and translation verbatim.
+
+Preserved codex-1 round-01 SHA256: `a254f907be4fa343c8491be93c46296d2d65bf450b6704b9e491692ff25a9420`.
+
+## Resumed round-1 launch
+
+The selected roster stays codex-1, kimi-1, and zcode-1. Claude does not participate.
+The launch uses the prior task-local override. Kimi uses `omniroute/k3.1-pro`; Zcode reads `zai/glm-5.3` from its configuration.
+Both peers use separate measured processes with a 1,800-second hard ceiling. Each owns its round file.
+Both briefs require the updated prompt and ruling before independent analysis. Neither brief contains a peer round answer.
+The live protocol hash remains `aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec`.
+The installed Codex fallback is stale. The live source remains the authority.
+
+`parley continue` still reports no driving run for this fixed slug. `parley status` and `parley wait` read its canonical artifacts.
+Standalone `parley preflight --no-ping --json` repeats the unrelated historical facilitator defect. Prior selected PONG evidence remains available.
+The design uses the owner-allocated branch name. GitHub participants share `feci`; native self-approval is unavailable.
+Use attributed COMMENT mirrors for peer signatures. Canonical signatures remain authoritative.

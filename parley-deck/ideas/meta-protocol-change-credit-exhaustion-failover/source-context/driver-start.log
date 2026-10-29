@@ -1,0 +1,30 @@
+flag provided but not defined: -idea
+Usage of run:
+  -auto
+    	auto-drive the protocol past round-01 (default; use --no-auto to disable) (default true)
+  -dir string
+    	workspace directory (default ".")
+  -max-driver-steps int
+    	auto-drive loop ceiling: max progress steps before escalating (explicit 0 = unlimited; omit to use ~/.parley [defaults.loop])
+  -max-wall-clock duration
+    	auto-drive loop ceiling: total wall-clock budget before escalating, e.g. 90m (explicit 0 = unlimited; omit to use ~/.parley [defaults.loop])
+  -no-auto
+    	disable auto-drive: stop after round-01 and advance the protocol manually
+  -no-implement
+    	stop the auto-driver at FINAL.md (skip code-writing implementation/fix-up phases)
+  -no-ping
+    	preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)
+  -no-preflight
+    	skip the pre-idea readiness check (CI escape)
+  -no-tui
+    	run without opening the TUI after the round
+  -participants string
+    	comma-separated agent IDs to run
+  -preset parley preset list
+    	named roster preset to expand into participants (see parley preset list)
+  -quota-auto-exclude value
+    	new idea quota exclusion policy (true or false)
+  -track string
+    	conditional-rigor track: fast|standard|deliberation (also drives track-linked roster defaults)
+  -yes
+    	launch selected agents without interactive confirmation
