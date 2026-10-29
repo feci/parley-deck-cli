@@ -202,3 +202,16 @@ An initial continue command used unsupported --no-tui; it did not launch. The co
 Use the owner-authorized native fallback with the same participant identities and models.
 Native receipts supply no driver accounting or automatic membership authority.
 The host reboot caused no participant exclusion. Current round and review files validate; no stopped participant owns a pending action.
+
+## Review-round-2 timeout recovery
+
+Kimi reached its 1800-second ceiling at `2026-10-29T22:40:50.778622+00:00` without a review file.
+Retry 1 is authorized after `2026-10-29T22:55:50.778622+00:00`, with a 2400-second ceiling.
+The private receipt and stream remain intact. The earlier reboot still causes no participant exclusion.
+The installed validator requires `## Findings` in later reviews. The original brief requested only `## Updated findings`.
+Each author must supply the required heading before the review round can pass validation.
+
+Zcode completed its supplemental review and its own heading correction. Both native processes exited 0 without timeout.
+Both exact-prefix checks passed. The current review hash is `98bed5b76f48f44d6a5bbf9cd14d402836273fef2f3f9dbf33ee57bfa4c52c19`.
+Zcode reproduced the concurrent-admission defect and rated it CRITICAL. Its own atomic-publication overlay checks passed.
+It accepted the capture-status documentation alternative. Both findings remain open until signed consensus and fix-up.

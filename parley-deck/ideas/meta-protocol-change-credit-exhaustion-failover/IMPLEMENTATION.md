@@ -165,3 +165,13 @@ The product remains at 31c039c while both independent reviewers work.
 A private atomic-publication proposal is under test; no product fix is accepted or applied yet.
 The next review consensus must address this result before close, regardless of any one full-suite pass.
 Evidence and proposal: `../../inbox/codex-1-to-all_meta-protocol-change-credit-exhaustion-failover_review02-concurrent-admission.md`.
+
+### Review-round-2 current state — 2026-10-29 22:45Z
+
+The required full Go command completed exit 0 at 31c039c, with 34 passing packages.
+Receipt: private `fixup01-full-go-v2.receipt.json`. The repeated concurrent-admission failure still blocks acceptance.
+Zcode independently reproduced that failure in 7 of 100 runs. Its supplemental review rates it CRITICAL.
+Zcode accepted the private writer-side atomic-publication proposal and the capture-status documentation correction.
+Kimi reached its 1800-second ceiling without an artifact. Retry 1 may start after 22:55:50 UTC with 2400 seconds.
+Its process and test child stopped. Native timeout recovery changes no membership or driver accounting.
+Review consensus, the accepted fix-up, fresh review, goal check, and all release work remain open.

@@ -41,3 +41,10 @@ It is a proposal for independent assessment, not an accepted product fix.
 
 The next review consensus must address this regression and its effect on AC-05 and AC-14.
 The current full suite, either CI pass, or a textual goal verdict cannot dispose of this reproduced failure.
+
+## Additional hosted evidence — macOS
+
+The macOS PR job also failed the unchanged concurrent-budget test. Its corresponding push job passed.
+Run: `40963775887`; job: `123762942318`; output: `started=2 refused=4`.
+Private log: `review02-cli-macos.log`; SHA256: `c1d825877aaeda7d5fbd2fb3f394ea6009122ab45ddce361ef462346945c3faf`.
+This evidence adds another platform result for the same open finding. No product fix is applied.
