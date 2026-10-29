@@ -7,7 +7,7 @@ completed: 2026-10-29
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover#feature/meta-protocol-change-credit-exhaustion-failover
 head-commit: 931550cb4c57f041f9a8a1d1337571cb271a873a
 design-pr: https://github.com/feci/parley-deck-cli/pull/86
-implementation-pr: n/a
+implementation-pr: https://github.com/feci/parley-deck-cli/pull/87
 ---
 
 ## Summary of work
@@ -92,7 +92,9 @@ The full Go suite, package tests, and independent review remain pending.
 - Skill `npm test` passed: 402 Node tests and 54 Python tests. Payload manifests pass.
 - Skill size is 19,989 bytes. Package dry-run and native portable build passed.
 - CLI native build reports 1.56.0. Capture status reports disabled by default and no retained files.
-- The full Go suite is in progress. It must pass at the reviewed tree before close.
+- The reviewed-source full Go suite exited 1. VERSION and unreadable-implementation phase checks failed.
+- Kimi and Zcode filed independent round-01 reviews. Review consensus proposes six fixes.
+- The capture unsafe-mode fixture also fails under umask 0077. Fix-up and current-source verification remain required.
 
 ## Outcomes & Retrospective
 

@@ -180,3 +180,13 @@ The full Go suite remains in progress. It must pass before close.
 The phase-6 driver refused again: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 Use the owner's native CLI fallback for independent Kimi and Zcode review. It supplies no driver accounting or membership authority.
 Protocol context is full at SHA256 `b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709`.
+
+## Review cycle 1 and proposed fixes
+
+Both independent native reviewers completed without timeout. The driver validates both canonical review files.
+Kimi recorded three MAJOR findings and one MINOR finding. Zcode recorded one MINOR and two NIT findings.
+The consensus proposes F1-F6, resolves two scoped verdict conflicts through cited evidence, and retains all release gates.
+The completed full Go suite failed only version metadata and partial phase reporting under the organizer's environment.
+Both independent reviewers reproduced the capture fixture failure under umask 0077.
+The phase-7 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized fallback applies. Native receipts supply no driver accounting or membership authority.
