@@ -152,3 +152,11 @@ The AC-05 and AC-08 resolutions follow §15.3. They engage the contrary evidence
 F5 resolves the reported display defect. A new digest field is not needed for a display-only defect. The new wording must stay correct for absent records and pre-implementation handovers.
 
 The conditions in this consensus bind: apply F1-F6 first; record current-source results in IMPLEMENTATION; both reviewers inspect the fixed complete diff; the next review records current-source PRIMARY evidence; the full Go suite passes at the fixed HEAD before close.
+
+### Signoff: kimi-1 — 2026-10-29
+Status: ✅ ACCEPT
+Notes: I accept F1-F6 as a fix plan only. This signoff gives no product pass, criterion verdict, or release approval. I inspected the unchanged source and did not rerun the recorded failing suite.
+
+F1 must change both `Roles.Protected` and the inline `protected` map in `Evaluate`. `Evaluate` must request succession only for role losses backed by `provider-exhaustion.v1`. An ordinary fallback or global-default failure must never create a role transition. Before a pin, those identities must retain transient retries, ordinary settlement, and global-default fallthrough. Explicit designee, pin, organizer, facilitator, and started-drafter protection must remain unchanged. Whole-batch tests must settle every loss before selection. They must cover mixed ordinary-plus-exhaustion losses, simultaneous role losses, successor usability, immutable history, and global-default fallthrough. Tests must also cover readiness, explicit designee/pin gates, and ordinary settlement.
+
+F2-F4 and F6 address their recorded defects directly. F5's active-record wording fixes the stale display without a new digest field. Its tests must cover absent records and handovers before implementation starts. The AC-05 and AC-08 resolutions engage the contrary primary evidence and correctly limit the untagged results under section 15. No vote proves either criterion. Corrupt authority must continue to block, without automatic deletion or fallback. The next review must inspect the fixed complete diff and record current-source PRIMARY evidence. The full Go suite must pass at the fixed HEAD before close.
