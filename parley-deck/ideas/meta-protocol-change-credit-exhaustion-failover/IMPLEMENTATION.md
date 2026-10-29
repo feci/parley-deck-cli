@@ -5,7 +5,7 @@ implementer: codex-1
 started: 2026-10-29
 completed: 2026-10-29
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover#feature/meta-protocol-change-credit-exhaustion-failover
-head-commit: 24c6184332ff4fc8084ead7458c1c2b207b949f3
+head-commit: 931550cb4c57f041f9a8a1d1337571cb271a873a
 design-pr: https://github.com/feci/parley-deck-cli/pull/86
 implementation-pr: n/a
 ---
@@ -41,6 +41,9 @@ The skill adds `references/EXHAUSTION_AND_HANDOVER.md`; existing references and 
 The capture scrubber accepts only proven safe framing. Uncertain input creates no file, as D10 requires.
 
 ## Notes for reviewers
+
+CLI implementation commit: `931550cb4c57f041f9a8a1d1337571cb271a873a`. Skill implementation commit: `70d29c1aebd9a632f6f6239123fd2f52e3775a48`.
+
 
 Use FINAL AC-01 through AC-15 and decisions D1–D12. The exact 29-hunk SHA256 is
 `f140e81ada0a8fb08644109b889979e54945f829183c3d82b47c760eae67147c`.
