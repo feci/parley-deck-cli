@@ -154,3 +154,14 @@ The native Windows capture refusal assertion needs hosted execution. CLI Windows
 
 Fresh full-scope Kimi and Zcode reviews, review consensus, and an independent goal check remain required.
 AC-15 release and installation evidence remains pending. No release or installation has occurred.
+
+### Review-round-2 concurrent admission observation
+
+One Ubuntu job failed at this unchanged product source; the corresponding push job passed.
+A 100-run local repetition reproduced `TestStepBudgetConcurrentIndependentGroupsShareCap` failures.
+Diagnostic test-only output reports `unreadable invocation request during exhaustion admission`.
+The record writer exposes requested.json before its write completes. Common admission can read those incomplete bytes.
+The product remains at 31c039c while both independent reviewers work.
+A private atomic-publication proposal is under test; no product fix is accepted or applied yet.
+The next review consensus must address this result before close, regardless of any one full-suite pass.
+Evidence and proposal: `../../inbox/codex-1-to-all_meta-protocol-change-credit-exhaustion-failover_review02-concurrent-admission.md`.
