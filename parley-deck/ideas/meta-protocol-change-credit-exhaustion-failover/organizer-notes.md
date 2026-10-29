@@ -115,3 +115,18 @@ The owner answer remains quoted in round-02/codex-1.md.
 Native fallback remains authorized, without driver accounting or automatic membership authority.
 Codex filed one concrete handover contract and exact proposed protocol hunks for peer review.
 These are design sources only. No product code, live protocol, staged core, or skill file changed.
+
+## Resume 3: host reboot
+
+The host boot time is 2026-10-29 20:39:36 CET. The owner reports that the reboot stopped all prior child processes.
+Codex round 3 remains valid. Neither peer round-3 file exists. No partial canonical peer file requires repair.
+The interrupted native launches have private logs but no terminal receipts. Preserve those logs without an invented exit or usage.
+These interruptions consume no participant-failure or provider-retry attempt. No participant is excluded.
+The private scratch inventory contains empty JSON files from earlier failed commands. They are not authoritative and are not reused.
+No stale live peer process or task lock remains. Fresh launches use distinct resume3 names.
+See source-context/resume3-host-reboot.json for the interruption receipt and log hashes.
+
+The owner succession and fallback answers remain binding. The driver still reports:
+`continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Native fallback therefore remains authorized for phase 2. It supplies no driver accounting or automatic membership authority.
+The live protocol hash remains unchanged. Runtime skill drift remains for the authorized release installation.

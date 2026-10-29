@@ -1,0 +1,55 @@
+{
+  "schema": "organizer-host-interruption/v1",
+  "observed_at": "2026-10-29T19:54:10.503753+00:00",
+  "cause": "host reboot; owner Resume 3 instruction",
+  "boot_time": "kern.boottime: { sec = 1793302776, usec = 23284 } Thu Oct 29 20:39:36 2026",
+  "participants": [
+    "kimi-1",
+    "zcode-1"
+  ],
+  "provider_failure": false,
+  "retry_consumed": false,
+  "terminal_receipts_present": false,
+  "canonical_round03": {
+    "codex-1": "present and validator-valid",
+    "kimi-1": "absent",
+    "zcode-1": "absent"
+  },
+  "preserved_private_logs": [
+    {
+      "path": ".parley-runtime/credit-failover/round03-kimi-1-native.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".parley-runtime/credit-failover/round03-kimi-1-native.stdout",
+      "bytes": 522128,
+      "sha256": "df74e9722016e5bac5a2c4fe3cef23f55af82eb3e3b8aa4f26650f2488bc6ec1"
+    },
+    {
+      "path": ".parley-runtime/credit-failover/round03-zcode-1-native.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".parley-runtime/credit-failover/round03-zcode-1-native.stdout",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "invalid_private_scratch": [
+    {
+      "path": ".parley-runtime/credit-failover/agents.json",
+      "bytes": 0
+    },
+    {
+      "path": ".parley-runtime/credit-failover/native-fallback-discovery.json",
+      "bytes": 0
+    },
+    {
+      "path": ".parley-runtime/credit-failover/resume2-organizer-brief.json",
+      "bytes": 0
+    }
+  ],
+  "recovery": "Fresh one-shot native launches with distinct resume3 prefixes; preserve old files."
+}
