@@ -215,3 +215,13 @@ Zcode completed its supplemental review and its own heading correction. Both nat
 Both exact-prefix checks passed. The current review hash is `98bed5b76f48f44d6a5bbf9cd14d402836273fef2f3f9dbf33ee57bfa4c52c19`.
 Zcode reproduced the concurrent-admission defect and rated it CRITICAL. Its own atomic-publication overlay checks passed.
 It accepted the capture-status documentation alternative. Both findings remain open until signed consensus and fix-up.
+
+## Review cycle 2 fix consensus
+
+Kimi retry 1 completed exit 0 at 23:20:16Z, within its 2400-second ceiling.
+Its artifact hash matches the native receipt. Both round-02 files pass the installed validator.
+The proposed second fix plan covers atomic publication, checked directory durability, cleanup documentation/help, and one formatting defect.
+The signed first-cycle consensus is preserved exactly in `review/consensus-cycle-01.md`.
+Archive SHA256: `e4218477079bdc219501f3f932ceab4424407b13e7bb45142098de20e45238e8`. No earlier signoff was edited.
+Phase-7 refusal: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Native fallback remains authorized, without driver accounting or membership authority.

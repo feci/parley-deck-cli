@@ -1,130 +1,152 @@
 ---
 idea: meta-protocol-change-credit-exhaustion-failover
-review-cycle: 1
+review-cycle: 2
 drafted-by: codex-1
-date: 2026-10-29
-reviewed-commit: 931550cb4c57f041f9a8a1d1337571cb271a873a
+date: 2026-10-30
+reviewed-commit: 31c039c41a455a03385401085d132234a17603f6
 ---
 
-Codex-1 is the organizer, implementer, participant, and consensus drafter. Signoffs ratify this proposed fix list; they do not close implementation.
+Codex-1 is the organizer, implementer, participant, and consensus drafter.
+This consensus proposes the second fix-up plan. It grants no product pass or release approval.
 Skill target: `70d29c1aebd9a632f6f6239123fd2f52e3775a48`.
-Both independent native processes exited 0. Their receipt hashes match their canonical review files.
+The signed first-cycle consensus remains byte-exact at `consensus-cycle-01.md`.
+Both current review artifacts pass the installed validator. Each author wrote its own artifact in a native process.
 
 ## Agreed fixes
 
-1. **F1 — Preserve transient behavior before an implementer pin.** Source: Kimi's first MAJOR in `round-01/kimi-1.md`.
-   Separate succession assignment from protected-role status. Keep fallback and global-default transient steps on the original two-attempt path.
-   Preserve ordinary exclusion and global-default fallthrough before a pin. Do not synthesize exhaustion succession from an ordinary fallback failure.
-   Resolve and bind the initial fallback/default identity when exhaustion requires a transition.
-   Preserve explicit designee, pin, organizer, facilitator, and started-drafter gates.
-   Test readiness, ordinary settlement, exhaustion succession, and mixed simultaneous losses. Test immutable history validation, not only `Roles.Protected`.
-2. **F2 — Match CLI version metadata.** Source: Kimi's second MAJOR in `round-01/kimi-1.md`.
-   Set root `VERSION` to `1.56.0`. Run the version check and complete Go suite at the fixed source.
-3. **F3 — Preserve observed implementation presence on read errors.** Source: Kimi's third MAJOR in `round-01/kimi-1.md`.
-   Apply `ExecutionStarted`'s boolean only when its error is nil. Preserve positive stat evidence and return the integrity error.
-   Retain early-handover behavior and the existing unreadable-file regression test.
-4. **F4 — Make the unsafe-mode fixture independent of umask.** Source: both reviewers' MINOR capture findings.
-   Force the fixture's `0644` mode with `os.Chmod`. Check setup errors in that test.
-   Run it under umasks `0077` and `0022`. Product storage must continue to reject unsafe modes.
-5. **F5 — Correct the wait message.** Source: Zcode's first NIT in `round-01/zcode-1.md`.
-   Replace initial-file-only wording with active-execution-record wording. Cover absent records and handovers before implementation starts.
-   Keep the digest API shape unchanged; this correction needs no new path field.
-6. **F6 — Remove the empty changelog heading.** Source: Zcode's second NIT in `round-01/zcode-1.md`.
-   Remove the empty `Unreleased` section above 1.56.0. Preserve all release entries.
+1. **F7 — Publish complete invocation records with checked durability.** Sources: both round-02 CRITICAL findings.
+   Stage complete bytes in a private sibling file. Check the write, file sync, and close before publication.
+   Publish through exclusive `os.Link`. Preserve refusal for any existing destination, including a symlink or directory.
+   Sync the invocation directory and its parent after publication. Use the existing `quota.SyncPath(i.Dir)` barrier.
+   Return every persistence error. Retain readable published state after a directory-sync failure, without a child launch or silent success.
+   Remove the temporary staging name on ordinary return paths. Crash residue must remain inert to record readers.
+   Keep malformed committed records as admission errors. Do not tolerate parse errors or weaken exhaustion suppression.
+   Add fault tests for write, file-sync, link, and directory-sync failures.
+   Cover existing files, symlinks, private permissions, and staging cleanup. Preserve immutable collision and repeated-failure behavior.
+   Repeat the concurrent-budget test at high count. Exercise grouped participant launches and attempt-accounting refusal paths.
+   Run relevant race checks and the complete required Go suite at the fixed source.
+2. **F8 — State capture-status cleanup effects.** Sources: Zcode's round-02 NIT and Kimi's round-02 MINOR.
+   Update the CLI guide, packaged skill reference, and command help.
+   State that status deletes expired files, removes old files for the total cap, and updates `cleanup.json`.
+   Preserve D10's cleanup on each use. Change no capture behavior or enablement source.
+3. **F9 — Format the changed driver file.** Source: Kimi's round-02 NIT.
+   Put the protocol import with the existing project imports in `internal/driver/impl.go`.
+   Run `gofmt` on that file. Check every Go file changed by this idea for formatting.
 
-These fixes preserve FINAL D1-D12. They do not alter the signed protocol hunks or the frozen owner order.
-The implementer must update IMPLEMENTATION and record current-source test results. Both reviewers must inspect the fixed complete diff.
+The private atomic-publication overlay is incomplete as a delivery patch. F7 adds its missing directory barriers and fault coverage.
+These fixes preserve FINAL D1–D12 and the signed protocol hunks. Both reviewers must inspect the complete fixed diff.
+A directory-durability failure must remain an error, including on an unsupported platform.
+CLI Windows remains experimental. CLI WinGet stays held. Record platform results without weakening storage checks.
+
+## Resolved prior findings
+
+Both reviewers accept F1–F6 at `31c039c` and withdraw their corresponding round-01 findings.
+Both accept the eager read-only candidate calculation. It grants no protection, pin, stored assignment, or succession authority.
+The new race remains separate from the corrected pre-pin protection defect.
+The unreadable active-record regression and the two umask cases now pass in independent checks.
+The first-cycle signatures remain intact in the archived consensus; they do not sign this new fix plan.
 
 ## Deferred follow-ups
 
-- `quota-zcode-native-exhaustion-capture` retains native-positive provenance and completeness work beyond this release's diagnostic capture facility.
-- `quota-kickoff-reporting-and-alias-guidance` retains its remaining reporting work. This release includes required account-alias guidance only.
+- `quota-zcode-native-exhaustion-capture` retains native-positive provenance and completeness work beyond this diagnostic facility.
+- `quota-kickoff-reporting-and-alias-guidance` retains its remaining reporting work. Required account-alias guidance is in this release.
 - Peer account inference, machine exhaustion caches, other native adapters, and broader Codex versions remain deferred under FINAL.
 - CLI WinGet remains held. npm and global-core publication remain owner-only.
 
 ## Dismissed findings
 
-None. Every concrete finding in both round-01 files has a proposed fix above.
-The reported capture failure concerns the fixture. Both peers observed that an actual unsafe file is rejected.
+None. F7–F9 address every current finding. The documentation severity difference changes no required correction.
 
 ## Verdict conflicts
 
-### AC-05 — Transient retry behavior
+### Atomic publication and durable persistence
 
-Zcode wrote in `round-01/zcode-1.md`:
+Zcode wrote in `round-02/zcode-1.md`, under its supplemental assessment:
 
-> Attempt: I checked attempt limits, the five-second delay, and the frozen ceiling in `RunParticipantStep`. I ran `TestExhaustionValidOutputAndSingleAttemptTransient`. I checked `SingleAttempt` on implementation, fix-up, protected steps, and started drafters.
-> Result: not broken. Ordinary steps keep two attempts, the delay, and the frozen ceiling. Code-mutating and protected steps run once. No new automatic retry exists for them.
+> Persistence: data bytes are synced before publication, same as before. Neither the old nor the proposed code fsyncs the directory entry after publication; that is parity, not a regression. An optional follow-up may fsync `i.Dir` after `Link`.
 
-This result has no explicit provenance tag. Section 15 therefore reads its verdict as `RECALL` and `UNVERIFIED`.
-Kimi wrote in `round-01/kimi-1.md`:
+It then wrote:
 
-> Result: `WRONG (PRIMARY)`. `internal/app/app.go:1965-1970` assigns either identity to `Assignment.Implementer`. `internal/quota/quota.go:143-145` treats that assignment as protected. `internal/app/preflight.go:964-972` then selects one attempt.
->
-> This contradicts the legacy comment at `internal/quota/quota.go:140`. It can also block global-default fallthrough. See the first finding.
+> My verdict on the proposal: `CONFIRMED (PRIMARY)` for the tested scope. I concur with the approach and found no defect in it. I propose no different correction; writer-side atomic publication is the correct shape, and reader-side tolerance would weaken corruption handling against D2/D3.
 
-Proposed resolution: F1 addresses the specific pre-pin path identified by Kimi. Zcode's cited test exercises an explicit single-attempt option.
-That test does not refute the eager protection counterexample. Preserve its narrower result; do not use it to close AC-05.
-Both signers must assess this resolution. The next independent review must test the corrected path and record admissible provenance.
+Zcode's decisive checks are its own 100-run overlay test and 20-run race check, quoted in that review.
+Those checks exercise visibility and collision behavior. They do not inject power loss or directory-sync failure.
 
-### AC-08 — Current execution readers
+Kimi wrote in `round-02/kimi-1.md`, in its CRITICAL finding:
 
-Zcode wrote in `round-01/zcode-1.md`:
+> The proposal is not complete for durable persistence. It does not sync the invocation directory after link publication. A crash can lose the new directory entry even after file sync. The initial invocation directory also needs a parent durability barrier.
 
-> Result: not broken. The resolver selects only from validated typed history. Filename order supplies nothing. A changed base hash, a corrupt tip, or a symlink blocks without fallback. A pending handover admits only the selected successor's handover action (`internal/runner/telemetry.go`, `selectedHandover`). All consumers I audited route through the resolver: driver checks, evidence table and report guard, driver evidence, cursor and phase digest, `advanceFinal`, implementation status and completion, fix-up paths, goal-check prompt, signoff recovery, learn, pipeline, TUI, retro, and action identity. `ExecutionStarted` keeps a pre-Phase-5 handover from implying review readiness.
+Its cited source is `record-atomic-proposal.go:403-427`; its proposed barrier is the existing `quota.SyncPath(i.Dir)`.
+Its AC-04 PRIMARY inspection cites `quota.DurableWrite` at `internal/quota/history.go:223-269` for checked publication and directory sync.
 
-This result also lacks an explicit provenance tag. It reads as `RECALL` and `UNVERIFIED` for acceptance purposes.
-Kimi wrote in `round-01/kimi-1.md`:
+Resolution proposed for signoff: keep the independently tested atomic visibility correction, then add the two directory barriers under F7.
+The absence of a new regression does not prove FINAL's durable no-reconnect requirement.
+The prior tests supply no directory-failure evidence. Kimi's identified missing operation therefore requires the stated correction and fault tests.
+This resolution preserves Zcode's narrower successful checks. It does not treat either reviewer's vote as durability evidence.
+The next full-scope review must verify the completed implementation at current source.
 
-> Result: `WRONG (PRIMARY)` for the complete current-reader scope. Resolver and pending-action tests passed. The fixed-path consumers mostly use `ResolveActiveExecution`. However, the phase reader has a confirmed error-handling regression.
->
-> Executed: `go test ./internal/driver -run '^TestRebuildDetailSurfacesReadErrors/unreadable_IMPLEMENTATION.md$' -count=1 -v`.
->
-> Output: `partial detail phase=round, want impl (the stat still saw the file)`. See the third finding.
+### AC-05 scope after the first fix-up
 
-Proposed resolution: retain the successful resolver cases and fix the unreadable-file case through F3.
-Resolver routing does not prove correct error handling. The specific failed test prevents a complete AC-08 pass.
-No vote supplies the missing evidence. The next review must verify the fixed reader at current source.
+Zcode wrote in its supplemental assessment:
+
+> AC-05: my verified scope stands; the retry-parity, spacing, and protection tests still pass. The race adds a separate concurrency defect. Risk I could not verify by execution: a spurious admission refusal inside a participant step surfaces as an invocation-less failure, and how that interacts with attempt accounting deserves a check in fix-up cycle 2.
+
+Kimi wrote in its AC-05 assessment:
+
+> Result: `WRONG (PRIMARY)`. F1 passed its focused checks, but common admission can reject unrelated concurrent launches after it reads partial request JSON.
+
+Both reviews quote independent seven-of-100 failures of the unchanged concurrent-budget test.
+Resolution proposed for signoff: retain the narrower F1 retry and protection results; keep complete AC-05 acceptance open until F7 passes.
+The race concerns ordinary launch admission before budget and participant accounting. The isolated F1 pass does not cover that boundary.
+F7 therefore includes grouped launches and refusal accounting, as well as the reproduced concurrent case.
 
 ## Drafter position changes
 
-None in the frozen design. F1 restores D1 and D4; F3 restores D6.
-The implementer withdraws any implication that its checked implementation checklist proves complete AC-05 or AC-08 satisfaction.
-The prior checklist in `../IMPLEMENTATION.md` records implemented areas, not independent acceptance evidence.
+The frozen design does not change. The implementer's private proposal omitted directory barriers; this plan now requires them.
+Prior position, from `../../inbox/codex-1-to-all_meta-protocol-change-credit-exhaustion-failover_review02-concurrent-admission.md`:
+
+> I propose atomic exclusive publication of complete request records. Preserve refusal for malformed committed authority and existing paths.
+> Do not ignore parse errors or add launch retries.
+> A private source overlay tests staged-file publication through an exclusive hard link.
+
+New position: that proposal addresses visibility but remains incomplete for delivery until F7 adds the barriers and fault tests.
+The implementer adopts Kimi's concrete correction. Both independent signers must assess the rationale above.
+The initial checked implementation areas never supply independent acceptance evidence.
 
 ## Alternatives disposition
 
-- **ALT-F1: adopt separate succession and protection decisions.** This preserves ordinary retries and the owner order without a new membership store.
-- **ALT-F2: reject universal one-attempt behavior.** It contradicts FINAL D1 and AC-05.
-- **ALT-F3: reject a fixed-umask test requirement.** The fixture must construct the unsafe mode it claims to test.
-- **ALT-F4: adopt active-record wording.** It corrects the wait text without another public digest field.
+- **ALT-F7a: adopt exclusive sibling publication.** It prevents partial visible JSON while preserving existing-record refusal.
+- **ALT-F7b: reject reader-side parse-error tolerance.** It would hide committed corruption and weaken the no-reconnect gate.
+- **ALT-F7c: adopt invocation-directory and parent barriers.** File sync alone does not supply the missing directory-entry durability.
+- **ALT-F7d: reject unchanged private-overlay delivery.** Its visibility tests do not cover the required durability boundary.
+- **ALT-F8a: adopt explicit status documentation and help.** It explains the required cleanup without changing D10.
+- **ALT-F8b: reject read-only status in this idea.** D10 requires cleanup on each use.
 
 ## Coverage & blind spots
 
-Kimi found the transient protection defect, version mismatch, and phase-read regression. Both peers found the umask fixture defect.
-Zcode found the two display/documentation issues. Both peers reconstructed the exact signed protocol hunks and checked packet sizes.
-Their agreement is not independent proof by itself. Related models can share assumptions.
-An untested launch path, transition boundary, or current-state consumer can invalidate the proposed correction.
-Native exhaustion remains synthetic or source-backed within FINAL's limits. No provider exhaustion was induced.
+Both reviewers independently reproduced the race. Both independently passed the private visibility-correction overlay.
+Kimi identified the missing durability barriers and formatting defect. Both found the command-specific cleanup omission.
+Related models can share assumptions. Their agreement is not independent evidence by itself.
+An untested persistence boundary, platform filesystem, or participant-accounting path can invalidate the correction.
+Native exhaustion evidence remains synthetic or source-backed within FINAL's limits. No provider exhaustion was induced.
 
-The completed organizer full suite also failed the version and phase-read checks. Its log is private `review01-full-go.log`.
-The older `resume3-full-go.log` compiled before the kickoff-order correction. It supplies no current-source result.
-The fixed source must pass the full Go suite, relevant race checks, skill suite, and package/build checks before close.
+The organizer's full Go run passed once at the reviewed source. Ubuntu and macOS PR jobs failed the concurrent test.
+Those facts are compatible: the race is intermittent. A passing run does not dispose of a reproduced counterexample.
+Windows baseline and current failures do not establish Windows correctness. Keep the stated experimental limitation.
 
-## Release and operator questions
+## Validation and remaining gates
 
-The required Go command is `go test ./... -count=1 -timeout 45m`. F4 removes the ambient-umask dependency.
-A fresh Kimi or Zcode process must perform the pre-release goal check after review closes.
-Then follow D12: merge commits, clean-source builds, authorized channels, runtime installs, and a separate channel-verification process.
-AC-15 delivery remains open until the hosted and installed byte checks exist. This fix consensus grants no completion claim.
-Verify Windows skill asset hashes after the release workflow completes, because it can replace those assets.
-The Zcode follow-up remains deferred; no execution date is promised here.
+Use `go test ./... -count=1 -timeout 45m` after the fixes.
+Also run the repeated concurrent regression, grouped participant paths, relevant race checks, skill suite, package checks, and portable build.
+Record the changed source commits in IMPLEMENTATION. Preserve the exact protocol/core hashes and size limits.
+Both reviewers then perform fresh full-scope reviews. A fresh independent process must perform the pre-release goal check.
+D12 places channel publication and installation after these gates. AC-15 delivery remains open until the separate channel review and hashes exist.
+The final delivery record must include owner-only commands in version order 2.15.0 through 2.20.0.
 
-A corrupt selected handover blocks without fallback. The operator must preserve its bytes and resolve the integrity defect.
-Automatic removal or replacement is not authorized by a timeout. The current runbook already states that corrupt authority blocks.
-
-The phase-7 driver refused with: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
-The owner-authorized native fallback applies. It supplies no driver accounting or membership authority.
+The phase-7 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized native fallback applies. It grants no driver accounting or automatic membership authority.
+Kimi's first round-02 process timed out without an artifact. Its authorized retry completed after the full 15-minute delay.
+The earlier host reboot caused no participant exclusion. All three current participants remain required signers.
 
 ## Protocol context
 
@@ -135,28 +157,6 @@ fallback_reason: none
 
 ## Signoffs
 
-### Signoff: codex-1 — 2026-10-29
+### Signoff: codex-1 — 2026-10-30
 Status: ✅ ACCEPT
-Notes: I accept F1-F6 and the stated evidence limits. I will apply the fixes after both independent signers accept.
-
-### Signoff: zcode-1 — 2026-10-29
-Status: ✅ ACCEPT
-Notes: I accept F1-F6 and the stated evidence limits. This signoff agrees on fixes. It passes no criterion and releases nothing.
-
-I inspected every F1-F6 site in the unchanged source myself. The eager fallback/default assignment sits near `internal/app/app.go:1965`. `Roles.Protected` includes `Assignment.Implementer` at `internal/quota/quota.go:143-149`, against its own comment. Readiness passes `SingleAttempt: opts.QuotaRoles.Protected(a.ID)` at `internal/app/preflight.go:971`. `VERSION` says `1.55.0`; `internal/app/version.go` says `1.56.0`. `RebuildDetail` overwrites the stat result at `internal/driver/cursor.go:268-273`. The fixture writes mode `0644` through `os.WriteFile` at `internal/telemetry/capture_test.go:98`. `outstandingAgents` prints "IMPLEMENTATION.md not filed". `CHANGELOG.md` keeps an empty `## Unreleased` heading.
-
-F1 needs one binding clarification. Removing `Assignment.Implementer` from protection alone is insufficient. `Evaluate` passes every candidate ID to `SelectSuccession` at `internal/quota/quota.go:273`, whatever rule caused the loss. The fix must gate succession on exhaustion-rule losses there. It must also cover both protection sites: `Roles.Protected` and the inline `protected` map in `Evaluate`. Otherwise an ordinary fallback failure would synthesize a role transition. F1's wording already requires this. The whole-batch tests must include the mixed ordinary-plus-exhaustion loss case.
-
-The AC-05 and AC-08 resolutions follow §15.3. They engage the contrary evidence and preserve the narrower passing results. No vote proves a criterion. My round-01 AC-05 and AC-08 results carried no provenance tags. I accept their RECALL reading. My current inspection confirms Kimi's counterexamples.
-
-F5 resolves the reported display defect. A new digest field is not needed for a display-only defect. The new wording must stay correct for absent records and pre-implementation handovers.
-
-The conditions in this consensus bind: apply F1-F6 first; record current-source results in IMPLEMENTATION; both reviewers inspect the fixed complete diff; the next review records current-source PRIMARY evidence; the full Go suite passes at the fixed HEAD before close.
-
-### Signoff: kimi-1 — 2026-10-29
-Status: ✅ ACCEPT
-Notes: I accept F1-F6 as a fix plan only. This signoff gives no product pass, criterion verdict, or release approval. I inspected the unchanged source and did not rerun the recorded failing suite.
-
-F1 must change both `Roles.Protected` and the inline `protected` map in `Evaluate`. `Evaluate` must request succession only for role losses backed by `provider-exhaustion.v1`. An ordinary fallback or global-default failure must never create a role transition. Before a pin, those identities must retain transient retries, ordinary settlement, and global-default fallthrough. Explicit designee, pin, organizer, facilitator, and started-drafter protection must remain unchanged. Whole-batch tests must settle every loss before selection. They must cover mixed ordinary-plus-exhaustion losses, simultaneous role losses, successor usability, immutable history, and global-default fallthrough. Tests must also cover readiness, explicit designee/pin gates, and ordinary settlement.
-
-F2-F4 and F6 address their recorded defects directly. F5's active-record wording fixes the stale display without a new digest field. Its tests must cover absent records and handovers before implementation starts. The AC-05 and AC-08 resolutions engage the contrary primary evidence and correctly limit the untagged results under section 15. No vote proves either criterion. Corrupt authority must continue to block, without automatic deletion or fallback. The next review must inspect the fixed complete diff and record current-source PRIMARY evidence. The full Go suite must pass at the fixed HEAD before close.
+Notes: I accept F7–F9 as the second fix plan. I will apply them after both independent participants accept.
