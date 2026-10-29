@@ -15,6 +15,7 @@ import (
 	"parley-deck-cli/internal/agents"
 	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/pidlease"
+	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/quota"
 	"parley-deck-cli/internal/telemetry"
 )
@@ -32,6 +33,11 @@ type StepValidation struct {
 
 type ParticipantStepOptions struct {
 	Root, Idea, Step string
+	// Exhaustion is explicit only for a proposed readiness batch without history.
+	// Existing ideas use their frozen policy; a prior invocation retains its policy.
+	Exhaustion bool
+	// SingleAttempt preserves protected/code-mutating steps' existing retry gate.
+	SingleAttempt bool
 	// HardTimeout is frozen in the first invocation metadata for this logical
 	// step. A resumed retry uses that original ceiling, never a new config value.
 	HardTimeout time.Duration
@@ -64,6 +70,11 @@ func ParticipantStepActive(ctx context.Context) bool {
 	return ok
 }
 
+func ParticipantStepSingleAttempt(ctx context.Context) bool {
+	s, ok := ctx.Value(participantStepKey{}).(*participantStepLaunch)
+	return ok && s.attemptLimit == 1
+}
+
 // ParticipantStepTimeout returns the resolved, restart-stable hard ceiling.
 func ParticipantStepTimeout(ctx context.Context) time.Duration {
 	if s, ok := ctx.Value(participantStepKey{}).(*participantStepLaunch); ok {
@@ -73,24 +84,21 @@ func ParticipantStepTimeout(ctx context.Context) time.Duration {
 }
 
 type participantStepLaunch struct {
-	hardTimeout time.Duration
-	idea        string
-	key         string
-	ordinal     int
-	retry       string
-	observe     func(telemetry.Record)
-	integrity   error
+	captureDirectory string
+	stderrPath       string
+	exhaustion       bool
+	attemptLimit     int
+	hardTimeout      time.Duration
+	idea             string
+	key              string
+	logicalStep      string
+	ordinal          int
+	retry            string
+	observe          func(telemetry.Record)
+	integrity        error
 }
 
-type participantValidationRecord struct {
-	InvocationID   string `json:"invocation_id"`
-	Step           string `json:"step"`
-	TerminalSHA256 string `json:"terminal_sha256"`
-	Valid          bool   `json:"valid"`
-	Reason         string `json:"reason,omitempty"`
-	Integrity      string `json:"integrity,omitempty"`
-	SourceSHA256   string `json:"source_sha256,omitempty"`
-}
+type participantValidationRecord = telemetry.ParticipantValidationRecord
 
 // RunParticipantStep bounds one logical step across runs/restarts. Immutable
 // requested/terminal telemetry is the attempt ledger; the small validation
@@ -117,11 +125,24 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 	if err != nil {
 		return out, err
 	}
+	if h, err := quota.ReadHistory(filepath.Join(opts.Root, protocol.DeckDir, "ideas", opts.Idea)); err != nil {
+		return out, err
+	} else if h != nil {
+		opts.Exhaustion = h.Policy().Exhaustion()
+	}
+	attemptLimit := 2
+	if opts.SingleAttempt {
+		attemptLimit = 1
+	}
 	hardTimeout := opts.HardTimeout
 	if hardTimeout < 0 {
 		return out, fmt.Errorf("invalid participant hard ceiling")
 	}
 	if len(records) > 0 {
+		opts.Exhaustion = records[0].Metadata.ExhaustionPolicy
+		if records[0].Metadata.ParticipantAttempts == 1 {
+			attemptLimit = 1
+		}
 		// A historical step without a recorded ceiling may replay its completed
 		// output, but cannot authorize a new child with an invented original bound.
 		hardTimeout = time.Duration(records[0].Metadata.ParticipantTimeoutNS)
@@ -132,6 +153,7 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 		}
 	}
 	var attempts []quota.FailedAttempt
+	var exhausted *quota.Evidence
 	for i, r := range records {
 		out.Record = r
 		validation, err := readParticipantValidation(opts.Root, key, r)
@@ -182,6 +204,11 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 			out.Valid, out.Replayed = true, true
 			return out, nil
 		}
+		if e, err := invocationExhaustion(r, validation); err != nil {
+			return out, err
+		} else if e != nil {
+			exhausted = e
+		}
 		if err := appendParticipantAttempt(&attempts, *a, r.Metadata.AttemptOrdinal); err != nil {
 			return out, err
 		}
@@ -191,13 +218,17 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 			}
 		}
 	}
-	if opts.RecoverOnly && len(attempts) < 2 {
+	if exhausted != nil {
+		out.Evidence, out.Replayed = exhausted, true
+		return out, fmt.Errorf("provider exhaustion: no retry or reconnection for %s in this idea", opts.Agent.ID)
+	}
+	if opts.RecoverOnly && len(attempts) < attemptLimit {
 		return out, nil
 	}
-	if len(attempts) < 2 && opts.HardTimeout > 0 && hardTimeout <= 0 {
+	if len(attempts) < attemptLimit && opts.HardTimeout > 0 && hardTimeout <= 0 {
 		return out, fmt.Errorf("historical participant attempt has no frozen hard ceiling; no new child authorized")
 	}
-	for len(attempts) < 2 {
+	for len(attempts) < attemptLimit {
 		if err := ctx.Err(); err != nil {
 			return out, err
 		}
@@ -217,7 +248,7 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 			retry = attempts[len(attempts)-1].InvocationID
 		}
 		var observed telemetry.Record
-		binding := &participantStepLaunch{hardTimeout: hardTimeout, idea: opts.Idea, key: key, ordinal: len(attempts) + 1, retry: retry,
+		binding := &participantStepLaunch{exhaustion: opts.Exhaustion, attemptLimit: attemptLimit, hardTimeout: hardTimeout, idea: opts.Idea, key: key, logicalStep: opts.Step, ordinal: len(attempts) + 1, retry: retry,
 			observe: func(r telemetry.Record) { observed = r }}
 		childCtx := context.WithValue(ctx, participantStepKey{}, binding)
 		runErr := run(childCtx, binding.ordinal, retry)
@@ -235,12 +266,15 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 		if binding.integrity != nil {
 			v.Integrity = binding.integrity
 		}
-		if _, err := writeParticipantValidation(opts.Root, key, observed, v); err != nil {
+		validation, err := writeParticipantValidation(opts.Root, key, observed, v)
+		if err != nil {
 			return out, err
 		}
 		if v.Integrity != nil {
 			return out, v.Integrity
 		}
+		// Diagnostic capture failure never changes the execution verdict.
+		_ = captureValidatedFailure(observed, v.Valid, binding.stderrPath, binding.captureDirectory)
 		a, err := telemetry.ParticipantAttempt(observed, v.Valid, v.Reason)
 		if err != nil {
 			return out, errors.Join(runErr, err)
@@ -248,6 +282,12 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 		if a == nil {
 			out.Valid = true
 			return out, nil
+		}
+		if e, err := invocationExhaustion(observed, validation); err != nil {
+			return out, err
+		} else if e != nil {
+			out.Evidence = e
+			return out, fmt.Errorf("provider exhaustion: no retry or reconnection for %s in this idea", opts.Agent.ID)
 		}
 		if err := appendParticipantAttempt(&attempts, *a, observed.Metadata.AttemptOrdinal); err != nil {
 			return out, err
@@ -257,6 +297,9 @@ func RunParticipantStep(ctx context.Context, opts ParticipantStepOptions, run fu
 				return out, err
 			}
 		}
+	}
+	if attemptLimit == 1 {
+		return out, fmt.Errorf("protected participant step failed; no automatic retry: %s", opts.Step)
 	}
 	e, err := telemetry.ParticipantEvidence(opts.Idea, opts.Agent.ID, opts.Step, opts.Agent.Adapter(), attempts)
 	if err != nil {
@@ -403,25 +446,10 @@ func participantRecords(root, key, idea, agent string) ([]telemetry.Record, erro
 	return records, nil
 }
 
-func participantTerminalHash(r telemetry.Record) string {
-	raw, _ := json.Marshal(r)
-	return fmt.Sprintf("%x", sha256.Sum256(raw))
-}
+func participantTerminalHash(r telemetry.Record) string { return telemetry.ParticipantTerminalHash(r) }
 
 func readParticipantValidation(root, key string, r telemetry.Record) (*participantValidationRecord, error) {
-	path := filepath.Join(root, ".parley-runtime", "invocations", r.InvocationID, "participant-result.json")
-	raw, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	var v participantValidationRecord
-	if quota.DecodeRevisionRequest(raw, &v) != nil || v.InvocationID != r.InvocationID || v.Step != key || v.TerminalSHA256 != participantTerminalHash(r) {
-		return nil, fmt.Errorf("contradictory participant validation receipt")
-	}
-	return &v, nil
+	return telemetry.ReadParticipantValidation(root, key, r)
 }
 
 func writeParticipantValidation(root, key string, r telemetry.Record, v StepValidation) (*participantValidationRecord, error) {

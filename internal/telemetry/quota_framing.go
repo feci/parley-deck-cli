@@ -18,6 +18,8 @@ type sdkRecord struct {
 	end                   int
 }
 type sdkDump struct {
+	capture     bool
+	redactions  []captureSpan
 	raw         string
 	pos         int
 	records     []sdkRecord
@@ -83,7 +85,11 @@ func (p *sdkDump) failure(depth int) (string, error) {
 		if p.pos >= len(p.raw) {
 			return "", fmt.Errorf("incomplete SDK stack")
 		}
+		stackStart := p.pos
 		line = p.line()
+		if p.capture {
+			p.redactions = append(p.redactions, captureSpan{stackStart, p.pos - 1})
+		}
 		if !sdkStack.MatchString(line) {
 			return "", fmt.Errorf("unknown SDK stack framing")
 		}
@@ -163,9 +169,13 @@ func (p *sdkDump) failure(depth int) (string, error) {
 			if !allowed[key] {
 				return "", fmt.Errorf("unknown SDK field %s", key)
 			}
+			valueStart := p.pos
 			v, e := p.value(depth + 1)
 			if e != nil {
 				return "", e
+			}
+			if p.capture && (key == "url" || key == "requestBodyValues" || key == "responseHeaders" || key == "data") {
+				p.redactions = append(p.redactions, captureSpan{valueStart, p.pos})
 			}
 			fields[key] = v
 			if key == "responseBody" {

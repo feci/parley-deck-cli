@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"parley-deck-cli/internal/protocol"
 	"path/filepath"
 	"strings"
 
@@ -49,8 +50,16 @@ func definedEvidenceArtifacts(root, ideaDir string) ([]string, error) {
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
 		return nil, fmt.Errorf("idea directory %q is not inside the tree root %q", ideaDir, root)
 	}
+	execution, err := protocol.ExecutionPath(ideaDir)
+	if err != nil {
+		return nil, err
+	}
+	executionRel, err := filepath.Rel(root, execution)
+	if err != nil {
+		return nil, err
+	}
 	return []string{
-		filepath.ToSlash(filepath.Join(rel, "IMPLEMENTATION.md")),
+		filepath.ToSlash(executionRel),
 		filepath.ToSlash(filepath.Join(rel, evidence.ReportFileName)),
 	}, nil
 }

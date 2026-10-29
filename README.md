@@ -241,3 +241,5 @@ Existing artifacts remain unchanged. This summary does not certify full ASD conf
 Headless prompt arguments at or above 120 KiB use a private file in the invocation directory.
 The agent must read the entire file and verify its SHA256 before the task.
 This avoids the Linux argument limit and preserves the full prompt. File delivery does not prove that a model read it.
+
+Provider exhaustion, saved policies, role handover, and private Zcode capture: [operator guide](docs/credit-exhaustion.md).

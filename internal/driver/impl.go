@@ -1,6 +1,7 @@
 package driver
 
 import (
+"parley-deck-cli/internal/protocol"
 	"context"
 	"errors"
 	"fmt"
@@ -79,7 +80,11 @@ func (d *Driver) advanceFinal(ctx context.Context, c Cursor) (Action, Cursor, er
 	if d.cfg.Impl == nil {
 		return ActionSurfaceOnly, c, nil // impl auto-drive not wired (slice 1-2 behavior)
 	}
-	if fileExists(filepath.Join(d.cfg.IdeaDir, "IMPLEMENTATION.md")) {
+	execution, err := protocol.ExecutionPath(d.cfg.IdeaDir)
+	if err != nil {
+		return ActionEscalated, c, err
+	}
+	if fileExists(execution) {
 		return ActionSurfaceOnly, c, nil // Rebuild moves to PhaseImpl/Review next tick
 	}
 	if !d.cfg.AutoImplement {

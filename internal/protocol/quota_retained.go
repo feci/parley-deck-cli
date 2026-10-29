@@ -187,7 +187,7 @@ func quotaDisposition(ideaDir, raw string, ob quota.Obligation) bool {
 			if author == ob.Agent {
 				continue
 			}
-			pin, _ := ReadFrontmatter(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+			pin, _ := ReadExecutionFrontmatter(ideaDir)
 			if author == strings.Trim(pin["implementer"], "\"'") {
 				continue
 			}

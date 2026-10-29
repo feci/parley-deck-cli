@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+	"parley-deck-cli/internal/protocol"
 	"path/filepath"
 
 	"parley-deck-cli/internal/agents"
@@ -65,8 +66,12 @@ func withRunnerActionInput(ctx context.Context, opts Options, operation string) 
 	for _, a := range opts.Agents {
 		agentsInput = append(agentsInput, agentInput{a.Spec, a.Path, a.Version})
 	}
+	execution, e := protocol.ExecutionPath(opts.Idea.Path)
+	if e != nil {
+		return budget.InheritActionInput(ctx, budget.ActionInput{Operation: operation, Basis: "runtime-input", RunID: opts.RunID})
+	}
 	files := []actionFileInput{}
-	for _, path := range []string{filepath.Join(opts.Root, "parley-deck", "COOPERATION.md"), filepath.Join(opts.Idea.Path, "00-prompt.md"), filepath.Join(opts.Idea.Path, "FINAL.md"), filepath.Join(opts.Idea.Path, "consensus.md"), filepath.Join(opts.Idea.Path, "review", "consensus.md"), filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md")} {
+	for _, path := range []string{filepath.Join(opts.Root, "parley-deck", "COOPERATION.md"), filepath.Join(opts.Idea.Path, "00-prompt.md"), filepath.Join(opts.Idea.Path, "FINAL.md"), filepath.Join(opts.Idea.Path, "consensus.md"), filepath.Join(opts.Idea.Path, "review", "consensus.md"), execution} {
 		row, e := hashActionFile(path)
 		if e != nil {
 			return budget.InheritActionInput(ctx, budget.ActionInput{Operation: operation, Basis: "runtime-input", RunID: opts.RunID})

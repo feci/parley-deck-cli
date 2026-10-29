@@ -78,7 +78,7 @@ func RecordManual(root, dir string) error {
 // Revise requires a committed owner answer that spells out the exact requested
 // set and policy. This is the explicit same-idea return/scope path; never called
 // by binary upgrade, reset timers or automatic batch exclusion.
-func Revise(ctx context.Context, root, dir, run string, ids []string, p quota.Policy, a quota.Authority, catchup map[string]string) (*quota.Batch, error) {
+func Revise(ctx context.Context, root, dir, run string, ids []string, p quota.Policy, a quota.Authority, catchup map[string]string, roles ...*quota.RoleSnapshot) (*quota.Batch, error) {
 	if err := revisionOpen(dir); err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func Revise(ctx context.Context, root, dir, run string, ids []string, p quota.Po
 		}
 		proof[id] = string(raw)
 	}
-	b := quota.NewRevision(h, run, ids, p, quota.Revision{Authority: &a, Catchup: proof}, time.Now())
+	b := quota.NewRevision(h, run, ids, p, quota.Revision{Authority: &a, Catchup: proof}, time.Now(), roles...)
 	removed := []string{}
 	for _, id := range h.Current {
 		if !Has(ids, id) {

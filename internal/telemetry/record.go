@@ -31,21 +31,27 @@ type Context struct {
 }
 
 type Metadata struct {
-	ParticipantTimeoutNS int64   `json:"participant_timeout_ns,omitempty"`
-	ParticipantStep      string  `json:"participant_step,omitempty"`
-	RunID                string  `json:"run_id"`
-	SegmentID            string  `json:"segment_id"`
-	Idea                 string  `json:"idea"`
-	Phase                string  `json:"phase"`
-	Agent                string  `json:"agent"`
-	Adapter              string  `json:"adapter"`
-	LaunchMode           string  `json:"launch_mode"`
-	AttemptOrdinal       int     `json:"attempt_ordinal"`
-	RetryOf              *string `json:"retry_of"`
-	RequestedModel       *string `json:"requested_model"`
-	RequestedEffort      *string `json:"requested_effort"`
-	RequestedSpeed       *string `json:"requested_speed"`
-	Context              Context `json:"context"`
+	CaptureZcodeFailures   bool    `json:"capture_zcode_failures,omitempty"`
+	ExhaustionPolicy       bool    `json:"exhaustion_policy,omitempty"`
+	CLIVersion             string  `json:"cli_version,omitempty"`
+	ExplicitJSON           bool    `json:"explicit_json,omitempty"`
+	ParticipantAttempts    int     `json:"participant_attempts,omitempty"`
+	ParticipantLogicalStep string  `json:"participant_logical_step,omitempty"`
+	ParticipantTimeoutNS   int64   `json:"participant_timeout_ns,omitempty"`
+	ParticipantStep        string  `json:"participant_step,omitempty"`
+	RunID                  string  `json:"run_id"`
+	SegmentID              string  `json:"segment_id"`
+	Idea                   string  `json:"idea"`
+	Phase                  string  `json:"phase"`
+	Agent                  string  `json:"agent"`
+	Adapter                string  `json:"adapter"`
+	LaunchMode             string  `json:"launch_mode"`
+	AttemptOrdinal         int     `json:"attempt_ordinal"`
+	RetryOf                *string `json:"retry_of"`
+	RequestedModel         *string `json:"requested_model"`
+	RequestedEffort        *string `json:"requested_effort"`
+	RequestedSpeed         *string `json:"requested_speed"`
+	Context                Context `json:"context"`
 }
 
 type Usage struct {
@@ -71,14 +77,15 @@ type Observation struct {
 }
 
 type Outcome struct {
-	DispatchAttempted bool            `json:"dispatch_attempted,omitempty"`
-	QuotaEvidence     *quota.Evidence `json:"quota_evidence,omitempty"`
-	Status            string          `json:"status"`
-	ExitCode          *int            `json:"exit_code"`
-	FailureClass      *string         `json:"failure_class"`
-	ArtifactSHA256    *string         `json:"artifact_sha256"`
-	Usage             Usage           `json:"usage"`
-	Observation       Observation     `json:"observation"`
+	ExhaustionEvidence *quota.Evidence `json:"exhaustion_evidence,omitempty"`
+	DispatchAttempted  bool            `json:"dispatch_attempted,omitempty"`
+	QuotaEvidence      *quota.Evidence `json:"quota_evidence,omitempty"`
+	Status             string          `json:"status"`
+	ExitCode           *int            `json:"exit_code"`
+	FailureClass       *string         `json:"failure_class"`
+	ArtifactSHA256     *string         `json:"artifact_sha256"`
+	Usage              Usage           `json:"usage"`
+	Observation        Observation     `json:"observation"`
 }
 
 // WriterIdentity binds crash recovery to the original host/boot, supervisor and
@@ -272,6 +279,7 @@ func cleanMetadata(m Metadata, warnings *[]string) Metadata {
 		{"run_id", &m.RunID}, {"segment_id", &m.SegmentID}, {"idea", &m.Idea},
 		{"phase", &m.Phase}, {"agent", &m.Agent}, {"adapter", &m.Adapter},
 		{"launch_mode", &m.LaunchMode}, {"context_mode", &m.Context.Mode},
+		{"cli_version", &m.CLIVersion},
 	}
 	for _, field := range fields {
 		if *field.target != "" && SafeLabel(*field.target) == nil {

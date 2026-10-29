@@ -39,7 +39,10 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 		return false, nil
 	}
 	role := protocol.ReadFacilitatorRole(ideaDir)
-	if implementer == role.Facilitator {
+	if frozen := h.RoleSnapshot(); frozen != nil {
+		role.Facilitator = frozen.Facilitator
+	}
+	if implementer == role.Facilitator && h.RoleSnapshot() == nil {
 		return false, nil
 	}
 	reviewers := func(members []string) []string {
@@ -87,9 +90,25 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 			proofIdea, kickoff = "", true
 		}
 	}
+	beforeImplementer := implementer
+	if decision != nil && decision.RoleTransition != nil {
+		if decision.RoleTransition.After.Implementer != implementer {
+			return false, fmt.Errorf("reviewer proof uses a stale implementer")
+		}
+		beforeImplementer = decision.RoleTransition.Before.Implementer
+	}
+	beforeReviewers := func(members []string) []string {
+		var out []string
+		for _, id := range members {
+			if id != beforeImplementer && id != role.Facilitator {
+				out = append(out, id)
+			}
+		}
+		return out
+	}
 	if decision == nil || !decision.Applied || decision.Block != "" || decision.UsableSurvivors < quota.Floor ||
 		!validMemberSet(decision.Before) || !sameMemberSet(decision.After, ids) ||
-		!Has(decision.Before, implementer) || !Has(decision.Before, survivors[0]) || len(reviewers(decision.Before)) < 2 {
+		(!Has(decision.Before, implementer) && !(decision.RoleTransition != nil && h.RoleSnapshot() != nil && implementer == h.RoleSnapshot().Facilitator)) || !Has(beforeReviewers(decision.Before), survivors[0]) || len(beforeReviewers(decision.Before)) < 2 {
 		return false, nil
 	}
 	roles, err := Roles(ideaDir)
@@ -98,16 +117,23 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 	}
 	removed := []string{}
 	for _, id := range ids {
-		if !Has(decision.Before, id) {
+		if !Has(decision.Before, id) && !(decision.RoleTransition != nil && h.RoleSnapshot() != nil && id == h.RoleSnapshot().Facilitator && id == implementer) {
 			return false, nil
 		}
 	}
 	for _, id := range decision.Before {
 		if !Has(ids, id) {
-			if id == role.Facilitator || roles.Protected(id) {
+			if (id == role.Facilitator || roles.Protected(id)) && !exhaustionCandidate(decision.Candidates, id) {
 				return false, nil
 			}
 			removed = append(removed, id)
+		}
+	}
+	if decision.RoleTransition != nil {
+		for _, c := range decision.Candidates {
+			if !Has(decision.Before, c.Agent) && h.RoleSnapshot() != nil && c.Agent == h.RoleSnapshot().Facilitator && c.Agent == decision.RoleTransition.Before.Organizer {
+				removed = append(removed, c.Agent)
+			}
 		}
 	}
 	if len(removed) == 0 || len(removed) != len(decision.Candidates) || !sameMemberSet(removed, quota.CandidateIDs(decision.Candidates)) {
@@ -163,7 +189,19 @@ func knownModel(model string) string {
 	return model
 }
 
+func exhaustionCandidate(cs []quota.Candidate, id string) bool {
+	for _, c := range cs {
+		if c.Agent == id && quota.ValidateExhaustionEvidence(c.Evidence, "", id) == nil {
+			return true
+		}
+	}
+	return false
+}
+
 func reviewFailureEvidence(e quota.Evidence, idea, agent string, kickoff bool) bool {
+	if e.RuleID == quota.ProviderExhaustionRule {
+		return quota.ValidateExhaustionEvidence(e, idea, agent) == nil && (!kickoff || e.Exhaustion.Step == "readiness")
+	}
 	if e.RuleID == quota.ParticipantFailureRule {
 		return quota.ValidateFailureEvidence(e, idea, agent) == nil && (!kickoff || e.Failure.Step == "readiness")
 	}

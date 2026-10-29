@@ -42,6 +42,8 @@ type QuotaInput struct {
 	ValidArtifact, LaterSuccess bool
 	Watchdog                    string
 	Truncated                   bool
+	CLIVersion                  string
+	ExplicitJSON                bool
 }
 
 // ClassifyQuota deliberately fails closed until an adapter's native error channel

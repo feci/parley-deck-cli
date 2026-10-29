@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"parley-deck-cli/internal/quota"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -145,6 +146,14 @@ func LegacyImplementerCandidates() []ImplementerCandidate {
 // facilitator-filtered list; the consensus side passes the raw participants) — the
 // divergence is visible and testable here rather than baked in.
 func ResolveImplementerChain(ideaDir string, candidates []ImplementerCandidate, eligible []string) (string, ImplementerSource, bool) {
+	if h, err := quota.ReadHistory(ideaDir); err != nil {
+		return "", "", false
+	} else if r := h.LastRoleTransition(); r != nil {
+		if _, err := ResolveActiveExecution(ideaDir); err != nil {
+			return "", "", false
+		}
+		return r.After.Implementer, ImplementerSource("role-transition"), true
+	}
 	isEligible := func(id string) bool {
 		for _, p := range eligible {
 			if p == id {

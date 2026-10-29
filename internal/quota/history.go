@@ -29,17 +29,18 @@ type Obligation struct {
 }
 
 type Batch struct {
-	Owner         *Revision    `json:"owner,omitempty"`
-	Retained      []Obligation `json:"retained,omitempty"`
-	Version       int          `json:"version"`
-	ID            string       `json:"id"`
-	Idea          string       `json:"idea"`
-	RunID         string       `json:"run_id"`
-	PriorRevision int          `json:"prior_revision"`
-	Policy        Policy       `json:"policy"`
-	Decision      Decision     `json:"decision"`
-	RecordedAt    time.Time    `json:"recorded_at"`
-	Round         string       `json:"round,omitempty"`
+	RoleSnapshot  *RoleSnapshot `json:"role_snapshot,omitempty"`
+	Owner         *Revision     `json:"owner,omitempty"`
+	Retained      []Obligation  `json:"retained,omitempty"`
+	Version       int           `json:"version"`
+	ID            string        `json:"id"`
+	Idea          string        `json:"idea"`
+	RunID         string        `json:"run_id"`
+	PriorRevision int           `json:"prior_revision"`
+	Policy        Policy        `json:"policy"`
+	Decision      Decision      `json:"decision"`
+	RecordedAt    time.Time     `json:"recorded_at"`
+	Round         string        `json:"round,omitempty"`
 	// Expected is the dispatched artifact set, not the whole quorum in a review.
 	Expected []string `json:"expected,omitempty"`
 }
@@ -76,22 +77,38 @@ func (b Batch) Validate(h *History) error {
 	if !d.Applied || d.Block != "" || d.UsableSurvivors < Floor || len(d.Candidates) == 0 || !reflect.DeepEqual(d.Before, h.Current) {
 		return fmt.Errorf("invalid quota batch decision")
 	}
+	if b.RoleSnapshot != nil {
+		return fmt.Errorf("automatic batch cannot replace frozen roles")
+	}
+	if err := validateRoleDecision(h.RoleSnapshot(), h.LastRoleTransition(), d); err != nil {
+		return err
+	}
+	for _, a := range d.DraftArchives {
+		if (a.Path != "consensus.md" && a.Path != "FINAL.md" && a.Path != "review/consensus.md") || !proofHash.MatchString(a.SHA256) || a.Archive != "draft-archive/"+strings.ReplaceAll(a.Path, "/", "-")+"-"+a.SHA256+".md" {
+			return fmt.Errorf("invalid draft archive binding")
+		}
+		proved := false
+		for _, c := range d.Candidates {
+			if c.Agent == a.Author && c.Evidence.RuleID == ProviderExhaustionRule {
+				proved = true
+			}
+		}
+		if !proved {
+			return fmt.Errorf("draft archive lacks exhausted author")
+		}
+	}
 	removed := map[string]bool{}
 	for _, c := range d.Candidates {
 		e := c.Evidence
-		if !contains(h.Current, c.Agent) || !e.Eligible || e.InvocationID == "" || e.Provenance == "" || e.RuleID == "" || e.ObservedAt.IsZero() || e.Excerpt == "" {
+		external := d.RoleTransition != nil && h.RoleSnapshot() != nil && c.Agent == h.RoleSnapshot().Facilitator && c.Agent == d.RoleTransition.Before.Organizer
+		if (!contains(h.Current, c.Agent) && !external) || !e.Eligible || e.InvocationID == "" || e.Provenance == "" || e.RuleID == "" || e.ObservedAt.IsZero() || e.Excerpt == "" {
 			return fmt.Errorf("invalid quota batch evidence")
 		}
 		if e.ResetAt != nil && e.ResetAt.Sub(e.ObservedAt) < MinimumReset {
 			return fmt.Errorf("invalid quota batch reset")
 		}
-		if b.Policy.Dropout() || e.RuleID == ParticipantFailureRule {
-			if !b.Policy.Dropout() {
-				return fmt.Errorf("participant failure evidence contradicts saved trigger")
-			}
-			if err := ValidateFailureEvidence(e, b.Idea, c.Agent); err != nil {
-				return err
-			}
+		if err := ValidatePolicyEvidence(b.Policy, e, b.Idea, c.Agent); err != nil {
+			return err
 		}
 		removed[c.Agent] = true
 	}
@@ -100,6 +117,9 @@ func (b Batch) Validate(h *History) error {
 		if !removed[id] {
 			after = append(after, id)
 		}
+	}
+	if r := d.RoleTransition; r != nil && !contains(after, r.After.Implementer) && h.RoleSnapshot() != nil && r.After.Implementer == h.RoleSnapshot().Facilitator {
+		after = append(after, r.After.Implementer)
 	}
 	if !reflect.DeepEqual(after, d.After) || len(after) < Floor {
 		return fmt.Errorf("contradictory quota batch membership")
@@ -335,7 +355,11 @@ func (b Batch) Notice() string {
 		return fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nblocking: no\ntransition: %s\n---\n\nOwner-confirmed membership/policy revision. Current participants: %v. Policy: %+v.\n", b.Idea, b.ID, b.Decision.After, b.Policy)
 	}
 	k := Kickoff{Idea: b.Idea, Participants: b.Decision.After, Transition: &Transition{ID: b.ID, RecordedAt: b.RecordedAt, Decision: b.Decision}}
-	return strings.Replace(k.Notice(), "phase: kickoff", "phase: "+b.Round, 1) + fmt.Sprintf("\nArithmetic: %d before - %d candidates = %d current; %d usable non-facilitators >= %d.\n", len(b.Decision.Before), len(CandidateIDs(b.Decision.Candidates)), len(b.Decision.After), b.Decision.UsableSurvivors, Floor)
+	notice := strings.Replace(k.Notice(), "phase: kickoff", "phase: "+b.Round, 1)
+	if r := b.Decision.RoleTransition; r != nil {
+		notice += fmt.Sprintf("\nTakeover %s: successor %s; roles %v. Organizer: %s. Implementer: %s. Resume record: %s. Predecessor: %s (%s). Filed positions remain binding.\n", r.ID, r.Successor, r.Roles, r.After.Organizer, r.After.Implementer, r.Path(), r.Base, r.BaseSHA256)
+	}
+	return notice + fmt.Sprintf("\nArithmetic: %d before - %d candidates = %d current; %d usable non-facilitators >= %d.\n", len(b.Decision.Before), len(CandidateIDs(b.Decision.Candidates)), len(b.Decision.After), b.Decision.UsableSurvivors, Floor)
 }
 
 // BindRetained freezes the filed obligations inside the same immutable batch.

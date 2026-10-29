@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"parley-deck-cli/internal/protocol"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -145,7 +146,7 @@ func (w *ReportWriter) save(report *Report) ([]byte, error) {
 	if !w.active {
 		return nil, errors.New("evidence writer transaction has ended")
 	}
-	doc, err := os.ReadFile(filepath.Join(w.dir, "IMPLEMENTATION.md"))
+	doc, err := protocol.ReadExecution(w.dir)
 	if err == nil {
 		_, from, err := TransitionStatusToComplete(doc)
 		if from == "complete" {

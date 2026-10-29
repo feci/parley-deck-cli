@@ -194,7 +194,7 @@ func implementationNewerThanLatestReview(ideaDir string, review *PhaseRoundSecti
 	if review == nil || review.Total == 0 || review.Completed != review.Total {
 		return false
 	}
-	implInfo, err := os.Stat(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	implInfo, err := protocol.StatExecution(ideaDir)
 	if err != nil {
 		return false
 	}
@@ -315,7 +315,13 @@ func roundsComplete(d *PhaseDigest) bool {
 }
 
 func implSection(ideaDir string) *PhaseImplSection {
-	path := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	if started, err := protocol.ExecutionStarted(ideaDir); err == nil && !started {
+		return &PhaseImplSection{}
+	}
+	path, err := protocol.ExecutionPath(ideaDir)
+	if err != nil {
+		return &PhaseImplSection{Present: true, Status: "unparsed"}
+	}
 	if _, err := os.ReadFile(path); err != nil {
 		return &PhaseImplSection{}
 	}

@@ -802,7 +802,7 @@ func autoDriveImplementationBlock(ctx context.Context, root, deck, slug string, 
 	}
 	defer release()
 
-	if _, statErr := os.Stat(filepath.Join(blockWS, "IMPLEMENTATION.md")); os.IsNotExist(statErr) {
+	if _, statErr := protocol.StatExecution(blockWS); os.IsNotExist(statErr) {
 		fmt.Fprintf(stdout, "auto: block %q Phase 5 implementation by %s\n", block.ID, implementer)
 		ideaImpl := idea
 		ideaImpl.Participants = []string{implementer}
@@ -1309,7 +1309,7 @@ func blockCompleteFunc(deck, slug string) pipeline.BlockComplete {
 		// Implementation blocks finish when IMPLEMENTATION.md is status: complete
 		// or the review consensus reports zero outstanding agreed fixes.
 		if b.Kind == pipeline.KindImplementation {
-			if data, err := os.ReadFile(filepath.Join(ws, "IMPLEMENTATION.md")); err == nil {
+			if data, err := protocol.ReadExecution(ws); err == nil {
 				if implementationComplete(string(data)) {
 					return true, nil
 				}

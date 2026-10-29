@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"os"
+	"parley-deck-cli/internal/protocol"
 	"path/filepath"
 )
 
@@ -21,7 +22,17 @@ func PrecheckRound(ctx context.Context, opts Options) error {
 // PrecheckImplementation mirrors the first implementer's actual artifact skip.
 func PrecheckImplementation(ctx context.Context, opts Options) error {
 	opts.Phase = "implementation"
-	opts.ArtifactName = "IMPLEMENTATION.md"
+	execution, err := protocol.ExecutionPath(opts.Idea.Path)
+	if err != nil {
+		return err
+	}
+	opts.ArtifactName, err = filepath.Rel(opts.Idea.Path, execution)
+	if err != nil {
+		return err
+	}
+	if opts.ArtifactName != "IMPLEMENTATION.md" {
+		opts.Overwrite = true
+	}
 	if opts.RoundLabel == "" {
 		opts.RoundLabel = "implementation"
 	}

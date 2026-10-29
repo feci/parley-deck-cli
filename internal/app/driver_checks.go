@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"parley-deck-cli/internal/protocol"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -78,7 +79,7 @@ func (o driverImplOps) runChecksContract(ctx context.Context, criteria []driver.
 
 func (o driverImplOps) runChecksWithWriter(ctx context.Context, criteria []driver.CheckCriterion, writer *evidence.ReportWriter) (bool, string) {
 	// Do not let a delayed check cycle alter the table after completion.
-	data, err := os.ReadFile(filepath.Join(o.ideaDir, "IMPLEMENTATION.md"))
+	data, err := protocol.ReadExecution(o.ideaDir)
 	if err != nil {
 		return false, err.Error()
 	}
@@ -216,11 +217,15 @@ func (o driverImplOps) writeTypedEvidence(results []criterionResult, preDigest, 
 // verifier authorizes a completion transition from, and the bytes the close
 // gate recomputes against.
 func implementationRestContent(root, ideaDir string) (content []byte, relSlash string, err error) {
-	rel, err := filepath.Rel(root, ideaDir)
+	execution, err := protocol.ExecutionPath(ideaDir)
 	if err != nil {
 		return nil, "", err
 	}
-	relSlash = filepath.ToSlash(filepath.Join(rel, "IMPLEMENTATION.md"))
+	rel, err := filepath.Rel(root, execution)
+	if err != nil {
+		return nil, "", err
+	}
+	relSlash = filepath.ToSlash(rel)
 	body, err := readImplementationEvidence(ideaDir)
 	if err != nil {
 		return nil, "", err
@@ -280,7 +285,11 @@ func scrubAndTruncate(s string) string {
 // tree stays clean between fix-up cycles. Best-effort and non-fatal: a non-git
 // tree or a no-op commit is silently fine.
 func (o driverImplOps) commitEvidence() {
-	implRel := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
+	implRel, err := protocol.ExecutionPath(o.ideaDir)
+	if err != nil {
+		fmt.Fprintf(o.out, "driver: execution authority: %v\n", err)
+		return
+	}
 	evidenceRel := filepath.Join(o.ideaDir, evidence.ReportFileName)
 	git := func(args ...string) error {
 		cmd := exec.Command("git", append([]string{"-C", o.root}, args...)...)
@@ -306,7 +315,10 @@ func (o driverImplOps) commitEvidence() {
 // writeValidationEvidence overwrites the `## Validation evidence` section of
 // IMPLEMENTATION.md with the latest per-criterion table (git history keeps prior cycles).
 func (o driverImplOps) writeValidationEvidence(results []criterionResult) error {
-	path := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
+	path, err := protocol.ExecutionPath(o.ideaDir)
+	if err != nil {
+		return err
+	}
 	body, err := readImplementationEvidence(o.ideaDir)
 	if err != nil {
 		return err

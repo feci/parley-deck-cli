@@ -150,6 +150,16 @@ func TestLiveDeckFacilitatorPacketNamedSetsAndGuardrail(t *testing.T) {
 	if len(c.Body) > facilitatorGuardrailBytes {
 		t.Errorf("facilitator body %d B exceeds the 70,000 B guardrail — bytes go back to the quorum before any map/ceiling change", len(c.Body))
 	}
+	metaReq := req
+	metaReq.Flags = []string{"protocol_change"}
+	meta := protocolpacket.Build(src, m, metaReq)
+	if meta.ContextMode != protocolpacket.ModePacket {
+		t.Fatalf("meta facilitator packet fell back: %s (%s)", meta.ContextMode, meta.FallbackReason)
+	}
+	if len(meta.Body) > facilitatorGuardrailBytes {
+		t.Errorf("meta facilitator body %d B exceeds %d B", len(meta.Body), facilitatorGuardrailBytes)
+	}
+	t.Logf("phase-1 protocol_change facilitator body=%d B", len(meta.Body))
 
 	// packet check stays green with the audiences key (structure incl. the audience
 	// never-cut proof across every phase x track).

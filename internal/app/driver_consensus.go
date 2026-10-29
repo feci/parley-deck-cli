@@ -144,6 +144,47 @@ func (o driverConsensusOps) runDrafter(ctx context.Context, kind, prompt string)
 				observed = r.Outcome.QuotaEvidence
 			}
 		}})
+	if history.MidIdea() && history.Policy().Exhaustion() {
+		validate := func() runner.StepValidation {
+			if kind == "FINAL" {
+				raw, err := os.ReadFile(target)
+				if err != nil {
+					return runner.StepValidation{Reason: err.Error()}
+				}
+				reason := protocol.ValidateFinal(string(raw), o.ideaSlug)
+				return runner.StepValidation{Valid: reason == "", Reason: reason}
+			}
+			summary, err := consensus.Status(rootAbs, o.ideaSlug, false)
+			if err != nil {
+				return runner.StepValidation{Integrity: err}
+			}
+			raw, err := os.ReadFile(target)
+			if err != nil {
+				return runner.StepValidation{Reason: err.Error()}
+			}
+			for _, heading := range protocol.RequiredConsensusSections {
+				if heading != "## Signoffs" && !protocol.HasNonEmptySection(string(raw), heading) {
+					return runner.StepValidation{Reason: "incomplete consensus section: " + heading}
+				}
+			}
+			return runner.StepValidation{Valid: len(summary.Errors) == 0, Reason: strings.Join(summary.Errors, "; ")}
+		}
+		if validate().Valid {
+			return nil
+		}
+		rounds, err := filepath.Glob(filepath.Join(o.ideaDir, "round-*"))
+		if err != nil || len(rounds) == 0 {
+			return fmt.Errorf("draft lacks a canonical round identity")
+		}
+		step := strings.ToLower(kind) + ":" + filepath.Base(rounds[len(rounds)-1])
+		result, runErr := runner.RunParticipantStep(ctx, runner.ParticipantStepOptions{Root: rootAbs, Idea: o.ideaSlug,
+			Agent: drafter, Step: step, SingleAttempt: true, HardTimeout: requestSignoffTimeout(drafter), Files: []string{target}, Validate: validate},
+			func(child context.Context, _ int, _ string) error {
+				return runHeadlessSignoffAgent(child, rootAbs, drafter, prompt, o.out, o.out)
+			})
+		_, settleErr := membership.Settle(ctx, rootAbs, o.ideaDir, run, kind, []string{drafter.ID}, []quota.Member{{ID: drafter.ID, ValidArtifact: result.Valid, Evidence: result.Evidence}})
+		return errors.Join(runErr, settleErr)
+	}
 	runErr := runHeadlessSignoffAgent(ctx, rootAbs, drafter, prompt, o.out, o.out)
 	if history.MidIdea() && (history.Policy().Dropout() || runErr != nil && observed != nil && observed.Eligible) {
 		valid := false

@@ -39,7 +39,7 @@ const (
 // Tighten only eligible participant-failure steps. Explicit overrides (including
 // disables), declared buffering and the existing hard-ceiling clamp still win.
 func supervisionForStep(ctx context.Context, agent agents.Discovery, hardTimeout time.Duration) SupervisionConfig {
-	if ParticipantStepActive(ctx) && agent.StallTimeoutMS == 0 {
+	if ParticipantStepActive(ctx) && !ParticipantStepSingleAttempt(ctx) && agent.StallTimeoutMS == 0 {
 		agent.StallTimeoutMS = participantStallTimeoutMS
 	}
 	return supervisionForAgent(agent, hardTimeout)

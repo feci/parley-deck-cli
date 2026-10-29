@@ -168,7 +168,7 @@ func recoverParticipantSignoffs(ctx context.Context, root, idea string, review b
 		return err
 	}
 	for _, id := range h.Current {
-		if roles.Protected(id) {
+		if roles.Protected(id) && !h.Policy().Exhaustion() {
 			continue
 		}
 		pending, err := runner.ParticipantStepPending(root, idea, id, participantSignoffStep(path))
@@ -195,6 +195,7 @@ func recoverParticipantSignoffs(ctx context.Context, root, idea string, review b
 			}
 		}
 		opts := participantSignoffOptions(root, idea, agents.Discovery{Spec: agents.Spec{ID: id}}, path, string(baseline), before, review)
+		opts.SingleAttempt = roles.Protected(id)
 		opts.RecoverOnly = true
 		result, err := runner.RunParticipantStep(ctx, opts, nil)
 		if err != nil && result.Evidence == nil {

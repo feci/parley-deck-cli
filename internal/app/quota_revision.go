@@ -16,6 +16,9 @@ import (
 )
 
 func runQuota(ctx context.Context, args []string, out, errs io.Writer) int {
+	if len(args) > 0 && args[0] == "capture" {
+		return runQuotaCapture(args[1:], out, errs)
+	}
 	if len(args) == 0 || (args[0] != "revise" && args[0] != "recover") {
 		fmt.Fprintln(errs, "usage: parley quota revise|recover --dir DIR --idea SLUG --run RUN [--request FILE]")
 		return 2
@@ -61,10 +64,11 @@ func runQuota(ctx context.Context, args []string, out, errs io.Writer) int {
 	}
 	defer f.Close()
 	var r struct {
-		Participants []string          `json:"participants"`
-		Policy       quota.Policy      `json:"policy"`
-		Authority    quota.Authority   `json:"authority"`
-		Catchup      map[string]string `json:"catchup,omitempty"`
+		RoleSnapshot *quota.RoleSnapshot `json:"role_snapshot,omitempty"`
+		Participants []string            `json:"participants"`
+		Policy       quota.Policy        `json:"policy"`
+		Authority    quota.Authority     `json:"authority"`
+		Catchup      map[string]string   `json:"catchup,omitempty"`
 	}
 	raw, err := io.ReadAll(io.LimitReader(f, (1<<20)+1))
 	if err != nil || len(raw) > 1<<20 {
@@ -81,7 +85,7 @@ func runQuota(ctx context.Context, args []string, out, errs io.Writer) int {
 		fmt.Fprintln(errs, err)
 		return 1
 	}
-	b, err := membership.Revise(ctx, *root, dir, *run, r.Participants, r.Policy, r.Authority, r.Catchup)
+	b, err := membership.Revise(ctx, *root, dir, *run, r.Participants, r.Policy, r.Authority, r.Catchup, r.RoleSnapshot)
 	if err != nil {
 		fmt.Fprintln(errs, err)
 		return 1

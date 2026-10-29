@@ -55,7 +55,7 @@ func runLearn(args []string, stdout, stderr io.Writer) int {
 	}
 
 	// Precondition: only a COMPLETED idea is distilled.
-	impl, err := os.ReadFile(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	impl, err := protocol.ReadExecution(ideaDir)
 	if err != nil || !isImplComplete(string(impl)) {
 		fmt.Fprintf(stderr, "learn: idea %q is not complete (IMPLEMENTATION.md status must be `complete`) — only closed ideas are distilled\n", slug)
 		return 1
@@ -144,7 +144,8 @@ func extractFM(doc string) string {
 func distillPlaybook(name, slug, ideaDir string) string {
 	track := frontmatterValue(filepath.Join(ideaDir, "00-prompt.md"), "track")
 	participants := frontmatterValue(filepath.Join(ideaDir, "00-prompt.md"), "participants")
-	fixups := strings.Count(readFile(filepath.Join(ideaDir, "IMPLEMENTATION.md")), "## Fix-up cycle")
+	execution, _ := protocol.ExecutionContext(ideaDir)
+	fixups := strings.Count(execution, "## Fix-up cycle")
 	var b strings.Builder
 	fmt.Fprintf(&b, `---
 playbook: %s

@@ -27,6 +27,7 @@ import (
 type Options struct {
 	quotaMidIdea       bool
 	participantDropout bool
+	exhaustionPolicy   bool
 	Root               string
 	RunID              string
 	Idea               protocol.IdeaStatus
@@ -417,6 +418,21 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		StderrPath: stderrPath,
 		StartedAt:  now,
 	}
+	if opts.exhaustionPolicy {
+		pending, err := ParticipantStepPending(opts.Root, opts.Idea.Slug, agent.ID, participantArtifactStep(opts, agent.ID))
+		if err != nil {
+			return failEarly(opts, result, err)
+		}
+		if pending {
+			opts.Overwrite = true
+		}
+		if opts.Phase == "implementation" {
+			meta, _ := protocol.ReadFrontmatter(outputPath)
+			if meta["status"] == "in-progress" || meta["status"] == "implementing" {
+				opts.Overwrite = true
+			}
+		}
+	}
 
 	if _, err := os.Stat(outputPath); err == nil && !opts.Overwrite {
 		invalidDropoutOutput := false
@@ -530,11 +546,8 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 		if roleErr != nil {
 			return failEarly(opts, result, roleErr)
 		}
-		if !roles.Protected(agent.ID) {
-			step := filepath.ToSlash(filepath.Join(opts.RoundLabel, agent.ID+".md"))
-			if opts.ArtifactName != "" {
-				step = opts.RoundLabel + ":" + filepath.ToSlash(opts.ArtifactName)
-			}
+		if !roles.Protected(agent.ID) || opts.exhaustionPolicy {
+			step := participantArtifactStep(opts, agent.ID)
 			res := result
 			check := func() StepValidation {
 				if strings.Contains(res.ExitError, "snapshot artifact move-back:") || strings.Contains(res.ExitError, "event append failed:") {
@@ -544,10 +557,17 @@ func runAgent(parent context.Context, opts Options, agent agents.Discovery) Resu
 				if err != nil {
 					return StepValidation{Reason: err.Error()}
 				}
+				if opts.exhaustionPolicy && opts.Phase == "implementation" {
+					return freshExecutionArtifact(opts.Root, opts.Idea.Slug, agent.ID, step, res.OutputPath)
+				}
 				return StepValidation{Valid: true}
 			}
+			hardTimeout := time.Duration(0)
+			if opts.exhaustionPolicy {
+				hardTimeout = timeoutForAgent(opts.Timeout, agent)
+			}
 			settled, stepErr := RunParticipantStep(parent, ParticipantStepOptions{Root: opts.Root, Idea: opts.Idea.Slug,
-				Agent: agent, Step: step, Files: []string{outputPath, stdoutPath, stderrPath}, Validate: check},
+				Agent: agent, Step: step, HardTimeout: hardTimeout, SingleAttempt: opts.exhaustionPolicy && (roles.Protected(agent.ID) || opts.Phase == "implementation"), Files: []string{outputPath, stdoutPath, stderrPath}, Validate: check},
 				func(ctx context.Context, ordinal int, retry string) error {
 					base := result
 					base.InvocationID = retry
@@ -1203,6 +1223,9 @@ func execAgentProcess(ctx context.Context, root, runID, agentID, marker string, 
 		return procctl.Spawned{}, err
 	}
 	defer stderrFile.Close()
+	if evidence.info.participantStep != nil {
+		evidence.info.participantStep.stderrPath = stderrPath
+	}
 	if act == nil {
 		act = &activityTracker{}
 	}

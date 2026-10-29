@@ -35,7 +35,18 @@ func RunImplementation(ctx context.Context, opts Options) Result {
 	defer finishStep()
 
 	opts.Phase = "implementation"
-	opts.ArtifactName = "IMPLEMENTATION.md"
+	execution, pathErr := protocol.ExecutionPath(opts.Idea.Path)
+	if pathErr != nil {
+		return Result{AgentID: "runner", ExitError: pathErr.Error()}
+	}
+	artifact, pathErr := filepath.Rel(opts.Idea.Path, execution)
+	if pathErr != nil {
+		return Result{AgentID: "runner", ExitError: pathErr.Error()}
+	}
+	opts.ArtifactName = artifact
+	if artifact != "IMPLEMENTATION.md" {
+		opts.Overwrite = true
+	}
 	if opts.RoundLabel == "" {
 		opts.RoundLabel = "implementation"
 	}
@@ -61,13 +72,17 @@ func RunReviewRound(ctx context.Context, opts Options) []Result {
 // PrecheckFixup uses RunFixup's selected implementer and protocol scope without
 // opening a step/cycle or segment. The actual launch still checks authority.
 func PrecheckFixup(ctx context.Context, opts Options) error {
+	execution, err := protocol.ExecutionPath(opts.Idea.Path)
+	if err != nil {
+		return err
+	}
 	selected, _ := selectedAgents(opts.Idea.Participants, opts.Agents, resolveMapping(opts))
 	if len(selected) == 0 {
 		return errors.New("no implementer available in participants")
 	}
 	return PrecheckProtocolLaunch(ctx, opts.Root, selected[0], LaunchInfo{
 		RunID: opts.RunID, Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1,
-		Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
+		Store: opts.Store, ArtifactPath: execution,
 	})
 }
 
@@ -84,7 +99,14 @@ func RunFixup(ctx context.Context, opts Options) Result {
 		return Result{AgentID: "runner/quota", ExitError: err.Error()}
 	}
 	defer release()
+	if opts.exhaustionPolicy && !ParticipantStepActive(ctx) {
+		return runExhaustionFixup(ctx, opts)
+	}
 
+	execution, pathErr := protocol.ExecutionPath(opts.Idea.Path)
+	if pathErr != nil {
+		return Result{AgentID: "runner", ExitError: pathErr.Error()}
+	}
 	opts.Phase = "fixup"
 	opts.RoundLabel = "fixup"
 	ctx = withRunnerActionInput(ctx, opts, "fixup")
@@ -113,7 +135,7 @@ func RunFixup(ctx context.Context, opts Options) Result {
 	cctx, cancel := context.WithTimeout(ctx, hardTimeout)
 	defer cancel()
 	cctx = WithLaunchInfo(cctx, LaunchInfo{RunID: opts.RunID, SegmentID: opts.SegmentID,
-		Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1, Store: opts.Store, ArtifactPath: filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"),
+		Idea: opts.Idea.Slug, Phase: "fixup", AttemptOrdinal: 1, Store: opts.Store, ArtifactPath: execution,
 		Observe: func(record telemetry.Record) {
 			result.InvocationID = record.InvocationID
 			if record.Outcome != nil {
@@ -204,6 +226,9 @@ func RunFixup(ctx context.Context, opts Options) Result {
 		data["agent_exit_kind"] = result.AgentExitKind
 	}
 	_ = opts.Store.Append(store.Event{Time: result.CompletedAt, Type: eventType, Data: data})
+	if opts.exhaustionPolicy && ParticipantStepActive(ctx) {
+		return result
+	}
 	return quotaSettleSingle(ctx, opts, result)
 }
 
@@ -211,7 +236,10 @@ func RunFixup(ctx context.Context, opts Options) Result {
 // reviewable state: the file exists, its frontmatter idea matches, its status
 // is review-ready, and a fix-up section is present (consensus D7).
 func ValidateFixupArtifact(ideaPath, ideaSlug string) error {
-	implPath := filepath.Join(ideaPath, "IMPLEMENTATION.md")
+	implPath, err := protocol.ExecutionPath(ideaPath)
+	if err != nil {
+		return err
+	}
 	data, err := os.ReadFile(implPath)
 	if err != nil {
 		return fmt.Errorf("fix-up validation: %w", err)
@@ -237,7 +265,10 @@ func ValidateFixupArtifact(ideaPath, ideaSlug string) error {
 // BuildFixupPrompt is the Phase 8 fix-up prompt for the implementer.
 func BuildFixupPrompt(agent agents.Discovery, idea protocol.IdeaStatus) string {
 	rc := filepath.Join(idea.Path, "review", "consensus.md")
-	impl := filepath.Join(idea.Path, "IMPLEMENTATION.md")
+	impl, err := protocol.ExecutionPath(idea.Path)
+	if err != nil {
+		return "Execution authority error: " + err.Error()
+	}
 	return fmt.Sprintf(`You are %s, the implementer for Parley Deck idea %s (Phase 8 fix-up).
 
 Rules:
@@ -331,12 +362,14 @@ Context (FINAL.md, IMPLEMENTATION.md, prior review rounds):
 // review-round artifacts to seed a code-review round.
 func gatherReviewContext(ideaPath string, round int) (string, error) {
 	var b strings.Builder
-	for _, name := range []string{"FINAL.md", "IMPLEMENTATION.md"} {
-		data, err := os.ReadFile(filepath.Join(ideaPath, name))
-		if err == nil {
-			fmt.Fprintf(&b, "\n===== %s =====\n%s\n", name, string(data))
-		}
+	if data, err := os.ReadFile(filepath.Join(ideaPath, "FINAL.md")); err == nil {
+		fmt.Fprintf(&b, "\nFINAL.md\n%s\n", data)
 	}
+	execution, err := protocol.ExecutionContext(ideaPath)
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	b.WriteString(execution)
 	for r := 1; r < round; r++ {
 		dir := filepath.Join(ideaPath, "review", roundLabel(r))
 		entries, err := os.ReadDir(dir)

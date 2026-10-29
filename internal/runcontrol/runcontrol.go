@@ -18,6 +18,7 @@ import (
 )
 
 type CreateOptions struct {
+	Roles         *quota.RoleSnapshot
 	QuotaPolicy   *quota.Policy
 	QuotaDecision *quota.Decision
 	Root          string
@@ -54,7 +55,7 @@ func Create(opts CreateOptions) (CreatedRun, error) {
 	}
 	opts.Participants = quota.FilterConfirmed(opts.Participants, opts.Excluded)
 	runID := store.NewRunID(now)
-	idea, kickoff, err := protocol.CreateIdeaWithQuota(opts.Root, opts.Task, opts.Participants, opts.Excluded, opts.Track, opts.Provenance, runID, opts.QuotaPolicy, opts.QuotaDecision)
+	idea, kickoff, err := protocol.CreateIdeaWithQuota(opts.Root, opts.Task, opts.Participants, opts.Excluded, opts.Track, opts.Provenance, runID, opts.QuotaPolicy, opts.QuotaDecision, opts.Roles)
 	if err != nil {
 		return CreatedRun{}, err
 	}

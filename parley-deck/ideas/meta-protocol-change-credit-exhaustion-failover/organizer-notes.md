@@ -171,3 +171,12 @@ Codex publishes FINAL under its accepted drafter claim. Product files remain unc
 
 The pre-change package baseline passed: quota, telemetry, membership, runner, and protocol.
 Command: `go test ./internal/quota ./internal/telemetry ./internal/membership ./internal/runner ./internal/protocol -count=1 -timeout 10m`.
+
+## Resume 3 implementation review boundary
+
+The implementation includes v2 exhaustion admission, role history, active execution, draft recovery, and private capture.
+Focused tests, targeted race checks, skill tests, package checks, and native portable build passed.
+The full Go suite remains in progress. It must pass before close.
+The phase-6 driver refused again: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Use the owner's native CLI fallback for independent Kimi and Zcode review. It supplies no driver accounting or membership authority.
+Protocol context is full at SHA256 `b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709`.
