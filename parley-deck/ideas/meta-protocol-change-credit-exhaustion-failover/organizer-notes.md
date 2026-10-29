@@ -130,3 +130,12 @@ The owner succession and fallback answers remain binding. The driver still repor
 `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 Native fallback therefore remains authorized for phase 2. It supplies no driver accounting or automatic membership authority.
 The live protocol hash remains unchanged. Runtime skill drift remains for the authorized release installation.
+
+## Ordinary Codex JSON smoke
+
+After the round-3 peer launches, a separate ordinary Codex process tested explicit `exec --json`.
+It used the approved gpt-6-astra model and xhigh effort, with a read-only sandbox and no requested tools.
+The process exited 0 after 11,846 ms. Every output line parsed as JSON and the reply matched `JSON-SMOKE-OK`.
+See source-context/codex-json-smoke-receipt.json for the argv, event types, hashes, and native usage report.
+This receipt covers the ordinary JSON envelope only. No exhaustion was induced or captured. It proves no installed-binary equivalence.
+The evidence arrived after peer round-3 launch. The consensus signoff briefs must expose it before a decision relies on it.

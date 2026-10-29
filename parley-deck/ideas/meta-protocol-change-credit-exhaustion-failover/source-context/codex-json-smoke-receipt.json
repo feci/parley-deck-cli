@@ -1,0 +1,50 @@
+{
+  "schema": "ordinary-json-smoke/v1",
+  "cli_version": "0.165.0",
+  "started_at": "2026-10-29T20:02:02.320195+00:00",
+  "completed_at": "2026-10-29T20:02:14.166181+00:00",
+  "duration_ms": 11846,
+  "pid": 2038,
+  "exit_code": 0,
+  "timed_out": false,
+  "argv": [
+    "/Users/tomasfecko/.nvm/versions/node/v24.15.0/bin/codex",
+    "exec",
+    "--skip-git-repo-check",
+    "--cd",
+    "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover",
+    "--sandbox",
+    "read-only",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "model_reasoning_effort=\"xhigh\"",
+    "-m",
+    "gpt-6-astra",
+    "--json",
+    "--ephemeral",
+    "-"
+  ],
+  "prompt_sha256": "be2f69e0cb3a7a51119761b24e3cb9e98ac590dff2cd08a2c2c8312efd480ab8",
+  "stdout_sha256": "0cd1aee8ed2123dea807e38178466dc0abbb7dbe305256368d9b9cccfb938de8",
+  "event_types": [
+    "thread.started",
+    "item.completed",
+    "item.completed",
+    "turn.started",
+    "item.completed",
+    "turn.completed"
+  ],
+  "invalid_json_lines": 0,
+  "reply_match": true,
+  "usage": [
+    {
+      "input_tokens": 15644,
+      "cached_input_tokens": 10368,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 10,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "scope": "normal explicit-JSON argv/envelope only; no exhaustion induced; no native failure capture or binary equivalence proved"
+}
