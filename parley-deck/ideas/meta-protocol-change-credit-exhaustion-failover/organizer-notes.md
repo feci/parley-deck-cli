@@ -80,3 +80,22 @@ The native CLI fallback needs an explicit owner decision because it would procee
 Prepared round-2 briefs retain the same roles, models, protocol context, and 1,800-second ceilings.
 The owner received one choice between that bounded fallback and repair of the historical-worktree gate.
 Until the owner answers, peer cross-review remains pending. No implementation or release has begun.
+
+## Resume 2: owner answer
+
+The answer is quoted verbatim in `round-02/codex-1.md`.
+Native CLI fallback is authorized after one recorded driver refusal at each phase.
+The relay repaired worktree registrations. No worktree declaration, pruning, or legacy accounting is authorized.
+`parley continue --json meta-protocol-change-credit-exhaustion-failover` reports: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+No product change exists at this point. The selected roster and models remain unchanged.
+
+The correct `round-02` measured launch still refuses before a child starts.
+Receipt: `source-context/resume2-round02-kimi-1-refusal.json`.
+Read-only migration inspection reports: `budget migrate cross-review inspect: historical run identity is missing or conflicting`.
+The owner-authorized native fallback now applies. It provides no driver accounting or automatic membership authority.
+
+An earlier organizer command used the wrong configuration variable and phase label.
+It launched Kimi with the stale adapter model `kimi-code/k3`, then failed authentication.
+Invocation: `21e9d87b-4386-437a-b309-181de929794d`; duration: 2,122 ms; exit: 1.
+No artifact was created. The corrected launch uses the approved `omniroute/k3.1-pro` model.
+This organizer error does not establish unavailability of the selected model. No credential or gateway setting changed.

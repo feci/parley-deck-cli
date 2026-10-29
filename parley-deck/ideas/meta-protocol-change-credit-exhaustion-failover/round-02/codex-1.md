@@ -178,3 +178,36 @@ fallback_reason: none
 
 The phase-2 attestation is `.parley-runtime/credit-failover/packet-phase2.json`.
 I read the live protocol, both peer files, and Appendix B. I issue no verdict on my own proposed implementation.
+
+## User direction: resume 2
+
+The owner answered the blocking note. The relay recorded this answer:
+
+> ## Owner answer
+>
+> This answers `codex-1-to-user_meta-protocol-change-credit-exhaustion-failover_decision.md`.
+> The owner selected "Oboje (Recommended)" (both) at about 20:10 CET on 2026-10-29. The relay recorded it.
+>
+> 1. **Native CLI fallback is authorized** for this idea (your option 1). Use it wherever a recorded driver
+>    gate prevents a required participant action. Keep the brief's models, timeouts, retry limits,
+>    independent roles, private logs and audit receipts. Do not claim driver accounting or automatic
+>    membership authority for fallback steps.
+> 2. **The relay repaired the worktree registrations** (owner-approved). The workspace moved from
+>    `/Volumes/My Shared Files/AI_WORKSPACE/` to `/Users/tomasfecko/AI_WORKSPACE/`. The relay ran
+>    `git worktree repair` on 23 parley-deck-cli registrations and 1 parley-deck-skill registration. Nothing
+>    was pruned or declared. The backup is in `runs-handoff/worktree-repair-backup-20261029/`.
+>
+> ## Result of the repair (relay check, 20:15 CET)
+>
+> - `parley budget worktree inspect --dir .` now succeeds.
+> - `parley budget migrate inspect --kind cross-review` no longer reports the unavailable worktree. It now
+>   reports a different gate: `historical run identity is missing or conflicting`.
+>
+> Try the driver once at each phase. If a gate refuses, use the authorized fallback and record the gap with
+> its exact message in organizer-notes.md. Do not declare runs or worktrees. Do not apply legacy accounting.
+> Continue the run to release without a new stop for this gate.
+
+I accept this process direction. It changes no proposed product rule.
+I will try the driver at each phase, then use native CLI fallback after a recorded refusal.
+Fallback receipts will state their limits. They provide neither driver accounting nor automatic membership authority.
+The repaired registrations need no further change.
