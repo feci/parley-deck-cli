@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-credit-exhaustion-failover
-status: fix-up-cycle-1
+status: fix-up-cycle-2
 implementer: codex-1
 started: 2026-10-29
-completed: 2026-10-29
+completed: 2026-10-30
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover#feature/meta-protocol-change-credit-exhaustion-failover
-head-commit: 31c039c41a455a03385401085d132234a17603f6
+head-commit: b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666
 design-pr: https://github.com/feci/parley-deck-cli/pull/86
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/87
 ---
@@ -175,3 +175,57 @@ Zcode accepted the private writer-side atomic-publication proposal and the captu
 Kimi reached its 1800-second ceiling without an artifact. Retry 1 may start after 22:55:50 UTC with 2400 seconds.
 Its process and test child stopped. Native timeout recovery changes no membership or driver accounting.
 Review consensus, the accepted fix-up, fresh review, goal check, and all release work remain open.
+
+
+## Fix-up cycle 2 plan — 2026-10-29 23:34Z
+
+All three participants accepted F7-F9. Both native signers completed exit 0 without timeout.
+Exact-prefix and receipt-hash checks passed. Zcode also placed its source assessment in its own review.
+The second fix plan preserves the original protocol hunks and FINAL decisions.
+
+- [x] F7: stage complete private invocation records, then publish exclusively and sync both directory levels.
+- [x] Reuse the quota directory-creation helper for the invocation store and its missing ancestors.
+- [x] Recheck the store barrier before reservation, including after an earlier incomplete creation.
+- [x] Add request/terminal fault tests, collision checks, staging cleanup, and inert crash-residue cases.
+- [x] F8: state the capture-status cleanup effects in both references and command help.
+- [x] F9: format the driver import and check all changed Go files.
+- [ ] Run persistence, grouped accounting, repeated concurrency, race, full Go, skill, package, and portable checks.
+- [ ] Obtain fresh full-scope reviews, review consensus, and the independent goal check before release.
+
+The store barrier also covers Zcode's source addendum about openInvocationStore.
+DurableMkdir exposes the existing quota helper without changing that helper's behavior.
+New invocation publication retains every error and refuses every existing destination.
+These details implement F7; the reviewers must assess them against D3 and the agreed plan.
+The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The authorized native fallback applies. It supplies no driver accounting or membership authority.
+
+
+## Fix-up cycle 2
+status: complete
+completed: 2026-10-30
+head-commit: b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666
+
+### Fixes applied
+
+F7 publishes complete private records through an exclusive hard link. The write, file sync, close, and directory barriers return errors.
+The checked directory helper also creates missing store ancestors. An existing store receives a fresh durability barrier before invocation reservation.
+No record reader consumes the private staging names. Published malformed records still refuse admission.
+Request and terminal tests inject write, sync, close, publication, and directory failures. Store-sync failure prevents reservation.
+Collision tests preserve files, symlinks, and directories. Failed terminal persistence remains an error on repeated Finish calls.
+
+F8 explains status cleanup in CLI help, the CLI guide, and the packaged reference.
+Skill commit: 406b6976cc75344d76f908297fe46ec2443e62cb. Its generated payload manifest reflects the reference change.
+F9 places the protocol import with project imports. Every changed Go file passes gofmt.
+
+### Deviations from agreed fixes
+
+None. Reuse of the quota directory helper covers the store-creation site in Zcode's supplementary source assessment.
+No helper behavior changes. No protocol/core hunk or size limit changes.
+
+### Current verification and remaining gates
+
+Persistence tests, relevant race tests, go vet, package dry-run, and the native portable build passed.
+The repeated concurrent/grouped check, complete Go command, and skill suite are in progress.
+Private evidence uses the fixup02 prefix. No pending check is recorded as passed.
+Fresh full-scope reviews must inspect the entire CLI and skill changes, including both fix-up cycles.
+The fresh independent goal check and all release/install evidence remain open.

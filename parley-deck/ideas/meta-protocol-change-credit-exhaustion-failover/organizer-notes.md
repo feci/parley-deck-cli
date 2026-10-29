@@ -225,3 +225,11 @@ The signed first-cycle consensus is preserved exactly in `review/consensus-cycle
 Archive SHA256: `e4218477079bdc219501f3f932ceab4424407b13e7bb45142098de20e45238e8`. No earlier signoff was edited.
 Phase-7 refusal: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 Native fallback remains authorized, without driver accounting or membership authority.
+
+
+## Fix-up cycle 2
+
+All three participants accepted F7-F9. Both peer receipts completed exit 0 without timeout.
+The prefix and hash checks passed. Source-context retains the content-free native receipts.
+The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized fallback remains in force. No participant was excluded.
