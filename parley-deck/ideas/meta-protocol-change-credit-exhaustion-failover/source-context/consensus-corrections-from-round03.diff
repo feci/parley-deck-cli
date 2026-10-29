@@ -1,0 +1,341 @@
+--- round-03 proposal
++++ corrected proposal
+@@ -105,7 +105,7 @@
+ Default to 2–4 active participants. Use enough agents for different analysis without needless coordination.
+ Add participants for separable modules, review scopes, or competing hypotheses. Avoid extra agents for
+ sequential changes to one file or tightly coupled work. Optional per-idea roles and lenses are advisory.
+-They change no quorum, signoff weight, artifact ownership, or drafter eligibility.
++They change no quorum, signoff weight, artifact ownership, drafter eligibility, or the non-solo requirement.
+ 
+ ### Internal helpers
+ 
+@@ -255,7 +255,7 @@
+ - **LE-1 — Refutation-default review.** A reviewer assumes the implementation is wrong and records concrete attempts to break each acceptance criterion; a "no findings" review counts only with refutation attempts shown.
+ - **LE-2 — Driver auto-advance.** A deterministic driver may advance mechanical phase transitions; it never authors participant content or decides contested issues.
+ - **LE-3 — Model diversity.** A reviewer sharing the implementer's model is likelier to rubber-stamp; `require_model_diversity: true` turns an all-shared-model reviewer set into a hard gate.
+-- **LE-4 — Verification command.** `checks:` in `00-prompt.md` is the build/test gate the driver runs (as `sh -c`) at Phase 5/8. `checks:` accepts either a scalar command (today's behavior) or an optional named list of `{name, command}` criteria (each expects exit 0); the list form activates the **completion contract** — the driver runs every criterion and writes the per-criterion result table into the `## Validation evidence` section of `IMPLEMENTATION.md` each cycle (overwriting the prior entry; git history preserves earlier cycles), with output secret-scrubbed and truncated.
++- **LE-4 — Verification command.** The driver runs `checks:` through `sh -c` at Phase 5/8. A scalar command retains existing behavior. An optional named list of `{name, command}` criteria activates the **completion contract**; each command must exit 0. Each cycle, the driver replaces the `## Validation evidence` criterion table in the active execution record. Git history preserves earlier entries. Scrub secrets and truncate output.
+ - **LE-5 — Loop budgets.** Driver runs are bounded by max steps / wall-clock / cost.
+ - **LE-7 / LE-11 — Close-decision integrity.** Before an auto-driven close, a goal-done check verifies FINAL's observable acceptance criteria; it can only withhold a close, never establish one — a missing, self or unavailable checker, a failed run, or an inconclusive or reserved verdict leaves completion unverified and escalates, and a textual pass never replaces current-tree criterion evidence. Reservations or too-few reviewers escalate rather than close.
+ - **LE-10 — Candidate remediation.** Remediation ideas may start as `status: candidate`.
+@@ -425,7 +425,7 @@
+ 
+ `FINAL.md` is the **single source of truth**. If later invalidated, open a new idea (`<slug>-v2`) — do **not** edit the old FINAL. Update `00-prompt.md` `status: final` and optionally move the dir to `ideas/archived/<slug>/` after implementation.
+ 
+-The sections above the References are **written at design time and frozen** with the rest of `FINAL.md` — it is static; the *living* companion is `IMPLEMENTATION.md` (Phase 5). For complex, `auto_implement`, designated (`implementer:` set), driver-managed, or pipeline ideas, `FINAL.md` plus `IMPLEMENTATION.md` MUST be self-contained enough that a fresh agent or the auto-drive driver can implement or resume **from them alone**, without session transcripts. **Observable acceptance criteria** state success as behavior a reviewer or the driver can check (e.g. "after X, Y is true"). For trivial or design-only ideas these added sections may be `N/A`.
++Freeze all sections above References at design time with `FINAL.md`. The active execution record (Phase 5) is its living companion. For complex, `auto_implement`, designated, driver-managed, or pipeline ideas, both artifacts MUST support implementation and resume without session transcripts. **Observable acceptance criteria** state behavior that a reviewer or driver can check. These added sections may be `N/A` for trivial or design-only ideas.
+ 
+ **Idempotence & recovery** states what state matters, what is safe to rerun, and what needs a human gate; it is required for `auto_implement` / action / pipeline ideas, where the driver treats it as the recovery contract.
+ 
+@@ -435,7 +435,8 @@
+ 
+ ### Phase 5 — Implementation
+ 
+-After a validated v2 succession, use its role history and active handover before the legacy chain below.
++The **active execution record** is `IMPLEMENTATION.md` before succession, then the handover selected by validated v2 history.
++That history takes priority over the legacy role chain below.
+ 
+ After publication of `FINAL.md`, participants implement and verify code. A declared facilitator reads their verdicts and validator output.
+ It does not implement or verify code unless `facilitator_participates: true` or §9.0 v2 succession permits implementation.
+@@ -481,12 +482,12 @@
+ Never derive membership by subtraction of `excluded:` markers.
+ A per-idea designee or pin cannot be automatically excluded under the legacy rules.
+ Its recorded failure opens the three-exit gate with evidence prefilled.
+-The drafter may also implement, including with two participants. Record that concentration in `IMPLEMENTATION.md` in one line.
++The drafter may also implement, including with two participants. Record that concentration in the active execution record in one line.
+ 
+ **V2 handover contract (§9.0).** The successor owns one `role-handover/<transition-id>.md`.
+ Use ordinary `status:`/`implementer:` execution keys plus transition, predecessor, successor, roles, phase, base path/hash, branch, HEAD, and date.
+ Add `## Takeover` and `## Resume state` to the existing living sections. State the next action and canonical resume paths.
+-Before Phase 5, base is `none`; this file becomes the execution record when implementation starts.
++Before Phase 5, base is `none`. At implementation, this file must satisfy every Phase 5 field and required section below.
+ Later handovers bind the previous execution record by exact hash. Preserve its bytes and inherit its progress, cycles, validation, and findings.
+ One `ResolveActiveExecution` helper selects the tip from validated history, never filename order.
+ Every current-state reader/writer uses it: dispatch, checks, evidence, status/wait/brief, review, goal check, and close.
+@@ -496,9 +497,9 @@
+ The implementer:
+ 
+ - Creates a branch in the **target code repo** per that repo's branching convention (e.g. `feature/<slug>` off the integration branch).
+-- For multi-file changes or changes outside `parley-deck/`, opens or updates `IMPLEMENTATION.md` with a short implementation plan/checklist before making code changes. For risky plans, the implementer may use the active transport surface or `inbox/` for a brief feedback window before proceeding. Reviewers may block material divergence from that plan through the normal review process. This is not a new phase or artifact.
+-- Implements strictly to `FINAL.md`. Any unavoidable deviation is logged in `IMPLEMENTATION.md` — not silently absorbed into the code.
+-- On completion, finalizes `ideas/<slug>/IMPLEMENTATION.md`:
++- Before multi-file changes or changes outside `parley-deck/`, open or update the active execution record with a short plan/checklist. Risky plans may receive a brief feedback window through the active transport or `inbox/`. Reviewers may block material divergence through normal review. This adds no phase or artifact.
++- Implement strictly to `FINAL.md`. Record unavoidable deviations in the active execution record.
++- On completion, finalize the active execution record with this schema:
+ 
+         ---
+         idea: <slug>
+@@ -513,48 +514,44 @@
+         ---
+ 
+         ## Summary of work
+-        (What was built. Which parts of FINAL.md this covers.)
++        (Work completed and FINAL.md coverage.)
+ 
+         ## Implementation plan / checklist
+-        (Required before multi-file changes or changes outside `parley-deck/`; "N/A" is valid for trivial or design-only work.)
++        (Plan before multi-file or non-deck changes; "N/A" for trivial/design-only work.)
+ 
+         - [ ] Files or areas to change:
+         - [ ] Checks to run:
+         - [ ] Review or risk notes:
+ 
+         ## Deviations from FINAL.md
+-        (Any divergence, with rationale. "None" is a valid answer.)
++        (Deviations and rationale; "None" is valid.)
+ 
+         ## Notes for reviewers
+-        (Areas that need extra attention, known trade-offs, out-of-scope items.)
++        (Review focus, trade-offs, and out-of-scope items.)
+ 
+         ## Progress
+-        (Living checklist, updated at every stopping point; ISO timestamps
+-        `(YYYY-MM-DD HH:MMZ)`, partial steps as `(completed: X; remaining: Y)`.
+-        Required for complex / `auto_implement` / driver-managed / pipeline ideas;
+-        "N/A" for trivial or design-only work.)
++        (Checklist at each stopping point, with ISO timestamps `(YYYY-MM-DD HH:MMZ)`.
++        Use `(completed: X; remaining: Y)` for partial steps.)
+ 
+         ## Decision Log
+-        (Decisions made *after* FINAL.md — Decision / Rationale / Date·Author.
+-        Deviations still go under `## Deviations from FINAL.md` above.)
++        (Decisions after FINAL.md: Decision / Rationale / Date·Author.
++        Record deviations under `## Deviations from FINAL.md`.)
+ 
+         ## Surprises & Discoveries
+-        (Unexpected findings, with evidence — especially when they change choices.)
++        (Unexpected findings and evidence, especially changes to choices.)
+ 
+         ## Validation evidence
+-        (Which FINAL.md acceptance criteria were met, with the commands run and what
+-        they proved. When `checks:` is a list (LE-4 completion contract), the driver
+-        populates this section automatically each cycle; the implementer does not
+-        hand-write it.)
++        (Commands and their FINAL.md criterion evidence. For a `checks:` list, the driver
++        writes this section each cycle; the implementer must not write it manually.)
+ 
+         ## Outcomes & Retrospective
+-        (At completion: achievements, gaps, lessons — framed to feed §13 `parley retro`.)
+-
+-`IMPLEMENTATION.md` is the **living** companion to the static `FINAL.md`: kept current at every stopping point so a fresh agent or the auto-drive driver has task-level resume context. §12 supplies the low-level effects ledger and idempotency keys; these sections supply the orientation and recovery narrative. The living sections are required for complex / `auto_implement` / driver-managed / pipeline ideas and may be `N/A` for trivial or design-only work.
+-
+-The implementer publishes `IMPLEMENTATION.md` (commit/PR/MR — see §11) and signals "open for review".
+-
+-If the idea is design-only (no code artifact), Phase 5 may be reduced to a brief `IMPLEMENTATION.md` describing where the design output was applied. Phases 6–8 still apply unless the participants agree in `consensus.md` that review is not required.
++        (At completion: achievements, gaps, and lessons for §13 `parley retro`.)
++
++Keep the active execution record current at every stopping point. It supplies resume context; §12 supplies the effects ledger and idempotency keys. Its living sections supply orientation and recovery. They are required for complex, `auto_implement`, driver-managed, or pipeline ideas; trivial or design-only work may use `N/A`.
++
++Publish the active execution record through the §11 transport and signal "open for review".
++
++A design-only idea may use a brief active execution record that states where the design was applied. Phases 6–8 still apply unless `consensus.md` waives review.
+ 
+ ### Phase 6 — Code review rounds
+ 
+@@ -566,7 +563,7 @@
+ The sole reviewer must have a known distinct model even if `require_model_diversity`
+ is false. Strict-gate, independent goal-check and historical-finding obligations remain.
+ 
+-Once `IMPLEMENTATION.md` is published, every active participant **except the implementer** writes `ideas/<slug>/review/round-01/<agent-id>.md`:
++After publication of the active execution record, every active participant **except the implementer** writes `ideas/<slug>/review/round-01/<agent-id>.md`:
+ 
+     ---
+     agent: <agent-id>
+@@ -656,10 +653,10 @@
+ 
+ ### Phase 8 — Fix-up
+ 
+-The implementer applies the **Agreed fixes** from `review/consensus.md` on the same branch.
+-After v2 succession, execution updates target the active handover from Phase 5. On completion, they append a new section to `IMPLEMENTATION.md`:
+-
+-When `checks:` is a list (LE-4 completion contract), closing additionally requires the latest driver run to be all-pass at the current HEAD: the driver vetoes `status: complete` while any criterion fails (it can only fail a close claim, never auto-pass one — the same shape as `strict_gate`, and independent of it). A failing criterion is recorded in `## Validation evidence` and escalates via stopping judgment rather than auto-retrying.
++Apply the **Agreed fixes** from `review/consensus.md` on the same branch.
++On completion, append the fix-up section to the active execution record:
++
++A `checks:` list requires the latest driver criteria to pass at current HEAD before close. The driver vetoes `status: complete` if any criterion fails. It never auto-passes a close claim; this gate is independent of `strict_gate`. Record failures in `## Validation evidence`. Escalate through stopping judgment without automatic retry.
+ 
+     ## Fix-up cycle N
+     status: complete
+@@ -672,9 +669,9 @@
+     ### Deviations from agreed fixes
+     (Any item that turned out to be infeasible or required a different approach, with rationale. "None" is a valid answer.)
+ 
+-They also update the top-level frontmatter: bump `status:` to `fix-up-cycle-N`, update `head-commit:`. Then publish per the active transport (see §11) with message `[<agent-id>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`.
+-
+-Phases 6 → 7 → 8 repeat until a Phase 7 consensus lists **zero Agreed fixes**. At that point the implementer sets `status: complete` in `IMPLEMENTATION.md` frontmatter and publishes with `[<agent-id>] <slug>: IMPLEMENTATION.md — complete`. The implementation PR/MR is merged (B/C) or the idea is simply marked closed (A). Later invalidation follows the same rule as FINAL.md: open a new idea, do not edit the closed IMPLEMENTATION.md.
++Update the active execution record's top-level frontmatter: bump `status:` to `fix-up-cycle-N`, update `head-commit:`. Then publish per the active transport (see §11) with message `[<agent-id>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`.
++
++Repeat Phases 6 → 7 → 8 until Phase 7 lists **zero Agreed fixes**. Set `status: complete` in the active execution record. Publish with `[<agent-id>] <slug>: IMPLEMENTATION.md — complete`. Merge the implementation PR/MR (B/C), or mark the idea closed (A). Later invalidation requires a new idea. Never edit a closed execution record.
+ 
+ #### Strict review gate (optional)
+ 
+@@ -835,32 +832,29 @@
+ 
+ ## 7. Changing this protocol
+ 
+-Open `ideas/meta-protocol-change-<topic>/`. Complete Phases 0–4 at minimum, and Phases 5–8 when the change needs code.
+-The resulting FINAL.md supersedes this document. The drafter updates `COOPERATION.md` and adds `meta/protocol-changelog.md`:
++Open `ideas/meta-protocol-change-<topic>/`. Complete Phases 0–4, plus 5–8 for code changes.
++FINAL.md supersedes this document. The drafter updates `COOPERATION.md` and `meta/protocol-changelog.md`:
+ 
+     ## YYYY-MM-DD — <short description>
+     Idea: ideas/meta-protocol-change-<topic>/
+     Drafted by: <agent-id>
+     Summary: <1–2 sentences>
+ 
+-**Core and deck changes have different scope.** The global core at `~/.parley/protocol/core/<version>/` supplies generated deck views.
+-One core change reaches all projects. It needs this meta idea and explicit user ratification.
+-The owner controls global core changes. Releases are write-once; publication through a symlinked store refuses.
+-`parley protocol publish` requires a controlling terminal. Ordinary agent input pipes or `/dev/null` fail this gate.
+-The mechanism prevents quiet or normal-path changes, but it is not a privilege boundary: an agent can allocate a pty.
+-Agents propose new rules; they do not publish a release. No agent-accessible code path writes one.
+-
+-A deck's `parley-deck/protocol-overlay.md` changes only that deck and follows its normal idea process.
+-Overlay support is partial: the file grammar, `parley.protocol-lock/v2`, and extend-only terminal-boundary composition exist.
+-The roster-annotation identity slot and removal of prose-matched zone addressing do not. Do not rely on absent parts.
+-
+-**Not implemented:** per-idea protocol version pinning and `DETECTED-UNATTRIBUTED` tamper detection.
+-They are ratified implementation ranks 2 and 4. An open idea does not carry a pinned protocol version.
+-Only the write-once, symlink, and terminal gates above are in force.
+-
+-**Version-sync exception.** Adoption of an upstream-ratified version through §9.0 is maintenance, without a new meta idea,
+-when it is additive/compatible and preserves project-specific zones. A breaking sync pauses for user confirmation.
+-Any new rule still follows this section.
++**Global core:** `~/.parley/protocol/core/<version>/` supplies generated views across projects.
++Changes require a meta idea and explicit user ratification. Only the owner publishes write-once releases; symlinked stores refuse.
++`parley protocol publish` requires a controlling terminal; ordinary pipes and `/dev/null` fail.
++This prevents quiet/normal-path changes, not privileged access: an agent can allocate a pty.
++Agents propose only. No agent-accessible publication path writes a release.
++
++**Deck overlay:** `parley-deck/protocol-overlay.md` affects one deck under its normal idea process.
++Implemented: file grammar, `parley.protocol-lock/v2`, extend-only terminal-boundary composition.
++Not implemented: roster-annotation identity slot or removal of prose-matched zone addressing. Do not rely on them.
++
++Per-idea version pinning and `DETECTED-UNATTRIBUTED` tamper detection remain unimplemented (ratified ranks 2 and 4).
++Open ideas are unpinned. Only write-once, symlink, and terminal gates are active.
++
++**Version-sync exception (§9.0):** upstream-ratified additive/compatible adoption needs no meta idea if project-specific zones remain intact.
++A breaking sync requires user confirmation. New rules still follow this section.
+ 
+ ## 8. Inbox (lightweight channel)
+ 
+@@ -876,7 +870,7 @@
+ 
+ Inbox messages are outside the round/consensus protocol. Recipients read them at session start. If an inbox thread starts to look like a design discussion, promote it to `ideas/<slug>/`.
+ 
+-Mid-round discoveries, handoffs, and progress notes may use `inbox/`, but substantive decisions and positions that influence a phase transition MUST be mirrored in the next round/review file, `consensus.md`, `FINAL.md`, or `IMPLEMENTATION.md`. Inbox messages are coordination aids, not a substitute for canonical artifacts.
++Use `inbox/` for discoveries, handoffs, and progress notes. Mirror phase-affecting decisions and positions into the next round/review, `consensus.md`, `FINAL.md`, or active execution record. Inbox notes never replace canonical artifacts.
+ 
+ **In transports B and C**, casual inbox-style chatter _may_ additionally happen in PR/MR conversations or in a dedicated chat channel, but **escalations to the user (`to-user`) and any handoff that influences phase transitions MUST be filed as inbox files**. PR/MR threads are too easy to bury and not durable enough for audit purposes.
+ 
+@@ -895,7 +889,7 @@
+ 3. Round 1 = independent analysis; later rounds = cross-review.
+ 4. Consensus = all ✅ signoffs in `consensus.md`. In B/C, also mirrored by native PR/MR review approvals; the file wins on conflict.
+ 5. The **idea initiator** (`author:` in `00-prompt.md`) drafts `FINAL.md`. Closing the idea is a single transaction (commit in A, PR/MR merge in B/C) that sweeps in any orphaned files.
+-6. Full dev flow: **idea → implementation → code review → fix-up**. The implementer resolves by one chain — the `IMPLEMENTATION.md` pin, a per-idea `implementer:` designation, the owner-set `[defaults].default_implementer` (ships unset), then today's chain — `FINAL.md`'s recorded implementer/drafter, else the first eligible participant; every non-implementer participant reviews; the same signoff mechanism gates each cycle; fix-up/review iterates until zero Agreed fixes.
++6. Flow: **idea → implementation → review → fix-up**. Validated v2 role history has priority. Otherwise use the Phase 5 chain: implementation pin, per-idea designation, owner-set default (unset initially), FINAL implementer/drafter, first eligible participant. Every non-implementer reviews. Signoffs gate each cycle; repeat until zero Agreed fixes.
+ 7. **Any agent can escalate to the user** via `inbox/<from>-to-user_...md`. The user's answer is quoted into the next round/review file for the audit trail.
+ 8. **English only** in every `parley-deck/` file _and_ every PR/MR description, comment, review, or commit message (unless the project deliberately overrides).
+ 9. Change the protocol the same way you'd change any other artifact: open an idea.
+@@ -947,7 +941,8 @@
+       Preserve invalid own output before retry; shared edits block for repair. Bind idea, agent, and logical step.
+       Restart, run ID, and prompt changes grant no third attempt. Unsettled starts require host/boot/PID stopped-writer proof, never invented success.
+       Kickoff uses the same bound within its readiness batch.
+-      Rule `participant-failure.v1` binds both invocation IDs/linkage, step, terminal/exit/watchdog class, validator reason, UTC times, and verbatim decisive evidence.
++      Rule `participant-failure.v1` uses supervisor facts independently of quota recognition.
++      It binds both invocation IDs/linkage, step, terminal/exit/watchdog class, validator reason, UTC times, and verbatim decisive evidence.
+       Only secret redaction and visible truncation may alter it. Full logs/partials stay private.
+     - **Provider exhaustion in v2.** `provider-exhaustion.v1` requires failed execution and explicit exhausted account credit, token, quota, or named usage allowance.
+       Native authority requires CLI behavior/source and positive/adversarial fixtures. Unsupported adapters remain diagnostic-only.
+@@ -962,6 +957,14 @@
+       Common admission enforces this across steps, prompts, runs, restart, policy downgrade/opt-out, recovery, and blocked membership batches.
+       SDK retries before terminal observation remain outside this boundary.
+       Scope is one agent in one idea. Provider/model/gateway labels prove no shared account; peer inference and machine caches are deferred.
++    - **Private zcode capture.** Default off; only owner machine configuration enables it, never ideas/prompts.
++      Capture failed-invocation stderr after termination, without provider calls. Keep scrubbed provider-error framing/fields only.
++      Remove credentials, authorization, cookies, prompts, requests, and unrelated responses before storage. Uncertain scrubbing writes nothing.
++      Store in `~/.parley/captures/zcode/`: directories 0700, exclusive files 0600, no symlinks.
++      Caps: 256 KiB/file, 2 MiB total, seven days. Each use deletes expired files, then oldest files to fit.
++      Mark removals `[REDACTED]` and caps `[TRUNCATED]`. Disable stops new captures. Owner purge/directory deletion gives immediate cleanup.
++      No idle deletion is guaranteed. Captures grant no authority or grammar expansion; lost required framing means incomplete evidence.
++      The follow-up's provenance/completeness review still applies.
+     - **Legacy quota predicate (unchanged).** Require a failed invocation (nonzero exit or
+       structured terminal provider error), no valid completed artifact and no later batch success.
+       Native provider-error provenance needs CLI behavior/source plus positive/adversarial fixtures;
+@@ -1012,7 +1015,7 @@
+       Missing drafts use current eligible selectors. Structurally valid incomplete shared drafts without signoffs may move byte-exactly to a recorded archive.
+       Bind original path, author, hash, and archive before successor authorship at the canonical path.
+       Any signoff, malformed identity/frontmatter, or truncated syntax blocks partial-draft recovery. Participant rounds/reviews never move.
+-      Closed FINAL/IMPLEMENTATION stay frozen. The CLI enforces supervised actions; an external organizer must follow the protocol itself.
++      Closed FINAL and execution records stay frozen. The CLI enforces supervised actions; an external organizer must follow the protocol itself.
+     - **Review gates.** Before commit, re-evaluate reviewer count, LE-7/LE-11, independent goal check, model diversity, and strict_gate.
+       A successor cannot review its own code. Its prior findings stay binding; require fresh independent current-tree evidence.
+       One reviewer suffices only when immutable history proves the latest automatic membership transition reduced ≥2 independent reviewers to exactly one.
+@@ -1091,7 +1094,7 @@
+ 4. **Transport B/C only:** check the project's open PRs/MRs for any titled `[<slug>] design` or `[<slug>] implementation` where you are a requested reviewer or assignee. If any is awaiting your action that maps to a missing file in §3, that file is what you owe — write it first.
+ 5. For each open idea where you're a participant, check:
+    - Your round file for the current design round is missing → write it **before** starting other work.
+-   - `IMPLEMENTATION.md` exists and `review/round-0N/<your-id>.md` is missing → write your review file **before** starting other work.
++   - The active execution record exists and `review/round-0N/<your-id>.md` is missing → write your review file **before** starting other work.
+ 6. Before accepting or finalizing Parley Deck work, verify that at least one non-facilitator participant has been invoked and has written the expected canonical artifact, or that a recorded solo exception explains why this was impossible.
+ 7. Only then proceed to the user's current task.
+ 
+@@ -1126,13 +1129,13 @@
+ 3. Sweeps any uncommitted contributions from other agents (with permission, or after a reasonable interval).
+ 4. Bundles all of the above into a **single commit** with message `[<drafter>] <slug>: FINAL.md + close idea`. The body summarizes what was included (and notes any swept-in files authored by others).
+ 
+-**Phase 5 — Implementation.** Implementer creates `feature/<slug>` in the target code repo, implements, then commits `IMPLEMENTATION.md` to `parley-deck/` with message `[<agent>] <slug>: IMPLEMENTATION.md — ready for review`. The `branch:` field in IMPLEMENTATION.md frontmatter points at the code-repo branch.
++**Phase 5 — Implementation.** Create `feature/<slug>` in the target code repo. Implement, then commit the active execution record to `parley-deck/`. Use `[<agent>] <slug>: IMPLEMENTATION.md — ready for review`. Its `branch:` points at the code-repo branch.
+ 
+ **Phase 6 — Code review.** Each non-implementer commits their `review/round-NN/<agent-id>.md`. No native review surface — discussion lives in the review files.
+ 
+ **Phase 7 — Review consensus.** Drafter commits `review/consensus.md`; signoffs appended in follow-up commits.
+ 
+-**Phase 8 — Fix-up.** Implementer pushes fix-up commits to `feature/<slug>` (in code repo), then updates `IMPLEMENTATION.md` (in parley-deck) with the fix-up cycle section and a new commit `[<agent>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`. When complete, status flips to `complete` in a final commit `[<agent>] <slug>: IMPLEMENTATION.md — complete`. The code-repo branch may or may not be merged — that is the code repo's own concern, not this protocol's.
++**Phase 8 — Fix-up.** Push fixes to the code repo's `feature/<slug>`. Add the cycle section to the active execution record. Commit with `[<agent>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`. At completion, set its status to `complete`; commit `[<agent>] <slug>: IMPLEMENTATION.md — complete`. The code repo controls whether its branch merges.
+ 
+ **Inbox.** Files in `parley-deck/inbox/`, as described in §8.
+ 
+@@ -1199,7 +1202,7 @@
+ 
+ 1. Creates branch `feature/<slug>` off the integration branch of the **code repo** (which may equal the parley-deck repo).
+ 2. Implements per the merged `FINAL.md` (referencing the parley-deck-repo commit SHA).
+-3. On completion, commits `IMPLEMENTATION.md` on the implementation branch and opens the same PR as the code (it lives at `ideas/<slug>/IMPLEMENTATION.md`, which the recommended branch protection below requires a PR for — the previous wording said "directly … no PR needed" and contradicted it) with message `[<agent>] <slug>: IMPLEMENTATION.md — ready for review`. The frontmatter `implementation-pr:` field is filled in step 4.
++3. Commit the active execution record on the implementation branch, in the same PR as the code. Use `[<agent>] <slug>: IMPLEMENTATION.md — ready for review`. Section 11.B branch protection covers its `ideas/<slug>/` path. Fill its `implementation-pr:` field in step 4.
+ 4. Opens a **Draft PR** in the code repo titled `[<slug>] implementation` against the integration branch. Description references the merged design PR URL and the `FINAL.md` permalink. Labels: `implementation`, `phase:review-round-01`. Reviewers: all participants except the implementer.
+ 5. Switches the PR to Ready-for-review when implementation is complete (i.e. when reviews can begin).
+ 
+@@ -1221,13 +1224,13 @@
+ **Phase 8 — Fix-up.** Implementer:
+ 
+ 1. Pushes fix-up commits to `feature/<slug>` in the code repo.
+-2. Updates `IMPLEMENTATION.md` in parley-deck (new fix-up cycle section, bumped frontmatter) with commit `[<agent>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`.
++2. Update the active execution record with the cycle section and frontmatter. Commit `[<agent>] <slug>: IMPLEMENTATION.md fix-up cycle N — ready for re-review`.
+ 3. **Re-requests review** from the participants on the implementation PR (GitHub: dismiss stale reviews if needed and click _Re-request review_).
+ 4. Bumps the PR label to `phase:review-round-(N+1)` or `phase:review-consensus` as appropriate.
+ 
+ Phases 6 → 7 → 8 iterate until a Phase 7 consensus lists **zero Agreed fixes**. When that consensus is reached:
+ 
+-1. Implementer sets `status: complete` in `IMPLEMENTATION.md` frontmatter, commits `[<agent>] <slug>: IMPLEMENTATION.md — complete`.
++1. Set `status: complete` in the active execution record. Commit `[<agent>] <slug>: IMPLEMENTATION.md — complete`.
+ 2. Implementer **merges the implementation PR** (Merge commit, not squash) with message `[<agent>] <slug>: implementation — complete`.
+ 3. PR label flips to `phase:complete`. Branch is deleted.
+ 
+@@ -1338,7 +1341,7 @@
+ ### 12.1 Block model
+ A pipeline is an ordered list of **blocks**. Each block is exactly one invocation of the existing cooperation engine; the pipeline layer only sequences blocks, records gates, and (for action blocks) executes approved side effects through the driver. Block kinds:
+ - `deliberation` — runs Phase 1–4, produces one typed stage artifact.
+-- `implementation` — runs Phase 5–8 unchanged, produces `IMPLEMENTATION.md` plus code state.
++- `implementation` — runs Phase 5–8 unchanged; produces the active execution record and code state.
+ - `action` — runs Phase 1–4 to reach consensus on an action plan, then enters `execute`, a driver-only sub-phase that performs approved side effects.
+ - `watcher` — defines monitoring/alerting policy; breach handling opens a gated follow-up by default.
+ 
+@@ -1390,7 +1393,7 @@
+ - **Protocol harness** — `COOPERATION.md` and any in-repo copy kept in lockstep by the drift guard. Changeable only via a meta-protocol-change idea (§7) with human approval; a retro pass must never edit it directly.
+ - **Runtime / shared harness — Repository Instruction Files** — tracked, shared files: skills, CLI behavior, helper scripts, docs, and repo-level instruction files. Changeable via an ordinary idea and the full review gate (a meta idea if the change alters protocol semantics).
+ - **Local harness — Agent Local Memory** — operator-local, non-canonical state (caches, ignored launch config, per-machine memory). A retro pass may report observations only; it must never canonicalize them or infer protocol rules from one operator's local setup.
+-- **Evidence corpus** — structured Parley Deck artifacts (`ideas/*` rounds, `review/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, run event logs) are the primary evidence. Raw session transcripts are secondary, off by default, and quarantined; include them only with recorded provenance. Within this corpus, a retro pass SHOULD surface **confident-error** signals — a dismissed `CRITICAL`/`MAJOR` finding, an unsupported assumption that shaped `FINAL.md`, or a missed risk that caused fix-up churn — drawn from the `IMPLEMENTATION.md` Outcomes & Surprises sections and the `consensus.md` blind-spots fields. This is diagnostic evidence only: **never** a new review severity, a blame label, or a merge gate.
++- **Evidence corpus** — structured Parley Deck artifacts (`ideas/*` rounds, `review/`, `consensus.md`, `FINAL.md`, `IMPLEMENTATION.md`, `role-handover/`, run event logs) are the primary evidence. Raw session transcripts are secondary, off by default, and quarantined; include them only with recorded provenance. Within this corpus, a retro pass SHOULD surface **confident-error** signals — a dismissed `CRITICAL`/`MAJOR` finding, an unsupported assumption that shaped `FINAL.md`, or a missed risk that caused fix-up churn — drawn from the active execution record's Outcomes & Surprises sections and the `consensus.md` blind-spots fields. This is diagnostic evidence only: **never** a new review severity, a blame label, or a merge gate.
+ 
+ ### 13.3 Acceptance gate
+ 

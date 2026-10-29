@@ -139,3 +139,19 @@ The process exited 0 after 11,846 ms. Every output line parsed as JSON and the r
 See source-context/codex-json-smoke-receipt.json for the argv, event types, hashes, and native usage report.
 This receipt covers the ordinary JSON envelope only. No exhaustion was induced or captured. It proves no installed-binary equivalence.
 The evidence arrived after peer round-3 launch. The consensus signoff briefs must expose it before a decision relies on it.
+
+## Resume-3 round completion and consensus
+
+Both fresh peer processes completed with exit 0 and no timeout.
+Kimi used 1,348,118 ms; Zcode used 1,422,651 ms. Their canonical receipt hashes match their own round-3 artifacts.
+The organizer brief reports all three round-3 files valid. No reboot-killed process counted as a participant failure.
+
+Kimi requested two restored clauses, active execution references, and a precise capture contract.
+The corrected proposal contains 29 exact hunks. It also accepts Zcode's native version restriction and operator capture controls.
+The same-request measurements are 68,442 unflagged bytes and 69,874 protocol_change bytes.
+The live authority and product files remain unchanged. Consensus signoffs must assess the corrected delivery set.
+
+The phase-3 driver attempt refused with this exact message:
+`continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized native fallback applies. Signers run sequentially and append only their own blocks.
+The fallback supplies no driver accounting or automatic membership authority.
