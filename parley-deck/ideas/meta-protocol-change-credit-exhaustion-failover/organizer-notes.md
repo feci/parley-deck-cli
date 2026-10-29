@@ -99,3 +99,19 @@ It launched Kimi with the stale adapter model `kimi-code/k3`, then failed authen
 Invocation: `21e9d87b-4386-437a-b309-181de929794d`; duration: 2,122 ms; exit: 1.
 No artifact was created. The corrected launch uses the approved `omniroute/k3.1-pro` model.
 This organizer error does not establish unavailability of the selected model. No credential or gateway setting changed.
+
+## Round-2 completion and round-3 opening
+
+Both native peer processes exited 0 within their 1,800-second ceilings.
+Kimi duration: 1,131,242 ms. Zcode duration: 1,743,413 ms.
+Artifact hashes match their content-free receipts in source-context. Raw logs stay private.
+`parley wait --for round --timeout 45s --json` reports 3/3 valid round-02 artifacts.
+The driver suggests consensus mechanically. The handover choice still needs peer agreement, so round 3 is necessary.
+
+Round 3 retains all identities, models, effort, transport, and timeouts.
+The owner answer remains quoted in round-02/codex-1.md.
+`parley continue --json meta-protocol-change-credit-exhaustion-failover` reports:
+`continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Native fallback remains authorized, without driver accounting or automatic membership authority.
+Codex filed one concrete handover contract and exact proposed protocol hunks for peer review.
+These are design sources only. No product code, live protocol, staged core, or skill file changed.

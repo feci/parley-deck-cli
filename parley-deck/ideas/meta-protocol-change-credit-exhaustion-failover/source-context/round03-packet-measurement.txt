@@ -1,0 +1,9 @@
+Design measurement only. No live authority changed.
+Command: go run .parley-runtime/credit-failover/measure-v2.go
+Request: Phase 1, deliberation, github-pr, facilitator; identical source display fields before/after.
+Hunks: round03-protocol-hunks-proposed.json
+
+baseline flags=[] mode=packet bytes=68868 reason=
+baseline flags=[protocol_change] mode=packet bytes=71852 reason=
+compaction-draft flags=[] mode=packet bytes=67773 reason=
+compaction-draft flags=[protocol_change] mode=packet bytes=69599 reason=
