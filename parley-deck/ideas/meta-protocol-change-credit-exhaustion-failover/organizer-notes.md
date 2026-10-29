@@ -61,3 +61,22 @@ No cycle action has yet exercised the D6 declaration.
 Round 2 retains the same roster, models, effort, transport, and 1,800-second ceilings.
 The new source-context Codex excerpts are shared before peer cross-review.
 The generic machine cache and the breadth of native adapter support remain design questions.
+
+## Round-2 launch refusal
+
+Both measured cross-review launches refused before a child started. Neither consumed a provider attempt.
+Kimi invocation: `21e634a2-1db5-42ad-99c7-ab6b4d9cbb6d`.
+Zcode invocation: `7c900416-094d-41b1-9763-f3a99337b3d4`.
+Both terminal records have `failure_class: budget_refused`, null PID, and null start time.
+No peer round-2 file exists. The brief's expected D6 readiness is not sufficient for this workspace.
+
+Read-only `parley budget cycle inspect` reports that the cycle policy is not initialized.
+Read-only `parley budget migrate inspect --kind cross-review` reports:
+`historical worktree is unavailable: /Volumes/My Shared Files/AI_WORKSPACE/parley-deck/worktrees/designated-implementer`.
+The same failure occurs through `budget legacy inspect`. The worktree inventory retains unknown history.
+The brief forbids pruning and worktree declarations. No accounting state or registration was changed.
+
+The native CLI fallback needs an explicit owner decision because it would proceed outside this accounting gate.
+Prepared round-2 briefs retain the same roles, models, protocol context, and 1,800-second ceilings.
+The owner received one choice between that bounded fallback and repair of the historical-worktree gate.
+Until the owner answers, peer cross-review remains pending. No implementation or release has begun.
