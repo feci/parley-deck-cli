@@ -214,7 +214,7 @@ func DecodeRevisionRequest(raw []byte, v any) error { return strictDecode(raw, v
 // Exclusive records are immutable. Failures after publication leave readable
 // pending state; failures before publication leave no committed record.
 func DurableWrite(path string, data []byte, exclusive bool) error {
-	if err := durableMkdir(filepath.Dir(path)); err != nil {
+	if err := DurableMkdir(filepath.Dir(path)); err != nil {
 		return err
 	}
 	if err := writeFault("create", path); err != nil {
@@ -295,15 +295,15 @@ func SyncPath(path string) error {
 	return syncDir(filepath.Dir(path))
 }
 
-// Sync each newly created directory in its parent before publishing a record.
-func durableMkdir(path string) error {
+// DurableMkdir syncs each new directory in its parent before record publication.
+func DurableMkdir(path string) error {
 	if _, err := os.Stat(path); err == nil {
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}
 	parent := filepath.Dir(path)
-	if err := durableMkdir(parent); err != nil {
+	if err := DurableMkdir(parent); err != nil {
 		return err
 	}
 	if err := os.Mkdir(path, 0700); err != nil && !os.IsExist(err) {

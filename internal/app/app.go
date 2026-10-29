@@ -256,6 +256,8 @@ Commands:
   quota capture status|purge
       Inspect or purge private Zcode diagnostics. Capture defaults off.
       Only ~/.parley/agents.toml [defaults].capture_zcode_failures enables it.
+      Status deletes expired files, removes oldest files for the total cap,
+      and updates cleanup.json. Purge removes retained capture files.
 
   version
       Print the CLI version. With --all, also print parley-deck-skill and

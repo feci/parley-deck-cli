@@ -186,14 +186,17 @@ func NewID() (string, error) {
 // openInvocationStore ensures the shared invocations directory exists and is a
 // real directory — never a symlink alias of another location.
 func openInvocationStore(directory string) error {
-	if err := fsutil.MkdirAllResilient(directory, 0o700); err != nil {
+	if err := quota.DurableMkdir(directory); err != nil {
 		return fmt.Errorf("create telemetry directory: %w", err)
 	}
 	info, err := os.Lstat(directory)
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return errors.New("telemetry directory must be a real directory")
 	}
-	return nil
+	if err := invocationWriteFault("store-sync", directory); err != nil {
+		return err
+	}
+	return quota.SyncPath(directory)
 }
 
 // newInvocation persists the requested record for a directory this caller
@@ -400,23 +403,49 @@ func (i *Invocation) Snapshot() Record {
 	return copy
 }
 
+// Fault injection stays private to this package's persistence tests.
+var invocationWriteFault = func(stage, path string) error { return nil }
+
 func (i *Invocation) write(name string) error {
 	data, err := json.MarshalIndent(i.record, "", "  ")
 	if err != nil {
 		return err
 	}
 	path := filepath.Join(i.Dir, name)
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	file, err := os.CreateTemp(i.Dir, ".record-*")
 	if err != nil {
 		return err
 	}
-	if _, err := file.Write(append(data, '\n')); err != nil {
-		file.Close()
+	defer os.Remove(file.Name())
+	if err = invocationWriteFault("write", path); err == nil {
+		_, err = file.Write(append(data, '\n'))
+	}
+	if err == nil {
+		err = invocationWriteFault("file-sync", path)
+	}
+	if err == nil {
+		err = fsutil.SyncFile(file)
+	}
+	closeErr := file.Close()
+	if closeErr == nil {
+		closeErr = invocationWriteFault("close", path)
+	}
+	if err == nil {
+		err = closeErr
+	}
+	if err != nil {
 		return err
 	}
-	if err := fsutil.SyncFile(file); err != nil {
-		file.Close()
+	if err = invocationWriteFault("link", path); err != nil {
 		return err
 	}
-	return file.Close()
+	// Publish complete bytes without replacing any existing record.
+	if err = os.Link(file.Name(), path); err != nil {
+		return err
+	}
+	if err = invocationWriteFault("directory-sync", path); err != nil {
+		return err
+	}
+	// Persist the record name and the invocation directory's parent entry.
+	return quota.SyncPath(i.Dir)
 }

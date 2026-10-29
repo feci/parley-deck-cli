@@ -1,7 +1,6 @@
 package driver
 
 import (
-"parley-deck-cli/internal/protocol"
 	"context"
 	"errors"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 	"parley-deck-cli/internal/budget"
 	"parley-deck-cli/internal/consensus"
 	"parley-deck-cli/internal/membership"
+	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/trajectory"
 )
 
