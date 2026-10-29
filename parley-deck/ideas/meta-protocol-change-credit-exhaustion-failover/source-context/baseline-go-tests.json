@@ -1,0 +1,9 @@
+{
+  "command": "go test ./... -count=1 -timeout 45m",
+  "exit_code": 0,
+  "scope": "Baseline product tree; only design artifacts changed during this run.",
+  "log_sha256": "06172a371e77d1b7974f2eafd279e83ce89d773d5e1fd00cce5c6ddd47932cf4",
+  "app_result": "ok parley-deck-cli/internal/app 1191.372s",
+  "product_base": "525febbf1d85c8f2ff122abb062a27a02bd333c2",
+  "note": "This is baseline evidence, not verification of the proposed feature."
+}

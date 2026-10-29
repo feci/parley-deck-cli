@@ -1,0 +1,51 @@
+{
+  "freshness": {
+    "role": "source",
+    "deckVersion": "2.19.0",
+    "protocolSha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+    "packagedProtocolSha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+    "skillVersion": "2.19.0",
+    "classification": "source-advisory",
+    "summary": "source — ahead of / independent of packaged skill; advisory only, never writes COOPERATION.md"
+  },
+  "roster": [
+    {
+      "rosterId": "claude-1",
+      "runtime": "claude",
+      "version": "2.1.312 (Claude Code)",
+      "available": true
+    },
+    {
+      "rosterId": "codex-1",
+      "runtime": "codex",
+      "version": "codex-cli 0.165.0",
+      "available": true
+    },
+    {
+      "rosterId": "hermes-1",
+      "runtime": "hermes",
+      "version": "Hermes Agent v0.20.5 (2026.8.19) · upstream a938f00f",
+      "available": true
+    },
+    {
+      "rosterId": "kimi-1",
+      "runtime": "kimi",
+      "version": "2.3.3",
+      "available": true
+    },
+    {
+      "rosterId": "zcode-1",
+      "runtime": "zcode",
+      "version": "zcode-app-cli 3.11.2-22",
+      "available": true
+    }
+  ],
+  "pinged": false,
+  "gates": [
+    {
+      "kind": "facilitator-declaration",
+      "detail": "ideas/meta-protocol-change-devx-speed: idea frontmatter declares `facilitator: claude-1` but also lists it in `participants:` without `facilitator_participates: true` — either remove the agent from participants (pure organizer) or set facilitator_participates: true (full participation)",
+      "confirm": "edit ideas/meta-protocol-change-devx-speed/00-prompt.md — remove the agent from participants, or add facilitator_participates: true"
+    }
+  ]
+}

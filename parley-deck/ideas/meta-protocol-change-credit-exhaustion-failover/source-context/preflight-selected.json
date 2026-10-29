@@ -1,0 +1,26 @@
+[
+  {
+    "agent": "codex-1",
+    "invocation_id": "a0598f17-2d16-42ab-83ce-e471eb152460",
+    "exit_code": 0,
+    "pong": true,
+    "requested_model": "gpt-6-astra",
+    "duration_ms": 13375
+  },
+  {
+    "agent": "kimi-1",
+    "invocation_id": "7f4c6163-6e03-4dbc-a525-c98ddf21db0a",
+    "exit_code": 0,
+    "pong": true,
+    "requested_model": "omniroute/k3.1-pro",
+    "duration_ms": 22763
+  },
+  {
+    "agent": "zcode-1",
+    "invocation_id": "75a5dae6-9461-42b3-bc62-a70cb1cbd61c",
+    "exit_code": 0,
+    "pong": true,
+    "requested_model": null,
+    "duration_ms": 25504
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "schema": "organizer-native-receipt/v1",
+  "authority": "owner decision-answer.md; no driver accounting or automatic membership authority",
+  "agent": "kimi-1",
+  "step": "round02",
+  "model": "omniroute/k3.1-pro",
+  "effort": "max (configuration)",
+  "argv_without_prompt": [
+    "/Users/tomasfecko/.kimi-code/bin/kimi",
+    "--model",
+    "omniroute/k3.1-pro",
+    "--output-format",
+    "stream-json",
+    "-p"
+  ],
+  "cwd": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover",
+  "pid": 46885,
+  "started_at": "2026-10-29T19:05:38.317022+00:00",
+  "completed_at": "2026-10-29T19:24:29.580127+00:00",
+  "duration_ms": 1131242,
+  "timeout_seconds": 1800,
+  "timed_out": false,
+  "exit_code": 0,
+  "prompt_sha256": "14c8ed49393b77759c044714f851c841a00ecbc1eae5db26f41a92c69484b34b",
+  "artifact": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/round-02/kimi-1.md",
+  "artifact_exists": true,
+  "artifact_sha256": "85e9dc43e3702a683806fe8af2e2ccf85279e3de640889b72bbe4abe19e89ebe",
+  "usage": "unavailable unless a separate native usage receipt establishes it",
+  "private_logs": [
+    ".parley-runtime/credit-failover/round02-kimi-1-native.stdout",
+    ".parley-runtime/credit-failover/round02-kimi-1-native.stderr"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "type": "invocation.terminal",
+  "invocation_id": "7c900416-094d-41b1-9763-f3a99337b3d4",
+  "metadata": {
+    "run_id": "5d71a0da-efde-4e4a-934a-1239f6ba51fe",
+    "segment_id": "manual",
+    "idea": "meta-protocol-change-credit-exhaustion-failover",
+    "phase": "round-02",
+    "agent": "zcode-1",
+    "adapter": "zcode",
+    "launch_mode": "headless",
+    "attempt_ordinal": 1,
+    "retry_of": null,
+    "requested_model": null,
+    "requested_effort": null,
+    "requested_speed": "deep",
+    "context": {
+      "context_mode": "full",
+      "source_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "packet_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "fallback_reason": null
+    }
+  },
+  "requested_at": "2026-10-29T18:54:13.895234Z",
+  "started_at": null,
+  "completed_at": "2026-10-29T18:54:13.973482Z",
+  "duration_ms": 78,
+  "pid": null,
+  "outcome": {
+    "quota_evidence": {
+      "invocation_id": "7c900416-094d-41b1-9763-f3a99337b3d4",
+      "adapter": "zcode",
+      "eligible": false,
+      "reason": "watchdog or cancellation",
+      "observed_at": "2026-10-29T18:54:13.973431Z"
+    },
+    "status": "failed",
+    "exit_code": null,
+    "failure_class": "budget_refused",
+    "artifact_sha256": null,
+    "usage": {
+      "input_tokens": null,
+      "output_tokens": null,
+      "cache_read_tokens": null,
+      "cache_write_tokens": null,
+      "total_tokens": null,
+      "cost_usd": null,
+      "reported_model": null,
+      "reported_models": [],
+      "source": "unavailable",
+      "cost_basis": "unavailable",
+      "coverage": "unavailable"
+    },
+    "observation": {
+      "first_activity_ms": null,
+      "stdout_bytes": null,
+      "stderr_bytes": null,
+      "parser_input_truncated": false
+    }
+  },
+  "warnings": []
+}
