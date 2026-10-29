@@ -1,0 +1,34 @@
+{
+  "schema": "organizer-native-receipt/v1",
+  "authority": "owner decision-answer.md; no driver accounting or automatic membership authority",
+  "agent": "zcode-1",
+  "step": "review02-provenance",
+  "model": "zai/glm-5.3 (CLI configuration; not enforced by argv)",
+  "effort": "max (configuration)",
+  "argv_without_prompt": [
+    "/Users/tomasfecko/.nvm/versions/node/v24.15.0/bin/zcode",
+    "--cwd",
+    "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover",
+    "--mode",
+    "yolo",
+    "--prompt"
+  ],
+  "cwd": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover",
+  "pid": 42316,
+  "started_at": "2026-10-29T23:27:31.779892+00:00",
+  "completed_at": "2026-10-29T23:32:22.906319+00:00",
+  "duration_ms": 291128,
+  "timeout_seconds": 1800,
+  "timed_out": false,
+  "exit_code": 0,
+  "prompt_sha256": "710dcfcc2d1fa5a1adafd730419bf0f24cdcdc652a639ce92cddc14e8afbbab1",
+  "artifact": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/review/round-02/zcode-1.md",
+  "artifact_before_sha256": "98bed5b76f48f44d6a5bbf9cd14d402836273fef2f3f9dbf33ee57bfa4c52c19",
+  "artifact_exists": true,
+  "artifact_sha256": "163e9312457015bdddb439fe2772051ec8b560fdd02ab045b3773400179e9642",
+  "usage": "unavailable unless a separate native usage receipt establishes it",
+  "private_logs": [
+    ".parley-runtime/credit-failover/review02-provenance-zcode-1-native.stdout",
+    ".parley-runtime/credit-failover/review02-provenance-zcode-1-native.stderr"
+  ]
+}

@@ -240,3 +240,72 @@ Each entry below points to the full statement elsewhere in this file. Each prese
 No other CRITICAL, MAJOR, MINOR, or NIT finding is open in this file. All round-01 findings are resolved by F1–F6, verified above. "Effect on prior verdicts" records that the CRITICAL finding supersedes the main file's "no new CRITICAL, MAJOR, or MINOR defect" claim.
 
 This repair changed structure only. No new test run, product change, or verdict change accompanies it.
+
+---
+
+## Durability assessment — 2026-10-30 (round 02, provenance-location correction)
+
+### Purpose
+
+My second-cycle signoff in `review/consensus.md` carries a PRIMARY source assessment of the directory-durability gap and `quota.SyncPath`. Section 15.1 requires a verification verdict in the verifier's own review artifact. This idea runs on the deliberation track, so a signoff block is not that location. This addendum gives that assessment its required location.
+
+The signoff stays byte-preserved in the shared consensus, now with kimi-1 for signature. Nothing here changes a verdict, a severity, a fix scope, or a signature. The consensus file is not written again by me.
+
+### Attestation and scope
+
+Protocol attestation for this process: context_mode full; source_sha256 and packet_sha256 `b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709`; fallback_reason none. I verified the live hash again: `shasum -a 256 parley-deck/COOPERATION.md` prints that value.
+
+The assessed product source is unchanged at `31c039c`. `git diff --stat 31c039c..HEAD -- ':!parley-deck'` is empty. `git status --porcelain -- ':!parley-deck'` is empty.
+
+I ran no test suite for this correction. It is a provenance-location correction. I inspected the product source myself for each statement below. Every verdict here is `PRIMARY`, with its locator and quoted passage. The verified spans refine the signoff's coarser spans; the sites are the same.
+
+### Source assessment — directory durability of invocation records
+
+The assessed signoff sentence reads: "`internal/telemetry/record.go:403-421` syncs the file, never the directory entry." I verified each site at `31c039c`. The verdict is `CONFIRMED (PRIMARY)`.
+
+**Gap 1 — publication syncs the file, never the directory entry.** The function `write` spans `internal/telemetry/record.go:403-422`. I read it in full. It holds no directory handle and no directory sync. Its decisive lines:
+
+- `internal/telemetry/record.go:409`: `file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)`
+- `internal/telemetry/record.go:413`: `if _, err := file.Write(append(data, '\n')); err != nil {`
+- `internal/telemetry/record.go:417`: `if err := fsutil.SyncFile(file); err != nil {`
+- `internal/telemetry/record.go:421`: `return file.Close()`
+
+The `O_CREATE` at `:409` creates the directory entry. No later operation syncs `i.Dir`, so that entry is not made durable. `write` serves both records: `requested.json` at `internal/telemetry/record.go:209` and `terminal.json` at `:389`. Both publications lack the barrier.
+
+**Gap 2 — invocation directory creation without a parent sync.** Two sites create the per-invocation directory:
+
+- `internal/telemetry/record.go:224`, in `Begin`: `if err := os.Mkdir(dir, 0o700); err != nil {`
+- `internal/telemetry/record.go:260`, in `BeginBound`: `if err := os.Mkdir(dir, 0o700); err != nil {`
+
+Neither caller syncs the invocations root after `Mkdir`. The store root is also created without a sync: `openInvocationStore` calls `fsutil.MkdirAllResilient(directory, 0o700)` at `internal/telemetry/record.go:189`. That third site sits inside the same open F7 scope. I file no new finding for it here.
+
+**The barrier — `quota.SyncPath`.** `internal/quota/history.go:282-296` defines it:
+
+- `internal/quota/history.go:283`: `f, err := os.Open(path)`
+- `internal/quota/history.go:287`: `err = fsutil.SyncFile(f)`
+- `internal/quota/history.go:295`: `return syncDir(filepath.Dir(path))`
+
+Called with `i.Dir`, it opens the invocation directory and syncs it. It then syncs the parent through `syncDir`. The first sync makes the published record entry durable. The second makes the invocation directory entry durable in the invocations root. These are exactly the two barriers F7 names.
+
+**The precedent — `quota.DurableWrite`.** The function spans `internal/quota/history.go:216-270`. Its comment at `:213` states: "DurableWrite publishes complete bytes with checked file and directory sync." It stages complete bytes at `:223` (`os.CreateTemp(filepath.Dir(path), ".stage-")`), file-syncs at `:239` (`fsutil.SyncFile(f)`), publishes exclusively at `:252` (`os.Link(f.Name(), path)`), and syncs the directory at `:269` (`syncDir(filepath.Dir(path))`). Its helper `durableMkdir` at `:299-313` syncs each newly created directory in its parent (`:312`: `return syncDir(parent)`). The invocation ledger that D3 suppression reads must meet this same standard.
+
+**Import and fault-stage facts.** `internal/telemetry` already imports `internal/quota` at `internal/telemetry/record.go:14`: `"parley-deck-cli/internal/quota"`. The F7 barrier adds no import cycle. The `writeFault` hooks inside `DurableWrite` name the stages: "create" at `:220`, "write" at `:228`, "sync" at `:236`, "publish" at `:248`, and "directory-sync" at `:266`. The package comment at `internal/quota/history.go:315` says: "Fault injection stays private to this package's persistence tests." F7's four fault stages — write, file-sync, link, directory-sync — mirror the "write", "sync", "publish", and "directory-sync" hooks.
+
+### Qualification of my earlier private-overlay acceptance
+
+My supplemental assessment gave the private overlay `CONFIRMED (PRIMARY)` "for the tested scope". It also disclosed: "Neither the old nor the proposed code fsyncs the directory entry after publication; that is parity, not a regression." I now state the scope split as verdicts, as a weakening of my own claim:
+
+- `CONFIRMED (PRIMARY)` for visibility and collision. The 100-run overlay check and the 20-run race check exercised atomic publication and refusal of existing names.
+- `UNVERIFIED` for directory-entry durability under power loss or directory-sync failure. Those checks injected neither condition.
+
+FINAL D3 requires, at `FINAL.md:43`: "After the first qualifying failure, persist the bound invocation and validation result before return." It requires, at `FINAL.md:45`: "Common launch admission enforces suppression across steps, prompts, runs, restarts, recovery, policy changes, and blocked membership batches." Parity with the old code cannot prove those requirements. The old code never met them.
+
+Full D3 durability therefore requires F7's added barriers: sync the invocation directory and its parent after publication, through `quota.SyncPath(i.Dir)`. It also requires F7's fault tests and the repeated concurrent run. My overlay verdict and my signoff vote supply no durability evidence. The fault tests must supply it.
+
+### Standing
+
+This addendum is a finding and fix-plan assessment at unchanged product `31c039c`. It passes no acceptance criterion, approves no product state, and releases nothing. The CRITICAL concurrent-admission finding stays open, with F7 as its fix. The capture-status NIT keeps its agreed F8 disposition. AC-14 and AC-15 stay open. No finding or severity is suppressed.
+
+### Independence
+
+I resolved every cited source myself at `31c039c`. I did not open kimi-1's round-02 file or its process logs. The product tree stayed unchanged. This addendum changed only this file.

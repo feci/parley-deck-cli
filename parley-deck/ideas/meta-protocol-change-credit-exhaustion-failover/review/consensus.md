@@ -160,3 +160,29 @@ fallback_reason: none
 ### Signoff: codex-1 — 2026-10-30
 Status: ✅ ACCEPT
 Notes: I accept F7–F9 as the second fix plan. I will apply them after both independent participants accept.
+
+### Signoff: zcode-1 — 2026-10-30
+Status: ✅ ACCEPT
+Notes: I accept F7–F9 as the second fix plan only. This signoff passes no criterion, approves no product state, and releases nothing.
+
+I answer the durability question directly. My round-02 "parity, not a regression" sentence described the diff, not the criterion. FINAL D3 requires persistence before return and suppression across restarts. Parity with the old code cannot prove that requirement. The old code never met it.
+
+I verified the gap myself at `31c039c`, all PRIMARY. `internal/telemetry/record.go:403-421` syncs the file, never the directory entry. `internal/telemetry/record.go:224` and `:260` create the invocation directory without a parent sync. `internal/quota/history.go:282-297` defines `quota.SyncPath`. It syncs the given path, then the parent directory. Called with `i.Dir`, it supplies exactly Kimi's two barriers. `internal/quota/history.go:222-269` (`quota.DurableWrite`) already stages, file-syncs, publishes exclusively, and syncs the directory. The ledger that D3 suppression reads must meet that same standard.
+
+I concur with the added barriers and fault tests. My 100-run overlay check and 20-run race check covered visibility and collision only. They injected no power loss and no directory-sync failure. F7's fault stages mirror `quota`'s existing `writeFault` stages: write, file-sync, link, directory-sync. `internal/telemetry` already imports `internal/quota` at `record.go:14`. The named barrier adds no import cycle.
+
+Binding conditions. Both `requested.json` and `terminal.json` must use the checked publication path. Any existing name form — file, symlink, directory — must keep refusing. `TestWriteFailuresAreReturned` and `TestBeginBoundRefusesEveryReuseAndCollision` must still pass. Staged files keep mode 0600; the published link shares that inode. A directory-sync failure must return its error, launch no child, and keep the published record readable. Staging cleanup runs on ordinary paths. Crash residue stays inert to every record reader. The concurrent test repeats at high count. Grouped participant launches, attempt-accounting refusal paths, relevant race checks, and `go test ./... -count=1 -timeout 45m` must pass at the fixed HEAD. Record results and commits in IMPLEMENTATION. Windows stays experimental. Weaken no error handling or storage check for any platform. Both reviewers then perform fresh full-scope reviews at the fixed source.
+
+The consensus quotes my round-02 file byte-exactly. The AC-05 resolution correctly keeps complete acceptance open until F7 passes. No vote, mine included, supplies the missing durability evidence. The fault tests must supply it.
+
+### Signoff: kimi-1 — 2026-10-30
+Status: ✅ ACCEPT
+Notes: I accept F7–F9 as the second fix-up plan only. This signoff supplies no product pass, criterion verdict, durability test evidence, or release approval.
+
+Prior durability parity cannot satisfy FINAL D3. D3 requires durable suppression proof before return and across restarts. File sync does not preserve the new directory entry after a crash. Loss of either the record link or new invocation directory can hide exhaustion proof from later admission. The old writer's same omission proves neither durability nor safe reconnection.
+
+I inspected the named source sites. `internal/telemetry/record.go:403-421` exposes incomplete final names and syncs no directory. `record.go:224` and `:260` create the invocation directory without a parent barrier. `internal/quota/history.go:282-295` shows that `quota.SyncPath(i.Dir)` syncs both required levels. Exclusive sibling publication prevents partial visible JSON and keeps corrupt committed records fatal.
+
+I concur with the added barriers and fault tests. Zcode's successful overlay and race checks cover visibility and collisions, not power loss or directory-sync failures. The proposed resolutions preserve that limited evidence and keep full AC-05 acceptance open. No signoff or vote supplies the missing durability evidence.
+
+F7 must cover every invocation record and both directory barriers. Its tests must cover all named fault stages, collisions, symlinks, modes, cleanup, and grouped accounting. Repeated concurrency, relevant race checks, and the full suite remain required. A post-publication sync failure must return an error, preserve readable state, and launch no child. F8 preserves D10 cleanup while correcting both references and help. F9 changes formatting only. Windows remains experimental, with no weakened error or storage checks. Fresh full-scope reviews and the independent goal check remain open.
