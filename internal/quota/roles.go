@@ -207,7 +207,7 @@ func validateRoleDecision(s *RoleSnapshot, previous *RoleTransition, d Decision)
 			}
 		}
 	}
-	want, err := SelectSuccession(*s, r.Before, d.Before, CandidateIDs(d.Candidates), r.Usable)
+	want, err := SelectSuccession(*s, r.Before, d.After, exhaustedCandidateIDs(d.Candidates), r.Usable)
 	if err != nil || want == nil || want.After != r.After || want.Successor != r.Successor || !reflect.DeepEqual(want.Roles, r.Roles) {
 		return fmt.Errorf("role transition violates owner order")
 	}

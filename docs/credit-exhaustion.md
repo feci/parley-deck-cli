@@ -88,6 +88,8 @@ Truncated input retains only a proven terminal tail and visible `[TRUNCATED]` ma
 No capture supplies recognition or membership authority. Lost required framing prevents any complete-native-evidence claim.
 
 Storage is `~/.parley/captures/zcode/`, outside worktrees. Directories require 0700; files require 0600 and exclusive creation.
+Windows cannot supply these POSIX modes through the current storage check. Capture refuses there and writes no provider data.
+CLI Windows support remains experimental. This release adds no Windows ACL implementation.
 Symlinks and unsafe existing permissions refuse. Limits are 256 KiB per file, 2 MiB total, and seven days.
 Each use removes expired files first, then oldest files to fit capacity. A bounded private receipt records counts and time only.
 No deletion is promised while idle. Disable capture to stop new files; retained files remain until cleanup.

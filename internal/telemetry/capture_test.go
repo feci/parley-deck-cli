@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -50,6 +51,16 @@ func TestZcodeCapturePrivateBoundsAndCleanup(t *testing.T) {
 	dir := captureTestDir(t)
 	now := time.Now()
 	raw := []byte(recordedZcode(t).Stderr)
+	if runtime.GOOS == "windows" {
+		made, err := CaptureZcodeFailure(dir, "inv-1", raw, false, now)
+		if made || err == nil || !strings.Contains(err.Error(), "mode 0700") {
+			t.Fatalf("private-mode refusal: %v %v", made, err)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "inv-1.log")); !os.IsNotExist(err) {
+			t.Fatalf("capture exists after private-mode refusal: %v", err)
+		}
+		return
+	}
 	if made, err := CaptureZcodeFailure(dir, "inv-1", raw, false, now); err != nil || !made {
 		t.Fatalf("%v %v", made, err)
 	}
@@ -90,19 +101,37 @@ func TestZcodeCaptureRejectsUnsafeStorage(t *testing.T) {
 	for _, name := range []string{"capture.lease", "cleanup.json", "inv.log", "directory-mode", "file-mode", "directory-link"} {
 		t.Run(name, func(t *testing.T) {
 			dir := captureTestDir(t)
-			os.MkdirAll(dir, 0700)
+			if err := os.MkdirAll(dir, 0700); err != nil {
+				t.Fatal(err)
+			}
 			switch name {
 			case "directory-mode":
-				os.Chmod(dir, 0755)
+				if err := os.Chmod(dir, 0755); err != nil {
+					t.Fatal(err)
+				}
 			case "file-mode":
-				os.WriteFile(filepath.Join(dir, "inv.log"), []byte("x"), 0644)
+				path := filepath.Join(dir, "inv.log")
+				if err := os.WriteFile(path, []byte("x"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(path, 0644); err != nil {
+					t.Fatal(err)
+				}
 			case "directory-link":
-				os.Remove(dir)
-				os.Symlink(t.TempDir(), dir)
+				if err := os.Remove(dir); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(t.TempDir(), dir); err != nil {
+					t.Fatal(err)
+				}
 			default:
 				target := filepath.Join(t.TempDir(), "target")
-				os.WriteFile(target, []byte("preserve"), 0600)
-				os.Symlink(target, filepath.Join(dir, name))
+				if err := os.WriteFile(target, []byte("preserve"), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Symlink(target, filepath.Join(dir, name)); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if _, err := CaptureStatus(dir, time.Now(), true); err == nil {
 				t.Fatal("unsafe status/purge accepted")

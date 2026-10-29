@@ -558,7 +558,7 @@ func outstandingAgents(d driver.PhaseDigest, scope string) string {
 	if scope == "implementation" || scope == "any" {
 		switch {
 		case d.Implementation == nil || !d.Implementation.Present:
-			missing = append(missing, "IMPLEMENTATION.md not filed")
+			missing = append(missing, "active execution record not filed or implementation not started")
 		case d.Implementation.Status == "complete", d.Implementation.ReadyForReview:
 			// not blocking on this scope
 		case d.Implementation.Status == "":

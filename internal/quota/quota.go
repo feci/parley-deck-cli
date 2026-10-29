@@ -141,7 +141,7 @@ type Roles struct {
 }
 
 func (r Roles) Protected(id string) bool {
-	return id != "" && (id == r.Facilitator || id == r.Designee || id == r.PinnedImplementer || id == r.Assignment.Organizer || id == r.Assignment.Implementer || contains(r.StartedDrafters, id))
+	return id != "" && (id == r.Facilitator || id == r.Designee || id == r.PinnedImplementer || id == r.Assignment.Organizer || contains(r.StartedDrafters, id))
 }
 
 type Candidate struct {
@@ -237,7 +237,7 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 			}
 		}
 	}
-	protected := map[string]bool{roles.Facilitator: true, roles.Designee: true, roles.PinnedImplementer: true, roles.Assignment.Organizer: true, roles.Assignment.Implementer: true}
+	protected := map[string]bool{roles.Facilitator: true, roles.Designee: true, roles.PinnedImplementer: true, roles.Assignment.Organizer: true}
 	for _, id := range roles.StartedDrafters {
 		protected[id] = true
 	}
@@ -270,7 +270,9 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 		for id := range usable {
 			positive = append(positive, id)
 		}
-		r, err := SelectSuccession(*roles.Snapshot, roles.Assignment, d.Before, CandidateIDs(d.Candidates), positive)
+		// Only exhaustion transfers roles. After excludes every settled loss,
+		// including ordinary failures that cannot supply a successor seat.
+		r, err := SelectSuccession(*roles.Snapshot, roles.Assignment, d.After, exhaustedCandidateIDs(d.Candidates), positive)
 		if err != nil {
 			d.Block = err.Error()
 			d.After = append([]string(nil), d.Before...)
@@ -300,6 +302,16 @@ func CandidateIDs(cs []Candidate) []string {
 	ids := []string{}
 	for _, c := range cs {
 		ids = append(ids, c.Agent)
+	}
+	return Unique(ids)
+}
+
+func exhaustedCandidateIDs(cs []Candidate) []string {
+	var ids []string
+	for _, c := range cs {
+		if c.Evidence.RuleID == ProviderExhaustionRule {
+			ids = append(ids, c.Agent)
+		}
 	}
 	return Unique(ids)
 }

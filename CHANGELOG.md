@@ -1,7 +1,5 @@
 # Changelog
 
-## Unreleased
-
 ## 1.56.0 — 2026-10-29
 
 - Freeze `participant-failure-v2` for new ideas. Preserve saved policy behavior and hashes.

@@ -268,8 +268,11 @@ func RebuildDetail(ideaDir string, maxRounds int) (PhaseDetail, error) {
 	implExists, err := statRegular(implPath)
 	keepErr(err)
 	if implExists {
-		implExists, err = protocol.ExecutionStarted(ideaDir)
-		keepErr(err)
+		started, startErr := protocol.ExecutionStarted(ideaDir)
+		keepErr(startErr)
+		if startErr == nil {
+			implExists = started
+		}
 	}
 	if implExists {
 		implStatus, _, err := readFrontmatterFieldErr(implPath, "status")

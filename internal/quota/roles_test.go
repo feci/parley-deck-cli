@@ -106,3 +106,66 @@ func TestRoleFieldsDoNotChangeLegacySerialization(t *testing.T) {
 		t.Fatal("v2 accepted missing frozen role order")
 	}
 }
+
+func TestExhaustionSuccessionUsesNativeRoleLossAndWholeBatch(t *testing.T) {
+	for _, source := range []string{"legacy", "global-default"} {
+		for _, tc := range []struct {
+			name, organizerRule, implementerRule, peerRule, successor string
+			pinned, designee, blocked                                 bool
+		}{
+			{name: "ordinary default", implementerRule: ParticipantFailureRule},
+			{name: "ordinary default and exhausted peer", implementerRule: ParticipantFailureRule, peerRule: ProviderExhaustionRule},
+			{name: "exhausted organizer and ordinary peer", organizerRule: ProviderExhaustionRule, peerRule: ParticipantFailureRule, successor: "impl"},
+			{name: "both roles and ordinary first survivor", organizerRule: ProviderExhaustionRule, implementerRule: ProviderExhaustionRule, peerRule: ParticipantFailureRule, successor: "z"},
+			{name: "unusable ordinary counterpart", organizerRule: ProviderExhaustionRule, implementerRule: ParticipantFailureRule, blocked: true},
+			{name: "ordinary pinned implementer", implementerRule: ParticipantFailureRule, pinned: true, blocked: true},
+			{name: "ordinary designated implementer", implementerRule: ParticipantFailureRule, designee: true, blocked: true},
+		} {
+			t.Run(source+"/"+tc.name, func(t *testing.T) {
+				p := NewExhaustionPolicy(nil, nil)
+				s := &RoleSnapshot{Version: 1, Order: []string{"org", "impl", "peer", "z", "a"}, Organizer: "org"}
+				r := Roles{Snapshot: s, Assignment: RoleAssignment{Organizer: "org", Implementer: "impl", ImplementerSource: source}}
+				if tc.pinned {
+					r.PinnedImplementer = "impl"
+					r.Assignment.ImplementerSource = "pin"
+				}
+				if tc.designee {
+					r.Designee = "impl"
+					r.Assignment.ImplementerSource = "designation"
+				}
+				var members []Member
+				for _, id := range s.Order {
+					rule := map[string]string{"org": tc.organizerRule, "impl": tc.implementerRule, "peer": tc.peerRule}[id]
+					m := Member{ID: id, Usable: rule == ""}
+					if rule != "" {
+						e := dropoutEvidence(id)
+						e.Failure.Step = "readiness"
+						if rule == ProviderExhaustionRule {
+							e = roleExhaustion(id)
+							e.Exhaustion.Step = "readiness"
+						}
+						m.Evidence = &e
+					}
+					members = append(members, m)
+				}
+				d := Evaluate(p, s.Order, members, r)
+				if tc.blocked {
+					if d.Applied || d.Block == "" || d.RoleTransition != nil {
+						t.Fatalf("unusable/protected role did not block: %+v", d)
+					}
+					return
+				}
+				if !d.Applied || (d.RoleTransition != nil) != (tc.successor != "") {
+					t.Fatalf("wrong transition class: %+v", d)
+				}
+				if tc.successor != "" && d.RoleTransition.Successor != tc.successor {
+					t.Fatalf("wrong successor: %+v", d.RoleTransition)
+				}
+				k := NewKickoff("idea", "run", p, d.After, &d, time.Now(), s)
+				if err := k.Validate(); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
+	}
+}
