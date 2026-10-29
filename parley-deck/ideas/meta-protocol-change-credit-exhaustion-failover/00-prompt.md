@@ -8,7 +8,7 @@ track: deliberation
 auto_implement: true
 require_model_diversity: true
 checks: go test ./... -count=1 -timeout 45m
-status: round-01
+status: round-02
 ---
 
 ## Problem / idea
@@ -98,3 +98,8 @@ There is no fallback reason. The complete live authority and Appendix B were rea
 - ../meta-protocol-change-driver-unstall/FINAL.md and IMPLEMENTATION.md
 - ../quota-kickoff-reporting-and-alias-guidance/00-prompt.md
 - ../quota-zcode-native-exhaustion-capture/00-prompt.md
+
+## Round-2 source evidence
+
+Read source-context/codex-native-source.md. These source excerpts arrived after codex-1 filed round 1.
+They describe a candidate native JSON channel, not an accepted recognizer or a captured exhaustion event.

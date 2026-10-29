@@ -1,0 +1,28 @@
+{
+  "agent": "kimi-1",
+  "invocation_id": "5e74305a-5269-4aa7-b808-941fafc93b27",
+  "requested_at": "2026-10-29T18:26:23.039216Z",
+  "completed_at": "2026-10-29T18:48:20.180481Z",
+  "duration_ms": 1317121,
+  "exit_code": 0,
+  "artifact_sha256": "9a38b36d48d61c83442095c53dc98f322d32905c9a829018badafc0587d3c078",
+  "usage": {
+    "input_tokens": null,
+    "output_tokens": null,
+    "cache_read_tokens": null,
+    "cache_write_tokens": null,
+    "total_tokens": null,
+    "cost_usd": null,
+    "reported_model": null,
+    "reported_models": [],
+    "source": "unavailable",
+    "cost_basis": "unavailable",
+    "coverage": "unavailable"
+  },
+  "context": {
+    "context_mode": "full",
+    "source_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+    "packet_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+    "fallback_reason": null
+  }
+}

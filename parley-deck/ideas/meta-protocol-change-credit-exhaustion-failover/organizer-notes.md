@@ -47,3 +47,17 @@ The installed Codex fallback is stale. The live source remains the authority.
 Standalone `parley preflight --no-ping --json` repeats the unrelated historical facilitator defect. Prior selected PONG evidence remains available.
 The design uses the owner-allocated branch name. GitHub participants share `feci`; native self-approval is unavailable.
 Use attributed COMMENT mirrors for peer signatures. Canonical signatures remain authoritative.
+
+## Round-1 completion and round-2 opening
+
+Both peer processes exited 0 and filed structurally valid round-1 files.
+Kimi duration: 1,317,121 ms. Zcode duration: 963,994 ms. Their receipts contain no transcript.
+The immutable artifact hashes match the terminal receipts. Codex round 1 retains its original hash.
+`parley wait` reached the complete round boundary. `parley organizer brief` reports 3/3 filed-and-valid.
+The brief then suggests consensus without cross-review. This deliberation idea requires round 2 first.
+`parley continue --json <slug>` still reports no driving run. Measured dispatch remains the fallback.
+No cycle action has yet exercised the D6 declaration.
+
+Round 2 retains the same roster, models, effort, transport, and 1,800-second ceilings.
+The new source-context Codex excerpts are shared before peer cross-review.
+The generic machine cache and the breadth of native adapter support remain design questions.
