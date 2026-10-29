@@ -190,3 +190,15 @@ The completed full Go suite failed only version metadata and partial phase repor
 Both independent reviewers reproduced the capture fixture failure under umask 0077.
 The phase-7 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 The owner-authorized fallback applies. Native receipts supply no driver accounting or membership authority.
+
+## Fix-up cycle 1 and review round 2
+
+All three participants accepted F1-F6 in review consensus. Each peer wrote its own signoff in a separate native process.
+Both signoff receipts exited 0 without timeout. The canonical append-only prefix checks passed.
+Fix-up product commit is 31c039c41a455a03385401085d132234a17603f6. IMPLEMENTATION records the candidate-timing detail and Windows limitation.
+The phase-8 driver gap remains in fixup01-driver.log. The phase-6 retry reports the same gap:
+`continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+An initial continue command used unsupported --no-tui; it did not launch. The corrected command produced the refusal above.
+Use the owner-authorized native fallback with the same participant identities and models.
+Native receipts supply no driver accounting or automatic membership authority.
+The host reboot caused no participant exclusion. Current round and review files validate; no stopped participant owns a pending action.

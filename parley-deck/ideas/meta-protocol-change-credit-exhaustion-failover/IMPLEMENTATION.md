@@ -1,11 +1,11 @@
 ---
 idea: meta-protocol-change-credit-exhaustion-failover
-status: implemented
+status: fix-up-cycle-1
 implementer: codex-1
 started: 2026-10-29
 completed: 2026-10-29
 branch: /Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover#feature/meta-protocol-change-credit-exhaustion-failover
-head-commit: 931550cb4c57f041f9a8a1d1337571cb271a873a
+head-commit: 31c039c41a455a03385401085d132234a17603f6
 design-pr: https://github.com/feci/parley-deck-cli/pull/86
 implementation-pr: https://github.com/feci/parley-deck-cli/pull/87
 ---
@@ -106,3 +106,51 @@ context_mode: full
 source_sha256: aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec
 packet_sha256: aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec
 fallback_reason: none
+
+## Fix-up cycle 1
+status: complete
+completed: 2026-10-29
+head-commit: 31c039c41a455a03385401085d132234a17603f6
+
+### Fixes applied
+
+- F1: separate protected roles from fallback/default candidates at both protection sites. Only exhaustion-backed losses request succession.
+  Selection uses the surviving membership after every settled loss. Immutable history re-derives the same result.
+  Readiness tests count children and check five-second spacing. They verify ordinary global-default fallthrough through the actual driver resolver.
+  Settlement tests cover mixed losses, both-role loss, an unusable counterpart, explicit designees, pins, and immutable kickoff validation.
+- F2: root VERSION now says 1.56.0, as the CLI binary does.
+- F3: retain positive stat evidence when ExecutionStarted returns an error. Preserve the integrity error for the caller.
+- F4: force the unsafe fixture to mode 0644 and check setup errors. Tests pass under umasks 0077 and 0022.
+- F5: wait names the active execution record. The integration test covers absent records and a validated handover before Phase 5.
+- F6: remove the empty Unreleased heading. Preserve the release entries.
+
+### Deviations from agreed fixes
+
+F1 retains the eager read-only candidate calculation in app.go and membership/succession.go.
+It grants no transient protection, pin, stored role assignment, or succession authority.
+An exhaustion-backed transition binds the candidate identity and source in immutable history.
+This preserves the existing resolver and avoids a second resolver or callback.
+The reviewers must assess this timing detail against F1's instruction to resolve and bind only when succession requires it.
+
+The completed Windows CI log exposed one new capture-test expectation mismatch.
+Windows cannot report the required POSIX private modes through this storage check.
+The test now expects refusal and verifies that no capture file exists. It does not skip the failure or weaken storage checks.
+The CLI guide states this limit. No Windows ACL implementation enters this scope.
+
+### Current verification and remaining gates
+
+Focused checks passed at the fixed source, including the new wait and portable readiness fixtures.
+The quota, membership, runner, and telemetry race checks passed after the F1 changes. go vet ./... passed.
+The full command is active at this product commit: `go test ./... -count=1 -timeout 45m`.
+Its private log is `fixup01-full-go-v2.log`. It must pass before close.
+The earlier `fixup01-full-go.log` was stopped after a new test fixture needed correction. It is not acceptance evidence.
+The corrected wait fixture now carries the frozen policy projection; its focused test passes.
+Skill source remains 70d29c1aebd9a632f6f6239123fd2f52e3775a48. Its prior independent suite and package results still apply.
+
+Windows run 40956924144 completed with failure at the previous product source.
+Its runner test timed out at 45 minutes; private-mode, durable directory sync, and other platform tests also failed.
+Many affected source files are unchanged by this idea. This record does not claim a clean Windows baseline or Windows support.
+The native Windows capture refusal assertion needs hosted execution. CLI Windows remains experimental; CLI WinGet stays held.
+
+Fresh full-scope Kimi and Zcode reviews, review consensus, and an independent goal check remain required.
+AC-15 release and installation evidence remains pending. No release or installation has occurred.
