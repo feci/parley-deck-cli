@@ -155,3 +155,19 @@ The phase-3 driver attempt refused with this exact message:
 `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 The owner-authorized native fallback applies. Signers run sequentially and append only their own blocks.
 The fallback supplies no driver accounting or automatic membership authority.
+
+## Consensus close and FINAL
+
+All three participants filed ACCEPT on the corrected 29-hunk contract.
+Kimi and Zcode signed in sequential fresh processes and exited 0 without timeout.
+Their receipts bind the successive append-only file hashes. No peer byte was changed.
+The historical DISPUTED interpretation supplies no decision or acceptance-criterion premise.
+FINAL retains that dependency check and the exact signed hunk hash.
+
+The phase-4 driver attempt refused with this exact message:
+`continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized fallback applies, without driver accounting or automatic membership authority.
+Codex publishes FINAL under its accepted drafter claim. Product files remain unchanged.
+
+The pre-change package baseline passed: quota, telemetry, membership, runner, and protocol.
+Command: `go test ./internal/quota ./internal/telemetry ./internal/membership ./internal/runner ./internal/protocol -count=1 -timeout 10m`.

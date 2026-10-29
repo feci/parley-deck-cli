@@ -376,3 +376,23 @@ Status: ✅ ACCEPT
 Drafter: yes
 Notes: I accept D1–D12 and the corrected hunk set `f140e81ada0a8fb08644109b889979e54945f829183c3d82b47c760eae67147c`.
 The historical compaction interpretation supplies no acceptance-criterion premise. Independent peers must assess the corrected text and implementation.
+
+### Signoff: kimi-1 — 2026-10-29
+Status: ✅ ACCEPT
+Notes: I accept D1–D12 and the corrected 29-hunk set `f140e81ada0a8fb08644109b889979e54945f829183c3d82b47c760eae67147c`.
+The historical DISPUTED interpretation supplies no decision or acceptance-criterion premise. Implementation, independent review, and fresh goal checks must verify the stated contracts.
+
+### Signoff: zcode-1 — 2026-10-29
+Status: ✅ ACCEPT
+Notes: I accept D1–D12 and the corrected 29-hunk set `f140e81ada0a8fb08644109b889979e54945f829183c3d82b47c760eae67147c`.
+Checks I ran this session, all read-only:
+- The live source hashes to `aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec`. The hunk file hashes to the signed value. The measurement script's private hunk input is byte-identical to it.
+- Each of the 29 before strings occurs exactly once in all four protocol copies: deck, bundled CLI default, sibling skill reference, staged core 2.19.0. No after text pre-exists in any copy.
+- The shipped readable diff, applied to the live file, yields the same bytes as the canonical hunk application. Both produce SHA256 `b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709`.
+- I read the full live-to-proposed diff. Both clauses Kimi named are restored. The advisory list ends with the non-solo requirement again. `participant-failure.v1` uses supervisor facts independently of quota recognition again.
+- Current-state updates route through the active execution record in LE-4, Phases 4–8, §8, §9.0, the session checklist, and both transport sections. The full Phase 5 frontmatter and section schema remains. The §7 ratification gates, §14 brake, legacy quota predicate, §15, and Appendix B stay intact. Both disclosed non-compaction changes match the text I read: the removed 40-deck sentence and the corrected §10 label.
+- `go run .parley-runtime/credit-failover/measure-corrected.go` reproduces 68,868/71,852 baseline and 68,442/69,874 corrected bytes. The sibling SKILL.md measures 19,482 bytes.
+- The phase-3 driver refusal is recorded in `resume3-phase3-continue.stderr`. My launch used the owner-authorized native fallback. It claims no driver accounting or membership authority.
+- The new smoke receipt records an ordinary successful `exec --json` run at 0.165.0 only. I treat it as argv/envelope evidence, with no exhaustion capture or binary-equivalence claim, per D9.
+Two FINAL duties, not reservations. Route the Phase 5 pin read and the Phase 0 template comment through D6's resolver in implementation. Carry the DISPUTED dependency check, the disclosure list, and the official fixture's exact source display fields in the hard meta test.
+This signoff adds no verdict artifact. The round-3 verdict conflict stays DISPUTED as recorded above.
