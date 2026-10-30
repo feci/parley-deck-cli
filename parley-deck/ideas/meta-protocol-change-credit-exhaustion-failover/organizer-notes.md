@@ -250,3 +250,11 @@ Each signer preserved every prior consensus byte. Both appended evidence in thei
 Zcode withdrew its final checklist NIT. No current product or evidence-record finding remains open.
 The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 Use the authorized native fallback for a fresh independent Zcode goal check.
+
+
+## Independent pre-release goal gate
+
+Zcode completed the fresh goal process at 2026-10-30 00:27:03Z, exit 0, without timeout.
+Its exact result is `GOAL-CHECK: PASS`. The receipt hash and append-only prefix match.
+The result covers the pre-release close at the reviewed products. It explicitly leaves D12 delivery for the next stage.
+IMPLEMENTATION now closes Phases 5–8. Its release handoff preserves every pending channel obligation.

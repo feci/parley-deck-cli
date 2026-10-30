@@ -1,6 +1,6 @@
 ---
 idea: meta-protocol-change-credit-exhaustion-failover
-status: fix-up-cycle-2
+status: complete
 implementer: codex-1
 started: 2026-10-29
 completed: 2026-10-30
@@ -25,7 +25,7 @@ The skill worktree remains on its allocated `credit-failover` branch.
 - [x] AC-12: add machine-only private Zcode capture, bounded cleanup, status, and purge.
 - [x] AC-13/14: apply the exact signed hunks; update skill guidance, hard size tests, versions, and release notes.
 - [x] Checks: focused tests and fault cases, relevant race tests, full Go suite, skill suite, package checks, portable builds.
-- [ ] AC-15: independent review, signed review consensus, agreed fixes, fresh independent goal check, and current-tree AC evidence.
+- [x] AC-15 pre-release gates: independent review, signed review consensus, agreed fixes, fresh independent goal check, and current-tree AC evidence.
 - [ ] Release: CLI 1.56.0 and skill/core 2.20.0; GitHub, both Homebrew formulae, skill-only WinGet, all runtime installs.
 - [ ] Separate reviewer process verifies delivery. Report owner-only npm/core commands without execution.
 
@@ -98,7 +98,11 @@ The full Go suite, package tests, and independent review remain pending.
 
 ## Outcomes & Retrospective
 
-Pending implementation and independent review.
+Both independent reviewers resolved all findings after two fix-up cycles. All three participants accepted the zero-fix consensus.
+Zcode issued `GOAL-CHECK: PASS` in a fresh process at the reviewed product trees.
+The intermittent admission race required repeated concurrent tests; one full-suite pass could not dispose of its reproduced counterexample.
+The checked publication path now preserves complete records, exclusive refusal, and directory durability.
+Release follows this implementation close under FINAL D12. Its evidence belongs to the separate delivery record.
 
 ## Protocol context
 
@@ -239,3 +243,31 @@ The skill suite passed 402 Node tests and 54 Python tests at 406b697. Package ch
 All changed Go files pass gofmt. All four protocol/core hashes retain the signed bytes; SKILL.md remains 19,989 bytes.
 Content-free receipts and the full Go package summary are in `source-context/fixup02-validation.json`.
 Both fresh independent review processes remain active. These execution results grant no independent review or close verdict.
+
+
+## Implementation close — 2026-10-30
+
+Status: complete for Phases 5–8. Two fix-up cycles resolved F1–F9 and both audit-record NITs.
+All three current participants filed plain ACCEPT in cycle-3 review consensus. No agreed fix remains.
+Kimi and Zcode supplied full-scope current-tree reviews at CLI `b7dce40` and skill `406b6976`.
+Zcode then issued `GOAL-CHECK: PASS` in a separate native process, with exit 0 and no timeout.
+Its full assessment remains in `review/round-03/zcode-1.md`; its receipt and prefix check remain in `source-context/`.
+The required full Go suite passed at the reviewed product: 34 packages. The skill suite passed 402 Node and 54 Python tests.
+Current validation, limits, and command-bearing receipts remain in `source-context/fixup02-validation.json` and the verifier-owned reviews.
+
+The product source remains CLI `b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666` and skill `406b6976cc75344d76f908297fe46ec2443e62cb`.
+Later commits contain audit records only. Both implementation PRs now qualify for merge commits under the signed gates.
+
+### Ordered release handoff
+
+The open release checklist items below the initial plan are deliberate. D12 orders their execution after this close.
+This complete status makes no claim that channels or runtime installation already passed.
+Continue with clean merged-source builds, both GitHub releases, both Homebrew formulae, skill-only WinGet, and all 19 runtime destinations.
+Then run the separate channel verifier and write `../../inbox/codex-1-to-user_meta-protocol-change-credit-exhaustion-failover_released.md`.
+That delivery record carries the remaining AC-15 channel evidence, owner commands, deferred scope, and usage.
+Preserve this closed execution record and frozen FINAL. Append later channel assessment only to the verifier's own review artifact.
+Never execute npm or global-core publication. CLI Windows remains experimental; CLI WinGet stays held.
+
+The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner's native fallback authority remains in force. It supplies no driver accounting or automatic membership authority.
+The host reboot caused no participant exclusion.

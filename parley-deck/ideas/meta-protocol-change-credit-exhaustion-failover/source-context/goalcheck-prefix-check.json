@@ -1,0 +1,8 @@
+{
+  "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/review/round-03/zcode-1.md",
+  "before_sha256": "b14611e4abd3e0ff56255aaf888869bef7a6ac1420625bf19d37bd22f78c7805",
+  "after_sha256": "a3a5a8de0b832ef26b0dbe14e60086cd1c53c43f479312db223256d814a80f0d",
+  "exact_prefix": true,
+  "result": "GOAL-CHECK: PASS",
+  "scope": "pre-release close under FINAL D12; delivery not yet executed"
+}
