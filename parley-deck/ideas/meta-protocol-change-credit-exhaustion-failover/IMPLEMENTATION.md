@@ -194,7 +194,7 @@ The second fix plan preserves the original protocol hunks and FINAL decisions.
 - [x] F8: state the capture-status cleanup effects in both references and command help.
 - [x] F9: format the driver import and check all changed Go files.
 - [x] Run persistence, grouped accounting, repeated concurrency, race, full Go, skill, package, and portable checks.
-- [ ] Obtain fresh full-scope reviews, review consensus, and the independent goal check before release.
+- [x] Obtain fresh full-scope reviews, review consensus, and the independent goal check before release.
 
 The store barrier also covers Zcode's source addendum about openInvocationStore.
 DurableMkdir exposes the existing quota helper without changing that helper's behavior.
