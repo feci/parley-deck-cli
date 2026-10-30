@@ -355,3 +355,9 @@ Replace section 6 rule 6 and append Appendix B with the exact reviewed hunks.
 Add one on-demand map entry. Keep the existing packet and skill limits.
 Preserve older live authority, exact evidence, existing artifacts, and correctness gates.
 Use one shared instruction in thirteen prompt builders. Stage core 2.19.0 from staged 2.18.0 plus only these hunks.
+
+## 2026-10-29 — Native exhaustion and role succession
+Idea: ideas/meta-protocol-change-credit-exhaustion-failover/
+Drafted by: codex-1
+Summary: Apply the exact 29 signed hunks for v2 suppression, owner-order succession, handover authority, and private capture.
+Preserve saved policies and all filed positions. Keep both size limits.

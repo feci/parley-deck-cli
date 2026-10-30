@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"parley-deck-cli/internal/protocol"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -254,7 +255,8 @@ func RebuildDetail(ideaDir string, maxRounds int) (PhaseDetail, error) {
 		c.RoundsRun = highest
 	}
 	finalPath := filepath.Join(ideaDir, "FINAL.md")
-	implPath := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	implPath, err := protocol.ExecutionPath(ideaDir)
+	keepErr(err)
 	reviewConsensus := filepath.Join(ideaDir, "review", "consensus.md")
 	var detail PhaseDetail
 	reviewConsensusExists, err := statRegular(reviewConsensus)
@@ -265,6 +267,13 @@ func RebuildDetail(ideaDir string, maxRounds int) (PhaseDetail, error) {
 	detail.HighestReviewRound = reviewRound
 	implExists, err := statRegular(implPath)
 	keepErr(err)
+	if implExists {
+		started, startErr := protocol.ExecutionStarted(ideaDir)
+		keepErr(startErr)
+		if startErr == nil {
+			implExists = started
+		}
+	}
 	if implExists {
 		implStatus, _, err := readFrontmatterFieldErr(implPath, "status")
 		keepErr(err)

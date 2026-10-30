@@ -77,7 +77,10 @@ Question:
 // pass/fail verdict — but it is still read-only and runs once, before close.
 func BuildGoalCheckPrompt(agent agents.Discovery, idea protocol.IdeaStatus) string {
 	final := filepath.Join(idea.Path, "FINAL.md")
-	impl := filepath.Join(idea.Path, "IMPLEMENTATION.md")
+	impl, err := protocol.ExecutionPath(idea.Path)
+	if err != nil {
+		return "Execution authority error: " + err.Error()
+	}
 	return fmt.Sprintf(`You are %s, the goal-done checker for Parley Deck idea %s (read-only).
 
 Task: decide whether the implementation meets the OBSERVABLE ACCEPTANCE CRITERIA in

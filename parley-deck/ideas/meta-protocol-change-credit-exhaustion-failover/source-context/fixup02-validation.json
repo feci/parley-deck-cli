@@ -1,0 +1,134 @@
+{
+  "at": "2026-10-29T23:38:09.300423+00:00",
+  "cli_product": "b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666",
+  "skill_product": "406b6976cc75344d76f908297fe46ec2443e62cb",
+  "scope": "Organizer execution evidence at the fixed source. Independent review and goal check remain required.",
+  "checks": [
+    {
+      "check": "persistence",
+      "log": ".parley-runtime/credit-failover/fixup02-persistence.log",
+      "sha256": "f9d957f5835e99edb9dbfb14555e625e5ee4e817c8ebea839addee316c451c58",
+      "exit_code": 0
+    },
+    {
+      "check": "concurrency_100_and_grouped_100",
+      "log": ".parley-runtime/credit-failover/fixup02-concurrent.log",
+      "sha256": "b6af0c1487bed310cf30fb6afe7bf25e3e113f6b83dd2d2899112f7cd85e189d",
+      "exit_code": 0
+    },
+    {
+      "check": "relevant_race",
+      "log": ".parley-runtime/credit-failover/fixup02-race.log",
+      "sha256": "e027de56383b2ac90d49962bd1750282ef7618ed00e8382271b16ce899126ad7",
+      "exit_code": 0
+    },
+    {
+      "check": "go_vet",
+      "log": ".parley-runtime/credit-failover/fixup02-vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    {
+      "check": "skill_suite",
+      "log": ".parley-runtime/credit-failover/fixup02-skill-tests.log",
+      "sha256": "5a3216113389c167e77645f3f8670458fa84e68a20ed213f960d8ef1951284eb",
+      "exit_code": 0
+    },
+    {
+      "check": "skill_package",
+      "log": ".parley-runtime/credit-failover/fixup02-skill-pack.log",
+      "sha256": "cd0eae700a3e47c0823b811e69a4d2c1b2151b0100d6928b75ed5ec0b2ee6863",
+      "exit_code": 0
+    },
+    {
+      "check": "skill_native_portable",
+      "log": ".parley-runtime/credit-failover/fixup02-skill-portable.log",
+      "sha256": "04a31d1123443efb29c75d8f2a2fac4a0eb9367fc8c94b3768d15548bbf91949",
+      "exit_code": 0
+    }
+  ],
+  "full_go": {
+    "command": "go test ./... -count=1 -timeout 45m",
+    "product_commit": "b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666",
+    "exit_code": 0,
+    "started_at": "2026-10-29T23:36:07.677983+00:00",
+    "completed_at": "2026-10-29T23:46:12.084004+00:00",
+    "log": ".parley-runtime/credit-failover/fixup02-full-go.log",
+    "sha256": "68cd0dedd2609cf803e8e24d8ad741a09e48d2193d84f911f90e58864e6172d5",
+    "passing_packages": 34,
+    "output": [
+      "?   \tparley-deck-cli/cmd/parley\t[no test files]",
+      "ok  \tparley-deck-cli/internal/acp\t2.840s",
+      "ok  \tparley-deck-cli/internal/agents\t0.227s",
+      "ok  \tparley-deck-cli/internal/app\t602.201s",
+      "ok  \tparley-deck-cli/internal/budget\t117.437s",
+      "ok  \tparley-deck-cli/internal/config\t1.689s",
+      "ok  \tparley-deck-cli/internal/consensus\t14.759s",
+      "ok  \tparley-deck-cli/internal/driver\t38.226s",
+      "ok  \tparley-deck-cli/internal/evidence\t16.565s",
+      "ok  \tparley-deck-cli/internal/fsutil\t0.432s",
+      "ok  \tparley-deck-cli/internal/hitl\t0.406s",
+      "ok  \tparley-deck-cli/internal/loop\t1.105s",
+      "ok  \tparley-deck-cli/internal/membership\t58.350s",
+      "ok  \tparley-deck-cli/internal/pidlease\t1.086s",
+      "ok  \tparley-deck-cli/internal/pipeline\t1.413s",
+      "ok  \tparley-deck-cli/internal/procctl\t0.698s",
+      "ok  \tparley-deck-cli/internal/protocol\t1.945s",
+      "ok  \tparley-deck-cli/internal/protocolcore\t1.013s",
+      "ok  \tparley-deck-cli/internal/protocolpacket\t3.148s",
+      "ok  \tparley-deck-cli/internal/quota\t7.985s",
+      "?   \tparley-deck-cli/internal/quotatest\t[no test files]",
+      "ok  \tparley-deck-cli/internal/repomap\t0.518s",
+      "ok  \tparley-deck-cli/internal/retro\t0.985s",
+      "ok  \tparley-deck-cli/internal/runaction\t0.256s",
+      "ok  \tparley-deck-cli/internal/runcontrol\t6.484s",
+      "ok  \tparley-deck-cli/internal/runmanifest\t0.269s",
+      "ok  \tparley-deck-cli/internal/runner\t154.776s",
+      "ok  \tparley-deck-cli/internal/runplan\t1.562s",
+      "ok  \tparley-deck-cli/internal/runstate\t1.406s",
+      "ok  \tparley-deck-cli/internal/sessionstore\t0.356s",
+      "ok  \tparley-deck-cli/internal/steer\t0.297s",
+      "ok  \tparley-deck-cli/internal/store\t0.276s",
+      "ok  \tparley-deck-cli/internal/telemetry\t4.095s",
+      "ok  \tparley-deck-cli/internal/track\t0.243s",
+      "ok  \tparley-deck-cli/internal/trajectory\t531.126s",
+      "ok  \tparley-deck-cli/internal/tui\t2.880s",
+      "?   \tparley-deck-cli/parley-deck/ideas/meta-protocol-change-quota-auto-exclude/source-context/fixup-cycle-3-20261006\t[no test files]"
+    ]
+  },
+  "command_receipts": [
+    {
+      "schema": "organizer-command-receipt/v1",
+      "recorded_at": "2026-10-29T23:47:43.387538+00:00",
+      "command": "go test ./internal/runner -run 'Test(StepBudgetConcurrentIndependentGroupsShareCap|StepBudgetGroupedRunnerCountsOnceAndRetainsRefusals)' -count=100 -timeout 10m",
+      "cwd": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover",
+      "product_commit": "b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666",
+      "exit_code": 0,
+      "log": ".parley-runtime/credit-failover/fixup02-concurrent.log",
+      "log_sha256": "b6af0c1487bed310cf30fb6afe7bf25e3e113f6b83dd2d2899112f7cd85e189d",
+      "provenance": "Exact command and exit status from the organizer tool execution. This retrospective receipt is not a driver ledger record."
+    },
+    {
+      "schema": "organizer-command-receipt/v1",
+      "recorded_at": "2026-10-29T23:47:43.387896+00:00",
+      "command": "npm run build:portable:current",
+      "cwd": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill",
+      "product_commit": "406b6976cc75344d76f908297fe46ec2443e62cb",
+      "exit_code": 0,
+      "log": ".parley-runtime/credit-failover/fixup02-skill-portable.log",
+      "log_sha256": "04a31d1123443efb29c75d8f2a2fac4a0eb9367fc8c94b3768d15548bbf91949",
+      "provenance": "Exact command and exit status from the organizer tool execution. This retrospective receipt is not a driver ledger record.",
+      "binary": {
+        "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/dist/parley-deck-skill-v2.20.0-macos-arm64",
+        "sha256": "dd821c1646c0f2843db05b146a28764a1f4e21e47fcd1cec19e70515eb1ca8f9",
+        "bytes": 65521856,
+        "version_command": [
+          "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/dist/parley-deck-skill-v2.20.0-macos-arm64",
+          "--version"
+        ],
+        "version_output": "2.20.0",
+        "version_exit_code": 0
+      }
+    }
+  ]
+}

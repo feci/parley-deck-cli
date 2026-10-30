@@ -121,6 +121,14 @@ func InspectQuota(ideaDir string) (QuotaView, error) {
 		return v, fmt.Errorf("contradictory quota membership projection; preserve the edit for the owner, restore recorded participants, then use parley quota revise; checked recovery only replays a pending transition's before/after set")
 	}
 
+	if _, e := resolveActiveExecution(ideaDir, h); e != nil {
+		var pending *PendingHandover
+		if errors.As(e, &pending) {
+			v.Pending = pending.Error()
+		} else {
+			return v, e
+		}
+	}
 	return v, nil
 }
 
@@ -226,7 +234,7 @@ func ReconcileQuotaPrompt(ideaDir string, h *quota.History) error {
 	if err != nil {
 		return err
 	}
-	if meta["status"] == "final" || meta["status"] == "closed" {
+	if (meta["status"] == "final" || meta["status"] == "closed") && h.RoleSnapshot() == nil {
 		return fmt.Errorf("closed quota prompt is frozen")
 	}
 	return quota.DurableWrite(path, []byte(out), false)
@@ -253,7 +261,7 @@ func writeQuotaPrompt(ideaDir string, k quota.Kickoff) error {
 
 // CreateIdeaWithQuota preserves the existing creation API for legacy callers.
 // The first prompt's membership is already filtered before any bytes are written.
-func CreateIdeaWithQuota(root, task string, participants, excluded []string, track, provenance, run string, p *quota.Policy, d *quota.Decision) (IdeaStatus, *quota.Kickoff, error) {
+func CreateIdeaWithQuota(root, task string, participants, excluded []string, track, provenance, run string, p *quota.Policy, d *quota.Decision, roles ...*quota.RoleSnapshot) (IdeaStatus, *quota.Kickoff, error) {
 	if p == nil {
 		idea, err := CreateIdeaFull(root, task, participants, excluded, track, provenance)
 		return idea, nil, err
@@ -294,7 +302,26 @@ func CreateIdeaWithQuota(root, task string, participants, excluded []string, tra
 		}
 		idea.Slug = finalSlug
 	}
-	k := quota.NewKickoff(idea.Slug, run, *p, idea.Participants, d, time.Now().UTC())
+	k := quota.NewKickoff(idea.Slug, run, *p, idea.Participants, d, time.Now().UTC(), roles...)
+	if k.Roles != nil {
+		fields := ""
+		if k.Roles.Organizer != "" && k.Roles.Organizer != k.Roles.Facilitator {
+			fields += "organizer: " + k.Roles.Organizer + "\n"
+		}
+		if k.Roles.Facilitator != "" {
+			fields += "facilitator: " + k.Roles.Facilitator + "\n"
+		}
+		if fields != "" {
+			raw, e := os.ReadFile(promptPath)
+			if e != nil {
+				return idea, nil, e
+			}
+			raw = []byte(strings.Replace(string(raw), "---\n", "---\n"+fields, 1))
+			if e = os.WriteFile(promptPath, raw, 0644); e != nil {
+				return idea, nil, e
+			}
+		}
+	}
 	if err = quota.WriteKickoff(idea.Path, k); err != nil {
 		return idea, nil, err
 	}

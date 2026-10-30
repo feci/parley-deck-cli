@@ -1,0 +1,44 @@
+{
+  "hunks_sha256": "f140e81ada0a8fb08644109b889979e54945f829183c3d82b47c760eae67147c",
+  "hunks": 29,
+  "copies": [
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover/parley-deck/COOPERATION.md",
+      "before_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "after_sha256": "b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709",
+      "exact_signed_hunks": true,
+      "header_preserved": true
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover/internal/protocol/defaults/COOPERATION.md",
+      "before_sha256": "ea8f26f11acfe8834061fe286a0812bcf7555ebb14337b501d90006ab893bd05",
+      "after_sha256": "43f2be0ef5fb03aa1a669697362446616925d647563f0bafa985d89e41c96994",
+      "exact_signed_hunks": true,
+      "header_preserved": true
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-deck/references/COOPERATION.md",
+      "before_sha256": "aae6e830dafcae1e60324a6e90df8c7dce04eb1cea8dee7d2618c38c179fe3ec",
+      "after_sha256": "b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709",
+      "exact_signed_hunks": true,
+      "header_preserved": true
+    },
+    {
+      "path": "~/.parley/staging/COOPERATION-2.20.0.md",
+      "before_sha256": "16323e04ffb076db3b2019169010033c6668199ebab0ca6896e79924e74bfe3b",
+      "after_sha256": "6c437ed5fa0805bc8929b1aa25371664f9c4df1fc34c731a9df02bf02f2bd357",
+      "exact_signed_hunks": true,
+      "header_preserved": true,
+      "published": false
+    }
+  ],
+  "skill_bytes": 19989,
+  "phase1_packet_bytes": {
+    "unflagged": 68448,
+    "protocol_change": 69880
+  },
+  "limits": {
+    "skill": 20000,
+    "phase1_packet": 70000
+  }
+}

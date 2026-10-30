@@ -2,8 +2,10 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"parley-deck-cli/internal/protocol"
 	"reflect"
 
 	"parley-deck-cli/internal/membership"
@@ -25,7 +27,28 @@ func (d *Driver) quotaBefore(ctx context.Context) (context.Context, func(), erro
 		release()
 		return ctx, nil, err
 	}
-	if h != nil && !reflect.DeepEqual(d.cfg.Participants, h.Current) {
+	if _, e := protocol.ResolveActiveExecution(d.cfg.IdeaDir); e != nil {
+		var pending *protocol.PendingHandover
+		if !errors.As(e, &pending) {
+			release()
+			return ctx, nil, e
+		}
+		var action interface{ Handover(context.Context) error }
+		if o, ok := d.cfg.Impl.(interface{ Handover(context.Context) error }); ok {
+			action = o
+		} else if o, ok := d.cfg.Consensus.(interface{ Handover(context.Context) error }); ok {
+			action = o
+		}
+		if action == nil {
+			release()
+			return ctx, nil, e
+		}
+		if e = action.Handover(ctx); e != nil {
+			release()
+			return ctx, nil, e
+		}
+	}
+	if h != nil && (h.LastRoleTransition() != nil || !reflect.DeepEqual(d.cfg.Participants, h.Current)) {
 		ids := append([]string(nil), h.Current...)
 		if o, ok := d.cfg.Consensus.(consensusMembership); ok {
 			d.cfg.Consensus = o.WithParticipants(ids)

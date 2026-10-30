@@ -31,21 +31,27 @@ type Context struct {
 }
 
 type Metadata struct {
-	ParticipantTimeoutNS int64   `json:"participant_timeout_ns,omitempty"`
-	ParticipantStep      string  `json:"participant_step,omitempty"`
-	RunID                string  `json:"run_id"`
-	SegmentID            string  `json:"segment_id"`
-	Idea                 string  `json:"idea"`
-	Phase                string  `json:"phase"`
-	Agent                string  `json:"agent"`
-	Adapter              string  `json:"adapter"`
-	LaunchMode           string  `json:"launch_mode"`
-	AttemptOrdinal       int     `json:"attempt_ordinal"`
-	RetryOf              *string `json:"retry_of"`
-	RequestedModel       *string `json:"requested_model"`
-	RequestedEffort      *string `json:"requested_effort"`
-	RequestedSpeed       *string `json:"requested_speed"`
-	Context              Context `json:"context"`
+	CaptureZcodeFailures   bool    `json:"capture_zcode_failures,omitempty"`
+	ExhaustionPolicy       bool    `json:"exhaustion_policy,omitempty"`
+	CLIVersion             string  `json:"cli_version,omitempty"`
+	ExplicitJSON           bool    `json:"explicit_json,omitempty"`
+	ParticipantAttempts    int     `json:"participant_attempts,omitempty"`
+	ParticipantLogicalStep string  `json:"participant_logical_step,omitempty"`
+	ParticipantTimeoutNS   int64   `json:"participant_timeout_ns,omitempty"`
+	ParticipantStep        string  `json:"participant_step,omitempty"`
+	RunID                  string  `json:"run_id"`
+	SegmentID              string  `json:"segment_id"`
+	Idea                   string  `json:"idea"`
+	Phase                  string  `json:"phase"`
+	Agent                  string  `json:"agent"`
+	Adapter                string  `json:"adapter"`
+	LaunchMode             string  `json:"launch_mode"`
+	AttemptOrdinal         int     `json:"attempt_ordinal"`
+	RetryOf                *string `json:"retry_of"`
+	RequestedModel         *string `json:"requested_model"`
+	RequestedEffort        *string `json:"requested_effort"`
+	RequestedSpeed         *string `json:"requested_speed"`
+	Context                Context `json:"context"`
 }
 
 type Usage struct {
@@ -71,14 +77,15 @@ type Observation struct {
 }
 
 type Outcome struct {
-	DispatchAttempted bool            `json:"dispatch_attempted,omitempty"`
-	QuotaEvidence     *quota.Evidence `json:"quota_evidence,omitempty"`
-	Status            string          `json:"status"`
-	ExitCode          *int            `json:"exit_code"`
-	FailureClass      *string         `json:"failure_class"`
-	ArtifactSHA256    *string         `json:"artifact_sha256"`
-	Usage             Usage           `json:"usage"`
-	Observation       Observation     `json:"observation"`
+	ExhaustionEvidence *quota.Evidence `json:"exhaustion_evidence,omitempty"`
+	DispatchAttempted  bool            `json:"dispatch_attempted,omitempty"`
+	QuotaEvidence      *quota.Evidence `json:"quota_evidence,omitempty"`
+	Status             string          `json:"status"`
+	ExitCode           *int            `json:"exit_code"`
+	FailureClass       *string         `json:"failure_class"`
+	ArtifactSHA256     *string         `json:"artifact_sha256"`
+	Usage              Usage           `json:"usage"`
+	Observation        Observation     `json:"observation"`
 }
 
 // WriterIdentity binds crash recovery to the original host/boot, supervisor and
@@ -179,14 +186,17 @@ func NewID() (string, error) {
 // openInvocationStore ensures the shared invocations directory exists and is a
 // real directory — never a symlink alias of another location.
 func openInvocationStore(directory string) error {
-	if err := fsutil.MkdirAllResilient(directory, 0o700); err != nil {
+	if err := quota.DurableMkdir(directory); err != nil {
 		return fmt.Errorf("create telemetry directory: %w", err)
 	}
 	info, err := os.Lstat(directory)
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return errors.New("telemetry directory must be a real directory")
 	}
-	return nil
+	if err := invocationWriteFault("store-sync", directory); err != nil {
+		return err
+	}
+	return quota.SyncPath(directory)
 }
 
 // newInvocation persists the requested record for a directory this caller
@@ -272,6 +282,7 @@ func cleanMetadata(m Metadata, warnings *[]string) Metadata {
 		{"run_id", &m.RunID}, {"segment_id", &m.SegmentID}, {"idea", &m.Idea},
 		{"phase", &m.Phase}, {"agent", &m.Agent}, {"adapter", &m.Adapter},
 		{"launch_mode", &m.LaunchMode}, {"context_mode", &m.Context.Mode},
+		{"cli_version", &m.CLIVersion},
 	}
 	for _, field := range fields {
 		if *field.target != "" && SafeLabel(*field.target) == nil {
@@ -392,23 +403,49 @@ func (i *Invocation) Snapshot() Record {
 	return copy
 }
 
+// Fault injection stays private to this package's persistence tests.
+var invocationWriteFault = func(stage, path string) error { return nil }
+
 func (i *Invocation) write(name string) error {
 	data, err := json.MarshalIndent(i.record, "", "  ")
 	if err != nil {
 		return err
 	}
 	path := filepath.Join(i.Dir, name)
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	file, err := os.CreateTemp(i.Dir, ".record-*")
 	if err != nil {
 		return err
 	}
-	if _, err := file.Write(append(data, '\n')); err != nil {
-		file.Close()
+	defer os.Remove(file.Name())
+	if err = invocationWriteFault("write", path); err == nil {
+		_, err = file.Write(append(data, '\n'))
+	}
+	if err == nil {
+		err = invocationWriteFault("file-sync", path)
+	}
+	if err == nil {
+		err = fsutil.SyncFile(file)
+	}
+	closeErr := file.Close()
+	if closeErr == nil {
+		closeErr = invocationWriteFault("close", path)
+	}
+	if err == nil {
+		err = closeErr
+	}
+	if err != nil {
 		return err
 	}
-	if err := fsutil.SyncFile(file); err != nil {
-		file.Close()
+	if err = invocationWriteFault("link", path); err != nil {
 		return err
 	}
-	return file.Close()
+	// Publish complete bytes without replacing any existing record.
+	if err = os.Link(file.Name(), path); err != nil {
+		return err
+	}
+	if err = invocationWriteFault("directory-sync", path); err != nil {
+		return err
+	}
+	// Persist the record name and the invocation directory's parent entry.
+	return quota.SyncPath(i.Dir)
 }

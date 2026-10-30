@@ -253,6 +253,12 @@ Commands:
       Inspect an existing budget ledger or record an attended conservative
       ceiling for unknown cost. Reconciliation preserves spent actions.
 
+  quota capture status|purge
+      Inspect or purge private Zcode diagnostics. Capture defaults off.
+      Only ~/.parley/agents.toml [defaults].capture_zcode_failures enables it.
+      Status deletes expired files, removes oldest files for the total cap,
+      and updates cleanup.json. Purge removes retained capture files.
+
   version
       Print the CLI version. With --all, also print parley-deck-skill and
       project metadata compatibility status when available.
@@ -1830,6 +1836,8 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	})
 	noPreflight := fs.Bool("no-preflight", false, "skip the pre-idea readiness check (CI escape)")
 	noPing := fs.Bool("no-ping", false, "preflight presence-only: skip the hosted-PONG roster ping (faster; for CI)")
+	organizerFlag := fs.String("organizer", "", "ordinary participant organizer; frozen for v2 succession")
+	facilitatorFlag := fs.String("facilitator", "", "declared facilitator; permanently excluded from the succession floor and review")
 	participantsFlag := fs.String("participants", "", "comma-separated agent IDs to run")
 	presetFlag := fs.String("preset", "", "named roster preset to expand into participants (see `parley preset list`)")
 	trackFlag := fs.String("track", "", "conditional-rigor track: fast|standard|deliberation (also drives track-linked roster defaults)")
@@ -1943,11 +1951,30 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "quota policy config failed: %v\n", configErr)
 		return 1
 	}
-	quotaPolicy := quota.NewParticipantPolicy(defs.QuotaAutoExclude, quotaOverride)
+	quotaPolicy := quota.NewExhaustionPolicy(defs.QuotaAutoExclude, quotaOverride)
+	frozenRoles := &quota.RoleSnapshot{Version: 1, Order: append([]string(nil), participants...), Organizer: *organizerFlag, Facilitator: *facilitatorFlag}
+	if frozenRoles.Organizer == "" {
+		frozenRoles.Organizer = frozenRoles.Facilitator
+	}
+	if (*organizerFlag != "" && *facilitatorFlag != "" && *organizerFlag != *facilitatorFlag) || frozenRoles.Validate() != nil {
+		fmt.Fprintln(stderr, "invalid or conflicting organizer/facilitator declaration")
+		return 1
+	}
+	if frozenRoles.Facilitator != "" && membership.Has(participants, frozenRoles.Facilitator) {
+		fmt.Fprintln(stderr, "declared facilitator must be outside the initial participants")
+		return 1
+	}
+	roleProof := quota.Roles{Snapshot: frozenRoles, Facilitator: frozenRoles.Facilitator, Assignment: quota.RoleAssignment{Organizer: frozenRoles.Organizer}}
+	if len(participants) > 0 {
+		roleProof.Assignment.Implementer, roleProof.Assignment.ImplementerSource = participants[0], "legacy"
+	}
+	if membership.Has(participants, defs.DefaultImplementer) {
+		roleProof.Assignment.Implementer, roleProof.Assignment.ImplementerSource = defs.DefaultImplementer, "global-default"
+	}
 	var quotaDecision *quota.Decision
 	var preflightExcluded []string
 	if !*noPreflight {
-		code, report, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, quotaPolicy, stdout, stderr, strings.TrimSpace(*trackFlag))
+		code, report, stop := runTaskPreflight(ctx, *root, discovered, participants, attendedRun(*auto, *yes), *noPing, *yes, quotaPolicy, stdout, stderr, strings.TrimSpace(*trackFlag), roleProof)
 		if stop {
 			return code
 		}
@@ -1957,6 +1984,9 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 			participants = quotaDecision.After
 		}
 		participants = quota.FilterConfirmed(participants, preflightExcluded)
+	}
+	if quotaDecision == nil || !quotaDecision.Applied {
+		frozenRoles.Order = append([]string(nil), participants...)
 	}
 	if !*auto && !*yes && !confirmLaunch(os.Stdin, stdout, participants) {
 		fmt.Fprintln(stdout, "No run started. Use `--yes` or `--auto` to launch without an interactive confirmation prompt.")
@@ -1970,6 +2000,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "warning: roster snapshot unavailable (%v) — this run will not record what each agent ran\n", snapErr)
 	}
 	created, err := runcontrol.Create(runcontrol.CreateOptions{
+		Roles:          frozenRoles,
 		QuotaPolicy:    &quotaPolicy,
 		QuotaDecision:  quotaDecision,
 		Root:           *root,
@@ -2480,7 +2511,7 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 		if err != nil {
 			return tui.LaunchResult{}, err
 		}
-		policy := quota.NewParticipantPolicy(defs.QuotaAutoExclude, nil)
+		policy := quota.NewExhaustionPolicy(defs.QuotaAutoExclude, nil)
 		created, err := runcontrol.Create(runcontrol.CreateOptions{
 			QuotaPolicy:  &policy,
 			Root:         root,

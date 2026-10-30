@@ -7,7 +7,7 @@ import (
 	"html"
 	"io"
 	"os"
-	"path/filepath"
+	"parley-deck-cli/internal/protocol"
 	"strconv"
 	"strings"
 
@@ -23,7 +23,10 @@ const validationEvidenceBindingSuffix = "#validation-evidence/v1"
 // Keep exact document bytes. A normal report read is bounded too; an excluded
 // carrier must not turn a symlink or unlimited stream into hidden input.
 func readImplementationEvidence(ideaDir string) ([]byte, error) {
-	path := filepath.Join(ideaDir, "IMPLEMENTATION.md")
+	path, err := protocol.ExecutionPath(ideaDir)
+	if err != nil {
+		return nil, err
+	}
 	info, err := os.Lstat(path)
 	if err != nil {
 		return nil, err
@@ -257,7 +260,11 @@ func (o driverImplOps) prepareValidationEvidence() (restDigest, implRel string, 
 		if err != nil {
 			return "", "", err
 		}
-		if err := writeVerificationBytes(filepath.Join(o.ideaDir, "IMPLEMENTATION.md"), updated); err != nil {
+		path, err := protocol.ExecutionPath(o.ideaDir)
+		if err != nil {
+			return "", "", err
+		}
+		if err := writeVerificationBytes(path, updated); err != nil {
 			return "", "", err
 		}
 	}

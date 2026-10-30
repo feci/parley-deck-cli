@@ -93,10 +93,14 @@ func newDriverImplOps(base runner.Options, root, ideaSlug, ideaDir string, parti
 	// LE-11 `< 2` guard passes with a single real reviewer, and (b) make
 	// RunReviewRound launch one goroutine per duplicate, all writing the same
 	// agents/<id>/stdout.log and review/round-NN/<id>.md concurrently (a write race).
+	permanentFacilitator := ""
+	if h, e := quota.ReadHistory(ideaDir); e == nil && h.RoleSnapshot() != nil {
+		permanentFacilitator = h.RoleSnapshot().Facilitator
+	}
 	var reviewers []string
 	seen := make(map[string]bool)
 	for _, p := range eligible {
-		if p != implementer && !seen[p] {
+		if p != implementer && p != permanentFacilitator && !seen[p] {
 			seen[p] = true
 			reviewers = append(reviewers, p)
 		}
@@ -163,7 +167,7 @@ func (d dispatchDesignation) live() bool {
 		return false
 	}
 	switch d.source {
-	case protocol.SourceImplementerNone,
+	case protocol.ImplementerSource("role-transition"), protocol.SourceImplementerNone,
 		protocol.SourceImplementerFallThroughInapplicable,
 		protocol.SourceImplementerFallThroughUnavailable:
 		return false
@@ -176,6 +180,14 @@ func (d dispatchDesignation) live() bool {
 // Ranks 2 and 3 are dormant unless somebody set them; with neither set the result is
 // exactly resolveImplementer(ideaDir, eligible) and present=false.
 func resolveDispatchDesignation(root, ideaDir string, eligible []string, discovered []agents.Discovery) dispatchDesignation {
+	if h, err := quota.ReadHistory(ideaDir); err != nil {
+		return dispatchDesignation{gate: err.Error()}
+	} else if r := h.LastRoleTransition(); r != nil {
+		if _, err := protocol.ResolveActiveExecution(ideaDir); err != nil {
+			return dispatchDesignation{gate: err.Error()}
+		}
+		return dispatchDesignation{implementer: r.After.Implementer, source: protocol.ImplementerSource("role-transition")}
+	}
 	legacy := resolveImplementer(ideaDir, eligible)
 	pinID, _, pinOK := protocol.ResolveImplementerChain(ideaDir, protocol.PinImplementerCandidates(), eligible)
 	d := protocol.ReadImplementerDesignation(ideaDir)
@@ -554,7 +566,7 @@ func (o driverImplOps) ImplementationStatus() (string, error) {
 		return "", qerr
 	}
 
-	meta, err := protocol.ReadFrontmatter(filepath.Join(o.ideaDir, "IMPLEMENTATION.md"))
+	meta, err := protocol.ReadExecutionFrontmatter(o.ideaDir)
 	if err != nil {
 		return "", err
 	}
@@ -1084,7 +1096,10 @@ func (o driverImplOps) completeWithWriter(ctx context.Context) error {
 			return fmt.Errorf("independent evidence changed before completion: %s", strings.Join(gate.Reasons, "; "))
 		}
 	}
-	path := filepath.Join(o.ideaDir, "IMPLEMENTATION.md")
+	path, err := protocol.ExecutionPath(o.ideaDir)
+	if err != nil {
+		return err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err

@@ -20,8 +20,9 @@ type Revision struct {
 }
 
 type RevisionDirective struct {
-	Participants []string `json:"participants"`
-	Policy       Policy   `json:"policy"`
+	RoleSnapshot *RoleSnapshot `json:"role_snapshot,omitempty"`
+	Participants []string      `json:"participants"`
+	Policy       Policy        `json:"policy"`
 }
 
 func (d RevisionDirective) Text() string {
@@ -40,8 +41,11 @@ func (h *History) Policy() Policy {
 	}
 	return p
 }
-func NewRevision(h *History, run string, ids []string, policy Policy, owner Revision, now time.Time) Batch {
+func NewRevision(h *History, run string, ids []string, policy Policy, owner Revision, now time.Time, roles ...*RoleSnapshot) Batch {
 	b := Batch{Version: 1, Idea: h.Kickoff.Idea, RunID: run, PriorRevision: h.Revision, Policy: policy, RecordedAt: now.UTC(), Owner: &owner, Decision: Decision{Before: append([]string(nil), h.Current...), After: append([]string(nil), ids...)}}
+	if len(roles) > 0 {
+		b.RoleSnapshot = roles[0]
+	}
 	b.ID = b.digest()
 	return b
 }
@@ -51,6 +55,16 @@ func (b Batch) validateRevision(h *History) error {
 	}
 	if b.Version != 1 || b.Idea != h.Kickoff.Idea || b.RunID == "" || b.ID != b.digest() || b.PriorRevision != h.Revision || b.RecordedAt.IsZero() || b.Policy.Validate() != nil || !reflect.DeepEqual(b.Decision.Before, h.Current) || b.Decision.Applied || len(b.Decision.Candidates) != 0 || len(b.Decision.After) == 0 || len(Unique(b.Decision.After)) != len(b.Decision.After) {
 		return fmt.Errorf("invalid owner membership revision")
+	}
+	if b.Policy.Trigger == ParticipantFailureV2 && h.RoleSnapshot() == nil {
+		if b.RoleSnapshot == nil || b.RoleSnapshot.Validate() != nil || !reflect.DeepEqual(b.RoleSnapshot.Order, h.Current) || b.Owner.Authority == nil {
+			return fmt.Errorf("v2 widening requires owner-bound frozen role snapshot")
+		}
+	} else if b.RoleSnapshot != nil {
+		return fmt.Errorf("frozen role snapshot cannot be replaced")
+	}
+	if b.Decision.RoleTransition != nil {
+		return fmt.Errorf("owner policy revision cannot fabricate automatic succession")
 	}
 	for _, id := range b.Decision.After {
 		if !identifier.MatchString(id) {
@@ -64,7 +78,7 @@ func (b Batch) validateRevision(h *History) error {
 		if err := validateManualSnapshot(b, h); err != nil {
 			return err
 		}
-	} else if b.Owner.ManualPrompt != "" || !HasDirective(b.Owner.Authority.Quote, (RevisionDirective{b.Decision.After, b.Policy}).Text()) {
+	} else if b.Owner.ManualPrompt != "" || !HasDirective(b.Owner.Authority.Quote, (RevisionDirective{Participants: b.Decision.After, Policy: b.Policy, RoleSnapshot: b.RoleSnapshot}).Text()) {
 		return fmt.Errorf("owner quote does not authorize this membership/policy revision")
 	}
 	for _, id := range b.Decision.After {

@@ -283,12 +283,13 @@ func participantDiscoveries(discovered []agents.Discovery, participants []string
 // unattended both stop on a gate (we never auto-answer the new gates); the only
 // difference is unattended must never block on stdin, which this path honors
 // because it never reads stdin.
-func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, policy quota.Policy, stdout, stderr io.Writer, trackName ...string) (int, preflightReport, bool) {
-	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes, QuotaPolicy: &policy}
-	if len(trackName) > 0 {
-		opts.Track = trackName[0]
+func runTaskPreflight(ctx context.Context, root string, discovered []agents.Discovery, participants []string, attended, noPing, yes bool, policy quota.Policy, stdout, stderr io.Writer, trackName string, roles quota.Roles) (int, preflightReport, bool) {
+	opts := preflightOptions{Root: root, NoPing: noPing || centralPingSkips(root), Yes: yes, QuotaPolicy: &policy, Track: trackName, QuotaRoles: roles}
+	probeIDs := append([]string(nil), participants...)
+	if roles.Facilitator != "" {
+		probeIDs = quota.FilterConfirmed(append(probeIDs, roles.Facilitator), nil)
 	}
-	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, participants, rosterMappingFor(opts.Root)), stdout, stderr)
+	report, code, err := preflight(ctx, opts, participantDiscoveries(discovered, probeIDs, rosterMappingFor(opts.Root)), stdout, stderr)
 	if err != nil {
 		fmt.Fprintf(stderr, "preflight failed: %v\n", err)
 		return 1, report, true
@@ -420,6 +421,13 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 		for _, entry := range report.Roster {
 			proposed = append(proposed, entry.RosterID)
 			members = append(members, quota.Member{ID: entry.RosterID, Usable: entry.Available && (!opts.QuotaPolicy.Dropout() || report.Pinged), Evidence: entry.QuotaEvidence})
+		}
+		if opts.QuotaPolicy.Exhaustion() {
+			if opts.QuotaRoles.Snapshot == nil {
+				opts.QuotaRoles.Snapshot = &quota.RoleSnapshot{Version: 1, Order: append([]string(nil), proposed...)}
+			} else {
+				proposed = opts.QuotaRoles.Snapshot.Order
+			}
 		}
 		decision := quota.Evaluate(*opts.QuotaPolicy, proposed, members, opts.QuotaRoles)
 		if decision.Applied && opts.Track == string(track.Fast) {
@@ -953,9 +961,14 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 		go func(idx int, a agents.Discovery) {
 			defer wg.Done()
 			var obs readinessObservation
-			if dropout && !opts.QuotaRoles.Protected(a.ID) {
+			if dropout && (!opts.QuotaRoles.Protected(a.ID) || opts.QuotaPolicy.Exhaustion()) {
+				ceiling := time.Duration(0)
+				if opts.QuotaPolicy.Exhaustion() {
+					ceiling = timeout
+				}
 				settled, err := runner.RunParticipantStep(probeCtx, runner.ParticipantStepOptions{
 					Root: opts.Root, Idea: opts.ProbeID, Agent: a, Step: "readiness",
+					HardTimeout: ceiling, Exhaustion: opts.QuotaPolicy.Exhaustion(), SingleAttempt: opts.QuotaRoles.Protected(a.ID),
 					ValidateRecord: func(r telemetry.Record) runner.StepValidation {
 						if obs.Integrity != nil {
 							return runner.StepValidation{Integrity: obs.Integrity}
@@ -965,7 +978,11 @@ func checkRoster(ctx context.Context, opts preflightOptions, discovered []agents
 						return validation
 					},
 				}, func(attemptCtx context.Context, _ int, _ string) error {
-					obs = pingProbe(attemptCtx, opts.Root, a, timeout)
+					ceiling := timeout
+					if frozen := runner.ParticipantStepTimeout(attemptCtx); frozen > 0 {
+						ceiling = frozen
+					}
+					obs = pingProbe(attemptCtx, opts.Root, a, ceiling)
 					return nil
 				})
 				obs.QuotaEvidence = settled.Evidence
@@ -1247,6 +1264,13 @@ func printPreflightReport(stdout io.Writer, report preflightReport) {
 			yesNo(entry.Available),
 			entry.Reason,
 		)
+		if entry.Runtime == "codex" {
+			if telemetry.CodexContractVersion(entry.Version) == "" {
+				fmt.Fprintln(stdout, "    Exhaustion: diagnostic-only; reviewed Codex JSON contract requires CLI 0.165.0.")
+			} else {
+				fmt.Fprintln(stdout, "    Exhaustion: source-backed support requires explicit effective exec --json; default text is diagnostic-only.")
+			}
+		}
 	}
 	if !report.Pinged {
 		fmt.Fprintln(stdout, "  (presence-only; hosted PONG skipped via --no-ping)")

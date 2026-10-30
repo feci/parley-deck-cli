@@ -9,10 +9,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"parley-deck-cli/internal/agents"
+	"parley-deck-cli/internal/config"
 	"parley-deck-cli/internal/membership"
 	"parley-deck-cli/internal/protocol"
 	"parley-deck-cli/internal/store"
@@ -113,6 +115,11 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 			return nil, fmt.Errorf("preflight cannot target a canonical idea artifact")
 		}
 	}
+	if !handoff {
+		if err := exhaustionAdmission(root, info.Idea, agent.ID); err != nil {
+			return nil, err
+		}
+	}
 	if info.Idea != "" && info.Phase != "preflight" {
 		dir := filepath.Join(root, protocol.DeckDir, "ideas", info.Idea)
 		v, err := protocol.InspectQuota(dir)
@@ -120,8 +127,16 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 			return nil, err
 		}
 		if v.History != nil {
+			selectedHandover := false
+			if active, e := protocol.ResolveActiveExecution(dir); e != nil {
+				var pending *protocol.PendingHandover
+				if !errors.As(e, &pending) {
+					return nil, e
+				}
+				selectedHandover = pending.Transition.Successor == agent.ID && filepath.Clean(info.ArtifactPath) == filepath.Clean(active.Path) && info.participantStep != nil && info.participantStep.logicalStep == "handover:"+pending.Transition.ID
+			}
 			catchup := protocol.ManualCatchupTarget(dir, v, agent.ID, info.ArtifactPath)
-			if v.Pending != "" && !catchup {
+			if v.Pending != "" && !catchup && !selectedHandover {
 				return nil, fmt.Errorf("quota transition pending: %s", v.Pending)
 			}
 			if (!membership.Has(v.History.Current, agent.ID) || !membership.Has(v.History.Known, agent.ID)) && !catchup {
@@ -134,12 +149,12 @@ func beginLaunch(ctx context.Context, root, runID string, agent agents.Discovery
 				// Read-only evidence verification has its own bounded accounting;
 				// canonical participant outputs may never bypass the step ledger.
 				bounded := target != "" || (info.Phase != "evidence-verification" && info.Phase != CapturedVerificationPhase && info.Phase != "consult")
-				if v.History.Policy().Dropout() && bounded && !handoff {
+				if v.History.Policy().Dropout() && bounded && !handoff && !selectedHandover {
 					roles, err := membership.Roles(dir)
 					if err != nil {
 						return nil, err
 					}
-					if !roles.Protected(agent.ID) && info.participantStep == nil {
+					if (v.History.Policy().Exhaustion() || !roles.Protected(agent.ID)) && info.participantStep == nil {
 						return nil, fmt.Errorf("participant-failure policy requires a bounded logical step; use the round, review or signoff driver")
 					}
 				}
@@ -189,6 +204,7 @@ func recordBoundLaunchRequest(root string, agent agents.Discovery, info LaunchIn
 }
 
 func recordLaunch(root string, agent agents.Discovery, info LaunchInfo, boundInvocation string) (*launchEvidence, error) {
+	args, _ := agent.Spec.ResolveLaunchArgs()
 	metadata := telemetry.Metadata{
 		RunID: info.RunID, SegmentID: info.SegmentID, Idea: info.Idea, Phase: info.Phase,
 		Agent: agent.ID, Adapter: agent.Adapter(), LaunchMode: agents.LaunchModeOrDefault(agent.LaunchMode),
@@ -197,8 +213,27 @@ func recordLaunch(root string, agent agents.Discovery, info LaunchInfo, boundInv
 		RequestedSpeed: requestedSetting(agent.Speed),
 	}
 	if info.participantStep != nil {
+		if agent.Adapter() == "zcode" {
+			enabled, dir, err := config.MachineZcodeCapture()
+			if err == nil {
+				metadata.CaptureZcodeFailures = enabled
+				info.participantStep.captureDirectory = dir
+			}
+		}
 		metadata.ParticipantStep = info.participantStep.key
 		metadata.ParticipantTimeoutNS = int64(info.participantStep.hardTimeout)
+		if info.participantStep.exhaustion {
+			metadata.ExhaustionPolicy = true
+			metadata.ParticipantAttempts = info.participantStep.attemptLimit
+			metadata.ParticipantLogicalStep = info.participantStep.logicalStep
+		}
+	}
+	if metadata.ExhaustionPolicy && agent.Adapter() == "codex" {
+		metadata.CLIVersion = telemetry.CodexContractVersion(agent.Version)
+		if metadata.CLIVersion == "" {
+			metadata.CLIVersion = strings.TrimSpace(agent.Version)
+		}
+		metadata.ExplicitJSON = metadata.LaunchMode != agents.LaunchACP && telemetry.ExplicitCodexJSON(args)
 	}
 	directory := filepath.Join(root, ".parley-runtime", "invocations")
 	var invocation *telemetry.Invocation
@@ -211,7 +246,6 @@ func recordLaunch(root string, agent agents.Discovery, info LaunchInfo, boundInv
 	if err != nil {
 		return nil, &launchIntegrityError{reason: "cannot persist required launch request"}
 	}
-	args, _ := agent.Spec.ResolveLaunchArgs()
 	structured := metadata.LaunchMode != agents.LaunchACP && telemetry.StructuredArgs(args)
 	l := &launchEvidence{invocation: invocation, collector: telemetry.NewCollector(agent.Adapter(), structured), info: info}
 	l.notify()
@@ -316,6 +350,17 @@ func (l *launchEvidence) finish(runErr, ctxErr error, exitCode *int) error {
 		outcome := telemetry.Outcome{DispatchAttempted: l.dispatchAttempted, QuotaEvidence: &quotaEvidence, Status: status, ExitCode: exitCode,
 			FailureClass: telemetry.String(failure), Usage: usage, Observation: observation,
 			ArtifactSHA256: observedArtifactHash(l.info.ArtifactPath)}
+		metadata := l.invocation.Snapshot().Metadata
+		if metadata.ExhaustionPolicy {
+			e := l.collector.ExhaustionEvidence(telemetry.QuotaInput{InvocationID: l.invocation.ID,
+				StartedAt: quotaStart, ObservedAt: time.Now().UTC(), ExitCode: exitCode,
+				StructuredFailure: providerFailure != "", Watchdog: quotaCancellation(failure),
+				CLIVersion: metadata.CLIVersion, ExplicitJSON: metadata.ExplicitJSON})
+			outcome.ExhaustionEvidence = &e
+			if e.Eligible && failure == "" {
+				outcome.Status, outcome.FailureClass = "failed", telemetry.String("provider-error")
+			}
+		}
 		if err := l.invocation.Finish(outcome); err != nil {
 			l.finishErr = &launchIntegrityError{reason: "cannot persist required terminal telemetry"}
 			return

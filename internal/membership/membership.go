@@ -135,6 +135,9 @@ func reconcileLocked(ctx context.Context, root, ideaDir, runID string, h *quota.
 		if err != nil {
 			return err
 		}
+		if err := reconcileDrafts(ideaDir, b, applied); err != nil {
+			return err
+		}
 		if err := projectionFault("evaluation"); err != nil {
 			return err
 		}
@@ -298,6 +301,12 @@ func Settle(ctx context.Context, root, ideaDir, runID, round string, expected []
 		return nil, nil
 	}
 	roles, roleErr := Roles(ideaDir)
+	if h.Policy().Exhaustion() {
+		members, err = SupplementUsability(ideaDir, h.Current, members)
+		if err != nil {
+			return nil, IntegrityBlock(root, ideaDir, runID, h, err)
+		}
+	}
 	d := quota.Evaluate(h.Policy(), h.Current, members, roles)
 	if roleErr != nil && len(d.Candidates) > 0 {
 		d.Applied = false
@@ -309,6 +318,17 @@ func Settle(ctx context.Context, root, ideaDir, runID, round string, expected []
 	}
 	if !d.Applied {
 		return nil, nil
+	}
+	if h.Policy().Exhaustion() {
+		d.DraftArchives, err = protocol.PlanDraftRecovery(ideaDir, d.Candidates)
+		if err != nil {
+			d.Block = err.Error()
+			return nil, Block(root, ideaDir, runID, round, d)
+		}
+	}
+	d, err = bindSuccession(root, ideaDir, round, d)
+	if err != nil {
+		return nil, Block(root, ideaDir, runID, round, quota.Decision{Before: d.Before, Candidates: d.Candidates, Block: err.Error()})
 	}
 	attempted = &d
 	if err := checkGates(root, ideaDir, runID, d.After, &d); err != nil {
@@ -328,7 +348,11 @@ func Settle(ctx context.Context, root, ideaDir, runID, round string, expected []
 		return nil, lockErr
 	}
 	defer release()
-	retained, err := protocol.CaptureQuotaObligations(ideaDir, quota.CandidateIDs(d.Candidates))
+	obligationAuthors := quota.CandidateIDs(d.Candidates)
+	if r := d.RoleTransition; r != nil && r.Before.Implementer != r.After.Implementer {
+		obligationAuthors = quota.Unique(append(obligationAuthors, r.After.Implementer))
+	}
+	retained, err := protocol.CaptureQuotaObligations(ideaDir, obligationAuthors)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +380,7 @@ func Roles(ideaDir string) (quota.Roles, error) {
 	if des.State == protocol.DesignationSet {
 		r.Designee = des.ID
 	}
-	if m, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "IMPLEMENTATION.md")); err == nil {
+	if m, err := protocol.ReadExecutionFrontmatter(ideaDir); err == nil {
 		r.PinnedImplementer = strings.Trim(m["implementer"], "\"'")
 	} else if !os.IsNotExist(err) {
 		return r, err
@@ -381,7 +405,7 @@ func Roles(ideaDir string) (quota.Roles, error) {
 		}
 		r.StartedDrafters = append(r.StartedDrafters, id)
 	}
-	return r, nil
+	return resolveSuccessionRoles(ideaDir, r)
 }
 func Block(root, ideaDir, runID, phase string, d quota.Decision) error {
 	blob, _ := json.Marshal(struct {
@@ -391,7 +415,7 @@ func Block(root, ideaDir, runID, phase string, d quota.Decision) error {
 	keyPhase := phase
 	keyRun := runID
 	for _, c := range d.Candidates {
-		if c.Evidence.RuleID == quota.ParticipantFailureRule {
+		if c.Evidence.RuleID == quota.ParticipantFailureRule || c.Evidence.RuleID == quota.ProviderExhaustionRule {
 			// The immutable attempt pair already identifies this settled batch;
 			// a restarted driver must not publish a second decision notice.
 			keyRun = ""

@@ -40,7 +40,7 @@ func ParticipantFailureClass(class string) bool {
 
 func ValidateFailureEvidence(e Evidence, idea, agent string) error {
 	f := e.Failure
-	if e.RuleID != ParticipantFailureRule || e.Provenance != "supervisor-terminal" || !e.Eligible || e.ResetAt != nil || e.RawReset != "" || f == nil || f.Idea == "" || f.Agent != agent || f.Step == "" || (idea != "" && f.Idea != idea) || len(f.Attempts) != 2 {
+	if e.RuleID != ParticipantFailureRule || e.Provenance != "supervisor-terminal" || !e.Eligible || e.Exhaustion != nil || e.ResetAt != nil || e.RawReset != "" || f == nil || f.Idea == "" || f.Agent != agent || f.Step == "" || (idea != "" && f.Idea != idea) || len(f.Attempts) != 2 {
 		return fmt.Errorf("invalid participant failure proof")
 	}
 	for i, a := range f.Attempts {
@@ -70,7 +70,7 @@ func (h *History) Dropped(id string) bool {
 	}
 	has := func(cs []Candidate) bool {
 		for _, c := range cs {
-			if c.Agent == id && c.Evidence.RuleID == ParticipantFailureRule {
+			if c.Agent == id && (c.Evidence.RuleID == ParticipantFailureRule || c.Evidence.RuleID == ProviderExhaustionRule) {
 				return true
 			}
 		}

@@ -171,3 +171,90 @@ Codex publishes FINAL under its accepted drafter claim. Product files remain unc
 
 The pre-change package baseline passed: quota, telemetry, membership, runner, and protocol.
 Command: `go test ./internal/quota ./internal/telemetry ./internal/membership ./internal/runner ./internal/protocol -count=1 -timeout 10m`.
+
+## Resume 3 implementation review boundary
+
+The implementation includes v2 exhaustion admission, role history, active execution, draft recovery, and private capture.
+Focused tests, targeted race checks, skill tests, package checks, and native portable build passed.
+The full Go suite remains in progress. It must pass before close.
+The phase-6 driver refused again: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Use the owner's native CLI fallback for independent Kimi and Zcode review. It supplies no driver accounting or membership authority.
+Protocol context is full at SHA256 `b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709`.
+
+## Review cycle 1 and proposed fixes
+
+Both independent native reviewers completed without timeout. The driver validates both canonical review files.
+Kimi recorded three MAJOR findings and one MINOR finding. Zcode recorded one MINOR and two NIT findings.
+The consensus proposes F1-F6, resolves two scoped verdict conflicts through cited evidence, and retains all release gates.
+The completed full Go suite failed only version metadata and partial phase reporting under the organizer's environment.
+Both independent reviewers reproduced the capture fixture failure under umask 0077.
+The phase-7 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized fallback applies. Native receipts supply no driver accounting or membership authority.
+
+## Fix-up cycle 1 and review round 2
+
+All three participants accepted F1-F6 in review consensus. Each peer wrote its own signoff in a separate native process.
+Both signoff receipts exited 0 without timeout. The canonical append-only prefix checks passed.
+Fix-up product commit is 31c039c41a455a03385401085d132234a17603f6. IMPLEMENTATION records the candidate-timing detail and Windows limitation.
+The phase-8 driver gap remains in fixup01-driver.log. The phase-6 retry reports the same gap:
+`continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+An initial continue command used unsupported --no-tui; it did not launch. The corrected command produced the refusal above.
+Use the owner-authorized native fallback with the same participant identities and models.
+Native receipts supply no driver accounting or automatic membership authority.
+The host reboot caused no participant exclusion. Current round and review files validate; no stopped participant owns a pending action.
+
+## Review-round-2 timeout recovery
+
+Kimi reached its 1800-second ceiling at `2026-10-29T22:40:50.778622+00:00` without a review file.
+Retry 1 is authorized after `2026-10-29T22:55:50.778622+00:00`, with a 2400-second ceiling.
+The private receipt and stream remain intact. The earlier reboot still causes no participant exclusion.
+The installed validator requires `## Findings` in later reviews. The original brief requested only `## Updated findings`.
+Each author must supply the required heading before the review round can pass validation.
+
+Zcode completed its supplemental review and its own heading correction. Both native processes exited 0 without timeout.
+Both exact-prefix checks passed. The current review hash is `98bed5b76f48f44d6a5bbf9cd14d402836273fef2f3f9dbf33ee57bfa4c52c19`.
+Zcode reproduced the concurrent-admission defect and rated it CRITICAL. Its own atomic-publication overlay checks passed.
+It accepted the capture-status documentation alternative. Both findings remain open until signed consensus and fix-up.
+
+## Review cycle 2 fix consensus
+
+Kimi retry 1 completed exit 0 at 23:20:16Z, within its 2400-second ceiling.
+Its artifact hash matches the native receipt. Both round-02 files pass the installed validator.
+The proposed second fix plan covers atomic publication, checked directory durability, cleanup documentation/help, and one formatting defect.
+The signed first-cycle consensus is preserved exactly in `review/consensus-cycle-01.md`.
+Archive SHA256: `e4218477079bdc219501f3f932ceab4424407b13e7bb45142098de20e45238e8`. No earlier signoff was edited.
+Phase-7 refusal: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Native fallback remains authorized, without driver accounting or membership authority.
+
+
+## Fix-up cycle 2
+
+All three participants accepted F7-F9. Both peer receipts completed exit 0 without timeout.
+The prefix and hash checks passed. Source-context retains the content-free native receipts.
+The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized fallback remains in force. No participant was excluded.
+
+
+## Review cycle 3 and proposed close
+
+Both full-scope native reviews completed exit 0 without timeout. Both artifacts pass the installed validator.
+Both reviewers withdrew the product findings after F1-F9. Zcode also withdrew the receipt NIT.
+The checklist correction awaits Zcode's own disposition during its consensus action. Product source remains unchanged.
+The signed cycle-2 consensus remains byte-exact at `review/consensus-cycle-02.md`.
+Phase-7 refusal: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized native fallback remains in force, without driver accounting or membership authority.
+All three participants remain required signers. The independent goal check follows the signatures.
+
+All three participants accepted the cycle-3 zero-fix consensus. Both peer signers exited 0 without timeout.
+Each signer preserved every prior consensus byte. Both appended evidence in their own review files.
+Zcode withdrew its final checklist NIT. No current product or evidence-record finding remains open.
+The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Use the authorized native fallback for a fresh independent Zcode goal check.
+
+
+## Independent pre-release goal gate
+
+Zcode completed the fresh goal process at 2026-10-30 00:27:03Z, exit 0, without timeout.
+Its exact result is `GOAL-CHECK: PASS`. The receipt hash and append-only prefix match.
+The result covers the pre-release close at the reviewed products. It explicitly leaves D12 delivery for the next stage.
+IMPLEMENTATION now closes Phases 5–8. Its release handoff preserves every pending channel obligation.

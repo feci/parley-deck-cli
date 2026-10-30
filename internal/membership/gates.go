@@ -2,7 +2,6 @@ package membership
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -26,7 +25,7 @@ func checkGates(root, ideaDir, runID string, ids []string, prospective *quota.De
 	}
 	auto := strings.EqualFold(meta["auto_implement"], "true")
 	strict := strings.EqualFold(meta["strict_gate"], "true")
-	_, implErr := os.Stat(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	_, implErr := protocol.StatExecution(ideaDir)
 	code := auto || strict || implErr == nil
 	diversity := strings.EqualFold(meta["require_model_diversity"], "true") || strings.EqualFold(meta["track"], "fast")
 	if !code && !diversity {
@@ -39,7 +38,21 @@ func checkGates(root, ideaDir, runID string, ids []string, prospective *quota.De
 			eligible = append(eligible, id)
 		}
 	}
+	var successor string
+	if prospective != nil && prospective.RoleTransition != nil {
+		successor = prospective.RoleTransition.After.Implementer
+	} else if h, e := quota.ReadHistory(ideaDir); e != nil {
+		return e
+	} else if r := h.LastRoleTransition(); r != nil {
+		successor = r.After.Implementer
+	}
+	if successor != "" && !Has(ids, successor) {
+		return fmt.Errorf("successor implementer absent from current membership")
+	}
 	des := protocol.ReadImplementerDesignation(ideaDir)
+	if successor != "" {
+		des = protocol.ImplementerDesignation{State: protocol.DesignationNone}
+	}
 	if des.State == protocol.DesignationEmpty {
 		return fmt.Errorf("incomplete per-idea implementer designation")
 	}
@@ -63,9 +76,12 @@ func checkGates(root, ideaDir, runID string, ids []string, prospective *quota.De
 	if !ok && len(eligible) > 0 {
 		impl = eligible[0]
 	}
+	if successor != "" {
+		impl = successor
+	}
 	reviewers := []string{}
 	for _, id := range eligible {
-		if id != impl {
+		if id != impl && id != role.Facilitator {
 			reviewers = append(reviewers, id)
 		}
 	}

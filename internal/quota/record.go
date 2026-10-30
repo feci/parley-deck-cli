@@ -18,13 +18,14 @@ const KickoffFile = "quota-kickoff.json"
 // runs. Participants is the first quorum: kickoff-excluded identities are not
 // historical members. Before in Transition is only the proposed readiness set.
 type Kickoff struct {
-	Version      int         `json:"version"`
-	Idea         string      `json:"idea"`
-	RunID        string      `json:"run_id"`
-	Revision     int         `json:"revision"`
-	Policy       Policy      `json:"policy"`
-	Participants []string    `json:"participants"`
-	Transition   *Transition `json:"transition,omitempty"`
+	Roles        *RoleSnapshot `json:"roles,omitempty"`
+	Version      int           `json:"version"`
+	Idea         string        `json:"idea"`
+	RunID        string        `json:"run_id"`
+	Revision     int           `json:"revision"`
+	Policy       Policy        `json:"policy"`
+	Participants []string      `json:"participants"`
+	Transition   *Transition   `json:"transition,omitempty"`
 }
 type Transition struct {
 	ID            string    `json:"id"`
@@ -34,9 +35,23 @@ type Transition struct {
 	RecordedAt    time.Time `json:"recorded_at"`
 }
 
-func NewKickoff(idea, run string, p Policy, participants []string, d *Decision, now time.Time) Kickoff {
+func NewKickoff(idea, run string, p Policy, participants []string, d *Decision, now time.Time, roles ...*RoleSnapshot) Kickoff {
 	k := Kickoff{Version: 1, Idea: idea, RunID: run, Policy: p, Participants: append([]string(nil), participants...)}
+	if p.Trigger == ParticipantFailureV2 {
+		order := participants
+		if d != nil && d.Applied {
+			order = d.Before
+		}
+		k.Roles = &RoleSnapshot{Version: 1, Order: append([]string(nil), order...)}
+		if len(roles) > 0 && roles[0] != nil {
+			k.Roles = roles[0]
+		}
+	}
 	if d != nil && d.Applied {
+		if d.RoleTransition != nil && d.RoleTransition.Phase == "" {
+			bound := d.BindHandover("kickoff", "none", "", "n/a", "n/a")
+			d = &bound
+		}
 		k.Transition = &Transition{PriorRevision: -1, Policy: p, Decision: *d, RecordedAt: now.UTC()}
 		payload, _ := json.Marshal(struct {
 			Idea, Run string
@@ -53,6 +68,20 @@ func (k Kickoff) Validate() error {
 	if err := k.Policy.Validate(); err != nil {
 		return err
 	}
+	if k.Policy.Trigger == ParticipantFailureV2 {
+		if k.Roles == nil || k.Roles.Validate() != nil {
+			return fmt.Errorf("missing or invalid v2 role snapshot")
+		}
+		order := k.Participants
+		if k.Transition != nil {
+			order = k.Transition.Decision.Before
+		}
+		if !reflect.DeepEqual(k.Roles.Order, order) {
+			return fmt.Errorf("frozen role order differs from proposed membership")
+		}
+	} else if k.Roles != nil {
+		return fmt.Errorf("legacy kickoff cannot carry v2 role authority")
+	}
 	if len(Unique(k.Participants)) != len(k.Participants) {
 		return fmt.Errorf("duplicate kickoff membership")
 	}
@@ -67,17 +96,28 @@ func (k Kickoff) Validate() error {
 		for _, c := range tr.Decision.Candidates {
 			if k.Policy.Dropout() || c.Evidence.RuleID == ParticipantFailureRule {
 				// A readiness batch is bound before the final idea slug exists.
-				if !k.Policy.Dropout() || contains(k.Participants, c.Agent) || ValidateFailureEvidence(c.Evidence, "", c.Agent) != nil {
+				if !k.Policy.Dropout() || contains(k.Participants, c.Agent) || ValidatePolicyEvidence(k.Policy, c.Evidence, "", c.Agent) != nil {
 					return fmt.Errorf("invalid kickoff participant failure evidence")
 				}
-				if c.Evidence.Failure.Step != "readiness" || !contains(tr.Decision.Before, c.Agent) {
+				step, batch := "", ""
+				if c.Evidence.Failure != nil {
+					step, batch = c.Evidence.Failure.Step, c.Evidence.Failure.Idea
+				}
+				if c.Evidence.Exhaustion != nil {
+					step, batch = c.Evidence.Exhaustion.Step, c.Evidence.Exhaustion.Idea
+				}
+				external := tr.Decision.RoleTransition != nil && k.Roles != nil && c.Agent == k.Roles.Facilitator && c.Agent == tr.Decision.RoleTransition.Before.Organizer
+				if step != "readiness" || (!contains(tr.Decision.Before, c.Agent) && !external) {
 					return fmt.Errorf("kickoff failure is not a proposed readiness step")
 				}
-				if readinessBatch != "" && readinessBatch != c.Evidence.Failure.Idea {
+				if readinessBatch != "" && readinessBatch != batch {
 					return fmt.Errorf("mixed kickoff readiness batches")
 				}
-				readinessBatch = c.Evidence.Failure.Idea
+				readinessBatch = batch
 			}
+		}
+		if err := validateRoleDecision(k.Roles, nil, tr.Decision); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -150,7 +190,7 @@ func (k Kickoff) Markers() []string {
 	for _, c := range k.Transition.Decision.Candidates {
 		e := c.Evidence
 		label := "automatic quota"
-		if e.RuleID == ParticipantFailureRule {
+		if e.RuleID == ParticipantFailureRule || e.RuleID == ProviderExhaustionRule {
 			label = "permanent participant dropout"
 		}
 		out = append(out, fmt.Sprintf("%s — %s — rule=%s — reset=%s — raw_reset=%q — transition=%s — recorded %s", c.Agent, label, e.RuleID, e.ResetHint(), e.RawReset, k.Transition.ID, k.Transition.RecordedAt.Format("2006-01-02")))
@@ -164,7 +204,7 @@ func (k Kickoff) Notice() string {
 	tr := k.Transition
 	body := fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nphase: kickoff\nblocking: no\ntransition: %s\ndate: %s\n---\n\nAutomatic quota exclusion for this idea only.\n\n", k.Idea, tr.ID, tr.RecordedAt.Format("2006-01-02"))
 	for _, c := range tr.Decision.Candidates {
-		if c.Evidence.RuleID == ParticipantFailureRule {
+		if c.Evidence.RuleID == ParticipantFailureRule || c.Evidence.RuleID == ProviderExhaustionRule {
 			body += "Permanent participant dropout for this idea; no same-idea return, even after opt-out or policy revision. The next idea probes afresh. Retained vetoes, disputes and findings remain in force.\n\n"
 		}
 		body += fmt.Sprintf("- %s: %s (%s), reset %s. %s\n", c.Agent, c.Evidence.Excerpt, c.Evidence.RuleID, c.Evidence.ResetHint(), c.Evidence.RelaunchHint())

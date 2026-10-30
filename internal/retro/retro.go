@@ -96,7 +96,11 @@ func scanIdea(dir, slug string, inboxNotes []string) IdeaSignals {
 			}
 		}
 	}
-	impl := readFile(filepath.Join(dir, "IMPLEMENTATION.md"))
+	impl, executionErr := protocol.ExecutionContext(dir)
+	if executionErr != nil && !os.IsNotExist(executionErr) {
+		s.Blocked = true
+		return s
+	}
 	s.FixupCycles = len(reFixupCycle.FindAllString(impl, -1))
 	s.Abandoned = statusIs(impl, "abandoned") || statusIs(readFile(filepath.Join(dir, "00-prompt.md")), "abandoned")
 

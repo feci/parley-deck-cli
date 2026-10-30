@@ -381,7 +381,7 @@ func artifactOnDisk(path string) bool {
 // implementerOf reads the implementer's agent id from IMPLEMENTATION.md
 // frontmatter; "" when absent.
 func implementerOf(ideaDir string) string {
-	meta, err := protocol.ReadFrontmatter(filepath.Join(ideaDir, "IMPLEMENTATION.md"))
+	meta, err := protocol.ReadExecutionFrontmatter(ideaDir)
 	if err != nil {
 		return ""
 	}

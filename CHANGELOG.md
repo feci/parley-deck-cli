@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 1.56.0 — 2026-10-29
+
+- Freeze `participant-failure-v2` for new ideas. Preserve saved policy behavior and hashes.
+- Stop an identity after one proven native account-exhaustion failure. Keep suppression across restarts and blocked membership batches.
+- Apply the owner's organizer/implementer succession order through immutable history and successor-owned handover records.
+- Preserve predecessor bytes, filed dissent, earlier findings, and independent review gates.
+- Add exact-version Codex 0.165.0 JSON recognition. Default Codex text, Kimi, and Claude remain diagnostic-only.
+- Keep Zcode's reviewed framing and provenance limit. Add optional private failure capture through machine configuration, status, and purge.
+- Keep the 20,000-byte skill and 70,000-byte phase-1 packet limits. Companion skill/core version is 2.20.0.
+- CLI Windows remains experimental. CLI WinGet remains held. npm and global core publication remain owner-only.
 
 ## 1.55.0 — 2026-10-13
 

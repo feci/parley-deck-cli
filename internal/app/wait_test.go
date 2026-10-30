@@ -9,6 +9,7 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,8 @@ import (
 
 	"parley-deck-cli/internal/driver"
 	"parley-deck-cli/internal/protocol"
+	"parley-deck-cli/internal/quota"
+	"parley-deck-cli/internal/quotatest"
 	"parley-deck-cli/internal/store"
 )
 
@@ -114,6 +117,56 @@ func TestWaitRoundBoundaryReachedExitZero(t *testing.T) {
 	}
 	if !strings.Contains(out, "2/2") {
 		t.Errorf("digest must show the completed round; got %q", out)
+	}
+}
+
+func TestWaitImplementationAbsentOrEarlyHandover(t *testing.T) {
+	for _, handover := range []bool{false, true} {
+		t.Run(fmt.Sprintf("handover=%v", handover), func(t *testing.T) {
+			withWaitPoll(t, 10*time.Millisecond)
+			t.Setenv("PARLEY_HOME", t.TempDir())
+			ids := []string{"alpha", "beta", "gamma"}
+			root, dir := seedWaitIdea(t, ids)
+			if handover {
+				p := quota.NewExhaustionPolicy(nil, nil)
+				s := &quota.RoleSnapshot{Version: 1, Order: ids, Organizer: "alpha"}
+				e := quotatest.Exhaustion("wait-idea", "alpha", "readiness")
+				d := quota.Evaluate(p, ids, []quota.Member{{ID: "alpha", Evidence: &e}, {ID: "beta", Usable: true}, {ID: "gamma", Usable: true}}, quota.Roles{Snapshot: s, Assignment: quota.RoleAssignment{Organizer: "alpha", Implementer: "alpha", ImplementerSource: "legacy"}})
+				d = d.BindHandover("round-01", "none", "", "feature/test", "abc123")
+				if !d.Applied || d.RoleTransition == nil {
+					t.Fatalf("handover decision: %+v", d)
+				}
+				k := quota.NewKickoff("wait-idea", "run", p, d.After, &d, time.Now(), s)
+				if err := quota.WriteKickoff(dir, k); err != nil {
+					t.Fatal(err)
+				}
+				prompt := filepath.Join(dir, "00-prompt.md")
+				meta, err := os.ReadFile(prompt)
+				if err != nil {
+					t.Fatal(err)
+				}
+				meta = bytes.Replace(meta, []byte("participants: [alpha, beta, gamma]"), []byte("participants: [beta, gamma]\nquota_auto_exclude: true\nquota_auto_exclude_scope: "+p.Scope+"\nquota_auto_exclude_trigger: "+p.Trigger), 1)
+				if err := os.WriteFile(prompt, meta, 0600); err != nil {
+					t.Fatal(err)
+				}
+				r := d.RoleTransition
+				path := filepath.Join(dir, filepath.FromSlash(r.Path()))
+				if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+					t.Fatal(err)
+				}
+				raw := fmt.Sprintf("---\nidea: wait-idea\ntransition: %s\nauthor: beta\norganizer: beta\nimplementer: beta\nphase: round-01\nbase: none\nbase-sha256: \ntakeover-branch: feature/test\ntakeover-head: abc123\ndate: 2026-10-29\nstatus: in-progress\n---\n\n## Takeover\nBoth roles transferred.\n\n## Resume state\nContinue round 1.\n", r.ID)
+				if err := os.WriteFile(path, []byte(raw), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := protocol.ResolveActiveExecution(dir); err != nil {
+					t.Fatal(err)
+				}
+			}
+			code, out, errOut := runWaitFor(t, "--dir", root, "--idea", "wait-idea", "--for", "implementation", "--timeout", "50ms")
+			if code != 3 || !strings.Contains(out, "active execution record not filed or implementation not started") {
+				t.Fatalf("exit=%d out=%q err=%q", code, out, errOut)
+			}
+		})
 	}
 }
 

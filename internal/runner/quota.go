@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"parley-deck-cli/internal/membership"
@@ -24,6 +23,7 @@ func quotaBefore(ctx context.Context, opts Options) (context.Context, Options, f
 	if h != nil {
 		opts.quotaMidIdea = h.MidIdea()
 		opts.participantDropout = h.MidIdea() && h.Policy().Dropout()
+		opts.exhaustionPolicy = h.MidIdea() && h.Policy().Exhaustion()
 		opts.Idea.Participants = membership.Intersect(opts.Idea.Participants, h.Current)
 		if len(opts.Idea.Participants) == 0 {
 			release()
@@ -48,9 +48,13 @@ func quotaSettle(ctx context.Context, opts Options, results []Result) []Result {
 	// A review batch does not launch the pinned implementer; a valid completed
 	// implementation is its usability evidence, not a new provider observation.
 	if opts.Phase == "review" {
-		meta, _ := protocol.ReadFrontmatter(filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"))
+		execution, err := protocol.ExecutionPath(opts.Idea.Path)
+		if err != nil {
+			return append(results, Result{AgentID: "runner/quota", ExitError: err.Error()})
+		}
+		meta, _ := protocol.ReadExecutionFrontmatter(opts.Idea.Path)
 		impl := meta["implementer"]
-		if membership.Has(h.Current, impl) && !membership.Has(opts.Idea.Participants, impl) && ValidateImplementationArtifact(filepath.Join(opts.Idea.Path, "IMPLEMENTATION.md"), opts.Idea.Slug) == nil {
+		if membership.Has(h.Current, impl) && !membership.Has(opts.Idea.Participants, impl) && ValidateImplementationArtifact(execution, opts.Idea.Slug) == nil {
 			members = append(members, quota.Member{ID: impl, Usable: true, ValidArtifact: true})
 		}
 	}

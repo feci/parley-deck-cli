@@ -509,13 +509,17 @@ func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Di
 	if err != nil && h.MidIdea() && h.Policy().Dropout() {
 		return result, err
 	}
-	if h.MidIdea() && h.Policy().Dropout() && !roles.Protected(agent.ID) && (agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless || agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchInteractive) {
+	if h.MidIdea() && h.Policy().Dropout() && (!roles.Protected(agent.ID) || h.Policy().Exhaustion()) && (agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchHeadless || agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchInteractive) {
 		review := phase == "review-consensus"
 		before, err := consensus.Status(rootAbs, idea, review)
 		if err != nil {
 			return result, err
 		}
 		opts := participantSignoffOptions(rootAbs, idea, agent, consensusPath, beforeRaw, before, review)
+		opts.SingleAttempt = roles.Protected(agent.ID)
+		if h.Policy().Exhaustion() {
+			opts.HardTimeout = requestSignoffTimeout(agent)
+		}
 		settled, err := runner.RunParticipantStep(ctx, opts, func(child context.Context, _ int, _ string) error {
 			if agents.LaunchModeOrDefault(agent.LaunchMode) == agents.LaunchInteractive {
 				var e error
@@ -548,7 +552,11 @@ func runSignoffAgent(ctx context.Context, rootAbs, runID string, agent agents.Di
 }
 
 func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.Discovery, prompt string, stdout, stderr io.Writer) error {
-	agentCtx, cancel := context.WithTimeout(ctx, requestSignoffTimeout(agent))
+	ceiling := requestSignoffTimeout(agent)
+	if frozen := runner.ParticipantStepTimeout(ctx); frozen > 0 {
+		ceiling = frozen
+	}
+	agentCtx, cancel := context.WithTimeout(ctx, ceiling)
 	defer cancel()
 
 	cmd, cleanup, err := runner.CommandFor(agentCtx, rootAbs, agent, prompt)
@@ -562,8 +570,8 @@ func runHeadlessSignoffAgent(ctx context.Context, rootAbs string, agent agents.D
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	run := cmd.Run
-	if runner.ParticipantStepActive(agentCtx) {
-		run = func() error { return cmd.RunSupervised(agent, requestSignoffTimeout(agent)) }
+	if runner.ParticipantStepActive(agentCtx) && !runner.ParticipantStepSingleAttempt(agentCtx) {
+		run = func() error { return cmd.RunSupervised(agent, ceiling) }
 	}
 	if err := run(); err != nil {
 		if agentCtx.Err() != nil {

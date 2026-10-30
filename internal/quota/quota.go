@@ -16,6 +16,8 @@ const KickoffOnly = "kickoff-only"
 const KickoffAndMidIdea = "kickoff-and-mid-idea"
 const ParticipantFailure = "participant-failure-v1"
 const ParticipantFailureRule = "participant-failure.v1"
+const ParticipantFailureV2 = "participant-failure-v2"
+const ProviderExhaustionRule = "provider-exhaustion.v1"
 
 type Policy struct {
 	Enabled bool   `json:"enabled"`
@@ -44,7 +46,7 @@ func (p *Policy) UnmarshalJSON(raw []byte) error {
 	p.Trigger = ""
 	if len(fields) == 3 {
 		var trigger *string
-		if fields["trigger"] == nil || json.Unmarshal(fields["trigger"], &trigger) != nil || trigger == nil || *trigger != ParticipantFailure {
+		if fields["trigger"] == nil || json.Unmarshal(fields["trigger"], &trigger) != nil || trigger == nil || (*trigger != ParticipantFailure && *trigger != ParticipantFailureV2) {
 			return fmt.Errorf("invalid automatic exclusion trigger")
 		}
 		p.Trigger = *trigger
@@ -64,18 +66,28 @@ func NewPolicy(defaultValue, ideaValue *bool) Policy {
 	return Policy{Enabled: enabled, Scope: KickoffAndMidIdea}
 }
 
-// NewParticipantPolicy is used only when creating a new idea, never on resume.
+// NewParticipantPolicy retains the v1 constructor for saved-policy callers.
 func NewParticipantPolicy(defaultValue, ideaValue *bool) Policy {
 	p := NewPolicy(defaultValue, ideaValue)
 	p.Trigger = ParticipantFailure
 	return p
 }
-func (p Policy) Dropout() bool { return p.Enabled && p.Trigger == ParticipantFailure }
+
+// NewExhaustionPolicy is for new ideas only. Resume uses the saved policy.
+func NewExhaustionPolicy(defaultValue, ideaValue *bool) Policy {
+	p := NewPolicy(defaultValue, ideaValue)
+	p.Trigger = ParticipantFailureV2
+	return p
+}
+func (p Policy) Dropout() bool {
+	return p.Enabled && (p.Trigger == ParticipantFailure || p.Trigger == ParticipantFailureV2)
+}
+func (p Policy) Exhaustion() bool { return p.Enabled && p.Trigger == ParticipantFailureV2 }
 func (p Policy) Validate() error {
 	if p.Scope != KickoffOnly && p.Scope != KickoffAndMidIdea {
 		return fmt.Errorf("ambiguous quota policy scope %q", p.Scope)
 	}
-	if p.Trigger != "" && p.Trigger != ParticipantFailure {
+	if p.Trigger != "" && p.Trigger != ParticipantFailure && p.Trigger != ParticipantFailureV2 {
 		return fmt.Errorf("unknown automatic exclusion trigger %q", p.Trigger)
 	}
 	return nil
@@ -84,17 +96,18 @@ func (p Policy) Validate() error {
 // Evidence contains only scrubbed, normalized observations, never full logs or environments.
 // Eligible is meaningful only after invocation, artifact and batch-success gates pass.
 type Evidence struct {
-	InvocationID string      `json:"invocation_id"`
-	Adapter      string      `json:"adapter"`
-	RuleID       string      `json:"rule_id,omitempty"`
-	Provenance   string      `json:"provenance,omitempty"`
-	Eligible     bool        `json:"eligible"`
-	Reason       string      `json:"reason"`
-	Excerpt      string      `json:"excerpt,omitempty"`
-	RawReset     string      `json:"raw_reset,omitempty"`
-	ObservedAt   time.Time   `json:"observed_at"`
-	ResetAt      *time.Time  `json:"reset_at,omitempty"`
-	Failure      *FailedStep `json:"failure,omitempty"`
+	InvocationID string         `json:"invocation_id"`
+	Adapter      string         `json:"adapter"`
+	RuleID       string         `json:"rule_id,omitempty"`
+	Provenance   string         `json:"provenance,omitempty"`
+	Eligible     bool           `json:"eligible"`
+	Reason       string         `json:"reason"`
+	Excerpt      string         `json:"excerpt,omitempty"`
+	RawReset     string         `json:"raw_reset,omitempty"`
+	ObservedAt   time.Time      `json:"observed_at"`
+	ResetAt      *time.Time     `json:"reset_at,omitempty"`
+	Failure      *FailedStep    `json:"failure,omitempty"`
+	Exhaustion   *ExhaustedStep `json:"exhaustion,omitempty"`
 }
 
 func (e Evidence) ResetHint() string {
@@ -104,7 +117,7 @@ func (e Evidence) ResetHint() string {
 	return e.ResetAt.UTC().Format(time.RFC3339Nano)
 }
 func (e Evidence) RelaunchHint() string {
-	if e.ResetAt == nil || e.RuleID == ParticipantFailureRule {
+	if e.ResetAt == nil || e.RuleID == ParticipantFailureRule || e.RuleID == ProviderExhaustionRule {
 		return ""
 	}
 	return "owner-authorized relaunch after " + e.ResetAt.Add(5*time.Minute).UTC().Format(time.RFC3339Nano) + " (provider estimate)"
@@ -118,6 +131,8 @@ type Member struct {
 	Evidence      *Evidence
 }
 type Roles struct {
+	Snapshot          *RoleSnapshot
+	Assignment        RoleAssignment
 	Facilitator       string
 	Designee          string
 	PinnedImplementer string
@@ -126,7 +141,7 @@ type Roles struct {
 }
 
 func (r Roles) Protected(id string) bool {
-	return id != "" && (id == r.Facilitator || id == r.Designee || id == r.PinnedImplementer || contains(r.StartedDrafters, id))
+	return id != "" && (id == r.Facilitator || id == r.Designee || id == r.PinnedImplementer || id == r.Assignment.Organizer || contains(r.StartedDrafters, id))
 }
 
 type Candidate struct {
@@ -134,12 +149,14 @@ type Candidate struct {
 	Evidence Evidence `json:"evidence"`
 }
 type Decision struct {
-	Before          []string    `json:"before"`
-	After           []string    `json:"after"`
-	Candidates      []Candidate `json:"candidates,omitempty"`
-	UsableSurvivors int         `json:"usable_non_facilitators"`
-	Applied         bool        `json:"applied"`
-	Block           string      `json:"block,omitempty"`
+	DraftArchives   []DraftArchive  `json:"draft_archives,omitempty"`
+	RoleTransition  *RoleTransition `json:"role_transition,omitempty"`
+	Before          []string        `json:"before"`
+	After           []string        `json:"after"`
+	Candidates      []Candidate     `json:"candidates,omitempty"`
+	UsableSurvivors int             `json:"usable_non_facilitators"`
+	Applied         bool            `json:"applied"`
+	Block           string          `json:"block,omitempty"`
 }
 
 // Evaluate settles the WHOLE batch once. Sorting makes evidence and decisions stable
@@ -159,7 +176,11 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 	for _, m := range members {
 		byID[m.ID] = append(byID[m.ID], m)
 	}
-	for _, id := range d.Before {
+	observedIDs := append([]string(nil), d.Before...)
+	if policy.Exhaustion() && roles.Snapshot != nil && roles.Assignment.Organizer == roles.Snapshot.Facilitator && !contains(observedIDs, roles.Assignment.Organizer) && roles.Assignment.Organizer != "" {
+		observedIDs = append(observedIDs, roles.Assignment.Organizer)
+	}
+	for _, id := range observedIDs {
 		observations := byID[id]
 		success, unresolved := false, len(observations) == 0
 		var candidates []Candidate
@@ -167,7 +188,7 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 			if m.Usable || m.ValidArtifact || m.LaterSuccess {
 				success = true
 			}
-			if m.Evidence != nil && m.Evidence.Eligible && m.Evidence.InvocationID != "" && m.Evidence.Provenance != "" && m.Evidence.RuleID != "" && (!policy.Dropout() || ValidateFailureEvidence(*m.Evidence, "", id) == nil) {
+			if m.Evidence != nil && m.Evidence.Eligible && m.Evidence.InvocationID != "" && m.Evidence.Provenance != "" && m.Evidence.RuleID != "" && ValidatePolicyEvidence(policy, *m.Evidence, "", id) == nil {
 				candidates = append(candidates, Candidate{Agent: id, Evidence: *m.Evidence})
 			} else if !m.Usable && !m.ValidArtifact && !m.LaterSuccess {
 				unresolved = true
@@ -191,9 +212,15 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 		}
 		return a.Evidence.InvocationID < b.Evidence.InvocationID
 	})
+	exhausted := map[string]bool{}
+	for _, c := range d.Candidates {
+		if c.Evidence.RuleID == ProviderExhaustionRule {
+			exhausted[c.Agent] = true
+		}
+	}
 	if policy.Dropout() {
-		for _, id := range Unique(d.Before) {
-			if roles.Protected(id) && len(byID[id]) > 0 && !usable[id] {
+		for _, id := range Unique(observedIDs) {
+			if roles.Protected(id) && len(byID[id]) > 0 && !usable[id] && !exhausted[id] {
 				d.Block = fmt.Sprintf("protected role %s failed or has unresolved usability; re-designate, record implementer_waived, or set implementer: none with owner confirmation; no exclusions applied", id)
 				return d
 			}
@@ -204,18 +231,18 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 	}
 	if policy.Dropout() {
 		for _, id := range []string{roles.Designee, roles.PinnedImplementer} {
-			if id != "" && !usable[id] {
+			if id != "" && !usable[id] && !exhausted[id] {
 				d.Block = fmt.Sprintf("protected implementer %s lacks positive usability evidence; no exclusions applied", id)
 				return d
 			}
 		}
 	}
-	protected := map[string]bool{roles.Facilitator: true, roles.Designee: true, roles.PinnedImplementer: true}
+	protected := map[string]bool{roles.Facilitator: true, roles.Designee: true, roles.PinnedImplementer: true, roles.Assignment.Organizer: true}
 	for _, id := range roles.StartedDrafters {
 		protected[id] = true
 	}
 	for _, c := range d.Candidates {
-		if protected[c.Agent] {
+		if protected[c.Agent] && !exhausted[c.Agent] {
 			d.Block = fmt.Sprintf("protected role %s; re-designate, record implementer_waived, or set implementer: none with owner confirmation", c.Agent)
 			return d
 		}
@@ -232,6 +259,28 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 	for _, id := range d.Before {
 		if !excluded[id] {
 			d.After = append(d.After, id)
+		}
+	}
+	if policy.Exhaustion() {
+		if roles.Snapshot == nil {
+			d.Block = "missing frozen v2 role snapshot"
+			return d
+		}
+		var positive []string
+		for id := range usable {
+			positive = append(positive, id)
+		}
+		// Only exhaustion transfers roles. After excludes every settled loss,
+		// including ordinary failures that cannot supply a successor seat.
+		r, err := SelectSuccession(*roles.Snapshot, roles.Assignment, d.After, exhaustedCandidateIDs(d.Candidates), positive)
+		if err != nil {
+			d.Block = err.Error()
+			d.After = append([]string(nil), d.Before...)
+			return d
+		}
+		d.RoleTransition = r
+		if r != nil && !contains(d.After, r.After.Implementer) && r.After.Implementer == roles.Snapshot.Facilitator {
+			d.After = append(d.After, r.After.Implementer)
 		}
 	}
 	d.Applied = true
@@ -253,6 +302,16 @@ func CandidateIDs(cs []Candidate) []string {
 	ids := []string{}
 	for _, c := range cs {
 		ids = append(ids, c.Agent)
+	}
+	return Unique(ids)
+}
+
+func exhaustedCandidateIDs(cs []Candidate) []string {
+	var ids []string
+	for _, c := range cs {
+		if c.Evidence.RuleID == ProviderExhaustionRule {
+			ids = append(ids, c.Agent)
+		}
 	}
 	return Unique(ids)
 }
