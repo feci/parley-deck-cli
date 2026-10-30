@@ -1,0 +1,26 @@
+[
+  {
+    "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/review/consensus.md",
+    "before_sha256": "7b428f7e02d24d56772a8f63373bc9f8e78d877bb9df6d02bb1ef2d3ce79d9ac",
+    "after_sha256": "f64b7be182a3c663575318b7d9587ff1eaf88ece2a0ec59a85c6189f509e17cf",
+    "exact_prefix": true
+  },
+  {
+    "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/review/round-03/kimi-1.md",
+    "before_sha256": "b1a8a52a922148e24f51b26dd0066e386ef72363c3a8496d5dcf392136f64981",
+    "after_sha256": "dae08a9e1cad25f7901297db1ddcca481216c229c2de56a898c67354284040cf",
+    "exact_prefix": true
+  },
+  {
+    "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/review/round-03/zcode-1.md",
+    "before_sha256": "aa355e1a681f5a7cdd124a336a8b34f7f0b4d85f6311222dc939586aa266ff59",
+    "after_sha256": "b14611e4abd3e0ff56255aaf888869bef7a6ac1420625bf19d37bd22f78c7805",
+    "exact_prefix": true
+  },
+  {
+    "path": ".parley-runtime/credit-failover/review03-consensus-before-kimi.md",
+    "before_sha256": "eb2441b9fcc8e3e94be2cdba689f4fd96cb505c59451bda99f4fe91070d7b0a6",
+    "after_sha256": "7b428f7e02d24d56772a8f63373bc9f8e78d877bb9df6d02bb1ef2d3ce79d9ac",
+    "exact_prefix": true
+  }
+]

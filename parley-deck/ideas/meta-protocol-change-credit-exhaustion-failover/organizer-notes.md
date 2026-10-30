@@ -233,3 +233,20 @@ All three participants accepted F7-F9. Both peer receipts completed exit 0 witho
 The prefix and hash checks passed. Source-context retains the content-free native receipts.
 The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
 The owner-authorized fallback remains in force. No participant was excluded.
+
+
+## Review cycle 3 and proposed close
+
+Both full-scope native reviews completed exit 0 without timeout. Both artifacts pass the installed validator.
+Both reviewers withdrew the product findings after F1-F9. Zcode also withdrew the receipt NIT.
+The checklist correction awaits Zcode's own disposition during its consensus action. Product source remains unchanged.
+The signed cycle-2 consensus remains byte-exact at `review/consensus-cycle-02.md`.
+Phase-7 refusal: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+The owner-authorized native fallback remains in force, without driver accounting or membership authority.
+All three participants remain required signers. The independent goal check follows the signatures.
+
+All three participants accepted the cycle-3 zero-fix consensus. Both peer signers exited 0 without timeout.
+Each signer preserved every prior consensus byte. Both appended evidence in their own review files.
+Zcode withdrew its final checklist NIT. No current product or evidence-record finding remains open.
+The phase-8 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
+Use the authorized native fallback for a fresh independent Zcode goal check.

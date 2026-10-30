@@ -1,152 +1,137 @@
 ---
 idea: meta-protocol-change-credit-exhaustion-failover
-review-cycle: 2
+review-cycle: 3
 drafted-by: codex-1
 date: 2026-10-30
-reviewed-commit: 31c039c41a455a03385401085d132234a17603f6
+reviewed-commit: b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666
+outstanding_agreed_fixes: 0
+closing_review_round: 3
 ---
 
 Codex-1 is the organizer, implementer, participant, and consensus drafter.
-This consensus proposes the second fix-up plan. It grants no product pass or release approval.
-Skill target: `70d29c1aebd9a632f6f6239123fd2f52e3775a48`.
-The signed first-cycle consensus remains byte-exact at `consensus-cycle-01.md`.
-Both current review artifacts pass the installed validator. Each author wrote its own artifact in a native process.
+Kimi-1 and Zcode-1 wrote independent full-scope reviews in separate native processes.
+Skill target: `406b6976cc75344d76f908297fe46ec2443e62cb`.
+The complete CLI baseline is `c2d2431`; the skill baseline is `f557c5e`.
+Later CLI commits contain audit records only. No product source changed during this review round.
+The signed second-cycle consensus remains byte-exact at `consensus-cycle-02.md`.
 
 ## Agreed fixes
 
-1. **F7 — Publish complete invocation records with checked durability.** Sources: both round-02 CRITICAL findings.
-   Stage complete bytes in a private sibling file. Check the write, file sync, and close before publication.
-   Publish through exclusive `os.Link`. Preserve refusal for any existing destination, including a symlink or directory.
-   Sync the invocation directory and its parent after publication. Use the existing `quota.SyncPath(i.Dir)` barrier.
-   Return every persistence error. Retain readable published state after a directory-sync failure, without a child launch or silent success.
-   Remove the temporary staging name on ordinary return paths. Crash residue must remain inert to record readers.
-   Keep malformed committed records as admission errors. Do not tolerate parse errors or weaken exhaustion suppression.
-   Add fault tests for write, file-sync, link, and directory-sync failures.
-   Cover existing files, symlinks, private permissions, and staging cleanup. Preserve immutable collision and repeated-failure behavior.
-   Repeat the concurrent-budget test at high count. Exercise grouped participant launches and attempt-accounting refusal paths.
-   Run relevant race checks and the complete required Go suite at the fixed source.
-2. **F8 — State capture-status cleanup effects.** Sources: Zcode's round-02 NIT and Kimi's round-02 MINOR.
-   Update the CLI guide, packaged skill reference, and command help.
-   State that status deletes expired files, removes old files for the total cap, and updates `cleanup.json`.
-   Preserve D10's cleanup on each use. Change no capture behavior or enablement source.
-3. **F9 — Format the changed driver file.** Source: Kimi's round-02 NIT.
-   Put the protocol import with the existing project imports in `internal/driver/impl.go`.
-   Run `gofmt` on that file. Check every Go file changed by this idea for formatting.
-
-The private atomic-publication overlay is incomplete as a delivery patch. F7 adds its missing directory barriers and fault coverage.
-These fixes preserve FINAL D1–D12 and the signed protocol hunks. Both reviewers must inspect the complete fixed diff.
-A directory-durability failure must remain an error, including on an unsupported platform.
-CLI Windows remains experimental. CLI WinGet stays held. Record platform results without weakening storage checks.
+None remain proposed. Both reviewers withdrew the product findings after the two accepted fix-up cycles.
+The two evidence-record NITs have concrete corrections below. Zcode must assess the checklist correction before its signoff.
+This draft is provisional until all three participants append ACCEPT.
+The fresh independent goal check remains required after these signatures.
 
 ## Resolved prior findings
 
-Both reviewers accept F1–F6 at `31c039c` and withdraw their corresponding round-01 findings.
-Both accept the eager read-only candidate calculation. It grants no protection, pin, stored assignment, or succession authority.
-The new race remains separate from the corrected pre-pin protection defect.
-The unreadable active-record regression and the two umask cases now pass in independent checks.
-The first-cycle signatures remain intact in the archived consensus; they do not sign this new fix plan.
+| Finding | Correction and independent disposition |
+| --- | --- |
+| F1: pre-pin transient protection | Both round-03 reviews retain the resolved disposition. Synthetic readiness preserves two attempts and five-second spacing. |
+| F2: root version | Both reviews retain the resolved disposition. Root and binary versions are 1.56.0. |
+| F3: unreadable active record | Both reviews retain the resolved disposition. Positive stat evidence survives the read error. |
+| F4: umask-dependent fixture | Both reviews retain the resolved disposition. Kimi reran both umasks. |
+| F5: wait wording | Both reviews retain the resolved disposition. Tests cover absent and early handover records. |
+| F6: empty changelog heading | Both reviews retain the resolved disposition. The release heading is first. |
+| F7: partial invocation publication and durability | Both reviewers withdrew their CRITICAL findings. Each ran 100 concurrent-budget repetitions at fixed source. |
+| F8: capture-status cleanup text | Both reviewers withdrew their documentation findings. Help and both references disclose deletion and cleanup receipts. |
+| F9: driver import format | Both reviewers withdrew the formatting finding after their changed-file checks. |
+
+The F7 checks cover complete exclusive publication, store barriers, request/terminal faults, collisions, permissions, cleanup, residue, and repeated failure.
+The reviewers retain the limit: fault injection and source inspection do not prove every real power-loss sequence or filesystem.
+The signed cycle-2 conflict resolutions remain in the archived consensus. No current decision depends on the rejected durability-parity premise.
+
+Zcode's round-03 receipt NIT is withdrawn in its own supplemental assessment.
+The full Go receipt came from the original process wrapper. The concurrent and portable receipts explicitly state their retrospective organizer provenance.
+Those two receipts supply no driver accounting. Zcode checked their hashes and retained its independent focused refutations.
+
+Zcode's supplemental checklist NIT requested a checked box for completed cycle-2 tests.
+Codex checked that box and the initial completed-test box. No source or evidence result changed.
+Proposed disposition: resolved by this record correction. Zcode must append its assessment to its own round-03 review before it signs.
+
+## Current-tree criterion evidence
+
+These entries summarize verifier-owned verdicts. They do not originate an implementer verification verdict.
+The complete refutations, commands, output, provenance, and limits remain in both `round-03/` files.
+
+| Criteria | Independent evidence at the reviewed products |
+| --- | --- |
+| AC-01 | Both reviewers ran quota, membership, and protocol checks for saved-policy and widening behavior. |
+| AC-02 | Both ran synthetic native-framing and reset fixtures. Native-positive and exact-version limits remain. |
+| AC-03–04 | Both ran runner suppression, recovery, stale-output, and handover checks. F7 adds checked publication evidence. |
+| AC-05 | Both ran independent 100-count concurrent-budget tests. Kimi also ran 100 grouped-accounting repetitions and transient readiness. |
+| AC-06–07 | Both ran whole-batch, original-order, facilitator, and fixed-floor fixtures. |
+| AC-08–10 | Both checked active execution, shared drafts, retained obligations, and causal review proof. |
+| AC-11 | Both retain source-backed Codex 0.165.0 with explicit JSON only. The ordinary smoke proves no exhaustion capture. |
+| AC-12 | Both ran capture fixtures and inspected the status documentation. No capture-store authority exists. |
+| AC-13 | Kimi reconstructed all four protocol/core targets from 29 signed hunks. Both checked hashes and packet limits. |
+| AC-14 | Both inspected the completed full Go result. Kimi independently ran 402 Node and 54 Python tests. |
+| AC-15 | Full-scope review exists. Consensus and the fresh goal check gate implementation close; delivery evidence follows D12. |
+
+The organizer's required command passed at CLI product `b7dce40`: `go test ./... -count=1 -timeout 45m`.
+Its wrapper receipt records exit 0 and 34 packages. Both reviewers checked the retained log against its hash.
+Log SHA256: `68cd0dedd2609cf803e8e24d8ad741a09e48d2193d84f911f90e58864e6172d5`.
+The organizer also ran relevant race checks, go vet, repeated concurrency, package checks, and the native portable build.
+Canonical evidence: `../source-context/fixup02-validation.json`.
+These organizer runs are attributed evidence, not a substitute for independent review.
 
 ## Deferred follow-ups
 
 - `quota-zcode-native-exhaustion-capture` retains native-positive provenance and completeness work beyond this diagnostic facility.
-- `quota-kickoff-reporting-and-alias-guidance` retains its remaining reporting work. Required account-alias guidance is in this release.
+- `quota-kickoff-reporting-and-alias-guidance` retains its remaining reporting work. Required account-alias guidance is delivered here.
 - Peer account inference, machine exhaustion caches, other native adapters, and broader Codex versions remain deferred under FINAL.
-- CLI WinGet remains held. npm and global-core publication remain owner-only.
+- CLI Windows remains experimental. CLI WinGet stays held. No permission or durability check was weakened.
+- npm and global-core publication remain owner-only. Their pending commands remain part of the final delivery note.
 
 ## Dismissed findings
 
-None. F7–F9 address every current finding. The documentation severity difference changes no required correction.
-
-## Verdict conflicts
-
-### Atomic publication and durable persistence
-
-Zcode wrote in `round-02/zcode-1.md`, under its supplemental assessment:
-
-> Persistence: data bytes are synced before publication, same as before. Neither the old nor the proposed code fsyncs the directory entry after publication; that is parity, not a regression. An optional follow-up may fsync `i.Dir` after `Link`.
-
-It then wrote:
-
-> My verdict on the proposal: `CONFIRMED (PRIMARY)` for the tested scope. I concur with the approach and found no defect in it. I propose no different correction; writer-side atomic publication is the correct shape, and reader-side tolerance would weaken corruption handling against D2/D3.
-
-Zcode's decisive checks are its own 100-run overlay test and 20-run race check, quoted in that review.
-Those checks exercise visibility and collision behavior. They do not inject power loss or directory-sync failure.
-
-Kimi wrote in `round-02/kimi-1.md`, in its CRITICAL finding:
-
-> The proposal is not complete for durable persistence. It does not sync the invocation directory after link publication. A crash can lose the new directory entry even after file sync. The initial invocation directory also needs a parent durability barrier.
-
-Its cited source is `record-atomic-proposal.go:403-427`; its proposed barrier is the existing `quota.SyncPath(i.Dir)`.
-Its AC-04 PRIMARY inspection cites `quota.DurableWrite` at `internal/quota/history.go:223-269` for checked publication and directory sync.
-
-Resolution proposed for signoff: keep the independently tested atomic visibility correction, then add the two directory barriers under F7.
-The absence of a new regression does not prove FINAL's durable no-reconnect requirement.
-The prior tests supply no directory-failure evidence. Kimi's identified missing operation therefore requires the stated correction and fault tests.
-This resolution preserves Zcode's narrower successful checks. It does not treat either reviewer's vote as durability evidence.
-The next full-scope review must verify the completed implementation at current source.
-
-### AC-05 scope after the first fix-up
-
-Zcode wrote in its supplemental assessment:
-
-> AC-05: my verified scope stands; the retry-parity, spacing, and protection tests still pass. The race adds a separate concurrency defect. Risk I could not verify by execution: a spurious admission refusal inside a participant step surfaces as an invocation-less failure, and how that interacts with attempt accounting deserves a check in fix-up cycle 2.
-
-Kimi wrote in its AC-05 assessment:
-
-> Result: `WRONG (PRIMARY)`. F1 passed its focused checks, but common admission can reject unrelated concurrent launches after it reads partial request JSON.
-
-Both reviews quote independent seven-of-100 failures of the unchanged concurrent-budget test.
-Resolution proposed for signoff: retain the narrower F1 retry and protection results; keep complete AC-05 acceptance open until F7 passes.
-The race concerns ordinary launch admission before budget and participant accounting. The isolated F1 pass does not cover that boundary.
-F7 therefore includes grouped launches and refusal accounting, as well as the reproduced concurrent case.
+None were dismissed by organizer judgment. Product findings were corrected and withdrawn by their authors.
+The receipt NIT was corrected and withdrawn. The checklist disposition requires its author's own assessment and this signoff gate.
+No participant dropout, silence rule, owner waiver, or severity downgrade closes a finding.
 
 ## Drafter position changes
 
-The frozen design does not change. The implementer's private proposal omitted directory barriers; this plan now requires them.
-Prior position, from `../../inbox/codex-1-to-all_meta-protocol-change-credit-exhaustion-failover_review02-concurrent-admission.md`:
-
-> I propose atomic exclusive publication of complete request records. Preserve refusal for malformed committed authority and existing paths.
-> Do not ignore parse errors or add launch retries.
-> A private source overlay tests staged-file publication through an exclusive hard link.
-
-New position: that proposal addresses visibility but remains incomplete for delivery until F7 adds the barriers and fault tests.
-The implementer adopts Kimi's concrete correction. Both independent signers must assess the rationale above.
-The initial checked implementation areas never supply independent acceptance evidence.
+No new design position changes. The changes since `../round-03/codex-1.md` remain recorded in `../consensus.md` under the same heading.
+The cycle-2 change from visibility-only publication to checked directory durability remains recorded in `consensus-cycle-02.md`.
+This draft now proposes zero remaining fixes, based on the complete current reviews and the stated evidence-record correction.
+It replaces no frozen design or historical verdict.
 
 ## Alternatives disposition
 
-- **ALT-F7a: adopt exclusive sibling publication.** It prevents partial visible JSON while preserving existing-record refusal.
-- **ALT-F7b: reject reader-side parse-error tolerance.** It would hide committed corruption and weaken the no-reconnect gate.
-- **ALT-F7c: adopt invocation-directory and parent barriers.** File sync alone does not supply the missing directory-entry durability.
-- **ALT-F7d: reject unchanged private-overlay delivery.** Its visibility tests do not cover the required durability boundary.
-- **ALT-F8a: adopt explicit status documentation and help.** It explains the required cleanup without changing D10.
-- **ALT-F8b: reject read-only status in this idea.** D10 requires cleanup on each use.
+- **ALT-F7a/F7c: retain the signed adoption.** Complete exclusive publication and checked directory barriers remain required.
+- **ALT-F7b/F7d: retain the signed rejection.** Parse-error tolerance and the incomplete overlay cannot satisfy the accepted persistence contract.
+- **ALT-F8a/F8b: retain the signed disposition.** Explicit cleanup documentation preserves D10's behavior.
+- **ALT-CLOSE-1: adopt a fresh independent goal process after signatures.** Agreement alone supplies no current-tree goal proof.
+- **ALT-CLOSE-2: reject a premature channel-pass claim.** D12 places publication after the pre-release gates and requires a separate channel process.
 
 ## Coverage & blind spots
 
-Both reviewers independently reproduced the race. Both independently passed the private visibility-correction overlay.
-Kimi identified the missing durability barriers and formatting defect. Both found the command-specific cleanup omission.
-Related models can share assumptions. Their agreement is not independent evidence by itself.
-An untested persistence boundary, platform filesystem, or participant-accounting path can invalidate the correction.
-Native exhaustion evidence remains synthetic or source-backed within FINAL's limits. No provider exhaustion was induced.
+Both reviewers independently inspected the full product diffs and tried to refute the acceptance criteria.
+Each reproduced the former race before F7, then passed 100 repetitions after F7.
+Kimi found the missing durability operation in cycle 2. Zcode found the receipt and checklist gaps in round 3.
+Related models can share assumptions. Unanimity is a shared prior, not independent evidence by itself.
+An untested persistence boundary, unsupported filesystem, incomplete native contract, or missed execution consumer could invalidate acceptance.
+No provider exhaustion was induced. Native exhaustion fixtures remain synthetic or source-backed within FINAL's exact limits.
+The full Go result is attributed to the organizer; neither review falsely claims an independent full-suite execution in this round.
 
-The organizer's full Go run passed once at the reviewed source. Ubuntu and macOS PR jobs failed the concurrent test.
-Those facts are compatible: the race is intermittent. A passing run does not dispose of a reproduced counterexample.
-Windows baseline and current failures do not establish Windows correctness. Keep the stated experimental limitation.
+## Remaining close and delivery gates
 
-## Validation and remaining gates
+After all signatures, Zcode-1 will perform the fresh goal check in a new native process.
+It must inspect the current products, all criteria, the review dispositions, and the completed validation evidence.
+It must record its own unambiguous result in its review artifact. A reserved or incomplete result cannot close implementation.
+If the pre-release gates pass, mark the execution record complete and merge both implementation PRs with merge commits.
+Preserve the product trees and bind release assets to the clean merged commits.
 
-Use `go test ./... -count=1 -timeout 45m` after the fixes.
-Also run the repeated concurrent regression, grouped participant paths, relevant race checks, skill suite, package checks, and portable build.
-Record the changed source commits in IMPLEMENTATION. Preserve the exact protocol/core hashes and size limits.
-Both reviewers then perform fresh full-scope reviews. A fresh independent process must perform the pre-release goal check.
-D12 places channel publication and installation after these gates. AC-15 delivery remains open until the separate channel review and hashes exist.
-The final delivery record must include owner-only commands in version order 2.15.0 through 2.20.0.
+D12 places publication and installation after the fresh goal check. AC-15 channel evidence therefore remains pending until delivery.
+Publish both GitHub releases and Homebrew formulae. Submit the skill-only WinGet PR.
+Install all 15 managed targets and four named generic destinations. Verify all six packaged SKILL.md files at each destination.
+Preserve historical source/archive copies and runtime backups. State the two unavailable cloud-trash paths as an inventory limit if they persist.
+A separate Kimi or Zcode process must inspect every authorized channel and runtime hash after publication.
+The final inbox note must list npm then core commands for each pending version, 2.15.0 through 2.20.0.
+The owner alone executes those publication commands. The relay owns the owner script.
 
 The phase-7 driver refused: `continue failed: idea "meta-protocol-change-credit-exhaustion-failover" has no runs yet`.
-The owner-authorized native fallback applies. It grants no driver accounting or automatic membership authority.
-Kimi's first round-02 process timed out without an artifact. Its authorized retry completed after the full 15-minute delay.
-The earlier host reboot caused no participant exclusion. All three current participants remain required signers.
+The owner-authorized native fallback applies. It supplies no driver accounting or automatic membership authority.
+The host reboot caused no participant exclusion. All three participants remain required signers.
 
 ## Protocol context
 
@@ -159,30 +144,16 @@ fallback_reason: none
 
 ### Signoff: codex-1 — 2026-10-30
 Status: ✅ ACCEPT
-Notes: I accept F7–F9 as the second fix plan. I will apply them after both independent participants accept.
+Notes: I accept the stated dispositions and zero-fix proposal, subject to both peer signatures and the fresh independent goal check.
+This signoff supplies no independent verification or delivered-channel claim.
 
 ### Signoff: zcode-1 — 2026-10-30
 Status: ✅ ACCEPT
-Notes: I accept F7–F9 as the second fix plan only. This signoff passes no criterion, approves no product state, and releases nothing.
+Notes: I accept the zero-fix proposal and the stated dispositions. My round-03 review and both supplements hold zero open findings at CLI `b7dce40` and skill `406b6976`. I withdrew the receipt NIT in my first supplement. After I verified the two checkbox corrections, I withdrew the checklist NIT in my second supplement. Evidence attribution is accurate: organizer runs are attributed evidence; my AC-14 verdict rests on hash-verified organizer receipts, not an independent full-suite execution. The dispositions, retained limitations, delivery counts, and gate order match FINAL D12, AC-15, and the controlling brief.
 
-I answer the durability question directly. My round-02 "parity, not a regression" sentence described the diff, not the criterion. FINAL D3 requires persistence before return and suppression across restarts. Parity with the old code cannot prove that requirement. The old code never met it.
-
-I verified the gap myself at `31c039c`, all PRIMARY. `internal/telemetry/record.go:403-421` syncs the file, never the directory entry. `internal/telemetry/record.go:224` and `:260` create the invocation directory without a parent sync. `internal/quota/history.go:282-297` defines `quota.SyncPath`. It syncs the given path, then the parent directory. Called with `i.Dir`, it supplies exactly Kimi's two barriers. `internal/quota/history.go:222-269` (`quota.DurableWrite`) already stages, file-syncs, publishes exclusively, and syncs the directory. The ledger that D3 suppression reads must meet that same standard.
-
-I concur with the added barriers and fault tests. My 100-run overlay check and 20-run race check covered visibility and collision only. They injected no power loss and no directory-sync failure. F7's fault stages mirror `quota`'s existing `writeFault` stages: write, file-sync, link, directory-sync. `internal/telemetry` already imports `internal/quota` at `record.go:14`. The named barrier adds no import cycle.
-
-Binding conditions. Both `requested.json` and `terminal.json` must use the checked publication path. Any existing name form — file, symlink, directory — must keep refusing. `TestWriteFailuresAreReturned` and `TestBeginBoundRefusesEveryReuseAndCollision` must still pass. Staged files keep mode 0600; the published link shares that inode. A directory-sync failure must return its error, launch no child, and keep the published record readable. Staging cleanup runs on ordinary paths. Crash residue stays inert to every record reader. The concurrent test repeats at high count. Grouped participant launches, attempt-accounting refusal paths, relevant race checks, and `go test ./... -count=1 -timeout 45m` must pass at the fixed HEAD. Record results and commits in IMPLEMENTATION. Windows stays experimental. Weaken no error handling or storage check for any platform. Both reviewers then perform fresh full-scope reviews at the fixed source.
-
-The consensus quotes my round-02 file byte-exactly. The AC-05 resolution correctly keeps complete acceptance open until F7 passes. No vote, mine included, supplies the missing durability evidence. The fault tests must supply it.
+This signoff is a position, not new verification. It passes no criterion alone and states no goal-check result. The fresh independent goal check in a new native process stays required before completion. Delivery, installation, and separate channel verification follow D12. npm and global-core publication stay owner-only; the final note must list versions 2.15.0 through 2.20.0.
 
 ### Signoff: kimi-1 — 2026-10-30
 Status: ✅ ACCEPT
-Notes: I accept F7–F9 as the second fix-up plan only. This signoff supplies no product pass, criterion verdict, durability test evidence, or release approval.
-
-Prior durability parity cannot satisfy FINAL D3. D3 requires durable suppression proof before return and across restarts. File sync does not preserve the new directory entry after a crash. Loss of either the record link or new invocation directory can hide exhaustion proof from later admission. The old writer's same omission proves neither durability nor safe reconnection.
-
-I inspected the named source sites. `internal/telemetry/record.go:403-421` exposes incomplete final names and syncs no directory. `record.go:224` and `:260` create the invocation directory without a parent barrier. `internal/quota/history.go:282-295` shows that `quota.SyncPath(i.Dir)` syncs both required levels. Exclusive sibling publication prevents partial visible JSON and keeps corrupt committed records fatal.
-
-I concur with the added barriers and fault tests. Zcode's successful overlay and race checks cover visibility and collisions, not power loss or directory-sync failures. The proposed resolutions preserve that limited evidence and keep full AC-05 acceptance open. No signoff or vote supplies the missing durability evidence.
-
-F7 must cover every invocation record and both directory barriers. Its tests must cover all named fault stages, collisions, symlinks, modes, cleanup, and grouped accounting. Repeated concurrency, relevant race checks, and the full suite remain required. A post-publication sync failure must return an error, preserve readable state, and launch no child. F8 preserves D10 cleanup while correcting both references and help. F9 changes formatting only. Windows remains experimental, with no weakened error or storage checks. Fresh full-scope reviews and the independent goal check remain open.
+Notes: I accept the zero-fix proposal, evidence attribution, dispositions, limitations, and remaining gate order. My cycle-3 consensus assessment in `round-03/kimi-1.md` supplies the factual basis.
+I concur with the checklist correction as a factual execution-record correction with no product edit. This signoff is a position, not new verification. It passes no criterion alone and states no goal-check result. The fresh independent goal check remains required before implementation completion. Delivery, installation, separate channel verification, and owner-only publication remain under D12.

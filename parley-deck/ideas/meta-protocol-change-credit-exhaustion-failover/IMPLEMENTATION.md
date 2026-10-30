@@ -24,7 +24,7 @@ The skill worktree remains on its allocated `credit-failover` branch.
 - [x] AC-08/09/10: add the checked active execution resolver, successor handover, draft recovery, and causal review proof.
 - [x] AC-12: add machine-only private Zcode capture, bounded cleanup, status, and purge.
 - [x] AC-13/14: apply the exact signed hunks; update skill guidance, hard size tests, versions, and release notes.
-- [ ] Checks: focused tests and fault cases, relevant race tests, full Go suite, skill suite, package checks, portable builds.
+- [x] Checks: focused tests and fault cases, relevant race tests, full Go suite, skill suite, package checks, portable builds.
 - [ ] AC-15: independent review, signed review consensus, agreed fixes, fresh independent goal check, and current-tree AC evidence.
 - [ ] Release: CLI 1.56.0 and skill/core 2.20.0; GitHub, both Homebrew formulae, skill-only WinGet, all runtime installs.
 - [ ] Separate reviewer process verifies delivery. Report owner-only npm/core commands without execution.
@@ -189,7 +189,7 @@ The second fix plan preserves the original protocol hunks and FINAL decisions.
 - [x] Add request/terminal fault tests, collision checks, staging cleanup, and inert crash-residue cases.
 - [x] F8: state the capture-status cleanup effects in both references and command help.
 - [x] F9: format the driver import and check all changed Go files.
-- [ ] Run persistence, grouped accounting, repeated concurrency, race, full Go, skill, package, and portable checks.
+- [x] Run persistence, grouped accounting, repeated concurrency, race, full Go, skill, package, and portable checks.
 - [ ] Obtain fresh full-scope reviews, review consensus, and the independent goal check before release.
 
 The store barrier also covers Zcode's source addendum about openInvocationStore.
@@ -229,3 +229,13 @@ The repeated concurrent/grouped check, complete Go command, and skill suite are 
 Private evidence uses the fixup02 prefix. No pending check is recorded as passed.
 Fresh full-scope reviews must inspect the entire CLI and skill changes, including both fix-up cycles.
 The fresh independent goal check and all release/install evidence remain open.
+
+
+### Fixed-source verification complete — 2026-10-29 23:46Z
+
+The complete command `go test ./... -count=1 -timeout 45m` passed at b7dce40, with 34 packages and exit 0.
+The 100-run concurrent-budget and grouped-accounting checks passed. Relevant race checks and go vet passed.
+The skill suite passed 402 Node tests and 54 Python tests at 406b697. Package checks and the native portable build passed.
+All changed Go files pass gofmt. All four protocol/core hashes retain the signed bytes; SKILL.md remains 19,989 bytes.
+Content-free receipts and the full Go package summary are in `source-context/fixup02-validation.json`.
+Both fresh independent review processes remain active. These execution results grant no independent review or close verdict.
