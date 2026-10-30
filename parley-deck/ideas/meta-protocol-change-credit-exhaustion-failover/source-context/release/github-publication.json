@@ -1,0 +1,151 @@
+{
+  "at": "2026-10-30T00:30:15.119648+00:00",
+  "releases": [
+    {
+      "assets": [
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383435",
+          "contentType": "application/octet-stream",
+          "createdAt": "2026-10-30T00:30:01Z",
+          "digest": "sha256:03eaed39456e88e17a91d50ed9aafabeca9245739be2c6d08aa974d011e1a584",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmpL",
+          "label": "",
+          "name": "parley-v1.56.0-darwin-arm64",
+          "size": 10538258,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:03Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/parley-v1.56.0-darwin-arm64"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383437",
+          "contentType": "application/octet-stream",
+          "createdAt": "2026-10-30T00:30:01Z",
+          "digest": "sha256:511bf0d2c34262dc535cf62758cb962f59166e64df170be0c2456d0182cbac32",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmpN",
+          "label": "",
+          "name": "parley-v1.56.0-darwin-x64",
+          "size": 11705792,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:03Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/parley-v1.56.0-darwin-x64"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383436",
+          "contentType": "application/octet-stream",
+          "createdAt": "2026-10-30T00:30:01Z",
+          "digest": "sha256:f411d19eb7d208b25f603ed7e4f52e7c095e7ec8804c71abc50fc2e3d0e7ffa4",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmpM",
+          "label": "",
+          "name": "parley-v1.56.0-linux-arm64",
+          "size": 10420384,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:03Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/parley-v1.56.0-linux-arm64"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383438",
+          "contentType": "application/octet-stream",
+          "createdAt": "2026-10-30T00:30:01Z",
+          "digest": "sha256:3fe7d87217609365cbe9a131ca8999f25a44bc92382b506a99022d2ee462f755",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmpO",
+          "label": "",
+          "name": "parley-v1.56.0-linux-x64",
+          "size": 11559072,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:03Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/parley-v1.56.0-linux-x64"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383433",
+          "contentType": "application/x-msdownload",
+          "createdAt": "2026-10-30T00:30:00Z",
+          "digest": "sha256:8f636f5c1374825664e7064887a9cbe1882adcf9f36153dcee02c7f09be15f25",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmpJ",
+          "label": "",
+          "name": "parley-v1.56.0-windows-arm64.exe",
+          "size": 10425344,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:03Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/parley-v1.56.0-windows-arm64.exe"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383548",
+          "contentType": "application/x-msdownload",
+          "createdAt": "2026-10-30T00:30:03Z",
+          "digest": "sha256:a73c9ed944dd54c2e1bd0183acb1a3fa7bb9afd1483537c25b67495e317bb945",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmq8",
+          "label": "",
+          "name": "parley-v1.56.0-windows-x64.exe",
+          "size": 11789824,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:04Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/parley-v1.56.0-windows-x64.exe"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-cli/releases/assets/690383555",
+          "contentType": "application/json",
+          "createdAt": "2026-10-30T00:30:04Z",
+          "digest": "sha256:cb597998b33d15f6d492488cbc04260f837ca6e9e0e723166829e777c845c791",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZovDc4pJmrD",
+          "label": "",
+          "name": "sha256.json",
+          "size": 611,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:04Z",
+          "url": "https://github.com/feci/parley-deck-cli/releases/download/v1.56.0/sha256.json"
+        }
+      ],
+      "isDraft": false,
+      "isPrerelease": false,
+      "publishedAt": "2026-10-30T00:30:05Z",
+      "tagName": "v1.56.0",
+      "targetCommitish": "59e78377ed00dadd940104f271bb13b8fce5d1a1",
+      "url": "https://github.com/feci/parley-deck-cli/releases/tag/v1.56.0"
+    },
+    {
+      "assets": [
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-skill/releases/assets/690383745",
+          "contentType": "application/x-gtar",
+          "createdAt": "2026-10-30T00:30:08Z",
+          "digest": "sha256:4f75dd45fc1c5c9960f027093f422d825e5beb1d9e2fb5c4c8708afe169116f0",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZipIs4pJmuB",
+          "label": "",
+          "name": "parley-deck-skill-2.20.0.tgz",
+          "size": 406579,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:08Z",
+          "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.20.0/parley-deck-skill-2.20.0.tgz"
+        },
+        {
+          "apiUrl": "https://api.github.com/repos/feci/parley-deck-skill/releases/assets/690383747",
+          "contentType": "application/octet-stream",
+          "createdAt": "2026-10-30T00:30:08Z",
+          "digest": "sha256:0478b8a44a294b79cbb7e0b306b60cf1d2523ad081fc27ca58eae9b3aa72e2fe",
+          "downloadCount": 0,
+          "id": "RA_kwDOSZipIs4pJmuD",
+          "label": "",
+          "name": "parley-deck-skill-v2.20.0-macos-arm64",
+          "size": 65521840,
+          "state": "uploaded",
+          "updatedAt": "2026-10-30T00:30:12Z",
+          "url": "https://github.com/feci/parley-deck-skill/releases/download/v2.20.0/parley-deck-skill-v2.20.0-macos-arm64"
+        }
+      ],
+      "isDraft": false,
+      "isPrerelease": false,
+      "publishedAt": "2026-10-30T00:30:13Z",
+      "tagName": "v2.20.0",
+      "targetCommitish": "7cdfb241b65a3eea855a9ed61e860d75acdd2f4a",
+      "url": "https://github.com/feci/parley-deck-skill/releases/tag/v2.20.0"
+    }
+  ]
+}

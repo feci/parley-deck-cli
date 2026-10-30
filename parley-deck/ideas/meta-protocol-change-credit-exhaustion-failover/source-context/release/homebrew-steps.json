@@ -1,0 +1,54 @@
+[
+  {
+    "name": "brew-upgrade-parley-deck-cli",
+    "command": [
+      "brew",
+      "upgrade",
+      "feci/parley/parley-deck-cli"
+    ],
+    "exit": 0,
+    "log": "brew-upgrade-parley-deck-cli.log"
+  },
+  {
+    "name": "brew-test-parley-deck-cli",
+    "command": [
+      "brew",
+      "test",
+      "feci/parley/parley-deck-cli"
+    ],
+    "exit": 0,
+    "log": "brew-test-parley-deck-cli.log"
+  },
+  {
+    "name": "brew-upgrade-parley-deck-skill",
+    "command": [
+      "brew",
+      "upgrade",
+      "feci/parley/parley-deck-skill"
+    ],
+    "exit": 0,
+    "log": "brew-upgrade-parley-deck-skill.log"
+  },
+  {
+    "name": "brew-test-parley-deck-skill",
+    "command": [
+      "brew",
+      "test",
+      "feci/parley/parley-deck-skill"
+    ],
+    "exit": 0,
+    "log": "brew-test-parley-deck-skill.log"
+  },
+  {
+    "name": "brew-audit",
+    "command": [
+      "brew",
+      "audit",
+      "--strict",
+      "feci/parley/parley-deck-cli",
+      "feci/parley/parley-deck-skill"
+    ],
+    "exit": 0,
+    "log": "brew-audit.log"
+  }
+]

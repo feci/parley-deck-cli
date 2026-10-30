@@ -1,0 +1,90 @@
+{
+  "captured_at": "2026-10-30T00:56:51.468747+00:00",
+  "idea": "meta-protocol-change-credit-exhaustion-failover",
+  "summary": {
+    "codex-1": {
+      "native_completed": 0,
+      "native_successes": 0,
+      "native_timeouts": 0,
+      "native_duration_ms": 0,
+      "measured_child_starts": 2,
+      "measured_successes": 2,
+      "measured_failed_children": 0,
+      "control_plane_refusals": 0,
+      "measured_duration_ms": 27365,
+      "tokens_and_cost": "unavailable unless stated in an individual measured record; not zero"
+    },
+    "kimi-1": {
+      "native_completed": 10,
+      "native_successes": 9,
+      "native_timeouts": 1,
+      "native_duration_ms": 10733082,
+      "measured_child_starts": 4,
+      "measured_successes": 2,
+      "measured_failed_children": 2,
+      "control_plane_refusals": 2,
+      "measured_duration_ms": 1343540,
+      "tokens_and_cost": "unavailable unless stated in an individual measured record; not zero"
+    },
+    "zcode-1": {
+      "native_completed": 15,
+      "native_successes": 15,
+      "native_timeouts": 0,
+      "native_duration_ms": 9435870,
+      "measured_child_starts": 2,
+      "measured_successes": 2,
+      "measured_failed_children": 0,
+      "control_plane_refusals": 1,
+      "measured_duration_ms": 989498,
+      "tokens_and_cost": "unavailable unless stated in an individual measured record; not zero"
+    }
+  },
+  "codex_json_smoke": {
+    "started_at": "2026-10-29T20:02:02.320195+00:00",
+    "completed_at": "2026-10-29T20:02:14.166181+00:00",
+    "duration_ms": 11846,
+    "exit_code": 0,
+    "usage": [
+      {
+        "input_tokens": 15644,
+        "cached_input_tokens": 10368,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 10,
+        "reasoning_output_tokens": 0
+      }
+    ],
+    "scope": "normal explicit-JSON argv/envelope only; no exhaustion induced; no native failure capture or binary equivalence proved"
+  },
+  "limits": [
+    "Only receipts that identify this idea enter the child totals.",
+    "Readiness probes without this idea identity and control-plane refusals are not child starts.",
+    "The reboot interrupted two additional peer processes; their cost and terminal duration are unavailable.",
+    "Native fallback receipts supply no driver accounting or automatic membership authority.",
+    "No reliable dollar total is claimed."
+  ],
+  "schema": "organizer-release-usage-summary/v1",
+  "deduplication": "Native records: agent, PID, start time. Measured records: invocation identity. Duplicate receipts count once.",
+  "host_reboot_interruptions": {
+    "count": 2,
+    "participants": [
+      "kimi-1",
+      "zcode-1"
+    ],
+    "provider_or_participant_failure": false,
+    "duration_and_usage": "unavailable; no invented terminal result",
+    "source": "../resume3-host-reboot.json"
+  },
+  "organizer_cumulative": {
+    "timestamp": "2026-10-30T00:56:33.765Z",
+    "total_token_usage": {
+      "input_tokens": 143917155,
+      "cached_input_tokens": 140958720,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 580460,
+      "reasoning_output_tokens": 255940,
+      "total_tokens": 144497615
+    },
+    "record_sha256": "a78df5648042676ec44084b5af8c63517a40e027a223fbbca7844120ef08e9c9",
+    "scope": "Cumulative current organizer session counters, not a marginal bill. Cached input and reasoning output are subsets. Do not add snapshots."
+  }
+}

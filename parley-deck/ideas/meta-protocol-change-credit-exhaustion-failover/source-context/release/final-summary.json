@@ -1,0 +1,201 @@
+{
+  "schema": "organizer-final-release-summary/v1",
+  "at": "2026-10-30T00:57:30.589688+00:00",
+  "idea": "meta-protocol-change-credit-exhaustion-failover",
+  "organizer": "codex-1",
+  "status": "Authorized release and installation complete. Owner-only publication and external WinGet processing remain pending.",
+  "context": {
+    "context_mode": "packet",
+    "audience": "facilitator",
+    "source_sha256": "b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709",
+    "packet_sha256": "bb3aa49e17148099b2de56f241113967b0753336fab515470385383ea55f89e4",
+    "fallback_reason": null,
+    "transport": "github-pr"
+  },
+  "participants": [
+    "codex-1",
+    "kimi-1",
+    "zcode-1"
+  ],
+  "excluded_participants": [],
+  "fallback_boundary": "The owner authorized native CLIs after driver refusal. These receipts supply no driver accounting or automatic membership authority.",
+  "review": {
+    "design_rounds": 3,
+    "code_review_rounds": 3,
+    "fixup_cycles": 2,
+    "zero_fix_consensus_sha256": "f64b7be182a3c663575318b7d9587ff1eaf88ece2a0ec59a85c6189f509e17cf",
+    "all_three_accept": true,
+    "goal_result": "GOAL-CHECK: PASS",
+    "goal_receipt": "../goalcheck-zcode-1-native.receipt.json",
+    "goal_prefix_proof": "../goalcheck-prefix-check.json",
+    "channel_result": "RELEASE-CHANNEL-CHECK: PASS",
+    "channel_receipt": "../channel-review-zcode-1-native.receipt.json",
+    "channel_prefix_proof": "../channel-review-prefix-check.json",
+    "final_zcode_review_sha256": "cc75643357f01326da0c0e1336e5d04f4ad2d425fd35b759f0a369ef3f09bd34",
+    "github_comment_mirrors": "channel-review-pr-mirrors.json"
+  },
+  "release": {
+    "cli": {
+      "version": "1.56.0",
+      "reviewed_product": "b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666",
+      "merge_and_tag": "59e78377ed00dadd940104f271bb13b8fce5d1a1",
+      "pr": "https://github.com/feci/parley-deck-cli/pull/87",
+      "url": "https://github.com/feci/parley-deck-cli/releases/tag/v1.56.0"
+    },
+    "skill": {
+      "version": "2.20.0",
+      "reviewed_product": "406b6976cc75344d76f908297fe46ec2443e62cb",
+      "merge_and_tag": "7cdfb241b65a3eea855a9ed61e860d75acdd2f4a",
+      "pr": "https://github.com/feci/parley-deck-skill/pull/13",
+      "url": "https://github.com/feci/parley-deck-skill/releases/tag/v2.20.0"
+    },
+    "hosted_assets_verified": 11,
+    "asset_evidence": "hosted-assets-verification.json",
+    "clean_build_evidence": "cli-build-verification.json",
+    "skill_payload_files": 212,
+    "skill_payload_evidence": "skill/payload-verification.json"
+  },
+  "homebrew": {
+    "tap_commit": "25230804f6161e3a01ecc3e9e5fa75393d98fa5c",
+    "formulae_installed": 2,
+    "both_tests": "PASS",
+    "strict_audit": "PASS",
+    "default_cli_version": "1.56.0",
+    "default_skill_version": "2.20.0",
+    "evidence": "homebrew-verification.json"
+  },
+  "runtime": {
+    "inventory_of_record": "Installer status enumeration for all managed targets, including undetected targets, plus the four generic destinations.",
+    "status_command": "parley-deck-skill status --target all --include-undetected --json",
+    "managed_targets": 15,
+    "generic_targets": 4,
+    "skills_per_target": 6,
+    "unique_skill_paths": 114,
+    "hashes_match": 114,
+    "doctor_checks": "PASS",
+    "evidence": "runtime-verification.json",
+    "generic_core_destinations": [
+      "~/.hermes/profiles/ldx/skills/parley-deck",
+      "~/.hermes/profiles/librade/skills/parley-deck",
+      "~/.hermes/profiles/testprofile/skills/parley-deck",
+      "~/.config/opencode/skills/parley-deck"
+    ],
+    "before_install_absent_paths": 60,
+    "sweep": {
+      "exact_requested_command": "find ~ -maxdepth 7 -path \"*/skills/parley-*/SKILL.md\"",
+      "whole_home_complete": false,
+      "exact_timeout_seconds": 180,
+      "narrowed_exit": 0,
+      "narrowed_duration_seconds": 37.42,
+      "files_checked": 132,
+      "runtime_files": 102,
+      "preserved_source_archive_files": 30,
+      "gemini_files_outside_pattern": 12,
+      "gemini_covered_by_direct_114": true,
+      "coverage_corrections": [
+        {
+          "path": "~/Library/CloudStorage/OneDrive-LabourDigitalGmbH/.Trash",
+          "final_state": "exists; outside the completed inventory"
+        },
+        {
+          "path": "~/Library/CloudStorage/OneDrive-NordlichtITSolutions,s.r.o/.Trash",
+          "final_state": "historically excluded as unavailable; absent at final verification"
+        }
+      ],
+      "evidence": "runtime-inventory-after-hashes.json"
+    },
+    "reporting_nits": "This final record applies both requested wording corrections. The reviewer-owned NIT findings remain unchanged; no withdrawal is claimed."
+  },
+  "winget": {
+    "url": "https://github.com/microsoft/winget-pkgs/pull/465809",
+    "head": "daf9930c4d6653c6d503c4acbdfc6d410ee59f15",
+    "state": "OPEN",
+    "merged": false,
+    "scope": "skill only; three added manifests; one package/version",
+    "cla": "PASS",
+    "upstream_validation": "no completed verdict at final check",
+    "catalog_latest_at_independent_check": "2.19.0",
+    "skill_2_20_0_catalog_available": false,
+    "native_validation": "unavailable on this Mac",
+    "local_schema_validation": "1.12.0 PASS; CRLF, version, package, hosted hashes, and PE architectures PASS",
+    "cli_winget": "held; no CLI PR submitted",
+    "evidence": "winget-final-status.json"
+  },
+  "ci": {
+    "reviewed_product_run": 40974357405,
+    "reviewed_product_jobs": {
+      "ubuntu": "SUCCESS",
+      "macos": "SUCCESS",
+      "windows": "FAILURE"
+    },
+    "cli_windows": "experimental",
+    "skill_release_run": 40980088483,
+    "skill_release_result": "SUCCESS",
+    "skill_windows_job_host": "ubuntu-latest; Windows binaries cross-built; no native Windows execution",
+    "merged_main_run": 40979932958,
+    "merged_main_state_at_snapshot": "in_progress",
+    "merged_main_claimed_pass": false,
+    "six_superseded_runs_cancelled": true,
+    "cancelled_runs_counted_as_passed": false
+  },
+  "validation": {
+    "go_full_suite": "34 packages passed; go test ./... -count=1 -timeout 45m",
+    "go_log_sha256": "68cd0dedd2609cf803e8e24d8ad741a09e48d2193d84f911f90e58864e6172d5",
+    "concurrent_budget_repetitions": 100,
+    "grouped_accounting_repetitions": 100,
+    "relevant_race": "PASS",
+    "go_vet": "PASS",
+    "gofmt": "PASS",
+    "skill_node_tests": 402,
+    "skill_python_tests": 54,
+    "package_checks": "PASS",
+    "portable_build": "PASS",
+    "core_skill_bytes": 19989,
+    "packet_bytes": [
+      68448,
+      69880
+    ],
+    "evidence": "../fixup02-validation.json"
+  },
+  "owner_only": {
+    "commands_executed": false,
+    "relay_script_modified": false,
+    "versions": [
+      "2.15.0",
+      "2.16.0",
+      "2.17.0",
+      "2.18.0",
+      "2.19.0",
+      "2.20.0"
+    ],
+    "commands": 12,
+    "order": "npm then core per version, ascending",
+    "registry_latest_at_check": "2.13.0",
+    "installed_core_versions": [
+      "2.10.0",
+      "2.13.0"
+    ],
+    "core_2_20_0_staged_sha256": "6c437ed5fa0805bc8929b1aa25371664f9c4df1fc34c731a9df02bf02f2bd357",
+    "verified_inputs": "All six tarballs and all six staged cores match their recorded hashes.",
+    "evidence": "pending-owner-commands.json"
+  },
+  "deferred": [
+    "Remaining quota-kickoff-reporting-and-alias-guidance scope; required alias guidance is delivered.",
+    "Native-positive provenance and completeness in quota-zcode-native-exhaustion-capture; diagnostic capture is delivered.",
+    "Shared-account inference and a machine exhaustion cache.",
+    "Additional native adapters and broader Codex versions. Codex recognition requires explicit JSON and exact version 0.165.0.",
+    "Zcode retains bounded provenance limits. SDK-internal retries before observable terminal exhaustion remain outside CLI control.",
+    "CLI WinGet remains held. Owner-only npm and global-core publication remain pending."
+  ],
+  "integrity": {
+    "final_and_implementation_unchanged": true,
+    "frozen_artifacts": "frozen-artifact-hashes.json",
+    "historical_delivery_index_preserved": true,
+    "historical_delivery_index_status": "Authorized delivery executed; independent channel check pending",
+    "current_channel_verdict": "RELEASE-CHANNEL-CHECK: PASS",
+    "raw_logs_runtime_backup_and_session_content": "private; not copied into this audit"
+  },
+  "usage": "usage-summary.json",
+  "final_remote_check_at": "2026-10-30T00:59:25.104Z",
+  "final_remote_evidence": "final-remote-status.json"
+}

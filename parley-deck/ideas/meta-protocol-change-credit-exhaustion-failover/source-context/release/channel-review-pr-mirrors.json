@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-30T00:59:01.688908+00:00",
+  "identity_boundary": "Shared feci account; COMMENT mirrors of Zcode-owned content. These are not distinct GitHub approval identities.",
+  "reviews": [
+    {
+      "repository": "feci/parley-deck-cli",
+      "pull_request": 87,
+      "review_id": 5706879163,
+      "url": "https://github.com/feci/parley-deck-cli/pull/87#pullrequestreview-5706879163",
+      "state": "COMMENTED",
+      "submitted_at": "2026-10-30T00:58:58Z",
+      "host_account": "feci",
+      "canonical_author": "zcode-1",
+      "submitted_by_agent": "codex-1",
+      "body_sha256": "46d7544e76850ad56cfd8901c7846fe2624d4fcdd91167d404f865a47e306f5e"
+    },
+    {
+      "repository": "feci/parley-deck-skill",
+      "pull_request": 13,
+      "review_id": 5706879365,
+      "url": "https://github.com/feci/parley-deck-skill/pull/13#pullrequestreview-5706879365",
+      "state": "COMMENTED",
+      "submitted_at": "2026-10-30T00:59:00Z",
+      "host_account": "feci",
+      "canonical_author": "zcode-1",
+      "submitted_by_agent": "codex-1",
+      "body_sha256": "46d7544e76850ad56cfd8901c7846fe2624d4fcdd91167d404f865a47e306f5e"
+    }
+  ]
+}

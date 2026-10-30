@@ -1,0 +1,12 @@
+[
+  {
+    "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/FINAL.md",
+    "sha256": "fa217b3c30153b1f5b5e3f349ad4c449ab908f5181c44ab24a66b24bdb1071aa",
+    "matches_release_merge": true
+  },
+  {
+    "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/IMPLEMENTATION.md",
+    "sha256": "d9ed2243ee1daed725d44a045268791dfd0df7737640e52f2143678b4d9ae4d0",
+    "matches_release_merge": true
+  }
+]

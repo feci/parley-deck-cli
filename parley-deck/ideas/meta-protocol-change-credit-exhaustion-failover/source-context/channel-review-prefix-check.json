@@ -1,0 +1,6 @@
+{
+  "before_sha256": "a3a5a8de0b832ef26b0dbe14e60086cd1c53c43f479312db223256d814a80f0d",
+  "after_sha256": "cc75643357f01326da0c0e1336e5d04f4ad2d425fd35b759f0a369ef3f09bd34",
+  "exact_prefix": true,
+  "result": "RELEASE-CHANNEL-CHECK: PASS"
+}

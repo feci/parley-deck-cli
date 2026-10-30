@@ -1,0 +1,673 @@
+{
+  "at": "2026-10-30T00:36:53.465394+00:00",
+  "all_home_complete": false,
+  "excluded_if_incomplete": [
+    "/Users/tomasfecko/Library/CloudStorage/OneDrive-LabourDigitalGmbH/.Trash",
+    "/Users/tomasfecko/Library/CloudStorage/OneDrive-NordlichtITSolutions,s.r.o/.Trash"
+  ],
+  "direct_runtime_hash_checks": 114,
+  "preserved_prior_sources": 30,
+  "inventory_files": 132,
+  "files": [
+    {
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.config/opencode/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.qwen/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.qwen/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.qwen/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.qwen/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.qwen/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.qwen/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.cursor/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.cursor/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.cursor/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.cursor/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.cursor/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.cursor/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.goose/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.goose/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.goose/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.goose/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.goose/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.goose/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.kimi-code/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.opencode/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.opencode/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.opencode/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.opencode/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.opencode/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.opencode/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.aionrs/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.claude/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.claude/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.claude/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.claude/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.claude/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.claude/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codex/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codex/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codex/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codex/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codex/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codex/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.vibe/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.vibe/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.vibe/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.vibe/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.vibe/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.vibe/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.factory/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.factory/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.factory/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.factory/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.factory/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.factory/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.codebuddy/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/.r16-kimi-scratch/repo/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/.r16-kimi-scratch/repo/skills/parley-deck/SKILL.md",
+      "sha256": "9f5d48c885446acf74a3e8434d01851626a725e21b39effea015c1f7e1d2d77b",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/.r16-kimi-scratch/repo/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/.r16-kimi-scratch/repo/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/.r16-kimi-scratch/repo/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/.r16-kimi-scratch/repo/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-skill/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-skill/skills/parley-deck/SKILL.md",
+      "sha256": "76765df83428a23288d5d1d09f0fc7b40d53197a832c0f3f51e11a3a3687a599",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-skill/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-skill/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-skill/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/parley-deck-skill/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/credit-failover-skill/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/evidence-first-skill/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/evidence-first-skill/skills/parley-deck/SKILL.md",
+      "sha256": "f26173d6d4c6b95dcfe7dc3562a83165abee416b73fec89f2ca150d0f8704abe",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/evidence-first-skill/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/evidence-first-skill/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/evidence-first-skill/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/parley-deck/worktrees/evidence-first-skill/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/pr-maintenance/parley-skill/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/pr-maintenance/parley-skill/skills/parley-deck/SKILL.md",
+      "sha256": "db71eca5a4f778cb6cb0d6aee0660474b4dbfc0f8cf19c6585edaf8b0010c03f",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/pr-maintenance/parley-skill/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/pr-maintenance/parley-skill/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/pr-maintenance/parley-skill/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/AI_WORKSPACE/pr-maintenance/parley-skill/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "preserved-source-or-archive"
+    },
+    {
+      "path": "/Users/tomasfecko/.zcode/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.zcode/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.zcode/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.zcode/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.zcode/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.zcode/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/testprofile/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/librade/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-tracker/SKILL.md",
+      "sha256": "25b7a6b2226833b1e8291864685cd0343de635f5b989b23799c40c98d5741198",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-deck/SKILL.md",
+      "sha256": "33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-design/SKILL.md",
+      "sha256": "9ccf8e9d03cc3655fc30c29714b390f79aa4fa90a0ca47125cbdf8d00b25d1bd",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-worktrees/SKILL.md",
+      "sha256": "91f94c4017edfea19f61ad298131d45cb74c4e56d9661eef1f3ebca2383fc3a9",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-design-check/SKILL.md",
+      "sha256": "337aafd6ec126bdbbee55c7718f5090a8f35f22b4bff55f45f14d71c48a42b1a",
+      "kind": "managed-or-generic-runtime"
+    },
+    {
+      "path": "/Users/tomasfecko/.hermes/profiles/ldx/skills/parley-bidding/SKILL.md",
+      "sha256": "aad7d7d8d43259893626a4593c69c3d90b8bf2a96b90dc723067fa83a04d9540",
+      "kind": "managed-or-generic-runtime"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "headRefOid": "daf9930c4d6653c6d503c4acbdfc6d410ee59f15",
+  "mergedAt": null,
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-30T00:41:15Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/apps/microsoft-github-policy-service",
+      "name": "license/cla",
+      "startedAt": "2026-10-30T00:41:15Z",
+      "status": "COMPLETED",
+      "workflowName": ""
+    }
+  ],
+  "url": "https://github.com/microsoft/winget-pkgs/pull/465809"
+}

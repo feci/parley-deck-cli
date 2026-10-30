@@ -287,3 +287,113 @@ GOAL-CHECK: PASS
 This PASS covers the pre-release close: FINAL's observable acceptance criteria AC-01 through AC-14 hold at CLI `b7dce40a1bf1dd4d3ba32dc792b98891ed4a9666` and skill `406b6976cc75344d76f908297fe46ec2443e62cb`, within the stated limits, and AC-15's pre-release conditions are satisfied by the signed zero-fix consensus plus this check. The implementation may be marked complete and both implementation PRs may merge. D12 release, channel publication, installs, and the separate channel verification remain unexecuted and follow this check; this result certifies none of them. npm and global-core publication stay owner-only, with pending commands listed from 2.15.0 through 2.20.0.
 
 This section is my own goal-check artifact. I edited no code, no other artifact, and no signoff. I committed nothing.
+
+## Independent release-channel verification — 2026-10-30 (round-03, separate post-release process)
+
+Scope and authority. I am zcode-1. This section is the separate post-release channel check that FINAL D12, AC-15, the signed review consensus, and the controlling brief require. It runs in a new native process under the owner-authorized fallback. It supplies no driver accounting and no automatic membership authority. I performed read-only checks only. I published nothing, merged nothing, installed nothing, changed no credential and no gateway setting. I used public GitHub APIs, read-only CLIs, and local hashes. I induced no provider exhaustion and opened no browser. I never executed `npm publish` or `parley protocol publish`, and I did not touch the relay's owner script.
+
+Protocol attestation: context_mode full; source_sha256 and packet_sha256 `b9284d7d7062ef49d59439a23117dd7434e494340b5b564a64651a12eb324709`, verified in this process by `shasum -a 256 parley-deck/COOPERATION.md`; fallback_reason none. I read the live protocol, §15, and Appendix B before I wrote this section.
+
+Method. Every check below is my own execution, tagged `PRIMARY`. Organizer evidence I only read is named as `SECONDARY` with its file. An organizer receipt alone is not my execution. I verified the decisive bytes and the remote state myself.
+
+### Channel 1 — merge commits, tags, and GitHub releases — CONFIRMED (PRIMARY)
+
+- `merge-commits.json` records `parley-deck-cli: 59e78377ed00dadd940104f271bb13b8fce5d1a1` and `parley-deck-skill: 7cdfb241b65a3eea855a9ed61e860d75acdd2f4a`.
+- Live API, executed `gh api repos/feci/parley-deck-cli/git/refs/tags/v1.56.0`: `{"object_sha":"59e78377ed00dadd940104f271bb13b8fce5d1a1","object_type":"commit"}`. For the skill: `refs/tags/v2.20.0` resolves to `7cdfb241b65a3eea855a9ed61e860d75acdd2f4a`, type `commit`. Both tags point exactly at the merge commits.
+- Live API for both releases: `target_commitish` equals the same two hashes; `draft:false`, `prerelease:false`.
+- Local git, executed `git cat-file -p`: `59e7837` has two parents, `24c6184` and `f5496ce`, and `git merge-base --is-ancestor b7dce40 59e7837` succeeds. `7cdfb241` has parents `f557c5e` and `406b6976`, and `406b6976` is its ancestor. The skill worktree is clean.
+- `IMPLEMENTATION.md` frontmatter records `status: complete`, `head-commit: b7dce40a…`, `implementation-pr: https://github.com/feci/parley-deck-cli/pull/87`.
+
+### Channel 2 — hosted assets, actual bytes — CONFIRMED (PRIMARY)
+
+I downloaded all 11 hosted assets from the public release URLs and hashed the bytes myself. Every sha256 matches the current live API `digest` field and the recorded size. Quoted from my run, the six CLI binaries:
+
+```text
+03eaed39…1a584  parley-v1.56.0-darwin-arm64      (10538258 bytes)
+511bf0d2…ac32  parley-v1.56.0-darwin-x64        (11705792)
+f411d19e…ffa4  parley-v1.56.0-linux-arm64       (10420384)
+3fe7d872…f755  parley-v1.56.0-linux-x64         (11559072)
+8f636f5c…5f25  parley-v1.56.0-windows-arm64.exe (10425344)
+a73c9ed9…b945  parley-v1.56.0-windows-x64.exe   (11789824)
+```
+
+The skill assets: `parley-deck-skill-2.20.0.tgz` = `4f75dd45…16f0` (406579), `parley-deck-skill-v2.20.0-macos-arm64` = `0478b8a4…e2fe` (65521840), `…windows-arm64.exe` = `b93dd523…0a69` (85834398), `…windows-x64.exe` = `239a34fd…21d3` (91421342). The hosted `sha256.json` asset lists the six CLI hashes and each matches my bytes. Executed `file` on the Windows assets: `PE32+ executable (console) x86-64` for the x64 files and `Aarch64` for the arm64 files. The architectures match the WinGet installer mapping.
+
+### Channel 3 — skill release workflow 40980088483 — CONFIRMED (PRIMARY), with stated platform limits
+
+- Live API: run `40980088483` on `feci/parley-deck-skill`, event `release`, head `7cdfb241…`, `status: completed`, `conclusion: success`, run 00:30:15Z to 00:38:07Z.
+- Jobs, live API: `macos-tests` on `macos-latest`, success. `windows` on `ubuntu-latest`, success, `needs: macos-tests`, steps `npm ci`, `npm test`, `npm run build:portable:windows`, `Upload release assets`.
+- I read `.github/workflows/release-portable.yml` at tag `v2.20.0`: the `windows` job declares `runs-on: ubuntu-latest`. Platform limit: both Windows executables are cross-built and tested on Linux only. The workflow never executes anything on a native Windows runner. Its success is complete for its own scope, and it completed before the Windows hashes counted: the two Windows assets were updated at 00:38:02Z and 00:38:04Z, and my byte hashes above cover the final hosted bytes.
+
+### Channel 4 — Homebrew tap and formulae — CONFIRMED (PRIMARY)
+
+- Remote tap main, live API: HEAD `25230804f6161e3a01ecc3e9e5fa75393d98fa5c`, message `[codex-1] meta-protocol-change-credit-exhaustion-failover: update both release formulae`. The local tap at `/opt/homebrew/Library/Taps/feci/homebrew-parley` prints the same HEAD.
+- Both formulae fetched from remote main. `parley-deck-cli.rb` pins `url "https://github.com/feci/parley-deck-cli/archive/refs/tags/v1.56.0.tar.gz"` and `sha256 "24b4c2ee613c6aaed23516ffbbbf0c35074a2485061e9e42d72cca3ac05a3514"`. `parley-deck-skill.rb` pins the `v2.20.0.tar.gz` archive and `sha256 "004f134b5726aca710fe7e8c1aeed3a5869538673fb779eeb943b80077920aae"`.
+- I downloaded both tag archives myself. My hashes: `24b4c2ee…3514` and `004f134b…0aae`. Both match the formula pin lines exactly.
+- Installed state: `parley --version` prints `parley 1.56.0`; `parley-deck-skill --version` prints `2.20.0`. `brew list --versions` retains `1.55.0` and `2.19.0` kegs beside the new ones.
+- I reran both tests myself: `brew test feci/parley/parley-deck-cli` exit 0 (`parley version`, `parley help`); `brew test feci/parley/parley-deck-skill` exit 0 (`--version`, sandboxed `install --target codex`, `doctor`). I reran `brew audit --strict` on both formulae: exit 0, no output.
+- Installed payload bytes: I diffed `/opt/homebrew/Cellar/parley-deck-skill/2.20.0/libexec` against the released npm payload I extracted. The `skills/` subtree is byte-identical. The only content difference is `bin/parley-deck-skill.js`: `#!/opt/homebrew/opt/node/bin/node` against `#!/usr/bin/env node`. That is Homebrew's documented interpreter rewrite; the formula carries an explicit `post_install_steps` that restores shebangs under `skills/`. The remaining diffs are files the source archive carries and the npm tarball does not (`packaging/`, `scripts/`, `test/`, `package-lock.json`, `RELEASING.md`) plus root docs only the npm package carries.
+- Binary provenance boundary: Homebrew built its `parley` from the tagged source archive. The GitHub-hosted binaries were built separately from a clean clone at `59e7837` (`SECONDARY`, `cli-build-verification.json`, `clean_source: true`). I verified each channel on its own bytes. I claim no equivalence between the two binaries and none is needed.
+
+### Channel 5 — skill-only WinGet PR — DELIVERED AS SUBMITTED, PENDING UPSTREAM (PRIMARY)
+
+- Live API `repos/microsoft/winget-pkgs/pulls/465809`: `state: open`, `merged: false`, `draft: false`, `head_sha: daf9930c4d6653c6d503c4acbdfc6d410ee59f15`, `base_sha: cee88caf2e052397491ef5957c5e1fee33c1d328`, `changed_files: 3`, `additions: 48`, `deletions: 0`.
+- The exact three-file diff, live API: `Feci.ParleyDeckSkill.installer.yaml` added (+15), `…locale.en-US.yaml` added (+27), `Feci.ParleyDeckSkill.yaml` added (+6). No other file changes.
+- The installer manifest pins `PackageIdentifier: Feci.ParleyDeckSkill`, `PackageVersion: 2.20.0`, `InstallerType: portable`, and the two hosted-exe URLs. `InstallerSha256` values `239A34FD11DFC8B27F8F5A7572C9C8F236664AD30E47DE673147663006BC21D3` (x64) and `B93DD523F1F6D4B75AE5FB40378FE2A6DD7401F5C54E0D963E14A21888D70A69` (arm64) equal my own byte hashes from Channel 2, uppercased.
+- The three local manifest files hash to `5d4b82c3…6654`, `cf4f4f97…7c42`, and `bb27f0f4…d296`, matching `winget-validation.json` (`SECONDARY`, cross-checked `PRIMARY`). Schema checks there passed against the 1.12.0 schemas.
+- Available upstream checks, live API at head `daf9930`: exactly one completed check run, `license/cla`, conclusion `success`. The `microsoft-github-policy-service[bot]` comment posts the validation-pipeline badges. `mergeable: true` but `mergeable_state: blocked`; zero reviews. No completed upstream validation verdict exists yet.
+- Upstream catalog, live API `manifests/f/Feci/ParleyDeckSkill`: highest present version is `2.19.0`. `2.20.0` is absent. The PR is an update to an existing package, correctly scoped to the skill only.
+- Limits: native winget validation is unavailable on this Mac. The PR is the requested delivery under D12. It is not yet a delivered catalog entry. I claim no upstream merge, no validation pass, and no availability for `2.20.0`.
+
+### Channel 6 — CLI CI record and cancellations — CONFIRMED (PRIMARY)
+
+- Live API `repos/feci/parley-deck-cli/actions/runs/40974357405`: head `511e2eb` (audit-only; product tree `b7dce40`), overall `conclusion: failure`. Jobs: `go build & test (ubuntu-latest)` success, `(macos-latest)` success, `(windows-latest)` failure at the `Test` step. The failure is disclosed, not promoted to support evidence. CLI Windows stays experimental.
+- All six superseded runs, live API: each shows `conclusion: cancelled` at heads `f5496ce`, `43955f3`, `1d4cd62` — audit-only heads. No canceled run is counted as passed anywhere in the evidence.
+- The retained merged-main run `40979932958` at head `59e7837` was still `in_progress` at my final recheck. It is not cited as passed and cannot be while it runs.
+- CLI WinGet held, live API: upstream `manifests/f/Feci/ParleyDeckCli` tops out at `1.48.0`; a `1.56.0` manifest does not exist; a search for open CLI PRs returns zero. The hold is verified.
+
+### Channel 7 — runtime installs and all 114 SKILL.md hashes — CONFIRMED (PRIMARY)
+
+- I extracted the released `parley-deck-skill-2.20.0.tgz` myself and hashed all six packaged `SKILL.md` files. The six values equal `skill/payload-verification.json` (`SECONDARY`, cross-checked `PRIMARY`), for example `parley-deck` = `33154bead53b8808a057fe5194c669acfcbac1a587ad38ac618d600f2c9c0ad6` at 19989 bytes.
+- I enumerated the destinations myself with the read-only command `parley-deck-skill status --target all --include-undetected --json`: exactly 15 managed runtimes, each showing six skills. I added the four named generic destinations from the brief: `~/.hermes/profiles/{ldx,librade,testprofile}/skills/parley-deck` and `~/.config/opencode/skills/parley-deck`.
+- I recomputed all 114 hashes across those 19 destinations, deriving each sibling destination from the core path exactly as `targetSkillUnits` does (`lib/installer.js:1036`: `const skillsDir = path.dirname(target.dest)`). Result: `total SKILL.md files checked: 114`, `all match released payload hashes: True`; 90 managed plus 24 generic; 114 unique paths.
+- Cross-check: the organizer's `runtime-verification.json` holds 114 rows; zero path or hash disagreements with my recompute; `backup_sha256` matches the retained `runtime-skills-before-2.20.0.tar.gz`, which I hashed myself. `runtime-skills-absent-before.json` records the 60 destinations that did not exist before install.
+
+### Channel 8 — copy inventory and historical hashes — CONFIRMED (PRIMARY), coverage limits stated
+
+- The exact whole-home find timed out: `runtime-all-home-after-receipt.json` records `exit: -15`, `timed_out: true`, `duration_seconds: 180.01`.
+- The follow-up inventory excludes the two named cloud-trash paths and completed: `exit: 0`, `duration_seconds: 37.42`, 132 files.
+- `runtime-inventory-after-hashes.json` records 132 files: 102 runtime copies plus 30 preserved source/archive copies. I re-hashed all 30 preserved files myself against the before-record: zero mismatches. The 102 swept rows agree with my independent recompute on every path.
+- Coverage limits, verified on disk: `OneDrive-LabourDigitalGmbH/.Trash` exists and holds 65535 entries; it is the plausible cause of the timeout and its contents are not inventoried or hashed. `OneDrive-NordlichtITSolutions,s.r.o/.Trash` does not exist on disk at check time (its parent exists); the exclusion is harmless but records a path that is currently absent. No file inside either tree was verified.
+- One further sweep limit, found by me: the find pattern `*/skills/parley-*/SKILL.md` cannot match the two gemini-family runtimes, because their parents are `plugins` and `extensions`. Exactly 12 `SKILL.md` files fall outside the sweep: `.gemini/config/plugins/parley-*` and `.gemini/extensions/parley-*`. Those 12 are covered by the direct 114 runtime checks, which I recomputed independently and which pass. The sweep, not the verification, has the gap.
+
+### Channel 9 — staged core and pending owner-only publication — CONFIRMED (PRIMARY), all pending
+
+- Executed `shasum -a 256 ~/.parley/staging/COOPERATION-2.20.0.md`: `6c437ed5fa0805bc8929b1aa25371664f9c4df1fc34c731a9df02bf02f2bd357`. Exact match.
+- `pending-owner-commands.json` orders npm then core per version, ascending `2.15.0` through `2.20.0`, six versions. I verified every input file exists and every recorded hash matches the bytes: all six tarballs `OK`, all six staged cores `OK`, `npm_pending` and `core_pending` true for all six. The `2.15.0`–`2.19.0` rows equal `prior-owner-command-sources.json` byte for byte in path and hash.
+- Registry state, read-only `npm view parley-deck-skill versions --json`: the list ends at `2.13.0`; none of `2.15.0`–`2.20.0` is published. `owner-publication-status.json` records `owner_commands_executed: false`; installed cores remain `2.10.0` and `2.13.0`.
+- I executed no owner-only command and did not modify the relay's owner script. The final released inbox note `inbox/codex-1-to-user_meta-protocol-change-credit-exhaustion-failover_released.md` does not exist yet. The brief's `Finish` step writes it after this channel check. It stays pending, with the owner commands in version order and the deferred items.
+
+### Evidence integrity
+
+I hashed all 15 files listed in `delivery-evidence-index.json`; every sha256 and byte count matches the current bytes. `SECONDARY` sources used, each named above: the organizer's release JSONs, `cli-build-verification.json`, `skill/payload-verification.json`, `winget-validation.json`, `runtime-verification.json`, both inventory hash files, and the organizer's brew logs, which my own reruns supersede. `usage-final.json` is organizer-collected; I did not re-measure usage and cite none of it as my own.
+
+### Findings
+
+No CRITICAL, MAJOR, or MINOR channel defect. Three observations, none suppressed:
+
+1. `[NIT]` The home-wide sweep pattern misses the 12 gemini-family `SKILL.md` files. The direct 114 checks cover them. Fix: add `-o -path "*/plugins/parley-*/SKILL.md" -o -path "*/extensions/parley-*/SKILL.md"` to the sweep, or state the status-based enumeration as the sweep of record.
+2. `[NIT]` The exclusion list names `OneDrive-NordlichtITSolutions,s.r.o/.Trash`, which does not exist on disk now. The before receipt predates this. State it as an unavailable-then, absent-now path, so the limit record stays factual.
+3. Observation: the retained merged-main run `40979932958` was still in progress at my final check. Nothing may cite it until it completes; a Windows failure there would stay inside the experimental scope.
+
+### Requested delivery scope
+
+Delivered and verified: both merge commits with tags and releases bound to them; all 11 hosted assets with digests equal to actual bytes; the skill release workflow complete on both jobs, with Windows cross-built on Linux stated as its platform limit; the Homebrew tap at `2523080` with both formulae pinned to the released archives and locally installed, tested, and audited; the runtime install of six skills across 15 managed and four generic destinations with 114 of 114 hashes matching; the preserved historical sources and archives; staged core `2.20.0` at the exact hash; the CI record with the Windows failure disclosed; the six superseded runs cancelled without being counted.
+
+Pending by design, not defects: npm publication and `parley protocol publish` for `2.15.0` through `2.20.0`, owner-only, inputs verified, commands not executed; the skill-only WinGet PR open with only the CLA check complete — no upstream validation verdict, no merge, and no catalog entry for `2.20.0` (catalog latest `2.19.0`), so it is not yet a delivered catalog entry; the final released inbox note not yet written; the merged-main CI run not yet complete; the two cloud-trash trees outside inventory coverage, with the exact whole-home find unachievable inside 180 seconds.
+
+### Result
+
+RELEASE-CHANNEL-CHECK: PASS
+
+The pass covers every authorized channel listed above, each verified on my own executions against live remote state and actual bytes. It does not cover the pending owner-only publications, the external WinGet processing, or the unfinished merged-main run; those remain open work in the stated scope, listed here and not hidden inside this pass. CLI Windows stays experimental and CLI WinGet stays held at `1.48.0`. This section is my own channel-check artifact. I edited no other artifact, no product file, and no signoff. I committed nothing.

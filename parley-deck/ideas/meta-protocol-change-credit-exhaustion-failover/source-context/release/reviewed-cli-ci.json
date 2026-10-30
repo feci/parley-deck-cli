@@ -1,0 +1,281 @@
+{
+  "conclusion": "failure",
+  "headSha": "511e2ebe8de5ec35770c28cdee1ab9d41eab4e61",
+  "jobs": [
+    {
+      "completedAt": "2026-10-29T23:40:54Z",
+      "conclusion": "success",
+      "databaseId": 123798599620,
+      "name": "go build & test (ubuntu-latest)",
+      "startedAt": "2026-10-29T23:37:08Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-29T23:37:09Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-29T23:37:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:10Z",
+          "conclusion": "success",
+          "name": "Configure fixture git identity",
+          "number": 2,
+          "startedAt": "2026-10-29T23:37:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:10Z",
+          "conclusion": "skipped",
+          "name": "Enable long paths (Windows)",
+          "number": 3,
+          "startedAt": "2026-10-29T23:37:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:11Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 4,
+          "startedAt": "2026-10-29T23:37:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:14Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-go@v5",
+          "number": 5,
+          "startedAt": "2026-10-29T23:37:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:21Z",
+          "conclusion": "success",
+          "name": "Build",
+          "number": 6,
+          "startedAt": "2026-10-29T23:37:14Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:40:51Z",
+          "conclusion": "success",
+          "name": "Test",
+          "number": 7,
+          "startedAt": "2026-10-29T23:37:21Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:40:51Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-go@v5",
+          "number": 13,
+          "startedAt": "2026-10-29T23:40:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:40:52Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 14,
+          "startedAt": "2026-10-29T23:40:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:40:52Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 15,
+          "startedAt": "2026-10-29T23:40:52Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/40974357405/job/123798599620"
+    },
+    {
+      "completedAt": "2026-10-29T23:47:15Z",
+      "conclusion": "success",
+      "databaseId": 123798599909,
+      "name": "go build & test (macos-latest)",
+      "startedAt": "2026-10-29T23:37:11Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-29T23:37:13Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-29T23:37:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:13Z",
+          "conclusion": "success",
+          "name": "Configure fixture git identity",
+          "number": 2,
+          "startedAt": "2026-10-29T23:37:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:13Z",
+          "conclusion": "skipped",
+          "name": "Enable long paths (Windows)",
+          "number": 3,
+          "startedAt": "2026-10-29T23:37:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:16Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 4,
+          "startedAt": "2026-10-29T23:37:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:19Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-go@v5",
+          "number": 5,
+          "startedAt": "2026-10-29T23:37:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:28Z",
+          "conclusion": "success",
+          "name": "Build",
+          "number": 6,
+          "startedAt": "2026-10-29T23:37:19Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:47:11Z",
+          "conclusion": "success",
+          "name": "Test",
+          "number": 7,
+          "startedAt": "2026-10-29T23:37:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:47:12Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-go@v5",
+          "number": 13,
+          "startedAt": "2026-10-29T23:47:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:47:12Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 14,
+          "startedAt": "2026-10-29T23:47:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:47:14Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 15,
+          "startedAt": "2026-10-29T23:47:12Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/40974357405/job/123798599909"
+    },
+    {
+      "completedAt": "2026-10-30T00:23:48Z",
+      "conclusion": "failure",
+      "databaseId": 123798599966,
+      "name": "go build & test (windows-latest)",
+      "startedAt": "2026-10-29T23:37:08Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-29T23:37:09Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-29T23:37:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:11Z",
+          "conclusion": "success",
+          "name": "Configure fixture git identity",
+          "number": 2,
+          "startedAt": "2026-10-29T23:37:09Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:11Z",
+          "conclusion": "success",
+          "name": "Enable long paths (Windows)",
+          "number": 3,
+          "startedAt": "2026-10-29T23:37:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:18Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 4,
+          "startedAt": "2026-10-29T23:37:11Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:23Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-go@v5",
+          "number": 5,
+          "startedAt": "2026-10-29T23:37:18Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-29T23:37:59Z",
+          "conclusion": "success",
+          "name": "Build",
+          "number": 6,
+          "startedAt": "2026-10-29T23:37:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-30T00:23:44Z",
+          "conclusion": "failure",
+          "name": "Test",
+          "number": 7,
+          "startedAt": "2026-10-29T23:37:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-30T00:23:44Z",
+          "conclusion": "skipped",
+          "name": "Post Run actions/setup-go@v5",
+          "number": 13,
+          "startedAt": "2026-10-30T00:23:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-30T00:23:47Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 14,
+          "startedAt": "2026-10-30T00:23:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-30T00:23:47Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 15,
+          "startedAt": "2026-10-30T00:23:47Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/feci/parley-deck-cli/actions/runs/40974357405/job/123798599966"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/feci/parley-deck-cli/actions/runs/40974357405"
+}

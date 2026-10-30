@@ -1,0 +1,161 @@
+{
+  "at": "2026-10-30T00:59:47.751367+00:00",
+  "scope": "Final authorized delivery evidence. The historical pre-check index remains unchanged.",
+  "files": [
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/channel-review-pr-mirrors.json",
+      "sha256": "339ae26970bd6bbffc6c18fff4f8c7e2ac25a026ff92709c3f38518aec892466",
+      "bytes": 1158
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/cli-build-verification.json",
+      "sha256": "b93920a5d2d0c6defe2a3652d367f3575b9e89111d9643d71a5dd0e64752b9f8",
+      "bytes": 18904
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/delivery-evidence-index.json",
+      "sha256": "e09ecbe976aaf939973e90b279e445ac9fc149ffe2be11a27a71c1824e783bc8",
+      "bytes": 2551
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/final-remote-status.json",
+      "sha256": "db762336ebdddd08f2bbea59f43a790bbb4c181a31739719b9a590cdfe3dff02",
+      "bytes": 10435
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/final-summary.json",
+      "sha256": "b43131bb1d6588c2fdb45d2aabf33511e283723fa32f3c0eea07ecea4e596a52",
+      "bytes": 8454
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/frozen-artifact-hashes.json",
+      "sha256": "9e363939e847a3a397d2ae7e529ef2d05c93ce7a8f0fbec1736a2aa07a5597d0",
+      "bytes": 442
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/github-publication.json",
+      "sha256": "719433bb279e87b7e1a8ec6886d7cf26d7f2f9050cf6a11ad1f8a6f777945fd9",
+      "bytes": 6745
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/homebrew-publication.json",
+      "sha256": "cdec3adc9a7c4645623cc1cbec63a8e9884f6e320641fb2f3ac72fe2a19bec8f",
+      "bytes": 696
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/homebrew-steps.json",
+      "sha256": "586fb9ddaa86f9d0cdbb39b917425dde7b0d9bf5e2e1b8da1a7375c78c687412",
+      "bytes": 1041
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/homebrew-verification.json",
+      "sha256": "a2e366faf7fc20333e00303d249c66343c2fa545c4f9a3b1aa69995f1900ecd0",
+      "bytes": 46431
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/hosted-assets-verification.json",
+      "sha256": "0a35c0b6792d8965c67b21704eb498f698dad4a0117532c2fd180257cedcc1f6",
+      "bytes": 4305
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/merge-commits.json",
+      "sha256": "30a80f10bf61afb72b9dda30eecd8e96d10b290948c6f9cd4c94c879cb46786f",
+      "bytes": 135
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/merge-evidence.json",
+      "sha256": "c2bc27705dd99e15d339b068979767ebb5a3221ad69e1b97f0141b9b7e3ffc00",
+      "bytes": 593
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/merged-main-ci-status.json",
+      "sha256": "027aaf34abbfb3210b469d37212bda9364f7ecd1f6c99f76231b81fcaead61ab",
+      "bytes": 8506
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/pending-owner-commands.json",
+      "sha256": "b61b3ab63aadc73c5cc339ef1dfd21e3446d9d7731636e9dd38ffcd4ff5a084c",
+      "bytes": 5645
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/reviewed-cli-ci.json",
+      "sha256": "4eae14a485013bbf43c01b5abc2d04fe0f69f904e27f3607954b0af016443ffb",
+      "bytes": 8752
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/runtime-all-home-after-receipt.json",
+      "sha256": "1baa4f99e93819f6ca588042d5e209ae7d60de73d13faf5e9b8bb14fd6753ef0",
+      "bytes": 242
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/runtime-home-except-two-trash-after-receipt.json",
+      "sha256": "b1072b72464a9ce311db45c3ec8e984319106ba735305bf34645c95b1aebf0b3",
+      "bytes": 501
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/runtime-inventory-after-hashes.json",
+      "sha256": "3bcad183d44058765173b81b8c0f3f66886e4dbe240b2bfbc86e829b27e1eca2",
+      "bytes": 30339
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/runtime-verification.json",
+      "sha256": "25677474bfaef897948b20396fd224c92cae7f44c0dc3b1a3cf176ae6288cd98",
+      "bytes": 26706
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/skill/payload-verification.json",
+      "sha256": "9743b9d18de151e9d1a91ac1c24eeeef7a61fc1f06e3ad10b4921935bc9497ef",
+      "bytes": 1387
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/skill/portable-workflow.json",
+      "sha256": "11a2fc4badbde08ef31201d32a4222f49427f75a466c499f4d00dd0293a160ce",
+      "bytes": 6547
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/superseded-ci-cancellations.json",
+      "sha256": "db0e0e6fac8bca56b2c4e1f683e653edfc144544fc53c8ee0f762a7bf4507d06",
+      "bytes": 3201
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/usage-summary.json",
+      "sha256": "d1355bfa1dd805aca08ed3796c5073ddfbe2f4e6e12410f321e902b547c16048",
+      "bytes": 3379
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/winget-final-status.json",
+      "sha256": "37f96d2f2da4bfd096b17798e1273599660311c1c2ab8bece28cc4b174f672ce",
+      "bytes": 522
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/winget-submission.json",
+      "sha256": "58f4a75a8db3a847ba62993b5cb9b0500200f4c59aa5c690cb95fac155161525",
+      "bytes": 5165
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/release/winget-validation.json",
+      "sha256": "edc69ed191708b36e951c6afc888165e26fc60ca71d6fd101f8fca29e58b9c8a",
+      "bytes": 1346
+    },
+    {
+      "path": "parley-deck/inbox/codex-1-to-user_meta-protocol-change-credit-exhaustion-failover_released.md",
+      "sha256": "fc144ece82f70cff5b0771d934281c1a8f9d2076c15487bed2836c5074864986",
+      "bytes": 17480
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/review/round-03/zcode-1.md",
+      "sha256": "cc75643357f01326da0c0e1336e5d04f4ad2d425fd35b759f0a369ef3f09bd34",
+      "bytes": 60832
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/channel-review-prefix-check.json",
+      "sha256": "53da49898217e378e80021dc3f8ea1d520b1b49d918a2e597953f0b7a7f4e8bc",
+      "bytes": 243
+    },
+    {
+      "path": "parley-deck/ideas/meta-protocol-change-credit-exhaustion-failover/source-context/channel-review-zcode-1-native.receipt.json",
+      "sha256": "d9598933cdc0eb0823bf39950b46560b9692fe98ae9b114bd4b73902184f1b05",
+      "bytes": 1483
+    }
+  ]
+}

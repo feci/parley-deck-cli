@@ -1,0 +1,14 @@
+{
+  "command": [
+    "find",
+    "/Users/tomasfecko",
+    "-maxdepth",
+    "7",
+    "-path",
+    "*/skills/parley-*/SKILL.md"
+  ],
+  "exit": -15,
+  "timed_out": true,
+  "duration_seconds": 180.01,
+  "at": "2026-10-30T00:36:16.035672+00:00"
+}

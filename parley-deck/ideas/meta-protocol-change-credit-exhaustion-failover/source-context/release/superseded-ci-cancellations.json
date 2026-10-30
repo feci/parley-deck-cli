@@ -1,0 +1,85 @@
+{
+  "at": "2026-10-30T00:36:05.615845+00:00",
+  "reason": "Redundant audit-only branch runs after merge; reviewed product evidence and merged-main CI preserved.",
+  "product_diff_check": "Only this idea audit directory differs from b7dce40 for every selected head.",
+  "runs": [
+    {
+      "run": {
+        "conclusion": "",
+        "databaseId": 40979891684,
+        "event": "pull_request",
+        "headBranch": "feature/meta-protocol-change-credit-exhaustion-failover",
+        "headSha": "f5496cedb97564549ad9fa74a5eb76c7a12e5707",
+        "status": "queued",
+        "url": "https://github.com/feci/parley-deck-cli/actions/runs/40979891684"
+      },
+      "cancel_exit": 0,
+      "output": "\u2713 Request to cancel workflow 40979891684 submitted.\n"
+    },
+    {
+      "run": {
+        "conclusion": "",
+        "databaseId": 40979886926,
+        "event": "push",
+        "headBranch": "feature/meta-protocol-change-credit-exhaustion-failover",
+        "headSha": "f5496cedb97564549ad9fa74a5eb76c7a12e5707",
+        "status": "in_progress",
+        "url": "https://github.com/feci/parley-deck-cli/actions/runs/40979886926"
+      },
+      "cancel_exit": 0,
+      "output": "\u2713 Request to cancel workflow 40979886926 submitted.\n"
+    },
+    {
+      "run": {
+        "conclusion": "",
+        "databaseId": 40979855894,
+        "event": "pull_request",
+        "headBranch": "feature/meta-protocol-change-credit-exhaustion-failover",
+        "headSha": "43955f3009f46a07b46025e91ca57970248810c6",
+        "status": "in_progress",
+        "url": "https://github.com/feci/parley-deck-cli/actions/runs/40979855894"
+      },
+      "cancel_exit": 0,
+      "output": "\u2713 Request to cancel workflow 40979855894 submitted.\n"
+    },
+    {
+      "run": {
+        "conclusion": "",
+        "databaseId": 40979848793,
+        "event": "push",
+        "headBranch": "feature/meta-protocol-change-credit-exhaustion-failover",
+        "headSha": "43955f3009f46a07b46025e91ca57970248810c6",
+        "status": "in_progress",
+        "url": "https://github.com/feci/parley-deck-cli/actions/runs/40979848793"
+      },
+      "cancel_exit": 0,
+      "output": "\u2713 Request to cancel workflow 40979848793 submitted.\n"
+    },
+    {
+      "run": {
+        "conclusion": "",
+        "databaseId": 40979143222,
+        "event": "pull_request",
+        "headBranch": "feature/meta-protocol-change-credit-exhaustion-failover",
+        "headSha": "1d4cd62d6dbe56263602d9391c04f7af4417b048",
+        "status": "in_progress",
+        "url": "https://github.com/feci/parley-deck-cli/actions/runs/40979143222"
+      },
+      "cancel_exit": 0,
+      "output": "\u2713 Request to cancel workflow 40979143222 submitted.\n"
+    },
+    {
+      "run": {
+        "conclusion": "",
+        "databaseId": 40979135581,
+        "event": "push",
+        "headBranch": "feature/meta-protocol-change-credit-exhaustion-failover",
+        "headSha": "1d4cd62d6dbe56263602d9391c04f7af4417b048",
+        "status": "in_progress",
+        "url": "https://github.com/feci/parley-deck-cli/actions/runs/40979135581"
+      },
+      "cancel_exit": 0,
+      "output": "\u2713 Request to cancel workflow 40979135581 submitted.\n"
+    }
+  ]
+}

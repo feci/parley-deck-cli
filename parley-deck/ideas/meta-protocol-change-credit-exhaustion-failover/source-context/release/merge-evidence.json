@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-30T00:28:51.828896+00:00",
+  "strategy": "merge commits; two parents verified",
+  "pull_requests": [
+    {
+      "mergeCommit": {
+        "oid": "59e78377ed00dadd940104f271bb13b8fce5d1a1"
+      },
+      "mergedAt": "2026-10-30T00:28:44Z",
+      "state": "MERGED",
+      "url": "https://github.com/feci/parley-deck-cli/pull/87"
+    },
+    {
+      "mergeCommit": {
+        "oid": "7cdfb241b65a3eea855a9ed61e860d75acdd2f4a"
+      },
+      "mergedAt": "2026-10-30T00:28:49Z",
+      "state": "MERGED",
+      "url": "https://github.com/feci/parley-deck-skill/pull/13"
+    }
+  ]
+}

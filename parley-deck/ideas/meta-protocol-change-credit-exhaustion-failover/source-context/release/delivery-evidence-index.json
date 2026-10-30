@@ -1,0 +1,81 @@
+{
+  "at": "2026-10-30T00:41:00.490337+00:00",
+  "status": "Authorized delivery executed; independent channel check pending",
+  "evidence": [
+    {
+      "path": "merge-commits.json",
+      "sha256": "30a80f10bf61afb72b9dda30eecd8e96d10b290948c6f9cd4c94c879cb46786f",
+      "bytes": 135
+    },
+    {
+      "path": "merge-evidence.json",
+      "sha256": "c2bc27705dd99e15d339b068979767ebb5a3221ad69e1b97f0141b9b7e3ffc00",
+      "bytes": 593
+    },
+    {
+      "path": "cli-build-verification.json",
+      "sha256": "b93920a5d2d0c6defe2a3652d367f3575b9e89111d9643d71a5dd0e64752b9f8",
+      "bytes": 18904
+    },
+    {
+      "path": "skill/payload-verification.json",
+      "sha256": "9743b9d18de151e9d1a91ac1c24eeeef7a61fc1f06e3ad10b4921935bc9497ef",
+      "bytes": 1387
+    },
+    {
+      "path": "github-publication.json",
+      "sha256": "719433bb279e87b7e1a8ec6886d7cf26d7f2f9050cf6a11ad1f8a6f777945fd9",
+      "bytes": 6745
+    },
+    {
+      "path": "homebrew-publication.json",
+      "sha256": "cdec3adc9a7c4645623cc1cbec63a8e9884f6e320641fb2f3ac72fe2a19bec8f",
+      "bytes": 696
+    },
+    {
+      "path": "homebrew-verification.json",
+      "sha256": "a2e366faf7fc20333e00303d249c66343c2fa545c4f9a3b1aa69995f1900ecd0",
+      "bytes": 46431
+    },
+    {
+      "path": "runtime-verification.json",
+      "sha256": "25677474bfaef897948b20396fd224c92cae7f44c0dc3b1a3cf176ae6288cd98",
+      "bytes": 26706
+    },
+    {
+      "path": "runtime-inventory-after-hashes.json",
+      "sha256": "3bcad183d44058765173b81b8c0f3f66886e4dbe240b2bfbc86e829b27e1eca2",
+      "bytes": 30339
+    },
+    {
+      "path": "hosted-assets-verification.json",
+      "sha256": "0a35c0b6792d8965c67b21704eb498f698dad4a0117532c2fd180257cedcc1f6",
+      "bytes": 4305
+    },
+    {
+      "path": "skill/portable-workflow.json",
+      "sha256": "11a2fc4badbde08ef31201d32a4222f49427f75a466c499f4d00dd0293a160ce",
+      "bytes": 6547
+    },
+    {
+      "path": "winget-validation.json",
+      "sha256": "edc69ed191708b36e951c6afc888165e26fc60ca71d6fd101f8fca29e58b9c8a",
+      "bytes": 1346
+    },
+    {
+      "path": "pending-owner-commands.json",
+      "sha256": "b61b3ab63aadc73c5cc339ef1dfd21e3446d9d7731636e9dd38ffcd4ff5a084c",
+      "bytes": 5645
+    },
+    {
+      "path": "reviewed-cli-ci.json",
+      "sha256": "4eae14a485013bbf43c01b5abc2d04fe0f69f904e27f3607954b0af016443ffb",
+      "bytes": 8752
+    },
+    {
+      "path": "winget-submission.json",
+      "sha256": "58f4a75a8db3a847ba62993b5cb9b0500200f4c59aa5c690cb95fac155161525",
+      "bytes": 5165
+    }
+  ]
+}

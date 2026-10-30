@@ -1,0 +1,24 @@
+{
+  "command": [
+    "find",
+    "/Users/tomasfecko",
+    "-maxdepth",
+    "7",
+    "(",
+    "-path",
+    "/Users/tomasfecko/Library/CloudStorage/OneDrive-LabourDigitalGmbH/.Trash",
+    "-o",
+    "-path",
+    "/Users/tomasfecko/Library/CloudStorage/OneDrive-NordlichtITSolutions,s.r.o/.Trash",
+    ")",
+    "-prune",
+    "-o",
+    "-path",
+    "*/skills/parley-*/SKILL.md",
+    "-print"
+  ],
+  "exit": 0,
+  "timed_out": false,
+  "duration_seconds": 37.42,
+  "at": "2026-10-30T00:36:53.458537+00:00"
+}
