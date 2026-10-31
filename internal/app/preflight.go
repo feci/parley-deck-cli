@@ -519,11 +519,12 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	// Hard failure: excluding the unavailable agents would leave < 2 participants
 	// (the §1 non-solo hard-stop). This outranks the pending gate and is NOT
 	// waivable by --yes.
-	// V3 (§9.0): participants are optional. One available participant, or an
-	// applied decision that keeps a usable role holder, is enough.
+	// V3 (§9.0): participants are optional only after automatic exclusion. An
+	// applied decision that keeps a usable role holder is enough; a deliberate
+	// solo start still needs the §1 user exception.
 	optional := opts.QuotaPolicy != nil && opts.QuotaPolicy.OptionalParticipants()
 	holder := report.QuotaDecision != nil && report.QuotaDecision.Applied && len(report.QuotaDecision.After) > 0
-	if len(report.Roster) > 0 && available < 2 && !(optional && (available >= 1 || holder)) {
+	if len(report.Roster) > 0 && available < 2 && !(optional && holder) {
 		return report, 1, nil
 	}
 
