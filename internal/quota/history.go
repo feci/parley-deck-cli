@@ -74,13 +74,13 @@ func (b Batch) Validate(h *History) error {
 		return fmt.Errorf("contradictory quota batch identity/policy/revision")
 	}
 	d := b.Decision
-	if !d.Applied || d.Block != "" || d.UsableSurvivors < Floor || len(d.Candidates) == 0 || !reflect.DeepEqual(d.Before, h.Current) {
+	if !d.Applied || d.Block != "" || d.UsableSurvivors < b.Policy.MinUsableSurvivors() || len(d.Candidates) == 0 || !reflect.DeepEqual(d.Before, h.Current) {
 		return fmt.Errorf("invalid quota batch decision")
 	}
 	if b.RoleSnapshot != nil {
 		return fmt.Errorf("automatic batch cannot replace frozen roles")
 	}
-	if err := validateRoleDecision(h.RoleSnapshot(), h.LastRoleTransition(), d); err != nil {
+	if err := validateRoleDecision(b.Policy, h.RoleSnapshot(), h.LastRoleTransition(), d); err != nil {
 		return err
 	}
 	for _, a := range d.DraftArchives {
@@ -121,7 +121,7 @@ func (b Batch) Validate(h *History) error {
 	if r := d.RoleTransition; r != nil && !contains(after, r.After.Implementer) && h.RoleSnapshot() != nil && r.After.Implementer == h.RoleSnapshot().Facilitator {
 		after = append(after, r.After.Implementer)
 	}
-	if !reflect.DeepEqual(after, d.After) || len(after) < Floor {
+	if !reflect.DeepEqual(after, d.After) || len(after) < b.Policy.MinMembers() {
 		return fmt.Errorf("contradictory quota batch membership")
 	}
 	return nil
@@ -359,7 +359,11 @@ func (b Batch) Notice() string {
 	if r := b.Decision.RoleTransition; r != nil {
 		notice += fmt.Sprintf("\nTakeover %s: successor %s; roles %v. Organizer: %s. Implementer: %s. Resume record: %s. Predecessor: %s (%s). Filed positions remain binding.\n", r.ID, r.Successor, r.Roles, r.After.Organizer, r.After.Implementer, r.Path(), r.Base, r.BaseSHA256)
 	}
-	return notice + fmt.Sprintf("\nArithmetic: %d before - %d candidates = %d current; %d usable non-facilitators >= %d.\n", len(b.Decision.Before), len(CandidateIDs(b.Decision.Candidates)), len(b.Decision.After), b.Decision.UsableSurvivors, Floor)
+	floor := fmt.Sprintf(">= %d", Floor)
+	if b.Policy.OptionalParticipants() {
+		floor = "(v3 floor: one usable organizer or implementer holder)"
+	}
+	return notice + fmt.Sprintf("\nArithmetic: %d before - %d candidates = %d current; %d usable non-facilitators %s.\n", len(b.Decision.Before), len(CandidateIDs(b.Decision.Candidates)), len(b.Decision.After), b.Decision.UsableSurvivors, floor)
 }
 
 // BindRetained freezes the filed obligations inside the same immutable batch.

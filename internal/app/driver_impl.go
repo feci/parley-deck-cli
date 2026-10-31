@@ -634,6 +634,9 @@ func (o driverImplOps) OpenReviewRound(ctx context.Context, round int) error {
 		return fmt.Errorf("driver: %s", o.roleErr)
 	}
 	if len(o.reviewers) == 0 {
+		if none, err := membership.NoReviewerAfterDropout(o.root, o.ideaDir, o.base.RunID, o.implementer, o.base.Idea.Participants, nil); err == nil && none {
+			return fmt.Errorf("no independent reviewer remains after v3 automatic exclusion; the organizer closes under §9.0 v3 and records `independent review: none` (never a pass)")
+		}
 		return fmt.Errorf("no non-implementer reviewers available")
 	}
 	if _, err := o.singleReviewerAfterDropout(); err != nil {

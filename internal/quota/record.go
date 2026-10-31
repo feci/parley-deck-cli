@@ -37,7 +37,7 @@ type Transition struct {
 
 func NewKickoff(idea, run string, p Policy, participants []string, d *Decision, now time.Time, roles ...*RoleSnapshot) Kickoff {
 	k := Kickoff{Version: 1, Idea: idea, RunID: run, Policy: p, Participants: append([]string(nil), participants...)}
-	if p.Trigger == ParticipantFailureV2 {
+	if p.rolesFrozen() {
 		order := participants
 		if d != nil && d.Applied {
 			order = d.Before
@@ -68,7 +68,7 @@ func (k Kickoff) Validate() error {
 	if err := k.Policy.Validate(); err != nil {
 		return err
 	}
-	if k.Policy.Trigger == ParticipantFailureV2 {
+	if k.Policy.rolesFrozen() {
 		if k.Roles == nil || k.Roles.Validate() != nil {
 			return fmt.Errorf("missing or invalid v2 role snapshot")
 		}
@@ -89,7 +89,7 @@ func (k Kickoff) Validate() error {
 		if tr.ID == "" || tr.PriorRevision != -1 || tr.RecordedAt.IsZero() || !tr.Decision.Applied || !k.Policy.Enabled || tr.Policy != k.Policy || !reflect.DeepEqual(Unique(tr.Decision.After), Unique(k.Participants)) {
 			return fmt.Errorf("contradictory quota kickoff transition")
 		}
-		if tr.Decision.UsableSurvivors < Floor || len(tr.Decision.Candidates) == 0 {
+		if tr.Decision.UsableSurvivors < k.Policy.MinUsableSurvivors() || len(tr.Decision.After) < k.Policy.MinMembers() || len(tr.Decision.Candidates) == 0 {
 			return fmt.Errorf("invalid quota kickoff floor or evidence")
 		}
 		readinessBatch := ""
@@ -116,7 +116,7 @@ func (k Kickoff) Validate() error {
 				readinessBatch = batch
 			}
 		}
-		if err := validateRoleDecision(k.Roles, nil, tr.Decision); err != nil {
+		if err := validateRoleDecision(k.Policy, k.Roles, nil, tr.Decision); err != nil {
 			return err
 		}
 	}

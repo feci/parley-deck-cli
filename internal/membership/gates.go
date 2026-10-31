@@ -89,6 +89,17 @@ func checkGates(root, ideaDir, runID string, ids []string, prospective *quota.De
 	if err != nil {
 		return err
 	}
+	if len(reviewers) == 0 {
+		// V3: participants are optional. A proved automatic loss of every
+		// independent reviewer is no veto; the close records the missing review.
+		none, err := NoReviewerAfterDropout(root, ideaDir, runID, impl, ids, prospective)
+		if err != nil {
+			return err
+		}
+		if none {
+			return nil
+		}
+	}
 	policy, err := track.PolicyFor(t, present, len(reviewers), auto, strict)
 	if err != nil {
 		return err
