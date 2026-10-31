@@ -17,6 +17,10 @@ const KickoffAndMidIdea = "kickoff-and-mid-idea"
 const ParticipantFailure = "participant-failure-v1"
 const ParticipantFailureRule = "participant-failure.v1"
 const ParticipantFailureV2 = "participant-failure-v2"
+
+// ParticipantFailureV3 keeps v2 and makes participants optional: one usable
+// organizer or implementer holder keeps the idea alive.
+const ParticipantFailureV3 = "participant-failure-v3"
 const ProviderExhaustionRule = "provider-exhaustion.v1"
 
 type Policy struct {
@@ -46,7 +50,7 @@ func (p *Policy) UnmarshalJSON(raw []byte) error {
 	p.Trigger = ""
 	if len(fields) == 3 {
 		var trigger *string
-		if fields["trigger"] == nil || json.Unmarshal(fields["trigger"], &trigger) != nil || trigger == nil || (*trigger != ParticipantFailure && *trigger != ParticipantFailureV2) {
+		if fields["trigger"] == nil || json.Unmarshal(fields["trigger"], &trigger) != nil || trigger == nil || (*trigger != ParticipantFailure && *trigger != ParticipantFailureV2 && *trigger != ParticipantFailureV3) {
 			return fmt.Errorf("invalid automatic exclusion trigger")
 		}
 		p.Trigger = *trigger
@@ -73,21 +77,53 @@ func NewParticipantPolicy(defaultValue, ideaValue *bool) Policy {
 	return p
 }
 
-// NewExhaustionPolicy is for new ideas only. Resume uses the saved policy.
+// NewExhaustionPolicy retains the v2 constructor for saved-policy callers.
 func NewExhaustionPolicy(defaultValue, ideaValue *bool) Policy {
 	p := NewPolicy(defaultValue, ideaValue)
 	p.Trigger = ParticipantFailureV2
 	return p
 }
-func (p Policy) Dropout() bool {
-	return p.Enabled && (p.Trigger == ParticipantFailure || p.Trigger == ParticipantFailureV2)
+
+// NewOptionalParticipantPolicy is for new ideas only. Resume uses the saved policy.
+func NewOptionalParticipantPolicy(defaultValue, ideaValue *bool) Policy {
+	p := NewPolicy(defaultValue, ideaValue)
+	p.Trigger = ParticipantFailureV3
+	return p
 }
-func (p Policy) Exhaustion() bool { return p.Enabled && p.Trigger == ParticipantFailureV2 }
+func (p Policy) Dropout() bool {
+	return p.Enabled && (p.Trigger == ParticipantFailure || p.rolesFrozen())
+}
+func (p Policy) Exhaustion() bool { return p.Enabled && p.rolesFrozen() }
+
+// OptionalParticipants reports the v3 floor: one usable role holder suffices.
+func (p Policy) OptionalParticipants() bool { return p.Enabled && p.Trigger == ParticipantFailureV3 }
+
+// MinUsableSurvivors is the usable non-facilitator floor of an applied batch.
+// V3 may reach zero when a usable facilitator holds the remaining roles.
+func (p Policy) MinUsableSurvivors() int {
+	if p.Trigger == ParticipantFailureV3 {
+		return 0
+	}
+	return Floor
+}
+
+// MinMembers is the member floor of an applied batch.
+func (p Policy) MinMembers() int {
+	if p.Trigger == ParticipantFailureV3 {
+		return 1
+	}
+	return Floor
+}
+
+// rolesFrozen reports a trigger that freezes roles and permits succession.
+func (p Policy) rolesFrozen() bool {
+	return p.Trigger == ParticipantFailureV2 || p.Trigger == ParticipantFailureV3
+}
 func (p Policy) Validate() error {
 	if p.Scope != KickoffOnly && p.Scope != KickoffAndMidIdea {
 		return fmt.Errorf("ambiguous quota policy scope %q", p.Scope)
 	}
-	if p.Trigger != "" && p.Trigger != ParticipantFailure && p.Trigger != ParticipantFailureV2 {
+	if p.Trigger != "" && p.Trigger != ParticipantFailure && !p.rolesFrozen() {
 		return fmt.Errorf("unknown automatic exclusion trigger %q", p.Trigger)
 	}
 	return nil
@@ -247,7 +283,12 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 			return d
 		}
 	}
-	if d.UsableSurvivors < Floor {
+	if policy.OptionalParticipants() {
+		if d.UsableSurvivors < 1 && !(roles.Facilitator != "" && usable[roles.Facilitator]) {
+			d.Block = fmt.Sprintf("quota floor: %d proposed distinct participants, %d candidate identities, no usable organizer or implementer holder remains", len(d.Before), len(CandidateIDs(d.Candidates)))
+			return d
+		}
+	} else if d.UsableSurvivors < Floor {
 		d.Block = fmt.Sprintf("quota floor: %d proposed distinct participants, %d candidate identities, %d usable non-facilitator survivors < %d", len(d.Before), len(CandidateIDs(d.Candidates)), d.UsableSurvivors, Floor)
 		return d
 	}
@@ -282,6 +323,13 @@ func Evaluate(policy Policy, proposed []string, members []Member, roles Roles) D
 		if r != nil && !contains(d.After, r.After.Implementer) && r.After.Implementer == roles.Snapshot.Facilitator {
 			d.After = append(d.After, r.After.Implementer)
 		}
+	}
+	if len(d.After) < policy.MinMembers() {
+		// A usable facilitator counts for v3 only when succession makes it a holder.
+		d.Block = fmt.Sprintf("quota floor: %d proposed distinct participants, %d candidate identities, no usable organizer or implementer holder remains", len(d.Before), len(CandidateIDs(d.Candidates)))
+		d.RoleTransition = nil
+		d.After = append([]string(nil), d.Before...)
+		return d
 	}
 	d.Applied = true
 	return d

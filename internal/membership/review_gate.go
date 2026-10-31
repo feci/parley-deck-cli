@@ -24,6 +24,16 @@ const (
 // prospective is used only by Settle after Evaluate, before CommitBatch: requiring
 // an already-committed transition there would deadlock the first eligible loss.
 func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []string, prospective *quota.Decision) (bool, error) {
+	return reviewerLossAfterDropout(root, ideaDir, runID, implementer, ids, prospective, 1)
+}
+
+// NoReviewerAfterDropout is the v3 exception: automatic exclusion removed every
+// independent reviewer. It proves the loss; it never supplies a review verdict.
+func NoReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []string, prospective *quota.Decision) (bool, error) {
+	return reviewerLossAfterDropout(root, ideaDir, runID, implementer, ids, prospective, 0)
+}
+
+func reviewerLossAfterDropout(root, ideaDir, runID, implementer string, ids []string, prospective *quota.Decision, remaining int) (bool, error) {
 	v, err := protocol.InspectQuota(ideaDir)
 	if err != nil {
 		return false, err
@@ -55,10 +65,12 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 		return out
 	}
 	survivors := reviewers(ids)
-	if len(survivors) != 1 {
+	if len(survivors) != remaining {
 		return false, nil
 	}
 	var decision *quota.Decision
+	// The policy that made the decision governs its floor, not a later revision.
+	deciding := h.Policy()
 	proofIdea := h.Kickoff.Idea
 	kickoff := false
 	if prospective != nil {
@@ -80,15 +92,18 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 			if b.Owner != nil {
 				return false, nil
 			}
-			decision = &b.Decision
+			decision, deciding = &b.Decision, b.Policy
 			break
 		}
 		if decision == nil && h.Kickoff.Transition != nil {
-			decision = &h.Kickoff.Transition.Decision
+			decision, deciding = &h.Kickoff.Transition.Decision, h.Kickoff.Transition.Policy
 			// Readiness evidence is bound to the proposed batch, before the final
 			// slug exists. Kickoff.Validate checks its shared readiness identity.
 			proofIdea, kickoff = "", true
 		}
+	}
+	if remaining == 0 && !deciding.OptionalParticipants() {
+		return false, nil
 	}
 	beforeImplementer := implementer
 	if decision != nil && decision.RoleTransition != nil {
@@ -106,9 +121,9 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 		}
 		return out
 	}
-	if decision == nil || !decision.Applied || decision.Block != "" || decision.UsableSurvivors < quota.Floor ||
+	if decision == nil || !decision.Applied || decision.Block != "" || decision.UsableSurvivors < deciding.MinUsableSurvivors() ||
 		!validMemberSet(decision.Before) || !sameMemberSet(decision.After, ids) ||
-		(!Has(decision.Before, implementer) && !(decision.RoleTransition != nil && h.RoleSnapshot() != nil && implementer == h.RoleSnapshot().Facilitator)) || !Has(beforeReviewers(decision.Before), survivors[0]) || len(beforeReviewers(decision.Before)) < 2 {
+		(!Has(decision.Before, implementer) && !(decision.RoleTransition != nil && h.RoleSnapshot() != nil && implementer == h.RoleSnapshot().Facilitator)) || remaining == 1 && !Has(beforeReviewers(decision.Before), survivors[0]) || len(beforeReviewers(decision.Before)) < remaining+1 {
 		return false, nil
 	}
 	roles, err := Roles(ideaDir)
@@ -143,6 +158,9 @@ func SingleReviewerAfterDropout(root, ideaDir, runID, implementer string, ids []
 		if !reviewFailureEvidence(c.Evidence, proofIdea, c.Agent, kickoff) {
 			return false, nil
 		}
+	}
+	if remaining == 0 {
+		return true, nil
 	}
 	m, err := runmanifest.Load(root, runID)
 	if err != nil {

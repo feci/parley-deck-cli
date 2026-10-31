@@ -444,9 +444,13 @@ func Block(root, ideaDir, runID, phase string, d quota.Decision) error {
 	if strings.HasPrefix(d.Block, "integrity/recovery gate:") {
 		outcome = "No further dispatch authorized; inspect immutable history for a committed pending transition."
 	}
-	arithmetic := fmt.Sprintf("%d distinct before; %d candidate identities; %d usable non-facilitator survivors; fixed floor %d", len(d.Before), len(quota.CandidateIDs(d.Candidates)), d.UsableSurvivors, quota.Floor)
+	floor := fmt.Sprintf("fixed floor %d", quota.Floor)
+	if v, err := protocol.InspectQuota(ideaDir); err == nil && v.History != nil && v.History.Policy().OptionalParticipants() {
+		floor = "v3 floor: one usable organizer or implementer holder"
+	}
+	arithmetic := fmt.Sprintf("%d distinct before; %d candidate identities; %d usable non-facilitator survivors; %s", len(d.Before), len(quota.CandidateIDs(d.Candidates)), d.UsableSurvivors, floor)
 	if len(d.Before) == 0 {
-		arithmetic = fmt.Sprintf("unavailable because immutable membership could not be validated; fixed floor %d", quota.Floor)
+		arithmetic = "unavailable because immutable membership could not be validated; " + floor
 	}
 	text := fmt.Sprintf("---\nfrom: parley\nto: user\nidea: %s\nphase: %s\nblocking: yes\ntransition: %s\n---\n\nQuota batch blocked: %s\n\nCandidates: %v\nBefore: %v\nArithmetic: %s. %s\n\nEvidence:\n```json\n%s\n```\n", filepath.Base(ideaDir), phase, id, d.Block, quota.CandidateIDs(d.Candidates), d.Before, arithmetic, outcome, blob)
 	text += "\n" + quota.OwnerOptions + "\n"
