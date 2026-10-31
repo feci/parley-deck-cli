@@ -56,7 +56,7 @@ func (b Batch) validateRevision(h *History) error {
 	if b.Version != 1 || b.Idea != h.Kickoff.Idea || b.RunID == "" || b.ID != b.digest() || b.PriorRevision != h.Revision || b.RecordedAt.IsZero() || b.Policy.Validate() != nil || !reflect.DeepEqual(b.Decision.Before, h.Current) || b.Decision.Applied || len(b.Decision.Candidates) != 0 || len(b.Decision.After) == 0 || len(Unique(b.Decision.After)) != len(b.Decision.After) {
 		return fmt.Errorf("invalid owner membership revision")
 	}
-	if b.Policy.Trigger == ParticipantFailureV2 && h.RoleSnapshot() == nil {
+	if b.Policy.rolesFrozen() && h.RoleSnapshot() == nil {
 		if b.RoleSnapshot == nil || b.RoleSnapshot.Validate() != nil || !reflect.DeepEqual(b.RoleSnapshot.Order, h.Current) || b.Owner.Authority == nil {
 			return fmt.Errorf("v2 widening requires owner-bound frozen role snapshot")
 		}

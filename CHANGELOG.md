@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.57.0 — 2026-10-31
+
+- Freeze `participant-failure-v3` for new ideas. V3 keeps every v2 rule. Saved v1/v2 policies and hashes do not change.
+- Make participants optional: an automatic exclusion can leave one usable organizer or implementer holder, including a facilitator that takes implementation.
+- Accept zero independent reviewers only when immutable history proves that automatic exclusion removed them. The driver then hands the close to the organizer, which records `independent review: none`. A missing review is never a pass.
+- Keep the 20,000-byte skill and 70,000-byte phase-1 packet limits through lossless reflow of seven §9.0 bullets. Companion skill/core version is 2.21.0.
+- Solo run: the owner authorized claude-1 alone because every other agent was out of tokens. CLI Windows remains experimental. CLI WinGet remains held. npm and global core publication remain owner-only.
+
 ## 1.56.0 — 2026-10-29
 
 - Freeze `participant-failure-v2` for new ideas. Preserve saved policy behavior and hashes.

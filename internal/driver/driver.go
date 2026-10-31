@@ -140,6 +140,14 @@ func New(cfg Config, r RoundRunner) *Driver {
 		// runtime --no-implement brake, which would otherwise let fast + auto_implement
 		// slip past the contradiction gate.
 		pol, err := track.PolicyFor(t, present, avail, ReadAutoImplement(cfg.IdeaDir), ReadStrictGate(cfg.IdeaDir))
+		if err != nil && avail < 1 && len(cfg.Participants) == 1 {
+			// V3 (§9.0): participants are optional. When immutable history proves
+			// automatic exclusion removed every reviewer, the sole role holder
+			// continues; the close records the missing independent review.
+			if none, e := membership.NoReviewerAfterDropout(cfg.Root, cfg.IdeaDir, fmtRunID(cfg.RunDir), cfg.Participants[0], cfg.Participants, nil); e == nil && none {
+				pol, err = track.PolicyFor(t, present, 1, ReadAutoImplement(cfg.IdeaDir), ReadStrictGate(cfg.IdeaDir))
+			}
+		}
 		if tErr != nil {
 			err = tErr
 		}

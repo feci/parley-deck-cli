@@ -361,3 +361,10 @@ Idea: ideas/meta-protocol-change-credit-exhaustion-failover/
 Drafted by: codex-1
 Summary: Apply the exact 29 signed hunks for v2 suppression, owner-order succession, handover authority, and private capture.
 Preserve saved policies and all filed positions. Keep both size limits.
+
+## 2026-10-31 — Optional participants (v3)
+Idea: ideas/meta-protocol-change-participants-optional/
+Drafted by: claude-1 (solo, recorded owner exception)
+Summary: New ideas freeze `participant-failure-v3`. One usable organizer or implementer holder keeps an idea alive.
+Zero independent reviewers are allowed only after proved automatic exclusion; the organizer close records `independent review: none`.
+Reflow seven §9.0 bullets without word changes to keep the packet guardrail. Stage core 2.21.0 from staged 2.20.0 plus these hunks.

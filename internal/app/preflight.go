@@ -302,7 +302,7 @@ func runTaskPreflight(ctx context.Context, root string, discovered []agents.Disc
 	}
 	// A gate or a hard failure: stop before runcontrol.Create. No half-open idea.
 	if code == 1 {
-		fmt.Fprintln(stderr, "preflight: hard stop — fewer than 2 participants after exclusion (§1 non-solo).")
+		fmt.Fprintln(stderr, "preflight: hard stop — fewer than 2 participants after exclusion (§1 non-solo; a v3 idea needs one usable organizer or implementer holder).")
 	} else {
 		w := stdout
 		if !attended {
@@ -430,7 +430,7 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 			}
 		}
 		decision := quota.Evaluate(*opts.QuotaPolicy, proposed, members, opts.QuotaRoles)
-		if decision.Applied && opts.Track == string(track.Fast) {
+		if decision.Applied && len(decision.After) > 0 && opts.Track == string(track.Fast) {
 			// The initial prompt has only track metadata: fast is the sole additional
 			// kickoff gate. Later declarations use membership.CheckGates before commit.
 			impl := decision.After[0]
@@ -466,7 +466,7 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 		report.QuotaDecision = &decision
 		if decision.Block != "" {
 			report.Gates = append(report.Gates, gate{Kind: "quota-batch-blocked", Detail: decision.Block + fmt.Sprintf("; candidates: %v", quota.CandidateIDs(decision.Candidates)), Confirm: "owner confirmation required"})
-			if err := writeQuotaBlock(opts.Root, decision); err != nil {
+			if err := writeQuotaBlock(opts.Root, decision, *opts.QuotaPolicy); err != nil {
 				raw, _ := json.MarshalIndent(decision, "", "  ")
 				fmt.Fprintf(stderr, "automatic exclusion escalation publication failed: %v\nDecision: %s\n%s\n", err, raw, quota.OwnerOptions)
 			}
@@ -519,7 +519,12 @@ func preflight(ctx context.Context, opts preflightOptions, discovered []agents.D
 	// Hard failure: excluding the unavailable agents would leave < 2 participants
 	// (the §1 non-solo hard-stop). This outranks the pending gate and is NOT
 	// waivable by --yes.
-	if len(report.Roster) > 0 && available < 2 {
+	// V3 (§9.0): participants are optional only after automatic exclusion. An
+	// applied decision that keeps a usable role holder is enough; a deliberate
+	// solo start still needs the §1 user exception.
+	optional := opts.QuotaPolicy != nil && opts.QuotaPolicy.OptionalParticipants()
+	holder := report.QuotaDecision != nil && report.QuotaDecision.Applied && len(report.QuotaDecision.After) > 0
+	if len(report.Roster) > 0 && available < 2 && !(optional && holder) {
 		return report, 1, nil
 	}
 

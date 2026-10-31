@@ -3,6 +3,7 @@ package quota
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -167,5 +168,56 @@ func TestExhaustionSuccessionUsesNativeRoleLossAndWholeBatch(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestOptionalParticipantFloorCountsTheRoleHolder(t *testing.T) {
+	p := NewOptionalParticipantPolicy(nil, nil)
+	s := &RoleSnapshot{Version: 1, Order: []string{"impl", "r1", "r2"}, Organizer: "fac", Facilitator: "fac"}
+	r := Roles{Snapshot: s, Facilitator: "fac", Designee: "impl", Assignment: RoleAssignment{Organizer: "fac", Implementer: "impl", ImplementerSource: "designation"}}
+	e := roleExhaustion("impl")
+	// V2 blocks here (one usable non-facilitator); v3 keeps the idea alive.
+	m := []Member{{ID: "impl", Evidence: &e}, {ID: "r1", Usable: true}, {ID: "fac", Usable: true}}
+	if d := Evaluate(NewExhaustionPolicy(nil, nil), s.Order, append(m, Member{ID: "r2"}), r); d.Applied {
+		t.Fatalf("v2 widened: %+v", d)
+	}
+	d := Evaluate(p, s.Order, append(m, Member{ID: "r2"}), r)
+	if !d.Applied || d.UsableSurvivors != 1 || d.RoleTransition == nil || d.RoleTransition.After.Implementer != "fac" {
+		t.Fatalf("v3 one usable participant: %+v", d)
+	}
+	// Every participant lost: the usable facilitator takes implementation.
+	e1, e2 := roleExhaustion("r1"), roleExhaustion("r2")
+	m = []Member{{ID: "impl", Evidence: &e}, {ID: "r1", Evidence: &e1}, {ID: "r2", Evidence: &e2}, {ID: "fac", Usable: true}}
+	d = Evaluate(p, s.Order, m, r)
+	if !d.Applied || d.UsableSurvivors != 0 || !reflect.DeepEqual(d.After, []string{"fac"}) || d.RoleTransition.After.Implementer != "fac" {
+		t.Fatalf("v3 facilitator holder: %+v", d)
+	}
+	if err := validateRoleDecision(p, s, nil, d); err != nil {
+		t.Fatalf("v3 role decision: %v", err)
+	}
+	if validateRoleDecision(NewExhaustionPolicy(nil, nil), s, nil, d) == nil {
+		t.Fatal("v2 accepted a zero-survivor role decision")
+	}
+	// An unresolved facilitator stays a protected block.
+	m[3] = Member{ID: "fac"}
+	if d = Evaluate(p, s.Order, m, r); d.Applied || d.Block == "" {
+		t.Fatalf("v3 unresolved facilitator: %+v", d)
+	}
+	// Nobody can hold a role: block once.
+	solo := &RoleSnapshot{Version: 1, Order: []string{"impl", "r1"}, Organizer: "impl"}
+	sr := Roles{Snapshot: solo, Assignment: RoleAssignment{Organizer: "impl", Implementer: "impl", ImplementerSource: "designation"}}
+	if d = Evaluate(p, solo.Order, []Member{{ID: "impl", Evidence: &e}, {ID: "r1", Evidence: &e1}}, sr); d.Applied || !strings.Contains(d.Block, "no usable organizer or implementer holder") {
+		t.Fatalf("v3 empty holder: %+v", d)
+	}
+}
+
+func TestOptionalParticipantFacilitatorWithoutRoleIsNoHolder(t *testing.T) {
+	p := NewOptionalParticipantPolicy(nil, nil)
+	s := &RoleSnapshot{Version: 1, Order: []string{"impl", "r1"}, Organizer: "fac", Facilitator: "fac"}
+	r := Roles{Snapshot: s, Facilitator: "fac", Assignment: RoleAssignment{Organizer: "fac", Implementer: "impl", ImplementerSource: "legacy"}}
+	e1, e2 := dropoutEvidence("impl"), dropoutEvidence("r1")
+	d := Evaluate(p, s.Order, []Member{{ID: "impl", Evidence: &e1}, {ID: "r1", Evidence: &e2}, {ID: "fac", Usable: true}}, r)
+	if d.Applied || len(d.After) != 2 || !strings.Contains(d.Block, "no usable organizer or implementer holder") {
+		t.Fatalf("ordinary losses left an empty membership: %+v", d)
 	}
 }

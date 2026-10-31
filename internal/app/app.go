@@ -1951,7 +1951,7 @@ func runTask(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "quota policy config failed: %v\n", configErr)
 		return 1
 	}
-	quotaPolicy := quota.NewExhaustionPolicy(defs.QuotaAutoExclude, quotaOverride)
+	quotaPolicy := quota.NewOptionalParticipantPolicy(defs.QuotaAutoExclude, quotaOverride)
 	frozenRoles := &quota.RoleSnapshot{Version: 1, Order: append([]string(nil), participants...), Organizer: *organizerFlag, Facilitator: *facilitatorFlag}
 	if frozenRoles.Organizer == "" {
 		frozenRoles.Organizer = frozenRoles.Facilitator
@@ -2511,7 +2511,7 @@ func newLaunchFunc(ctx context.Context, root string, discovered []agents.Discove
 		if err != nil {
 			return tui.LaunchResult{}, err
 		}
-		policy := quota.NewExhaustionPolicy(defs.QuotaAutoExclude, nil)
+		policy := quota.NewOptionalParticipantPolicy(defs.QuotaAutoExclude, nil)
 		created, err := runcontrol.Create(runcontrol.CreateOptions{
 			QuotaPolicy:  &policy,
 			Root:         root,

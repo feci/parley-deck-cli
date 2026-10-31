@@ -14,14 +14,18 @@ import (
 
 // A failed kickoff has no idea identity yet. Keep one decision-scoped blocking
 // record, with all candidates and the complete arithmetic; never one per agent.
-func writeQuotaBlock(root string, d quota.Decision) error {
+func writeQuotaBlock(root string, d quota.Decision, policy ...quota.Policy) error {
 	b, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}
 	id := fmt.Sprintf("%x", sha256.Sum256(b))
 	path := filepath.Join(root, protocol.DeckDir, "inbox", "parley-to-user_quota-kickoff-"+id+".md")
-	text := fmt.Sprintf("---\nfrom: parley\nto: user\nphase: kickoff\nblocking: yes\ndate: %s\n---\n\nAutomatic exclusion batch blocked: %s\n\nCandidates: %v\n\nProposed: %v\n\nUsable non-facilitator survivors: %d; fixed floor: %d. No exclusions applied.\n\n%s\n\nEvidence:\n```json\n%s\n```\n", time.Now().UTC().Format("2006-01-02"), d.Block, quota.CandidateIDs(d.Candidates), d.Before, d.UsableSurvivors, quota.Floor, quota.OwnerOptions, b)
+	floor := fmt.Sprintf("fixed floor: %d", quota.Floor)
+	if len(policy) > 0 && policy[0].OptionalParticipants() {
+		floor = "v3 floor: one usable organizer or implementer holder"
+	}
+	text := fmt.Sprintf("---\nfrom: parley\nto: user\nphase: kickoff\nblocking: yes\ndate: %s\n---\n\nAutomatic exclusion batch blocked: %s\n\nCandidates: %v\n\nProposed: %v\n\nUsable non-facilitator survivors: %d; %s. No exclusions applied.\n\n%s\n\nEvidence:\n```json\n%s\n```\n", time.Now().UTC().Format("2006-01-02"), d.Block, quota.CandidateIDs(d.Candidates), d.Before, d.UsableSurvivors, floor, quota.OwnerOptions, b)
 	return quota.PublishNotice(filepath.Dir(path), filepath.Base(path), text)
 }
 func quotaSurface(ideaDir string) []string {

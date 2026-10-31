@@ -159,7 +159,7 @@ func SelectSuccession(s RoleSnapshot, before RoleAssignment, current []string, l
 	return r, nil
 }
 
-func validateRoleDecision(s *RoleSnapshot, previous *RoleTransition, d Decision) error {
+func validateRoleDecision(p Policy, s *RoleSnapshot, previous *RoleTransition, d Decision) error {
 	r := d.RoleTransition
 	if r == nil {
 		if s != nil && previous == nil && contains(CandidateIDs(d.Candidates), s.Organizer) {
@@ -194,7 +194,7 @@ func validateRoleDecision(s *RoleSnapshot, previous *RoleTransition, d Decision)
 			positive++
 		}
 	}
-	if positive < Floor || positive != d.UsableSurvivors {
+	if positive < p.MinUsableSurvivors() || positive != d.UsableSurvivors || len(r.Usable) == 0 {
 		return fmt.Errorf("role transition lacks the positive floor")
 	}
 	if previous != nil && r.Before != previous.After || previous == nil && r.Before.Organizer != s.Organizer {
